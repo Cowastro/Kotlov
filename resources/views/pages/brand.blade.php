@@ -16,7 +16,7 @@
         }
     @endphp
 
-    <section class="brand-detail-hero flat-spacing-2">
+    <section class="brand-detail-hero">
         <div class="container">
             <div class="breadcrumbs brand-detail-breadcrumbs">
                 <a href="/" class="text-caption-01 cl-text-3 link">Главная</a>
@@ -27,7 +27,38 @@
             </div>
 
             <div class="brand-detail-card">
-                <div class="brand-detail-logo-box">
+                <div class="brand-detail-summary">
+                    <p class="brand-detail-eyebrow">Официальный каталог бренда</p>
+                    <h1>{{ $h1 }}</h1>
+
+                    @if ($brand->producer)
+                        <div class="brand-detail-producer">
+                            {!! $brand->producer !!}
+                        </div>
+                    @else
+                        <p class="brand-detail-lead">
+                            Подберём оборудование {{ $brandName }} под вашу задачу, проверим комплектацию
+                            и организуем доставку по Беларуси.
+                        </p>
+                    @endif
+
+                    <div class="brand-detail-meta" aria-label="Информация о бренде">
+                        <span><strong>{{ $products->total() }}</strong> товаров</span>
+                        @if ($brandCategories->isNotEmpty())
+                            <span><strong>{{ $brandCategories->count() }}</strong> разделов</span>
+                        @endif
+                        @if ($brand->country)
+                            <span>{{ $brand->country }}</span>
+                        @endif
+                    </div>
+
+                    <div class="brand-detail-actions">
+                        <a href="#brand-products" class="tf-btn btn-primary radius-3">Перейти к товарам</a>
+                        <a href="#brand-about" class="brand-detail-text-link">О бренде <span aria-hidden="true">→</span></a>
+                    </div>
+                </div>
+
+                <div class="brand-detail-logo-box" aria-label="Логотип {{ $brandName }}">
                     @if ($brand->logo)
                         <img
                             class="brand-detail-logo"
@@ -40,32 +71,6 @@
                         <span class="brand-detail-initials">{{ $brandInitials }}</span>
                     @endif
                 </div>
-
-                <div class="brand-detail-summary">
-                    <p class="brand-detail-eyebrow">Каталог бренда</p>
-                    <h1>{{ $h1 }}</h1>
-
-                    <div class="brand-detail-meta">
-                        @if ($brand->country)
-                            <span>Страна: {{ $brand->country }}</span>
-                        @endif
-                        <span>{{ $products->total() }} товаров</span>
-                        @if ($brandCategories->isNotEmpty())
-                            <span>{{ $brandCategories->count() }} разделов</span>
-                        @endif
-                    </div>
-
-                    @if ($brand->producer)
-                        <div class="brand-detail-producer">
-                            {!! $brand->producer !!}
-                        </div>
-                    @endif
-
-                    <div class="brand-detail-actions">
-                        <a href="#brand-products" class="tf-btn btn-primary radius-3">Смотреть товары</a>
-                        <a href="/brands" class="tf-btn btn-outline radius-3">Все бренды</a>
-                    </div>
-                </div>
             </div>
         </div>
     </section>
@@ -74,15 +79,20 @@
         <section class="brand-detail-categories">
             <div class="container">
                 <div class="brand-detail-section-head">
-                    <p class="text-caption-01 cl-text-3">Ассортимент</p>
+                    <p class="brand-detail-kicker">Ассортимент</p>
                     <h2>Разделы {{ $brandName }}</h2>
+                    <p>Выберите нужную товарную группу — покажем подходящие модели и актуальные цены.</p>
                 </div>
 
                 <div class="brand-category-grid">
                     @foreach ($brandCategories as $category)
                         <a href="/{{ $category->slug }}?brand={{ $brand->id }}" class="brand-category-chip">
-                            <span>{{ $category->name }}</span>
-                            <small>{{ $category->products_count }} товаров</small>
+                            <span class="brand-category-chip__count">{{ str_pad($loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>
+                            <span class="brand-category-chip__body">
+                                <strong>{{ $category->name }}</strong>
+                                <small>{{ $category->products_count }} товаров</small>
+                            </span>
+                            <span class="brand-category-chip__arrow" aria-hidden="true">→</span>
                         </a>
                     @endforeach
                 </div>
@@ -91,21 +101,40 @@
     @endif
 
     @if ($cleanContent)
-        <section class="brand-detail-content-section flat-spacing">
+        <section id="brand-about" class="brand-detail-content-section">
             <div class="container">
-                <article class="brand-detail-content-panel brand-detail-content tf-rte">
-                    {!! $cleanContent !!}
-                </article>
+                <div class="brand-detail-content-shell">
+                    <div class="brand-detail-content-aside">
+                        <p class="brand-detail-kicker">О бренде</p>
+                        <p>Главное о продукции, сериях и выборе оборудования {{ $brandName }}.</p>
+                    </div>
+                    <article class="brand-detail-content-panel brand-detail-content tf-rte">
+                        {!! $cleanContent !!}
+                    </article>
+                </div>
             </div>
         </section>
     @endif
 
-    <section id="brand-products" class="flat-spacing">
+    <section class="brand-detail-help">
+        <div class="container">
+            <div class="brand-detail-help-card">
+                <div>
+                    <p class="brand-detail-kicker">Нужна помощь с выбором?</p>
+                    <h2>Сверим характеристики и комплектацию</h2>
+                    <p>Менеджер проверит совместимость, документы и доступность конкретной модели до заказа.</p>
+                </div>
+                <a href="/contacts" class="tf-btn btn-outline radius-3">Получить консультацию</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="brand-products" class="brand-products-section flat-spacing">
         <div class="container">
             @if ($products->count() > 0)
                 <div class="brand-products-head">
                     <div>
-                        <p class="text-caption-01 cl-text-3">Товары бренда</p>
+                        <p class="brand-detail-kicker">Товары бренда</p>
                         <h2>{{ $brandName }} в наличии и под заказ</h2>
                     </div>
                     <p class="text-body-1 cl-text-2">
