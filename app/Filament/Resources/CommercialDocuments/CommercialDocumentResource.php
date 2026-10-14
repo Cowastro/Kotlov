@@ -470,15 +470,26 @@ class CommercialDocumentResource extends Resource
                     ->badge()
                     ->color(fn (CommercialDocument $record): string => app(CommercialDocumentReadiness::class)->issues($record) === [] ? 'success' : 'warning'),
             ]),
-            Section::make('Что изменилось в редакции')
-                ->description(fn (CommercialDocument $record): string => 'Сравнение редакции №'.($record->revision_number ?: 1).' с предыдущей версией КП.')
-                ->visible(fn (CommercialDocument $record): bool => app(CommercialDocumentRevisionComparison::class)->previousRevision($record) !== null)
+            Section::make('История и изменения редакций')
+                ->description('Все версии КП сохранены отдельно. Откройте любую редакцию или посмотрите, что изменилось в текущей.')
+                ->visible(fn (CommercialDocument $record): bool => app(CommercialDocumentRevisionComparison::class)->history($record)->count() > 1)
                 ->schema([
                     ViewEntry::make('revision_comparison')->hiddenLabel()
-                        ->view('filament.commercial-documents.revision-comparison', fn (CommercialDocument $record): array => [
-                            'comparison' => app(CommercialDocumentRevisionComparison::class)->compare($record),
-                            'document' => $record,
-                        ])
+                        ->view('filament.commercial-documents.revision-comparison', function (CommercialDocument $record): array {
+                            $service = app(CommercialDocumentRevisionComparison::class);
+
+                            return [
+                                'comparison' => $service->compare($record),
+                                'document' => $record,
+                                'history' => $service->history($record)->map(fn (CommercialDocument $revision): array => [
+                                    'number' => $revision->number,
+                                    'revision_number' => $revision->revision_number ?: 1,
+                                    'status' => CommercialDocument::STATUSES[$revision->status] ?? $revision->status,
+                                    'current' => $revision->is($record),
+                                    'url' => self::getUrl('view', ['record' => $revision]),
+                                ])->all(),
+                            ];
+                        })
                         ->columnSpanFull(),
                 ]),
             Section::make('Позиции')->schema([

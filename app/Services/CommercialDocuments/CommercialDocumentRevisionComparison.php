@@ -85,6 +85,19 @@ class CommercialDocumentRevisionComparison
             ->first();
     }
 
+    /** @return Collection<int, CommercialDocument> */
+    public function history(CommercialDocument $document): Collection
+    {
+        $rootId = $document->revision_of_id ?: $document->id;
+
+        return CommercialDocument::query()
+            ->where(function ($query) use ($rootId): void {
+                $query->whereKey($rootId)->orWhere('revision_of_id', $rootId);
+            })
+            ->orderBy('revision_number')
+            ->get();
+    }
+
     /** @param Collection<int, CommercialDocumentItem> $items */
     private function keyItems(Collection $items): Collection
     {

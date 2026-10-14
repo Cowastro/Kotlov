@@ -15,6 +15,20 @@
 @endphp
 
 <div class="space-y-4">
+    <div class="flex flex-wrap items-stretch gap-2">
+        @foreach ($history as $revision)
+            <a href="{{ $revision['url'] }}" @class([
+                'rounded-xl border px-3 py-2 text-sm transition',
+                'border-primary-500 bg-primary-50 text-primary-700 ring-1 ring-primary-500 dark:bg-primary-500/10 dark:text-primary-300' => $revision['current'],
+                'border-gray-200 text-gray-700 hover:border-primary-400 hover:text-primary-600 dark:border-white/10 dark:text-gray-300 dark:hover:border-primary-500 dark:hover:text-primary-300' => ! $revision['current'],
+            ])>
+                <span class="font-semibold">Редакция №{{ $revision['revision_number'] }}</span>
+                <span class="ml-1 text-xs opacity-70">{{ $revision['number'] }} · {{ $revision['status'] }}</span>
+            </a>
+        @endforeach
+    </div>
+
+    @if ($previous)
     <div class="grid gap-3 sm:grid-cols-3">
         <div class="rounded-xl border border-gray-200 p-3 dark:border-white/10">
             <div class="text-xs text-gray-500 dark:text-gray-400">Предыдущая версия</div>
@@ -102,6 +116,11 @@
                     @endif
                 </div>
             @endforeach
+        </div>
+    @endif
+    @else
+        <div class="rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-600 dark:border-white/10 dark:text-gray-300">
+            Это первая редакция. Для сравнения откройте следующую версию выше.
         </div>
     @endif
 </div>

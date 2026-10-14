@@ -41,12 +41,28 @@ class CommercialDocumentRevisionComparisonTest extends TestCase
         Livewire::actingAs($manager)
             ->test(ViewCommercialDocument::class, ['record' => $revision->getRouteKey()])
             ->assertSuccessful()
-            ->assertSee('Что изменилось в редакции')
+            ->assertSee('История и изменения редакций')
+            ->assertSee('Редакция №1')
+            ->assertSee('Редакция №2')
             ->assertSee('Добавлено')
             ->assertSee('Удалено')
             ->assertSee('Изменено')
             ->assertSee('Причина корректировки:')
             ->assertSee('Заменить радиатор и увеличить количество насоса');
+    }
+
+    public function test_first_revision_links_to_later_versions_without_comparing_itself(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        [$original, $revision] = $this->changedRevision($manager);
+
+        Livewire::actingAs($manager)
+            ->test(ViewCommercialDocument::class, ['record' => $original->getRouteKey()])
+            ->assertSuccessful()
+            ->assertSee('История и изменения редакций')
+            ->assertSee($revision->number)
+            ->assertSee('Это первая редакция')
+            ->assertDontSee('Было / стало');
     }
 
     /** @return array{CommercialDocument, CommercialDocument} */
