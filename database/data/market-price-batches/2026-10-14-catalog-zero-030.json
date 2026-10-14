@@ -1,0 +1,141 @@
+{
+    "code": "2026-10-14-catalog-zero-030",
+    "observed_at": "2026-10-14T06:50:06+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "TMF",
+        "skus": [
+            "PS-002.655",
+            "PS-002.657",
+            "PS-002.659",
+            "PS-002.663",
+            "PS-002.723"
+        ],
+        "after_id": 2643,
+        "limit": 5,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [
+        {
+            "code": "web-113da3726556a699",
+            "name": "kochegar.by",
+            "kind": "competitor",
+            "base_url": "https://kochegar.by",
+            "currency": "BYN",
+            "region": "Беларусь",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Независимый источник точной модели; одного наблюдения недостаточно для назначения цены."
+        }
+    ],
+    "products": [
+        {
+            "sku": "PS-002.655",
+            "review_reason": "Найдены только собственные региональные карточки KOTLOV; независимых подтверждений TMF Огонь-батарея 9 недостаточно.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Две карточки KOTLOV показывают 1071.12 BYN; российские предложения относятся к другому рынку и валюте.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Отопительная печь TMF Огонь-батарея 9 антрацит PS-002.655 купить",
+                    "TMF Огонь-батарея 9 антрацит PS-002.655 Беларусь",
+                    "печь Огонь-батарея 9 антрацит KOTLOV"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:49:06+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.657",
+            "review_reason": "Найдено менее трёх независимых белорусских предложений TMF Огонь-батарея 5; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Собственная карточка KOTLOV показывает 806.74 BYN; второе найденное предложение не даёт достаточного независимого подтверждения точной цены.",
+                "confidence": "medium",
+                "search_queries": [
+                    "TMF Огонь-батарея 5 PS-002.657 Беларусь",
+                    "Отопительная печь TMF Огонь-батарея 5 антрацит PS-002.657",
+                    "TMF Огонь-батарея 5 антрацит цена Беларусь"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:49:22+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.659",
+            "review_reason": "Точная модель подтверждена только одним независимым ценовым источником; одного наблюдения недостаточно для назначения цены.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-113da3726556a699",
+                    "url": "https://kochegar.by/katalog/otopitelnoe-obrudovanie/otopitelnye-pechi/pech-otopitelnaya-termofor-gimnazist.html?utm_source=openai",
+                    "external_name": "Печь отопительная Термофор Гимназист",
+                    "model": "Отопительная печь TMF Гимназист (стальная дверца)",
+                    "package": null,
+                    "observed_price": 768,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Точная модель Гимназист со стальной дверцей, 6 кВт, до 100 м³ и сталью 3 мм."
+                }
+            ],
+            "research": {
+                "summary": "Независимый продавец kochegar.by подтверждает точную модель по цене 768 BYN; остальные найденные карточки не дают ещё двух независимых подтверждений.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Отопительная печь TMF Гимназист стальная дверца PS-002.659",
+                    "TMF Гимназист PS-002.659 купить Беларусь",
+                    "Отопительная печь TMF Гимназист Беларусь"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:49:37+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.663",
+            "review_reason": "Найдены только карточки сети KOTLOV; независимых предложений TMF Профессор ЧД, СК, ТВ недостаточно.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Две региональные карточки относятся к одной сети; независимого рыночного подтверждения точной комплектации нет.",
+                "confidence": "medium",
+                "search_queries": [
+                    "TMF Профессор ЧД СК ТВ PS-002.663 буржуйка купить Беларусь",
+                    "TMF Professor PS-002.663 печь отопительная Беларусь",
+                    "TMF Профессор PS-002.663 купить"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:49:51+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.723",
+            "review_reason": "В Беларуси не найдено предложений точной модификации TMF Огонь-батарея 5Б с теплообменником.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Белорусские результаты относятся к версии без Б; российские предложения точной модели не подтверждают цену в BYN и локальную поставку.",
+                "confidence": "medium",
+                "search_queries": [
+                    "TMF Огонь-батарея 5Б антрацит купить Беларусь",
+                    "TMF Огонь-батарея 5Б PS-002.723",
+                    "Огонь-батарея 5Б антрацит магазин Россия"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:50:06+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
