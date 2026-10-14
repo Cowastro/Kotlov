@@ -29,12 +29,14 @@ class SyncBelomoPriceListCommand extends Command
         $rows = $priceList->rows();
         $supplierId = (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
         $classified = $this->classify($rows, $priceList, $supplierId);
+        $artifacts = $this->catalogArtifacts($classified);
         $retail = (bool) $this->option('sync-elicon-retail')
             ? $this->eliconRetailPlan($classified, $priceList)
             : ['rows' => [], 'metrics' => []];
-        $reportPath = $this->writeReport($classified, $retail['rows']);
+        $reportPath = $this->writeReport($classified, $retail['rows'], $artifacts);
         $counts = collect($classified)->countBy('status');
         $quality = $this->qualityMetrics($classified);
+        $quality['artifact_extra'] = count($artifacts);
 
         $this->line($apply ? 'APPLY: прайс БелОМО будет привязан к поставщику СанБизнесГруп.' : 'DRY RUN: база не изменяется.');
         $this->line('metric.belomo.price_rows='.count($rows));
@@ -172,7 +174,7 @@ class SyncBelomoPriceListCommand extends Command
         }, $rows);
     }
 
-    private function writeReport(array $classified, array $retailRows = []): string
+    private function writeReport(array $classified, array $retailRows = [], array $artifacts = []): string
     {
         $retailByProduct = collect($retailRows)->keyBy('product_id');
         $path = trim((string) $this->option('report')) ?: storage_path('app/reports/suppliers/belomo/current-audit.csv');
@@ -202,6 +204,15 @@ class SyncBelomoPriceListCommand extends Command
                 $retail ? number_format((float) $retail['target_price'], 2, '.', '') : '',
                 $retail['method'] ?? '',
                 isset($retail['markup_percent']) ? number_format((float) $retail['markup_percent'], 2, '.', '') : '',
+            ], ';');
+        }
+        foreach ($artifacts as $product) {
+            fputcsv($handle, [
+                'artifact_extra', '', $product->name, '', '', $product->id, $product->sku,
+                number_format((float) $product->price, 2, '.', ''), '', (bool) $product->is_active ? '1' : '0',
+                count($this->jsonArray($product->images ?? null)),
+                (filled($product->short_description ?? null) || filled($product->content ?? null)) ? '1' : '0',
+                count($this->jsonArray($product->specs ?? null)), '0', '', '', '',
             ], ';');
         }
         fclose($handle);
@@ -343,6 +354,25 @@ class SyncBelomoPriceListCommand extends Command
     private function priceWithVat(float $priceWithoutVat): float
     {
         return round($priceWithoutVat * 1.20, 2);
+    }
+
+    /** @return array<int, object> */
+    private function catalogArtifacts(array $classified): array
+    {
+        $canonicalIds = collect($classified)
+            ->pluck('product.id')
+            ->filter()
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+
+        return DB::table('products')
+            ->where('brand_id', $this->brandId())
+            ->where('is_archived', false)
+            ->when($canonicalIds !== [], fn ($query) => $query->whereNotIn('id', $canonicalIds))
+            ->orderBy('id')
+            ->get()
+            ->all();
     }
 
     /** @return array{rows: array<int, array<string, mixed>>, metrics: array<string, int>} */
