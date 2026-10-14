@@ -10187,4 +10187,59 @@ XML;
         $this->assertFileExists(public_path('img/products/teplov-i-suhov/perehod-mono-pp-430-08-d150-150.jpg'));
         $this->assertStringContainsString('kaminchi.ru', $product->content_source_url);
     }
+
+    public function test_it_creates_the_exact_nulite_pool_heat_pump_with_researched_price(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-nulite-pool-heat-pump',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'teplovyie-nasosyi'], [
+            'name' => 'Тепловые насосы',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-6570',
+            'name' => 'Тестовый товар-шаблон',
+            'slug' => 'nulite-ek-test-template',
+            'price' => 10,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '79f82f90-a6ac-11f1-b4b9-1c1b0d1de7c2',
+            'external_code' => 'УТ-00009646',
+            'external_sku' => null,
+            'name' => 'Тепловой насос NL-FLM25Y/32, (230V-50hz-1 phase, R32), Nulite',
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-ek',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('4630.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('NL-FLM25Y/32', $item->fresh()->external_sku);
+        $this->assertSame('15–40 м³', collect($product->specs)->firstWhere('key', 'Рекомендуемый объём бассейна')['value']);
+        $this->assertSame('7,7 кВт', collect($product->specs)->firstWhere('key', 'Теплопроизводительность (воздух 27 °C)')['value']);
+        $this->assertSame('R32', collect($product->specs)->firstWhere('key', 'Хладагент')['value']);
+        $this->assertSame(['img/products/nulite/nl-flm25y-32.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/nulite/nl-flm25y-32.jpg'));
+        $this->assertStringContainsString('sunelements.hu', $product->content_source_url);
+        $this->assertStringContainsString('Pool-Heat-Pump-Catalog.pdf', $product->content);
+    }
 }

@@ -5004,6 +5004,55 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact current offer is 395,000 HUF plus 27% VAT. At the current
+    // 2026-10-14 market rate of 9.23 BYN per 1,000 HUF, the VAT-inclusive
+    // price is 4,630.23 BYN, rounded to 4,630.00 BYN. The image and technical
+    // data come from the model page and its manufacturer catalogue.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EK = [
+        'УТ-00009646' => [
+            'template' => 'KOTLOV-6570',
+            'allow_unmatched' => true,
+            'category_slug' => 'teplovyie-nasosyi',
+            'external_sku' => 'NL-FLM25Y/32',
+            'hydrate_external_sku' => true,
+            'brand' => [
+                'name' => 'Nulite',
+                'slug' => 'nulite',
+                'country' => 'Китай',
+            ],
+            'fragments' => ['Тепловой насос', 'NL-FLM25Y/32', '230V', 'R32', 'Nulite'],
+            'name' => 'Тепловой насос для бассейна Nulite NL-FLM25Y/32 7,7 кВт R32',
+            'retail' => 4630.00,
+            'images' => ['img/products/nulite/nl-flm25y-32.jpg'],
+            'source_url' => 'https://sunelements.hu/en/product/nl-flm25y-32/',
+            'short' => 'Инверторный тепловой насос Nulite NL-FLM25Y/32 для нагрева и охлаждения бассейнов объёмом 15–40 м³.',
+            'content' => '<p><strong>Nulite NL-FLM25Y/32</strong> — инверторный тепловой насос воздух-вода для нагрева и охлаждения воды в бассейне объёмом 15–40 м³. При температуре воздуха 27 °C его теплопроизводительность достигает 7,7 кВт при COP 6,11.</p><p>Модель работает от однофазной сети 220–230 В, использует хладагент R32 и оснащена двухроторным DC-инверторным компрессором. Титановый спиральный теплообменник рассчитан на контакт с бассейновой водой, а рекомендуемый расход воды составляет 2–3 м³/ч.</p><p><a href="https://sunelements.hu/wp-content/uploads/2025/09/Pool-Heat-Pump-Catalog.pdf" target="_blank" rel="noopener">Технический каталог Nulite NL-FLM25Y/32 (PDF)</a></p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Инверторный тепловой насос для бассейна'],
+                ['key' => 'Модель', 'value' => 'NL-FLM25Y/32'],
+                ['key' => 'Рекомендуемый объём бассейна', 'value' => '15–40 м³'],
+                ['key' => 'Теплопроизводительность (воздух 27 °C)', 'value' => '7,7 кВт'],
+                ['key' => 'Потребляемая мощность (воздух 27 °C)', 'value' => '1,26 кВт'],
+                ['key' => 'COP (воздух 27 °C)', 'value' => '6,11'],
+                ['key' => 'Теплопроизводительность (воздух 15 °C)', 'value' => '5,5 кВт'],
+                ['key' => 'Холодопроизводительность', 'value' => '3,43 кВт'],
+                ['key' => 'Рабочая температура воздуха', 'value' => 'от −15 до +43 °C'],
+                ['key' => 'Электропитание', 'value' => '220–230 В, 50 Гц, 1 фаза'],
+                ['key' => 'Максимальный ток', 'value' => '8 А'],
+                ['key' => 'Хладагент', 'value' => 'R32'],
+                ['key' => 'Компрессор', 'value' => 'Двухроторный DC-инверторный'],
+                ['key' => 'Теплообменник', 'value' => 'Спиральная титановая трубка в корпусе PVC'],
+                ['key' => 'Рекомендуемый расход воды', 'value' => '2–3 м³/ч'],
+                ['key' => 'Подключение воды', 'value' => '50 мм'],
+                ['key' => 'Уровень звукового давления на 1 м', 'value' => '36–46 дБ(А)'],
+                ['key' => 'Размеры (Ш×Г×В)', 'value' => '846×328×589 мм'],
+                ['key' => 'Масса нетто', 'value' => '44,5 кг'],
+                ['key' => 'Бренд', 'value' => 'Nulite'],
+                ['key' => 'Страна бренда', 'value' => 'Китай'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5149,6 +5198,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-eh' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EH,
             'unmatched-researched-20261014-ei' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EI,
             'unmatched-researched-20261014-ej' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EJ,
+            'unmatched-researched-20261014-ek' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EK,
             default => null,
         };
 
