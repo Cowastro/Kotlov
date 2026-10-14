@@ -4,6 +4,7 @@ namespace App\Filament\Resources\MarketAnalysis;
 
 use App\Filament\Resources\MarketAnalysis\Pages\ListMarketAnalysis;
 use App\Filament\Resources\MarketPriceObservations\MarketPriceObservationResource;
+use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
 use App\Models\MarketPriceSource;
 use App\Models\Product;
 use App\Services\Market\MarketPriceIndicator;
@@ -222,6 +223,13 @@ class MarketAnalysisResource extends Resource
                         ->icon(Heroicon::OutlinedListBullet)
                         ->color('info')
                         ->url(fn (Product $record): string => MarketPriceObservationResource::getUrl('index', [
+                            'filters' => ['product_id' => ['value' => $record->id]],
+                        ])),
+                    Action::make('research_archive')
+                        ->label('История анализов')
+                        ->icon(Heroicon::OutlinedArchiveBox)
+                        ->visible(fn (Product $record): bool => $record->marketResearchReports()->exists())
+                        ->url(fn (Product $record): string => MarketResearchReportResource::getUrl('index', [
                             'filters' => ['product_id' => ['value' => $record->id]],
                         ])),
                     Action::make('site')

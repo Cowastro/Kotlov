@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\ActivityLog;
 use App\Models\MarketPriceSource;
+use App\Models\MarketResearchReport;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Market\MarketPriceObservationRecorder;
@@ -51,6 +52,7 @@ class ApplyMarketPriceBatchCommand extends Command
             'prices_unchanged' => 0,
             'consultation_holds' => 0,
             'old_prices_cleared' => 0,
+            'reports_archived' => 0,
         ];
 
         if (! $this->option('apply')) {
@@ -140,6 +142,49 @@ class ApplyMarketPriceBatchCommand extends Command
 
                 $product->update(['requires_price_confirmation' => $hold]);
 
+                $freshProduct = $product->fresh();
+                $decision = $hold
+                    ? 'consultation_hold'
+                    : ($recommendation['can_apply'] ? 'price_applied' : 'price_unchanged');
+                $research = is_array($item['research'] ?? null) ? $item['research'] : [];
+                // A reviewed batch is evidence. Re-running the same deployment must not
+                // rewrite the historical decision; a new review receives a new batch code.
+                $report = MarketResearchReport::query()->firstOrCreate(
+                    [
+                        'batch_code' => (string) $batch['code'],
+                        'product_id' => $product->id,
+                    ],
+                    [
+                        'review_reason' => (string) $item['review_reason'],
+                        'summary' => $research['summary'] ?? null,
+                        'verdict' => $research['verdict'] ?? null,
+                        'confidence' => (string) ($research['confidence'] ?? 'low'),
+                        'decision' => $decision,
+                        'decision_reason' => (string) ($recommendation['reason'] ?? ''),
+                        'price_before' => $oldPrice,
+                        'recommended_price' => $recommendation['recommended_price'] ?? null,
+                        'price_after' => (float) $freshProduct->price,
+                        'requires_price_confirmation' => $hold,
+                        'search_queries' => array_values((array) ($research['search_queries'] ?? [])),
+                        'rejected_candidates' => array_values((array) ($research['rejected_candidates'] ?? [])),
+                        'excluded_offers' => array_values((array) ($research['excluded_offers'] ?? [])),
+                        'research_payload' => $research,
+                        'observations_snapshot' => collect($item['observations'] ?? [])->map(function (array $observation) use ($sources): array {
+                            $source = $sources->get((string) ($observation['source'] ?? ''), []);
+
+                            return [
+                                ...$observation,
+                                'source_name' => $source['name'] ?? ($observation['source'] ?? null),
+                                'source_base_url' => $source['base_url'] ?? null,
+                            ];
+                        })->values()->all(),
+                        'research_model' => $research['model'] ?? null,
+                        'researched_at' => $research['searched_at'] ?? ($batch['observed_at'] ?? null),
+                        'applied_at' => now(),
+                    ],
+                );
+                $result['reports_archived'] += $report->wasRecentlyCreated ? 1 : 0;
+
                 ActivityLog::query()->create([
                     'user_id' => $actor->id,
                     'action' => $hold ? 'market_price_confirmation_required' : 'market_price_review_completed',
@@ -151,8 +196,8 @@ class ApplyMarketPriceBatchCommand extends Command
                         'requires_price_confirmation' => $oldHold,
                     ],
                     'new_values' => [
-                        'price' => (float) $product->fresh()->price,
-                        'price_old' => $product->fresh()->price_old !== null ? (float) $product->fresh()->price_old : null,
+                        'price' => (float) $freshProduct->price,
+                        'price_old' => $freshProduct->price_old !== null ? (float) $freshProduct->price_old : null,
                         'requires_price_confirmation' => $hold,
                         'review_status' => $recommendation['status'],
                         'review_reason' => $recommendation['reason'],

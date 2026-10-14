@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\ActivityLog;
 use App\Models\Category;
 use App\Models\MarketPriceObservation;
+use App\Models\MarketResearchReport;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -80,6 +81,7 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             ->expectsOutputToContain('metric.prices_applied=1')
             ->expectsOutputToContain('metric.consultation_holds=4')
             ->expectsOutputToContain('metric.old_prices_cleared=1')
+            ->expectsOutputToContain('metric.reports_archived=5')
             ->assertSuccessful();
 
         $locomotive = Product::query()->where('sku', 'KOTLOV-004560')->firstOrFail();
@@ -99,6 +101,16 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
 
         $this->assertNull(Product::query()->where('sku', 'PS-007.208')->value('price_old'));
         $this->assertSame(14, MarketPriceObservation::query()->count());
+        $this->assertSame(5, MarketResearchReport::query()->count());
+        $archivedAnalysis = MarketResearchReport::query()
+            ->where('batch_code', '2026-10-13-below-cost-priority')
+            ->whereHas('product', fn ($query) => $query->where('sku', 'KOTLOV-004560'))
+            ->firstOrFail();
+        $this->assertSame('price_applied', $archivedAnalysis->decision);
+        $this->assertSame('1235.63', $archivedAnalysis->price_after);
+        $this->assertCount(3, $archivedAnalysis->observations_snapshot);
+        $this->assertSame('BANIPECHI.BY', $archivedAnalysis->observations_snapshot[0]['source_name']);
+        $this->assertFalse($archivedAnalysis->requires_price_confirmation);
         $this->assertSame(4, ActivityLog::query()
             ->where('action', 'market_price_confirmation_required')
             ->count());
@@ -298,6 +310,7 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
 
     public function test_first_technolit_zero_price_batch_holds_exact_production_skus(): void
     {
+        User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $category = Category::query()->create([
             'name' => 'Тест нулевых цен ТехноЛит',
             'slug' => 'technolit-zero-price-batch-test',
@@ -320,11 +333,23 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
 
         $this->artisan('catalog:apply-market-price-batch', [
             'batch' => '2026-10-13-technolit-zero-001',
+            '--apply' => true,
         ])
-            ->expectsOutputToContain('metric.status=dry_run')
+            ->expectsOutputToContain('metric.status=applied')
             ->expectsOutputToContain('metric.products=3')
             ->expectsOutputToContain('metric.observations=0')
+            ->expectsOutputToContain('metric.reports_archived=3')
             ->assertSuccessful();
+
+        $report = MarketResearchReport::query()
+            ->where('batch_code', '2026-10-13-technolit-zero-001')
+            ->whereHas('product', fn ($query) => $query->where('sku', 'KOTLOV-000126'))
+            ->firstOrFail();
+        $this->assertSame('consultation_hold', $report->decision);
+        $this->assertSame('gpt-6.1-sol', $report->research_model);
+        $this->assertSame('medium', $report->confidence);
+        $this->assertCount(3, $report->research_payload['evidence']);
+        $this->assertStringContainsString('pechnoy.by', $report->research_payload['evidence'][0]['url']);
     }
 
     public function test_second_technolit_zero_price_batch_uses_exact_production_skus(): void

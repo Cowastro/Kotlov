@@ -593,4 +593,9 @@ class Product extends Model
     {
         return $this->hasMany(MarketPriceObservation::class);
     }
+
+    public function marketResearchReports(): HasMany
+    {
+        return $this->hasMany(MarketResearchReport::class);
+    }
 }

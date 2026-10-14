@@ -29,6 +29,7 @@ use App\Models\IntegrationSource;
 use App\Models\MarketPriceCollectionRun;
 use App\Models\MarketPriceObservation;
 use App\Models\MarketPriceSource;
+use App\Models\MarketResearchReport;
 use App\Models\Order;
 use App\Models\Page;
 use App\Models\Product;
@@ -64,6 +65,7 @@ final class AdminRoleAccess
         Review::class => ['viewAny', 'view', 'update'],
         MarketPriceObservation::class => ['viewAny', 'view'],
         MarketPriceCollectionRun::class => ['viewAny', 'view'],
+        MarketResearchReport::class => ['viewAny', 'view'],
         TelephonyCall::class => ['viewAny', 'view', 'update'],
         TelephonyEmployee::class => ['viewAny', 'view'],
     ];
@@ -97,6 +99,7 @@ final class AdminRoleAccess
         MarketPriceObservation::class,
         MarketPriceCollectionRun::class,
         MarketPriceSource::class,
+        MarketResearchReport::class,
         Order::class,
         Page::class,
         Product::class,

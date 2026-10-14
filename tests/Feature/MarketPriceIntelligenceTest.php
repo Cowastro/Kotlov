@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Resources\MarketAnalysis\MarketAnalysisResource;
 use App\Filament\Resources\MarketPriceObservations\MarketPriceObservationResource;
 use App\Filament\Resources\MarketPriceSources\MarketPriceSourceResource;
+use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\ActivityLog;
@@ -13,6 +14,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\MarketPriceObservation;
 use App\Models\MarketPriceSource;
+use App\Models\MarketResearchReport;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -146,12 +148,28 @@ class MarketPriceIntelligenceTest extends TestCase
         [$product, $source] = $this->fixture('access', productPrice: 120);
         $observation = $this->record($source, $product, 100, now()->subHour());
         $observation->update(['delivery_terms' => 'Самовывоз или доставка за 2 дня']);
+        MarketResearchReport::query()->create([
+            'product_id' => $product->id,
+            'batch_code' => 'archive-access-test',
+            'review_reason' => 'Проверка сохранённого анализа рынка.',
+            'summary' => 'Три точных предложения подтверждены.',
+            'confidence' => 'high',
+            'decision' => 'price_unchanged',
+            'price_before' => 120,
+            'price_after' => 120,
+            'requires_price_confirmation' => false,
+            'observations_snapshot' => [['url' => 'https://example.com/item', 'source_name' => 'Тестовый рынок']],
+            'researched_at' => now()->subHour(),
+            'applied_at' => now(),
+        ]);
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
 
         $this->actingAs($manager);
         $this->assertTrue(MarketAnalysisResource::canViewAny());
         $this->assertTrue(MarketPriceObservationResource::canViewAny());
+        $this->assertTrue(MarketResearchReportResource::canViewAny());
+        $this->assertFalse(MarketResearchReportResource::canCreate());
         $this->assertFalse(MarketPriceObservationResource::canCreate());
         $this->assertFalse(MarketPriceSourceResource::canViewAny());
 
@@ -165,6 +183,11 @@ class MarketPriceIntelligenceTest extends TestCase
             ->assertSeeText($product->name)
             ->assertSeeText($source->name)
             ->assertSeeText('Самовывоз или доставка за 2 дня');
+        $this->get(MarketResearchReportResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Архив анализа рынка')
+            ->assertSeeText('archive-access-test')
+            ->assertSeeText($product->name);
         $this->get(MarketPriceObservationResource::getUrl('create', panel: 'admin'))->assertForbidden();
         $this->get(MarketPriceSourceResource::getUrl('index', panel: 'admin'))->assertForbidden();
 
