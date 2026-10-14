@@ -10242,4 +10242,47 @@ XML;
         $this->assertStringContainsString('sunelements.hu', $product->content_source_url);
         $this->assertStringContainsString('Pool-Heat-Pump-Catalog.pdf', $product->content);
     }
+
+    public function test_it_documents_the_unidentified_pp_00_00_adapter_as_a_research_dispute(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unidentified-pp-adapter',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '8bf68630-96f1-11f1-b4b9-1c1b0d1de7c2',
+            'external_code' => 'УТ-00009627',
+            'external_sku' => null,
+            'barcode' => null,
+            'name' => 'Переходник ПП 00.00',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-el',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $dispute = $item->candidates[0];
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertNull($item->product_id);
+        $this->assertSame('ambiguous', $item->match_status);
+        $this->assertSame('manual_research_unresolved', $item->match_method);
+        $this->assertSame('research_dispute', $dispute['type']);
+        $this->assertStringContainsString('Переходник ПП 00.00', $dispute['reason']);
+        $this->assertContains('присоединительные размеры с обеих сторон', $dispute['required_data']);
+        $this->assertContains('закупочная или розничная цена', $dispute['required_data']);
+        $this->assertCount(2, $dispute['evidence']);
+        $this->assertSame('УТ-00009627', $dispute['source_identity']['external_code']);
+    }
 }

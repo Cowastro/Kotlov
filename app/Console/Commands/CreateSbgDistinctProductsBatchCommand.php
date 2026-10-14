@@ -5053,6 +5053,36 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_DISPUTED_20261014_EL = [
+        'УТ-00009627' => [
+            'document_dispute' => true,
+            'external_id' => '8bf68630-96f1-11f1-b4b9-1c1b0d1de7c2',
+            'fragments' => ['Переходник', 'ПП', '00.00'],
+            'reason' => 'Строка 1С «Переходник ПП 00.00» не содержит группы, производителя, артикула, штрихкода, цены, размеров, материала или назначения. Обозначение «ПП» используется для несовместимых изделий: полипропиленовых сантехнических переходников, соединений типа «папа-папа» и внутренних заводских деталей. Точный поиск по полному названию не находит карточку производителя, поэтому создавать товар, назначать категорию, цену и изображение небезопасно.',
+            'required_data' => [
+                'группа товара в 1С',
+                'бренд или производитель',
+                'артикул производителя',
+                'штрихкод',
+                'фотография изделия и маркировки',
+                'назначение переходника',
+                'присоединительные размеры с обеих сторон',
+                'материал исполнения',
+                'закупочная или розничная цена',
+            ],
+            'evidence' => [
+                [
+                    'url' => 'https://www.bing.com/search?q=%22%D0%9F%D0%B5%D1%80%D0%B5%D1%85%D0%BE%D0%B4%D0%BD%D0%B8%D0%BA+%D0%9F%D0%9F+00.00%22',
+                    'finding' => 'Точный поиск по полному названию не возвращает ни одной идентифицируемой товарной карточки.',
+                ],
+                [
+                    'url' => 'https://kotlov.by/admin/integration-products/3325/edit',
+                    'finding' => 'В записи 1С отсутствуют группа, артикул, штрихкод и цена; указан только остаток 1 штука.',
+                ],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5199,6 +5229,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-ei' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EI,
             'unmatched-researched-20261014-ej' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EJ,
             'unmatched-researched-20261014-ek' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EK,
+            'unmatched-disputed-20261014-el' => self::BATCH_UNMATCHED_DISPUTED_20261014_EL,
             default => null,
         };
 
