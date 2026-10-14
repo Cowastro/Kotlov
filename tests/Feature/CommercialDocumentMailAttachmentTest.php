@@ -118,4 +118,32 @@ class CommercialDocumentMailAttachmentTest extends TestCase
             $email->getAttachments()[0]->getPreparedHeaders()->getHeaderParameter('Content-Disposition', 'filename'),
         );
     }
+
+    public function test_branded_email_uses_the_site_identity_and_embeds_the_real_logo(): void
+    {
+        $manager = User::factory()->create([
+            'name' => 'Денис Готто',
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+        $sender = app(CrmMailSender::class);
+        $html = $sender->brandedHtml('Здравствуйте!', $manager);
+
+        $this->assertStringContainsString('src="cid:kotlov-logo"', $html);
+        $this->assertStringContainsString('#DC4646', $html);
+        $this->assertStringNotContainsString('#f28c00', $html);
+
+        $email = (new Email)
+            ->from('info@kotlov.by')
+            ->to('client@example.com')
+            ->subject('Коммерческое предложение')
+            ->html($html);
+        $method = new \ReflectionMethod(CrmMailSender::class, 'embedBrandAssets');
+        $method->invoke($sender, $email);
+        $rawMessage = $email->toString();
+
+        $this->assertStringContainsString('Content-Type: image/png; name=kotlov-logo', $rawMessage);
+        $this->assertStringContainsString('src=3D"cid:', $rawMessage);
+        $this->assertStringContainsString('Content-Disposition: inline', $rawMessage);
+    }
 }

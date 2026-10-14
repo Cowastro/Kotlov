@@ -13,9 +13,9 @@
         .company { padding-left: 14px; font-size: 9px; color: #444; word-wrap: break-word; }
         .company strong { display: block; color: #111; font-size: 15px; margin-bottom: 4px; }
         .doc-box { width: 220px; text-align: right; }
-        .doc-type { font-size: 17px; font-weight: bold; text-transform: uppercase; color: #d97706; line-height: 1.25; }
+        .doc-type { font-size: 17px; font-weight: bold; text-transform: uppercase; color: #DC4646; line-height: 1.25; }
         .doc-number { font-size: 11px; font-weight: bold; margin-top: 6px; }
-        .accent { height: 4px; background: #f59e0b; margin: 8px 0 16px; }
+        .accent { height: 4px; background: #DC4646; margin: 8px 0 16px; }
         .party { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 14px; }
         .party td { width: 50%; border: 1px solid #d4d4d4; padding: 8px 10px; vertical-align: top; }
         .party-title { font-size: 8px; text-transform: uppercase; color: #737373; margin-bottom: 3px; }
@@ -27,8 +27,8 @@
         .summary { width: 310px; margin-left: auto; border-collapse: collapse; margin-top: 10px; }
         .summary td { padding: 4px 6px; border-bottom: 1px solid #e5e5e5; }
         .summary td:last-child { text-align: right; font-weight: bold; }
-        .summary .total td { font-size: 13px; color: #b45309; border-top: 2px solid #f59e0b; border-bottom: 0; }
-        .words { margin-top: 12px; padding: 8px 10px; background: #fff7ed; border-left: 4px solid #f59e0b; font-weight: bold; }
+        .summary .total td { font-size: 13px; color: #B63434; border-top: 2px solid #DC4646; border-bottom: 0; }
+        .words { margin-top: 12px; padding: 8px 10px; background: #FFF4F4; border-left: 4px solid #DC4646; font-weight: bold; }
         .terms { margin-top: 16px; width: 100%; border-collapse: collapse; }
         .terms td { width: 50%; vertical-align: top; padding-right: 16px; }
         .terms strong { display: block; margin-bottom: 3px; }

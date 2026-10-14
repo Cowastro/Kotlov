@@ -60,6 +60,7 @@ class CrmMailSender
         if ($cc !== []) {
             $email->cc(...$cc);
         }
+        $this->embedBrandAssets($email);
         $this->attachFiles($email, $draft);
         $email->getHeaders()->addIdHeader('Message-ID', $messageId);
         if ($previousMessage?->message_id) {
@@ -152,6 +153,7 @@ class CrmMailSender
         if ($cc !== []) {
             $email->cc(...$cc);
         }
+        $this->embedBrandAssets($email);
         $attachmentMetadata = collect($attachments)->values()->map(function (mixed $path, int $index) use ($attachmentNames): array {
             $path = (string) $path;
 
@@ -262,6 +264,7 @@ class CrmMailSender
         if ($cc !== []) {
             $email->cc(...$cc);
         }
+        $this->embedBrandAssets($email);
         $this->attachMetadata($email, $attachmentMetadata);
         $email->getHeaders()->addIdHeader('Message-ID', $messageId);
 
@@ -359,6 +362,15 @@ class CrmMailSender
         }
     }
 
+    private function embedBrandAssets(Email $email): void
+    {
+        $logo = public_path('img/logo-black.png');
+
+        if (is_file($logo)) {
+            $email->embedFromPath($logo, 'kotlov-logo', 'image/png');
+        }
+    }
+
     public function sendTest(CrmMailbox $mailbox, string $recipient, User $user): void
     {
         $body = 'Это тестовое письмо из модуля «Почта и лиды». Оно подтверждает, что общий почтовый ящик работает, а в подписи указан сотрудник, который отправил письмо.';
@@ -370,6 +382,8 @@ class CrmMailSender
             ->subject('Тест персональной подписи KOTLOV.BY')
             ->text($this->brandedText($body, $user))
             ->html($this->brandedHtml($body, $user));
+
+        $this->embedBrandAssets($email);
 
         $this->mailer($mailbox)->send($email);
     }
