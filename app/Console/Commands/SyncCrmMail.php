@@ -21,7 +21,10 @@ class SyncCrmMail extends Command
         }
 
         $failed = false;
+        $processed = 0;
+        $failedCount = 0;
         foreach ($query->get() as $connection) {
+            $processed++;
             try {
                 $result = $synchronizer->sync($connection);
                 $this->info("{$connection->email}: загружено {$result['imported']}, пропущено {$result['skipped']}");
@@ -30,8 +33,14 @@ class SyncCrmMail extends Command
                 $connection->forceFill(['last_sync_at' => now(), 'last_error' => $message])->save();
                 $this->error("{$connection->email}: {$message}");
                 $failed = true;
+                $failedCount++;
+                $this->line('metric.mail_sync.failure_class='.class_basename($exception));
+                $this->line('metric.mail_sync.failure_origin='.basename($exception->getFile()).':'.$exception->getLine());
             }
         }
+
+        $this->line('metric.mail_sync.mailboxes='.$processed);
+        $this->line('metric.mail_sync.failed='.$failedCount);
 
         return $failed ? self::FAILURE : self::SUCCESS;
     }
