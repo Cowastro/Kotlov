@@ -4923,6 +4923,14 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             $category = $this->categoryForRule($rule, $template);
             $brandName = trim((string) ($configuredBrand['name'] ?? $brand?->name));
             $name = $rule['name'] ?? $this->productName($brandName, $item->name);
+            $nameCollision = $linkProduct
+                ? null
+                : Product::query()->where('name', $name)->first();
+            $plannedNameRelease = $nameCollision && collect($rows)->contains(
+                fn (array $batchRule): bool => ($batchRule['correct_linked_product'] ?? false)
+                    && ($batchRule['product_sku'] ?? null) === $nameCollision->sku
+                    && ($batchRule['name'] ?? null) !== $name
+            );
             $valid = $item->source?->name === self::SOURCE_NAME
                 && $item->source?->partnerName() === self::PARTNER_NAME
                 && $item->match_status === ($allowUnmatched ? 'unmatched' : 'ambiguous')
@@ -4939,7 +4947,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                     || (($rule['hydrate_external_sku'] ?? false) && blank($item->external_sku)))
                 && ($linkProduct
                     ? $this->containsAll($linkProduct->name, $rule['link_fragments'] ?? [$rule['link_existing_sku'] ?? $rule['link_existing_slug']])
-                    : Product::query()->where('name', $name)->doesntExist());
+                    : ! $nameCollision || $plannedNameRelease);
 
             if (! $valid) {
                 $stats['blocked']++;
