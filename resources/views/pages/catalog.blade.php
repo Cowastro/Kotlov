@@ -452,13 +452,13 @@
                                             @case('name_asc') По названию А-Я @break
                                             @case('rating') По рейтингу @break
                                             @case('new') Сначала новые @break
-                                            @default Популярные
+                                            @default {{ $category->slug === 'schetchiki-gaza' ? 'По рейтингу' : 'Популярные' }}
                                         @endswitch
                                     </span>
                                     <span class="icon icon-CaretDown"></span>
                                 </div>
                                 <div class="dropdown-menu">
-                                    <div class="select-item {{ !request('sort') ? 'active' : '' }}"
+                                    <div class="select-item {{ !request('sort') && $category->slug !== 'schetchiki-gaza' ? 'active' : '' }}"
                                         onclick="applyFilter('sort', '')">
                                         <span class="text-value-item">Популярные</span>
                                     </div>
@@ -474,7 +474,7 @@
                                         onclick="applyFilter('sort', 'price_desc')">
                                         <span class="text-value-item">Цена: по убыванию</span>
                                     </div>
-                                    <div class="select-item {{ request('sort') == 'rating' ? 'active' : '' }}"
+                                    <div class="select-item {{ request('sort') == 'rating' || (!request('sort') && $category->slug === 'schetchiki-gaza') ? 'active' : '' }}"
                                         onclick="applyFilter('sort', 'rating')">
                                         <span class="text-value-item">По рейтингу</span>
                                     </div>

@@ -342,12 +342,23 @@ class CatalogController extends Controller
                 $query->orderBy('name');
                 break;
             case 'rating':
-                $query->orderByDesc('rating');
+                $query->orderByDesc('rating')
+                    ->orderByDesc('reviews_count')
+                    ->orderByDesc('views_count')
+                    ->orderByDesc('id');
                 break;
             case 'new':
                 $query->orderByDesc('is_new')->orderByDesc('id');
                 break;
             default:
+                if ($category->slug === 'schetchiki-gaza') {
+                    $query->orderByDesc('rating')
+                        ->orderByDesc('reviews_count')
+                        ->orderByDesc('views_count')
+                        ->orderByDesc('id');
+                    break;
+                }
+
                 $priorityBrandId = match (true) {
                     $category->slug === 'teplovyie-nasosyi' => Brand::query()
                         ->where('slug', 'kotlov-ge')
