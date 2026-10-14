@@ -1,0 +1,110 @@
+{
+    "code": "2026-10-14-catalog-zero-027",
+    "observed_at": "2026-10-14T06:17:47+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": null,
+        "skus": [
+            "PS-002.044",
+            "PS-002.045",
+            "PS-002.046",
+            "PS-002.367",
+            "PS-002.480"
+        ],
+        "after_id": 2043,
+        "limit": 5,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [],
+    "products": [
+        {
+            "sku": "PS-002.044",
+            "review_reason": "Найдена только собственная карточка KOTLOV для Viadrus Termo 813/95; независимого белорусского подтверждения нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Единственная точная белорусская карточка показывает 85.47 BYN за секцию; зарубежные предложения не подтверждают локальную цену и комплектность.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Viadrus Termo 813/95 купить Беларусь",
+                    "Viadrus Termo 813/95 цена BYN",
+                    "Viadrus Termo 813/95 PS-002.044"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:16:44+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.045",
+            "review_reason": "Найдена только собственная карточка KOTLOV для Viadrus Termo 813/130; независимых белорусских продавцов нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "KOTLOV указывает 117.81 BYN за одну секцию. Российские варианты имеют другой рынок либо комплектность на 10–14 секций.",
+                "confidence": "high",
+                "search_queries": [
+                    "Viadrus Termo 813/130 купить Беларусь",
+                    "Viadrus Termo 813/130 интернет-магазин Беларусь",
+                    "Radiator Viadrus Termo 813/130 цена BYN"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:17:02+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.046",
+            "review_reason": "Найдена только собственная карточка KOTLOV для Viadrus Styl 500/130; независимого подтверждения нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Единственная точная белорусская карточка показывает 73.92 BYN за секцию; предложения России и Украины не подтверждают рынок Беларуси.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Радиатор Viadrus Styl 500/130 купить Беларусь",
+                    "Viadrus Styl 500/130 Беларусь цена",
+                    "Viadrus Styl 500/130 сайт Viadrus Styl"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:17:19+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.367",
+            "review_reason": "Предложений точной модели Solpi-M SLP-M 500VA в Беларуси не найдено; аналоги отличаются артикулом и комплектацией.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "По точной модели и артикулу активных предложений нет; похожие стабилизаторы не приняты как замена.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Стабилизатор напряжения Solpi-M SLP-M 500VA PS-002.367 Беларусь",
+                    "Solpi-M SLP-M 500VA PS-002.367 купить",
+                    "PS-002.367 Solpi-M стабилизатор 500VA"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:17:33+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.480",
+            "review_reason": "Ariston Superlux NTS 10 R PL (SU) снят с производства, активных белорусских предложений нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Официальный источник указывает снятие модели с производства. Российский прайс и описательные страницы не являются активными предложениями в BYN.",
+                "confidence": "high",
+                "search_queries": [
+                    "Ariston Superlux NTS 10 R PL SU купить Беларусь",
+                    "PS-002.480 водонагреватель Ariston Superlux NTS 10 R PL SU",
+                    "Superlux NTS 10 R PL SU Аристон цена"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:17:47+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
