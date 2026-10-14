@@ -5,11 +5,14 @@ namespace Tests\Feature;
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\Pages\ViewCrmCounterparty;
 use App\Models\CommercialDocument;
+use App\Models\Category;
 use App\Models\CrmContact;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\CommercialDocuments\CommercialDocumentReadiness;
+use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\Crm\BelarusTaxpayerRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -145,6 +148,63 @@ class CommercialClientWorkflowImprovementTest extends TestCase
         $this->assertSame(7.5, session('commercial_document_prefill.client_default_discount_percent'));
         $this->assertSame('50% предоплата', session('commercial_document_prefill.payment_terms'));
         $this->assertSame('Поставка за 5 рабочих дней', session('commercial_document_prefill.delivery_terms'));
+    }
+
+    public function test_readiness_flags_unconfirmed_prices_and_margin_below_the_minimum(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Проверка цен КП',
+            'slug' => 'commercial-readiness-prices',
+            'is_active' => true,
+        ]);
+        $staleProduct = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Котёл с неподтверждённой ценой',
+            'slug' => 'commercial-stale-price',
+            'price' => 1000,
+            'requires_price_confirmation' => true,
+        ]);
+        $lowMarginProduct = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Насос с низкой маржой',
+            'slug' => 'commercial-low-margin',
+            'price' => 100,
+        ]);
+        $document = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'client_name' => 'Розничный клиент',
+            'client_email' => 'client@example.com',
+            'payment_terms' => '100% предоплата',
+            'delivery_terms' => '3 рабочих дня',
+        ]);
+        $document->items()->create([
+            'product_id' => $staleProduct->id,
+            'name' => $staleProduct->name,
+            'quantity' => 1,
+            'unit_price' => 1000,
+        ]);
+        $document->items()->create([
+            'product_id' => $lowMarginProduct->id,
+            'name' => $lowMarginProduct->name,
+            'quantity' => 1,
+            'unit_price' => 100,
+            'discount_percent' => 10,
+        ]);
+
+        $this->mock(CommercialOfferCopilotService::class)
+            ->shouldReceive('pricing')
+            ->once()
+            ->with($lowMarginProduct->id, 90.0)
+            ->andReturn([
+                'purchase_price' => 85.0,
+                'margin_percent' => 5.6,
+                'minimum_margin_percent' => 10.0,
+            ]);
+
+        $issues = app(CommercialDocumentReadiness::class)->issues($document->fresh());
+
+        $this->assertContains('нужно подтвердить актуальность цены: '.$staleProduct->name, $issues);
+        $this->assertContains('маржа ниже допустимой: '.$lowMarginProduct->name.' (5,6%)', $issues);
     }
 
     public function test_pdf_template_prints_legal_name_and_address_of_buyer(): void
