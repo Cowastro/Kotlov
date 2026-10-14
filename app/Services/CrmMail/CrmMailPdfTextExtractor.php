@@ -73,6 +73,73 @@ class CrmMailPdfTextExtractor
         return $result + ['name' => $name];
     }
 
+    /**
+     * Browser fallback for servers where Poppler is unavailable.
+     *
+     * @param  list<string>  $images
+     * @return array{text: string, method: string, name: string}
+     */
+    public function extractRenderedImages(CrmMailMessage $message, int $attachmentIndex, array $images): array
+    {
+        $attachment = collect($message->metadata['attachments'] ?? [])->values()->get($attachmentIndex);
+        if (! is_array($attachment)) {
+            throw new RuntimeException('PDF-вложение не найдено.');
+        }
+
+        $path = (string) ($attachment['path'] ?? '');
+        $name = (string) ($attachment['name'] ?? basename($path));
+        if (! str_starts_with($path, 'crm-mail-attachments/') || mb_strtolower(pathinfo($name, PATHINFO_EXTENSION)) !== 'pdf') {
+            throw new RuntimeException('Для распознавания выберите PDF-вложение.');
+        }
+
+        $disk = Storage::disk('local');
+        if (! $disk->exists($path)) {
+            throw new RuntimeException('PDF-файл не найден в хранилище.');
+        }
+
+        $absolutePath = $disk->path($path);
+        $hash = hash_file('sha256', $absolutePath) ?: hash('sha256', $path.'|'.$disk->size($path));
+        $cacheKey = 'crm-mail-pdf-text:v2:'.$hash;
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached) && filled($cached['text'] ?? null)) {
+            return $cached + ['name' => $name];
+        }
+
+        $pages = [];
+        $totalBytes = 0;
+        foreach (array_slice($images, 0, 8) as $image) {
+            if (! is_string($image) || ! preg_match('#^data:(image/(?:jpeg|png|webp));base64,(.+)$#s', $image, $matches)) {
+                continue;
+            }
+
+            $data = base64_decode($matches[2], true);
+            if (! is_string($data) || $data === '') {
+                continue;
+            }
+
+            $totalBytes += strlen($data);
+            if ($totalBytes > 24_000_000) {
+                throw new RuntimeException('Страницы PDF слишком большие для распознавания.');
+            }
+
+            $pages[] = ['mime' => $matches[1], 'data' => $data];
+        }
+
+        if ($pages === []) {
+            throw new RuntimeException('Браузер не смог подготовить страницы PDF для распознавания.');
+        }
+
+        $text = $this->normalize($this->recognizePagesWithDeepSeek($pages));
+        if (! $this->hasUsefulText($text)) {
+            throw new RuntimeException('DeepSeek не смог распознать достаточно текста на страницах PDF.');
+        }
+
+        $result = ['text' => $text, 'method' => 'deepseek-ocr'];
+        Cache::put($cacheKey, $result, now()->addDays(30));
+
+        return $result + ['name' => $name];
+    }
+
     private function extractTextLayer(string $path): string
     {
         try {
@@ -99,6 +166,17 @@ class CrmMailPdfTextExtractor
         $pages = $this->renderPdfPages($path);
         if ($pages === []) {
             throw new RuntimeException('Сервер не смог преобразовать страницы PDF в изображения. Проверьте установку Poppler (pdftoppm или pdftocairo).');
+        }
+
+        return $this->recognizePagesWithDeepSeek($pages);
+    }
+
+    /** @param list<array{mime: string, data: string}> $pages */
+    private function recognizePagesWithDeepSeek(array $pages): string
+    {
+        $key = trim((string) config('services.ai.api_key', ''));
+        if ($key === '') {
+            throw new RuntimeException('На сервере не настроен ключ DeepSeek (AI_API_KEY).');
         }
 
         $content = [[

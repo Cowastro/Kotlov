@@ -75,6 +75,11 @@ Route::get('/admin/crm-mail-messages/{message}/attachments/{attachment}/read-pdf
     ->middleware('auth')
     ->name('admin.crm-mail-messages.attachments.read-pdf');
 
+Route::post('/admin/crm-mail-messages/{message}/attachments/{attachment}/recognize-pdf', [CrmMailPdfTextController::class, 'recognizeImages'])
+    ->whereNumber('attachment')
+    ->middleware('auth')
+    ->name('admin.crm-mail-messages.attachments.recognize-pdf');
+
 Route::get('/robots.txt', function (Request $request) {
     if ($request->getHost() === 'admin.'.config('app.base_domain', 'kotlov.by')) {
         return response("User-agent: *\nDisallow: /\n", 200)

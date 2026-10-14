@@ -187,6 +187,40 @@ class CrmMailAttachmentDownloadTest extends TestCase
             ->assertSee('DeepSeek вернул ошибку 402: Insufficient Balance');
     }
 
+    public function test_browser_rendered_pdf_pages_can_be_recognized_with_deepseek(): void
+    {
+        Storage::fake('local');
+        config([
+            'services.ai.api_key' => 'test-deepseek-key',
+            'services.ai.api_url' => 'https://api.deepseek.test/chat/completions',
+            'services.ai.deepseek_document_model' => 'deepseek-flash',
+        ]);
+        Http::fake([
+            'api.deepseek.test/*' => Http::response([
+                'choices' => [[
+                    'message' => ['content' => 'Хомут трубный Теплов и Сухов XT-P D 140-ФР, количество 4 штуки. Просим подготовить коммерческое предложение.'],
+                ]],
+            ]),
+        ]);
+
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $path = 'crm-mail-attachments/incoming/1/106/01-browser-scan.pdf';
+        $message = $this->messageWithAttachment($path, 'SCAN0102.PDF');
+        Storage::disk('local')->put($path, "%PDF-1.4\nscanned-image-only");
+
+        $this->actingAs($manager)->postJson(route('admin.crm-mail-messages.attachments.recognize-pdf', [
+            'message' => $message,
+            'attachment' => 0,
+        ]), [
+            'images' => ['data:image/jpeg;base64,'.base64_encode('browser-rendered-jpeg')],
+        ])->assertOk()
+            ->assertJsonPath('method', 'deepseek-ocr')
+            ->assertJsonPath('text', 'Хомут трубный Теплов и Сухов XT-P D 140-ФР, количество 4 штуки. Просим подготовить коммерческое предложение.');
+
+        Http::assertSent(fn ($request): bool => data_get($request->data(), 'model') === 'deepseek-flash'
+            && str_starts_with((string) data_get($request->data(), 'messages.0.content.1.image_url.url'), 'data:image/jpeg;base64,'));
+    }
+
     private function messageWithAttachment(
         string $path,
         string $name = 'order.pdf',

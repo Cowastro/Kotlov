@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Текст PDF: {{ $name }}</title>
     <style>
         :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
@@ -16,6 +17,8 @@
         .button.primary { border-color: #ea580c; background: #c2410c; }
         textarea { box-sizing: border-box; width: 100%; min-height: calc(100vh - 180px); border: 1px solid #3f3f46; border-radius: 12px; padding: 18px; resize: vertical; background: #18181b; color: #f4f4f5; font: 15px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
         .error { border: 1px solid #7f1d1d; border-radius: 10px; padding: 14px; background: #450a0a; color: #fecaca; }
+        .status { border-color: #92400e; background: #431407; color: #fed7aa; }
+        [hidden] { display: none !important; }
     </style>
 </head>
 <body>
@@ -30,14 +33,15 @@
         <div class="actions">
             <a class="button" href="{{ $threadUrl }}">Вернуться к письму</a>
             <a class="button" href="{{ $downloadUrl }}">Скачать оригинал</a>
-            @if (! $error)
-                <button class="button primary" id="copy-text" type="button">Копировать текст</button>
-            @endif
+            <button class="button primary" id="copy-text" type="button" @if ($error) hidden @endif>Копировать текст</button>
         </div>
     </div>
 
     @if ($error)
-        <div class="error">{{ $error }}</div>
+        <div class="error {{ $browserFallback ? 'status' : '' }}" id="recognition-status">
+            {{ $browserFallback ? 'Подготавливаю страницы PDF в браузере и отправляю их в DeepSeek…' : $error }}
+        </div>
+        <textarea id="pdf-text" readonly hidden></textarea>
     @else
         <textarea id="pdf-text" readonly>{{ $text }}</textarea>
     @endif
@@ -48,5 +52,60 @@
         this.textContent = 'Скопировано';
     });
 </script>
+@if ($browserFallback)
+<script type="module">
+    import * as pdfjsLib from '/vendor/pdfjs/pdf.min.mjs';
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.mjs';
+
+    const status = document.getElementById('recognition-status');
+    const textarea = document.getElementById('pdf-text');
+    const copyButton = document.getElementById('copy-text');
+
+    try {
+        const pdfResponse = await fetch(@json($downloadUrl), { credentials: 'same-origin' });
+        if (!pdfResponse.ok) throw new Error('Не удалось загрузить PDF из письма.');
+
+        const pdf = await pdfjsLib.getDocument({ data: await pdfResponse.arrayBuffer() }).promise;
+        const images = [];
+        const pageCount = Math.min(pdf.numPages, 8);
+
+        for (let pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
+            status.textContent = `Подготавливаю страницу ${pageNumber} из ${pageCount}…`;
+            const page = await pdf.getPage(pageNumber);
+            const baseViewport = page.getViewport({ scale: 1 });
+            const scale = Math.min(2, 1400 / baseViewport.width);
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.ceil(viewport.width);
+            canvas.height = Math.ceil(viewport.height);
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            images.push(canvas.toDataURL('image/jpeg', 0.78));
+        }
+
+        status.textContent = 'DeepSeek распознаёт документ…';
+        const response = await fetch(@json($recognizeUrl), {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({ images }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || 'DeepSeek не смог распознать документ.');
+
+        textarea.value = result.text;
+        textarea.hidden = false;
+        copyButton.hidden = false;
+        status.remove();
+    } catch (error) {
+        status.classList.remove('status');
+        status.textContent = error instanceof Error ? error.message : 'Не удалось распознать PDF.';
+    }
+</script>
+@endif
 </body>
 </html>
