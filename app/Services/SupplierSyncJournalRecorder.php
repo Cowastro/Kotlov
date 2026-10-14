@@ -13,6 +13,7 @@ class SupplierSyncJournalRecorder
         'supplier:sync-rusklimat' => 'rusklimat',
         'supplier:sync-rusklimat-pricelist' => 'rusklimat',
         'supplier:sync-svah-group' => 'svah_group',
+        'supplier:sync-belomo-pricelist' => 'sanbusinessgroup',
     ];
 
     /** @var array<int, array{command:string, run_id:int, started_at:float, source_candidates:array<int, string>}> */
@@ -403,6 +404,10 @@ class SupplierSyncJournalRecorder
         if ($command === 'supplier:sync-svah-group') {
             $values[] = storage_path('app/pricelists/svah-group/latest.xlsx');
             $values[] = storage_path('app/pricelists/svah-group/latest.xls');
+        }
+
+        if ($command === 'supplier:sync-belomo-pricelist') {
+            $values[] = database_path('data/supplier-price-lists/belomo-2026-09-15.csv');
         }
 
         return array_values(array_unique(array_filter($values)));
