@@ -350,6 +350,10 @@ class QuickCommercialOfferService
             'client_phone' => $thread->contact?->phones_list ?: $counterparty?->phones_list ?: ($analysis['phones'][0] ?? null),
             'client_unp' => $counterparty?->unp ?: $analysis['unp'],
             'client_address' => $counterparty?->legal_address ?: $analysis['legal_address'],
+            'client_default_discount_percent' => (float) ($counterparty?->commercial_discount_percent ?? 0),
+            'payment_terms' => $counterparty?->commercial_payment_terms ?: 'Безналичный расчёт по выставленному счёту.',
+            'delivery_terms' => $counterparty?->commercial_delivery_terms ?: 'Срок и способ поставки согласовываются с менеджером.',
+            'currency' => $counterparty?->commercial_currency ?: 'BYN',
         ];
     }
 

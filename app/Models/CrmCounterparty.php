@@ -48,9 +48,15 @@ class CrmCounterparty extends Model
         'business_region', 'one_c_manager_name', 'registered_at', 'abc_xyz_classification',
         'unp', 'external_1c_id', 'responsible_user_id', 'source', 'website',
         'legal_address', 'postal_address', 'actual_address', 'notes', 'last_contact_at',
+        'commercial_discount_percent', 'commercial_payment_terms', 'commercial_delivery_terms',
+        'commercial_currency', 'commercial_note',
     ];
 
-    protected $casts = ['registered_at' => 'date', 'last_contact_at' => 'datetime'];
+    protected $casts = [
+        'registered_at' => 'date',
+        'last_contact_at' => 'datetime',
+        'commercial_discount_percent' => 'decimal:2',
+    ];
 
     public function responsibleUser(): BelongsTo
     {

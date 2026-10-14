@@ -35,6 +35,10 @@ class ViewCrmCounterparty extends ViewRecord
                         'client_phone' => $points->firstWhere('type', 'phone')?->value,
                         'client_unp' => $counterparty->unp,
                         'client_address' => $counterparty->legal_address ?: ($counterparty->actual_address ?: $counterparty->postal_address),
+                        'client_default_discount_percent' => (float) $counterparty->commercial_discount_percent,
+                        'payment_terms' => $counterparty->commercial_payment_terms ?: 'Безналичный расчёт по выставленному счёту.',
+                        'delivery_terms' => $counterparty->commercial_delivery_terms ?: 'Срок и способ поставки согласовываются с менеджером.',
+                        'currency' => $counterparty->commercial_currency ?: 'BYN',
                     ]);
 
                     $this->redirect(CommercialDocumentResource::getUrl('create'));

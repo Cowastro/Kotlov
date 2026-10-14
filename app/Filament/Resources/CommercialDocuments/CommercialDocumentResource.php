@@ -104,6 +104,7 @@ class CommercialDocumentResource extends Resource
                         ->getOptionLabelUsing(fn (mixed $value): ?string => self::counterpartyOptionLabel($value))
                         ->afterStateUpdated(fn (mixed $state, Set $set) => self::fillClientFromCounterparty($state, $set))
                         ->columnSpanFull(),
+                    Hidden::make('client_default_discount_percent')->default(0)->dehydrated(false),
                     Select::make('crm_contact_id')
                         ->label('Контактное лицо CRM')
                         ->placeholder('Выберите получателя коммерческого предложения')
@@ -246,7 +247,13 @@ class CommercialDocumentResource extends Resource
                                 $existingIds = collect($items)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id)->all();
                                 $newIds = array_values(array_diff($selected, $existingIds));
                                 $rows = app(CommercialOfferCopilotService::class)->itemRows($newIds, (array) $get('copilot_quantities'));
+                                $defaultDiscount = min(100, max(0, (float) $get('client_default_discount_percent')));
                                 foreach ($rows as $row) {
+                                    $row['discount_percent'] = $defaultDiscount;
+                                    $row['line_total'] = round(
+                                        (float) $row['unit_price'] * (float) $row['quantity'] * (1 - ($defaultDiscount / 100)),
+                                        2,
+                                    );
                                     $items[(string) Str::uuid()] = $row;
                                 }
                                 $set('items', $items);
@@ -280,16 +287,17 @@ class CommercialDocumentResource extends Resource
                                 ->getOptionLabelFromRecordUsing(fn (Product $record): string => trim($record->name.' · '.($record->sku ?: 'без артикула')))
                                 ->searchable(['name', 'sku'])
                                 ->live()
-                                ->afterStateUpdated(function ($state, callable $set): void {
+                                ->afterStateUpdated(function ($state, callable $set, callable $get): void {
                                     $product = $state ? Product::query()->find($state) : null;
                                     if (! $product) {
                                         return;
                                     }
+                                    $discount = min(100, max(0, (float) $get('discount_percent')));
                                     $set('name', $product->name);
                                     $set('sku', $product->sku);
                                     $set('unit', $product->unit ?: 'шт.');
                                     $set('unit_price', (float) $product->price);
-                                    $set('line_total', (float) $product->price);
+                                    $set('line_total', round((float) $product->price * (1 - ($discount / 100)), 2));
                                 })
                                 ->columnSpan(4),
                             TextInput::make('name')->label('Наименование')->required()->maxLength(255)->columnSpan(4),
@@ -299,7 +307,8 @@ class CommercialDocumentResource extends Resource
                                 ->afterStateUpdated(fn ($state, callable $get, callable $set) => self::updateLineTotal($get, $set))->columnSpan(2),
                             TextInput::make('unit_price')->label('Цена, BYN')->numeric()->minValue(0)->default(0)->required()->live(onBlur: true)
                                 ->afterStateUpdated(fn ($state, callable $get, callable $set) => self::updateLineTotal($get, $set))->columnSpan(3),
-                            TextInput::make('discount_percent')->label('Скидка, %')->numeric()->minValue(0)->maxValue(100)->default(0)->live(onBlur: true)
+                            TextInput::make('discount_percent')->label('Скидка, %')->numeric()->minValue(0)->maxValue(100)
+                                ->default(fn (Get $get): float => (float) ($get('../../client_default_discount_percent') ?: 0))->live(onBlur: true)
                                 ->afterStateUpdated(fn ($state, callable $get, callable $set) => self::updateLineTotal($get, $set))->columnSpan(2),
                             TextInput::make('vat_rate')->label('НДС, %')->numeric()->minValue(0)->default(20)->required()->columnSpan(2),
                             TextInput::make('line_total')->label('Сумма, BYN')->numeric()->readOnly()->dehydrated()->default(0)->columnSpan(3),
@@ -624,6 +633,14 @@ class CommercialDocumentResource extends Resource
         $set('client_phone', $points->firstWhere('type', 'phone')?->value);
         $set('client_unp', $counterparty->unp);
         $set('client_address', $counterparty->legal_address ?: ($counterparty->actual_address ?: $counterparty->postal_address));
+        $set('client_default_discount_percent', (float) $counterparty->commercial_discount_percent);
+        if (filled($counterparty->commercial_payment_terms)) {
+            $set('payment_terms', $counterparty->commercial_payment_terms);
+        }
+        if (filled($counterparty->commercial_delivery_terms)) {
+            $set('delivery_terms', $counterparty->commercial_delivery_terms);
+        }
+        $set('currency', $counterparty->commercial_currency ?: 'BYN');
     }
 
     /** @return array<int, string> */

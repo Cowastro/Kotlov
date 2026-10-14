@@ -114,6 +114,9 @@ class CommercialClientWorkflowImprovementTest extends TestCase
             'legal_name' => 'ООО «Тестовый покупатель»',
             'unp' => '193000004',
             'legal_address' => 'г. Минск, ул. Покупателей, 2',
+            'commercial_discount_percent' => 7.5,
+            'commercial_payment_terms' => '50% предоплата',
+            'commercial_delivery_terms' => 'Поставка за 5 рабочих дней',
             'source' => 'manual',
         ]);
         $contact = CrmContact::query()->create([
@@ -139,6 +142,9 @@ class CommercialClientWorkflowImprovementTest extends TestCase
         $this->assertSame($counterparty->id, session('commercial_document_prefill.crm_counterparty_id'));
         $this->assertSame('ООО «Тестовый покупатель»', session('commercial_document_prefill.client_legal_name'));
         $this->assertSame('anna@example.com', session('commercial_document_prefill.client_email'));
+        $this->assertSame(7.5, session('commercial_document_prefill.client_default_discount_percent'));
+        $this->assertSame('50% предоплата', session('commercial_document_prefill.payment_terms'));
+        $this->assertSame('Поставка за 5 рабочих дней', session('commercial_document_prefill.delivery_terms'));
     }
 
     public function test_pdf_template_prints_legal_name_and_address_of_buyer(): void

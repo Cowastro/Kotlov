@@ -84,6 +84,36 @@ class CrmCounterpartyResource extends Resource
                         Toggle::make('is_active')->label('Активен')->default(true),
                     ])->defaultItems(0)->addActionLabel('Добавить телефон или email')->reorderable(false),
             ]),
+            Section::make('Коммерческие условия')
+                ->description('Эти значения автоматически подставляются в новые КП этого клиента и остаются доступными для проверки менеджером.')
+                ->columns(3)
+                ->schema([
+                    TextInput::make('commercial_discount_percent')
+                        ->label('Стандартная скидка, %')
+                        ->numeric()
+                        ->minValue(0)
+                        ->maxValue(100)
+                        ->default(0),
+                    Select::make('commercial_currency')
+                        ->label('Валюта КП')
+                        ->options(['BYN' => 'BYN'])
+                        ->default('BYN')
+                        ->required(),
+                    TextInput::make('commercial_payment_terms')
+                        ->label('Условия оплаты')
+                        ->placeholder('Например: 50% предоплата, 50% перед отгрузкой')
+                        ->maxLength(255),
+                    TextInput::make('commercial_delivery_terms')
+                        ->label('Условия и срок поставки')
+                        ->placeholder('Например: 3–5 рабочих дней после оплаты')
+                        ->maxLength(255)
+                        ->columnSpan(2),
+                    Textarea::make('commercial_note')
+                        ->label('Внутренние указания менеджеру')
+                        ->helperText('Не печатаются в PDF и не отправляются клиенту.')
+                        ->rows(3)
+                        ->columnSpanFull(),
+                ]),
         ]);
     }
 
@@ -111,6 +141,13 @@ class CrmCounterpartyResource extends Resource
                     ->state(fn (CrmCounterparty $record): int => $record->externalIdentities()->count()),
                 TextEntry::make('one_c_manager_name')->label('Менеджер в 1С')->placeholder('Не указан'),
                 TextEntry::make('notes')->label('Примечание')->placeholder('—')->columnSpanFull(),
+            ]),
+            Section::make('Коммерческие условия')->columns(3)->schema([
+                TextEntry::make('commercial_discount_percent')->label('Стандартная скидка')->suffix('%'),
+                TextEntry::make('commercial_currency')->label('Валюта КП')->placeholder('BYN'),
+                TextEntry::make('commercial_payment_terms')->label('Оплата')->placeholder('Общие условия'),
+                TextEntry::make('commercial_delivery_terms')->label('Поставка')->placeholder('Общие условия')->columnSpan(2),
+                TextEntry::make('commercial_note')->label('Указания менеджеру')->placeholder('—')->columnSpanFull(),
             ]),
             Section::make('Коммерческие предложения и счета')->schema([
                 RepeatableEntry::make('commercialDocuments')

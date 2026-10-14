@@ -39,6 +39,7 @@ class CommercialDocumentPrefillTest extends TestCase
         session()->put('commercial_document_prefill', [
             'type' => 'quote',
             'client_company' => 'ОАО «Колпень-Агро»',
+            'client_default_discount_percent' => 10,
         ]);
         session()->put('commercial_document_product_ids', [$product->id]);
         session()->put('commercial_document_product_quantities', [$product->id => 1]);
@@ -50,6 +51,8 @@ class CommercialDocumentPrefillTest extends TestCase
         $this->assertSame($product->id, (int) $items->first()['product_id']);
         $this->assertSame($product->name, $items->first()['name']);
         $this->assertSame(3154.0, (float) $items->first()['unit_price']);
+        $this->assertSame(10.0, (float) $items->first()['discount_percent']);
+        $this->assertSame(2838.6, (float) $items->first()['line_total']);
 
         $component->call('create')->assertHasNoFormErrors();
 
@@ -58,6 +61,8 @@ class CommercialDocumentPrefillTest extends TestCase
             'name' => $product->name,
             'quantity' => 1,
             'unit_price' => 3154,
+            'discount_percent' => 10,
+            'line_total' => 2838.6,
         ]);
         $this->assertDatabaseHas('crm_counterparties', [
             'name' => 'ОАО «Колпень-Агро»',

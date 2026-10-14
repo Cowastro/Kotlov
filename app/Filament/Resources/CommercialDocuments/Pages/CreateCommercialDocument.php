@@ -27,6 +27,7 @@ class CreateCommercialDocument extends CreateRecord
         $prefill = session()->pull('commercial_document_prefill', []);
         $productIds = collect(session()->pull('commercial_document_product_ids', []))->map(fn ($id): int => (int) $id)->filter()->unique();
         $quantities = session()->pull('commercial_document_product_quantities', []);
+        $defaultDiscount = min(100, max(0, (float) ($prefill['client_default_discount_percent'] ?? 0)));
         if ($productIds->isEmpty()) {
             if ($prefill !== []) {
                 $this->form->fill(array_merge($this->data, $prefill));
@@ -35,7 +36,7 @@ class CreateCommercialDocument extends CreateRecord
             return;
         }
 
-        $items = Product::query()->whereIn('id', $productIds)->get()->map(function (Product $product) use ($quantities): array {
+        $items = Product::query()->whereIn('id', $productIds)->get()->map(function (Product $product) use ($quantities, $defaultDiscount): array {
             $quantity = max(0.001, (float) ($quantities[$product->id] ?? 1));
 
             return [
@@ -45,9 +46,9 @@ class CreateCommercialDocument extends CreateRecord
                 'unit' => $product->unit ?: 'шт.',
                 'quantity' => $quantity,
                 'unit_price' => (float) $product->price,
-                'discount_percent' => 0,
+                'discount_percent' => $defaultDiscount,
                 'vat_rate' => 20,
-                'line_total' => round((float) $product->price * $quantity, 2),
+                'line_total' => round((float) $product->price * $quantity * (1 - ($defaultDiscount / 100)), 2),
             ];
         })->all();
 
