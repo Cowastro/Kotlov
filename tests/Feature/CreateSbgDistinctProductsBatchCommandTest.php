@@ -9199,4 +9199,93 @@ XML;
         $this->assertTrue($products->every(fn (Product $product): bool => $product->fresh()->is_active && ! $product->fresh()->is_archived));
         $this->assertStringContainsString('новой автоматикой XO', $products['УТ-00000133']->fresh()->content);
     }
+
+    public function test_it_corrects_the_two_metre_duct_then_creates_two_distinct_three_metre_cards(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-next-air-ducts',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Гибкие воздуховоды',
+            'slug' => 'gibkie-vozduhovody',
+            'parent_id' => 0,
+        ]);
+        $aluminium = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => null,
+            'sku' => 'KOTLOV-022720',
+            'name' => 'Воздуховод гибкий алюминиевый Ø100 мм, 3 м',
+            'slug' => 'vozduxovod-gibkii-aliuminievyi-o100-mm-3-m',
+            'price' => 3.84,
+            'stock_qty' => 3,
+            'images' => ['img/products/air-ducts/flexible-aluminum-3m.jpg'],
+            'specs' => [['key' => 'Длина', 'value' => '3 м']],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => null,
+            'sku' => 'KOTLOV-022719',
+            'name' => 'Воздуховод гибкий из нержавеющей стали Ø110 мм, 3 м',
+            'slug' => 'vozduxovod-gibkii-iz-nerzaveiushhei-stali-o110-mm-3-m',
+            'price' => 17.68,
+            'stock_qty' => 8,
+            'images' => ['img/products/air-ducts/flexible-stainless-3m.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $items = collect([
+            'УТ-00000091' => ['af1f3567-1f62-11e9-bad6-1c1b0d1de7c2', 'Воздуховод гибкий гофрированный 100 (алюминий)', 3.84, 3],
+            'УТ-00000090' => ['af1f3566-1f62-11e9-bad6-1c1b0d1de7c2', 'Воздуховод гибкий гофрированный 100 (алюминий 3 м)', 5.28, 2],
+            'УТ-00000089' => ['af1f3565-1f62-11e9-bad6-1c1b0d1de7c2', 'Воздуховод гибкий гофрированный 100 (3м нерж.ст)', 16.80, 3],
+        ])->mapWithKeys(function (array $row, string $code) use ($source, $aluminium): array {
+            return [$code => IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id,
+                'external_id' => $row[0],
+                'external_code' => $code,
+                'name' => $row[1],
+                'price_byn' => $row[2],
+                'stock_quantity' => $row[3],
+                'stock_confirmed_at' => now(),
+                'product_id' => $code === 'УТ-00000091' ? $aluminium->id : null,
+                'match_status' => $code === 'УТ-00000091' ? 'matched' : 'unmatched',
+                'match_method' => $code === 'УТ-00000091' ? 'manual_created' : null,
+            ])];
+        });
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dt',
+        ])->assertSuccessful();
+        $this->assertSame('vozduxovod-gibkii-aliuminievyi-o100-mm-3-m', $aluminium->fresh()->slug);
+        $this->assertSame($productCount, Product::query()->count());
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dt',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $aluminium->refresh();
+        $threeMetreAluminium = $items['УТ-00000090']->fresh()->product()->sole();
+        $threeMetreStainless = $items['УТ-00000089']->fresh()->product()->sole();
+        $this->assertSame($productCount + 2, Product::query()->count());
+        $this->assertSame('vozduxovod-gibkii-aliuminievyi-o100-mm-2-m', $aluminium->slug);
+        $this->assertSame('Воздуховод гибкий алюминиевый Ø100 мм, 2 м', $aluminium->name);
+        $this->assertSame('2 м', collect($aluminium->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame(['5.28', '16.80'], [$threeMetreAluminium->price, $threeMetreStainless->price]);
+        $this->assertSame(['2', '3'], [(string) $threeMetreAluminium->stock_qty, (string) $threeMetreStainless->stock_qty]);
+        $this->assertSame(['3 м', '3 м'], [
+            collect($threeMetreAluminium->specs)->firstWhere('key', 'Длина')['value'],
+            collect($threeMetreStainless->specs)->firstWhere('key', 'Длина')['value'],
+        ]);
+        $this->assertSame(['matched', 'matched'], [
+            $items['УТ-00000090']->fresh()->match_status,
+            $items['УТ-00000089']->fresh()->match_status,
+        ]);
+    }
 }

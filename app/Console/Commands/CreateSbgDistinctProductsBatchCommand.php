@@ -4296,6 +4296,79 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DT = [
+        'УТ-00000091' => [
+            'correct_linked_product' => true,
+            'external_id' => 'af1f3567-1f62-11e9-bad6-1c1b0d1de7c2',
+            'product_sku' => 'KOTLOV-022720',
+            'current_slug' => 'vozduxovod-gibkii-aliuminievyi-o100-mm-3-m',
+            'product_slug' => 'vozduxovod-gibkii-aliuminievyi-o100-mm-2-m',
+            'fragments' => ['Воздуховод гибкий', '100', 'алюминий'],
+            'product_fragments' => ['Воздуховод гибкий', '100', '3 м'],
+            'name' => 'Воздуховод гибкий алюминиевый Ø100 мм, 2 м',
+            'retail' => 3.84,
+            'images' => ['img/products/air-ducts/flexible-aluminum-3m.jpg'],
+            'source_url' => 'https://www.europlast.lv/ru/products/category/alyuminievie-vozduhovodi-g',
+            'short' => 'Гибкий круглый воздуховод из алюминия диаметром 100 мм и длиной 2 м для систем вентиляции.',
+            'content' => '<p><strong>Гибкий алюминиевый воздуховод Ø100 мм</strong> предназначен для прокладки круглых каналов вентиляции, кондиционирования и отвода воздуха.</p><p>Длина рукава в растянутом состоянии — 2 м. При монтаже следует избегать резких перегибов.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гибкий гофрированный воздуховод'],
+                ['key' => 'Материал', 'value' => 'Алюминий'],
+                ['key' => 'Диаметр', 'value' => '100 мм'],
+                ['key' => 'Длина', 'value' => '2 м'],
+                ['key' => 'Форма сечения', 'value' => 'Круглая'],
+                ['key' => 'Исполнение', 'value' => 'Полугибкое, неизолированное'],
+                ['key' => 'Назначение', 'value' => 'Вентиляция, кондиционирование, отвод воздуха'],
+            ],
+        ],
+        'УТ-00000090' => [
+            'template' => 'KOTLOV-022720',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'force_brandless' => true,
+            'category_slug' => 'gibkie-vozduhovody',
+            'fragments' => ['Воздуховод гибкий', '100', 'алюминий', '3 м'],
+            'name' => 'Воздуховод гибкий алюминиевый Ø100 мм, 3 м',
+            'retail' => 5.28,
+            'images' => ['img/products/air-ducts/flexible-aluminum-3m.jpg'],
+            'source_url' => 'https://www.europlast.lv/ru/products/category/alyuminievie-vozduhovodi-g',
+            'short' => 'Гибкий круглый воздуховод из алюминия диаметром 100 мм и длиной 3 м.',
+            'content' => '<p><strong>Гибкий алюминиевый воздуховод Ø100 мм</strong> предназначен для вентиляции, кондиционирования и отвода воздуха. Длина рукава в растянутом состоянии — 3 м.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гибкий гофрированный воздуховод'],
+                ['key' => 'Материал', 'value' => 'Алюминий'],
+                ['key' => 'Диаметр', 'value' => '100 мм'],
+                ['key' => 'Длина', 'value' => '3 м'],
+                ['key' => 'Форма сечения', 'value' => 'Круглая'],
+                ['key' => 'Исполнение', 'value' => 'Полугибкое, неизолированное'],
+                ['key' => 'Назначение', 'value' => 'Вентиляция, кондиционирование, отвод воздуха'],
+            ],
+        ],
+        'УТ-00000089' => [
+            'template' => 'KOTLOV-022719',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'force_brandless' => true,
+            'category_slug' => 'gibkie-vozduhovody',
+            'fragments' => ['Воздуховод гибкий', '100', '3м', 'нерж.ст'],
+            'name' => 'Воздуховод гибкий из нержавеющей стали Ø100 мм, 3 м',
+            'retail' => 16.80,
+            'images' => ['img/products/air-ducts/flexible-stainless-3m.jpg'],
+            'source_url' => 'https://www.europlast.lv/ru/products/category/vozduhovodi-iz-nerzhaveyushtej-stali-tg',
+            'short' => 'Гибкий круглый воздуховод из нержавеющей стали диаметром 100 мм и длиной 3 м.',
+            'content' => '<p><strong>Гибкий воздуховод из нержавеющей стали Ø100 мм</strong> предназначен для вентиляции, кондиционирования и отвода воздуха. Длина изделия — 3 м. Карточка не заявляет применение в качестве дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гибкий гофрированный воздуховод'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Диаметр', 'value' => '100 мм'],
+                ['key' => 'Длина', 'value' => '3 м'],
+                ['key' => 'Форма сечения', 'value' => 'Круглая'],
+                ['key' => 'Исполнение', 'value' => 'Полугибкое, неизолированное'],
+                ['key' => 'Назначение', 'value' => 'Вентиляция, кондиционирование, отвод воздуха'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4424,6 +4497,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-dq' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DQ,
             'unmatched-disputed-20261014-dr' => self::BATCH_UNMATCHED_DISPUTED_20261014_DR,
             'unmatched-researched-20261014-ds' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DS,
+            'unmatched-researched-20261014-dt' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DT,
             default => null,
         };
 
@@ -4563,6 +4637,77 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                     $details[] = [$code, '-', 'disputed', 'insufficient source identity; evidence and required data recorded'];
                 } else {
                     $details[] = [$code, '-', 'ready', 'document unresolved research dispute'];
+                }
+
+                continue;
+            }
+
+            if ($rule['correct_linked_product'] ?? false) {
+                $product = Product::query()->where('sku', $rule['product_sku'])->first();
+                if ($items->count() !== 1 || ! $product) {
+                    $stats['blocked']++;
+                    $details[] = [$code, $rule['product_sku'], 'blocked', 'missing unique 1C row or linked product'];
+
+                    continue;
+                }
+
+                $item = $items->first();
+                $alreadyCorrected = $product->slug === $rule['product_slug']
+                    && $product->name === $rule['name']
+                    && (string) $product->price === number_format((float) $rule['retail'], 2, '.', '')
+                    && collect($product->specs)->contains(
+                        fn (array $spec): bool => ($spec['key'] ?? null) === 'Длина'
+                            && ($spec['value'] ?? null) === '2 м'
+                    );
+                if ($alreadyCorrected) {
+                    $stats['already']++;
+                    $details[] = [$code, $product->sku, 'already', 'linked card identity is already corrected'];
+
+                    continue;
+                }
+
+                $valid = $item->source?->name === self::SOURCE_NAME
+                    && $item->source?->partnerName() === self::PARTNER_NAME
+                    && $item->external_id === $rule['external_id']
+                    && $item->match_status === 'matched'
+                    && $item->match_method === 'manual_created'
+                    && (int) $item->product_id === (int) $product->id
+                    && (float) $item->stock_quantity > 0
+                    && $product->slug === $rule['current_slug']
+                    && $this->containsAll($item->name, $rule['fragments'])
+                    && $this->containsAll($product->name, $rule['product_fragments'])
+                    && $this->hasNoKnownWatermarkSource($rule['images']);
+
+                if (! $valid) {
+                    $stats['blocked']++;
+                    $details[] = [$code, $product->sku, 'blocked', 'source, identity, stock or linked-product guard failed'];
+
+                    continue;
+                }
+
+                $stats['ready']++;
+                if ($apply) {
+                    $product->forceFill([
+                        'brand_id' => null,
+                        'name' => $rule['name'],
+                        'h1' => $rule['name'],
+                        'slug' => $rule['product_slug'],
+                        'price' => round((float) $rule['retail'], 2),
+                        'currency' => 'BYN',
+                        'short_description' => $rule['short'],
+                        'content' => $rule['content'],
+                        'images' => $rule['images'],
+                        'specs' => $rule['specs'],
+                        'content_source_url' => $rule['source_url'],
+                        'meta_title' => Str::limit($rule['name'].' — купить в Беларуси | KOTLOV', 255, ''),
+                        'meta_description' => Str::limit('Купить '.$rule['name'].' в KOTLOV. Характеристики, актуальная цена и наличие, доставка по Беларуси.', 255, ''),
+                        'is_active' => true,
+                        'is_archived' => false,
+                    ])->save();
+                    $stats['refreshed']++;
+                    $details[] = [$code, $product->sku, 'corrected', Str::limit($product->name, 58)];
+                } else {
+                    $details[] = [$code, $product->sku, 'ready', 'correct 2 m identity before creating 3 m card'];
                 }
 
                 continue;
