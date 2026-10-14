@@ -5,12 +5,18 @@ namespace Tests\Feature;
 use App\Events\NewOrderCreated;
 use App\Filament\Resources\CommercialDocuments\Pages\ViewCommercialDocument;
 use App\Filament\Resources\CrmCounterparties\Pages\ViewCrmCounterparty;
+use App\Models\Category;
 use App\Models\CommercialDocument;
 use App\Models\CrmContact;
 use App\Models\CrmCounterparty;
+use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
+use App\Services\Integrations\OneCOrderQueue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Livewire\Livewire;
@@ -141,5 +147,76 @@ class CommercialDocumentOrderConversionTest extends TestCase
             ->assertSuccessful()
             ->assertSee('Заказы клиента')
             ->assertSee($order->number);
+    }
+
+    public function test_order_from_accepted_quote_keeps_onec_product_link_and_can_enter_exchange_queue(): void
+    {
+        Event::fake([NewOrderCreated::class]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Товары КП в 1С', 'slug' => 'commercial-order-onec', 'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Котёл для обмена',
+            'slug' => 'commercial-order-onec-boiler',
+            'sku' => 'ONEC-KP-1',
+            'price' => 2000,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $source = IntegrationSource::query()->updateOrCreate(['code' => 'onec'], [
+            'name' => 'Центральная 1С',
+            'is_active' => true,
+            'settings' => [
+                'order_pricing_types' => ['b2b'],
+                'require_linked_order_products' => true,
+            ],
+        ]);
+        $integrationProduct = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'onec-commercial-1',
+            'external_sku' => 'ONEC-KP-1',
+            'name' => $product->name,
+            'price' => 1500,
+            'price_byn' => 1500,
+            'stock_quantity' => 3,
+            'match_status' => 'matched',
+            'matched_at' => now(),
+        ]);
+        $quote = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'accepted',
+            'client_company' => 'ООО «Клиент 1С»',
+            'client_phone' => '+375291234567',
+            'client_unp' => '190000002',
+        ]);
+        $quote->items()->create([
+            'product_id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'quantity' => 1,
+            'unit_price' => 2000,
+        ]);
+
+        $order = app(CommercialDocumentWorkflow::class)->convertToOrder($quote->fresh(), $manager);
+        $orderItem = $order->items()->firstOrFail();
+
+        $this->assertSame($integrationProduct->id, $orderItem->integration_product_id);
+        $this->assertSame('b2b', $orderItem->pricing_type);
+
+        $orderItem->forceFill([
+            'fulfillment_route' => 'own_stock',
+            'fulfillment_confirmed_by' => $manager->id,
+            'fulfillment_confirmed_at' => now(),
+        ])->save();
+        $order->forceFill(['status' => 'confirmed'])->save();
+        $delivery = app(OneCOrderQueue::class)->queue($order->fresh(), $manager);
+
+        $this->assertSame(OrderIntegrationDelivery::STATUS_PENDING, $delivery->status);
+        $this->assertSame('processing', $order->fresh()->status);
+        $this->assertNotNull($delivery->queued_at);
     }
 }

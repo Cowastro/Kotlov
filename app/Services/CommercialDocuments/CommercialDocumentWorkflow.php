@@ -6,6 +6,7 @@ use App\Events\NewOrderCreated;
 use App\Models\CommercialDocument;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
+use App\Models\IntegrationProduct;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
@@ -81,6 +82,15 @@ class CommercialDocumentWorkflow
             foreach ($locked->items as $item) {
                 $quantity = (int) $item->quantity;
                 $netPrice = round((float) $item->line_total / $quantity, 2);
+                $oneCProduct = $item->product_id
+                    ? IntegrationProduct::query()
+                        ->where('product_id', $item->product_id)
+                        ->where('match_status', 'matched')
+                        ->whereHas('source', fn ($source) => $source->where('code', 'onec')->where('is_active', true))
+                        ->latest('matched_at')
+                        ->latest('id')
+                        ->first()
+                    : null;
                 $order->items()->create([
                     'product_id' => $item->product_id,
                     'product_name' => $item->name,
@@ -89,6 +99,8 @@ class CommercialDocumentWorkflow
                     'quantity' => $quantity,
                     'total' => $item->line_total,
                     'pricing_type' => 'b2b',
+                    'price_tax_mode' => $oneCProduct?->price_tax_mode,
+                    'integration_product_id' => $oneCProduct?->id,
                 ]);
             }
 
