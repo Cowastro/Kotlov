@@ -10396,4 +10396,80 @@ XML;
         $this->assertFileExists(public_path('img/products/tekhnolit-polotsk/cast-iron-flat-cauldron-lid-4l-707.jpg'));
         $this->assertStringContainsString('pcentr.by', $product->content_source_url);
     }
+
+    public function test_it_creates_the_unmatched_brand_neutral_sauna_window_500x500_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-sauna-window-500',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $parent = Category::query()->create([
+            'name' => 'Бани и сауны',
+            'slug' => 'bani-i-sauny',
+            'parent_id' => 0,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Окна для бани и сауны',
+            'slug' => 'okna-dlya-bani-i-sauny',
+            'parent_id' => $parent->id,
+        ]);
+        $brand = Brand::query()->create([
+            'name' => 'Шаблонный бренд',
+            'slug' => 'sauna-window-template-brand',
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-SAUNA-WINDOW-400-TEMPLATE',
+            'name' => 'Форточка для бани 400×400 мм',
+            'slug' => 'fortocka-dlia-bani-400400-mm',
+            'price' => 82,
+            'images' => ['img/products/sauna/fortochka-400x400-clean.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '949b0045-255e-11e9-b256-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001213',
+            'external_sku' => null,
+            'name' => 'Форточка 500*500',
+            'price_byn' => null,
+            'stock_quantity' => 3,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-eo',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('Форточка для бани 500×500 мм', $product->name);
+        $this->assertSame('82.00', $product->price);
+        $this->assertSame('3', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertNull($product->brand_id);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+        $this->assertSame('okna-dlya-bani-i-sauny', $product->category->slug);
+        $this->assertSame('500×500 мм', collect($product->specs)->firstWhere('key', 'Размер')['value']);
+        $this->assertSame('Дерево', collect($product->specs)->firstWhere('key', 'Материал рамы')['value']);
+        $this->assertSame(['img/products/sauna/fortochka-500x500-clean.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/sauna/fortochka-500x500-clean.jpg'));
+        $this->assertStringContainsString('pechnoi.by', $product->content_source_url);
+        $this->assertStringContainsString('фактическую комплектацию', $product->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001213',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
 }

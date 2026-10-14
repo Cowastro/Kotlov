@@ -5176,6 +5176,34 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The 1C row has no manufacturer article or brand, so keep the card
+    // brand-neutral. A current Belarus listing confirms the exact 500×500 mm
+    // size, stock and an 82 BYN retail price; the clean series photo is local.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EO = [
+        'УТ-00001213' => [
+            'template_slug' => 'fortocka-dlia-bani-400400-mm',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'force_brandless' => true,
+            'category_slug' => 'okna-dlya-bani-i-sauny',
+            'external_id' => '949b0045-255e-11e9-b256-1c1b0d1de7c2',
+            'fragments' => ['Форточка', '500*500'],
+            'name' => 'Форточка для бани 500×500 мм',
+            'retail' => 82.00,
+            'images' => ['img/products/sauna/fortochka-500x500-clean.jpg'],
+            'source_url' => 'https://pechnoi.by/p244022482-fortochka-50h50-dvojnoe.html',
+            'short' => 'Открывающаяся деревянная форточка 500×500 мм для проветривания и естественного освещения бани или сауны.',
+            'content' => '<p><strong>Форточка для бани 500×500 мм</strong> — квадратная открывающаяся оконная конструкция для банного помещения.</p><p>Форточка помогает быстро проветрить парную, улучшить циркуляцию воздуха и добавить естественное освещение. Перед монтажом сверьте размер проёма, направление открывания и фактическую комплектацию.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Форточка для бани и сауны'],
+                ['key' => 'Размер', 'value' => '500×500 мм'],
+                ['key' => 'Материал рамы', 'value' => 'Дерево'],
+                ['key' => 'Тип открывания', 'value' => 'Распашной'],
+                ['key' => 'Назначение', 'value' => 'Проветривание и естественное освещение банного помещения'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5325,6 +5353,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-disputed-20261014-el' => self::BATCH_UNMATCHED_DISPUTED_20261014_EL,
             'unmatched-researched-20261014-em' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EM,
             'unmatched-researched-20261014-en' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EN,
+            'unmatched-researched-20261014-eo' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EO,
             default => null,
         };
 
