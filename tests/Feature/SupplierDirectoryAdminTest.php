@@ -72,8 +72,10 @@ class SupplierDirectoryAdminTest extends TestCase
             ->test(ListSuppliers::class)
             ->searchTable('Поставщик из справочника')
             ->assertSeeText('Бренд справочника')
-            ->assertSeeText('Прайс / файл')
-            ->assertSeeText('ссылок 1 · авто 1');
+            ->assertSeeText('Онлайн-прайс и остатки')
+            ->assertSeeText('Google Таблица · Ежедневно в 09:00 · автообновление включено')
+            ->assertSee('href="https://docs.google.com/spreadsheets/d/example"', false)
+            ->assertSee('target="_blank"', false);
     }
 
     public function test_brand_knows_which_suppliers_sell_it(): void

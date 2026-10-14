@@ -11,6 +11,7 @@ use App\Filament\Resources\Suppliers\RelationManagers\PriceSourcesRelationManage
 use App\Filament\Resources\Suppliers\RelationManagers\PriceSyncsRelationManager;
 use App\Models\IntegrationSource;
 use App\Models\Supplier;
+use App\Models\SupplierSource;
 use App\Services\Integrations\IntegrationFlowHealth;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use App\Services\Orders\SupplierAutoTransferManager;
@@ -275,15 +276,19 @@ class SupplierResource extends Resource
 
                 TextColumn::make('data_channel')
                     ->label('Прайсы и синхронизация')
-                    ->state(fn (Supplier $record): string => self::dataChannelLabel($record))
-                    ->description(fn (Supplier $record): string => self::syncSummary($record))
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        '1С' => 'success',
-                        'Смешанный' => 'warning',
-                        'Старый канал' => 'gray',
-                        default => 'info',
-                    })
+                    ->state(fn (Supplier $record): string => self::priceSourceLabel($record))
+                    ->description(fn (Supplier $record): string => self::priceSourceDescription($record))
+                    ->url(fn (Supplier $record): ?string => self::primaryPriceSource($record)?->sourceUrl())
+                    ->openUrlInNewTab()
+                    ->icon(fn (Supplier $record): ?Heroicon => self::primaryPriceSource($record)?->sourceUrl()
+                        ? Heroicon::OutlinedArrowTopRightOnSquare
+                        : null)
+                    ->color(fn (Supplier $record): string => self::primaryPriceSource($record)?->sourceUrl()
+                        ? 'info'
+                        : 'gray')
+                    ->tooltip(fn (Supplier $record): string => self::primaryPriceSource($record)?->sourceUrl()
+                        ? 'Открыть прайс или остатки в новой вкладке'
+                        : 'Добавьте внешнюю ссылку в карточке поставщика')
                     ->wrap(),
 
                 TextColumn::make('supplier_products_count')
@@ -396,6 +401,44 @@ class SupplierResource extends Resource
             self::hasActivePriceSource($supplier) ? self::priceSourcesLabel($supplier) : 'Прайсы не указаны',
             $oneCSource ? '1С: '.self::integrationHealthLabel($supplier) : null,
             self::lastPriceUpdateLabel($supplier),
+        ])->filter()->implode(' · ');
+    }
+
+    private static function primaryPriceSource(Supplier $supplier): ?SupplierSource
+    {
+        return $supplier->sources
+            ->where('is_active', true)
+            ->sortByDesc(fn (SupplierSource $source): bool => filled($source->sourceUrl()))
+            ->first();
+    }
+
+    private static function priceSourceLabel(Supplier $supplier): string
+    {
+        $source = self::primaryPriceSource($supplier);
+
+        if (! $source) {
+            return self::dataChannelLabel($supplier);
+        }
+
+        $additionalSources = $supplier->sources->where('is_active', true)->count() - 1;
+
+        return $source->name.($additionalSources > 0 ? ' +'.$additionalSources : '');
+    }
+
+    private static function priceSourceDescription(Supplier $supplier): string
+    {
+        $source = self::primaryPriceSource($supplier);
+
+        if (! $source) {
+            return self::syncSummary($supplier);
+        }
+
+        return collect([
+            $source->typeLabel(),
+            $source->scheduleLabel(),
+            $supplier->syncs->where('is_active', true)->isNotEmpty()
+                ? 'автообновление включено'
+                : null,
         ])->filter()->implode(' · ');
     }
 

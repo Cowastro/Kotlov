@@ -48,6 +48,7 @@ class PriceSourcesRelationManager extends RelationManager
             TextInput::make('config.url')
                 ->label('Ссылка на прайс или папку')
                 ->url()
+                ->helperText('Можно вставить Google Таблицу, папку Google Drive или прямую ссылку на файл/страницу поставщика. Проверьте, что ссылка открывается у менеджеров.')
                 ->maxLength(2048)
                 ->columnSpanFull(),
             TextInput::make('schedule_cron')
