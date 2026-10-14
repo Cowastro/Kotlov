@@ -255,7 +255,11 @@ class ImapMailboxSynchronizer
             return;
         }
 
-        $header = imap_headerinfo($imap, $messageNumber);
+        $header = @imap_headerinfo($imap, $messageNumber);
+        if ($header === false) {
+            return;
+        }
+
         $receivedAt = $this->tryParseDate($header->date ?? null);
         if (! $receivedAt || $message->received_at?->equalTo($receivedAt)) {
             return;
