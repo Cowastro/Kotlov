@@ -8,10 +8,18 @@
     @endpush
 @endif
 
-@if (in_array($category->slug, ['dymohody', 'truby-i-fitingi', 'bani-i-sauny'], true))
+@if (in_array($category->slug, ['dymohody', 'truby-i-fitingi', 'bani-i-sauny', 'schetchiki-gaza'], true))
     @push('styles')
         <style>
             .catalog-brand-note{margin-top:22px}.catalog-brand-note__inner{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:22px 26px;border:1px solid var(--line);border-radius:18px;background:var(--bg)}.catalog-brand-note__eyebrow{display:block;margin-bottom:5px;color:var(--text-2);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}.catalog-brand-note h2{margin:0 0 5px;font-size:22px;line-height:1.2}.catalog-brand-note p{max-width:790px;margin:0;color:var(--text-2);font-size:13px;line-height:1.5}.catalog-brand-note .tf-btn{flex:0 0 auto;min-width:210px;justify-content:center}@media(max-width:767px){.catalog-brand-note{margin-top:16px}.catalog-brand-note__inner{align-items:stretch;flex-direction:column;gap:16px;padding:19px}.catalog-brand-note h2{font-size:20px}.catalog-brand-note .tf-btn{box-sizing:border-box;width:100%;min-width:0}}
+        </style>
+    @endpush
+@endif
+
+@if ($category->slug === 'schetchiki-gaza')
+    @push('styles')
+        <style>
+            .gas-meter-guide{padding-top:12px;padding-bottom:72px}.gas-meter-guide__lead{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:28px;padding:32px;border:1px solid var(--line);border-radius:22px;background:var(--bg)}.gas-meter-guide__lead h2{margin:0 0 14px;font-size:clamp(27px,3vw,40px);line-height:1.12}.gas-meter-guide__lead p{margin:0;color:var(--text-2);line-height:1.65}.gas-meter-guide__checklist{display:grid;gap:10px;margin:0;padding:0;list-style:none}.gas-meter-guide__checklist li{padding:13px 15px;border-radius:12px;background:#fff;font-size:14px}.gas-meter-guide__checklist strong{display:block;margin-bottom:2px}.gas-meter-guide__types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:24px}.gas-meter-guide__type{padding:22px;border:1px solid var(--line);border-radius:16px;background:#fff}.gas-meter-guide__type h3{margin:0 0 8px;font-size:19px}.gas-meter-guide__type p{margin:0;color:var(--text-2);font-size:14px;line-height:1.55}.gas-meter-guide__type a{display:inline-block;margin-top:13px;color:#111;font-weight:650;text-decoration:underline;text-underline-offset:4px}.gas-meter-guide__faq{margin-top:44px}.gas-meter-guide__faq h2{margin-bottom:18px}.gas-meter-guide__faq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.gas-meter-guide__faq details{padding:19px 21px;border:1px solid var(--line);border-radius:14px;background:#fff}.gas-meter-guide__faq summary{cursor:pointer;font-weight:650;list-style:none}.gas-meter-guide__faq summary::-webkit-details-marker{display:none}.gas-meter-guide__faq p{margin:11px 0 0;color:var(--text-2);line-height:1.55}.gas-meter-guide__note{margin-top:20px;padding:16px 18px;border-left:3px solid #111;background:#f7f7f7;color:var(--text-2);font-size:13px;line-height:1.55}@media(max-width:767px){.gas-meter-guide{padding-bottom:48px}.gas-meter-guide__lead{grid-template-columns:1fr;padding:23px}.gas-meter-guide__types,.gas-meter-guide__faq-grid{grid-template-columns:1fr}}
         </style>
     @endpush
 @endif
@@ -627,6 +635,10 @@
     @if ($category->slug === 'pelletnye-gorelki' && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort', 'power']))
         @include('partials.pellet-burner-comparison')
         @include('partials.pellet-burner-category-faq')
+    @endif
+
+    @if ($category->slug === 'schetchiki-gaza' && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort']))
+        @include('partials.gas-meter-category-content', ['faq' => $gasMeterFaq ?? collect()])
     @endif
 
 </main>

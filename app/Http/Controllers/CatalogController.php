@@ -514,8 +514,39 @@ class CatalogController extends Controller
 
         $heatPumpArticles = collect();
         $pelletBurnerFaq = collect();
+        $gasMeterFaq = collect();
         $pelletComparisonProducts = collect();
         $schemaNodes = [$breadcrumbSchema];
+
+        if ($category->slug === 'schetchiki-gaza') {
+            $gasMeterFaq = $this->gasMeterFaqItems();
+
+            $schemaNodes[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'ItemList',
+                'name' => 'Газовые счетчики для квартиры и частного дома',
+                'numberOfItems' => $products->count(),
+                'itemListElement' => $products->values()->map(fn (Product $product, int $index) => [
+                    '@type' => 'ListItem',
+                    'position' => $index + 1,
+                    'name' => $product->name,
+                    'url' => 'https://kotlov.by/'.$product->category->slug.'/'.$product->slug,
+                ])->all(),
+            ];
+
+            $schemaNodes[] = [
+                '@context' => 'https://schema.org',
+                '@type' => 'FAQPage',
+                'mainEntity' => $gasMeterFaq->map(fn (array $item) => [
+                    '@type' => 'Question',
+                    'name' => $item['question'],
+                    'acceptedAnswer' => [
+                        '@type' => 'Answer',
+                        'text' => $item['answer'],
+                    ],
+                ])->values()->all(),
+            ];
+        }
 
         if ($category->slug === 'teplovyie-nasosyi') {
             $articleOrder = [
@@ -690,6 +721,7 @@ class CatalogController extends Controller
             'truby-iz-sshitogo-polietilena' => 'Трубы из сшитого полиэтилена для отопления и водяного тёплого пола. Подберите диаметр, толщину стенки и длину бухты.',
             'rezbovye-fitingi' => 'Резьбовые фитинги для разъёмных соединений труб: муфты, угольники, тройники и переходники. Сравните размер резьбы и материал.',
             'vodyanoy-teplyy-pol' => 'Комплектующие для водяного тёплого пола: трубы, фитинги и элементы подключения. Подберите совместимые компоненты системы.',
+            'schetchiki-gaza' => 'Газовые счетчики для квартиры и частного дома: диафрагменные и ультразвуковые модели БелОМО. Сравните типоразмер, направление потока и монтажную длину.',
             'press-fitingi' => 'Пресс-фитинги для быстрых неразъёмных соединений труб. Сравните диаметр, профиль прессования, материал и назначение.',
             'kompressionnye-fitingi' => 'Компрессионные фитинги для труб отопления и водоснабжения. Подберите тип соединения, диаметр и материал корпуса.',
             'krepleniya-dlya-trub' => 'Крепления для надёжной фиксации труб: клипсы, хомуты и опоры. Сравните диаметр, материал и способ монтажа.',
@@ -723,6 +755,20 @@ class CatalogController extends Controller
                     'text' => 'Пресс-фитинги, резьбовые и компрессионные соединения, трубы и комплектующие одной совместимой системы.',
                     'url' => url('/truby-i-fitingi').'?brand='.$varmegaBrand->id,
                     'button' => 'Все товары бренда',
+                ];
+            }
+        }
+
+        if ($category->slug === 'schetchiki-gaza') {
+            $belomoBrand = $brands->firstWhere('slug', 'belomo');
+
+            if ($belomoBrand) {
+                $catalogSpotlight = [
+                    'eyebrow' => 'Белорусский производитель',
+                    'title' => 'Газовые счетчики БелОМО',
+                    'text' => 'Бытовые диафрагменные СГД и СГМН, а также ультразвуковые СКАТ. Подберите исполнение по расходу газа, направлению потока и монтажной длине.',
+                    'url' => url('/brands/belomo'),
+                    'button' => 'Каталог БелОМО',
                 ];
             }
         }
@@ -764,12 +810,39 @@ class CatalogController extends Controller
             'schemaJson',
             'heatPumpArticles',
             'pelletBurnerFaq',
+            'gasMeterFaq',
             'pelletPowerRanges',
             'pelletComparisonProducts',
             'installerRecruitment',
             'catalogIntro',
             'catalogSpotlight'
         ));
+    }
+
+    private function gasMeterFaqItems(): Collection
+    {
+        return collect([
+            [
+                'question' => 'Как выбрать газовый счетчик для квартиры?',
+                'answer' => 'Сверьте максимальный суммарный расход газовых приборов, направление потока, межосевое расстояние и требования проекта газоснабжения. Для одной плиты часто рассматривают G1,6 или G2,5, но окончательное исполнение должен подтвердить проектировщик или газоснабжающая организация.',
+            ],
+            [
+                'question' => 'Чем отличаются счетчики G1,6, G2,5, G4, G6 и G10?',
+                'answer' => 'Маркировка обозначает типоразмер и диапазон расхода. Чем больше суммарное потребление подключенных приборов, тем выше требуется пропускная способность. Выбирать счетчик только по названию класса нельзя — ориентируйтесь на паспортные расходы оборудования и проект.',
+            ],
+            [
+                'question' => 'Как определить левое или правое исполнение?',
+                'answer' => 'Исполнение выбирают по направлению движения газа через счетчик и расположению входного патрубка. Перед заказом сравните направление стрелки, схему подключения и монтажную длину 110, 200 или 250 мм со старым прибором или проектом.',
+            ],
+            [
+                'question' => 'Можно ли самостоятельно заменить счетчик газа?',
+                'answer' => 'Нет. Монтаж, пломбирование и ввод прибора учета выполняются в установленном порядке уполномоченной организацией. До покупки согласуйте модель и комплект документов с обслуживающей газоснабжающей организацией.',
+            ],
+            [
+                'question' => 'Есть ли у газовых счетчиков документы для установки в Беларуси?',
+                'answer' => 'Для конкретной модификации необходимо проверить паспорт, сведения о поверке и документы о соответствии. Запросите комплект документов у менеджера до оплаты: требования могут различаться по модели и объекту.',
+            ],
+        ]);
     }
 
     private function visibleFilterSuffix(string $name, ?string $suffix): ?string
