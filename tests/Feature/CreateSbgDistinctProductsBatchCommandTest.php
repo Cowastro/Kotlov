@@ -8082,4 +8082,52 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_chistoglass_plus_250ml_fireplace_glass_cleaner(): void
+    {
+        $source = IntegrationSource::query()->create(['code' => 'onec-sbg-unmatched-chistoglass-plus-250', 'name' => '1С СанБизнесГруп', 'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'], 'is_active' => true, 'update_stock' => true]);
+        $category = Category::query()->firstOrCreate(['slug' => 'aksessuary-kaminy'], ['name' => 'Аксессуары для каминов', 'parent_id' => 0]);
+        Product::query()->firstOrCreate(['slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia'], ['category_id' => $category->id, 'sku' => 'KOTLOV-000910', 'name' => 'Nordflam Решетка каминная AERO 90×800 белая', 'price' => 104, 'images' => ['img/products/nordflam/template.jpg'], 'is_active' => true, 'is_archived' => false]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'chistoglass-plus-250-production-row',
+            'external_code' => 'УТ-00000621',
+            'name' => 'Очиститель кам.стекол "ЧистоGLASS" плюс 250 мл',
+            'price_byn' => 6.16,
+            'stock_quantity' => 27,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-db', '--code' => ['УТ-00000621']])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-db', '--code' => ['УТ-00000621'], '--apply' => true])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product()->sole();
+        $brand = Brand::query()->where('slug', 'chistoglass')->sole();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertSame('ЧистоGLASS+ Очиститель каминных стёкол, 250 мл', $product->name);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('Беларусь', $brand->country);
+        $this->assertSame('11.18', $product->price);
+        $this->assertSame('27', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('250 мл', collect($product->specs)->firstWhere('key', 'Объём')['value']);
+        $this->assertSame('Вода, гидроксид натрия', collect($product->specs)->firstWhere('key', 'Состав')['value']);
+        $this->assertSame(['img/products/chistoglass/chistoglass-plus-fireplace-glass-cleaner-250ml.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/chistoglass/chistoglass-plus-fireplace-glass-cleaner-250ml.png'));
+        $this->assertStringContainsString('flagma.by', $product->content_source_url);
+        $this->assertStringContainsString('3–5 минут', $product->content);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('byn', mb_strtolower($product->content));
+
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-db', '--code' => ['УТ-00000621'], '--apply' => true])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }

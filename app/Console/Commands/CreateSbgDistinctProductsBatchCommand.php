@@ -3414,6 +3414,41 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // An independent Belarusian retailer lists the exact concentrated
+    // ChistoGLASS+ 250 ml bottle at 11.18 BYN. The manufacturer/supplier page
+    // confirms the composition, application method and Belarusian origin.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DB = [
+        'УТ-00000621' => [
+            'template_slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia',
+            'allow_unmatched' => true,
+            'category_slug' => 'aksessuary-kaminy',
+            'fragments' => ['Очиститель кам.стекол', 'ЧистоGLASS', '250 мл'],
+            'brand' => [
+                'name' => 'ЧистоGLASS',
+                'slug' => 'chistoglass',
+                'country' => 'Беларусь',
+            ],
+            'name' => 'ЧистоGLASS+ Очиститель каминных стёкол, 250 мл',
+            'retail' => 11.18,
+            'images' => [
+                'img/products/chistoglass/chistoglass-plus-fireplace-glass-cleaner-250ml.png',
+            ],
+            'source_url' => 'https://flagma.by/ochistitel-kaminnyh-styokol-chistoglass-plyus-250-ml-o4911875.html',
+            'short' => 'Концентрированное средство ЧистоGLASS+ для удаления сажи, нагара и загрязнений со стеклянных дверок печей и каминов.',
+            'content' => '<p><strong>ЧистоGLASS+, 250 мл</strong> — концентрированное чистящее средство для стеклянных дверок каминов и печей. Состав размягчает сажу, нагар и запёкшийся налёт.</p><p>Перед применением взболтайте флакон. Равномерно нанесите средство на остывшее стекло, оставьте на 3–5 минут, затем удалите загрязнения тканью или губкой.</p><p><strong>Меры предосторожности:</strong> работайте в перчатках и защищайте глаза. Не допускайте попадания на лакированные, пластиковые, алюминиевые и хромированные поверхности; берегите от детей.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Очиститель каминных стёкол'],
+                ['key' => 'Модель', 'value' => 'ЧистоGLASS+'],
+                ['key' => 'Объём', 'value' => '250 мл'],
+                ['key' => 'Форма', 'value' => 'Жидкость с распылителем'],
+                ['key' => 'Состав', 'value' => 'Вода, гидроксид натрия'],
+                ['key' => 'Назначение', 'value' => 'Удаление сажи, нагара и налёта с каминных стёкол'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+                ['key' => 'Бренд', 'value' => 'ЧистоGLASS'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3524,6 +3559,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-cy' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CY,
             'unmatched-researched-20261014-cz' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CZ,
             'unmatched-researched-20261014-da' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DA,
+            'unmatched-researched-20261014-db' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DB,
             default => null,
         };
 
