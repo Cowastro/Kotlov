@@ -4715,6 +4715,46 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact Vseinstrumenti listing confirms the dual 115/120 mm fit,
+    // 1000 mm length, AISI 430 steel, 0.8 mm wall and 4.2 kg net weight.
+    // The saved exact product photo is clean and contains no retailer watermark.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_ED = [
+        'УТ-00001311' => [
+            'template' => 'PS-011.910',
+            'allow_unmatched' => true,
+            'category_slug' => 'teplosyomniki',
+            'external_id' => '8f0a589f-29e9-11e9-b256-1c1b0d1de7c2',
+            'external_sku' => 'TS.KMP.KNV.0120.72311',
+            'fragments' => ['Конвектор трубный', 'L1000', 'КТр-Р', '430-0,8', 'D120/115(120)'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Конвектор трубный КТр-Р L1000 AISI 430 0,8 мм Ø115/120',
+            'retail' => 180.79,
+            'images' => [
+                'img/products/teplov-i-suhov/convector-ktr-r-l1000-430-08-d120-115-120.jpg',
+            ],
+            'source_url' => 'https://www.vseinstrumenti.ru/product/konvektor-trubnyj-teplovisuhov-l1000-ktr-r-430-0-8-d120-115-120-ts-kmp-knv-0115-72311-ts-kmp-knv-0120-72311-1514140/',
+            'short' => 'Трубный конвектор Теплов и Сухов длиной 1000 мм для дымохода Ø115/120 мм, AISI 430 толщиной 0,8 мм.',
+            'content' => '<p><strong>Теплов и Сухов КТр-Р L1000</strong> — трубный конвектор, который использует тепло дымовых газов для ускорения нагрева помещения. Поворотная диафрагма позволяет регулировать конвективный поток.</p><p>Корпус длиной 1000 мм изготовлен из нержавеющей стали AISI 430 толщиной 0,8 мм. Конвектор подходит для совместимых отопительных и банных печей. Перед монтажом необходимо сверить диаметр патрубка и направление сборки дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Трубный конвектор для дымохода'],
+                ['key' => 'Модель', 'value' => 'КТр-Р L1000'],
+                ['key' => 'Длина', 'value' => '1000 мм'],
+                ['key' => 'Диаметр', 'value' => '115–120 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Вес нетто', 'value' => '4,2 кг'],
+                ['key' => 'Артикул', 'value' => 'TS.KMP.KNV.0120.72311'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4853,6 +4893,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-ea' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EA,
             'unmatched-researched-20261014-eb' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EB,
             'unmatched-researched-20261014-ec' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EC,
+            'unmatched-researched-20261014-ed' => self::BATCH_UNMATCHED_RESEARCHED_20261014_ED,
             default => null,
         };
 

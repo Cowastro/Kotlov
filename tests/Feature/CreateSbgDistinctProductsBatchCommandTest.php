@@ -9778,4 +9778,57 @@ XML;
         $this->assertFileExists(public_path('img/products/teplov-i-suhov/adapter-mono-mm-430-08-d140-150.jpg'));
         $this->assertStringContainsString('virage24.ru', $product->content_source_url);
     }
+
+    public function test_it_creates_the_exact_teplov_i_suhov_l1000_tubular_convector(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-convector-l1000-d120',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(
+            ['slug' => 'teplosyomniki'],
+            ['name' => 'Теплосъёмники', 'parent_id' => 0],
+        );
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-011.910',
+            'name' => 'Конвектор трубный L1000 D150/150 430',
+            'slug' => 'konvektor-trubnyy-l1000-d150-150-ed-test',
+            'price' => 265.53,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '8f0a589f-29e9-11e9-b256-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001311',
+            'external_sku' => 'TS.KMP.KNV.0120.72311',
+            'name' => 'Конвектор трубный L1000 КТр-Р 430-0,8, D120/115(120)',
+            'price_byn' => 180.79,
+            'stock_quantity' => 2,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-ed',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('180.79', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('TS.KMP.KNV.0120.72311', $item->fresh()->external_sku);
+        $this->assertSame('115–120 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('1000 мм', collect($product->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/convector-ktr-r-l1000-430-08-d120-115-120.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/convector-ktr-r-l1000-430-08-d120-115-120.jpg'));
+        $this->assertStringContainsString('vseinstrumenti.ru', $product->content_source_url);
+    }
 }
