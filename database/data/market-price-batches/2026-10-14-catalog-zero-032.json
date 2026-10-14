@@ -1,0 +1,75 @@
+{
+    "code": "2026-10-14-catalog-zero-032",
+    "observed_at": "2026-10-14T07:08:00+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "TMF",
+        "skus": ["PS-002.731", "PS-002.733", "PS-002.735", "PS-002.736", "PS-002.738"],
+        "after_id": 2729,
+        "limit": 5,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [
+        {"code": "web-kochegar-by-20261014", "name": "kochegar.by", "kind": "competitor", "base_url": "https://kochegar.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Независимая карточка точной модели."},
+        {"code": "web-vishop-by-20261014", "name": "Vishop.by", "kind": "competitor", "base_url": "https://vishop.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Независимые карточки точных моделей."},
+        {"code": "web-amazonka-by-20261014", "name": "Amazonka.by", "kind": "competitor", "base_url": "https://amazonka.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Независимые карточки точных моделей."},
+        {"code": "web-banipechi-by-20261014", "name": "BANIPECHI.BY", "kind": "competitor", "base_url": "https://banipechi.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Независимые карточки точных моделей."},
+        {"code": "web-yoursale-by-20261014", "name": "Your Sale", "kind": "competitor", "base_url": "https://www.yoursale.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Независимая карточка точной угольной модификации."},
+        {"code": "web-ultraprice-by-20261014", "name": "ULTRAPRICE", "kind": "competitor", "base_url": "https://ultraprice.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Независимая карточка точной угольной модификации."},
+        {"code": "web-tecno-by-20261014", "name": "TECNO.BY", "kind": "competitor", "base_url": "https://www.tecno.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Независимое предложение точной угольной модификации."}
+    ],
+    "products": [
+        {
+            "sku": "PS-002.731",
+            "review_reason": "Четыре независимых белорусских источника подтверждают TMF Огонь-батарея 9 Лайт; применение допустимо только после серверной проверки закупки и маржи.",
+            "force_consultation_hold": false,
+            "observations": [
+                {"source": "web-kochegar-by-20261014", "url": "https://kochegar.by/katalog/otopitelnoe-obrudovanie/otopitelnye-pechi/pech-otopitelnaya-termofor-ogon-batareya-9-lajt-antraczit.html", "external_name": "Печь отопительная Термофор ОГОНЬ-БАТАРЕЯ 9 ЛАЙТ антрацит", "model": "TMF Огонь-батарея 9 Лайт антрацит", "package": "стальная дверца без стекла", "observed_price": 1055, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Точная модель 9 Лайт антрацит, 200 м³, 13 кВт, цена 1 055 BYN."},
+                {"source": "web-vishop-by-20261014", "url": "https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/pechi-i-kaminy-dlya-doma/otopitelnye-pechi-termofor/otopitelnaya-pech-termofor-ogon-batareya-lait/otopitelnaya-pech-termofor-ogon-batareya-9-lait-antracit/", "external_name": "Отопительная печь Термофор Огонь-батарея 9 ЛАЙТ антрацит", "model": "TMF Огонь-батарея 9 Лайт антрацит", "package": "стальная дверца без стекла", "observed_price": 1055, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Точная модель 9 Лайт антрацит, цена 1 055 BYN, есть в наличии."},
+                {"source": "web-amazonka-by-20261014", "url": "https://amazonka.by/otopitelnaya-pech-termofor-ogon-batareya-9-layt-antratsit", "external_name": "Отопительная печь Термофор Огонь-батарея 9 Лайт антрацит", "model": "TMF Огонь-батарея 9 Лайт антрацит", "package": "дверца без стекла", "observed_price": 1101, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Точная модель 9 Лайт антрацит, цена 1 101 BYN, в наличии."},
+                {"source": "web-banipechi-by-20261014", "url": "https://banipechi.by/catalog/pechi-i-kaminy-dlya-doma-i-dachi/otopitelnye-pechi-dlya-doma-i-dachi-termofor/otopitelnye-pechi-dlya-doma-i-dachi-termofor-ogon-batareya", "external_name": "Отопительная печь Термофор Огонь-батарея 9 Лайт антрацит", "model": "TMF Огонь-батарея 9 Лайт антрацит", "package": "стальная дверца", "observed_price": 998.35, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Листинг точной модели 9 Лайт антрацит, 200 м³, цена 998.35 BYN, в наличии."}
+            ],
+            "research": {"summary": "Четыре независимых предложения дают диапазон 998.35–1 101 BYN и медиану 1 055 BYN.", "confidence": "high", "search_queries": ["Огонь-батарея 9 Лайт антрацит цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:08:00+00:00"}
+        },
+        {
+            "sku": "PS-002.733",
+            "review_reason": "Три независимых белорусских источника подтверждают TMF Огонь-батарея 11 Лайт; применение допустимо только после серверной проверки закупки и маржи.",
+            "force_consultation_hold": false,
+            "observations": [
+                {"source": "web-banipechi-by-20261014", "url": "https://banipechi.by/catalog/pechi-i-kaminy-dlya-doma-i-dachi/otopitelnye-pechi-dlya-doma-i-dachi-termofor/otopitelnye-pechi-dlya-doma-i-dachi-ternofor-ogon-batareya-11-lite-antracit", "external_name": "Отопительная печь Термофор Огонь-батарея 11 Лайт антрацит", "model": "TMF Огонь-батарея 11 Лайт антрацит", "package": "стальная дверца", "observed_price": 1095.59, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Карточка точной модели 11 Лайт антрацит, 250 м³, цена 1 095.59 BYN, в наличии."},
+                {"source": "web-vishop-by-20261014", "url": "https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/pechi-i-kaminy-dlya-doma/otopitelnye-pechi-termofor/otopitelnaya-pech-termofor-ogon-batareya-lait/", "external_name": "Отопительная печь Термофор Огонь-батарея 11 ЛАЙТ антрацит", "model": "TMF Огонь-батарея 11 Лайт антрацит", "package": "стальная дверца", "observed_price": 1155, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Листинг точной модели 11 Лайт антрацит, 250 м³, цена 1 155 BYN, есть в наличии."},
+                {"source": "web-amazonka-by-20261014", "url": "https://amazonka.by/otopitelnaya-pech-termofor-ogon-batareya-11-layt-antratsit", "external_name": "Отопительная печь Термофор Огонь-батарея 11 Лайт антрацит", "model": "TMF Огонь-батарея 11 Лайт антрацит", "package": "дверца без стекла", "observed_price": 1222, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "order", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Карточка точной модели 11 Лайт антрацит с ценой 1 222 BYN."}
+            ],
+            "research": {"summary": "Три независимых предложения дают диапазон 1 095.59–1 222 BYN и медиану 1 155 BYN.", "confidence": "high", "search_queries": ["Огонь-батарея 11 Лайт антрацит BYN -kotlov.by"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:08:00+00:00"}
+        },
+        {
+            "sku": "PS-002.735",
+            "review_reason": "Три независимых белорусских источника подтверждают точную угольную комплектацию TMF Студент; применение допустимо только после серверной проверки закупки и маржи.",
+            "force_consultation_hold": false,
+            "observations": [
+                {"source": "web-yoursale-by-20261014", "url": "https://www.yoursale.by/stove/tmf/student10308", "external_name": "TMF Студент Уголь (ЧД, ЧК, ЗГ, ТВ)", "model": "TMF Студент Уголь", "package": "ЧД, ЧК, ЗГ, ТВ", "observed_price": 1495.06, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Точная угольная комплектация, 9 кВт, 150 м³, цена 1 495.06 BYN, в наличии."},
+                {"source": "web-ultraprice-by-20261014", "url": "https://ultraprice.by/product/svobodnostoyashchaya-pech-kamin-tmf-student-ugol-chd-chk-zg-tv", "external_name": "TMF Студент Уголь (ЧД, ЧК, ЗГ, ТВ)", "model": "TMF Студент Уголь", "package": "ЧД, ЧК, ЗГ, ТВ", "observed_price": 1406.50, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Точная угольная комплектация, 9 кВт, 150 м³, цена 1 406.50 BYN, в наличии."},
+                {"source": "web-tecno-by-20261014", "url": "https://www.tecno.by/stove", "external_name": "TMF Студент Уголь (ЧД, ЧК, ЗГ, ТВ)", "model": "TMF Студент Уголь", "package": "ЧД, ЧК, ЗГ, ТВ", "observed_price": 1423.10, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "unknown", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Листинг точной угольной комплектации, 9 кВт, 150 м³, цена 1 423.10 BYN."}
+            ],
+            "research": {"summary": "Три независимых предложения дают диапазон 1 406.50–1 495.06 BYN и медиану 1 423.10 BYN.", "confidence": "high", "search_queries": ["TMF Студент Уголь цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:08:00+00:00"}
+        },
+        {
+            "sku": "PS-002.736",
+            "review_reason": "Найдены только собственные региональные карточки KOTLOV для TMF Инженер Уголь; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых точных ценовых предложений в Беларуси не найдено.", "confidence": "medium", "search_queries": ["TMF Инженер Уголь BYN", "site:yoursale.by Инженер Уголь TMF", "site:ultraprice.by Инженер Уголь TMF"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:08:00+00:00"}
+        },
+        {
+            "sku": "PS-002.738",
+            "review_reason": "Найдены только собственные региональные карточки KOTLOV для TMF Профессор Уголь; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых точных ценовых предложений в Беларуси не найдено.", "confidence": "medium", "search_queries": ["TMF Профессор Уголь BYN", "site:yoursale.by Профессор Уголь TMF"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:08:00+00:00"}
+        }
+    ],
+    "failed_products": []
+}

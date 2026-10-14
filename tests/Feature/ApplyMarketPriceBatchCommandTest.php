@@ -1308,4 +1308,67 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             $this->assertTrue((bool) Product::query()->where('sku', $sku)->value('requires_price_confirmation'));
         }
     }
+
+    public function test_thirty_second_catalog_zero_price_batch_prices_only_three_independently_confirmed_models(): void
+    {
+        User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Тест тридцать второго пакета нулевых цен каталога',
+            'slug' => 'catalog-zero-price-batch-thirty-two-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'catalog-zero-price-batch-thirty-two-supplier',
+            'name' => 'Поставщик для тридцать второго пакета',
+        ]);
+        $costs = [
+            'PS-002.731' => 800,
+            'PS-002.733' => 800,
+            'PS-002.735' => 1000,
+            'PS-002.736' => 1000,
+            'PS-002.738' => 1500,
+        ];
+
+        foreach ($costs as $sku => $cost) {
+            $product = Product::query()->create([
+                'category_id' => $category->id,
+                'name' => 'Точная production-модель '.$sku,
+                'slug' => 'catalog-zero-price-batch-thirty-two-'.strtolower(str_replace('.', '-', $sku)),
+                'sku' => $sku,
+                'price' => 0,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+            SupplierProduct::query()->create([
+                'supplier_id' => $supplier->id,
+                'product_id' => $product->id,
+                'supplier_article' => 'SUP-'.$sku,
+                'price_byn' => $cost,
+                'in_stock' => true,
+                'stock_quantity' => 1,
+                'last_stock_synced_at' => now(),
+            ]);
+        }
+
+        $this->artisan('catalog:apply-market-price-batch', [
+            'batch' => '2026-10-14-catalog-zero-032',
+            '--apply' => true,
+        ])
+            ->expectsOutputToContain('metric.status=applied')
+            ->expectsOutputToContain('metric.products=5')
+            ->expectsOutputToContain('metric.observations=10')
+            ->expectsOutputToContain('metric.prices_applied=3')
+            ->expectsOutputToContain('metric.consultation_holds=2')
+            ->assertSuccessful();
+
+        $this->assertSame('1055.00', Product::query()->where('sku', 'PS-002.731')->value('price'));
+        $this->assertSame('1155.00', Product::query()->where('sku', 'PS-002.733')->value('price'));
+        $this->assertSame('1423.10', Product::query()->where('sku', 'PS-002.735')->value('price'));
+        foreach (['PS-002.736', 'PS-002.738'] as $sku) {
+            $this->assertSame('0.00', Product::query()->where('sku', $sku)->value('price'));
+            $this->assertTrue((bool) Product::query()->where('sku', $sku)->value('requires_price_confirmation'));
+        }
+    }
 }
