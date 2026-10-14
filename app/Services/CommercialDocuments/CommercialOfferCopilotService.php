@@ -18,29 +18,7 @@ class CommercialOfferCopilotService
     /** @return array<string, mixed> */
     public function analyze(string $text, ?bool $useAi = null): array
     {
-        $result = $this->offers->prepareText($text, $useAi);
-        $result['match_details'] = collect((array) ($result['match_details'] ?? []))
-            ->map(function (array $detail): array {
-                if (($detail['quality'] ?? null) === 'rejected') {
-                    return $detail + [
-                        'purchase_price' => null,
-                        'margin_percent' => null,
-                    ];
-                }
-
-                $pricing = $this->pricing((int) $detail['product_id'], (float) $detail['price']);
-
-                return array_merge($detail, [
-                    'supplier' => $detail['supplier'] ?: ($pricing['supplier_name'] ?? null),
-                    'availability' => ($pricing['stock_label'] ?? null) ?: $detail['availability'],
-                    'purchase_price' => $pricing['purchase_price'] ?? null,
-                    'margin_percent' => $pricing['margin_percent'] ?? null,
-                ]);
-            })
-            ->values()
-            ->all();
-
-        return $result;
+        return $this->offers->prepareText($text, $useAi);
     }
 
     /** @param array<int|string> $productIds

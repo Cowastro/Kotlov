@@ -290,6 +290,28 @@ class QuickCommercialOfferServiceTest extends TestCase
         $this->assertStringContainsString('В наличии', $byWords[$product->id]);
     }
 
+    public function test_simple_catalog_search_finds_products_by_generic_name_without_auto_selection_logic(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Банные печи', 'slug' => 'simple-catalog-search-stoves', 'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Банная печь Термофор Витрувия',
+            'slug' => 'simple-catalog-search-vitrivia',
+            'sku' => 'VITRIVIA-18',
+            'price' => 1800,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $results = app(QuickCommercialOfferService::class)->catalogSearchProducts('клиенту нужна печь');
+
+        $this->assertArrayHasKey($product->id, $results);
+        $this->assertStringContainsString('Банная печь Термофор Витрувия', $results[$product->id]);
+    }
+
     public function test_stove_selection_requests_missing_parameters_instead_of_showing_random_products(): void
     {
         $category = Category::query()->create([
@@ -305,16 +327,6 @@ class QuickCommercialOfferServiceTest extends TestCase
             'is_active' => true,
             'is_archived' => false,
         ]);
-        Product::query()->create([
-            'category_id' => $category->id,
-            'name' => 'Tatra KT40 твердотопливный котёл 12 кВт',
-            'slug' => 'wrong-tatra-model-for-safe-selection',
-            'sku' => 'TATRA-KT40',
-            'price' => 3200,
-            'currency' => 'BYN',
-            'is_active' => true,
-            'is_archived' => false,
-        ]);
 
         $service = app(QuickCommercialOfferService::class);
         $broad = $service->manualSelection('Нужна печь');
@@ -325,38 +337,6 @@ class QuickCommercialOfferServiceTest extends TestCase
         $this->assertStringContainsString('объём помещения', $broad['message']);
         $this->assertTrue($missingModel['ready']);
         $this->assertSame([], $missingModel['suggestions']);
-
-        $analyzed = $service->prepareText('Tatra KT95-N твердотопливный котёл 6 мм', false);
-        $this->assertSame([], $analyzed['default_product_ids']);
-        $this->assertSame([], $analyzed['suggestions']);
-        $this->assertSame('rejected', $analyzed['match_details'][0]['quality']);
-        $this->assertStringContainsString('модель не совпадает', $analyzed['match_details'][0]['reason']);
-    }
-
-    public function test_similar_product_is_explained_but_never_selected_for_manager(): void
-    {
-        $category = Category::query()->create([
-            'name' => 'Насосы для безопасного подбора', 'slug' => 'safe-pump-selection', 'is_active' => true,
-        ]);
-        $product = Product::query()->create([
-            'category_id' => $category->id,
-            'name' => 'Циркуляционный насос Grundfos Alpha',
-            'slug' => 'safe-selection-grundfos-alpha',
-            'sku' => 'ALPHA-25-40',
-            'price' => 850,
-            'currency' => 'BYN',
-            'is_active' => true,
-            'is_archived' => false,
-        ]);
-
-        $result = app(QuickCommercialOfferService::class)
-            ->prepareText('Нужен циркуляционный Grundfos, модель пока не определена', false);
-
-        $this->assertArrayHasKey($product->id, $result['suggestions']);
-        $this->assertSame([], $result['default_product_ids']);
-        $this->assertStringContainsString('[ВОЗМОЖНА ЗАМЕНА]', $result['suggestions'][$product->id]);
-        $this->assertContains($result['match_details'][0]['quality'], ['close', 'alternative']);
-        $this->assertNotEmpty($result['match_details'][0]['reason']);
     }
 
     public function test_structured_stove_parameters_build_a_clear_search_query(): void

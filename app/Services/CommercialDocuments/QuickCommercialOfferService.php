@@ -6,6 +6,7 @@ use App\Models\CrmMailThread;
 use App\Models\Product;
 use App\Services\Crm\BelarusCompanyLookup;
 use App\Services\CrmMail\CrmMailPdfTextExtractor;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -52,7 +53,7 @@ class QuickCommercialOfferService
     }
 
     /**
-     * @return array{suggestions: array<int, string>, default_product_ids: list<int>, product_quantities: array<int, float>, analysis_summary: string, analysis: array<string, mixed>, unmatched_items: array<int, array<string, mixed>>, match_details: list<array<string, mixed>>, clarification_questions: list<string>}
+     * @return array{suggestions: array<int, string>, default_product_ids: list<int>, product_quantities: array<int, float>, analysis_summary: string, analysis: array<string, mixed>, unmatched_items: array<int, array<string, mixed>>}
      */
     public function prepareText(string $text, ?bool $useAi = null): array
     {
@@ -75,80 +76,43 @@ class QuickCommercialOfferService
         $tokens = $this->tokens($searchText);
         $products = $this->candidateProducts($tokens);
 
-        $guidance = $this->selectionGuidance($text);
         $ranked = $products
             ->map(fn (Product $product): array => [
                 'product' => $product,
                 'score' => $this->score($product, $tokens, $searchText),
             ])
             ->filter(fn (array $item): bool => $item['score'] >= 60)
-            ->map(fn (array $item): array => $item + $this->matchAssessment(
-                $item['product'],
-                $tokens,
-                $searchText,
-                $item['score'],
-            ))
             ->sortByDesc(fn (array $item): array => [$item['score'], (int) $item['product']->in_stock, (int) $item['product']->views_count])
             ->values();
 
-        if (! $guidance['ready']) {
-            $ranked = collect();
-        }
-
-        $selectable = $ranked->whereNotIn('quality', ['rejected'])->values();
-
-        $suggestions = $selectable->take(12)->mapWithKeys(function (array $item): array {
+        $suggestions = $ranked->take(12)->mapWithKeys(function (array $item): array {
             /** @var Product $product */
             $product = $item['product'];
             $parts = [
-                $item['quality'] === 'exact' ? '[ТОЧНО]' : '[ВОЗМОЖНА ЗАМЕНА]',
                 $product->name,
                 $product->sku ? 'арт. '.$product->sku : null,
                 (float) $product->price > 0 ? number_format((float) $product->price, 2, ',', ' ').' BYN' : 'цена не указана',
                 $product->availabilityLabel(),
-                $item['reason'],
             ];
 
             return [$product->id => implode(' · ', array_filter($parts))];
         })->all();
 
-        $exactMatches = $selectable->where('quality', 'exact');
+        $exactMatches = $ranked
+            ->filter(fn (array $item): bool => $this->sourceContainsExactIdentifier($item['product'], $searchText));
         $defaults = $exactMatches->count() === 1
             ? [(int) $exactMatches->first()['product']->id]
             : [];
 
-        $details = $ranked->take(16)->map(function (array $item): array {
-            /** @var Product $product */
-            $product = $item['product'];
-
-            return [
-                'product_id' => $product->id,
-                'name' => $product->name,
-                'sku' => $product->sku,
-                'quality' => $item['quality'],
-                'reason' => $item['reason'],
-                'conflicts' => $item['conflicts'],
-                'price' => (float) $product->price,
-                'availability' => $product->availabilityLabel(),
-                'supplier' => $product->supplierProducts
-                    ->map(fn ($offer): ?string => $offer->supplier?->name ?: $offer->supplier_name)
-                    ->filter()->unique()->first(),
-            ];
-        })->values()->all();
-
-        $summary = $this->analysisSummary($analysis).' '.$this->selectionSummary($guidance, $details);
-
         return [
             'suggestions' => $suggestions,
             'default_product_ids' => $defaults,
-            'product_quantities' => $selectable->take(12)->mapWithKeys(fn (array $item): array => [
+            'product_quantities' => $ranked->take(12)->mapWithKeys(fn (array $item): array => [
                 $item['product']->id => $this->quantityForProduct($item['product'], $analysis['items']),
             ])->all(),
-            'analysis_summary' => trim($summary),
+            'analysis_summary' => $this->analysisSummary($analysis),
             'analysis' => $analysis,
-            'unmatched_items' => $this->unmatchedItems($analysis['items'], $selectable),
-            'match_details' => $details,
-            'clarification_questions' => $guidance['questions'],
+            'unmatched_items' => $this->unmatchedItems($analysis['items'], $ranked),
         ];
     }
 
@@ -227,15 +191,89 @@ class QuickCommercialOfferService
             ->all();
     }
 
+    /** @return array<int, string> */
+    public function catalogSearchProducts(string $search): array
+    {
+        $search = trim($search);
+        preg_match_all('/[\p{L}\p{N}][\p{L}\p{N}.\/_-]{1,}/u', Str::lower($search), $matches);
+        $tokens = collect($matches[0] ?? [])
+            ->map(fn (string $token): string => trim($token, ".,;:()[]{}<>\"'"))
+            ->filter(fn (string $token): bool => mb_strlen($token) >= 2)
+            ->reject(fn (string $token): bool => in_array($token, [
+                'нужен', 'нужна', 'нужно', 'найти', 'подобрать', 'покажи', 'клиенту', 'товар', 'товары',
+            ], true))
+            ->unique()
+            ->values();
+
+        if ($tokens->isEmpty()) {
+            return [];
+        }
+
+        return Product::query()
+            ->with(['brand', 'category', 'supplierProducts.supplier'])
+            ->where('is_active', true)
+            ->where('is_archived', false)
+            ->where(function (Builder $query) use ($search, $tokens): void {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhere('h1', 'like', "%{$search}%");
+
+                foreach ($tokens->take(10) as $token) {
+                    $query->orWhere('name', 'like', "%{$token}%")
+                        ->orWhere('sku', 'like', "%{$token}%")
+                        ->orWhere('h1', 'like', "%{$token}%")
+                        ->orWhereHas('brand', fn (Builder $brand): Builder => $brand->where('name', 'like', "%{$token}%"))
+                        ->orWhereHas('category', fn (Builder $category): Builder => $category->where('name', 'like', "%{$token}%"))
+                        ->orWhereHas('supplierProducts', fn (Builder $offer): Builder => $offer
+                            ->where('supplier_name', 'like', "%{$token}%")
+                            ->orWhere('supplier_article', 'like', "%{$token}%")
+                            ->orWhereHas('supplier', fn (Builder $supplier): Builder => $supplier->where('name', 'like', "%{$token}%")));
+                }
+            })
+            ->limit(250)
+            ->get()
+            ->map(function (Product $product) use ($search, $tokens): array {
+                $haystack = Str::lower(implode(' ', array_filter([
+                    $product->name,
+                    $product->h1,
+                    $product->sku,
+                    $product->brand?->name,
+                    $product->category?->name,
+                    $product->supplierProducts->pluck('supplier_name')->implode(' '),
+                    $product->supplierProducts->pluck('supplier_article')->implode(' '),
+                    $product->supplierProducts->pluck('supplier.name')->implode(' '),
+                ])));
+                $score = Str::contains($haystack, Str::lower($search)) ? 200 : 0;
+                $score += $tokens->sum(function (string $token) use ($product, $haystack): int {
+                    if (Str::lower((string) $product->sku) === $token) {
+                        return 300;
+                    }
+
+                    return Str::contains($haystack, $token) ? 40 : 0;
+                });
+
+                return ['product' => $product, 'score' => $score];
+            })
+            ->filter(fn (array $item): bool => $item['score'] > 0)
+            ->sortByDesc(fn (array $item): array => [
+                $item['score'],
+                (int) $item['product']->in_stock,
+                (int) $item['product']->views_count,
+            ])
+            ->take(30)
+            ->mapWithKeys(fn (array $item): array => [
+                $item['product']->id => $this->productLabel($item['product']),
+            ])
+            ->all();
+    }
+
     /** @return array{ready: bool, message: string, suggestions: array<int, string>} */
     public function manualSelection(string $query): array
     {
         $guidance = $this->selectionGuidance($query);
-        $matched = $guidance['ready'] ? $this->prepareText($query, false) : null;
 
         return $guidance + [
-            'suggestions' => $matched['suggestions'] ?? [],
-            'match_details' => $matched['match_details'] ?? [],
+            'suggestions' => $guidance['ready'] ? $this->searchProducts($query) : [],
         ];
     }
 
@@ -272,7 +310,7 @@ class QuickCommercialOfferService
         ])->filter()->implode(', ');
     }
 
-    /** @return array{ready: bool, message: string, questions: list<string>} */
+    /** @return array{ready: bool, message: string} */
     public function selectionGuidance(string $query): array
     {
         $query = trim($query);
@@ -286,7 +324,6 @@ class QuickCommercialOfferService
                 'message' => $hasModel
                     ? 'Указана конкретная модель. Показываем только достаточно близкие совпадения; выбор остаётся за менеджером.'
                     : 'Показываем только достаточно близкие совпадения. Выберите товар вручную.',
-                'questions' => [],
             ];
         }
 
@@ -302,17 +339,12 @@ class QuickCommercialOfferService
         }
 
         if ($missing === []) {
-            return [
-                'ready' => true,
-                'message' => 'Основные параметры указаны. Выберите подходящий товар вручную.',
-                'questions' => [],
-            ];
+            return ['ready' => true, 'message' => 'Основные параметры указаны. Выберите подходящий товар вручную.'];
         }
 
         return [
             'ready' => false,
             'message' => "Сначала уточните у клиента:\n• ".implode("\n• ", $missing)."\nПосле уточнения повторите подбор — товары автоматически в КП не добавляются.",
-            'questions' => $missing,
         ];
     }
 
@@ -330,7 +362,6 @@ class QuickCommercialOfferService
     private function candidateProducts(Collection $tokens): Collection
     {
         $query = Product::query()
-            ->with(['brand', 'category', 'supplierProducts.supplier'])
             ->where('is_active', true)
             ->where('is_archived', false);
 
@@ -420,155 +451,6 @@ class QuickCommercialOfferService
         }
 
         return preg_match('/(?<![\p{L}\p{N}])'.preg_quote($sku, '/').'(?![\p{L}\p{N}])/ui', $source) === 1;
-    }
-
-    /**
-     * @param  Collection<int, string>  $tokens
-     * @return array{quality: string, reason: string, conflicts: list<string>}
-     */
-    private function matchAssessment(Product $product, Collection $tokens, string $source, int $score): array
-    {
-        if ($this->sourceContainsExactIdentifier($product, $source)) {
-            return [
-                'quality' => 'exact',
-                'reason' => 'точно совпал артикул',
-                'conflicts' => [],
-            ];
-        }
-
-        $haystack = $this->productSearchText($product);
-        $modelIdentifiers = $this->modelIdentifiers($source);
-        $matchedModels = $modelIdentifiers->filter(fn (string $identifier): bool => Str::contains($haystack, $identifier));
-        $conflicts = $this->technicalConflicts($source, $haystack);
-
-        if ($modelIdentifiers->isNotEmpty() && $matchedModels->isEmpty()) {
-            return [
-                'quality' => 'rejected',
-                'reason' => 'указанная модель не совпадает',
-                'conflicts' => ['В карточке товара не найдена модель '.implode(', ', $modelIdentifiers->all()).'.'],
-            ];
-        }
-
-        if ($conflicts !== []) {
-            return [
-                'quality' => 'rejected',
-                'reason' => 'характеристики противоречат запросу',
-                'conflicts' => $conflicts,
-            ];
-        }
-
-        $matchedTokens = $tokens->filter(fn (string $token): bool => Str::contains($haystack, $token));
-        $coverage = $tokens->isEmpty() ? 0 : $matchedTokens->count() / $tokens->count();
-        $reason = $matchedModels->isNotEmpty()
-            ? 'совпала модель '.$matchedModels->implode(', ')
-            : 'совпали ключевые слова: '.$matchedTokens->take(3)->implode(', ');
-
-        return [
-            'quality' => ($matchedModels->isNotEmpty() || ($score >= 120 && $coverage >= 0.6)) ? 'close' : 'alternative',
-            'reason' => $reason !== 'совпали ключевые слова: ' ? $reason : 'требует проверки менеджером',
-            'conflicts' => [],
-        ];
-    }
-
-    private function productSearchText(Product $product): string
-    {
-        return Str::lower(implode(' ', array_filter([
-            $product->name,
-            $product->h1,
-            $product->sku,
-            $product->brand?->name,
-            $product->category?->name,
-            $product->short_description,
-            json_encode($product->specs, JSON_UNESCAPED_UNICODE),
-        ])));
-    }
-
-    /** @return Collection<int, string> */
-    private function modelIdentifiers(string $text): Collection
-    {
-        return $this->tokens($text)
-            ->filter(function (string $token): bool {
-                if (mb_strlen($token) < 3 || ! preg_match('/\p{L}/u', $token) || ! preg_match('/\d/u', $token)) {
-                    return false;
-                }
-
-                return preg_match('/^\d+(?:[.,]\d+)?(?:kw|квт|mm|мм|v|в|m3|м3)$/ui', $token) !== 1;
-            })
-            ->values();
-    }
-
-    /** @return list<string> */
-    private function technicalConflicts(string $source, string $productText): array
-    {
-        $requested = $this->technicalValues($source);
-        $candidate = $this->technicalValues($productText);
-        $conflicts = [];
-
-        foreach ($requested as $unit => $values) {
-            if (! isset($candidate[$unit]) || array_intersect($values, $candidate[$unit]) !== []) {
-                continue;
-            }
-
-            $conflicts[] = $this->technicalUnitLabel($unit).': запрошено '.implode('/', $values)
-                .', у товара '.implode('/', $candidate[$unit]).'.';
-        }
-
-        return $conflicts;
-    }
-
-    /** @return array<string, list<string>> */
-    private function technicalValues(string $text): array
-    {
-        preg_match_all('/(\d+(?:[.,]\d+)?)\s*(квт|kw|мм|mm|вольт|v|м[³3]|m3)\b/ui', Str::lower($text), $matches, PREG_SET_ORDER);
-        $values = [];
-
-        foreach ($matches as $match) {
-            $unit = match (Str::lower($match[2])) {
-                'квт', 'kw' => 'power',
-                'мм', 'mm' => 'diameter',
-                'вольт', 'v' => 'voltage',
-                default => 'volume',
-            };
-            $values[$unit][] = str_replace(',', '.', $match[1]);
-            $values[$unit] = array_values(array_unique($values[$unit]));
-        }
-
-        return $values;
-    }
-
-    private function technicalUnitLabel(string $unit): string
-    {
-        return match ($unit) {
-            'power' => 'Мощность, кВт',
-            'diameter' => 'Размер/диаметр, мм',
-            'voltage' => 'Напряжение, В',
-            default => 'Объём, м³',
-        };
-    }
-
-    /** @param array<string, mixed> $guidance
-     * @param  list<array<string, mixed>>  $details
-     */
-    private function selectionSummary(array $guidance, array $details): string
-    {
-        if (! $guidance['ready']) {
-            return $guidance['message'];
-        }
-
-        $counts = collect($details)->countBy('quality');
-        $parts = [
-            ($counts['exact'] ?? 0) > 0 ? 'Точных совпадений: '.$counts['exact'].'.' : null,
-            (($counts['close'] ?? 0) + ($counts['alternative'] ?? 0)) > 0
-                ? 'Возможных замен: '.(($counts['close'] ?? 0) + ($counts['alternative'] ?? 0)).' — требуется подтверждение менеджера.'
-                : null,
-            ($counts['rejected'] ?? 0) > 0 ? 'Исключено из-за несовпадения: '.$counts['rejected'].'.' : null,
-        ];
-
-        if (($counts['exact'] ?? 0) === 0 && (($counts['close'] ?? 0) + ($counts['alternative'] ?? 0)) === 0) {
-            $parts[] = 'Подходящих товаров в каталоге не найдено. Уточните модель или параметры.';
-        }
-
-        return implode(' ', array_filter($parts));
     }
 
     /** @return array{string, string} */

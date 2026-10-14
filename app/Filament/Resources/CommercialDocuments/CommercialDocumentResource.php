@@ -188,83 +188,58 @@ class CommercialDocumentResource extends Resource
                     ])->columnSpanFull(),
                 ]),
 
-            Section::make('ИИ-помощник подбора')
-                ->description('Вставьте список, запрос клиента или текст письма. Помощник найдёт товары и количества, но ничего не добавит и не изменит без подтверждения менеджера.')
-                ->icon('heroicon-o-sparkles')
+            Section::make('Подбор товаров из базы')
+                ->description('Введите название, артикул, бренд или поставщика. Отметьте нужные товары и добавьте их в КП.')
+                ->icon('heroicon-o-magnifying-glass')
                 ->columnSpanFull()
                 ->schema([
-                    Textarea::make('copilot_request')
-                        ->label('Что нужно подобрать')
-                        ->placeholder("Например:\nНасос Grundfos Comfort 15-14 — 2 шт.\nКотёл Tatra KT30 — 1 шт.")
-                        ->rows(5)
+                    TextInput::make('catalog_search')
+                        ->label('Поиск по базе товаров')
+                        ->placeholder('Например: Tatra KT95-N, Grundfos, PS-008.538 или название поставщика')
                         ->dehydrated(false)
                         ->columnSpanFull(),
-                    Hidden::make('copilot_suggestion_ids')->default([])->dehydrated(false),
-                    Hidden::make('copilot_suggestion_labels')->default([])->dehydrated(false),
-                    Hidden::make('copilot_quantities')->default([])->dehydrated(false),
-                    Hidden::make('copilot_match_details')->default([])->dehydrated(false),
-                    Hidden::make('copilot_clarification_questions')->default([])->dehydrated(false),
-                    Textarea::make('copilot_summary')
-                        ->label('Что распознано и чего не хватает')
-                        ->rows(5)
-                        ->disabled()
-                        ->dehydrated(false)
-                        ->columnSpanFull(),
-                    Placeholder::make('copilot_match_report')
-                        ->label('Проверка вариантов')
-                        ->content(fn (Get $get): HtmlString => self::copilotMatchReportHtml(
-                            (array) $get('copilot_match_details'),
-                            (array) $get('copilot_clarification_questions'),
-                        ))
-                        ->columnSpanFull(),
-                    Select::make('copilot_product_ids')
-                        ->label('Подтверждённые менеджером товары')
-                        ->helperText('Точный артикул может быть отмечен заранее. Возможные замены никогда не отмечаются автоматически — выберите их только после проверки.')
+                    Hidden::make('catalog_result_labels')->default([])->dehydrated(false),
+                    Select::make('catalog_product_ids')
+                        ->label('Найденные товары')
+                        ->helperText('Отметьте один или несколько товаров. Без вашего выбора ничего в КП не добавится.')
                         ->multiple()
                         ->searchable()
                         ->dehydrated(false)
-                        ->options(fn (Get $get): array => (array) $get('copilot_suggestion_labels'))
-                        ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->searchProducts($search))
+                        ->options(fn (Get $get): array => (array) $get('catalog_result_labels'))
+                        ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->catalogSearchProducts($search))
                         ->getOptionLabelsUsing(fn (array $values): array => app(QuickCommercialOfferService::class)->productLabels($values))
                         ->columnSpanFull(),
                     SchemaActions::make([
-                        Action::make('analyze_copilot_request')
-                            ->label('Подобрать товары')
-                            ->icon('heroicon-o-sparkles')
+                        Action::make('search_catalog')
+                            ->label('Найти в базе')
+                            ->icon('heroicon-o-magnifying-glass')
                             ->color('warning')
                             ->action(function (Get $get, Set $set): void {
-                                $request = trim((string) $get('copilot_request'));
-                                if ($request === '') {
-                                    Notification::make()->warning()->title('Вставьте список товаров или текст запроса')->send();
+                                $search = trim((string) $get('catalog_search'));
+                                if ($search === '') {
+                                    Notification::make()->warning()->title('Введите название, артикул или бренд')->send();
 
                                     return;
                                 }
 
-                                $result = app(CommercialOfferCopilotService::class)->analyze($request);
-                                $suggestionIds = array_map('intval', array_keys((array) ($result['suggestions'] ?? [])));
-                                $set('copilot_suggestion_ids', $suggestionIds);
-                                $set('copilot_suggestion_labels', (array) ($result['suggestions'] ?? []));
-                                $set('copilot_product_ids', (array) ($result['default_product_ids'] ?? []));
-                                $set('copilot_quantities', (array) ($result['product_quantities'] ?? []));
-                                $set('copilot_match_details', (array) ($result['match_details'] ?? []));
-                                $set('copilot_clarification_questions', (array) ($result['clarification_questions'] ?? []));
-                                $set('copilot_summary', (string) ($result['analysis_summary'] ?? 'Подбор завершён.'));
+                                $results = app(QuickCommercialOfferService::class)->catalogSearchProducts($search);
+                                $set('catalog_result_labels', $results);
+                                $set('catalog_product_ids', []);
 
-                                $questions = (array) ($result['clarification_questions'] ?? []);
                                 Notification::make()
-                                    ->title($questions === [] ? 'Подбор завершён' : 'Нужно уточнить параметры')
-                                    ->body($questions === []
-                                        ? count($suggestionIds).' вариант(ов). Возможные замены не выбраны — решение остаётся за менеджером.'
-                                        : 'Товары не предложены. Сначала получите недостающие данные у клиента.')
-                                    ->color($questions === [] ? 'success' : 'warning')
+                                    ->title($results === [] ? 'В базе ничего не найдено' : 'Товары найдены')
+                                    ->body($results === []
+                                        ? 'Попробуйте артикул, бренд или более короткое название.'
+                                        : 'Найдено: '.count($results).'. Отметьте нужные позиции.')
+                                    ->color($results === [] ? 'warning' : 'success')
                                     ->send();
                             }),
-                        Action::make('add_copilot_products')
+                        Action::make('add_catalog_products')
                             ->label('Добавить выбранные в КП')
                             ->icon('heroicon-o-plus-circle')
                             ->color('success')
                             ->action(function (Get $get, Set $set): void {
-                                $selected = array_values(array_unique(array_map('intval', (array) $get('copilot_product_ids'))));
+                                $selected = array_values(array_unique(array_map('intval', (array) $get('catalog_product_ids'))));
                                 if ($selected === []) {
                                     Notification::make()->warning()->title('Выберите хотя бы один товар')->send();
 
@@ -274,7 +249,7 @@ class CommercialDocumentResource extends Resource
                                 $items = (array) $get('items');
                                 $existingIds = collect($items)->pluck('product_id')->filter()->map(fn ($id): int => (int) $id)->all();
                                 $newIds = array_values(array_diff($selected, $existingIds));
-                                $rows = app(CommercialOfferCopilotService::class)->itemRows($newIds, (array) $get('copilot_quantities'));
+                                $rows = app(CommercialOfferCopilotService::class)->itemRows($newIds);
                                 $defaultDiscount = min(100, max(0, (float) $get('client_default_discount_percent')));
                                 foreach ($rows as $row) {
                                     $row['discount_percent'] = $defaultDiscount;
@@ -292,7 +267,7 @@ class CommercialDocumentResource extends Resource
                                     ->body($rows === [] ? null : 'Добавлено позиций: '.count($rows).'. Цены можно проверить по рынку ниже.')
                                     ->send();
                             }),
-                    ])->key('copilot_actions')->columnSpanFull(),
+                    ])->key('catalog_actions')->columnSpanFull(),
                 ]),
 
             Section::make('Товары и услуги')
@@ -598,69 +573,6 @@ class CommercialDocumentResource extends Resource
             'view' => ViewCommercialDocument::route('/{record}'),
             'edit' => EditCommercialDocument::route('/{record}/edit'),
         ];
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $details
-     * @param  list<string>  $questions
-     */
-    private static function copilotMatchReportHtml(array $details, array $questions): HtmlString
-    {
-        if ($questions !== []) {
-            $items = collect($questions)
-                ->map(fn (string $question): string => '<li>'.e($question).'</li>')
-                ->implode('');
-
-            return new HtmlString(
-                '<div class="rounded-xl border border-warning-300 bg-warning-50 p-4 text-sm text-warning-900 dark:border-warning-500/30 dark:bg-warning-500/10 dark:text-warning-100">'
-                .'<div class="font-semibold">Товары не подставлены. Уточните у клиента:</div>'
-                .'<ul class="mt-2 list-disc space-y-1 pl-5">'.$items.'</ul>'
-                .'</div>',
-            );
-        }
-
-        if ($details === []) {
-            return new HtmlString('<span class="text-sm text-gray-500">Выполните подбор — здесь появятся причины совпадения и исключённые варианты.</span>');
-        }
-
-        $cards = collect($details)->map(function (array $detail): string {
-            $quality = (string) ($detail['quality'] ?? 'alternative');
-            [$label, $classes] = match ($quality) {
-                'exact' => ['Точное совпадение', 'border-success-300 bg-success-50 dark:border-success-500/30 dark:bg-success-500/10'],
-                'close' => ['Возможная замена', 'border-info-300 bg-info-50 dark:border-info-500/30 dark:bg-info-500/10'],
-                'rejected' => ['Не подходит', 'border-danger-300 bg-danger-50 dark:border-danger-500/30 dark:bg-danger-500/10'],
-                default => ['Требует проверки', 'border-warning-300 bg-warning-50 dark:border-warning-500/30 dark:bg-warning-500/10'],
-            };
-            $meta = collect([
-                filled($detail['sku'] ?? null) ? 'арт. '.e((string) $detail['sku']) : null,
-                self::money((float) ($detail['price'] ?? 0)),
-                e((string) ($detail['availability'] ?? '')),
-                filled($detail['supplier'] ?? null) ? 'поставщик: '.e((string) $detail['supplier']) : null,
-                $quality !== 'rejected'
-                    ? (($detail['purchase_price'] ?? null) !== null
-                        ? 'закупка: '.self::money($detail['purchase_price'])
-                        : 'закупка: нет данных')
-                    : null,
-                ($detail['margin_percent'] ?? null) !== null
-                    ? 'маржа: '.number_format((float) $detail['margin_percent'], 1, ',', ' ').'%'
-                    : null,
-            ])->filter()->implode(' · ');
-            $conflicts = collect((array) ($detail['conflicts'] ?? []))
-                ->map(fn (string $conflict): string => '<div class="mt-1 text-danger-700 dark:text-danger-300">'.e($conflict).'</div>')
-                ->implode('');
-
-            return '<div class="rounded-xl border p-3 '.$classes.'">'
-                .'<div class="flex flex-wrap items-center gap-2">'
-                .'<span class="rounded-md bg-white/70 px-2 py-1 text-xs font-semibold dark:bg-black/20">'.$label.'</span>'
-                .'<span class="font-semibold text-gray-950 dark:text-white">'.e((string) ($detail['name'] ?? 'Товар')).'</span>'
-                .'</div>'
-                .'<div class="mt-2 text-xs text-gray-600 dark:text-gray-300">'.$meta.'</div>'
-                .'<div class="mt-1 text-sm text-gray-800 dark:text-gray-200">Почему: '.e((string) ($detail['reason'] ?? 'требует проверки')).'</div>'
-                .$conflicts
-                .'</div>';
-        })->implode('');
-
-        return new HtmlString('<div class="grid gap-3 lg:grid-cols-2">'.$cards.'</div>');
     }
 
     /** @param array<string, mixed> $pricing */

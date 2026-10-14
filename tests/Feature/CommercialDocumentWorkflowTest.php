@@ -239,15 +239,15 @@ class CommercialDocumentWorkflowTest extends TestCase
         Livewire::actingAs($user)
             ->test(CreateCommercialDocument::class)
             ->assertSuccessful()
-            ->assertSeeText('ИИ-помощник подбора')
-            ->assertSeeText('Подобрать товары')
+            ->assertSeeText('Подбор товаров из базы')
+            ->assertSeeText('Найти в базе')
             ->assertSeeText('Добавить выбранные в КП')
             ->assertSeeText('Рынок / исследование')
             ->assertSeeText('Условия оплаты')
             ->assertSeeText('Срок поставки');
     }
 
-    public function test_manager_can_match_and_add_products_from_copilot_text(): void
+    public function test_manager_can_find_and_add_product_from_database(): void
     {
         $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $category = Category::query()->create([
@@ -267,53 +267,20 @@ class CommercialDocumentWorkflowTest extends TestCase
 
         Livewire::actingAs($user)
             ->test(CreateCommercialDocument::class)
-            ->fillForm(['copilot_request' => 'Насос Grundfos Comfort PS-008.538 — 2 шт.'])
-            ->callFormComponentAction('copilot_actions', 'analyze_copilot_request')
+            ->fillForm(['catalog_search' => 'PS-008.538'])
+            ->callFormComponentAction('catalog_actions', 'search_catalog')
             ->assertFormSet(function (array $state) use ($product): bool {
-                return in_array($product->id, $state['copilot_product_ids'] ?? [], true)
-                    && (float) ($state['copilot_quantities'][$product->id] ?? 0) === 2.0;
+                return array_key_exists($product->id, $state['catalog_result_labels'] ?? [])
+                    && ($state['catalog_product_ids'] ?? []) === [];
             })
-            ->assertSee('Точное совпадение')
-            ->assertSee('точно совпал артикул')
-            ->assertSee('закупка: нет данных')
-            ->callFormComponentAction('copilot_actions', 'add_copilot_products')
+            ->fillForm(['catalog_product_ids' => [$product->id]])
+            ->callFormComponentAction('catalog_actions', 'add_catalog_products')
             ->assertFormSet(function (array $state) use ($product): bool {
                 return collect($state['items'] ?? [])->contains(
                     fn (array $item): bool => (int) ($item['product_id'] ?? 0) === $product->id
-                        && (float) ($item['quantity'] ?? 0) === 2.0
+                        && (float) ($item['quantity'] ?? 0) === 1.0
                         && (float) ($item['unit_price'] ?? 0) === 578.28,
                 );
             });
-    }
-
-    public function test_manager_sees_clarifying_questions_instead_of_random_stove_products(): void
-    {
-        $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
-        $category = Category::query()->create([
-            'name' => 'Печи без параметров', 'slug' => 'stoves-without-selection-parameters', 'is_active' => true,
-        ]);
-        Product::query()->create([
-            'category_id' => $category->id,
-            'name' => 'Банная печь 18 м³ на дровах',
-            'slug' => 'random-bath-stove-must-not-be-suggested',
-            'sku' => 'BATH-18',
-            'price' => 1500,
-            'currency' => 'BYN',
-            'is_active' => true,
-            'is_archived' => false,
-        ]);
-
-        Livewire::actingAs($user)
-            ->test(CreateCommercialDocument::class)
-            ->fillForm(['copilot_request' => 'Клиенту нужна печь'])
-            ->callFormComponentAction('copilot_actions', 'analyze_copilot_request')
-            ->assertFormSet(function (array $state): bool {
-                return ($state['copilot_product_ids'] ?? []) === []
-                    && ($state['copilot_suggestion_ids'] ?? []) === []
-                    && count($state['copilot_clarification_questions'] ?? []) === 3;
-            })
-            ->assertSee('Товары не подставлены')
-            ->assertSee('объём помещения')
-            ->assertSee('вид топлива');
     }
 }
