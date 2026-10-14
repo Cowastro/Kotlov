@@ -99,7 +99,43 @@ class AuditGasMeterDemandCommand extends Command
                     ? 'demand_for_inactive_product'
                     : ($recommended > 0 ? 'buy' : 'observe'),
             ];
-        })->sortByDesc('demand_score')->values();
+        });
+
+        $seenProductIds = $rows->pluck('product_id')->filter()->map(fn ($id): int => (int) $id)->flip();
+        foreach ($supplierProductIds->keys() as $productId) {
+            $product = $products->get((int) $productId);
+            if (! $product || $seenProductIds->has((int) $productId) || ! (bool) $product->is_active || (bool) $product->is_archived) {
+                continue;
+            }
+
+            $views = (int) $product->views_count;
+            $rating = (float) $product->rating;
+            $reviews = (int) $product->reviews_count;
+            $rows->push([
+                'product_id' => (int) $product->id,
+                'sku' => $product->sku,
+                'name' => $product->name,
+                'active' => true,
+                'supplier_linked' => true,
+                'archived_orders' => 0,
+                'archived_quantity' => 0,
+                'valid_orders' => 0,
+                'valid_quantity' => 0,
+                'recent_orders' => 0,
+                'recent_quantity' => 0,
+                'excluded_test_duplicate_orders' => 0,
+                'last_request_at' => null,
+                'rating' => $rating,
+                'reviews_count' => $reviews,
+                'views_count' => $views,
+                'current_stock' => $product->stock_qty === null ? null : (float) $product->stock_qty,
+                'retail_price' => $product->price === null ? null : (float) $product->price,
+                'demand_score' => round(min(50, log10(max(1, $views)) * 10) + $rating * 5 + $reviews * 2, 2),
+                'recommended_purchase' => 0,
+                'recommendation_status' => 'watch_no_archived_demand',
+            ]);
+        }
+        $rows = $rows->sortByDesc('demand_score')->values();
 
         $path = trim((string) $this->option('report')) ?: storage_path('app/reports/suppliers/belomo/gas-meter-demand.csv');
         File::ensureDirectoryExists(dirname($path));
@@ -121,7 +157,8 @@ class AuditGasMeterDemandCommand extends Command
 
         $this->line('metric.gas_meter_demand.archived_orders='.$items->pluck('order_id')->unique()->count());
         $this->line('metric.gas_meter_demand.archived_items='.$items->count());
-        $this->line('metric.gas_meter_demand.products='.$rows->count());
+        $this->line('metric.gas_meter_demand.products_with_archived_demand='.$grouped->count());
+        $this->line('metric.gas_meter_demand.current_supplier_products='.$rows->where('supplier_linked', true)->where('active', true)->count());
         $this->line('metric.gas_meter_demand.buy_positions='.$rows->where('recommended_purchase', '>', 0)->count());
         $this->line('metric.gas_meter_demand.buy_quantity='.$rows->sum('recommended_purchase'));
         $this->line('metric.gas_meter_demand.inactive_demand='.$rows->where('recommendation_status', 'demand_for_inactive_product')->count());
