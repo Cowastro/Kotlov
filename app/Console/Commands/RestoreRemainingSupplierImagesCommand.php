@@ -14,7 +14,6 @@ class RestoreRemainingSupplierImagesCommand extends Command
     private const COMMANDS = [
         'supplier:sync-ecokamin-fireboxes' => ['--apply' => true],
         'supplier:sync-ecokamin-stoves' => ['--apply' => true],
-        'supplier:sync-elicon-gas-meters' => ['--apply' => true],
         'supplier:sync-gorodkotlov-vaillant' => ['--apply' => true],
     ];
 
