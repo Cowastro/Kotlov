@@ -12,6 +12,7 @@ use App\Models\SupplierProduct;
 use App\Services\AiContentEnricher;
 use App\Services\CommercialDocuments\QuickCommercialOfferSaver;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
+use App\Services\CrmMail\CrmMailPdfTextExtractor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -126,16 +127,25 @@ class QuickCommercialOfferServiceTest extends TestCase
     {
         Storage::fake('local');
         config([
-            'services.ai.openai_key' => 'test-openai-key',
-            'services.ai.openai_responses_url' => 'https://api.openai.test/v1/responses',
-            'services.ai.openai_document_model' => 'gpt-4.1-mini',
+            'services.ai.api_key' => 'test-deepseek-key',
+            'services.ai.api_url' => 'https://api.deepseek.test/chat/completions',
+            'services.ai.deepseek_document_model' => 'deepseek-flash',
             'services.ai.pdftotext_binary' => 'missing-pdftotext-for-test',
         ]);
         Http::fake([
-            'api.openai.test/*' => Http::response([
-                'output_text' => 'Запрос: счётчик газа СГД-3Т G6, количество 2 штуки. Просим предоставить цену и срок поставки.',
+            'api.deepseek.test/*' => Http::response([
+                'choices' => [[
+                    'message' => ['content' => 'Запрос: счётчик газа СГД-3Т G6, количество 2 штуки. Просим предоставить цену и срок поставки.'],
+                ]],
             ]),
         ]);
+        $this->app->bind(CrmMailPdfTextExtractor::class, fn (): CrmMailPdfTextExtractor => new class extends CrmMailPdfTextExtractor
+        {
+            protected function renderPdfPages(string $path): array
+            {
+                return [['mime' => 'image/jpeg', 'data' => 'fake-jpeg-page']];
+            }
+        });
 
         $ai = $this->mock(AiContentEnricher::class);
         $ai->shouldReceive('isAvailable')->andReturn(true);
@@ -188,7 +198,7 @@ class QuickCommercialOfferServiceTest extends TestCase
 
         $this->assertContains($product->id, $result['default_product_ids']);
         $this->assertSame(2.0, $result['product_quantities'][$product->id]);
-        $this->assertStringContainsString('SCAN0102.PDF (ИИ-OCR)', $result['analysis_summary']);
+        $this->assertStringContainsString('SCAN0102.PDF (DeepSeek OCR)', $result['analysis_summary']);
     }
 
     public function test_manager_text_is_matched_with_quantity_without_ai(): void

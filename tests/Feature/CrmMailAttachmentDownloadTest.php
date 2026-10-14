@@ -6,6 +6,7 @@ use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
+use App\Services\CrmMail\CrmMailPdfTextExtractor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -109,22 +110,19 @@ class CrmMailAttachmentDownloadTest extends TestCase
     {
         Storage::fake('local');
         config([
-            'services.ai.openai_key' => 'test-openai-key',
-            'services.ai.openai_responses_url' => 'https://api.openai.test/v1/responses',
-            'services.ai.openai_document_model' => 'gpt-4.1-mini',
+            'services.ai.api_key' => 'test-deepseek-key',
+            'services.ai.api_url' => 'https://api.deepseek.test/chat/completions',
+            'services.ai.deepseek_document_model' => 'deepseek-flash',
             'services.ai.pdftotext_binary' => 'missing-pdftotext-for-test',
         ]);
         Http::fake([
-            'api.openai.test/*' => Http::response([
-                'output' => [[
-                    'type' => 'message',
-                    'content' => [[
-                        'type' => 'output_text',
-                        'text' => 'Счётчик газа СГД-3Т G6, количество 2 штуки. Просим предоставить коммерческое предложение.',
-                    ]],
+            'api.deepseek.test/*' => Http::response([
+                'choices' => [[
+                    'message' => ['content' => 'Счётчик газа СГД-3Т G6, количество 2 штуки. Просим предоставить коммерческое предложение.'],
                 ]],
             ]),
         ]);
+        $this->bindPdfRendererStub();
 
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $path = 'crm-mail-attachments/incoming/1/103/01-scan.pdf';
@@ -137,13 +135,14 @@ class CrmMailAttachmentDownloadTest extends TestCase
         ]));
 
         $response->assertOk()
-            ->assertSee('Скан распознан с помощью ИИ')
+            ->assertSee('Скан распознан с помощью DeepSeek')
             ->assertSee('Счётчик газа СГД-3Т G6')
             ->assertSee('Копировать текст');
 
-        Http::assertSent(fn ($request): bool => $request->url() === 'https://api.openai.test/v1/responses'
-            && data_get($request->data(), 'input.0.content.0.type') === 'input_file'
-            && str_starts_with((string) data_get($request->data(), 'input.0.content.0.file_data'), 'data:application/pdf;base64,'));
+        Http::assertSent(fn ($request): bool => $request->url() === 'https://api.deepseek.test/chat/completions'
+            && data_get($request->data(), 'model') === 'deepseek-flash'
+            && data_get($request->data(), 'messages.0.content.1.type') === 'image_url'
+            && str_starts_with((string) data_get($request->data(), 'messages.0.content.1.image_url.url'), 'data:image/jpeg;base64,'));
     }
 
     public function test_customer_cannot_read_pdf_with_ai(): void
@@ -194,6 +193,17 @@ class CrmMailAttachmentDownloadTest extends TestCase
                 ]],
             ],
         ]);
+    }
+
+    private function bindPdfRendererStub(): void
+    {
+        $this->app->bind(CrmMailPdfTextExtractor::class, fn (): CrmMailPdfTextExtractor => new class extends CrmMailPdfTextExtractor
+        {
+            protected function renderPdfPages(string $path): array
+            {
+                return [['mime' => 'image/jpeg', 'data' => 'fake-jpeg-page']];
+            }
+        });
     }
 
     /**

@@ -302,7 +302,7 @@ class QuickCommercialOfferService
                     try {
                         $extracted = $this->pdfTextExtractor->extract($message, $index);
                         $parts[] = "PDF-ВЛОЖЕНИЕ {$extracted['name']}:\n{$extracted['text']}";
-                        $pdfNames[] = $extracted['name'].($extracted['method'] === 'openai-ocr' ? ' (ИИ-OCR)' : '');
+                        $pdfNames[] = $extracted['name'].($extracted['method'] === 'deepseek-ocr' ? ' (DeepSeek OCR)' : '');
                     } catch (\Throwable) {
                         $pdfFailures++;
                     }

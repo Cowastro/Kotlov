@@ -24,7 +24,7 @@
         <div>
             <h1>Распознанный текст: {{ $name }}</h1>
             @if (! $error)
-                <div class="meta">{{ $method === 'openai-ocr' ? 'Скан распознан с помощью ИИ' : 'Использован текстовый слой PDF' }}</div>
+                <div class="meta">{{ $method === 'deepseek-ocr' ? 'Скан распознан с помощью DeepSeek' : 'Использован текстовый слой PDF' }}</div>
             @endif
         </div>
         <div class="actions">
