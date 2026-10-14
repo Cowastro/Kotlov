@@ -21,6 +21,7 @@ on:
           - audit-price-integrity
           - verify-commercial-pdf
           - research-price-batch
+          - upload-svah-pricelist
           - configure-openai
           - deploy-safe
           - deploy-recover
@@ -50,7 +51,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|verify-commercial-pdf|research-price-batch|configure-openai|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -104,7 +105,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Run remote task
-        if: inputs.task != 'configure-openai'
+        if: inputs.task != 'configure-openai' && inputs.task != 'upload-svah-pricelist'
         env:
           TASK: ${{ inputs.task }}
           ARTISAN_ARGS: ${{ inputs.artisan_args }}
@@ -302,6 +303,11 @@ jobs:
             grep '^metric\.availability\.' "$detail_log" || true
             echo "safe_availability_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-svah-group" ]]; then
+            echo "safe_svah_group_metrics_begin"
+            grep '^metric\.svah_group\.' "$detail_log" || true
+            echo "safe_svah_group_metrics_end"
+          fi
           if [[ "$TASK" == "research-price-batch" ]]; then
             echo "safe_market_research_metrics_begin"
             grep '^metric\.' "$detail_log" || true
@@ -314,6 +320,36 @@ jobs:
           ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
             "TASK='$TASK' ARTISAN_ARGS='$ARTISAN_ARGS' LOG_FILE='$LOG_FILE' SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \
             <<< "$remote_script"
+
+      - name: Upload SVAH Group price list
+        if: inputs.task == 'upload-svah-pricelist'
+        env:
+          SVAH_PRICELIST_XLSX_BASE64: ${{ secrets.SVAH_PRICELIST_XLSX_BASE64 }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          set -euo pipefail
+          test -n "$SVAH_PRICELIST_XLSX_BASE64"
+
+          port="${SERVER_PORT:-22}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          local_file="$(mktemp)"
+          trap 'rm -f "$local_file"' EXIT
+
+          printf '%s' "$SVAH_PRICELIST_XLSX_BASE64" | base64 --decode > "$local_file"
+          test "$(head -c 2 "$local_file")" = "PK"
+
+          ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
+            "mkdir -p '$server_path/storage/app/pricelists/svah-group'"
+          scp -q -i ~/.ssh/server_key -P "$port" "$local_file" \
+            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/pricelists/svah-group/latest.xlsx.upload"
+          ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
+            "mv '$server_path/storage/app/pricelists/svah-group/latest.xlsx.upload' '$server_path/storage/app/pricelists/svah-group/latest.xlsx' && chmod 640 '$server_path/storage/app/pricelists/svah-group/latest.xlsx'"
+
+          echo "uploaded=1"
+          echo "destination=storage/app/pricelists/svah-group/latest.xlsx"
 
       - name: Configure OpenAI production secret
         if: inputs.task == 'configure-openai'

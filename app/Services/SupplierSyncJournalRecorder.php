@@ -15,6 +15,7 @@ class SupplierSyncJournalRecorder
     private const COMMAND_SUPPLIER_CODES = [
         'supplier:sync-rusklimat' => 'rusklimat',
         'supplier:sync-rusklimat-pricelist' => 'rusklimat',
+        'supplier:sync-svah-group' => 'svah_group',
     ];
 
     /** @var array<int, string> Commands invoked inside another tracked sync. */

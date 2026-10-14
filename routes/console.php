@@ -158,6 +158,17 @@ Schedule::command('supplier:sync-gazkotelbel --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/gazkotelbel-sync.log'));
 
+// СВАГ Груп / TATRA / SVAH / HOT: партнёрская цена, отпускная цена и точный остаток
+// из последнего загруженного XLS/XLSX. Новый файл сначала применяется вручную
+// с --price-file; после успешной проверки он становится источником daily-sync.
+// Новые позиции создаются автоматически как непубличные карточки-черновики.
+Schedule::command('supplier:sync-svah-group --apply --sync-retail-prices')
+    ->dailyAt('08:35')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/svah-group-price-stock-sync.log'));
+
 // TM Management: once a day refresh all price-list sheets in one run.
 // This also keeps the synchronization journal concise: one supplier entry per day.
 Schedule::command('supplier:sync-tm-management --apply')
