@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Services\PriceList\SvahGroupPriceList;
+use App\Services\PriceList\SvahGroupCatalogContent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -135,12 +136,18 @@ class SyncSvahGroupCommandTest extends TestCase
         $this->assertSame('150 мм', $tatraSpecs->firstWhere('key', 'Диаметр дымохода')['value']);
         $this->assertGreaterThanOrEqual(20, $tatraSpecs->count());
         $this->assertFileExists(public_path('img/products/tatra/tatra-t16-water-tank-80l-clean.png'));
-        $svahProduct = DB::table('products')->where('name', 'Печь банная SVAH Т16 сталь 8мм')->first();
-        $hotProduct = DB::table('products')->where('name', 'Печь банная HOT T20')->first();
+        $svahProductId = DB::table('supplier_products')->where('supplier_article', 'SVAH-T16')->value('product_id');
+        $hotProductId = DB::table('supplier_products')->where('supplier_article', 'HOT-T20')->value('product_id');
+        $svahProduct = DB::table('products')->where('id', $svahProductId)->first();
+        $hotProduct = DB::table('products')->where('id', $hotProductId)->first();
         $this->assertNotNull($svahProduct);
         $this->assertNotNull($hotProduct);
-        $this->assertFalse((bool) $svahProduct->is_active);
-        $this->assertFalse((bool) $hotProduct->is_active);
+        $this->assertTrue((bool) $svahProduct->is_active);
+        $this->assertTrue((bool) $hotProduct->is_active);
+        $this->assertNotEmpty($svahProduct->short_description);
+        $this->assertNotEmpty($hotProduct->short_description);
+        $this->assertGreaterThanOrEqual(15, count(json_decode($svahProduct->specs, true, 512, JSON_THROW_ON_ERROR)));
+        $this->assertGreaterThanOrEqual(15, count(json_decode($hotProduct->specs, true, 512, JSON_THROW_ON_ERROR)));
         $this->assertSame($saunaCategoryId, (int) $svahProduct->category_id);
         $this->assertSame(791.54, (float) $svahProduct->price);
         $this->assertSame(823.85, (float) $hotProduct->price);
@@ -235,6 +242,43 @@ class SyncSvahGroupCommandTest extends TestCase
             'stock_quantity' => 0,
             'in_stock' => false,
         ]);
+    }
+
+    public function test_catalog_content_covers_every_current_supplier_price_signature_without_blank_specs(): void
+    {
+        $signatures = [
+            'tatra:boiler:kt15-np1', 'tatra:boiler:kt15-nl1',
+            'tatra:boiler:kt15-np2', 'tatra:boiler:kt15-nl2',
+            'tatra:boiler:kt30-np1', 'tatra:boiler:kt30-nl1',
+            'tatra:boiler:kt30-np2', 'tatra:boiler:kt30-nl2',
+            'tatra:boiler:kt40-np1', 'tatra:boiler:kt40-nl1',
+            'tatra:boiler:kt50-np1', 'tatra:boiler:kt50-nl1',
+            'tatra:boiler:kt50', 'tatra:boiler:kt70-n',
+            'tatra:boiler:kt95', 'tatra:boiler:kt95-n',
+            'tatra:stove:t10', 'tatra:stove:t10:tank50',
+            'tatra:stove:t16', 'tatra:stove:t16:tank80',
+            'tatra:stove:t24', 'tatra:stove:t24:tank80',
+            'tatra:stove:t30', 'tatra:stove:t30:tank100',
+            'tatra:stove:t32:tank100', 'tatra:stove:t32t', 'tatra:stove:t36',
+            'svah:stove:t16', 'svah:stove:t20', 'svah:stove:t24',
+            'hot:stove:t16', 'hot:stove:t20', 'hot:stove:t24',
+        ];
+        $catalog = app(SvahGroupCatalogContent::class);
+
+        foreach ($signatures as $signature) {
+            $profile = $catalog->profile(['signature' => $signature]);
+
+            $this->assertNotNull($profile, $signature);
+            $this->assertNotEmpty($profile['name'], $signature);
+            $this->assertNotEmpty($profile['short_description'], $signature);
+            $this->assertNotEmpty($profile['content'], $signature);
+            $this->assertNotEmpty($profile['source_url'], $signature);
+            $this->assertGreaterThanOrEqual(15, count($profile['specs']), $signature);
+            foreach ($profile['specs'] as $spec) {
+                $this->assertNotSame('', trim((string) $spec['key']), $signature);
+                $this->assertNotSame('', trim((string) $spec['value']), $signature);
+            }
+        }
     }
 
     private function product(int $categoryId, int $brandId, string $sku, string $name, float $price): int

@@ -226,7 +226,7 @@ class SyncSvahGroupCommand extends Command
             ->where(function ($query): void {
                 $query->where('p.is_archived', false)->orWhereNull('p.is_archived');
             })
-            ->get(['p.id', 'p.sku', 'p.name', 'p.price', 'p.in_stock', 'p.stock_qty', 'b.name as brand_name'])
+            ->get(['p.id', 'p.sku', 'p.name', 'p.price', 'p.in_stock', 'p.stock_qty', 'p.images', 'b.name as brand_name'])
             ->map(function (object $product) use ($priceList): object {
                 $product->svah_signature = $priceList->signature(
                     (string) $product->name,
@@ -250,7 +250,7 @@ class SyncSvahGroupCommand extends Command
         return DB::table('supplier_products as sp')
             ->join('products as p', 'p.id', '=', 'sp.product_id')
             ->where('sp.supplier_id', $supplierId)
-            ->get(['sp.supplier_article', 'p.id', 'p.sku', 'p.name', 'p.price', 'p.in_stock', 'p.stock_qty'])
+            ->get(['sp.supplier_article', 'p.id', 'p.sku', 'p.name', 'p.price', 'p.in_stock', 'p.stock_qty', 'p.images'])
             ->keyBy('supplier_article')
             ->all();
     }
@@ -452,7 +452,9 @@ class SyncSvahGroupCommand extends Command
             'h1' => $name,
             'short_description' => $profile['short_description'],
             'content' => $profile['content'],
-            'images' => json_encode($profile['images'], JSON_UNESCAPED_UNICODE),
+            'images' => $profile['images'] === null
+                ? ($product->images ?? json_encode([]))
+                : json_encode($profile['images'], JSON_UNESCAPED_UNICODE),
             'specs' => json_encode($profile['specs'], JSON_UNESCAPED_UNICODE),
             'content_source_url' => $profile['source_url'],
             'requires_price_confirmation' => false,
