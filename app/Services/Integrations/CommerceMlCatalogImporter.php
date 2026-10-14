@@ -366,7 +366,9 @@ class CommerceMlCatalogImporter
 
         $item->fill($attributes);
 
-        if (! $item->product_id && $item->match_status !== 'ignored') {
+        if (! $item->product_id
+            && $item->match_status !== 'ignored'
+            && ! $this->hasUnchangedResearchDispute($item)) {
             $item->fill($this->match($item));
         }
 

@@ -7383,6 +7383,27 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         $this->assertSame(['matched' => 0, 'suggested' => 0, 'ambiguous' => 0, 'unmatched' => 0], $stats);
         $this->assertSame('manual_research_unresolved', $item->fresh()->match_method);
 
+        $offerXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <ПакетПредложений>
+    <Предложения>
+      <Предложение>
+        <Ид>bbd2cbff-1f62-11e9-bad6-1c1b0d1de7c2</Ид>
+        <Наименование>Угловое соединение 10х10</Наименование>
+        <Количество>26</Количество>
+      </Предложение>
+    </Предложения>
+  </ПакетПредложений>
+</КоммерческаяИнформация>
+XML;
+        app(\App\Services\Integrations\CommerceMlCatalogImporter::class)->import($offerXml, $source->code);
+        $item->refresh();
+        $this->assertSame('ambiguous', $item->match_status);
+        $this->assertSame('manual_research_unresolved', $item->match_method);
+        $this->assertSame('26.000', $item->stock_quantity);
+        $this->assertSame('research_dispute', $item->candidates[0]['type']);
+
         $this->artisan('integration:create-sbg-distinct-products', [
             '--batch' => 'unmatched-disputed-20261013-cs',
             '--code' => ['УТ-00001010'],
