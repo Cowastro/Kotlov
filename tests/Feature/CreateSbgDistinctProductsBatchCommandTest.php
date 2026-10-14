@@ -10548,4 +10548,80 @@ XML;
             'is_active' => true,
         ]);
     }
+
+    public function test_it_creates_the_exact_brand_neutral_50_micron_24_square_metre_sauna_foil(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-sauna-foil-50-24',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Отделка для парной',
+            'slug' => 'otdelka-dlya-parnoj',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $templateBrand = Brand::query()->create([
+            'name' => 'Бренд шаблона',
+            'slug' => 'foil-template-brand',
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $templateBrand->id,
+            'sku' => 'PS-012.090',
+            'name' => 'Фольга для бани Алукрафт на бумажной основе 30 м²',
+            'slug' => 'foil-template-24m2-test',
+            'price' => 68,
+            'images' => ['product/alukraft-30.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '7c6d9745-996d-11e9-b0c6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00002044',
+            'external_sku' => null,
+            'name' => 'Фольга 50 мкм (24м2)',
+            'price' => 78.81,
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => IntegrationSource::PRICE_TAX_EXCLUSIVE,
+            'price_vat_rate' => 20,
+            'price_byn' => 94.57,
+            'stock_quantity' => 5,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-eq',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('140.00', $product->price);
+        $this->assertSame('5', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertNull($product->brand_id);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+        $this->assertSame('otdelka-dlya-parnoj', $product->category->slug);
+        $this->assertSame('50 мкм', collect($product->specs)->firstWhere('key', 'Толщина')['value']);
+        $this->assertSame('24 м²', collect($product->specs)->firstWhere('key', 'Площадь рулона')['value']);
+        $this->assertSame(['img/products/sauna/aluminium-foil-50-micron-24m2-clean.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/sauna/aluminium-foil-50-micron-24m2-clean.jpg'));
+        $this->assertStringContainsString('7771.by', $product->content_source_url);
+        $this->assertStringContainsString('алюминиевой лентой', $product->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00002044',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
 }

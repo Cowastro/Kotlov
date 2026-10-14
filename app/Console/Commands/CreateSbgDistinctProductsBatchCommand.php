@@ -5246,6 +5246,36 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact 1.2×20 m / 24 m² roll is currently stocked at 7771.by for
+    // 140 BYN. Deal.by independently shows the same 50 μm, 24 m² format.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EQ = [
+        'УТ-00002044' => [
+            'template' => 'PS-012.090',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'force_brandless' => true,
+            'category_slug' => 'otdelka-dlya-parnoj',
+            'external_id' => '7c6d9745-996d-11e9-b0c6-1c1b0d1de7c2',
+            'fragments' => ['Фольга', '50 мкм', '24м2'],
+            'name' => 'Фольга алюминиевая для бани 50 мкм, 1,2×20 м (24 м²)',
+            'retail' => 140.00,
+            'images' => ['img/products/sauna/aluminium-foil-50-micron-24m2-clean.jpg'],
+            'source_url' => 'https://7771.by/folga-50-mkm-24-m2',
+            'short' => 'Гладкая алюминиевая фольга толщиной 50 мкм для теплоотражающего и парозащитного слоя в банях и саунах; рулон 1,2×20 м, площадь 24 м².',
+            'content' => '<p><strong>Алюминиевая фольга 50 мкм, 24 м²</strong> применяется при отделке бань и саун как отражающий и парозащитный слой.</p><p>Рулон шириной 1,2 м и длиной 20 м закрывает до 24 м² поверхности. Фольгу монтируют отражающей стороной внутрь помещения с проклейкой нахлёстов и стыков алюминиевой лентой. Для сохранения воздушного зазора между фольгой и внутренней облицовкой используют обрешётку.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Алюминиевая фольга для бани'],
+                ['key' => 'Исполнение', 'value' => 'Гладкая, без основы'],
+                ['key' => 'Материал', 'value' => 'Алюминий'],
+                ['key' => 'Толщина', 'value' => '50 мкм'],
+                ['key' => 'Ширина', 'value' => '1,2 м'],
+                ['key' => 'Длина', 'value' => '20 м'],
+                ['key' => 'Площадь рулона', 'value' => '24 м²'],
+                ['key' => 'Назначение', 'value' => 'Теплоотражающий и парозащитный слой для бань и саун'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5397,6 +5427,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-en' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EN,
             'unmatched-researched-20261014-eo' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EO,
             'unmatched-researched-20261014-ep' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EP,
+            'unmatched-researched-20261014-eq' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EQ,
             default => null,
         };
 
