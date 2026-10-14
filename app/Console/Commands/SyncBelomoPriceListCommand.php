@@ -124,12 +124,13 @@ class SyncBelomoPriceListCommand extends Command
         File::ensureDirectoryExists(dirname($path));
         $handle = fopen($path, 'wb');
         fwrite($handle, "\xEF\xBB\xBF");
-        fputcsv($handle, ['status', 'article', 'name', 'price_without_vat_byn', 'product_id', 'sku', 'retail_price_byn'], ';');
+        fputcsv($handle, ['status', 'article', 'name', 'price_without_vat_byn', 'partner_price_with_vat_byn', 'product_id', 'sku', 'retail_price_byn'], ';');
         foreach ($classified as $item) {
             $product = $item['product'];
             fputcsv($handle, [
                 $item['status'], $item['row']['article'], $item['row']['name'],
                 number_format($item['row']['partner_price_byn'], 2, '.', ''),
+                number_format($this->priceWithVat($item['row']['partner_price_byn']), 2, '.', ''),
                 $product->id ?? '', $product->sku ?? '', isset($product->price) ? number_format((float) $product->price, 2, '.', '') : '',
             ], ';');
         }
@@ -187,7 +188,7 @@ class SyncBelomoPriceListCommand extends Command
             'price_currency' => 'BYN', 'price_currency_rate' => 1, 'is_active' => true,
             'create_products' => false, 'update_prices' => true, 'update_stock' => false,
             'settings' => json_encode([
-                'price_tax_mode' => 'exclusive', 'vat_rate' => 0, 'b2b_enabled' => true,
+                'price_tax_mode' => 'exclusive', 'vat_rate' => 20, 'b2b_enabled' => true,
                 'b2b_category_ids' => [$categoryId], 'partner_name' => 'ООО «СанБизнесГруп»',
                 'procurement_mode' => true, 'warehouse_label' => 'Закупка БелОМО',
                 'stock_validity_minutes' => 525600,
@@ -217,8 +218,8 @@ class SyncBelomoPriceListCommand extends Command
         DB::table('integration_products')->updateOrInsert(['integration_source_id' => $sourceId, 'external_id' => $row['article']], [
             'product_id' => $product->id, 'target_category_id' => $product->category_id, 'external_code' => $row['article'],
             'external_sku' => $row['article'], 'name' => $row['name'], 'price' => $row['partner_price_byn'],
-            'price_currency' => 'BYN', 'price_currency_rate' => 1, 'price_tax_mode' => 'exclusive', 'price_vat_rate' => 0,
-            'price_byn' => $row['partner_price_byn'], 'stock_quantity' => 0,
+            'price_currency' => 'BYN', 'price_currency_rate' => 1, 'price_tax_mode' => 'exclusive', 'price_vat_rate' => 20,
+            'price_byn' => $this->priceWithVat($row['partner_price_byn']), 'stock_quantity' => 0,
             'match_status' => 'matched', 'match_method' => 'belomo_article', 'match_confidence' => 100,
             'payload' => json_encode(['procurement_mode' => true, 'vat_included' => false, 'source_document' => 'Цены БелОМО.pdf'], JSON_UNESCAPED_UNICODE),
             'matched_at' => $now, 'last_seen_at' => $now, 'last_offer_seen_at' => $now,
@@ -267,5 +268,10 @@ class SyncBelomoPriceListCommand extends Command
         $base = Str::slug($name) ?: 'belomo-gas-meter'; $slug = $base; $i = 2;
         while (DB::table('products')->where('slug', $slug)->exists()) $slug = $base.'-'.$i++;
         return $slug;
+    }
+
+    private function priceWithVat(float $priceWithoutVat): float
+    {
+        return round($priceWithoutVat * 1.20, 2);
     }
 }
