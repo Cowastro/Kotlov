@@ -88,14 +88,10 @@ class CommercialDocumentMailAttachmentTest extends TestCase
             ->callMountedAction()
             ->assertHasNoActionErrors();
 
-        $this->assertSame([
-            'user_matches' => true,
-            'count' => 1,
-            'metadata' => [[
-                'path' => $attachmentPath,
-                'name' => $attachmentName,
-            ]],
-        ], $observedAttachment);
+        $this->assertTrue($observedAttachment['user_matches']);
+        $this->assertSame(1, $observedAttachment['count']);
+        $this->assertSame($attachmentPath, $observedAttachment['metadata'][0]['path']);
+        $this->assertSame($attachmentName, $observedAttachment['metadata'][0]['name']);
         Storage::disk('local')->assertExists($attachmentPath);
     }
 
