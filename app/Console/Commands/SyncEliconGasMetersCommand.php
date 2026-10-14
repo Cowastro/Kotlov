@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\Pricing\CurrencyPriceConverter;
+use App\Services\PriceList\BelomoPriceList;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -26,6 +27,9 @@ class SyncEliconGasMetersCommand extends Command
 
     private string $supplierCurrency = CurrencyPriceConverter::BASE_CURRENCY;
     private float $supplierRate = 1.0;
+
+    /** @var array<int, array{compact:string,short:string}>|null */
+    private ?array $allowedBelomoArticles = null;
 
     public function handle(): int
     {
@@ -259,11 +263,30 @@ class SyncEliconGasMetersCommand extends Command
                     continue;
                 }
 
+                if (! $this->isAllowedBelomoArticle($item['article'])) {
+                    continue;
+                }
+
                 $items[$this->normalizeSupplierArticle($item['article'])] = $item;
             }
         }
 
         return array_values($items);
+    }
+
+    private function isAllowedBelomoArticle(string $article): bool
+    {
+        $priceList = new BelomoPriceList();
+        $this->allowedBelomoArticles ??= array_map(fn (array $row): array => [
+            'compact' => $priceList->compactArticle($row['article']),
+            'short' => $priceList->shortArticle($row['article']),
+        ], $priceList->rows());
+        $compact = $priceList->compactArticle($article);
+        $short = $priceList->shortArticle($article);
+
+        return collect($this->allowedBelomoArticles)->contains(
+            fn (array $allowed): bool => $allowed['compact'] === $compact || $allowed['short'] === $short,
+        );
     }
 
     private function productNodes(string $html): array

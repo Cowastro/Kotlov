@@ -16,6 +16,7 @@ class SyncBelomoPriceListCommand extends Command
         {--dry-run : Только аудит без записи}
         {--complete-cards : Заполнить и активировать карточки, используя безопасную розничную цену и изображения той же серии}
         {--sync-elicon-retail : Установить розницу Эликона; отсутствующие цены рассчитать по наценке серии}
+        {--archive-artifacts : Перенести полезные связи и архивировать карточки БелОМО, которых нет в прайсе}
         {--report= : Путь CSV-отчёта}';
 
     protected $description = 'Import the static BelOMO wholesale price list without VAT, preserving Elicon retail prices.';
@@ -115,6 +116,18 @@ class SyncBelomoPriceListCommand extends Command
                     $retail['metrics']['markup'],
                     $retail['metrics']['update'],
                 ));
+            }
+
+            if ((bool) $this->option('archive-artifacts')) {
+                $fresh = $this->classify($rows, $priceList, $supplierId);
+                $cleanup = $this->archiveCatalogArtifacts($this->catalogArtifacts($fresh), $fresh, $priceList, $now);
+                $this->info(sprintf(
+                    'Артефакты: архивировано %d; связей поставщиков перенесено %d.',
+                    $cleanup['archived'],
+                    $cleanup['links_reassigned'],
+                ));
+                $this->line('metric.belomo.artifacts_archived='.$cleanup['archived']);
+                $this->line('metric.belomo.artifact_links_reassigned='.$cleanup['links_reassigned']);
             }
 
             DB::table('supplier_sources')->where('supplier_id', $supplierId)->where('name', 'Прайс БелОМО 15.09.2026')->update(['last_run_at' => $now, 'updated_at' => $now]);
@@ -373,6 +386,57 @@ class SyncBelomoPriceListCommand extends Command
             ->orderBy('id')
             ->get()
             ->all();
+    }
+
+    /** @return array{archived:int, links_reassigned:int} */
+    private function archiveCatalogArtifacts(array $artifacts, array $classified, BelomoPriceList $priceList, $now): array
+    {
+        $canonical = collect($classified)
+            ->filter(fn (array $item): bool => $item['product'] !== null && $item['status'] === 'matched')
+            ->values();
+        $archived = 0;
+        $linksReassigned = 0;
+
+        DB::transaction(function () use ($artifacts, $canonical, $priceList, $now, &$archived, &$linksReassigned): void {
+            foreach ($artifacts as $artifact) {
+                $links = DB::table('supplier_products')->where('product_id', $artifact->id)->get();
+                foreach ($links as $link) {
+                    $target = $canonical->first(function (array $item) use ($link, $priceList): bool {
+                        return $priceList->compactArticle((string) $link->supplier_article) === $priceList->compactArticle($item['row']['article'])
+                            || $priceList->shortArticle((string) $link->supplier_article) === $priceList->shortArticle($item['row']['article']);
+                    });
+                    if (! $target) {
+                        continue;
+                    }
+                    DB::table('supplier_products')->where('id', $link->id)->update([
+                        'product_id' => $target['product']->id,
+                        'product_sku' => $target['product']->sku,
+                        'updated_at' => $now,
+                    ]);
+                    DB::table('supplier_product_mappings')
+                        ->where('product_id', $artifact->id)
+                        ->where('supplier_article', $link->supplier_article)
+                        ->update([
+                            'product_id' => $target['product']->id,
+                            'product_sku' => $target['product']->sku,
+                            'updated_at' => $now,
+                        ]);
+                    $linksReassigned++;
+                }
+
+                DB::table('products')->where('id', $artifact->id)->update([
+                    'is_active' => false,
+                    'is_archived' => true,
+                    'in_stock' => false,
+                    'stock_qty' => null,
+                    'availability_status' => 'out_of_stock',
+                    'updated_at' => $now,
+                ]);
+                $archived++;
+            }
+        });
+
+        return ['archived' => $archived, 'links_reassigned' => $linksReassigned];
     }
 
     /** @return array{rows: array<int, array<string, mixed>>, metrics: array<string, int>} */
