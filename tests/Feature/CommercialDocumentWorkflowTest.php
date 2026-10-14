@@ -273,6 +273,9 @@ class CommercialDocumentWorkflowTest extends TestCase
                 return in_array($product->id, $state['copilot_product_ids'] ?? [], true)
                     && (float) ($state['copilot_quantities'][$product->id] ?? 0) === 2.0;
             })
+            ->assertSee('Точное совпадение')
+            ->assertSee('точно совпал артикул')
+            ->assertSee('закупка: нет данных')
             ->callFormComponentAction('copilot_actions', 'add_copilot_products')
             ->assertFormSet(function (array $state) use ($product): bool {
                 return collect($state['items'] ?? [])->contains(
@@ -281,5 +284,36 @@ class CommercialDocumentWorkflowTest extends TestCase
                         && (float) ($item['unit_price'] ?? 0) === 578.28,
                 );
             });
+    }
+
+    public function test_manager_sees_clarifying_questions_instead_of_random_stove_products(): void
+    {
+        $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Печи без параметров', 'slug' => 'stoves-without-selection-parameters', 'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Банная печь 18 м³ на дровах',
+            'slug' => 'random-bath-stove-must-not-be-suggested',
+            'sku' => 'BATH-18',
+            'price' => 1500,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(CreateCommercialDocument::class)
+            ->fillForm(['copilot_request' => 'Клиенту нужна печь'])
+            ->callFormComponentAction('copilot_actions', 'analyze_copilot_request')
+            ->assertFormSet(function (array $state): bool {
+                return ($state['copilot_product_ids'] ?? []) === []
+                    && ($state['copilot_suggestion_ids'] ?? []) === []
+                    && count($state['copilot_clarification_questions'] ?? []) === 3;
+            })
+            ->assertSee('Товары не подставлены')
+            ->assertSee('объём помещения')
+            ->assertSee('вид топлива');
     }
 }
