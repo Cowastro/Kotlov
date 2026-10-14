@@ -4556,6 +4556,45 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact manufacturer article is marketed as a nominal 500 x 500 mm
+    // protective screen with an actual sheet size of 480 x 480 mm. The source
+    // photo is clean and has no retailer watermark.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DZ = [
+        'УТ-00001999' => [
+            'template_slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia',
+            'allow_unmatched' => true,
+            'category_slug' => 'aksessuary-kaminy',
+            'external_id' => 'f37d7c0d-9186-11e9-b722-1c1b0d1de7c2',
+            'external_sku' => 'TS.KMP.LST.0000.75657',
+            'fragments' => ['Экран', '480х480', 'М'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Экран защитный 500 × 500 / 480 × 480 мм',
+            'retail' => 39.06,
+            'images' => [
+                'img/products/teplov-i-suhov/protective-screen-500x500-480x480.jpeg',
+            ],
+            'source_url' => 'https://radiat.ru/catalog/ekran/ekran_500kh500/',
+            'short' => 'Защитно-декоративный экран Теплов и Сухов из нержавеющей стали AISI 430 для снижения нагрева стены возле печи или дымохода.',
+            'content' => '<p><strong>Теплов и Сухов Экран 500 × 500 / 480 × 480 мм</strong> — защитно-декоративный лист из нержавеющей стали для установки возле печи, теплогенерирующего аппарата или дымоходной системы.</p><p>Экран помогает снизить воздействие теплового излучения на стену и закрывает негорючий изоляционный материал. Номинальный размер модели в каталогах — 500 × 500 мм, фактический размер листа — 480 × 480 мм.</p><p>Для полноценной тепловой защиты экран необходимо монтировать совместно с подходящим негорючим теплоизоляционным материалом и соблюдать требования пожарной безопасности.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Защитный экран'],
+                ['key' => 'Номинальный размер', 'value' => '500 × 500 мм'],
+                ['key' => 'Фактический размер', 'value' => '480 × 480 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Назначение', 'value' => 'Защита стены от теплового излучения'],
+                ['key' => 'Артикул', 'value' => 'TS.KMP.LST.0000.75657'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4690,6 +4729,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-disputed-20261014-dw' => self::BATCH_UNMATCHED_DISPUTED_20261014_DW,
             'unmatched-researched-20261014-dx' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DX,
             'unmatched-researched-20261014-dy' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DY,
+            'unmatched-researched-20261014-dz' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DZ,
             default => null,
         };
 

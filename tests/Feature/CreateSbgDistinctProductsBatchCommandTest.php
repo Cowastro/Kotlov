@@ -9563,4 +9563,59 @@ XML;
         $this->assertFileExists(public_path('img/products/chistogrill/chistogrill-grill-cleaner-700ml.png'));
         $this->assertStringContainsString('siteapi.org', $product->content_source_url);
     }
+
+    public function test_it_creates_the_exact_teplov_i_suhov_500x500_protective_screen(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-protective-screen-500',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Аксессуары для каминов',
+            'slug' => 'aksessuary-kaminy',
+            'parent_id' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-000910',
+            'name' => 'Nordflam Решетка каминная AERO 90×800 белая',
+            'slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia',
+            'price' => 104,
+            'images' => ['img/products/nordflam/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'f37d7c0d-9186-11e9-b722-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001999',
+            'external_sku' => 'TS.KMP.LST.0000.75657',
+            'name' => 'Экран 480х480 М',
+            'price_byn' => 39.06,
+            'stock_quantity' => 9,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dz',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('Теплов и Сухов Экран защитный 500 × 500 / 480 × 480 мм', $product->name);
+        $this->assertSame('TS.KMP.LST.0000.75657', $item->fresh()->external_sku);
+        $this->assertSame('39.06', $product->price);
+        $this->assertSame('9', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('480 × 480 мм', collect($product->specs)->firstWhere('key', 'Фактический размер')['value']);
+        $this->assertSame('AISI 430', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/protective-screen-500x500-480x480.jpeg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/protective-screen-500x500-480x480.jpeg'));
+        $this->assertStringContainsString('radiat.ru', $product->content_source_url);
+    }
 }
