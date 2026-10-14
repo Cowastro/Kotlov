@@ -58,6 +58,8 @@ return [
         'openai_url' => env('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions'),
         'openai_model' => env('OPENAI_MODEL', 'gpt-4.1'),
         'openai_responses_url' => env('OPENAI_RESPONSES_URL', 'https://api.openai.com/v1/responses'),
+        'openai_document_model' => env('OPENAI_DOCUMENT_MODEL', 'gpt-4.1-mini'),
+        'pdftotext_binary' => env('PDFTOTEXT_BINARY', 'pdftotext'),
         'openai_research_model' => env('OPENAI_RESEARCH_MODEL', 'gpt-6.1-sol'),
         'openai_research_timeout' => env('OPENAI_RESEARCH_TIMEOUT', 180),
         'openai_proxy' => env('OPENAI_PROXY', ''),

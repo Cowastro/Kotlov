@@ -5,6 +5,7 @@ namespace App\Services\CommercialDocuments;
 use App\Models\CrmMailThread;
 use App\Models\Product;
 use App\Services\Crm\BelarusCompanyLookup;
+use App\Services\CrmMail\CrmMailPdfTextExtractor;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -20,6 +21,7 @@ class QuickCommercialOfferService
     public function __construct(
         private readonly CommercialOfferMailAnalyzer $mailAnalyzer,
         private readonly BelarusCompanyLookup $companyLookup,
+        private readonly CrmMailPdfTextExtractor $pdfTextExtractor,
     ) {}
 
     /**
@@ -28,17 +30,23 @@ class QuickCommercialOfferService
     public function prepare(CrmMailThread $thread, ?bool $useAi = null): array
     {
         $thread->loadMissing(['counterparty.contactPoints', 'contact.contactPoints', 'messages']);
-        $text = $this->sourceText($thread);
+        [$text, $pdfSummary] = $this->sourceText($thread);
         $analysis = $this->mailAnalyzer->analyze($thread, $text, $useAi);
         $registry = $this->companyLookup->lookup($analysis['unp'] ?? null);
         if ($registry) {
             $analysis = $this->mergeRegistryData($analysis, $registry);
         }
 
-        return array_merge(
+        $prepared = array_merge(
             $this->matchProducts($text, $analysis),
             ['prefill' => $this->clientPrefill($thread, $text, $analysis)],
         );
+
+        if ($pdfSummary !== '') {
+            $prepared['analysis_summary'] = trim($prepared['analysis_summary'].' '.$pdfSummary);
+        }
+
+        return $prepared;
     }
 
     /**
@@ -270,16 +278,45 @@ class QuickCommercialOfferService
         return $score + ((float) $product->price > 0 ? 5 : 0) + ($product->in_stock ? 5 : 0);
     }
 
-    private function sourceText(CrmMailThread $thread): string
+    /** @return array{string, string} */
+    private function sourceText(CrmMailThread $thread): array
     {
         $message = $thread->messages->where('direction', 'incoming')->sortByDesc('received_at')->first()
             ?? $thread->messages->sortByDesc('received_at')->first();
 
-        return trim(implode("\n", array_filter([
+        $parts = array_filter([
             $thread->subject,
             $message?->subject,
             $message?->text_body ?: strip_tags((string) $message?->html_body),
-        ])));
+        ]);
+        $pdfNames = [];
+        $pdfFailures = 0;
+
+        if ($message) {
+            collect($message->metadata['attachments'] ?? [])
+                ->values()
+                ->filter(fn (mixed $attachment): bool => is_array($attachment)
+                    && mb_strtolower(pathinfo((string) ($attachment['name'] ?? ''), PATHINFO_EXTENSION)) === 'pdf')
+                ->take(3)
+                ->each(function (array $attachment, int $index) use ($message, &$parts, &$pdfNames, &$pdfFailures): void {
+                    try {
+                        $extracted = $this->pdfTextExtractor->extract($message, $index);
+                        $parts[] = "PDF-ВЛОЖЕНИЕ {$extracted['name']}:\n{$extracted['text']}";
+                        $pdfNames[] = $extracted['name'].($extracted['method'] === 'openai-ocr' ? ' (ИИ-OCR)' : '');
+                    } catch (\Throwable) {
+                        $pdfFailures++;
+                    }
+                });
+        }
+
+        $summary = $pdfNames !== []
+            ? 'PDF прочитан: '.implode(', ', $pdfNames).'.'
+            : '';
+        if ($pdfFailures > 0) {
+            $summary .= ($summary !== '' ? ' ' : '').'Не удалось прочитать PDF: '.$pdfFailures.'.';
+        }
+
+        return [trim(implode("\n", $parts)), $summary];
     }
 
     private function tokens(string $text): Collection

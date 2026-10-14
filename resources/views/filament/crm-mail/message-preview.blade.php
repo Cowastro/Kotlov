@@ -112,6 +112,15 @@
                                     download="{{ $attachmentName }}"
                                     title="Скачать оригинал"
                                 >⬇ Скачать</a>
+                                @if ($extension === 'pdf')
+                                    <a
+                                        class="crm-mail-attachment-ai"
+                                        href="{{ route('admin.crm-mail-messages.attachments.read-pdf', ['message' => $message, 'attachment' => $index]) }}"
+                                        target="_blank"
+                                        rel="noopener"
+                                        title="Распознать текст PDF и скопировать его"
+                                    >✨ Прочитать ИИ</a>
+                                @endif
                             @else
                                 <a
                                     class="crm-mail-attachment"
@@ -166,6 +175,9 @@
         .crm-mail-attachment-group .crm-mail-attachment { border-radius: 8px 0 0 8px; }
         .crm-mail-attachment-download { display: inline-flex; align-items: center; border: 1px solid rgb(82 82 91); border-left: 0; border-radius: 0 8px 8px 0; padding: 7px 10px; color: rgb(134 239 172); font-size: 12px; text-decoration: none; }
         .crm-mail-attachment-download:hover { border-color: rgb(34 197 94); background: rgb(34 197 94 / .1); }
+        .crm-mail-attachment-ai { display: inline-flex; align-items: center; border: 1px solid rgb(124 58 237); border-left: 0; border-radius: 0 8px 8px 0; padding: 7px 10px; color: rgb(196 181 253); font-size: 12px; text-decoration: none; }
+        .crm-mail-attachment-group:has(.crm-mail-attachment-ai) .crm-mail-attachment-download { border-radius: 0; }
+        .crm-mail-attachment-ai:hover { background: rgb(124 58 237 / .15); }
         a.crm-mail-attachment { color: rgb(96 165 250); text-decoration: none; }
         a.crm-mail-attachment:hover { border-color: rgb(96 165 250); background: rgb(59 130 246 / .1); }
         .crm-mail-attachment small { margin-left: 6px; color: rgb(161 161 170); }

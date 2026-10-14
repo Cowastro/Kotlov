@@ -13,6 +13,8 @@ use App\Services\AiContentEnricher;
 use App\Services\CommercialDocuments\QuickCommercialOfferSaver;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class QuickCommercialOfferServiceTest extends TestCase
@@ -118,6 +120,75 @@ class QuickCommercialOfferServiceTest extends TestCase
         $this->assertSame(4.0, $result['product_quantities'][$product->id]);
         $this->assertStringContainsString('DeepSeek', $result['analysis_summary']);
         $this->assertSame('777.00', $product->fresh()->price);
+    }
+
+    public function test_scanned_pdf_text_is_sent_to_ai_and_used_for_product_selection(): void
+    {
+        Storage::fake('local');
+        config([
+            'services.ai.openai_key' => 'test-openai-key',
+            'services.ai.openai_responses_url' => 'https://api.openai.test/v1/responses',
+            'services.ai.openai_document_model' => 'gpt-4.1-mini',
+            'services.ai.pdftotext_binary' => 'missing-pdftotext-for-test',
+        ]);
+        Http::fake([
+            'api.openai.test/*' => Http::response([
+                'output_text' => 'Запрос: счётчик газа СГД-3Т G6, количество 2 штуки. Просим предоставить цену и срок поставки.',
+            ]),
+        ]);
+
+        $ai = $this->mock(AiContentEnricher::class);
+        $ai->shouldReceive('isAvailable')->andReturn(true);
+        $ai->shouldReceive('providerName')->andReturn('deepseek-chat (api.deepseek.com)');
+        $ai->shouldReceive('complete')->once()->withArgs(fn (string $prompt): bool => str_contains($prompt, 'СГД-3Т G6'))
+            ->andReturn(json_encode([
+                'company' => null,
+                'legal_name' => null,
+                'unp' => null,
+                'legal_address' => null,
+                'contact_name' => null,
+                'contact_position' => null,
+                'phones' => [],
+                'emails' => [],
+                'items' => [['query' => 'Счётчик газа СГД-3Т G6', 'sku' => 'SGD-3T-G6', 'quantity' => 2]],
+                'note' => null,
+            ], JSON_UNESCAPED_UNICODE));
+
+        $mailbox = CrmMailbox::query()->create([
+            'name' => 'PDF AI', 'email' => 'pdf-ai@kotlov.by', 'username' => 'pdf-ai@kotlov.by',
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Газовые счётчики', 'slug' => 'pdf-ai-gas-meters', 'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id, 'name' => 'Счётчик газа СГД-3Т G6',
+            'slug' => 'pdf-ai-sgd-3t-g6', 'sku' => 'SGD-3T-G6', 'price' => 315,
+            'currency' => 'BYN', 'is_active' => true, 'is_archived' => false,
+        ]);
+        $thread = CrmMailThread::query()->create([
+            'mailbox_id' => $mailbox->id, 'thread_key' => 'pdf-ai-quick-offer-test',
+            'subject' => 'Запрос во вложении', 'participant_email' => 'buyer@example.com',
+            'status' => 'new', 'priority' => 'normal', 'messages_count' => 1,
+            'unread_count' => 1, 'last_message_at' => now(),
+        ]);
+        $path = 'crm-mail-attachments/incoming/1/200/01-SCAN0102.PDF';
+        $pdf = "%PDF-1.4\nscanned-image-only-unique";
+        Storage::disk('local')->put($path, $pdf);
+        $thread->messages()->create([
+            'mailbox_id' => $mailbox->id, 'direction' => 'incoming', 'from_email' => 'buyer@example.com',
+            'subject' => 'Запрос во вложении', 'text_body' => 'Позиции указаны в приложенном PDF.',
+            'attachments_count' => 1, 'is_read' => false, 'received_at' => now(),
+            'metadata' => ['attachments' => [[
+                'name' => 'SCAN0102.PDF', 'path' => $path, 'mime_type' => 'application/pdf',
+                'size' => strlen($pdf), 'stored' => true, 'error' => null,
+            ]]],
+        ]);
+
+        $result = app(QuickCommercialOfferService::class)->prepare($thread, true);
+
+        $this->assertContains($product->id, $result['default_product_ids']);
+        $this->assertSame(2.0, $result['product_quantities'][$product->id]);
+        $this->assertStringContainsString('SCAN0102.PDF (ИИ-OCR)', $result['analysis_summary']);
     }
 
     public function test_manager_text_is_matched_with_quantity_without_ai(): void

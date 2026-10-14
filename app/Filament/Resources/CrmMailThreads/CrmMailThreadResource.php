@@ -235,7 +235,7 @@ class CrmMailThreadResource extends Resource
                     ->color('success')
                     ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status !== 'draft')
                     ->modalHeading('Быстрое коммерческое предложение')
-                    ->modalDescription('Для разбора тема и текст письма передаются настроенному DeepSeek. Компания и товары будут предложены автоматически, а цены всегда берутся только из нашей базы.')
+                    ->modalDescription('Для разбора используются тема, текст письма и PDF-вложения. Сканированные PDF распознаются ИИ. Компания и товары будут предложены автоматически, а цены всегда берутся только из нашей базы.')
                     ->modalSubmitActionLabel('Продолжить к КП')
                     ->modalWidth('5xl')
                     ->fillForm(function (CrmMailThread $record): array {

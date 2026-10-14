@@ -7,6 +7,7 @@ use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 use ZipArchive;
@@ -102,6 +103,61 @@ class CrmMailAttachmentDownloadTest extends TestCase
         $download->assertOk();
         $this->assertStringStartsWith('attachment;', (string) $download->headers->get('Content-Disposition'));
         $this->assertSame('PDF-CONTENT', $download->streamedContent());
+    }
+
+    public function test_manager_can_use_ai_to_read_and_copy_a_scanned_pdf(): void
+    {
+        Storage::fake('local');
+        config([
+            'services.ai.openai_key' => 'test-openai-key',
+            'services.ai.openai_responses_url' => 'https://api.openai.test/v1/responses',
+            'services.ai.openai_document_model' => 'gpt-4.1-mini',
+            'services.ai.pdftotext_binary' => 'missing-pdftotext-for-test',
+        ]);
+        Http::fake([
+            'api.openai.test/*' => Http::response([
+                'output' => [[
+                    'type' => 'message',
+                    'content' => [[
+                        'type' => 'output_text',
+                        'text' => 'Счётчик газа СГД-3Т G6, количество 2 штуки. Просим предоставить коммерческое предложение.',
+                    ]],
+                ]],
+            ]),
+        ]);
+
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $path = 'crm-mail-attachments/incoming/1/103/01-scan.pdf';
+        $message = $this->messageWithAttachment($path, 'SCAN0102.PDF');
+        Storage::disk('local')->put($path, "%PDF-1.4\nscanned-image-only");
+
+        $response = $this->actingAs($manager)->get(route('admin.crm-mail-messages.attachments.read-pdf', [
+            'message' => $message,
+            'attachment' => 0,
+        ]));
+
+        $response->assertOk()
+            ->assertSee('Скан распознан с помощью ИИ')
+            ->assertSee('Счётчик газа СГД-3Т G6')
+            ->assertSee('Копировать текст');
+
+        Http::assertSent(fn ($request): bool => $request->url() === 'https://api.openai.test/v1/responses'
+            && data_get($request->data(), 'input.0.content.0.type') === 'input_file'
+            && str_starts_with((string) data_get($request->data(), 'input.0.content.0.file_data'), 'data:application/pdf;base64,'));
+    }
+
+    public function test_customer_cannot_read_pdf_with_ai(): void
+    {
+        Storage::fake('local');
+        $customer = User::factory()->create(['role' => 'client', 'is_active' => true]);
+        $path = 'crm-mail-attachments/incoming/1/104/01-scan.pdf';
+        $message = $this->messageWithAttachment($path, 'SCAN0102.PDF');
+        Storage::disk('local')->put($path, "%PDF-1.4\nscanned-image-only");
+
+        $this->actingAs($customer)->get(route('admin.crm-mail-messages.attachments.read-pdf', [
+            'message' => $message,
+            'attachment' => 0,
+        ]))->assertForbidden();
     }
 
     private function messageWithAttachment(

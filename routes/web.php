@@ -15,6 +15,7 @@ use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\CrmMailAttachmentController;
 use App\Http\Controllers\CrmMailAttachmentPreviewController;
+use App\Http\Controllers\CrmMailPdfTextController;
 use App\Http\Controllers\FireplaceInstallationController;
 use App\Http\Controllers\HeatPumpInstallationController;
 use App\Http\Controllers\HeatPumpLandingController;
@@ -68,6 +69,11 @@ Route::get('/admin/crm-mail-messages/{message}/attachments/{attachment}/preview'
     ->whereNumber('attachment')
     ->middleware('auth')
     ->name('admin.crm-mail-messages.attachments.preview');
+
+Route::get('/admin/crm-mail-messages/{message}/attachments/{attachment}/read-pdf', CrmMailPdfTextController::class)
+    ->whereNumber('attachment')
+    ->middleware('auth')
+    ->name('admin.crm-mail-messages.attachments.read-pdf');
 
 Route::get('/robots.txt', function (Request $request) {
     if ($request->getHost() === 'admin.'.config('app.base_domain', 'kotlov.by')) {
