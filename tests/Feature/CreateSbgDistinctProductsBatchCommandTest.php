@@ -8779,4 +8779,132 @@ XML;
         $this->assertCount(3, $gsk->candidates[0]['evidence']);
         $this->assertSame($productCount + 2, Product::query()->count());
     }
+
+    public function test_it_creates_the_exact_cast_plate_and_hanging_heater_and_documents_two_generic_rows(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-plate-heater',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $casting = Category::query()->firstOrCreate(['slug' => 'pechnoe-i-kaminnoe-lite'], [
+            'name' => 'Печное и каминное литьё',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $accessories = Category::query()->firstOrCreate(['slug' => 'aksessuary-dlya-bani'], [
+            'name' => 'Аксессуары для бани',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $casting->id,
+            'name' => 'Плита Т202 с двумя конфорками Fireway',
+            'slug' => 'fireway-plita-t202-dve-konforki',
+            'price' => 398,
+            'images' => ['img/products/template-plate.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        Product::query()->create([
+            'category_id' => $accessories->id,
+            'sku' => 'PS-009.932',
+            'name' => 'Царь-Печи Буржуйка 8 мм',
+            'slug' => 'tsar-pechi-burzhuyka-template',
+            'price' => 100,
+            'images' => ['img/products/template-tsar-pechi.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $plate = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '6c628574-be8d-11ee-abaa-1c1b0d1de7c2',
+            'external_code' => 'УТ-00008383',
+            'name' => 'Плита цельная ПЦ (Б) 710х410мм',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $heater = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'af1f360e-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000258',
+            'name' => 'Каменка навесная "30"',
+            'price_byn' => 92,
+            'stock_quantity' => 2,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $headrest = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '783fcb3d-d82b-11ed-a6f2-1c1b0d1de7c2',
+            'external_code' => 'УТ-00008006',
+            'name' => 'Подголовник деревянный ComfortProm',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $cauldron = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'af1f360b-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000255',
+            'name' => 'Казан 20 л',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dm',
+        ])->assertSuccessful();
+        $this->assertNull($plate->fresh()->product_id);
+        $this->assertNull($heater->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dm',
+            '--apply' => true,
+        ])->assertSuccessful();
+        $plateProduct = $plate->fresh()->product()->sole();
+        $heaterProduct = $heater->fresh()->product()->sole();
+        $this->assertSame($productCount + 2, Product::query()->count());
+        $this->assertSame('149.00', $plateProduct->price);
+        $this->assertSame('1', (string) $plateProduct->stock_qty);
+        $this->assertSame($casting->id, $plateProduct->category_id);
+        $this->assertSame('23 кг', collect($plateProduct->specs)->firstWhere('key', 'Масса')['value']);
+        $this->assertSame(['img/products/balezino/plita-celnaya-pc-b-710x410.jpg'], $plateProduct->images);
+        $this->assertSame('92.00', $heaterProduct->price);
+        $this->assertSame('2', (string) $heaterProduct->stock_qty);
+        $this->assertSame($accessories->id, $heaterProduct->category_id);
+        $this->assertSame('до 30 кг', collect($heaterProduct->specs)->firstWhere('key', 'Масса камней')['value']);
+        $this->assertSame(['img/products/tsar-pechi/kamenka-navesnaya-30.jpg'], $heaterProduct->images);
+        $this->assertFileExists(public_path('img/products/balezino/plita-celnaya-pc-b-710x410.jpg'));
+        $this->assertFileExists(public_path('img/products/tsar-pechi/kamenka-navesnaya-30.jpg'));
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-dn',
+        ])->assertSuccessful();
+        $this->assertSame('unmatched', $headrest->fresh()->match_status);
+        $this->assertSame('unmatched', $cauldron->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-dn',
+            '--apply' => true,
+        ])->assertSuccessful();
+        $headrest->refresh();
+        $cauldron->refresh();
+        $this->assertSame('ambiguous', $headrest->match_status);
+        $this->assertSame('manual_research_unresolved', $headrest->match_method);
+        $this->assertContains('закупочная и розничная цена', $headrest->candidates[0]['required_data']);
+        $this->assertSame('ambiguous', $cauldron->match_status);
+        $this->assertSame('manual_research_unresolved', $cauldron->match_method);
+        $this->assertCount(3, $cauldron->candidates[0]['evidence']);
+        $this->assertSame($productCount + 2, Product::query()->count());
+    }
 }
