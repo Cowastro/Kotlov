@@ -92,9 +92,7 @@ class CrmMailSender
                 'handled_at' => now(),
             ])->save();
 
-            $commercialDocuments = CommercialDocument::query()
-                ->where('crm_mail_thread_id', $thread->id)
-                ->update(['status' => 'sent', 'sent_at' => now()]);
+            $commercialDocuments = $this->markCommercialDocumentsSent($thread);
 
             if ($commercialDocuments > 0) {
                 $thread->markProposalSent($user->id);
@@ -102,6 +100,14 @@ class CrmMailSender
 
             return $draft->fresh();
         });
+    }
+
+    public function markCommercialDocumentsSent(CrmMailThread $thread): int
+    {
+        return CommercialDocument::query()
+            ->where('crm_mail_thread_id', $thread->id)
+            ->where('status', 'draft')
+            ->update(['status' => 'sent', 'sent_at' => now()]);
     }
 
     public function reply(
