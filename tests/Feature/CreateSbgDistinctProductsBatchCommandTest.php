@@ -9114,4 +9114,48 @@ XML;
         }
         $this->assertSame($productCount + 6, Product::query()->count());
     }
+
+    public function test_it_flags_two_old_burner_rows_until_the_actual_controller_and_package_are_confirmed(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-old-burner-packages',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $rows = [
+            ['af1f3591-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000133', 'Горелка OXI Ceramik+F30 HOTTO'],
+            ['af1f358e-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000130', 'Горелка Cyberia 100'],
+        ];
+        $items = collect($rows)->mapWithKeys(function (array $row) use ($source): array {
+            $item = IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id,
+                'external_id' => $row[0],
+                'external_code' => $row[1],
+                'name' => $row[2],
+                'price_byn' => null,
+                'stock_quantity' => 1,
+                'stock_confirmed_at' => now(),
+                'match_status' => 'unmatched',
+            ]);
+
+            return [$row[1] => $item];
+        });
+        $productCount = Product::query()->count();
+
+        $status = \Illuminate\Support\Facades\Artisan::call('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-ds',
+            '--apply' => true,
+        ]);
+        $this->assertSame(0, $status, \Illuminate\Support\Facades\Artisan::output());
+        $oxi = $items['УТ-00000133']->fresh();
+        $cyberia = $items['УТ-00000130']->fresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame(['ambiguous', 'ambiguous'], [$oxi->match_status, $cyberia->match_status]);
+        $this->assertSame(['manual_research_unresolved', 'manual_research_unresolved'], [$oxi->match_method, $cyberia->match_method]);
+        $this->assertContains('решение: продажа с новым XO или архив', $oxi->candidates[0]['required_data']);
+        $this->assertContains('актуальная розничная цена', $cyberia->candidates[0]['required_data']);
+        $this->assertStringContainsString('2018', $cyberia->candidates[0]['evidence'][0]['finding']);
+    }
 }

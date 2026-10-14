@@ -4273,6 +4273,46 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_DISPUTED_20261014_DS = [
+        'УТ-00000133' => [
+            'document_dispute' => true,
+            'external_id' => 'af1f3591-1f62-11e9-bad6-1c1b0d1de7c2',
+            'fragments' => ['Горелка', 'OXI', 'Ceramik', 'F30', 'HOTTO'],
+            'reason' => 'Строка 1С относится к старой комплектации горелки HOTTA/OXI Ceramik с контроллером F30. Старые пульты OXI публиковать нельзя, а по записи неясно, продаётся ли комплект именно со старым F30, только механическая часть горелки или обновлённый комплект с современным контроллером XO. Клиентская цена отсутствует. Создание публичной карточки сейчас могло бы показать неверную комплектацию и устаревшую автоматику.',
+            'required_data' => [
+                'фотография фактического складского комплекта и шильдика',
+                'мощность горелки',
+                'точная модель контроллера в комплекте',
+                'состав комплекта: горелка, шнек, автоматика и датчики',
+                'актуальная розничная цена',
+                'решение: продажа с новым XO или архив',
+            ],
+            'evidence' => [[
+                'url' => 'https://kotlov.by/blog/hotta-ceramik-20-30-kvt-rasprodazha-s-wifi-kontrollerom',
+                'finding' => 'Актуальные складские комплекты HOTTA Ceramik на KOTLOV комплектуются современным контроллером XO с Wi‑Fi; старые OXI и F30 упоминаются только в истории серии.',
+            ]],
+        ],
+        'УТ-00000130' => [
+            'document_dispute' => true,
+            'external_id' => 'af1f358e-1f62-11e9-bad6-1c1b0d1de7c2',
+            'fragments' => ['Горелка', 'Cyberia', '100'],
+            'reason' => 'HOTTA Cyberia 100 идентифицируется как пеллетная горелка старой серии номинальной мощностью 100 кВт, однако строка 1С не содержит производителя, года исполнения, модели контроллера, состава комплекта, фотографии и клиентской цены. Паспорт 2018 года описывает варианты Cyberia и Cyberia Pro, поэтому без осмотра склада нельзя определить фактическое исполнение и безопасно опубликовать актуальную комплектацию.',
+            'required_data' => [
+                'фотография горелки и заводского шильдика',
+                'исполнение Cyberia или Cyberia Pro',
+                'модель и состояние контроллера',
+                'состав комплекта: горелка, шнек, автоматика и датчики',
+                'год выпуска и состояние складского изделия',
+                'актуальная розничная цена',
+                'решение: обновлённый комплект или архив',
+            ],
+            'evidence' => [[
+                'url' => 'https://storage.by.prom.st/200485_instruktsiya_pasport_hott__eria_pro_100_150_2018.pdf',
+                'finding' => 'Паспорт 2018 года подтверждает модели HOTTA Cyberia/Cyberia Pro 100 и 150 кВт, но не позволяет определить фактическую складскую комплектацию конкретной строки 1С.',
+            ]],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4400,6 +4440,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-dp' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DP,
             'unmatched-researched-20261014-dq' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DQ,
             'unmatched-disputed-20261014-dr' => self::BATCH_UNMATCHED_DISPUTED_20261014_DR,
+            'unmatched-disputed-20261014-ds' => self::BATCH_UNMATCHED_DISPUTED_20261014_DS,
             default => null,
         };
 
