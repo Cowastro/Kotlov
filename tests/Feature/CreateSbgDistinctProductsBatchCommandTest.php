@@ -10133,4 +10133,58 @@ XML;
         $this->assertFileExists(public_path('img/products/teplov-i-suhov/shiber-shm-r-m2-430-05-d80.jpg'));
         $this->assertStringContainsString('revitech.ru', $product->content_source_url);
     }
+
+    public function test_it_creates_the_exact_aisi_430_d150_male_male_transition_with_researched_price(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-transition-430-d150',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'perehody-adaptery-dymohod'], [
+            'name' => 'Переходы и адаптеры дымохода',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-009.149',
+            'name' => 'Тестовый товар-шаблон',
+            'slug' => 'transition-ej-test-template',
+            'price' => 10,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '37dd7be0-6333-11f1-b4b9-1c1b0d1de7c2',
+            'external_code' => 'УТ-00009544',
+            'external_sku' => 'TS.FRT.PRM.0150.74712',
+            'name' => 'Переход Моно П-П 430-0.8 D150/150',
+            'stock_quantity' => 3,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-ej',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('15.20', $product->price);
+        $this->assertSame('3', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('TS.FRT.PRM.0150.74712', $item->fresh()->external_sku);
+        $this->assertSame('150/150 мм', collect($product->specs)->firstWhere('key', 'Диаметры')['value']);
+        $this->assertSame('Папа-папа', collect($product->specs)->firstWhere('key', 'Соединение')['value']);
+        $this->assertSame('0,8 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/perehod-mono-pp-430-08-d150-150.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/perehod-mono-pp-430-08-d150-150.jpg'));
+        $this->assertStringContainsString('kaminchi.ru', $product->content_source_url);
+    }
 }

@@ -4967,6 +4967,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact current dealer offer is 421 RUB. At the 2026-10-14 NBRB
+    // rate it converts to 15.16 BYN, rounded to a practical retail 15.20 BYN.
+    // The gallery image carries only the manufacturer's own brand mark.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EJ = [
+        'УТ-00009544' => [
+            'template' => 'PS-009.149',
+            'allow_unmatched' => true,
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'external_sku' => 'TS.FRT.PRM.0150.74712',
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'fragments' => ['Переход Моно', 'П-П', '430-0.8', 'D150/150'],
+            'name' => 'Теплов и Сухов Переход Моно П-П 430-0.8 D150/150',
+            'retail' => 15.20,
+            'images' => ['img/products/teplov-i-suhov/perehod-mono-pp-430-08-d150-150.jpg'],
+            'source_url' => 'https://kaminchi.ru/dimohod/dymoxody-modulnye-iz-nerzhaveyushhej-stali/dvustennye-sendvich-dymoxody/dymoxody-dvustennye-diametrom-150-mm/perekhod-mono-p-p-430-0-8-d150-1501',
+            'short' => 'Соединительный переход «Теплов и Сухов» П-П для стыковки двух раструбов одностенного дымохода Ø150 мм.',
+            'content' => '<p><strong>Теплов и Сухов Переход Моно П-П D150/150</strong> — соединительный элемент с двумя концами типа «папа» для стыковки двух элементов одностенного дымохода с раструбами типа «мама».</p><p>Переход изготовлен из нержавеющей стали AISI 430 толщиной 0,8 мм. Одинаковый диаметр 150 мм с обеих сторон сохраняет проходное сечение дымового канала и позволяет собрать совместимые элементы модульной системы.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Соединительный переход Моно'],
+                ['key' => 'Модель', 'value' => 'П-П'],
+                ['key' => 'Диаметры', 'value' => '150/150 мм'],
+                ['key' => 'Соединение', 'value' => 'Папа-папа'],
+                ['key' => 'Назначение', 'value' => 'Стыковка двух соединений типа «мама»'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,8 мм'],
+                ['key' => 'Конструкция', 'value' => 'Одностенная, без теплоизоляции'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.PRM.0150.74712'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5111,6 +5148,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-eg' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EG,
             'unmatched-researched-20261014-eh' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EH,
             'unmatched-researched-20261014-ei' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EI,
+            'unmatched-researched-20261014-ej' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EJ,
             default => null,
         };
 
