@@ -46,6 +46,38 @@ class B2bCatalogPricingTest extends TestCase
             ->assertSeeText('120.00 BYN');
     }
 
+    public function test_approved_wholesale_user_can_order_a_procurement_offer_without_fake_stock(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        $source = IntegrationSource::query()->where('code', 'onec')->firstOrFail();
+        $settings = $source->settings;
+        $settings['procurement_mode'] = true;
+        $settings['warehouse_label'] = 'Закупка БелОМО';
+        $source->update(['settings' => $settings]);
+        IntegrationProduct::query()->where('product_id', $product->id)->update([
+            'price' => 153.65,
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => 'exclusive',
+            'price_vat_rate' => 20,
+            'price_byn' => 184.38,
+            'stock_quantity' => 0,
+            'stock_confirmed_at' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertSeeText('184.38 BYN')
+            ->assertSeeText('Закупка БелОМО')
+            ->assertDontSeeText('Закупка БелОМО: 0 шт.');
+
+        $this->actingAs($user)
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2])
+            ->assertOk()
+            ->assertJsonPath('subtotal', 368.76);
+    }
+
     public function test_public_product_page_shows_the_actual_site_stock_quantity(): void
     {
         [$product, $user] = $this->catalogFixture(approved: false);

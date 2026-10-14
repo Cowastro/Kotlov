@@ -113,10 +113,10 @@ class CheckoutController extends Controller
                 $offer = $product ? $offerResolver->forProduct($product, Auth::user()) : null;
                 if (! $offer
                     || (int) ($item['integration_product_id'] ?? 0) !== (int) $offer->id
-                    || (int) $item['quantity'] > (float) $offer->stock_quantity) {
+                    || ! $offerResolver->canOrder($offer, (int) $item['quantity'])) {
                     return redirect()->route('cart')->with(
                         'error',
-                        'B2B-заказ не создан: одна из позиций потеряла привязку или свежий подтверждённый остаток 1С.'
+                        'B2B-заказ не создан: одна из позиций потеряла привязку или больше недоступна в указанном количестве.'
                     );
                 }
 

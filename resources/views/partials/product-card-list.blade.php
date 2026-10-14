@@ -11,8 +11,9 @@
     $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
     $b2bOffer = $b2bComparison['offer'] ?? null;
     $isB2bOffer = $b2bOffer !== null;
+    $isProcurementOffer = $isB2bOffer && $b2bOffer->source?->isProcurementMode();
     $canBuy = $isB2bOffer
-        ? $product->is_active && ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
+        ? $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
         : (method_exists($product, 'canBePurchased') ? $product->canBePurchased() : ($product->in_stock && $product->price > 0));
     $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
 
@@ -146,8 +147,12 @@
             @if ($isB2bOffer)
                 <span class="text-caption-01 text-success">
                     <i class="icon icon-CheckCircle"></i>
-                    {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
-                    {{ $b2bOffer->formattedStockQuantity() }}
+                    @if ($isProcurementOffer)
+                        {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Под заказ') }}
+                    @else
+                        {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
+                        {{ $b2bOffer->formattedStockQuantity() }}
+                    @endif
                 </span>
             @elseif ($availabilityStatus === 'in_stock')
                 <span class="text-caption-01 text-success">

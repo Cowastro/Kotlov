@@ -75,6 +75,11 @@ class IntegrationSource extends Model
         return (bool) data_get($this->settings, 'b2b_enabled', false);
     }
 
+    public function isProcurementMode(): bool
+    {
+        return (bool) data_get($this->settings, 'procurement_mode', false);
+    }
+
     public function partnerName(): string
     {
         return (string) data_get($this->settings, 'partner_name', $this->name);

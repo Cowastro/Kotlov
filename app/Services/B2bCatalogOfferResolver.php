@@ -82,6 +82,20 @@ class B2bCatalogOfferResolver
         return $offer->hasFreshPositiveStock();
     }
 
+    public function isProcurementOffer(IntegrationProduct $offer): bool
+    {
+        return $offer->source?->isProcurementMode() === true;
+    }
+
+    public function canOrder(IntegrationProduct $offer, int $quantity = 1): bool
+    {
+        if ($this->isProcurementOffer($offer)) {
+            return $quantity >= 1 && $quantity <= 999;
+        }
+
+        return $this->hasFreshStock($offer) && $quantity <= (float) $offer->stock_quantity;
+    }
+
     /** @return array{offer: IntegrationProduct, wholesale_price: float, retail_price: float, difference: float, difference_percent: float|null, vat_rate: float}|null */
     public function comparison(Product $product, ?User $user = null): ?array
     {
@@ -115,12 +129,11 @@ class B2bCatalogOfferResolver
             ->whereNotNull('product_id')
             ->where('match_status', 'matched')
             ->withUsablePrice()
-            ->where('stock_quantity', '>', 0)
             ->whereHas('source', fn ($query) => $query->where('is_active', true))
             ->get()
             ->filter(fn (IntegrationProduct $offer): bool => $offer->source?->isB2bEnabled() === true
                 && $offer->normalizedPriceByn() !== null
-                && $this->hasFreshStock($offer)
+                && ($this->isProcurementOffer($offer) || $this->hasFreshStock($offer))
                 && $this->sourceAllowsCategory($offer))
             ->values();
     }

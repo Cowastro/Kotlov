@@ -189,6 +189,7 @@
                                 @php
                                     $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
                                     $b2bOffer = $b2bComparison['offer'] ?? null;
+                                    $isProcurementOffer = $b2bOffer && $b2bOffer->source?->isProcurementMode();
                                     if (!$product->is_active || $product->is_archived) {
                                         $availabilityStatus = 'out_of_stock';
                                     } elseif ($b2bOffer && (float) $b2bOffer->stock_quantity > 0) {
@@ -199,7 +200,7 @@
                                             : 'check';
                                     }
                                     $canBuy = $b2bOffer
-                                        ? $product->is_active && ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
+                                        ? $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
                                         : $product->canBePurchased();
                                     $availabilityLabel = \App\Models\Product::availabilityStatusOptions()[$availabilityStatus]
                                         ?? 'Уточняйте наличие';
@@ -309,8 +310,12 @@
                                     @elseif ($b2bOffer)
                                         <span class="stock in-stock fw-medium text-success">
                                             <i class="icon icon-CheckCircle"></i>
-                                            {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
-                                            {{ $b2bOffer->formattedStockQuantity() }}
+                                            @if ($isProcurementOffer)
+                                                {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Под заказ') }}
+                                            @else
+                                                {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
+                                                {{ $b2bOffer->formattedStockQuantity() }}
+                                            @endif
                                         </span>
                                     @elseif ($availabilityStatus === 'in_stock')
                                         <span class="stock in-stock fw-medium text-success">

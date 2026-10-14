@@ -58,7 +58,7 @@ class CartController extends Controller
         }
 
         $canBeOrdered = $b2bOffer
-            ? $product->is_active && ! $product->is_archived && (float) $b2bOffer->stock_quantity >= 1
+            ? $product->is_active && ! $product->is_archived && $offerResolver->canOrder($b2bOffer)
             : $product->canBePurchased();
 
         if (! $canBeOrdered) {
@@ -71,8 +71,8 @@ class CartController extends Controller
 
         $qty = max(1, (int) $request->input('quantity', 1));
 
-        if ($b2bOffer && $qty > (float) $b2bOffer->stock_quantity) {
-            $message = 'Запрошенное количество превышает подтверждённый остаток 1С.';
+        if ($b2bOffer && ! $offerResolver->canOrder($b2bOffer, $qty)) {
+            $message = 'Запрошенное количество превышает доступный остаток поставщика.';
 
             return $request->expectsJson()
                 ? response()->json(['message' => $message], 422)
@@ -168,8 +168,8 @@ class CartController extends Controller
 
                 if (! $offer
                     || (int) ($cart[$id]['integration_product_id'] ?? 0) !== (int) $offer->id
-                    || $quantity > (float) $offer->stock_quantity) {
-                    $message = 'B2B-позиция изменилась или её остаток 1С уже недостаточен. Обновите корзину.';
+                    || ! $offerResolver->canOrder($offer, $quantity)) {
+                    $message = 'B2B-позиция изменилась или её уже нельзя заказать в указанном количестве. Обновите корзину.';
 
                     return $request->expectsJson()
                         ? response()->json(['message' => $message], 422)
