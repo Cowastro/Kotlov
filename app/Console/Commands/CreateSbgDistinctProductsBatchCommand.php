@@ -3754,6 +3754,112 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DK = [
+        'УТ-00000169' => [
+            'template' => 'PS-007.806',
+            'allow_unmatched' => true,
+            'category_slug' => 'zonty-deflektory',
+            'external_sku' => 'TS.FRT.DFR.0180.72739',
+            'fragments' => ['Дефлектор', 'ДМ-Р', '430-0.5', 'D180'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Дефлектор ДМ-Р AISI 430 0,5 мм D180',
+            'retail' => 60.00,
+            'images' => [
+                'img/products/teplov-i-suhov/deflektor-dm-r-430-05-d180.jpg',
+            ],
+            'source_url' => 'https://www.vseinstrumenti.ru/product/deflektor-dm-r-430-0-5-d180-m-teplovisuhov-ts-frt-dfr-0180-72739-1418170/',
+            'short' => 'Одностенный дефлектор Теплов и Сухов ДМ-Р диаметром 180 мм из нержавеющей стали AISI 430 толщиной 0,5 мм.',
+            'content' => '<p><strong>Теплов и Сухов ДМ-Р D180</strong> — завершающий элемент одностенного дымохода. Дефлектор помогает улучшить тягу и защищает дымовой канал от ветра, атмосферных осадков и посторонних загрязнений.</p><p>Изделие изготовлено из нержавеющей стали AISI 430 толщиной 0,5 мм и устанавливается на трубу диаметром 180 мм. При монтаже на утеплённый дымоход дефлектор устанавливают на совместимый конус Термо.</p>',
+            'specs' => [
+                ['key' => 'Тип элемента', 'value' => 'Дефлектор для дымохода'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Модель', 'value' => 'ДМ-Р'],
+                ['key' => 'Диаметр подключения', 'value' => '180 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Габариты (В×Ш×Г)', 'value' => '260×405×405 мм'],
+                ['key' => 'Масса нетто', 'value' => '1,295 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.DFR.0180.72739'],
+                ['key' => 'Штрихкод', 'value' => '4680205311772'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+        'УТ-00000167' => [
+            'template' => 'PS-007.806',
+            'allow_unmatched' => true,
+            'category_slug' => 'zonty-deflektory',
+            'external_sku' => 'TS.FRT.DFR.0130.74685',
+            'fragments' => ['Дефлектор', 'ДМ-Р', '430-0.5', 'D130'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Дефлектор ДМ-Р AISI 430 0,5 мм D130 (У1)',
+            'retail' => 43.20,
+            'images' => [
+                'img/products/teplov-i-suhov/deflektor-dm-r-430-05-d130.jpg',
+            ],
+            'source_url' => 'https://www.vseinstrumenti.ru/product/deflektor-dm-r-430-0-5-d130-m-u-teplovisuhov-u1-ts-frt-dfr-0130-74685-1418169/',
+            'short' => 'Одностенный дефлектор Теплов и Сухов ДМ-Р диаметром 130 мм из нержавеющей стали AISI 430 толщиной 0,5 мм.',
+            'content' => '<p><strong>Теплов и Сухов ДМ-Р D130 (У1)</strong> — завершающий элемент одностенного дымохода. Дефлектор помогает улучшить тягу и защищает дымовой канал от ветра, атмосферных осадков и посторонних загрязнений.</p><p>Изделие изготовлено из нержавеющей стали AISI 430 толщиной 0,5 мм и устанавливается на трубу диаметром 130 мм. При монтаже на утеплённый дымоход дефлектор устанавливают на совместимый конус Термо.</p>',
+            'specs' => [
+                ['key' => 'Тип элемента', 'value' => 'Дефлектор для дымохода'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Модель', 'value' => 'ДМ-Р'],
+                ['key' => 'Исполнение', 'value' => 'У1'],
+                ['key' => 'Диаметр подключения', 'value' => '130 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Габариты (В×Ш×Г)', 'value' => '240×295×295 мм'],
+                ['key' => 'Масса нетто', 'value' => '1,005 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.DFR.0130.74685'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
+    private const BATCH_UNMATCHED_DISPUTED_20261014_DL = [
+        'УТ-00000323' => [
+            'document_dispute' => true,
+            'external_id' => 'af1f364f-1f62-11e9-bad6-1c1b0d1de7c2',
+            'fragments' => ['Коллектор', 'Distant', 'GSK', '4.22'],
+            'reason' => 'Строка 1С «Коллектор Distant GSK 4.22» не содержит артикула, штрихкода, цены или фотографии. Точный производитель и модель Distant GSK 4.22 не найдены в открытых каталогах. Обозначение GSK применяется к коллекторам с гидравлическим разделителем в разных диаметрах и конфигурациях контуров, поэтому по одной строке нельзя достоверно определить мощность, присоединительные размеры, материал, комплектацию и изображение. Создавать публичную карточку с предположительными данными небезопасно.',
+            'required_data' => [
+                'точное название производителя или бренда',
+                'артикул производителя',
+                'штрихкод',
+                'фотография изделия и маркировки',
+                'количество отопительных контуров',
+                'диаметры входных и выходных подключений',
+                'максимальная мощность и расход теплоносителя',
+                'материал корпуса',
+                'состав комплекта',
+                'закупочная цена',
+            ],
+            'evidence' => [
+                [
+                    'url' => 'https://proxytherm.ru/raspredelitelnyy-kollektor-s-gidrostrelkoy-120-kvt-5-konturov/',
+                    'finding' => 'Официальная страница ProxyTherm показывает, что GSK 40-5 — коллектор с гидрострелкой на пять контуров, где индекс включает диаметр и конфигурацию.',
+                ],
+                [
+                    'url' => 'https://kermi-fko.ru/gsk-40-4-1-proxytherm.aspx',
+                    'finding' => 'Отдельная модель GSK 40-4.1 рассчитана на другую конфигурацию — четыре основных и один дополнительный контур; запись 4.22 ей не соответствует.',
+                ],
+                [
+                    'url' => 'https://enginer-pro.ru/catalog/gruppy-bystrogo-montazha/gidravlicheskie-razdeliteli-i-moduli/gidravlicheskie-razdeliteli-proksiterm/proksiterm-kollektor-s-gidrostrelkoy-gsk-32-21-vh-1-14-21-vyh-1/',
+                    'finding' => 'Модель GSK 32-2.1 имеет иной диаметр и схему выходов, что подтверждает необходимость полного точного индекса перед созданием карточки.',
+                ],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3873,6 +3979,8 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-disputed-20261014-dh' => self::BATCH_UNMATCHED_DISPUTED_20261014_DH,
             'unmatched-researched-20261014-di' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DI,
             'unmatched-researched-20261014-dj' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DJ,
+            'unmatched-researched-20261014-dk' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DK,
+            'unmatched-disputed-20261014-dl' => self::BATCH_UNMATCHED_DISPUTED_20261014_DL,
             default => null,
         };
 

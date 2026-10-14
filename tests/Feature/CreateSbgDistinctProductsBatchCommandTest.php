@@ -8648,4 +8648,135 @@ XML;
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_dm_r_deflectors_and_documents_the_unidentified_gsk_collector(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-dm-r-deflectors',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'zonty-deflektory'], [
+            'name' => 'Зонты и дефлекторы',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->firstOrCreate(['sku' => 'PS-007.806'], [
+            'category_id' => $category->id,
+            'name' => 'Зонт дымохода D115',
+            'slug' => 'zont-dymohoda-d115-template',
+            'price' => 20,
+            'images' => ['img/products/template-zont.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $items = collect([
+            [
+                'external_id' => 'af1f35b5-1f62-11e9-bad6-1c1b0d1de7c2',
+                'external_code' => 'УТ-00000169',
+                'external_sku' => 'TS.FRT.DFR.0180.72739',
+                'barcode' => '4680205311772',
+                'name' => 'Дефлектор ДМ-Р 430-0.5 D180 М',
+                'price_byn' => 60,
+                'stock_quantity' => 4,
+            ],
+            [
+                'external_id' => 'af1f35b3-1f62-11e9-bad6-1c1b0d1de7c2',
+                'external_code' => 'УТ-00000167',
+                'external_sku' => 'TS.FRT.DFR.0130.74685',
+                'barcode' => null,
+                'name' => 'Дефлектор ДМ-Р 430-0.5 D130 М У1',
+                'price_byn' => 43.20,
+                'stock_quantity' => 6,
+            ],
+        ])->map(fn (array $data): IntegrationProduct => IntegrationProduct::query()->create(array_merge($data, [
+            'integration_source_id' => $source->id,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ])));
+        $gsk = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'af1f364f-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000323',
+            'external_sku' => null,
+            'barcode' => null,
+            'name' => 'Коллектор Distant GSK 4.22',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dk',
+        ])->assertSuccessful();
+        $this->assertTrue($items->every(fn (IntegrationProduct $item): bool => $item->fresh()->product_id === null));
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dk',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $this->assertSame($productCount + 2, Product::query()->count());
+        $d180 = $items[0]->fresh()->product()->sole();
+        $d130 = $items[1]->fresh()->product()->sole();
+        $this->assertSame('matched', $items[0]->fresh()->match_status);
+        $this->assertSame('manual_created', $items[0]->fresh()->match_method);
+        $this->assertSame($category->id, $items[0]->fresh()->target_category_id);
+        $this->assertSame('60.00', $d180->price);
+        $this->assertSame('4', (string) $d180->stock_qty);
+        $this->assertSame('180 мм', collect($d180->specs)->firstWhere('key', 'Диаметр подключения')['value']);
+        $this->assertSame('4680205311772', collect($d180->specs)->firstWhere('key', 'Штрихкод')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/deflektor-dm-r-430-05-d180.jpg'], $d180->images);
+        $this->assertSame('43.20', $d130->price);
+        $this->assertSame('6', (string) $d130->stock_qty);
+        $this->assertSame('130 мм', collect($d130->specs)->firstWhere('key', 'Диаметр подключения')['value']);
+        $this->assertSame('У1', collect($d130->specs)->firstWhere('key', 'Исполнение')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/deflektor-dm-r-430-05-d130.jpg'], $d130->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/deflektor-dm-r-430-05-d180.jpg'));
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/deflektor-dm-r-430-05-d130.jpg'));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.FRT.DFR.0180.72739',
+            'product_id' => $d180->id,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.FRT.DFR.0130.74685',
+            'product_id' => $d130->id,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dk',
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount + 2, Product::query()->count());
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-dl',
+        ])->assertSuccessful();
+        $this->assertSame('unmatched', $gsk->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-dl',
+            '--apply' => true,
+        ])->assertSuccessful();
+        $gsk->refresh();
+        $this->assertNull($gsk->product_id);
+        $this->assertSame('ambiguous', $gsk->match_status);
+        $this->assertSame('manual_research_unresolved', $gsk->match_method);
+        $this->assertSame('research_dispute', $gsk->candidates[0]['type']);
+        $this->assertStringContainsString('производитель', $gsk->candidates[0]['reason']);
+        $this->assertContains('закупочная цена', $gsk->candidates[0]['required_data']);
+        $this->assertCount(3, $gsk->candidates[0]['evidence']);
+        $this->assertSame($productCount + 2, Product::query()->count());
+    }
 }
