@@ -4930,6 +4930,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact article is currently offered at 763-836 RUB. The upper retail
+    // offer converts to 30.10 BYN at the 2026-10-14 NBRB rate and preserves a
+    // reasonable market position instead of copying the lower promo price.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EI = [
+        'УТ-00009586' => [
+            'template' => 'PS-009.741',
+            'allow_unmatched' => true,
+            'category_slug' => 'shibery-dymohod',
+            'external_sku' => 'TS.FRT.SHR.0080.83395',
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'fragments' => ['Шибер', 'ШМ-Р(М2)', '430-0.5', 'D80'],
+            'name' => 'Теплов и Сухов Шибер Моно ШМ-Р(М2) 430-0.5 D80',
+            'retail' => 30.10,
+            'images' => ['img/products/teplov-i-suhov/shiber-shm-r-m2-430-05-d80.jpg'],
+            'source_url' => 'https://ekaterinburg.revitech.ru/catalog/komplektuyushchie-dymokhodov/',
+            'short' => 'Поворотный шибер «Теплов и Сухов» для одностенного дымохода Ø80 мм, AISI 430 толщиной 0,5 мм.',
+            'content' => '<p><strong>Теплов и Сухов ШМ-Р(М2) D80</strong> — одностенный поворотный шибер для ручной регулировки тяги в дымоходе печи, камина или котла.</p><p>Корпус и заслонка изготовлены из нержавеющей стали AISI 430 толщиной 0,5 мм. Наружная рукоятка поворачивает внутреннюю заслонку, изменяя проходное сечение канала Ø80 мм. Элемент устанавливают только в совместимую модульную систему дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Поворотный шибер'],
+                ['key' => 'Серия', 'value' => 'Моно'],
+                ['key' => 'Модель', 'value' => 'ШМ-Р(М2)'],
+                ['key' => 'Диаметр дымохода', 'value' => '80 мм'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Конструкция', 'value' => 'Одностенная, без теплоизоляции'],
+                ['key' => 'Механизм', 'value' => 'Поворотная заслонка с наружной рукояткой'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.SHR.0080.83395'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5073,6 +5110,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-ef' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EF,
             'unmatched-researched-20261014-eg' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EG,
             'unmatched-researched-20261014-eh' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EH,
+            'unmatched-researched-20261014-ei' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EI,
             default => null,
         };
 

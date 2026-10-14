@@ -10079,4 +10079,58 @@ XML;
         $this->assertFileExists(public_path('img/products/teplov-i-suhov/konus-kt-r-304-05-304-05-d150-210-m-homut.jpg'));
         $this->assertStringContainsString('kaminchi.ru', $product->content_source_url);
     }
+
+    public function test_it_creates_the_exact_aisi_430_d80_rotary_shiber_with_researched_price(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-shiber-430-d80',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'shibery-dymohod'], [
+            'name' => 'Шиберы и задвижки',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-009.741',
+            'name' => 'Тестовый товар-шаблон',
+            'slug' => 'shiber-ei-test-template',
+            'price' => 10,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'a12d9480-708b-11f1-b4b9-1c1b0d1de7c2',
+            'external_code' => 'УТ-00009586',
+            'external_sku' => 'TS.FRT.SHR.0080.83395',
+            'name' => 'Шибер ШМ-Р(М2) 430-0.5 D80',
+            'stock_quantity' => 4,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-ei',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('30.10', $product->price);
+        $this->assertSame('4', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('TS.FRT.SHR.0080.83395', $item->fresh()->external_sku);
+        $this->assertSame('80 мм', collect($product->specs)->firstWhere('key', 'Диаметр дымохода')['value']);
+        $this->assertSame('AISI 430', collect($product->specs)->firstWhere('key', 'Марка стали')['value']);
+        $this->assertSame('0,5 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/shiber-shm-r-m2-430-05-d80.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/shiber-shm-r-m2-430-05-d80.jpg'));
+        $this->assertStringContainsString('revitech.ru', $product->content_source_url);
+    }
 }
