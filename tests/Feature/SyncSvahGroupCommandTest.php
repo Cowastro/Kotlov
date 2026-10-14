@@ -143,7 +143,7 @@ class SyncSvahGroupCommandTest extends TestCase
         $this->assertNotNull($svahProduct);
         $this->assertNotNull($hotProduct);
         $this->assertTrue((bool) $svahProduct->is_active);
-        $this->assertTrue((bool) $hotProduct->is_active);
+        $this->assertFalse((bool) $hotProduct->is_active);
         $this->assertNotEmpty($svahProduct->short_description);
         $this->assertNotEmpty($hotProduct->short_description);
         $this->assertGreaterThanOrEqual(15, count(json_decode($svahProduct->specs, true, 512, JSON_THROW_ON_ERROR)));
@@ -226,7 +226,7 @@ class SyncSvahGroupCommandTest extends TestCase
         $this->assertSame(1500.00, (float) $product->price);
         $this->assertTrue((bool) $product->is_active);
         $this->assertFalse((bool) $product->in_stock);
-        $this->assertSame('https://www.snabcity.by/product/pech-dlya-bani-tatra16-v-komplekte-s-bakom/', $product->content_source_url);
+        $this->assertSame('https://tatra1.by/p332449-pech-dlya-bani.html', $product->content_source_url);
         $this->assertNotEmpty($product->short_description);
         $this->assertNotEmpty($product->content);
         $this->assertCount(1, json_decode($product->images, true, 512, JSON_THROW_ON_ERROR));
@@ -274,10 +274,42 @@ class SyncSvahGroupCommandTest extends TestCase
             $this->assertNotEmpty($profile['content'], $signature);
             $this->assertNotEmpty($profile['source_url'], $signature);
             $this->assertGreaterThanOrEqual(15, count($profile['specs']), $signature);
+            if (! str_starts_with($signature, 'hot:')) {
+                $this->assertNotEmpty($profile['images'], $signature);
+            }
             foreach ($profile['specs'] as $spec) {
                 $this->assertNotSame('', trim((string) $spec['key']), $signature);
                 $this->assertNotSame('', trim((string) $spec['value']), $signature);
             }
+        }
+    }
+
+    public function test_every_current_tatra_and_svah_profile_has_a_verified_catalog_image(): void
+    {
+        $catalog = app(SvahGroupCatalogContent::class);
+        $signatures = [
+            'tatra:boiler:kt15-np1', 'tatra:boiler:kt15-np2',
+            'tatra:boiler:kt30-np1', 'tatra:boiler:kt30-np2',
+            'tatra:boiler:kt40-np1', 'tatra:boiler:kt50',
+            'tatra:boiler:kt70-n', 'tatra:boiler:kt95-n',
+            'tatra:stove:t10', 'tatra:stove:t10:tank50',
+            'tatra:stove:t16', 'tatra:stove:t16:tank80',
+            'tatra:stove:t24', 'tatra:stove:t24:tank80',
+            'tatra:stove:t30', 'tatra:stove:t30:tank100',
+            'tatra:stove:t32:tank100', 'tatra:stove:t32t', 'tatra:stove:t36',
+            'svah:stove:t16', 'svah:stove:t20', 'svah:stove:t24',
+        ];
+
+        foreach ($signatures as $signature) {
+            $profile = $catalog->profile(['signature' => $signature]);
+
+            $this->assertNotNull($profile, $signature);
+            $this->assertCount(1, $profile['images'], $signature);
+            $this->assertMatchesRegularExpression(
+                '#^(?:https://|img/products/)#',
+                $profile['images'][0],
+                $signature,
+            );
         }
     }
 

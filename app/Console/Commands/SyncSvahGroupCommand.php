@@ -60,10 +60,9 @@ class SyncSvahGroupCommand extends Command
         $reportRows = $this->auditRows($classified, $siteProducts);
         $reportPath = $this->writeReport($reportRows);
         $stats = collect($classified)->countBy('status');
-        $contentReady = count(array_filter(
-            $classified,
-            fn (array $item): bool => $catalogContent->profile($item['row']) !== null,
-        ));
+        $contentReady = count(array_filter($classified, function (array $item) use ($catalogContent): bool {
+            return $this->catalogProfileIsReady($catalogContent->profile($item['row']));
+        }));
 
         $this->table(['Статус', 'Количество'], [
             ['Совпало', $stats->get('matched', 0)],
@@ -427,7 +426,7 @@ class SyncSvahGroupCommand extends Command
             // The price list has no photos or full descriptions. Keep new
             // cards unpublished until content review, but immediately link
             // supplier price and stock so the operational data stays current.
-            'is_active' => $profile !== null,
+            'is_active' => $this->catalogProfileIsReady($profile),
             'is_archived' => false,
             'in_stock' => $row['stock_quantity'] > 0,
             'availability_status' => $row['stock_quantity'] > 0 ? 'in_stock' : 'check',
@@ -460,7 +459,7 @@ class SyncSvahGroupCommand extends Command
             'requires_price_confirmation' => false,
             'meta_title' => $name.' — купить в Беларуси | KOTLOV',
             'meta_description' => 'Купить '.$name.' в KOTLOV: характеристики, цена, наличие и доставка по Беларуси.',
-            'is_active' => true,
+            'is_active' => $this->catalogProfileIsReady($profile),
             'is_archived' => false,
             'updated_at' => $now,
         ]);
@@ -489,6 +488,16 @@ class SyncSvahGroupCommand extends Command
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+    }
+
+    private function catalogProfileIsReady(?array $profile): bool
+    {
+        return $profile !== null
+            && trim((string) ($profile['short_description'] ?? '')) !== ''
+            && trim((string) ($profile['content'] ?? '')) !== ''
+            && trim((string) ($profile['source_url'] ?? '')) !== ''
+            && count((array) ($profile['images'] ?? [])) > 0
+            && count((array) ($profile['specs'] ?? [])) >= 15;
     }
 
     private function categoryId(string $signature): int
