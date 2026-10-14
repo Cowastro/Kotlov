@@ -1,0 +1,230 @@
+{
+    "code": "2026-10-14-catalog-zero-036",
+    "observed_at": "2026-10-14T07:41:00+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "skus": [
+            "PS-010.765", "PS-010.768", "PS-010.775", "PS-010.776", "PS-010.777",
+            "PS-010.778", "PS-010.779", "PS-010.782", "PS-010.783", "PS-010.788",
+            "PS-010.796", "PS-010.798", "PS-010.804", "PS-010.805", "PS-011.963",
+            "PS-011.172", "PS-011.173", "PS-011.174", "PS-011.428", "PS-005.262",
+            "PS-005.263", "PS-005.264", "PS-005.265", "PS-005.278", "PS-005.279"
+        ],
+        "after_id": 0,
+        "limit": 25,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [
+        {
+            "code": "web-amazonka-by-20261014-p036",
+            "name": "Amazonka.by",
+            "kind": "competitor",
+            "base_url": "https://amazonka.by",
+            "currency": "BYN",
+            "region": "Беларусь",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Точная карточка печи Kennet Ария 200."
+        }
+    ],
+    "products": [
+        {
+            "sku": "PS-010.765",
+            "review_reason": "FireWay K414 имеет белорусскую цену только на собственных региональных доменах KOTLOV; независимые предложения относятся к другим рынкам.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay K414 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.768",
+            "review_reason": "FireWay K301 имеет белорусскую цену только на собственных доменах KOTLOV; независимой актуальной цены в BYN не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Собственная цена KOTLOV исключена, зарубежные предложения несопоставимы.", "confidence": "high", "search_queries": ["Беларусь FireWay K301 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.775",
+            "review_reason": "Дублирующая карточка FireWay K301 имеет общий URL /dverka и не подтверждена независимыми белорусскими предложениями.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Неспецифичный production URL усиливает риск неверного сопоставления.", "confidence": "high", "search_queries": ["Беларусь FireWay K301 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.776",
+            "review_reason": "FireWay K302 не подтверждена независимыми белорусскими ценами; найдены собственные домены KOTLOV и зарубежные предложения.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay K302 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.777",
+            "review_reason": "FireWay K303 не подтверждена независимыми белорусскими ценами; собственные страницы KOTLOV исключены.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay K303 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.778",
+            "review_reason": "FireWay K311 имеет цену только в собственном каталоге KOTLOV; независимых актуальных белорусских карточек нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Зарубежные предложения исключены из белорусского рынка.", "confidence": "high", "search_queries": ["Беларусь FireWay K311 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.779",
+            "review_reason": "FireWay K312 имеет цену только в собственном каталоге KOTLOV; независимых актуальных белорусских карточек нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Зарубежные предложения исключены из белорусского рынка.", "confidence": "high", "search_queries": ["Беларусь FireWay K312 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.782",
+            "review_reason": "FireWay K401 не подтверждена независимыми белорусскими ценами; найденная BYN-цена принадлежит сети KOTLOV.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay K401 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.783",
+            "review_reason": "FireWay K402 не подтверждена независимыми белорусскими ценами; найденная BYN-цена принадлежит сети KOTLOV.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay K402 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.788",
+            "review_reason": "FireWay K412 не подтверждена независимыми белорусскими ценами; выдача также смешивает дверку с банной печью ПароВар K412.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Собственная цена KOTLOV исключена, совпадения по банной печи являются другой товарной сущностью.", "confidence": "high", "search_queries": ["FireWay K412 цена Беларусь дверка"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.796",
+            "review_reason": "Для FireWay Z-101 найдены предложения только в RUB; независимой белорусской цены в BYN нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Российские карточки исключены как другой рынок.", "confidence": "high", "search_queries": ["FireWay Z-101 задвижка цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.798",
+            "review_reason": "Для FireWay Z-103 независимых белорусских карточек с точной ценой не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Результаты по похожим задвижкам и зарубежным рынкам несопоставимы.", "confidence": "high", "search_queries": ["FireWay Z-103 задвижка цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.804",
+            "review_reason": "Колосник FireWay BHB-R101 не найден как точная независимая белорусская позиция с ценой.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Нет точной цены в BYN вне сети KOTLOV.", "confidence": "high", "search_queries": ["FireWay BHB-R101 колосник цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-010.805",
+            "review_reason": "Колосник FireWay BHB-R102 не найден как точная независимая белорусская позиция с ценой.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Нет точной цены в BYN вне сети KOTLOV.", "confidence": "high", "search_queries": ["FireWay BHB-R102 колосник цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-011.963",
+            "review_reason": "Название указывает Greolit DEEP 15 кВт, а production URL — DEEP 10 кВт; конфликт мощности запрещает установку цены.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Поиск подтверждает линейку DEEP, но не разрешает конфликт идентичности 15/10 кВт.", "confidence": "high", "search_queries": ["Greolit DEEP 15 кВт цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-011.172",
+            "review_reason": "Название указывает бренд KOTLOV GE 4 кВт, а production URL — Centrometal 4 кВт; конфликт бренда и отсутствие точной модели запрещают цену.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых предложений точной карточки KOTLOV GE 4 кВт не найдено.", "confidence": "high", "search_queries": ["Centrometal 4 kW тепловой насос Беларусь цена", "KOTLOV GE 4 кВт тепловой насос"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-011.173",
+            "review_reason": "Название указывает бренд KOTLOV GE 6 кВт, а production URL — Centrometal 6 кВт; найденные зарубежные Centrometal не подтверждают белорусскую карточку.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Конфликт бренда остаётся неразрешённым, цены EUR/RON исключены.", "confidence": "high", "search_queries": ["Centrometal 6 kW тепловой насос Беларусь цена", "KOTLOV GE 6 кВт тепловой насос"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-011.174",
+            "review_reason": "Название указывает бренд KOTLOV GE 8 кВт, а production URL — Centrometal 8 кВт; точной белорусской рыночной карточки нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Конфликт бренда остаётся неразрешённым, зарубежные предложения исключены.", "confidence": "high", "search_queries": ["Centrometal 8 kW тепловой насос Беларусь цена", "KOTLOV GE 8 кВт тепловой насос"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-011.428",
+            "review_reason": "Найдена одна независимая белорусская цена точной модели Kennet Ария 200; одной точки недостаточно для изменения цены.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-amazonka-by-20261014-p036",
+                    "url": "https://amazonka.by/pech-otopitelnaya-kennet-ariya-200",
+                    "external_name": "Печь отопительная Kennet Ария 200",
+                    "model": "Kennet Ария 200",
+                    "package": "отопительная печь со стеклом, до 200 м³",
+                    "observed_price": 815,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "preorder",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": ["preorder"],
+                    "evidence": "Amazonka.by: точная модель Kennet Ария 200, 815 BYN, под заказ 3 дня."
+                }
+            ],
+            "research": {"summary": "Одна точная белорусская карточка; предложения в RUB исключены.", "confidence": "high", "search_queries": ["Kennet Ария 200 цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-005.262",
+            "review_reason": "Для Korado RADIK KLASIK 22 500x400 найдена только устаревшая белорусская карточка; актуальные предложения относятся к зарубежным рынкам.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Достоверной актуальной независимой цены в BYN нет.", "confidence": "high", "search_queries": ["Korado Radik Klasik 22 500 400 цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-005.263",
+            "review_reason": "Для Korado RADIK KLASIK 22 500x500 актуальных независимых белорусских предложений не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Выдача смешивает Korado с Prado и зарубежными карточками.", "confidence": "high", "search_queries": ["Korado Radik Klasik 22 500 500 цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-005.264",
+            "review_reason": "Для Korado RADIK KLASIK 22 500x600 найдена только устаревшая белорусская карточка; актуальные предложения указаны в RON.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Достоверной актуальной независимой цены в BYN нет.", "confidence": "high", "search_queries": ["Korado Radik Klasik 22 500 600 цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-005.265",
+            "review_reason": "Для Korado RADIK KLASIK 22 300x600 независимой актуальной цены в Беларуси не найдено; точные зарубежные карточки исключены.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Идентичность подтверждается кодом K22300600, но сопоставимой BYN-цены нет.", "confidence": "high", "search_queries": ["Korado Radik Klasik 22 300 600 цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-005.278",
+            "review_reason": "Для Korado RADIK KLASIK 22 500x1000 найдена только устаревшая белорусская карточка; актуальные предложения относятся к рынкам ЕС.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Достоверной актуальной независимой цены в BYN нет.", "confidence": "high", "search_queries": ["Korado Radik Klasik 22 500 1000 цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        },
+        {
+            "sku": "PS-005.279",
+            "review_reason": "Для Korado RADIK KLASIK 22 500x800 найдена только устаревшая белорусская карточка без актуального подтверждения.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Достоверной актуальной независимой цены в BYN нет.", "confidence": "high", "search_queries": ["Korado Radik Klasik 22 500 800 цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:41:00+00:00"}
+        }
+    ],
+    "failed_products": []
+}
