@@ -8951,4 +8951,78 @@ XML;
         ])->assertSuccessful();
         $this->assertSame($productCount, Product::query()->count());
     }
+
+    public function test_it_creates_the_three_current_plum_sensor_cards(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-plum-sensors',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'datchiki'], [
+            'name' => 'Датчики',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-004.481',
+            'name' => 'Шаблон датчика',
+            'slug' => 'sensor-template-plum',
+            'price' => 1,
+            'images' => ['img/products/template-sensor.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $rows = [
+            ['af1f359b-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000143', 'Датчик температуры ECOMAX 4 M PLUM ECOMAX', 1],
+            ['af1f3599-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000141', 'Датчик пламени ОСР-2 PLUM Polska', 2],
+            ['af1f3598-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000140', 'Датчик комнатный СТ-7 PLUM Polska', 2],
+        ];
+        $items = collect($rows)->mapWithKeys(function (array $row) use ($source): array {
+            $item = IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id,
+                'external_id' => $row[0],
+                'external_code' => $row[1],
+                'name' => $row[2],
+                'price_byn' => null,
+                'stock_quantity' => $row[3],
+                'stock_confirmed_at' => now(),
+                'match_status' => 'unmatched',
+            ]);
+
+            return [$row[1] => $item];
+        });
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dp',
+        ])->assertSuccessful();
+        $this->assertTrue($items->every(fn (IntegrationProduct $item): bool => $item->fresh()->product_id === null));
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dp',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $ct4 = $items['УТ-00000143']->fresh()->product()->sole();
+        $ocp2 = $items['УТ-00000141']->fresh()->product()->sole();
+        $ct7 = $items['УТ-00000140']->fresh()->product()->sole();
+        $this->assertSame($productCount + 3, Product::query()->count());
+        $this->assertSame(['52.00', '112.00', '67.00'], [$ct4->price, $ocp2->price, $ct7->price]);
+        $this->assertSame(['1', '2', '2'], [(string) $ct4->stock_qty, (string) $ocp2->stock_qty, (string) $ct7->stock_qty]);
+        $this->assertSame([$category->id, $category->id, $category->id], [$ct4->category_id, $ocp2->category_id, $ct7->category_id]);
+        $this->assertSame('4 м', collect($ct4->specs)->firstWhere('key', 'Длина кабеля')['value']);
+        $this->assertSame('OCP-5 / OCP-6', collect($ocp2->specs)->firstWhere('key', 'Актуальные совместимые исполнения')['value']);
+        $this->assertSame('Настенный', collect($ct7->specs)->firstWhere('key', 'Монтаж')['value']);
+        $this->assertSame(['img/products/plum/plum-ct4-4m.webp'], $ct4->images);
+        $this->assertSame(['img/products/plum/plum-ocp-2.webp'], $ocp2->images);
+        $this->assertSame(['img/products/plum/plum-ct7.webp'], $ct7->images);
+        $this->assertFileExists(public_path('img/products/plum/plum-ct4-4m.webp'));
+        $this->assertFileExists(public_path('img/products/plum/plum-ocp-2.webp'));
+        $this->assertFileExists(public_path('img/products/plum/plum-ct7.webp'));
+    }
 }

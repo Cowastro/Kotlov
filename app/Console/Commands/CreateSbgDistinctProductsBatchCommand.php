@@ -3987,6 +3987,98 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DP = [
+        'УТ-00000143' => [
+            'template' => 'PS-004.481',
+            'allow_unmatched' => true,
+            'category_slug' => 'datchiki',
+            'fragments' => ['Датчик температуры', 'ECOMAX 4 M', 'PLUM'],
+            'brand' => [
+                'name' => 'PLUM',
+                'slug' => 'plum',
+                'country' => 'Польша',
+            ],
+            'name' => 'PLUM CT4 Датчик температуры для ecoMAX, кабель 4 м',
+            'retail' => 52.00,
+            'images' => [
+                'img/products/plum/plum-ct4-4m.webp',
+            ],
+            'source_url' => 'https://kotly.com/pl/1192-czujnik-temperatury-plum-ct4-do-sterownika-ecomax-4m.html',
+            'short' => 'Проводной датчик температуры PLUM CT4 с кабелем 4 м для регуляторов серии ecoMAX.',
+            'content' => '<p><strong>PLUM CT4</strong> — проводной датчик температуры с кабелем длиной 4 м для контроллеров серии ecoMAX. Применяется для измерения температуры в системах отопления и передаёт показания на автоматику.</p><p>Измерительная гильза диаметром 6 мм и длиной 55 мм рассчитана на диапазон от 0 до 100 °C. Перед покупкой следует сверить модель контроллера и тип разъёма.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Проводной датчик температуры'],
+                ['key' => 'Модель', 'value' => 'CT4'],
+                ['key' => 'Совместимость', 'value' => 'Контроллеры PLUM серии ecoMAX'],
+                ['key' => 'Длина кабеля', 'value' => '4 м'],
+                ['key' => 'Диаметр измерительной гильзы', 'value' => '6 мм'],
+                ['key' => 'Длина измерительной гильзы', 'value' => '55 мм'],
+                ['key' => 'Диапазон измерения', 'value' => '0…100 °C'],
+                ['key' => 'Точность измерения', 'value' => '±2 °C'],
+                ['key' => 'Производитель', 'value' => 'PLUM'],
+                ['key' => 'Страна бренда', 'value' => 'Польша'],
+            ],
+        ],
+        'УТ-00000141' => [
+            'template' => 'PS-004.481',
+            'allow_unmatched' => true,
+            'category_slug' => 'datchiki',
+            'fragments' => ['Датчик пламени', 'ОСР-2', 'PLUM'],
+            'brand' => [
+                'name' => 'PLUM',
+                'slug' => 'plum',
+                'country' => 'Польша',
+            ],
+            'name' => 'PLUM OCP-2 Оптический датчик пламени, кабель 0,5 м',
+            'retail' => 112.00,
+            'images' => [
+                'img/products/plum/plum-ocp-2.webp',
+            ],
+            'source_url' => 'https://kotly-pellet.pl/oferta/czujnik-optyczny-plomienia-ocp-2-ocp-4-ocp-5-ocp-6plum',
+            'short' => 'Оптический датчик пламени PLUM OCP-2 с кабелем 0,5 м для контроля горения в пеллетных горелках.',
+            'content' => '<p><strong>PLUM OCP-2</strong> — оптический датчик для определения наличия пламени в пеллетной горелке. Кабель длиной 0,5 м позволяет подключить датчик к совместимой автоматике.</p><p>Производитель изменил обозначения OCP-2 и OCP-4 на OCP-5 и OCP-6; новые исполнения совместимы с прежними. Перед заказом необходимо сверить разъём и модель контроллера или горелки.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Оптический датчик пламени'],
+                ['key' => 'Модель', 'value' => 'OCP-2'],
+                ['key' => 'Актуальные совместимые исполнения', 'value' => 'OCP-5 / OCP-6'],
+                ['key' => 'Назначение', 'value' => 'Контроль наличия пламени в горелке'],
+                ['key' => 'Длина кабеля', 'value' => '0,5 м'],
+                ['key' => 'Максимальная температура датчика', 'value' => '70 °C'],
+                ['key' => 'Подключение', 'value' => 'Проводное'],
+                ['key' => 'Производитель', 'value' => 'PLUM'],
+                ['key' => 'Страна бренда', 'value' => 'Польша'],
+            ],
+        ],
+        'УТ-00000140' => [
+            'template' => 'PS-004.481',
+            'allow_unmatched' => true,
+            'category_slug' => 'datchiki',
+            'fragments' => ['Датчик комнатный', 'СТ-7', 'PLUM'],
+            'brand' => [
+                'name' => 'PLUM',
+                'slug' => 'plum',
+                'country' => 'Польша',
+            ],
+            'name' => 'PLUM CT7 Комнатный датчик температуры для ecoMAX',
+            'retail' => 67.00,
+            'images' => [
+                'img/products/plum/plum-ct7.webp',
+            ],
+            'source_url' => 'https://kotly-pellet.pl/oferta/czujnik-pokojowy-ct7-plum',
+            'short' => 'Проводной комнатный датчик температуры PLUM CT7 для работы с совместимыми контроллерами серии ecoMAX.',
+            'content' => '<p><strong>PLUM CT7</strong> — комнатный датчик температуры для совместимых контроллеров серии ecoMAX. Он передаёт автоматике фактическую температуру воздуха в помещении и помогает поддерживать заданный режим отопления.</p><p>Датчик предназначен для настенного монтажа и проводного подключения. Перед покупкой необходимо проверить совместимость с конкретной моделью контроллера PLUM.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Комнатный датчик температуры'],
+                ['key' => 'Модель', 'value' => 'CT7'],
+                ['key' => 'Совместимость', 'value' => 'Совместимые контроллеры PLUM серии ecoMAX'],
+                ['key' => 'Монтаж', 'value' => 'Настенный'],
+                ['key' => 'Подключение', 'value' => 'Проводное'],
+                ['key' => 'Производитель', 'value' => 'PLUM'],
+                ['key' => 'Страна бренда', 'value' => 'Польша'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4111,6 +4203,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-dm' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DM,
             'unmatched-disputed-20261014-dn' => self::BATCH_UNMATCHED_DISPUTED_20261014_DN,
             'not-for-site-unmatched-20261014-do' => self::BATCH_NOT_FOR_SITE_UNMATCHED_20261014_DO,
+            'unmatched-researched-20261014-dp' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DP,
             default => null,
         };
 
