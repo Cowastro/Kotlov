@@ -282,6 +282,11 @@ jobs:
             cat "$detail_log"
             echo "safe_availability_diagnostic_end"
           fi
+          if [[ "$TASK" == "artisan-dry-run" && "${ARTISAN_ARGV[0]:-}" == "integration:list-sbg-unmatched" ]]; then
+            echo "safe_sbg_unmatched_output_begin"
+            cat "$detail_log"
+            echo "safe_sbg_unmatched_output_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:reconcile-availability" ]]; then
             echo "safe_availability_metrics_begin"
             grep '^metric\.availability\.' "$detail_log" || true
