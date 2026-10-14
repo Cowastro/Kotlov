@@ -3605,6 +3605,40 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_DISPUTED_20261014_DG = [
+        'УТ-00000454' => [
+            'document_dispute' => true,
+            'external_id' => 'b5470392-1f62-11e9-bad6-1c1b0d1de7c2',
+            'fragments' => ['КСР-80'],
+            'reason' => 'Строка 1С «КСР-80» похожа на регулируемое стеновое крепление дымохода «Теплов и Сухов» КСР D80, которое встречается у двух связанных продавцов. Однако официальный лист производителя по серии КСР не содержит исполнения диаметром 80 мм, а в 1С нет бренда, артикула, штрихкода, цены или фотографии. Без первичного идентификатора нельзя исключить ошибку в диаметре либо другое изделие с тем же сокращением, поэтому карточку и изображение назначать небезопасно.',
+            'required_data' => [
+                'бренд или производитель',
+                'артикул производителя',
+                'штрихкод',
+                'фотография маркировки или упаковки',
+                'фотография самого изделия',
+                'подтверждённый диаметр крепления',
+                'диапазон регулировки расстояния от стены',
+                'материал и толщина металла',
+                'закупочная цена',
+            ],
+            'evidence' => [
+                [
+                    'url' => 'https://art-kaminspb.ru/kreplenie-stenovoe-reguliruemoe-ksr-d80/',
+                    'finding' => 'Сторонний магазин называет товар «Крепление стеновое регулируемое КСР D80», указывает бренд «Теплов и Сухов» и цену 464 RUB, но не публикует собственное изображение товара или артикул производителя.',
+                ],
+                [
+                    'url' => 'https://realkamin.ru/kreplenie-stenovoe-reguliruemoe-ksr-d80/',
+                    'finding' => 'Вторая связанная витрина повторяет название, бренд и цену 464 RUB, но также не даёт независимого артикула, маркировки или фотографии.',
+                ],
+                [
+                    'url' => 'https://tehnodom.org/UserFiles/Files/%D0%A1%D1%82%D0%B5%D0%BD%D0%BE%D0%B2%D1%8B%D0%B5%20%D0%BA%D1%80%D0%B5%D0%BF%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F.pdf',
+                    'finding' => 'Официальный лист «Теплов и Сухов» по стеновым креплениям перечисляет для КСР диаметры 110, 120, 230, 250 и 280 мм; исполнения D80 в таблице нет.',
+                ],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3720,6 +3754,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-dd' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DD,
             'unmatched-researched-20261014-de' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DE,
             'unmatched-disputed-20261014-df' => self::BATCH_UNMATCHED_DISPUTED_20261014_DF,
+            'unmatched-disputed-20261014-dg' => self::BATCH_UNMATCHED_DISPUTED_20261014_DG,
             default => null,
         };
 
