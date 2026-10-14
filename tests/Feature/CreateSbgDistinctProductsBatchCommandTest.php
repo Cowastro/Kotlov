@@ -9443,4 +9443,70 @@ XML;
         $this->assertStringContainsString('кованая сетка-каменка', $item->candidates[0]['reason']);
         $this->assertContains('актуальная закупочная или розничная цена', $item->candidates[0]['required_data']);
     }
+
+    public function test_it_creates_the_priced_hotta_aet24_and_disputes_the_unpriced_aet_s12(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-hotta-electric-storage-heaters',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Конвекторы',
+            'slug' => 'elektricheskie-konvektoryi',
+            'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->firstOrCreate(
+            ['slug' => 'hotta'],
+            ['name' => 'Hotta', 'is_active' => true],
+        );
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-000.18755',
+            'name' => 'Электроконвектор тестовый',
+            'slug' => 'electric-convector-test-template',
+            'price' => 477,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $priced = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '506c878f-4bb1-11e9-b781-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001528',
+            'name' => 'Аппарат электрический теплоаккумулирующий "HOTTA" АЭТ-2.4(220)',
+            'price_byn' => 768.44,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $unpriced = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '506c878e-4bb1-11e9-b781-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001527',
+            'name' => 'Аппарат электрический теплоаккумулирующий "HOTTA" АЭТ-С-1.2(220)',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dx',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $priced->fresh()->product()->sole();
+        $this->assertSame('768.44', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertSame(['img/products/generated/hotta-aet-24-electric-storage-heater.png'], $product->images);
+        $this->assertSame('2,4 кВт', collect($product->specs)->firstWhere('key', 'Номинальная мощность')['value']);
+        $this->assertSame('matched', $priced->fresh()->match_status);
+        $this->assertSame('ambiguous', $unpriced->fresh()->match_status);
+        $this->assertSame('manual_research_unresolved', $unpriced->fresh()->match_method);
+        $this->assertSame('research_dispute', $unpriced->fresh()->candidates[0]['type']);
+    }
 }

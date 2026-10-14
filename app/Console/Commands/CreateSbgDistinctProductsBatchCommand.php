@@ -4472,6 +4472,53 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DX = [
+        'УТ-00001528' => [
+            'template' => 'PS-000.18755',
+            'allow_unmatched' => true,
+            'category_slug' => 'elektricheskie-konvektoryi',
+            'fragments' => ['Аппарат', 'электрический', 'теплоаккумулирующий', 'HOTTA', 'АЭТ-2.4', '220'],
+            'brand' => [
+                'name' => 'Hotta',
+                'slug' => 'hotta',
+            ],
+            'name' => 'HOTTA АЭТ-2.4 (220 В) электрический теплоаккумулятор',
+            'retail' => 768.44,
+            'images' => [
+                'img/products/generated/hotta-aet-24-electric-storage-heater.png',
+            ],
+            'source_url' => 'https://ela.kpi.ua/bitstreams/957cbb21-8ec4-4607-a991-0cc17ce3c358/download',
+            'short' => 'Напольный электрический теплоаккумулятор HOTTA АЭТ-2.4 мощностью 2,4 кВт для сети 220 В.',
+            'content' => '<p><strong>HOTTA АЭТ-2.4</strong> — электрический теплоаккумулирующий обогреватель динамического типа. Аппарат накапливает тепло во время семичасового цикла зарядки и отдаёт его в помещение.</p><p>Модель рассчитана на питание 220 В и имеет номинальную мощность 2,4 кВт. Перед покупкой складского экземпляра нужно уточнить его комплектность, состояние и условия подключения. Изображение показывает тип исполнения; внешний вид фактического изделия может отличаться.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Электрический теплоаккумулятор'],
+                ['key' => 'Исполнение', 'value' => 'Динамическое'],
+                ['key' => 'Номинальная мощность', 'value' => '2,4 кВт'],
+                ['key' => 'Напряжение', 'value' => '220 В'],
+                ['key' => 'Время зарядки', 'value' => '7 ч'],
+                ['key' => 'Установка', 'value' => 'Напольная'],
+                ['key' => 'Назначение', 'value' => 'Аккумуляционное отопление помещений'],
+                ['key' => 'Модель', 'value' => 'АЭТ-2.4(220)'],
+                ['key' => 'Бренд', 'value' => 'HOTTA'],
+            ],
+        ],
+        'УТ-00001527' => [
+            'document_dispute' => true,
+            'external_id' => '506c878e-4bb1-11e9-b781-1c1b0d1de7c2',
+            'fragments' => ['Аппарат', 'электрический', 'теплоаккумулирующий', 'HOTTA', 'АЭТ-С-1.2', '220'],
+            'reason' => 'Модель HOTTA АЭТ-С-1.2 (220 В) идентифицирована как статический электрический теплоаккумулятор мощностью 1,2 кВт с питанием 220 В и семичасовой зарядкой. В 1С есть один экземпляр, но не передана цена, артикул и штрихкод; публиковать карточку с выдуманной ценой нельзя.',
+            'required_data' => [
+                'актуальная закупочная или розничная цена',
+                'артикул или фотография шильдика',
+                'фотография складского экземпляра и подтверждение комплектности',
+            ],
+            'evidence' => [[
+                'url' => 'https://ela.kpi.ua/bitstreams/957cbb21-8ec4-4607-a991-0cc17ce3c358/download',
+                'finding' => 'Техническая таблица подтверждает для АЭТ-С-1,2 мощность 1,2 кВт, питание 220 В, статическое исполнение и семичасовой цикл зарядки.',
+            ]],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4604,6 +4651,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-du' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DU,
             'unmatched-researched-20261014-dv' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DV,
             'unmatched-disputed-20261014-dw' => self::BATCH_UNMATCHED_DISPUTED_20261014_DW,
+            'unmatched-researched-20261014-dx' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DX,
             default => null,
         };
 
