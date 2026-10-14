@@ -42,6 +42,8 @@ class CommercialDocumentWorkflowTest extends TestCase
             'type' => 'quote',
             'client_company' => 'ООО «Тест»',
             'client_email' => 'client@example.com',
+            'payment_terms' => '50% предоплата, 50% перед отгрузкой',
+            'delivery_terms' => '5 рабочих дней после предоплаты',
         ]);
         $quote->items()->create([
             'product_id' => $product->id,
@@ -62,6 +64,8 @@ class CommercialDocumentWorkflowTest extends TestCase
         $this->assertSame($quote->id, $invoice->source_document_id);
         $this->assertSame('Газовый котёл KOTLOV TEST', $invoice->items->first()->name);
         $this->assertSame('4500.00', $invoice->total);
+        $this->assertSame('50% предоплата, 50% перед отгрузкой', $invoice->payment_terms);
+        $this->assertSame('5 рабочих дней после предоплаты', $invoice->delivery_terms);
         $this->assertNotSame($quote->number, $invoice->number);
     }
 
@@ -173,7 +177,9 @@ class CommercialDocumentWorkflowTest extends TestCase
             ->assertSeeText('ИИ-помощник подбора')
             ->assertSeeText('Подобрать товары')
             ->assertSeeText('Добавить выбранные в КП')
-            ->assertSeeText('Сравнить рынок');
+            ->assertSeeText('Сравнить рынок')
+            ->assertSeeText('Условия оплаты')
+            ->assertSeeText('Срок поставки');
     }
 
     public function test_manager_can_match_and_add_products_from_copilot_text(): void

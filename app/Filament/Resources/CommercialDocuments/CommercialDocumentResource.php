@@ -81,8 +81,6 @@ class CommercialDocumentResource extends Resource
                     DatePicker::make('issued_at')->label('Дата')->default(today())->required()->native(false),
                     DatePicker::make('valid_until')->label('Действует до')->default(today()->addDays(10))->native(false),
                     Select::make('manager_id')->label('Менеджер')->relationship('manager', 'name')->default(fn () => auth()->id())->searchable()->preload(),
-                    TextInput::make('payment_terms')->label('Условия оплаты')->default('Безналичный расчёт по выставленному счёту.')->columnSpan(3),
-                    TextInput::make('delivery_terms')->label('Условия поставки')->default('Срок и способ поставки согласовываются с менеджером.')->columnSpanFull(),
                 ]),
 
             Section::make('Клиент')
@@ -281,6 +279,17 @@ class CommercialDocumentResource extends Resource
                     TextInput::make('discount_total')->label('Дополнительная скидка')->numeric()->minValue(0)->default(0)->prefix('BYN'),
                     TextInput::make('delivery_price')->label('Доставка')->numeric()->minValue(0)->default(0)->prefix('BYN'),
                     Select::make('currency')->label('Валюта')->options(['BYN' => 'BYN'])->default('BYN')->required(),
+                    TextInput::make('payment_terms')
+                        ->label('Условия оплаты')
+                        ->placeholder('Например: 100% предоплата')
+                        ->default('Безналичный расчёт по выставленному счёту.')
+                        ->maxLength(255)
+                        ->columnSpan(2),
+                    TextInput::make('delivery_terms')
+                        ->label('Срок поставки')
+                        ->placeholder('Например: 3–5 рабочих дней после оплаты')
+                        ->default('Срок и способ поставки согласовываются с менеджером.')
+                        ->maxLength(255),
                     Textarea::make('notes')->label('Примечание для клиента')->rows(3)->columnSpanFull(),
                 ]),
         ]);
@@ -316,7 +325,7 @@ class CommercialDocumentResource extends Resource
                 TextEntry::make('delivery_price')->label('Доставка')->money('BYN'),
                 TextEntry::make('total')->label('К оплате')->money('BYN')->weight(FontWeight::Bold)->color('warning'),
                 TextEntry::make('payment_terms')->label('Оплата')->columnSpan(2),
-                TextEntry::make('delivery_terms')->label('Поставка')->columnSpan(2),
+                TextEntry::make('delivery_terms')->label('Срок поставки')->columnSpan(2),
                 TextEntry::make('notes')->label('Примечание')->placeholder('—')->columnSpanFull(),
             ]),
         ]);

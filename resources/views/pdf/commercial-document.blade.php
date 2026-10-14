@@ -119,7 +119,7 @@
 <table class="terms">
     <tr>
         <td><strong>Условия оплаты</strong>{{ $document->payment_terms ?: 'Безналичный расчёт по выставленному счёту.' }}</td>
-        <td><strong>Условия поставки</strong>{{ $document->delivery_terms ?: 'Срок и способ поставки согласовываются с менеджером.' }}</td>
+        <td><strong>Срок поставки</strong>{{ $document->delivery_terms ?: 'Срок и способ поставки согласовываются с менеджером.' }}</td>
     </tr>
 </table>
 @if($document->notes)<div class="note"><strong>Примечание</strong><br>{{ $document->notes }}</div>@endif
