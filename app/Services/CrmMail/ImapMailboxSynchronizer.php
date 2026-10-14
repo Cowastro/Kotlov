@@ -17,6 +17,7 @@ class ImapMailboxSynchronizer
     public function __construct(
         private readonly LeadMatcher $leadMatcher,
         private readonly CrmMailThreadResolver $threadResolver,
+        private readonly IncomingMailTelegramNotifier $telegramNotifier,
     ) {}
 
     /** @return array{imported: int, skipped: int} */
@@ -89,10 +90,10 @@ class ImapMailboxSynchronizer
                     $mailbox->create_leads,
                 );
 
-                DB::transaction(function () use (
+                $message = DB::transaction(function () use (
                     $mailbox, $uid, $header, $fromEmail, $fromName, $subject, $messageId,
                     $inReplyTo, $bodies, $attachments, $counterparty, $contact
-                ): void {
+                ): CrmMailMessage {
                     $receivedAt = $this->parseDate($header->date ?? null);
                     $thread = $this->threadResolver->resolve(
                         $mailbox,
@@ -124,7 +125,7 @@ class ImapMailboxSynchronizer
                         $thread->restore();
                     }
 
-                    CrmMailMessage::create([
+                    $message = CrmMailMessage::create([
                         'thread_id' => $thread->id,
                         'mailbox_id' => $mailbox->id,
                         'message_id' => $messageId,
@@ -165,7 +166,11 @@ class ImapMailboxSynchronizer
                     $thread->markCustomerReplied();
 
                     $counterparty?->forceFill(['last_contact_at' => $receivedAt])->save();
+
+                    return $message;
                 });
+
+                $this->telegramNotifier->send($message);
 
                 $mailbox->last_uid = max((int) $mailbox->last_uid, (int) $uid);
                 $imported++;
