@@ -8199,4 +8199,61 @@ XML;
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_teplov_i_suhov_475x580_hearth_sheet(): void
+    {
+        $source = IntegrationSource::query()->create(['code' => 'onec-sbg-unmatched-tis-hearth-sheet-475x580', 'name' => '1С СанБизнесГруп', 'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'], 'is_active' => true, 'update_stock' => true]);
+        $category = Category::query()->firstOrCreate(['slug' => 'aksessuary-kaminy'], ['name' => 'Аксессуары для каминов', 'parent_id' => 0]);
+        Product::query()->firstOrCreate(['slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia'], ['category_id' => $category->id, 'sku' => 'KOTLOV-000910', 'name' => 'Nordflam Решетка каминная AERO 90×800 белая', 'price' => 104, 'images' => ['img/products/nordflam/template.jpg'], 'is_active' => true, 'is_archived' => false]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'b547039e-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000466',
+            'external_sku' => 'TS.KMP.LST.0000.64132',
+            'barcode' => '4680205250682',
+            'name' => 'Лист предтопочный 475 х 580',
+            'price_byn' => 38.60,
+            'stock_quantity' => 17,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-dd', '--code' => ['УТ-00000466']])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-dd', '--code' => ['УТ-00000466'], '--apply' => true])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product()->sole();
+        $brand = Brand::query()->where('slug', 'teplov-i-suhov')->sole();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertSame('Теплов и Сухов Лист предтопочный 475 × 580 мм', $product->name);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('43.00', $product->price);
+        $this->assertSame('17', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('475 × 580 мм', collect($product->specs)->firstWhere('key', 'Размер')['value']);
+        $this->assertSame('TS.KMP.LST.0000.64132', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame('4680205250682', collect($product->specs)->firstWhere('key', 'Штрихкод')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/list-predtopochnyy-475x580.jpeg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/list-predtopochnyy-475x580.jpeg'));
+        $this->assertStringContainsString('pechiteplov.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.KMP.LST.0000.64132',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-dd', '--code' => ['УТ-00000466'], '--apply' => true])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }

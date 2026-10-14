@@ -3486,6 +3486,44 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // PechiTeplov lists the exact Teplov i Sukhov 475 x 580 mm hearth sheet
+    // at 1,194 RUB. At the NBRB rate for 2026-10-14 (3.6006 BYN per
+    // 100 RUB), the independent retail benchmark rounds to 43 BYN.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DD = [
+        'УТ-00000466' => [
+            'template_slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia',
+            'allow_unmatched' => true,
+            'category_slug' => 'aksessuary-kaminy',
+            'external_sku' => 'TS.KMP.LST.0000.64132',
+            'fragments' => ['Лист предтопочный', '475', '580'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Лист предтопочный 475 × 580 мм',
+            'retail' => 43.00,
+            'images' => [
+                'img/products/teplov-i-suhov/list-predtopochnyy-475x580.jpeg',
+            ],
+            'source_url' => 'https://moscow.pechiteplov.ru/catalog/listy_predtopochnye/list_predtopochnyy_475_kh_580/',
+            'short' => 'Предтопочный лист «Теплов и Сухов» из полированной нержавеющей стали для защиты пола перед топкой; размер 475 × 580 мм.',
+            'content' => '<p><strong>Предтопочный лист «Теплов и Сухов» 475 × 580 мм</strong> закрывает участок пола перед топочной дверцей печи или камина. Он помогает защитить напольное покрытие от искр, углей и загрязнений.</p><p>Лист изготовлен из нержавеющей стали с полированной зеркальной поверхностью. При монтаже соблюдайте требования инструкции отопительного оборудования и правила пожарной безопасности.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Лист предтопочный'],
+                ['key' => 'Размер', 'value' => '475 × 580 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Поверхность', 'value' => 'Полированная (зеркальная)'],
+                ['key' => 'Назначение', 'value' => 'Защита пола перед топочной дверцей'],
+                ['key' => 'Масса', 'value' => '1,12 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.KMP.LST.0000.64132'],
+                ['key' => 'Штрихкод', 'value' => '4680205250682'],
+                ['key' => 'Гарантия', 'value' => '12 месяцев'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3598,6 +3636,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-da' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DA,
             'unmatched-researched-20261014-db' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DB,
             'unmatched-researched-20261014-dc' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DC,
+            'unmatched-researched-20261014-dd' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DD,
             default => null,
         };
 
