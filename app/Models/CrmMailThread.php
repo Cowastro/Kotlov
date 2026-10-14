@@ -97,6 +97,25 @@ class CrmMailThread extends Model
         return $this->hasOne(CrmMailMessage::class, 'thread_id')->latestOfMany();
     }
 
+    public function refreshMessageSummary(): void
+    {
+        $latestMessage = $this->messages()
+            ->reorder()
+            ->orderByDesc('received_at')
+            ->orderByDesc('id')
+            ->first();
+
+        $this->forceFill([
+            'subject' => $latestMessage?->subject ?: $this->subject,
+            'messages_count' => $this->messages()->count(),
+            'unread_count' => $this->messages()
+                ->where('direction', 'incoming')
+                ->where('is_read', false)
+                ->count(),
+            'last_message_at' => $latestMessage?->received_at ?: $this->last_message_at,
+        ])->save();
+    }
+
     public function commercialDocuments(): HasMany
     {
         return $this->hasMany(CommercialDocument::class, 'crm_mail_thread_id');

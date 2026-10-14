@@ -418,7 +418,7 @@ class ViewCrmMailThread extends ViewRecord
             return $query->findOrFail($this->forwardMessageId);
         }
 
-        return $query->latest('received_at')->latest('id')->firstOrFail();
+        return $query->reorder()->latest('received_at')->latest('id')->firstOrFail();
     }
 
     /** @return array<string, mixed> */

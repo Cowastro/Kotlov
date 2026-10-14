@@ -28,10 +28,6 @@ class CrmMailThreadMerger
             $source->messages()->update(['thread_id' => $target->id]);
             $source->commercialDocuments()->update(['crm_mail_thread_id' => $target->id]);
 
-            $latestMessage = $target->messages()
-                ->orderByDesc('received_at')
-                ->orderByDesc('id')
-                ->first();
             $target->forceFill([
                 'crm_counterparty_id' => $target->crm_counterparty_id ?: $source->crm_counterparty_id,
                 'crm_contact_id' => $target->crm_contact_id ?: $source->crm_contact_id,
@@ -41,14 +37,9 @@ class CrmMailThreadMerger
                 'next_follow_up_at' => $target->next_follow_up_at ?: $source->next_follow_up_at,
                 'follow_up_note' => $target->follow_up_note ?: $source->follow_up_note,
                 'manager_note' => $target->manager_note ?: $source->manager_note,
-                'subject' => $latestMessage?->subject ?: $target->subject,
-                'messages_count' => $target->messages()->count(),
-                'unread_count' => $target->messages()
-                    ->where('direction', 'incoming')
-                    ->where('is_read', false)
-                    ->count(),
-                'last_message_at' => $latestMessage?->received_at ?: $target->last_message_at,
             ])->save();
+
+            $target->refreshMessageSummary();
 
             $source->delete();
 

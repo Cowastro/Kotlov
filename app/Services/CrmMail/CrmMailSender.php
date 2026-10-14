@@ -29,6 +29,7 @@ class CrmMailSender
             throw new RuntimeException('Текст почтового черновика не найден.');
         }
         $previousMessage = $thread->messages()
+            ->reorder()
             ->where('id', '!=', $draft->id)
             ->whereNotNull('message_id')
             ->latest('received_at')
@@ -117,7 +118,11 @@ class CrmMailSender
             throw new RuntimeException('Укажите корректный email получателя перед отправкой.');
         }
 
-        $lastMessage = $thread->messages()->whereNotNull('message_id')->latest('received_at')->first();
+        $lastMessage = $thread->messages()->reorder()
+            ->whereNotNull('message_id')
+            ->orderByDesc('received_at')
+            ->orderByDesc('id')
+            ->first();
         $subject = preg_match('/^re\s*:/i', (string) $thread->subject)
             ? $thread->subject
             : 'Re: '.$thread->subject;

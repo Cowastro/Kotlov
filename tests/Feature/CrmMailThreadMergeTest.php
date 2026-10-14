@@ -54,6 +54,17 @@ class CrmMailThreadMergeTest extends TestCase
             'is_read' => true,
             'received_at' => now(),
         ]);
+        $latestMessageAt = now()->addHour()->startOfSecond();
+        $target->messages()->create([
+            'mailbox_id' => $mailbox->id,
+            'message_id' => 'reply@example.com',
+            'in_reply_to' => 'quote@example.com',
+            'direction' => 'incoming',
+            'from_email' => 'client@example.com',
+            'subject' => 'Re: КП-1 — согласование',
+            'is_read' => true,
+            'received_at' => $latestMessageAt,
+        ]);
         CommercialDocument::query()->create([
             'type' => 'quote',
             'status' => 'sent',
@@ -63,8 +74,10 @@ class CrmMailThreadMergeTest extends TestCase
         $merged = app(CrmMailThreadMerger::class)->merge($source, $target);
 
         $this->assertSoftDeleted($source);
-        $this->assertSame(2, $merged->messages_count);
-        $this->assertSame(2, $merged->messages->count());
+        $this->assertSame(3, $merged->messages_count);
+        $this->assertSame(3, $merged->messages->count());
+        $this->assertSame('Re: КП-1 — согласование', $merged->subject);
+        $this->assertTrue($merged->last_message_at->equalTo($latestMessageAt));
         $this->assertSame('proposal_sent', $merged->sales_stage);
         $this->assertSame('waiting_customer', $merged->status);
         $this->assertNotNull($merged->next_follow_up_at);
