@@ -173,12 +173,17 @@ class CrmMailThreadResource extends Resource
                 ->schema([
                     RepeatableEntry::make('messages')->hiddenLabel()->schema([
                         ViewEntry::make('mail_preview')->hiddenLabel()
-                            ->view('filament.crm-mail.message-preview', fn (CrmMailMessage $record): array => [
-                                'message' => $record,
-                                'safeHtml' => app(CrmMailMessagePreview::class)->compactHtml($record),
-                                'originalHtml' => filled($record->html_body) ? (string) $record->html_body : null,
-                                'isLatestMessage' => $record->isLatestInThread(),
-                            ])
+                            ->view('filament.crm-mail.message-preview', function (CrmMailMessage $record): array {
+                                $preview = app(CrmMailMessagePreview::class);
+
+                                return [
+                                    'message' => $record,
+                                    'safeHtml' => $preview->compactHtml($record),
+                                    'hasVisibleBody' => $preview->hasVisibleContent($record),
+                                    'originalHtml' => filled($record->html_body) ? (string) $record->html_body : null,
+                                    'isLatestMessage' => $record->isLatestInThread(),
+                                ];
+                            })
                             ->columnSpanFull(),
                     ]),
                 ]),

@@ -10,7 +10,9 @@
     $copies = collect($message->cc ?? [])->pluck('email')->filter()->implode(', ');
     $attachments = collect($message->metadata['attachments'] ?? [])->values();
     $date = $message->received_at ?? $message->sent_at;
-    $hasOriginalHtml = filled($originalHtml);
+    $hasVisibleBody = $hasVisibleBody ?? true;
+    $showBody = $hasVisibleBody || $attachments->isEmpty();
+    $hasOriginalHtml = $hasVisibleBody && filled($originalHtml);
 @endphp
 
 <article
@@ -59,11 +61,13 @@
 
     <div class="crm-mail-subject">{{ $message->subject ?: 'Без темы' }}</div>
 
-    <div class="crm-mail-body" x-show="! originalOpen">
-        {!! $safeHtml !!}
-    </div>
+    @if ($showBody)
+        <div class="crm-mail-body" x-show="! originalOpen">
+            {!! $safeHtml !!}
+        </div>
+    @endif
 
-    @if (filled($originalHtml))
+    @if ($hasOriginalHtml)
         <div class="crm-mail-original">
             <button
                 type="button"

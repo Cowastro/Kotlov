@@ -8,6 +8,13 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
 class CrmMailMessagePreview
 {
+    public function hasVisibleContent(CrmMailMessage $message): bool
+    {
+        $text = $this->plainText($message);
+
+        return preg_match('/[^\s\x{00A0}\x{200B}\x{200C}\x{200D}\x{FEFF}]/u', $text) === 1;
+    }
+
     public function compactHtml(CrmMailMessage $message, int $maxLength = 12000): string
     {
         $text = $this->plainText($message);

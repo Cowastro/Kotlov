@@ -62,4 +62,19 @@ class CrmMailMessagePreviewTest extends TestCase
         $this->assertStringContainsString('Письмо сокращено', $html);
         $this->assertLessThan(400, mb_strlen($html));
     }
+
+    #[Test]
+    public function it_recognizes_html_without_visible_text_as_empty(): void
+    {
+        $preview = app(CrmMailMessagePreview::class);
+        $message = new CrmMailMessage([
+            'html_body' => '<html><head><style>body { margin: 0; }</style></head><body>&nbsp;&#8203;</body></html>',
+        ]);
+
+        $this->assertFalse($preview->hasVisibleContent($message));
+
+        $message->html_body = '<p>Во вложении документы</p>';
+
+        $this->assertTrue($preview->hasVisibleContent($message));
+    }
 }
