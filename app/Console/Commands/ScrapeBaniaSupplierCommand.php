@@ -589,7 +589,18 @@ class ScrapeBaniaSupplierCommand extends Command
             array_values($stats + $this->runStats)
         ));
 
-        return $stats['error'] > 0 ? self::FAILURE : self::SUCCESS;
+        $exitCode = $stats['error'] > 0 ? self::FAILURE : self::SUCCESS;
+
+        if ($apply && $syncId) {
+            DB::table('supplier_syncs')->where('id', $syncId)->update([
+                'last_run_at' => now(),
+                'last_status' => $exitCode === self::SUCCESS ? 'updated' : 'failed',
+                'last_exit_code' => $exitCode,
+                'updated_at' => now(),
+            ]);
+        }
+
+        return $exitCode;
     }
 
     private function discoverCategoryPages(string $categoryUrl): array

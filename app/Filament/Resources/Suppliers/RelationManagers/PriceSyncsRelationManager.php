@@ -42,18 +42,8 @@ class PriceSyncsRelationManager extends RelationManager
                 TextColumn::make('last_status')
                     ->label('Статус')
                     ->badge()
-                    ->formatStateUsing(fn (?string $state): string => match ($state) {
-                        'updated' => 'Обновлено',
-                        'dry-run' => 'Проверено',
-                        'failed' => 'Ошибка',
-                        default => 'Нет запусков',
-                    })
-                    ->color(fn (?string $state): string => match ($state) {
-                        'updated' => 'success',
-                        'dry-run' => 'info',
-                        'failed' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->state(fn (SupplierSync $record): string => $record->statusLabel())
+                    ->color(fn (SupplierSync $record): string => $record->statusColor()),
                 IconColumn::make('is_active')
                     ->label('Включён')
                     ->boolean(),

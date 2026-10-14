@@ -118,6 +118,34 @@ class SupplierSync extends Model
         return file_get_contents($this->last_log_path) ?: 'Лог пуст.';
     }
 
+    public function statusLabel(): string
+    {
+        if ($this->last_status === 'running' && $this->last_run_at?->lt(now()->subHours(6))) {
+            return 'Зависло';
+        }
+
+        return match ($this->last_status) {
+            'running' => 'Выполняется',
+            'updated' => 'Обновлено',
+            'dry-run' => 'Проверено',
+            'failed' => 'Ошибка',
+            'stale' => 'Зависло',
+            default => 'Нет запусков',
+        };
+    }
+
+    public function statusColor(): string
+    {
+        return match ($this->statusLabel()) {
+            'Выполняется' => 'warning',
+            'Обновлено' => 'success',
+            'Проверено' => 'info',
+            'Ошибка' => 'danger',
+            'Зависло' => 'danger',
+            default => 'gray',
+        };
+    }
+
     public static function cleanLogs(): void
     {
         $dir = storage_path('logs/supplier-sync');

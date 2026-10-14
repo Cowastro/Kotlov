@@ -235,7 +235,9 @@ class SupplierResource extends Resource
                     ])->columns(4),
                     RepeatableEntry::make('syncs')->label('Автоматические обновления')->schema([
                         TextEntry::make('title')->label('Сценарий')->weight('bold'),
-                        TextEntry::make('last_status')->label('Статус')->badge()->placeholder('Нет запусков'),
+                        TextEntry::make('last_status')->label('Статус')->badge()
+                            ->state(fn (\App\Models\SupplierSync $record): string => $record->statusLabel())
+                            ->color(fn (\App\Models\SupplierSync $record): string => $record->statusColor()),
                         TextEntry::make('last_run_at')->label('Последний запуск')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Нет запусков'),
                     ])->columns(3),
                 ]),

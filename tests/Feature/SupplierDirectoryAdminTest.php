@@ -94,4 +94,67 @@ class SupplierDirectoryAdminTest extends TestCase
         $this->assertTrue($supplier->brands()->whereKey($brand->id)->exists());
         $this->assertTrue($brand->suppliers()->whereKey($supplier->id)->exists());
     }
+
+    public function test_stale_running_sync_is_not_presented_as_currently_running(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'stale-sync-supplier',
+            'name' => 'Поставщик со старым запуском',
+        ]);
+        SupplierSync::query()->create([
+            'supplier_id' => $supplier->id,
+            'key' => 'stale-sync',
+            'name' => 'Старый сценарий',
+            'code' => 'stale-sync-supplier',
+            'title' => 'Сценарий из июня',
+            'command' => 'supplier:test',
+            'last_status' => 'running',
+            'last_run_at' => now()->subMonths(4),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(SupplierResource::getUrl('view', ['record' => $supplier], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Сценарий из июня')
+            ->assertSeeText('Зависло')
+            ->assertDontSeeText('Выполняется');
+    }
+
+    public function test_directory_data_migration_registers_all_documented_online_price_sources(): void
+    {
+        $suppliers = collect([
+            ['code' => 'bania', 'name' => 'BANIA.by'],
+            ['code' => 'ligmet', 'name' => 'Лигмет груп'],
+            ['code' => 'termostudia', 'name' => 'Термостудия'],
+            ['code' => 'maytek', 'name' => 'Майтек груп'],
+        ])->mapWithKeys(function (array $attributes): array {
+            $supplier = Supplier::query()->updateOrCreate(
+                ['code' => $attributes['code']],
+                ['name' => $attributes['name']],
+            );
+
+            return [$attributes['code'] => $supplier];
+        });
+
+        $migration = require database_path('migrations/2026_10_14_140000_seed_supplier_price_sources_and_close_stale_runs.php');
+        $migration->up();
+
+        $this->assertSame(
+            'https://docs.google.com/spreadsheets/d/1eDUENigmEbQjge6G1WFqvJdjZ_YBM32A/edit?gid=700541031#gid=700541031',
+            $suppliers['bania']->sources()->firstOrFail()->sourceUrl(),
+        );
+        $this->assertSame(
+            'https://drive.google.com/drive/folders/1pQQRGMKBEHHEjUF3AYsi_dTvlxxTFxzz',
+            $suppliers['ligmet']->sources()->firstOrFail()->sourceUrl(),
+        );
+        $this->assertSame(
+            'https://docs.google.com/spreadsheets/d/1cQEYeQIDjAyHG-_r-ZqL0v0zsSj9hZ5m9yDpyTBBqm0/edit?gid=1298422136#gid=1298422136',
+            $suppliers['termostudia']->sources()->firstOrFail()->sourceUrl(),
+        );
+        $this->assertSame(
+            'https://docs.google.com/spreadsheets/d/1Cucw7U8f2Qs6U7kcWZvrdwZitXgP17j5W0TcujUFiN8/edit?pli=1&gid=2059074837#gid=2059074837',
+            $suppliers['maytek']->sources()->firstOrFail()->sourceUrl(),
+        );
+    }
 }
