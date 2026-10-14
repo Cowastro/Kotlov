@@ -10779,4 +10779,73 @@ XML;
             'is_active' => true,
         ]);
     }
+
+    public function test_it_links_and_refreshes_the_existing_exact_12_square_metre_sauna_foil(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-sauna-foil-50-12',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Отделка для парной',
+            'slug' => 'otdelka-dlya-parnoj',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $existing = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-012.088',
+            'name' => 'Фольга для бани алюминиевая 50мкм, намотка 12м2',
+            'slug' => 'folga-dlya-bani-alyuminievaya-50mkm-namotka-12m2',
+            'price' => 41,
+            'stock_qty' => 0,
+            'in_stock' => false,
+            'images' => ['product/old-foil-12.png'],
+            'requires_price_confirmation' => true,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '9ce95b87-5520-11e9-b09a-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001572',
+            'name' => 'Фольга 50 мкм (12 м2)',
+            'price' => 37.83,
+            'price_currency' => 'BYN',
+            'price_currency_rate' => 1,
+            'price_tax_mode' => IntegrationSource::PRICE_TAX_EXCLUSIVE,
+            'price_vat_rate' => 20,
+            'price_byn' => 45.40,
+            'stock_quantity' => 5,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-et',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $this->assertSame($existing->id, $item->fresh()->product_id);
+        $this->assertSame('manual_search', $item->fresh()->match_method);
+        $this->assertSame('80.00', $existing->fresh()->price);
+        $this->assertSame('5', (string) $existing->fresh()->stock_qty);
+        $this->assertTrue((bool) $existing->fresh()->in_stock);
+        $this->assertFalse((bool) $existing->fresh()->requires_price_confirmation);
+        $this->assertSame('Фольга алюминиевая для бани 50 мкм, 1,2×10 м (12 м²)', $existing->fresh()->name);
+        $this->assertSame('10 м', collect($existing->fresh()->specs)->firstWhere('key', 'Длина')['value']);
+        $this->assertSame('12 м²', collect($existing->fresh()->specs)->firstWhere('key', 'Площадь рулона')['value']);
+        $this->assertSame(['img/products/sauna/aluminium-foil-50-micron-24m2-clean.jpg'], $existing->fresh()->images);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00001572',
+            'product_id' => $existing->id,
+            'product_sku' => 'PS-012.088',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
 }
