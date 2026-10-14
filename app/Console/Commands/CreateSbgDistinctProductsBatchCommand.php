@@ -3449,6 +3449,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // OMA lists the exact ChistoGLASS 700 ml trigger bottle at 18.79 BYN on
+    // 2026-10-14. Its product card also confirms the Belarusian manufacturer,
+    // package dimensions and net weight.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DC = [
+        'УТ-00000620' => [
+            'template_slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia',
+            'allow_unmatched' => true,
+            'category_slug' => 'aksessuary-kaminy',
+            'fragments' => ['Очиститель для каминных стекол', 'ЧистоGLASS', '700 мл'],
+            'brand' => [
+                'name' => 'ЧистоGLASS',
+                'slug' => 'chistoglass',
+                'country' => 'Беларусь',
+            ],
+            'name' => 'ЧистоGLASS Очиститель каминных стёкол, 700 мл',
+            'retail' => 18.79,
+            'images' => [
+                'img/products/chistoglass/chistoglass-fireplace-glass-cleaner-700ml.png',
+            ],
+            'source_url' => 'https://www.oma.by/ochistitel-kaminnykh-styekol-chistoglass-700-ml-1-227411-p',
+            'short' => 'Готовое средство ЧистоGLASS во флаконе с триггером для удаления сажи, нагара и загрязнений со стеклянных дверок печей и каминов.',
+            'content' => '<p><strong>ЧистоGLASS, 700 мл</strong> — готовое чистящее средство для стеклянных дверок каминов и печей. Флакон с триггером удобно равномерно наносить на загрязнённую поверхность.</p><p>Перед применением взболтайте флакон. Нанесите средство на остывшее стекло, оставьте на 3–5 минут, затем удалите загрязнения тканью или губкой.</p><p><strong>Меры предосторожности:</strong> работайте в перчатках и защищайте глаза. Не наносите на лакированные, пластиковые, алюминиевые и хромированные поверхности; берегите от детей.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Очиститель каминных стёкол'],
+                ['key' => 'Модель', 'value' => 'ЧистоGLASS'],
+                ['key' => 'Объём', 'value' => '700 мл'],
+                ['key' => 'Упаковка', 'value' => 'Флакон с триггером'],
+                ['key' => 'Состав', 'value' => 'Вода, гидроксид натрия'],
+                ['key' => 'Габариты упаковки', 'value' => '5×10×20 см'],
+                ['key' => 'Масса нетто', 'value' => '0,7 кг'],
+                ['key' => 'Изготовитель', 'value' => 'ИП Потапов Роман Александрович'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+                ['key' => 'Бренд', 'value' => 'ЧистоGLASS'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3560,6 +3597,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-cz' => self::BATCH_UNMATCHED_RESEARCHED_20261014_CZ,
             'unmatched-researched-20261014-da' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DA,
             'unmatched-researched-20261014-db' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DB,
+            'unmatched-researched-20261014-dc' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DC,
             default => null,
         };
 
