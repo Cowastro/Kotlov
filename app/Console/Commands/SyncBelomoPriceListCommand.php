@@ -14,6 +14,7 @@ class SyncBelomoPriceListCommand extends Command
     protected $signature = 'supplier:sync-belomo-pricelist
         {--apply : Записать поставщика, оптовые цены и связи}
         {--dry-run : Только аудит без записи}
+        {--complete-cards : Заполнить и активировать карточки, используя безопасную розничную цену и изображения той же серии}
         {--report= : Путь CSV-отчёта}';
 
     protected $description = 'Import the static BelOMO wholesale price list without VAT, preserving Elicon retail prices.';
@@ -38,6 +39,12 @@ class SyncBelomoPriceListCommand extends Command
         $this->line('metric.belomo.ambiguous='.$counts->get('ambiguous', 0));
         foreach ($quality as $metric => $value) {
             $this->line('metric.belomo.'.$metric.'='.$value);
+        }
+        if ((bool) $this->option('complete-cards')) {
+            $completion = $this->completionPlan($classified);
+            foreach ($completion['metrics'] as $metric => $value) {
+                $this->line('metric.belomo.completion_'.$metric.'='.$value);
+            }
         }
         $this->line('metric.belomo.report='.$reportPath);
 
@@ -74,6 +81,20 @@ class SyncBelomoPriceListCommand extends Command
             });
 
             $availability->refreshMany($touched, $now);
+
+            if ((bool) $this->option('complete-cards')) {
+                $fresh = $this->classify($rows, $priceList, $supplierId);
+                $completion = $this->completionPlan($fresh);
+                $this->applyCompletionPlan($completion['rows'], $now);
+                $availability->refreshMany(array_column($completion['rows'], 'product_id'), $now);
+                $this->info(sprintf(
+                    'Карточки: активировано %d; отсутствующие цены рассчитаны с безопасной маржой %d; изображения серии добавлены %d.',
+                    $completion['metrics']['activate'],
+                    $completion['metrics']['price_update'],
+                    $completion['metrics']['image_copy'],
+                ));
+            }
+
             DB::table('supplier_sources')->where('supplier_id', $supplierId)->where('name', 'Прайс БелОМО 15.09.2026')->update(['last_run_at' => $now, 'updated_at' => $now]);
             DB::table('supplier_syncs')->where('id', $syncId)->update(['last_run_at' => $now, 'updated_at' => $now]);
             $this->info("Применено {$applied}; создано неактивных черновиков {$created}. Розничные цены Эликона не изменялись.");
@@ -296,6 +317,169 @@ class SyncBelomoPriceListCommand extends Command
     private function priceWithVat(float $priceWithoutVat): float
     {
         return round($priceWithoutVat * 1.20, 2);
+    }
+
+    /** @return array{rows: array<int, array<string, mixed>>, metrics: array<string, int>} */
+    private function completionPlan(array $classified): array
+    {
+        $minimumMargin = max(0.0, min(99.0, (float) config('shop.order_management.minimum_margin_percent', 10)));
+        $donors = collect($classified)
+            ->filter(fn (array $item): bool => $item['product'] !== null
+                && count($this->jsonArray($item['product']->images ?? null)) > 0)
+            ->values();
+
+        $metrics = [
+            'rows' => 0,
+            'activate' => 0,
+            'price_update' => 0,
+            'image_copy' => 0,
+            'description_update' => 0,
+            'blocked_no_image' => 0,
+        ];
+        $plan = [];
+
+        foreach ($classified as $item) {
+            $product = $item['product'];
+            if ($product === null || $item['status'] !== 'matched') {
+                continue;
+            }
+
+            $currentImages = $this->jsonArray($product->images ?? null);
+            $donor = $currentImages === [] ? $this->bestImageDonor($item, $donors->all()) : null;
+            $images = $currentImages !== [] ? $currentImages : $this->jsonArray($donor['product']->images ?? null);
+            $needsDescription = (! filled($product->content ?? null) && ! filled($product->short_description ?? null))
+                || trim((string) ($product->short_description ?? '')) === 'Черновик из прямого оптового прайса БелОМО.';
+            $safeRetail = $this->safeRetailPrice((float) $item['row']['partner_price_byn'], $minimumMargin);
+            $currentRetail = (float) ($product->price ?? 0);
+            // Elicon remains the owner of every retail price it publishes.
+            // The calculated margin-safe price is used only where Elicon has
+            // no price at all; existing retail prices are never overwritten.
+            $targetRetail = $currentRetail > 0 ? $currentRetail : $safeRetail;
+            $canActivate = $images !== [] && $targetRetail > 0;
+
+            $row = [
+                'product_id' => (int) $product->id,
+                'article' => $item['row']['article'],
+                'name' => $item['row']['name'],
+                'price' => $targetRetail,
+                'price_changed' => abs($targetRetail - $currentRetail) >= 0.01,
+                'images' => $images,
+                'image_changed' => $currentImages === [] && $images !== [],
+                'description_changed' => $needsDescription,
+                'activate' => ! (bool) ($product->is_active ?? false) && $canActivate,
+                'can_activate' => $canActivate,
+                'specs' => $this->completionSpecs($item['row'], $product->specs ?? null),
+            ];
+            $plan[] = $row;
+            $metrics['rows']++;
+            if ($row['activate']) $metrics['activate']++;
+            if ($row['price_changed']) $metrics['price_update']++;
+            if ($row['image_changed']) $metrics['image_copy']++;
+            if ($row['description_changed']) $metrics['description_update']++;
+            if (! $canActivate) $metrics['blocked_no_image']++;
+        }
+
+        return ['rows' => $plan, 'metrics' => $metrics];
+    }
+
+    private function applyCompletionPlan(array $rows, $now): void
+    {
+        DB::transaction(function () use ($rows, $now): void {
+            foreach ($rows as $row) {
+                $update = [
+                    'price' => $row['price'],
+                    'specs' => json_encode($row['specs'], JSON_UNESCAPED_UNICODE),
+                    'updated_at' => $now,
+                ];
+
+                if ($row['image_changed']) {
+                    $update['images'] = json_encode($row['images'], JSON_UNESCAPED_UNICODE);
+                }
+                if ($row['description_changed']) {
+                    $update['short_description'] = $row['name'].'. Поставка под заказ через ООО «СанБизнесГруп»; наличие и срок подтверждает менеджер.';
+                    $update['content'] = '<p>'.$row['name'].' производства БелОМО. Карточка привязана к закупочному прайсу ООО «СанБизнесГруп». Наличие, срок поставки и комплектацию подтвердит менеджер перед оформлением.</p><p>Изображение показывает соответствующую серию счетчика; точное исполнение определяется артикулом производителя.</p>';
+                    $update['meta_title'] = $row['name'].' купить в %city%';
+                    $update['meta_description'] = $row['name'].' БелОМО — цена с НДС, поставка под заказ.';
+                }
+                if ($row['can_activate']) {
+                    $update['is_active'] = true;
+                    $update['is_archived'] = false;
+                }
+                if ($row['activate']) {
+                    $update['availability_status'] = 'check';
+                    $update['in_stock'] = false;
+                    $update['stock_qty'] = null;
+                }
+
+                DB::table('products')->where('id', $row['product_id'])->update($update);
+            }
+        });
+    }
+
+    private function safeRetailPrice(float $priceWithoutVat, float $minimumMargin): float
+    {
+        $costWithVat = $this->priceWithVat($priceWithoutVat);
+        $divisor = 1 - ($minimumMargin / 100);
+
+        return ceil(($costWithVat / $divisor) * 100) / 100;
+    }
+
+    private function bestImageDonor(array $target, array $donors): ?array
+    {
+        $family = $this->articleFamily($target['row']['article']);
+        $targetTokens = $this->modelTokens($target['row']['name']);
+        $best = null;
+        $bestScore = -1;
+
+        foreach ($donors as $donor) {
+            if ($this->articleFamily($donor['row']['article']) !== $family) {
+                continue;
+            }
+            $shared = count(array_intersect($targetTokens, $this->modelTokens($donor['row']['name'])));
+            $score = $shared * 100 - abs($this->articleSuffix($target['row']['article']) - $this->articleSuffix($donor['row']['article']));
+            if ($score > $bestScore) {
+                $best = $donor;
+                $bestScore = $score;
+            }
+        }
+
+        return $best;
+    }
+
+    private function articleFamily(string $article): string
+    {
+        return explode('.', $article, 2)[0];
+    }
+
+    private function articleSuffix(string $article): int
+    {
+        return preg_match('/-(\d+)$/', $article, $match) ? (int) $match[1] : 0;
+    }
+
+    /** @return array<int, string> */
+    private function modelTokens(string $name): array
+    {
+        $normalized = mb_strtolower(preg_replace('/[^\pL\pN]+/u', ' ', $name) ?? '');
+        return array_values(array_unique(array_filter(preg_split('/\s+/u', trim($normalized)) ?: [], fn (string $token): bool => mb_strlen($token) > 1)));
+    }
+
+    private function completionSpecs(array $row, mixed $current): array
+    {
+        $specs = $this->jsonArray($current);
+        $specs['Производитель'] = 'БелОМО';
+        $specs['Артикул производителя'] = $row['article'];
+        $specs['Тип счетчика'] = str_contains(mb_strtolower($row['name']), 'ультразвуковой') ? 'Ультразвуковой' : 'Диафрагменный';
+        if (preg_match('/G\s*([0-9]+(?:[,.][0-9]+)?)/iu', $row['name'], $match)) {
+            $specs['Типоразмер'] = 'G'.str_replace('.', ',', $match[1]);
+        }
+        if (! empty($row['center_distance_mm'])) {
+            $specs['Межосевое расстояние'] = $row['center_distance_mm'].' мм';
+        }
+        if (! empty($row['flow_direction'])) {
+            $specs['Направление потока'] = $row['flow_direction'];
+        }
+
+        return $specs;
     }
 
     private function cardIsReady(?object $product): bool
