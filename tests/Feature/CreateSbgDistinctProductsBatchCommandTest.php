@@ -10350,13 +10350,13 @@ XML;
             'is_active' => true,
             'update_stock' => true,
         ]);
-        $category = Category::query()->firstOrCreate(['slug' => 'kazany'], [
-            'name' => 'Казаны',
+        Category::query()->firstOrCreate(['slug' => 'mangalyi'], [
+            'name' => 'Мангалы',
             'parent_id' => 0,
             'is_active' => true,
         ]);
         Product::query()->create([
-            'category_id' => $category->id,
+            'category_id' => Category::query()->where('slug', 'mangalyi')->value('id'),
             'sku' => 'KOTLOV-007773',
             'name' => 'Тестовый товар-шаблон',
             'slug' => 'cauldron-lid-en-test-template',
@@ -10388,6 +10388,8 @@ XML;
         $this->assertTrue((bool) $product->in_stock);
         $this->assertSame('matched', $item->fresh()->match_status);
         $this->assertSame('707', $item->fresh()->external_sku);
+        $this->assertSame('kazany', $product->category->slug);
+        $this->assertSame('mangalyi', $product->category->parent->slug);
         $this->assertSame('308 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр')['value']);
         $this->assertSame('280 мм', collect($product->specs)->firstWhere('key', 'Диаметр внутреннего паза')['value']);
         $this->assertSame(['img/products/tekhnolit-polotsk/cast-iron-flat-cauldron-lid-4l-707.jpg'], $product->images);
