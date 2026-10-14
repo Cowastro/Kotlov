@@ -10285,4 +10285,59 @@ XML;
         $this->assertCount(2, $dispute['evidence']);
         $this->assertSame('УТ-00009627', $dispute['source_identity']['external_code']);
     }
+
+    public function test_it_creates_the_exact_stahlmann_f_25_by_1_easyfix_coupling_with_researched_price(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-stahlmann-f-25x1-ef',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'komplektuyushhie-dlya-otopleniya'], [
+            'name' => 'Комплектующие для отопления',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-007773',
+            'name' => 'Тестовый товар-шаблон',
+            'slug' => 'stahlmann-em-test-template',
+            'price' => 10,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'd84c5b80-6583-11f1-b4b9-1c1b0d1de7c2',
+            'external_code' => 'УТ-00009551',
+            'external_sku' => null,
+            'name' => 'Муфта Stahlmann (F) 25х1 EF',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-em',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('34.00', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('2217160', $item->fresh()->external_sku);
+        $this->assertSame('25 мм', collect($product->specs)->firstWhere('key', 'Диаметр трубы')['value']);
+        $this->assertSame('1″', collect($product->specs)->firstWhere('key', 'Резьба')['value']);
+        $this->assertSame('Внутренняя (F)', collect($product->specs)->firstWhere('key', 'Тип резьбы')['value']);
+        $this->assertSame(['img/products/stahlmann/stahlmann-coupling-f-25-1-ef-2217160.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/stahlmann/stahlmann-coupling-f-25-1-ef-2217160.jpg'));
+        $this->assertStringContainsString('chipdip.by', $product->content_source_url);
+    }
 }

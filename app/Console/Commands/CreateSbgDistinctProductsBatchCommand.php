@@ -5083,6 +5083,49 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact Belarus listing identifies Stahlmann code 2217160 and confirms
+    // a current retail price of 34 BYN. The saved product photo is clean and
+    // has no retailer watermark.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EM = [
+        'УТ-00009551' => [
+            'template' => 'KOTLOV-007773',
+            'allow_unmatched' => true,
+            'category_slug' => 'komplektuyushhie-dlya-otopleniya',
+            'external_id' => 'd84c5b80-6583-11f1-b4b9-1c1b0d1de7c2',
+            'external_sku' => '2217160',
+            'hydrate_external_sku' => true,
+            'fragments' => ['Муфта', 'Stahlmann', '(F)', '25х1', 'EF'],
+            'brand' => [
+                'name' => 'Stahlmann',
+                'slug' => 'stahlmann',
+            ],
+            'name' => 'Муфта Stahlmann (F) 25×1″ EF с внутренней резьбой',
+            'retail' => 34.00,
+            'images' => ['img/products/stahlmann/stahlmann-coupling-f-25-1-ef-2217160.jpg'],
+            'source_url' => 'https://www.chipdip.by/product/mufta-stahlmann-f-25x1-ef-2217160-8002442624',
+            'short' => 'Латунная быстросборная муфта Stahlmann EasyFix для гофрированной нержавеющей трубы Ду 25 и перехода на внутреннюю резьбу 1″.',
+            'content' => '<p><strong>Stahlmann (F) 25×1″ EF</strong> — латунная переходная муфта для присоединения гибкой гофрированной трубы Stahlmann диаметром 25 мм к прибору или арматуре с наружной резьбой 1″.</p><p>Быстросборная конструкция EasyFix позволяет вставить подготовленный торец трубы в фитинг и затянуть накидную гайку. Корпус и фиксирующее кольцо выполнены из латуни CW617N. Муфта рассчитана на рабочее давление до 10 бар и температуру до 110 °C.</p><p>Код Stahlmann — 2217160, артикул серии — SSFL250001BEF. Перед монтажом следует проверить диаметр трубы, размер ответной резьбы и герметичность соединения.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Переходная муфта'],
+                ['key' => 'Серия', 'value' => 'EasyFix (EF)'],
+                ['key' => 'Диаметр трубы', 'value' => '25 мм'],
+                ['key' => 'Резьба', 'value' => '1″'],
+                ['key' => 'Тип резьбы', 'value' => 'Внутренняя (F)'],
+                ['key' => 'Тип соединения', 'value' => 'Быстросборное обжимное / резьбовое'],
+                ['key' => 'Материал', 'value' => 'Латунь CW617N'],
+                ['key' => 'Максимальная рабочая температура', 'value' => '110 °C'],
+                ['key' => 'Рабочее давление', 'value' => '10 бар'],
+                ['key' => 'Назначение', 'value' => 'Водоснабжение, ГВС, ХВС, отопление'],
+                ['key' => 'Совместимость', 'value' => 'Гофрированные трубы Stahlmann 25 мм'],
+                ['key' => 'Артикул серии', 'value' => 'SSFL250001BEF'],
+                ['key' => 'Код Stahlmann', 'value' => '2217160'],
+                ['key' => 'Нормативный документ', 'value' => 'ГОСТ 15763-2005'],
+                ['key' => 'Масса', 'value' => '44 г'],
+                ['key' => 'Гарантия', 'value' => '24 месяца'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5230,6 +5273,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-ej' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EJ,
             'unmatched-researched-20261014-ek' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EK,
             'unmatched-disputed-20261014-el' => self::BATCH_UNMATCHED_DISPUTED_20261014_EL,
+            'unmatched-researched-20261014-em' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EM,
             default => null,
         };
 
