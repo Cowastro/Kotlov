@@ -3673,6 +3673,42 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // Radiat lists the exact TS.KMP.PPU.0000.63144 kit at 433 RUB. At the
+    // official NBRB rate of 3.6006 BYN per 100 RUB on 2026-10-14 this is
+    // 15.59 BYN, rounded to 16 BYN retail.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DI = [
+        'УТ-00000335' => [
+            'template_slug' => 'ploschadka-montajnaya-teplov-i-suhov-mono-pmm-r-aisi-304-08-mm',
+            'allow_unmatched' => true,
+            'category_slug' => 'krepleniya-dymohod',
+            'external_sku' => 'TS.KMP.PPU.0000.63144',
+            'fragments' => ['Комплект теплоиз.', '80х400', 'ППУ', '500х500'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Комплект теплоизоляционный 80 × 400 мм для ППУ-Р 500 × 500 мм',
+            'retail' => 16.00,
+            'images' => [
+                'img/products/teplov-i-suhov/teploizolyatsionnyy-komplekt-80x400-ppu-r-500x500.png',
+            ],
+            'source_url' => 'https://radiat.ru/catalog/komplekt_teploizolyatsionnyy_/komplekt_teploizolyatsionnyy_80kh400_dlya_ppu_r_500kh500/',
+            'short' => 'Теплоизоляционный комплект «Теплов и Сухов» из полос 80 × 400 мм для снижения теплопередачи по периметру прохода перекрытия ППУ-Р 500 × 500 мм.',
+            'content' => '<p><strong>Комплект теплоизоляционный «Теплов и Сухов» 80 × 400 мм</strong> применяется совместно с проходом перекрытия ППУ-Р 500 × 500 мм. Полосы размещаются по периметру проходного узла и уменьшают передачу тепла на конструкции перекрытия.</p><p>Комплект является отдельным монтажным элементом и не входит в стандартную комплектацию ППУ-Р. Монтаж выполняйте по инструкции производителя с соблюдением противопожарных отступов и требований к негорючей теплоизоляции.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Комплект теплоизоляционный для прохода перекрытия'],
+                ['key' => 'Размер элементов', 'value' => '80 × 400 мм'],
+                ['key' => 'Совместимый проход', 'value' => 'ППУ-Р 500 × 500 мм'],
+                ['key' => 'Назначение', 'value' => 'Снижение теплопередачи на перекрытие по периметру ППУ-Р'],
+                ['key' => 'Поставка', 'value' => 'Отдельно от прохода перекрытия'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.KMP.PPU.0000.63144'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3790,6 +3826,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-disputed-20261014-df' => self::BATCH_UNMATCHED_DISPUTED_20261014_DF,
             'unmatched-disputed-20261014-dg' => self::BATCH_UNMATCHED_DISPUTED_20261014_DG,
             'unmatched-disputed-20261014-dh' => self::BATCH_UNMATCHED_DISPUTED_20261014_DH,
+            'unmatched-researched-20261014-di' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DI,
             default => null,
         };
 

@@ -8492,4 +8492,60 @@ XML;
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame('manual_research_unresolved', $item->fresh()->match_method);
     }
+
+    public function test_it_creates_the_exact_teplov_i_suhov_ppu_insulation_kit(): void
+    {
+        $source = IntegrationSource::query()->create(['code' => 'onec-sbg-unmatched-ppu-insulation', 'name' => '1С СанБизнесГруп', 'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'], 'is_active' => true, 'update_stock' => true]);
+        $category = Category::query()->firstOrCreate(['slug' => 'krepleniya-dymohod'], ['name' => 'Крепления для дымохода', 'parent_id' => 0]);
+        Product::query()->firstOrCreate(['slug' => 'ploschadka-montajnaya-teplov-i-suhov-mono-pmm-r-aisi-304-08-mm'], ['category_id' => $category->id, 'sku' => 'KOTLOV-003039', 'name' => 'Площадка монтажная Теплов и Сухов', 'price' => 100, 'images' => ['img/products/teplov-i-suhov/template.jpg'], 'is_active' => true, 'is_archived' => false]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'af1f365b-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000335',
+            'external_sku' => 'TS.KMP.PPU.0000.63144',
+            'name' => 'Комплект теплоиз. 80х400 для ППУ - Р 500х500',
+            'price_byn' => null,
+            'stock_quantity' => 4,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-di', '--code' => ['УТ-00000335']])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-di', '--code' => ['УТ-00000335'], '--apply' => true])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product()->sole();
+        $brand = Brand::query()->where('slug', 'teplov-i-suhov')->sole();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertSame('Теплов и Сухов Комплект теплоизоляционный 80 × 400 мм для ППУ-Р 500 × 500 мм', $product->name);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('16.00', $product->price);
+        $this->assertSame('4', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('80 × 400 мм', collect($product->specs)->firstWhere('key', 'Размер элементов')['value']);
+        $this->assertSame('ППУ-Р 500 × 500 мм', collect($product->specs)->firstWhere('key', 'Совместимый проход')['value']);
+        $this->assertSame('TS.KMP.PPU.0000.63144', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/teploizolyatsionnyy-komplekt-80x400-ppu-r-500x500.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/teploizolyatsionnyy-komplekt-80x400-ppu-r-500x500.png'));
+        $this->assertStringContainsString('radiat.ru', $product->content_source_url);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('rub', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'TS.KMP.PPU.0000.63144',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-di', '--code' => ['УТ-00000335'], '--apply' => true])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
