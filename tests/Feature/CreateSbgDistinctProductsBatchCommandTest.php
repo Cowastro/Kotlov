@@ -9115,7 +9115,7 @@ XML;
         $this->assertSame($productCount + 6, Product::query()->count());
     }
 
-    public function test_it_flags_two_old_burner_rows_until_the_actual_controller_and_package_are_confirmed(): void
+    public function test_it_links_two_old_burner_rows_to_the_existing_clearance_cards(): void
     {
         $source = IntegrationSource::query()->create([
             'code' => 'onec-sbg-old-burner-packages',
@@ -9124,6 +9124,36 @@ XML;
             'is_active' => true,
             'update_stock' => true,
         ]);
+        $category = Category::query()->create([
+            'name' => 'Пеллетные горелки',
+            'slug' => 'pelletnye-gorelki',
+            'parent_id' => 0,
+        ]);
+        $products = collect([
+            'УТ-00000133' => [
+                'sku' => 'KTL-HOTTA-CERAMIK-30-K3',
+                'name' => 'HOTTA Ceramik 30 кВт с Wi‑Fi — комплект распродажи',
+                'slug' => 'pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3',
+                'price' => 4600,
+                'stock_qty' => 3,
+                'images' => ['img/products/hotta/hotta-ceramik-30.jpg'],
+            ],
+            'УТ-00000130' => [
+                'sku' => 'PS-012.203',
+                'name' => 'KOTLOV XO Ceramic PRO 100 кВт',
+                'slug' => 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt',
+                'price' => 12960,
+                'stock_qty' => 1,
+                'images' => ['img/products/kotlov-xo/ceramic-pro-100.jpg'],
+            ],
+        ])->map(fn (array $data): Product => Product::query()->create($data + [
+            'category_id' => $category->id,
+            'brand_id' => null,
+            'short_description' => 'Актуальная карточка распродажи.',
+            'content' => '<p>Комплект с новой автоматикой XO.</p>',
+            'is_active' => true,
+            'is_archived' => false,
+        ]));
         $rows = [
             ['af1f3591-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000133', 'Горелка OXI Ceramik+F30 HOTTO'],
             ['af1f358e-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000130', 'Горелка Cyberia 100'],
@@ -9144,18 +9174,29 @@ XML;
         });
         $productCount = Product::query()->count();
 
+        $dryRunStatus = \Illuminate\Support\Facades\Artisan::call('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-ds',
+        ]);
+        $this->assertSame(0, $dryRunStatus, \Illuminate\Support\Facades\Artisan::output());
+        $this->assertTrue($items->every(fn (IntegrationProduct $item): bool => $item->fresh()->product_id === null));
+
         $status = \Illuminate\Support\Facades\Artisan::call('integration:create-sbg-distinct-products', [
-            '--batch' => 'unmatched-disputed-20261014-ds',
+            '--batch' => 'unmatched-researched-20261014-ds',
             '--apply' => true,
         ]);
         $this->assertSame(0, $status, \Illuminate\Support\Facades\Artisan::output());
         $oxi = $items['УТ-00000133']->fresh();
         $cyberia = $items['УТ-00000130']->fresh();
         $this->assertSame($productCount, Product::query()->count());
-        $this->assertSame(['ambiguous', 'ambiguous'], [$oxi->match_status, $cyberia->match_status]);
-        $this->assertSame(['manual_research_unresolved', 'manual_research_unresolved'], [$oxi->match_method, $cyberia->match_method]);
-        $this->assertContains('решение: продажа с новым XO или архив', $oxi->candidates[0]['required_data']);
-        $this->assertContains('актуальная розничная цена', $cyberia->candidates[0]['required_data']);
-        $this->assertStringContainsString('2018', $cyberia->candidates[0]['evidence'][0]['finding']);
+        $this->assertSame([$products['УТ-00000133']->id, $products['УТ-00000130']->id], [$oxi->product_id, $cyberia->product_id]);
+        $this->assertSame(['matched', 'matched'], [$oxi->match_status, $cyberia->match_status]);
+        $this->assertSame(['manual_search', 'manual_search'], [$oxi->match_method, $cyberia->match_method]);
+        $this->assertSame([$category->id, $category->id], [$oxi->target_category_id, $cyberia->target_category_id]);
+        $this->assertNull($oxi->candidates);
+        $this->assertNull($cyberia->candidates);
+        $this->assertSame(['4600.00', '12960.00'], $products->map(fn (Product $product): string => $product->fresh()->price)->values()->all());
+        $this->assertSame(['1', '1'], $products->map(fn (Product $product): string => (string) $product->fresh()->stock_qty)->values()->all());
+        $this->assertTrue($products->every(fn (Product $product): bool => $product->fresh()->is_active && ! $product->fresh()->is_archived));
+        $this->assertStringContainsString('новой автоматикой XO', $products['УТ-00000133']->fresh()->content);
     }
 }
