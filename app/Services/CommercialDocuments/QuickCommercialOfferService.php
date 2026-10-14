@@ -16,6 +16,8 @@ class QuickCommercialOfferService
         'просим', 'прошу', 'цена', 'цены', 'стоимость', 'наличие', 'срок', 'поставка', 'поставки',
         'добрый', 'день', 'здравствуйте', 'спасибо', 'письмо', 'ответ', 'ответе', 'товар', 'товары',
         'для', 'или', 'как', 'что', 'это', 'нам', 'вам', 'вас', 'при', 'под', 'над', 'без', 'из', 'на', 'по', 'от', 'до',
+        'печь', 'печи', 'котел', 'котёл', 'котла', 'котлы', 'камин', 'камины', 'насос', 'насосы',
+        'твердотопливный', 'твердотопливная', 'отопительный', 'отопительная', 'банный', 'банная',
     ];
 
     public function __construct(
@@ -69,7 +71,7 @@ class QuickCommercialOfferService
         $aiSearchText = collect($analysis['items'])
             ->flatMap(fn (array $item): array => [$item['query'], $item['sku']])
             ->filter()->implode(' ');
-        $searchText = trim($text."\n".$aiSearchText);
+        $searchText = trim($aiSearchText !== '' ? $aiSearchText : $text);
         $tokens = $this->tokens($searchText);
         $products = $this->candidateProducts($tokens);
 
@@ -78,6 +80,7 @@ class QuickCommercialOfferService
                 'product' => $product,
                 'score' => $this->score($product, $tokens, $searchText),
             ])
+            ->filter(fn (array $item): bool => $item['score'] >= 60)
             ->sortByDesc(fn (array $item): array => [$item['score'], (int) $item['product']->in_stock, (int) $item['product']->views_count])
             ->values();
 
@@ -94,10 +97,10 @@ class QuickCommercialOfferService
             return [$product->id => implode(' · ', array_filter($parts))];
         })->all();
 
-        $bestScore = (int) ($ranked->first()['score'] ?? 0);
-        $defaults = $bestScore >= 80
-            ? $ranked->filter(fn (array $item): bool => $item['score'] >= max(80, $bestScore - 20))->take(3)
-                ->pluck('product.id')->map(fn ($id): int => (int) $id)->values()->all()
+        $exactMatches = $ranked
+            ->filter(fn (array $item): bool => $this->sourceContainsExactIdentifier($item['product'], $searchText));
+        $defaults = $exactMatches->count() === 1
+            ? [(int) $exactMatches->first()['product']->id]
             : [];
 
         return [
@@ -169,6 +172,7 @@ class QuickCommercialOfferService
                 'product' => $product,
                 'score' => $this->manualSearchScore($product, $tokens, $search),
             ])
+            ->filter(fn (array $item): bool => $item['score'] >= 60)
             ->sortByDesc(fn (array $item): array => [
                 $item['score'],
                 (int) $item['product']->in_stock,
@@ -179,6 +183,54 @@ class QuickCommercialOfferService
                 $item['product']->id => $this->productLabel($item['product']),
             ])
             ->all();
+    }
+
+    /** @return array{ready: bool, message: string, suggestions: array<int, string>} */
+    public function manualSelection(string $query): array
+    {
+        $guidance = $this->selectionGuidance($query);
+
+        return $guidance + [
+            'suggestions' => $guidance['ready'] ? $this->searchProducts($query) : [],
+        ];
+    }
+
+    /** @return array{ready: bool, message: string} */
+    public function selectionGuidance(string $query): array
+    {
+        $query = trim($query);
+        $normalized = Str::lower($query);
+        $isStoveRequest = preg_match('/\b(?:печ[ьи]|кот[её]л|камин)\b/ui', $normalized) === 1;
+        $hasModel = preg_match('~\b(?=[a-zа-я0-9./-]*[a-zа-я])(?=[a-zа-я0-9./-]*\d)[a-zа-я0-9]+(?:[-./][a-zа-я0-9]+)+\b~ui', $normalized) === 1;
+
+        if (! $isStoveRequest || $hasModel) {
+            return [
+                'ready' => true,
+                'message' => $hasModel
+                    ? 'Указана конкретная модель. Показываем только достаточно близкие совпадения; выбор остаётся за менеджером.'
+                    : 'Показываем только достаточно близкие совпадения. Выберите товар вручную.',
+            ];
+        }
+
+        $missing = [];
+        if (preg_match('/бан|саун|парн|отоп|дом|дач|камин|кот[её]л/ui', $normalized) !== 1) {
+            $missing[] = 'назначение: баня/сауна или отопление дома';
+        }
+        if (preg_match('/\d+(?:[.,]\d+)?\s*(?:м[²³23]|кв\.?\s*м|куб\.?\s*м|квт)/ui', $normalized) !== 1) {
+            $missing[] = 'площадь или объём помещения (м²/м³), либо требуемая мощность';
+        }
+        if (preg_match('/дров|угол|пеллет|газ|электр/ui', $normalized) !== 1) {
+            $missing[] = 'вид топлива';
+        }
+
+        if ($missing === []) {
+            return ['ready' => true, 'message' => 'Основные параметры указаны. Выберите подходящий товар вручную.'];
+        }
+
+        return [
+            'ready' => false,
+            'message' => "Сначала уточните у клиента:\n• ".implode("\n• ", $missing)."\nПосле уточнения повторите подбор — товары автоматически в КП не добавляются.",
+        ];
     }
 
     /** @param array<int|string> $ids
@@ -209,11 +261,6 @@ class QuickCommercialOfferService
         }
 
         $products = $query->orderByDesc('in_stock')->orderByDesc('views_count')->limit(250)->get();
-
-        if ($products->isEmpty()) {
-            return Product::query()->where('is_active', true)->where('is_archived', false)
-                ->where('price', '>', 0)->orderByDesc('in_stock')->orderByDesc('views_count')->limit(12)->get();
-        }
 
         return $products;
     }
@@ -276,6 +323,16 @@ class QuickCommercialOfferService
         }
 
         return $score + ((float) $product->price > 0 ? 5 : 0) + ($product->in_stock ? 5 : 0);
+    }
+
+    private function sourceContainsExactIdentifier(Product $product, string $source): bool
+    {
+        $sku = trim((string) $product->sku);
+        if ($sku === '') {
+            return false;
+        }
+
+        return preg_match('/(?<![\p{L}\p{N}])'.preg_quote($sku, '/').'(?![\p{L}\p{N}])/ui', $source) === 1;
     }
 
     /** @return array{string, string} */

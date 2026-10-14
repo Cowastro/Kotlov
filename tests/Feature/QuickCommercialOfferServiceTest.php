@@ -290,6 +290,33 @@ class QuickCommercialOfferServiceTest extends TestCase
         $this->assertStringContainsString('В наличии', $byWords[$product->id]);
     }
 
+    public function test_stove_selection_requests_missing_parameters_instead_of_showing_random_products(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Печи для безопасного подбора', 'slug' => 'safe-stove-selection', 'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Твердотопливный котёл другого производителя 20 кВт',
+            'slug' => 'unrelated-solid-fuel-boiler',
+            'sku' => 'OTHER-20',
+            'price' => 2000,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $service = app(QuickCommercialOfferService::class);
+        $broad = $service->manualSelection('Нужна печь');
+        $missingModel = $service->manualSelection('Tatra KT95-N твердотопливный котёл 6 мм');
+
+        $this->assertFalse($broad['ready']);
+        $this->assertSame([], $broad['suggestions']);
+        $this->assertStringContainsString('объём помещения', $broad['message']);
+        $this->assertTrue($missingModel['ready']);
+        $this->assertSame([], $missingModel['suggestions']);
+    }
+
     public function test_manual_market_query_can_become_an_inactive_draft_when_catalog_has_no_match(): void
     {
         $items = CrmMailThreadResource::quickOfferMissingItems([

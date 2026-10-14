@@ -788,9 +788,9 @@ class CrmMailThreadResource extends Resource
     {
         return [
             TextInput::make('manual_product_query')
-                ->label('Ручной подбор товара')
-                ->placeholder('Введите название, модель, артикул или характеристики')
-                ->helperText('Сначала ищем похожие позиции в нашей базе. Порядок слов и неполное название допускаются.')
+                ->label('Подбор товара с проверкой параметров')
+                ->placeholder('Например: банная печь, парная 18 м³, дрова, дымоход 115 мм')
+                ->helperText('Если данных для печи недостаточно, система сначала подскажет, что спросить у клиента. Ничего не добавляется в КП автоматически.')
                 ->maxLength(500)
                 ->columnSpanFull(),
             Hidden::make('manual_suggestion_ids')->default([]),
@@ -799,7 +799,7 @@ class CrmMailThreadResource extends Resource
                 ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
             SchemaActions::make([
                 Action::make('match_manual_product')
-                    ->label('Подобрать похожие в базе')
+                    ->label('Проверить запрос и найти в базе')
                     ->icon('heroicon-o-magnifying-glass')
                     ->color('warning')
                     ->action(function (Get $get, Set $set): void {
@@ -810,22 +810,18 @@ class CrmMailThreadResource extends Resource
                             return;
                         }
 
-                        $result = app(QuickCommercialOfferService::class)->prepareText($query, false);
-                        $suggestionIds = array_map('intval', array_keys((array) ($result['suggestions'] ?? [])));
+                        $result = app(QuickCommercialOfferService::class)->manualSelection($query);
+                        $suggestionIds = array_map('intval', array_keys($result['suggestions']));
                         $set('manual_suggestion_ids', $suggestionIds);
-                        $set('product_ids', array_values(array_unique(array_merge(
-                            array_map('intval', (array) $get('product_ids')),
-                            array_map('intval', (array) ($result['default_product_ids'] ?? [])),
-                        ))));
-                        $set('manual_product_summary', $suggestionIds === []
-                            ? 'В нашей базе совпадений не найдено. Нажмите «Найти на рынке и поставщика».'
-                            : 'Найдено похожих вариантов: '.count($suggestionIds).'. Выберите подходящий товар в поле «Товары для КП».');
+                        $set('manual_product_summary', ! $result['ready']
+                            ? $result['message']
+                            : ($suggestionIds === []
+                                ? 'Достаточно близких совпадений в нашей базе нет. Уточните модель или выполните поиск на рынке.'
+                                : $result['message'].' Найдено вариантов: '.count($suggestionIds).'.'));
 
                         Notification::make()
-                            ->title($suggestionIds === [] ? 'В базе совпадений нет' : 'Похожие товары найдены')
-                            ->body($suggestionIds === []
-                                ? 'Можно выполнить поиск на рынке и затем создать неактивный черновик товара для КП.'
-                                : 'Проверьте название, артикул, цену, наличие и поставщика.')
+                            ->title(! $result['ready'] ? 'Нужно уточнить параметры' : ($suggestionIds === [] ? 'Точного совпадения нет' : 'Подходящие варианты найдены'))
+                            ->body($result['message'])
                             ->color($suggestionIds === [] ? 'warning' : 'success')
                             ->send();
                     }),
