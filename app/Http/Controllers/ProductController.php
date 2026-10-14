@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Services\HeatPumpProductPresenter;
+use App\Services\ProductPopularityService;
 use App\Services\SeoMetadataBuilder;
 use Illuminate\Support\Facades\Log;
 
@@ -88,7 +89,7 @@ class ProductController extends Controller
             ->limit(8)
             ->get();
 
-        $product->increment('views_count');
+        app(ProductPopularityService::class)->recordView($product, request());
 
         $reviews = $product->reviews;
 

@@ -56,6 +56,15 @@ Schedule::command('market:collect-prices')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/market-price-collection.log'));
 
+// Автоматически поднимаем востребованные товары по свежим уникальным просмотрам,
+// оценкам и отзывам. Старые просмотры имеют небольшой вес и не фиксируют выдачу навсегда.
+Schedule::command('catalog:recalculate-popularity')
+    ->hourlyAt(40)
+    ->timezone('Europe/Minsk')
+    ->withoutOverlapping(15)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/catalog-popularity.log'));
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');

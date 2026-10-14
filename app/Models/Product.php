@@ -48,7 +48,7 @@ class Product extends Model
         'requires_price_confirmation',
         'is_featured', 'is_new', 'is_sale', 'sort_order',
         'meta_title', 'meta_keywords', 'meta_description',
-        'rating', 'reviews_count', 'views_count',
+        'rating', 'reviews_count', 'views_count', 'popularity_score', 'popularity_updated_at',
     ];
 
     protected $casts = [
@@ -66,6 +66,8 @@ class Product extends Model
         'is_sale' => 'boolean',
         'price' => 'decimal:2',
         'price_old' => 'decimal:2',
+        'popularity_score' => 'decimal:4',
+        'popularity_updated_at' => 'datetime',
     ];
 
     public static function availabilityStatusOptions(): array
@@ -463,7 +465,16 @@ class Product extends Model
 
         return $query
             ->orderByDesc('is_featured')
+            ->orderByPopularity();
+    }
+
+    public function scopeOrderByPopularity($query)
+    {
+        return $query
+            ->orderByDesc('popularity_score')
             ->orderByDesc('rating')
+            ->orderByDesc('reviews_count')
+            ->orderByDesc('views_count')
             ->orderByDesc('id');
     }
 

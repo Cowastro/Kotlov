@@ -34,6 +34,9 @@ class ProductCatalogOrderTest extends TestCase
             $table->boolean('is_archived')->default(false);
             $table->boolean('is_featured')->default(false);
             $table->decimal('rating', 3, 2)->default(0);
+            $table->unsignedInteger('reviews_count')->default(0);
+            $table->unsignedInteger('views_count')->default(0);
+            $table->decimal('popularity_score', 10, 4)->default(0);
         });
 
         Schema::dropIfExists('catalog_order_attribute_values');
@@ -99,6 +102,22 @@ class ProductCatalogOrderTest extends TestCase
             ->all();
 
         $this->assertSame([3, 2, 1], $orderedIds);
+    }
+
+    public function test_default_catalog_order_uses_popularity_before_raw_rating(): void
+    {
+        DB::table('catalog_order_products')->insert([
+            ['id' => 1, 'rating' => 5, 'reviews_count' => 1, 'views_count' => 10, 'popularity_score' => 20],
+            ['id' => 2, 'rating' => 4, 'reviews_count' => 8, 'views_count' => 200, 'popularity_score' => 70],
+            ['id' => 3, 'rating' => 0, 'reviews_count' => 0, 'views_count' => 1000, 'popularity_score' => 45],
+        ]);
+
+        $orderedIds = CatalogOrderProduct::query()
+            ->catalogDefaultOrder()
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([2, 3, 1], $orderedIds);
     }
 
     public function test_default_catalog_order_can_prioritize_available_products(): void
