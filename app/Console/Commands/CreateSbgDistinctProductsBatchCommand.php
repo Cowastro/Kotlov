@@ -5126,6 +5126,46 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The current supplier card confirms stock and a 42 BYN retail price.
+    // An independent Belarus listing confirms the exact TechnoLit Polotsk
+    // article 707, dimensions and weight; its clean product photo is saved.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EN = [
+        'УТ-00001222' => [
+            'template' => 'KOTLOV-007773',
+            'allow_unmatched' => true,
+            'category_slug' => 'kazany',
+            'external_id' => '4f58bf99-2605-11e9-b256-1c1b0d1de7c2',
+            'external_sku' => '707',
+            'hydrate_external_sku' => true,
+            'fragments' => ['Крышка', 'плоская', 'казан', '4л'],
+            'brand' => [
+                'name' => 'Технолит Полоцк',
+                'slug' => 'tehnolit-polock',
+                'country' => 'Беларусь',
+            ],
+            'name' => 'Технолит Полоцк Крышка чугунная плоская для казана 4 л, 308 мм',
+            'retail' => 42.00,
+            'images' => ['img/products/tekhnolit-polotsk/cast-iron-flat-cauldron-lid-4l-707.jpg'],
+            'source_url' => 'https://pcentr.by/magazin/kazani/kryishka-ploskaya-na-kazan-4-l',
+            'short' => 'Плоская чугунная крышка Технолит Полоцк для казана объёмом 4 л; наружный диаметр 308 мм, внутренний паз 280 мм.',
+            'content' => '<p><strong>Плоская крышка для казана 4 л</strong> изготовлена обособленным подразделением ОАО «Технолит Полоцк». Чугун равномерно накапливает и отдаёт тепло, а воронённая поверхность имеет чёрный матовый цвет.</p><p>Наружный диаметр крышки — 308 мм, высота — 48 мм, диаметр внутреннего посадочного паза — 280 мм. Плоскую крышку можно использовать отдельно как чугунную сковороду-жаровню. Перед покупкой нужно сверить диаметр паза с посадочным бортом казана.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Плоская крышка-жаровня'],
+                ['key' => 'Совместимый объём казана', 'value' => '4 л'],
+                ['key' => 'Материал', 'value' => 'Чугун'],
+                ['key' => 'Наружный диаметр', 'value' => '308 мм'],
+                ['key' => 'Диаметр внутреннего паза', 'value' => '280 мм'],
+                ['key' => 'Высота', 'value' => '48 мм'],
+                ['key' => 'Масса', 'value' => '3,2 кг'],
+                ['key' => 'Цвет', 'value' => 'Чёрный матовый'],
+                ['key' => 'Обработка поверхности', 'value' => 'Воронение'],
+                ['key' => 'Артикул источника', 'value' => '707'],
+                ['key' => 'Производитель', 'value' => 'ОАО «Технолит Полоцк»'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5274,6 +5314,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-ek' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EK,
             'unmatched-disputed-20261014-el' => self::BATCH_UNMATCHED_DISPUTED_20261014_EL,
             'unmatched-researched-20261014-em' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EM,
+            'unmatched-researched-20261014-en' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EN,
             default => null,
         };
 

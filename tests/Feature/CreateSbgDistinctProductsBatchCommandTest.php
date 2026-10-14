@@ -10340,4 +10340,58 @@ XML;
         $this->assertFileExists(public_path('img/products/stahlmann/stahlmann-coupling-f-25-1-ef-2217160.jpg'));
         $this->assertStringContainsString('chipdip.by', $product->content_source_url);
     }
+
+    public function test_it_creates_the_exact_technoLit_polotsk_flat_cast_iron_lid_for_a_four_litre_cauldron(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-cast-iron-cauldron-lid-4l',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'kazany'], [
+            'name' => 'Казаны',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-007773',
+            'name' => 'Тестовый товар-шаблон',
+            'slug' => 'cauldron-lid-en-test-template',
+            'price' => 10,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '4f58bf99-2605-11e9-b256-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001222',
+            'external_sku' => null,
+            'name' => 'Крышка плоская на казан 4л',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-en',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('42.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('707', $item->fresh()->external_sku);
+        $this->assertSame('308 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр')['value']);
+        $this->assertSame('280 мм', collect($product->specs)->firstWhere('key', 'Диаметр внутреннего паза')['value']);
+        $this->assertSame(['img/products/tekhnolit-polotsk/cast-iron-flat-cauldron-lid-4l-707.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/tekhnolit-polotsk/cast-iron-flat-cauldron-lid-4l-707.jpg'));
+        $this->assertStringContainsString('pcentr.by', $product->content_source_url);
+    }
 }
