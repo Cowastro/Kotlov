@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Pages;
 
+use App\Filament\Resources\Products\Pages\Concerns\HasProductMarketResearchActions;
 use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\RunProductSourceEnrichment;
 use App\Services\ProductSourceEnricher;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class EditProduct extends EditRecord
 {
+    use HasProductMarketResearchActions;
+
     protected static string $resource = ProductResource::class;
 
     public function getMaxContentWidth(): ?string
@@ -26,6 +29,7 @@ class EditProduct extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            ...$this->productMarketResearchActions(),
             Action::make('enrich_from_source_url')
                 ->label('Обновить из ссылки')
                 ->icon('heroicon-o-link')

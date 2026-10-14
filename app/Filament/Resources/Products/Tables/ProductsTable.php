@@ -12,7 +12,9 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\Market\MarketPriceIndicator;
+use App\Services\Market\MarketWebResearchService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -414,6 +416,20 @@ class ProductsTable
                         ->visible(fn (Product $record): bool => (int) ($record->market_research_reports_count ?? 0) > 0)
                         ->url(fn (Product $record): string => MarketResearchReportResource::getUrl('index', [
                             'filters' => ['product_id' => ['value' => $record->id]],
+                        ])),
+                    Action::make('research_market')
+                        ->label('Исследовать рынок')
+                        ->icon('heroicon-o-globe-alt')
+                        ->color('info')
+                        ->slideOver()
+                        ->modalWidth('7xl')
+                        ->modalHeading(fn (Product $record): string => 'Исследование рынка · '.$record->name)
+                        ->modalDescription('Откроется сохранённое исследование или будет выполнен первый поиск с сохранением в карточке товара.')
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Закрыть')
+                        ->modalContent(fn (Product $record) => view('filament.market.live-price-research', [
+                            'research' => app(MarketWebResearchService::class)->research($record, (float) $record->price),
+                            'pricing' => app(CommercialOfferCopilotService::class)->pricing($record->id, (float) $record->price),
                         ])),
                     Action::make('preview_source_enrichment')
                         ->label('Проверить из ссылки')
