@@ -40,6 +40,11 @@ class CrmContact extends Model
         return $this->hasMany(CrmMailThread::class, 'crm_contact_id');
     }
 
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'crm_contact_id')->latest();
+    }
+
     public function getPhonesListAttribute(): string
     {
         return $this->contactPoints->where('type', 'phone')->pluck('value')->join(', ');

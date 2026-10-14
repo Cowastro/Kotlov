@@ -137,6 +137,7 @@ class CrmCounterpartyResource extends Resource
                 TextEntry::make('calls_count')->label('Звонков')->state(fn (CrmCounterparty $record): int => $record->calls()->count()),
                 TextEntry::make('mail_threads_count')->label('Переписок')->state(fn (CrmCounterparty $record): int => $record->mailThreads()->count()),
                 TextEntry::make('commercial_documents_count')->label('КП и счетов')->state(fn (CrmCounterparty $record): int => $record->commercialDocuments()->count()),
+                TextEntry::make('orders_count')->label('Заказов')->state(fn (CrmCounterparty $record): int => $record->orders()->count()),
                 TextEntry::make('external_identities_count')->label('Связей с 1С')
                     ->state(fn (CrmCounterparty $record): int => $record->externalIdentities()->count()),
                 TextEntry::make('one_c_manager_name')->label('Менеджер в 1С')->placeholder('Не указан'),

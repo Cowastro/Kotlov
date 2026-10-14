@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CommercialDocuments\Pages;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
+use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CommercialDocument;
 use App\Services\CommercialDocuments\CommercialDocumentReadiness;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
@@ -66,6 +67,31 @@ class ViewCommercialDocument extends ViewRecord
                     Notification::make()->success()->title('Счёт создан')->body($invoice->number)->send();
                     $this->redirect(CommercialDocumentResource::getUrl('view', ['record' => $invoice]));
                 }),
+            Action::make('create_order')
+                ->label('Создать заказ')
+                ->icon('heroicon-o-shopping-cart')
+                ->color('success')
+                ->visible(fn (): bool => $this->record->type === 'quote'
+                    && $this->record->status === 'accepted'
+                    && ! $this->record->order()->exists())
+                ->requiresConfirmation()
+                ->modalHeading('Создать заказ из согласованного КП?')
+                ->modalDescription('Клиент, реквизиты, товары, цены и условия будут перенесены в заказ. Заказ попадёт в обычный процесс обработки и обмена с 1С.')
+                ->action(function (): void {
+                    try {
+                        $order = app(CommercialDocumentWorkflow::class)->convertToOrder($this->record, auth()->user());
+                        Notification::make()->success()->title('Заказ создан')->body($order->number)->send();
+                        $this->redirect(OrderResource::getUrl('view', ['record' => $order]));
+                    } catch (Throwable $exception) {
+                        Notification::make()->danger()->title('Не удалось создать заказ')->body($exception->getMessage())->send();
+                    }
+                }),
+            Action::make('open_order')
+                ->label('Открыть заказ')
+                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->color('primary')
+                ->visible(fn (): bool => $this->record->order()->exists())
+                ->url(fn (): string => OrderResource::getUrl('view', ['record' => $this->record->order()->firstOrFail()])),
             Action::make('accept')
                 ->label('Согласовано')
                 ->icon('heroicon-o-check-circle')

@@ -49,7 +49,7 @@ class Order extends Model
     ];
 
     protected $fillable = [
-        'user_id', 'number', 'status',
+        'user_id', 'commercial_document_id', 'crm_counterparty_id', 'crm_contact_id', 'number', 'status',
         'customer_name', 'customer_phone', 'customer_email',
         'company_name', 'company_unp', 'company_address', 'company_email',
         'delivery_type', 'delivery_region', 'delivery_city',
@@ -276,6 +276,21 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function commercialDocument(): BelongsTo
+    {
+        return $this->belongsTo(CommercialDocument::class);
+    }
+
+    public function crmCounterparty(): BelongsTo
+    {
+        return $this->belongsTo(CrmCounterparty::class);
+    }
+
+    public function crmContact(): BelongsTo
+    {
+        return $this->belongsTo(CrmContact::class);
     }
 
     /**

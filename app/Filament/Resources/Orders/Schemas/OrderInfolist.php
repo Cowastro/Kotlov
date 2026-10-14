@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
+use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Models\IntegrationIssue;
 use App\Models\Order;
@@ -109,6 +111,30 @@ class OrderInfolist
                         TextEntry::make('workflow_next_step')
                             ->label('Следующее действие')
                             ->getStateUsing(fn (Order $record): string => $record->workflowNextStep()),
+                    ]),
+
+                Section::make('Источник продажи')
+                    ->icon('heroicon-o-link')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->columns(3)
+                    ->visible(fn (Order $record): bool => filled($record->commercial_document_id) || filled($record->crm_counterparty_id))
+                    ->schema([
+                        TextEntry::make('commercialDocument.number')
+                            ->label('Коммерческое предложение')
+                            ->placeholder('—')
+                            ->url(fn (Order $record): ?string => $record->commercialDocument
+                                ? CommercialDocumentResource::getUrl('view', ['record' => $record->commercialDocument])
+                                : null),
+                        TextEntry::make('crmCounterparty.name')
+                            ->label('Контрагент CRM')
+                            ->placeholder('—')
+                            ->url(fn (Order $record): ?string => $record->crmCounterparty
+                                ? CrmCounterpartyResource::getUrl('view', ['record' => $record->crmCounterparty])
+                                : null),
+                        TextEntry::make('crmContact.full_name')
+                            ->label('Контактное лицо')
+                            ->placeholder('—'),
                     ]),
 
                 Section::make('Обмен с 1С')

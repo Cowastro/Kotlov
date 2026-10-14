@@ -93,6 +93,11 @@ class CrmCounterparty extends Model
         return $this->hasMany(CommercialDocument::class, 'crm_counterparty_id')->latest('issued_at');
     }
 
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'crm_counterparty_id')->latest();
+    }
+
     public function suppliers(): HasMany
     {
         return $this->hasMany(Supplier::class, 'crm_counterparty_id');

@@ -2,16 +2,109 @@
 
 namespace App\Services\CommercialDocuments;
 
+use App\Events\NewOrderCreated;
 use App\Models\CommercialDocument;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
+use App\Models\Order;
 use App\Models\User;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
+use App\Services\Orders\OrderEconomicSnapshotRecorder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class CommercialDocumentWorkflow
 {
+    public function convertToOrder(CommercialDocument $document, User $user): Order
+    {
+        if ($document->type !== 'quote' || $document->status !== 'accepted') {
+            throw new RuntimeException('Заказ можно создать только из согласованного коммерческого предложения.');
+        }
+
+        if (blank($document->client_phone)) {
+            throw new RuntimeException('Перед созданием заказа укажите телефон клиента в коммерческом предложении.');
+        }
+
+        if (blank($document->client_name) && blank($document->client_company) && blank($document->client_legal_name)) {
+            throw new RuntimeException('Перед созданием заказа укажите клиента или организацию.');
+        }
+
+        $document->loadMissing('items');
+        if ($document->items->isEmpty()) {
+            throw new RuntimeException('В коммерческом предложении нет товарных позиций.');
+        }
+
+        foreach ($document->items as $item) {
+            if ((float) $item->quantity <= 0 || floor((float) $item->quantity) !== (float) $item->quantity) {
+                throw new RuntimeException('Для создания заказа количество каждой позиции должно быть целым и больше нуля.');
+            }
+        }
+
+        $created = false;
+        $order = DB::transaction(function () use ($document, $user, &$created): Order {
+            $locked = CommercialDocument::query()->lockForUpdate()->findOrFail($document->id);
+            $existing = Order::query()->where('commercial_document_id', $locked->id)->first();
+            if ($existing) {
+                return $existing;
+            }
+
+            $locked->load('items');
+            $order = Order::query()->create([
+                'commercial_document_id' => $locked->id,
+                'crm_counterparty_id' => $locked->crm_counterparty_id,
+                'crm_contact_id' => $locked->crm_contact_id,
+                'number' => Order::generateNumber(),
+                'status' => 'new',
+                'customer_name' => $locked->client_name ?: $locked->client_company ?: $locked->client_legal_name,
+                'customer_phone' => $locked->client_phone,
+                'customer_email' => $locked->client_email,
+                'company_name' => $locked->client_legal_name ?: $locked->client_company,
+                'company_unp' => $locked->client_unp,
+                'company_address' => $locked->client_address,
+                'company_email' => $locked->client_email,
+                'delivery_type' => (float) $locked->delivery_price > 0 ? 'transport' : 'pickup',
+                'delivery_price' => $locked->delivery_price,
+                'payment_type' => 'invoice',
+                'payment_status' => 'pending',
+                'discount' => $locked->discount_total,
+                'subtotal' => $locked->subtotal,
+                'total' => $locked->total,
+                'comment' => $locked->notes,
+                'admin_comment' => implode("\n", array_filter([
+                    'Создан из согласованного КП '.$locked->number.'.',
+                    $locked->payment_terms ? 'Условия оплаты: '.$locked->payment_terms : null,
+                    $locked->delivery_terms ? 'Условия поставки: '.$locked->delivery_terms : null,
+                ])),
+                'manager_id' => $user->id,
+            ]);
+
+            foreach ($locked->items as $item) {
+                $quantity = (int) $item->quantity;
+                $netPrice = round((float) $item->line_total / $quantity, 2);
+                $order->items()->create([
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->name,
+                    'product_sku' => $item->sku,
+                    'price' => $netPrice,
+                    'quantity' => $quantity,
+                    'total' => $item->line_total,
+                    'pricing_type' => 'b2b',
+                ]);
+            }
+
+            app(OrderEconomicSnapshotRecorder::class)->capturePlaced($order->load('items'));
+            $created = true;
+
+            return $order;
+        });
+
+        if ($created) {
+            NewOrderCreated::dispatch($order->load('items'));
+        }
+
+        return $order;
+    }
+
     public function accept(CommercialDocument $document): void
     {
         DB::transaction(function () use ($document): void {
