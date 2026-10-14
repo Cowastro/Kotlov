@@ -1603,4 +1603,44 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             ->expectsOutputToContain('metric.prices_applied=0')
             ->assertSuccessful();
     }
+
+    public function test_thirty_ninth_catalog_zero_price_batch_preserves_evidence_and_holds_all_twenty_five_products(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Тест тридцать девятого пакета нулевых цен каталога',
+            'slug' => 'catalog-zero-price-batch-thirty-nine-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+
+        $skus = [
+            'PS-011.611', 'PS-010.458', 'PS-010.459', 'PS-010.462', 'PS-010.466',
+            'PS-010.474', 'PS-010.475', 'PS-010.476', 'PS-010.480', 'PS-010.481',
+            'PS-010.482', 'PS-010.483', 'PS-010.486', 'PS-010.489', 'PS-010.490',
+            'PS-010.491', 'PS-010.493', 'PS-010.637', 'PS-011.708', 'PS-011.713',
+            'PS-011.714', 'PS-011.715', 'PS-011.716', 'PS-011.717', 'PS-011.718',
+        ];
+
+        foreach ($skus as $index => $sku) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => 'Точная production-модель '.$sku,
+                'slug' => 'catalog-zero-price-batch-thirty-nine-'.$index,
+                'sku' => $sku,
+                'price' => 0,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+        }
+
+        $this->artisan('catalog:apply-market-price-batch', [
+            'batch' => '2026-10-14-catalog-zero-039',
+        ])
+            ->expectsOutputToContain('metric.status=dry_run')
+            ->expectsOutputToContain('metric.products=25')
+            ->expectsOutputToContain('metric.observations=20')
+            ->expectsOutputToContain('metric.prices_applied=0')
+            ->assertSuccessful();
+    }
 }
