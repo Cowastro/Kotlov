@@ -3979,6 +3979,14 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_NOT_FOR_SITE_UNMATCHED_20261014_DO = [
+        'УТ-00000148' => [
+            'ignore_unmatched_not_for_site' => true,
+            'external_id' => 'af1f35a0-1f62-11e9-bad6-1c1b0d1de7c2',
+            'fragments' => ['Датчик температуры коллектора', 'CT6W', 'L=1m', 'OLE-PRO'],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4102,6 +4110,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-disputed-20261014-dl' => self::BATCH_UNMATCHED_DISPUTED_20261014_DL,
             'unmatched-researched-20261014-dm' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DM,
             'unmatched-disputed-20261014-dn' => self::BATCH_UNMATCHED_DISPUTED_20261014_DN,
+            'not-for-site-unmatched-20261014-do' => self::BATCH_NOT_FOR_SITE_UNMATCHED_20261014_DO,
             default => null,
         };
 
@@ -4123,6 +4132,57 @@ class CreateSbgDistinctProductsBatchCommand extends Command
 
         foreach ($rows as $code => $rule) {
             $items = IntegrationProduct::query()->with(['source', 'product'])->where('external_code', $code)->get();
+
+            if ($rule['ignore_unmatched_not_for_site'] ?? false) {
+                if ($items->count() !== 1) {
+                    $stats['blocked']++;
+                    $details[] = [$code, '-', 'blocked', 'missing unique 1C row'];
+
+                    continue;
+                }
+
+                $item = $items->first();
+                if ($item->match_status === 'ignored' && $item->match_method === 'manual_ignore' && ! $item->product_id) {
+                    $stats['already']++;
+                    $details[] = [$code, '-', 'already', 'item is already excluded from the site'];
+
+                    continue;
+                }
+
+                $valid = $item->source?->name === self::SOURCE_NAME
+                    && $item->source?->partnerName() === self::PARTNER_NAME
+                    && $item->match_status === 'unmatched'
+                    && ! $item->product_id
+                    && (float) $item->stock_quantity > 0
+                    && $item->external_id === $rule['external_id']
+                    && $this->containsAll($item->name, $rule['fragments']);
+
+                if (! $valid) {
+                    $stats['blocked']++;
+                    $details[] = [$code, '-', 'blocked', 'source, identity, stock or status guard failed'];
+
+                    continue;
+                }
+
+                $stats['ready']++;
+                if ($apply) {
+                    $item->forceFill([
+                        'product_id' => null,
+                        'target_category_id' => null,
+                        'match_status' => 'ignored',
+                        'match_method' => 'manual_ignore',
+                        'match_confidence' => null,
+                        'matched_at' => null,
+                        'candidates' => null,
+                    ])->save();
+                    $stats['ignored']++;
+                    $details[] = [$code, '-', 'ignored', 'confirmed archived item excluded from the public catalog'];
+                } else {
+                    $details[] = [$code, '-', 'ready', 'exclude confirmed archived item from the site'];
+                }
+
+                continue;
+            }
 
             if ($rule['document_dispute'] ?? false) {
                 if ($items->count() !== 1) {

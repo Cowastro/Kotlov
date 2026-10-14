@@ -8907,4 +8907,48 @@ XML;
         $this->assertCount(3, $cauldron->candidates[0]['evidence']);
         $this->assertSame($productCount + 2, Product::query()->count());
     }
+
+    public function test_it_excludes_the_confirmed_archived_ct6w_sensor_without_creating_a_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-archived-ct6w',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $sensor = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'af1f35a0-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000148',
+            'name' => 'Датчик температуры коллектора CT6W L=1m OLE-PRO',
+            'price_byn' => null,
+            'stock_quantity' => 5,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'not-for-site-unmatched-20261014-do',
+        ])->assertSuccessful();
+        $this->assertSame('unmatched', $sensor->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'not-for-site-unmatched-20261014-do',
+            '--apply' => true,
+        ])->assertSuccessful();
+        $sensor->refresh();
+        $this->assertNull($sensor->product_id);
+        $this->assertNull($sensor->target_category_id);
+        $this->assertSame('ignored', $sensor->match_status);
+        $this->assertSame('manual_ignore', $sensor->match_method);
+        $this->assertSame($productCount, Product::query()->count());
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'not-for-site-unmatched-20261014-do',
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+    }
 }
