@@ -1371,4 +1371,36 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             $this->assertTrue((bool) Product::query()->where('sku', $sku)->value('requires_price_confirmation'));
         }
     }
+
+    public function test_thirty_third_catalog_zero_price_batch_preserves_single_observation_and_holds_all_products(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Тест тридцать третьего пакета нулевых цен каталога',
+            'slug' => 'catalog-zero-price-batch-thirty-three-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+
+        foreach (['PS-002.741', 'PS-002.958', 'PS-004.168', 'PS-005.823', 'PS-003.814'] as $index => $sku) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => 'Точная production-модель '.$sku,
+                'slug' => 'catalog-zero-price-batch-thirty-three-'.$index,
+                'sku' => $sku,
+                'price' => 0,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+        }
+
+        $this->artisan('catalog:apply-market-price-batch', [
+            'batch' => '2026-10-14-catalog-zero-033',
+        ])
+            ->expectsOutputToContain('metric.status=dry_run')
+            ->expectsOutputToContain('metric.products=5')
+            ->expectsOutputToContain('metric.observations=1')
+            ->expectsOutputToContain('metric.prices_applied=0')
+            ->assertSuccessful();
+    }
 }

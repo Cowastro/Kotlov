@@ -1,0 +1,84 @@
+{
+    "code": "2026-10-14-catalog-zero-033",
+    "observed_at": "2026-10-14T07:15:00+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "skus": ["PS-002.741", "PS-002.958", "PS-004.168", "PS-005.823", "PS-003.814"],
+        "after_id": 2738,
+        "limit": 5,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [
+        {
+            "code": "web-vishop-normal2-20261014",
+            "name": "Vishop.by",
+            "kind": "competitor",
+            "base_url": "https://vishop.by",
+            "currency": "BYN",
+            "region": "Беларусь",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Единственная независимая карточка точной модификации с положительной ценой."
+        }
+    ],
+    "products": [
+        {
+            "sku": "PS-002.741",
+            "review_reason": "Точная модификация TMF Нормаль-2 Турбо с задним дымоходом подтверждена только одним независимым ценовым источником; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-vishop-normal2-20261014",
+                    "url": "https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/pechi-i-kaminy-dlya-doma/otopitelnye-pechi-termofor/otopitelnaya-pech-termofor-normal/otopitelnaya-pech-termofor-normal-2-turbo-antracit--tz/",
+                    "external_name": "Отопительная печь Термофор Нормаль-2 Турбо антрацит, ТЗ",
+                    "model": "TMF Нормаль-2 ТУРБО антрацит, труба назад",
+                    "package": "глухая дверца, выход дымохода назад",
+                    "observed_price": 730,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Vishop.by: точная версия Нормаль-2 Турбо антрацит с трубой назад, 120 м³, 8 кВт, цена 730 BYN, в наличии."
+                }
+            ],
+            "research": {"summary": "Одна независимая точная цена 730 BYN; карточки KOTLOV исключены, у bania.by цена не подтверждена.", "confidence": "medium", "search_queries": ["Нормаль-2 ТУРБО антрацит труба назад цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:15:00+00:00"}
+        },
+        {
+            "sku": "PS-002.958",
+            "review_reason": "Найдены только собственные региональные карточки KOTLOV для точного цвета TMF Огонь-батарея 7; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых белорусских предложений точной расцветки антрацит-серый металлик не найдено.", "confidence": "medium", "search_queries": ["Огонь-батарея 7 антрацит-серый металлик BYN -kotlov.by"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:15:00+00:00"}
+        },
+        {
+            "sku": "PS-004.168",
+            "review_reason": "Для TMF Золушка 2016 Лайт найдены только собственные карточки KOTLOV и технические материалы без актуальной цены; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых положительных цен в BYN нет.", "confidence": "medium", "search_queries": ["Золушка 2016 Лайт TMF цена Беларусь", "Золушка 2016 Лайт BYN -kotlov.by"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:15:00+00:00"}
+        },
+        {
+            "sku": "PS-005.823",
+            "review_reason": "Для TMF Золушка 2016 найдены только собственные карточки KOTLOV и технические материалы без актуальной независимой цены; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых положительных цен в BYN нет.", "confidence": "medium", "search_queries": ["Золушка 2016 TMF цена Беларусь", "Золушка 2016 BYN -kotlov.by"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:15:00+00:00"}
+        },
+        {
+            "sku": "PS-003.814",
+            "review_reason": "Для теплосъёмника Термофор Профессор независимых ценовых предложений не найдено; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Собственная карточка KOTLOV показывает цену по запросу; независимых карточек с ценой нет.", "confidence": "medium", "search_queries": ["Съемник тепла Термофор Профессор цена Беларусь"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:15:00+00:00"}
+        }
+    ],
+    "failed_products": []
+}
