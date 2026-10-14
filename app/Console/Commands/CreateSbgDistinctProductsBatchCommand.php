@@ -4890,6 +4890,46 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact article is listed by two current dealers at 2,225-2,508 RUB.
+    // At the 2026-10-14 NBRB rate, the lower offer is 80.11 BYN, rounded to
+    // 80.10 BYN. The gallery uses the manufacturer's product photo and does
+    // not carry a competing retailer watermark.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EH = [
+        'УТ-00009651' => [
+            'template' => 'PS-009.149',
+            'allow_unmatched' => true,
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'external_sku' => 'TS.ST3.KNS.0150.78405',
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'fragments' => ['Конус Термо', 'КТ-Р', '304-0.5/304-0.5', 'D150/210', 'хомут'],
+            'name' => 'Теплов и Сухов Конус Термо КТ-Р 304-0.5/304-0.5 D150/210 М с хомутом',
+            'retail' => 80.10,
+            'images' => ['img/products/teplov-i-suhov/konus-kt-r-304-05-304-05-d150-210-m-homut.jpg'],
+            'source_url' => 'https://kaminchi.ru/dimohod/dymoxody-modulnye-iz-nerzhaveyushhej-stali/dvustennye-sendvich-dymoxody/dymoxody-dvustennye-diametrom-150-mm/konus-termo-kt-r-304-0-5-304-0-5-d150-210-m-s-khomutom1',
+            'short' => 'Завершающий конус «Теплов и Сухов» для защиты теплоизоляции дымохода Ø150/210 мм; хомут входит в комплект.',
+            'content' => '<p><strong>Теплов и Сухов КТ-Р D150/210</strong> — завершающий конус для утеплённого двухконтурного дымохода. Он закрывает торец теплоизоляции трубы Термо и фиксируется комплектным трубным хомутом.</p><p>Внутренний и наружный контуры изготовлены из нержавеющей стали AISI 304 толщиной 0,5 мм. Конус можно использовать как финальный элемент дымохода либо как основание для совместимого зонта или дефлектора.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Конус для утеплённого дымохода'],
+                ['key' => 'Модель', 'value' => 'КТ-Р'],
+                ['key' => 'Внутренний диаметр', 'value' => '150 мм'],
+                ['key' => 'Наружный диаметр', 'value' => '210 мм'],
+                ['key' => 'Марка стали внутреннего контура', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали внутреннего контура', 'value' => '0,5 мм'],
+                ['key' => 'Марка стали наружного контура', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали наружного контура', 'value' => '0,5 мм'],
+                ['key' => 'Толщина теплоизоляции', 'value' => '30 мм'],
+                ['key' => 'Комплектация', 'value' => 'Конус, соединительный хомут'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST3.KNS.0150.78405'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5032,6 +5072,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-ee' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EE,
             'unmatched-researched-20261014-ef' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EF,
             'unmatched-researched-20261014-eg' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EG,
+            'unmatched-researched-20261014-eh' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EH,
             default => null,
         };
 

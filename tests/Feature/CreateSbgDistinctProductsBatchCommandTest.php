@@ -10025,4 +10025,58 @@ XML;
         $this->assertFileExists(public_path('img/products/teplov-i-suhov/perehod-pmt-r-304-05-304-d150-210-m.jpg'));
         $this->assertStringContainsString('kaminchi.ru', $product->content_source_url);
     }
+
+    public function test_it_creates_the_exact_304_thermo_cone_with_clamp_and_researched_price(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-konus-304-d150-210',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'perehody-adaptery-dymohod'], [
+            'name' => 'Переходы и адаптеры',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-009.149',
+            'name' => 'Тестовый товар-шаблон',
+            'slug' => 'konus-eh-test-template',
+            'price' => 10,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '9d70cd63-aaa4-11f1-b4b9-1c1b0d1de7c2',
+            'external_code' => 'УТ-00009651',
+            'external_sku' => 'TS.ST3.KNS.0150.78405',
+            'name' => 'Конус Термо КТ-Р 304-0.5/304-0.5 D150/210 М с хомутом',
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-eh',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('80.10', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('TS.ST3.KNS.0150.78405', $item->fresh()->external_sku);
+        $this->assertSame('150 мм', collect($product->specs)->firstWhere('key', 'Внутренний диаметр')['value']);
+        $this->assertSame('210 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр')['value']);
+        $this->assertSame('Конус, соединительный хомут', collect($product->specs)->firstWhere('key', 'Комплектация')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/konus-kt-r-304-05-304-05-d150-210-m-homut.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/konus-kt-r-304-05-304-05-d150-210-m-homut.jpg'));
+        $this->assertStringContainsString('kaminchi.ru', $product->content_source_url);
+    }
 }
