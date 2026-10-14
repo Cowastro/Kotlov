@@ -4371,6 +4371,39 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DU = [
+        'УТ-00001956' => [
+            'external_id' => 'd03c5781-88f4-11e9-972a-1c1b0d1de7c2',
+            'template_slug' => 'pelletnaya-gorelka-hotta-ceramik-20-kvt-komplekt-1',
+            'link_existing_slug' => 'pelletnaya-gorelka-hotta-ceramik-20-kvt-komplekt-1',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'fragments' => ['Горелка', 'пеллетная', 'HOTTA', '20'],
+            'link_fragments' => ['HOTTA', 'Ceramik', '20 кВт', 'Wi‑Fi'],
+            'retail' => 4300.00,
+        ],
+        'УТ-00001959' => [
+            'external_id' => 'd03c5784-88f4-11e9-972a-1c1b0d1de7c2',
+            'template_slug' => 'pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3',
+            'link_existing_slug' => 'pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'fragments' => ['Горелка', 'пеллетная', 'HOTTA', '30'],
+            'link_fragments' => ['HOTTA', 'Ceramik', '30 кВт', 'Wi‑Fi'],
+            'retail' => 4600.00,
+        ],
+        'УТ-00009442' => [
+            'external_id' => '84c4e9c0-f533-11f0-8ad0-1c1b0d1de7c2',
+            'template_slug' => 'pelletnaya-gorelka-dlya-pechi-potapyich',
+            'link_existing_slug' => 'pelletnaya-gorelka-dlya-pechi-potapyich',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'fragments' => ['Горелка', 'пеллетная', 'Потапыч'],
+            'link_fragments' => ['Пеллетная горелка', 'печи', 'Потапыч'],
+            'retail' => 165.00,
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4500,6 +4533,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-disputed-20261014-dr' => self::BATCH_UNMATCHED_DISPUTED_20261014_DR,
             'unmatched-researched-20261014-ds' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DS,
             'unmatched-researched-20261014-dt' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DT,
+            'unmatched-researched-20261014-du' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DU,
             default => null,
         };
 

@@ -9288,4 +9288,68 @@ XML;
             $items['УТ-00000089']->fresh()->match_status,
         ]);
     }
+
+    public function test_it_links_three_old_burner_rows_to_existing_sale_cards(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-old-burners',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Пеллетные горелки',
+            'slug' => 'pelletnye-gorelki',
+            'parent_id' => 0,
+        ]);
+        $definitions = [
+            'УТ-00001956' => ['d03c5781-88f4-11e9-972a-1c1b0d1de7c2', 'Горелка пеллетная HOTTA 20', 'Пеллетная горелка HOTTA Ceramik 20 кВт с Wi‑Fi', 'pelletnaya-gorelka-hotta-ceramik-20-kvt-komplekt-1', 4300],
+            'УТ-00001959' => ['d03c5784-88f4-11e9-972a-1c1b0d1de7c2', 'Горелка пеллетная HOTTA 30', 'Пеллетная горелка HOTTA Ceramik 30 кВт с Wi‑Fi', 'pelletnaya-gorelka-hotta-ceramik-30-kvt-komplekt-3', 4600],
+            'УТ-00009442' => ['84c4e9c0-f533-11f0-8ad0-1c1b0d1de7c2', 'Горелка пеллетная Потапыч', 'Пеллетная горелка для печи Потапыч', 'pelletnaya-gorelka-dlya-pechi-potapyich', 165],
+        ];
+        $products = collect($definitions)->mapWithKeys(function (array $row, string $code) use ($category): array {
+            return [$code => Product::query()->create([
+                'category_id' => $category->id,
+                'sku' => 'TEST-'.$code,
+                'name' => $row[2],
+                'slug' => $row[3],
+                'price' => $row[4],
+                'stock_qty' => 0,
+                'images' => ['img/products/burner.jpg'],
+                'is_active' => true,
+                'is_archived' => false,
+            ])];
+        });
+        $items = collect($definitions)->mapWithKeys(function (array $row, string $code) use ($source): array {
+            return [$code => IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id,
+                'external_id' => $row[0],
+                'external_code' => $code,
+                'name' => $row[1],
+                'price_byn' => null,
+                'stock_quantity' => 1,
+                'stock_confirmed_at' => now(),
+                'match_status' => 'unmatched',
+            ])];
+        });
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-du',
+        ])->assertSuccessful();
+        $this->assertTrue($items->every(fn (IntegrationProduct $item): bool => $item->fresh()->product_id === null));
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-du',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        foreach ($items as $code => $item) {
+            $this->assertSame($products[$code]->id, $item->fresh()->product_id);
+            $this->assertSame('matched', $item->fresh()->match_status);
+            $this->assertSame('manual_search', $item->fresh()->match_method);
+            $this->assertSame('1', (string) $products[$code]->fresh()->stock_qty);
+        }
+        $this->assertSame(['4300.00', '4600.00', '165.00'], $products->map(fn (Product $product): string => $product->fresh()->price)->values()->all());
+    }
 }
