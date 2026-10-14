@@ -9831,4 +9831,64 @@ XML;
         $this->assertFileExists(public_path('img/products/teplov-i-suhov/convector-ktr-r-l1000-430-08-d120-115-120.jpg'));
         $this->assertStringContainsString('vseinstrumenti.ru', $product->content_source_url);
     }
+
+    public function test_it_creates_the_exact_tsvetlit_dn15_female_to_male_ball_valve(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-tsvetlit-ball-valve',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $parent = Category::query()->create([
+            'name' => 'Трубы и фитинги',
+            'slug' => 'truby-i-fitingi',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Шаровые краны',
+            'slug' => 'sharovye-krany',
+            'parent_id' => $parent->id,
+            'is_active' => false,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-011.910',
+            'name' => 'Тестовый товар-шаблон',
+            'slug' => 'tsvetlit-ball-valve-ee-test-template',
+            'price' => 10,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '62cbabbe-2853-11e9-b256-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000399',
+            'name' => 'Кран шар DN 15; PN1,6 МПа; 11Б27n5, м-ц (вода)',
+            'price_byn' => 6.16,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-ee',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('6.16', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('DN15', collect($product->specs)->firstWhere('key', 'Условный диаметр')['value']);
+        $this->assertSame('Муфта-цапка', collect($product->specs)->firstWhere('key', 'Тип присоединения')['value']);
+        $this->assertSame(['img/products/tsvetlit/ball-valve-11b27p5-dn15-mufta-capka.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/tsvetlit/ball-valve-11b27p5-dn15-mufta-capka.png'));
+        $this->assertTrue((bool) $category->fresh()->is_active);
+        $this->assertStringContainsString('ecs-sko.ru', $product->content_source_url);
+    }
 }

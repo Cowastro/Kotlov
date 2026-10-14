@@ -4755,6 +4755,61 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The manufacturer registry and the Belarusian distributor identify this
+    // exact 11B27p5 DN15 version as a brass female-to-male valve made by
+    // Tsvetlit. The local catalog image was reconstructed from the exact
+    // product reference without third-party logos or watermarks.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EE = [
+        'УТ-00000399' => [
+            'template' => 'PS-011.910',
+            'allow_unmatched' => true,
+            'category_slug' => 'sharovye-krany',
+            'activate_category' => true,
+            'category' => [
+                'parent_slug' => 'truby-i-fitingi',
+                'name' => 'Шаровые краны',
+                'slug' => 'sharovye-krany',
+                'h1' => 'Шаровые краны',
+                'type' => 'catalog',
+                'content' => '<p>Шаровые краны для систем отопления и водоснабжения. При выборе сверяйте DN, PN, тип резьбы и допустимую рабочую среду.</p>',
+                'meta_title' => 'Шаровые краны — купить в %city% | KOTLOV',
+                'meta_description' => 'Шаровые краны для отопления и водоснабжения: характеристики, цены, наличие и доставка по Беларуси.',
+            ],
+            'external_id' => '62cbabbe-2853-11e9-b256-1c1b0d1de7c2',
+            'fragments' => ['Кран шар', 'DN 15', 'PN1,6', '11Б27n5', 'м-ц', 'вода'],
+            'brand' => [
+                'name' => 'Цветлит',
+                'slug' => 'tsvetlit',
+                'country' => 'Беларусь',
+            ],
+            'name' => 'Цветлит Кран шаровой 11Б27п5 DN15 PN16 муфта-цапка',
+            'retail' => 6.16,
+            'images' => [
+                'img/products/tsvetlit/ball-valve-11b27p5-dn15-mufta-capka.png',
+            ],
+            'source_url' => 'https://ecs-sko.ru/catalog/equipment/detail/kran-sharovoy-latunnyy-dn-15-pn1-6-mpa-11b27p5-mufta-tsapkac32e54946d2cd5426d8054fa861c02eb4a6ea782e31452205a6a69f583ac4e37/',
+            'short' => 'Латунный шаровой кран Цветлит 11Б27п5 DN15 PN16 с присоединением муфта-цапка для воды.',
+            'content' => '<p><strong>Цветлит 11Б27п5 DN15</strong> — латунный шаровой кран с присоединением «муфта-цапка»: с одной стороны внутренняя, с другой — наружная резьба G1/2. Модель предназначена для работы в качестве запорного устройства на трубопроводах воды.</p><p>Корпус изготовлен из латуни ЛЦ40Сд или ЛЦ40С. Номинальное давление составляет 1,6 МПа (16 бар), испытательное — 2,4 МПа. Перед монтажом нужно сверить тип и размер резьбы, рабочее давление и среду.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Шаровой запорный кран'],
+                ['key' => 'Модель', 'value' => '11Б27п5'],
+                ['key' => 'Условный диаметр', 'value' => 'DN15'],
+                ['key' => 'Номинальное давление', 'value' => 'PN16 (1,6 МПа)'],
+                ['key' => 'Испытательное давление', 'value' => '2,4 МПа'],
+                ['key' => 'Тип присоединения', 'value' => 'Муфта-цапка'],
+                ['key' => 'Резьба', 'value' => 'G1/2 внутренняя / G1/2 наружная'],
+                ['key' => 'Рабочая среда', 'value' => 'Вода'],
+                ['key' => 'Материал корпуса', 'value' => 'Латунь ЛЦ40Сд / ЛЦ40С'],
+                ['key' => 'Температура рабочей среды', 'value' => 'от −50 до +150 °C'],
+                ['key' => 'Класс герметичности', 'value' => 'А по ГОСТ 9544-2015'],
+                ['key' => 'Масса', 'value' => '0,235 кг'],
+                ['key' => 'Технические условия', 'value' => 'ТУ РБ 03973239.011-99'],
+                ['key' => 'Бренд', 'value' => 'Цветлит'],
+                ['key' => 'Страна производства', 'value' => 'Беларусь'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4894,6 +4949,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-eb' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EB,
             'unmatched-researched-20261014-ec' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EC,
             'unmatched-researched-20261014-ed' => self::BATCH_UNMATCHED_RESEARCHED_20261014_ED,
+            'unmatched-researched-20261014-ee' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EE,
             default => null,
         };
 
@@ -5370,6 +5426,8 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 if (! $category->exists) {
                     $category = $this->createCategory($rule['category']);
                     $stats['categories_created']++;
+                } elseif (($rule['activate_category'] ?? false) && isset($rule['category'])) {
+                    $this->activateCategory($category, $rule['category']);
                 }
 
                 if (($rule['hydrate_external_sku'] ?? false) && blank($item->external_sku)) {
@@ -5549,6 +5607,24 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'meta_title' => $config['meta_title'] ?? null,
             'meta_description' => $config['meta_description'] ?? null,
         ]);
+    }
+
+    /** @param array<string, mixed> $config */
+    private function activateCategory(Category $category, array $config): void
+    {
+        $parent = Category::query()->where('slug', $config['parent_slug'])->firstOrFail();
+
+        $category->forceFill([
+            'parent_id' => $parent->id,
+            'name' => $config['name'],
+            'h1' => $config['h1'] ?? $config['name'],
+            'type' => $config['type'] ?? $category->type,
+            'sort_order' => $config['sort_order'] ?? $category->sort_order,
+            'is_active' => true,
+            'content' => $config['content'] ?? $category->content,
+            'meta_title' => $config['meta_title'] ?? $category->meta_title,
+            'meta_description' => $config['meta_description'] ?? $category->meta_description,
+        ])->save();
     }
 
     /** @param array{name:string,slug:string} $config */
