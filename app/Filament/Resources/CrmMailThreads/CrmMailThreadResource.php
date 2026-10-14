@@ -547,14 +547,24 @@ class CrmMailThreadResource extends Resource
             'incoming' => 'Входящее',
             'outgoing' => 'Исходящее',
             'draft' => 'Черновик',
-            default => 'Письмо',
+            default => null,
         };
 
         if ($record->unread_count > 0) {
-            return $direction.' · непрочитано: '.$record->unread_count;
+            return $direction
+                ? $direction.' · непрочитано: '.$record->unread_count
+                : 'Непрочитано: '.$record->unread_count;
         }
 
-        return $direction.' · прочитано';
+        if ($direction) {
+            return $direction.' · прочитано';
+        }
+
+        return match ($record->status) {
+            'new' => 'Новое · прочитано',
+            'closed' => 'Закрыто · прочитано',
+            default => 'Прочитано',
+        };
     }
 
     public static function mailReadIcon(CrmMailThread $record): string
