@@ -9352,4 +9352,61 @@ XML;
         }
         $this->assertSame(['4300.00', '4600.00', '165.00'], $products->map(fn (Product $product): string => $product->fresh()->price)->values()->all());
     }
+
+    public function test_it_creates_the_exact_d80_mono_adapter_with_a_clean_local_image(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-adapter-d80',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(
+            ['slug' => 'krepleniya-dymohod'],
+            ['name' => 'Крепления дымохода', 'parent_id' => 0],
+        );
+        $template = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-007944',
+            'name' => 'Теплов и Сухов Адаптер Моно М-М 430-0.8 D110 (У)',
+            'slug' => 'teplov-i-suhov-adapter-mono-mm-d110-test',
+            'price' => 12,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'af1f3537-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000043',
+            'external_sku' => 'TS.FRT.AKL.0080.62699',
+            'barcode' => '4680205249327',
+            'name' => 'Адаптер Моно М-М 430-0.5 D80 (У)',
+            'price_byn' => 6.67,
+            'stock_quantity' => 20,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dv',
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dv',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertNotSame($template->id, $product->id);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('9.05', $product->price);
+        $this->assertSame('20', (string) $product->stock_qty);
+        $this->assertSame(['img/products/generated/teplov-suhov-adapter-mono-mm-430-05-d80.png'], $product->images);
+        $this->assertSame('80 мм', collect($product->specs)->firstWhere('key', 'Диаметр')['value']);
+        $this->assertSame('0,5 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
+        $this->assertSame('TS.FRT.AKL.0080.62699', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+    }
 }

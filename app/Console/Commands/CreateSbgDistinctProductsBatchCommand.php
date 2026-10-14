@@ -4404,6 +4404,47 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact item is present in the current SBG stock feed under
+    // TS.FRT.AKL.0080.62699. Independent retailers list the same 430/0.5/D80
+    // adapter at 153-173 RUB; the 9.05 BYN retail keeps a safe margin over the
+    // current 6.67 BYN supplier price. The catalog image is an original clean
+    // studio render because available retailer photos carry foreign marks.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DV = [
+        'УТ-00000043' => [
+            'template' => 'KOTLOV-007944',
+            'allow_unmatched' => true,
+            'category_slug' => 'krepleniya-dymohod',
+            'external_sku' => 'TS.FRT.AKL.0080.62699',
+            'fragments' => ['Адаптер Моно М-М', '430-0.5', 'D80'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Адаптер Моно М-М AISI 430 0,5 мм Ø80 (У)',
+            'retail' => 9.05,
+            'images' => [
+                'img/products/generated/teplov-suhov-adapter-mono-mm-430-05-d80.png',
+            ],
+            'source_url' => 'https://fox-kamin.ru/adapter-mono-m-m-430-05-d80-u/',
+            'short' => 'Одноконтурный адаптер Моно М-М «Теплов и Сухов» Ø80 мм из нержавеющей стали AISI 430 толщиной 0,5 мм.',
+            'content' => '<p><strong>Теплов и Сухов Адаптер Моно М-М Ø80 мм</strong> — одноконтурный элемент для соединения теплогенерирующего аппарата с дымоходом или двух участков системы с соответствующим типом соединения.</p><p>Адаптер изготовлен из нержавеющей стали AISI 430 толщиной 0,5 мм. Перед монтажом сверьте диаметр патрубка, направление сборки и совместимость элементов дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Адаптер одноконтурный'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Тип соединения', 'value' => 'М-М'],
+                ['key' => 'Диаметр', 'value' => '80 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.FRT.AKL.0080.62699'],
+                ['key' => 'Штрихкод', 'value' => '4680205249327'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4534,6 +4575,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-ds' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DS,
             'unmatched-researched-20261014-dt' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DT,
             'unmatched-researched-20261014-du' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DU,
+            'unmatched-researched-20261014-dv' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DV,
             default => null,
         };
 
