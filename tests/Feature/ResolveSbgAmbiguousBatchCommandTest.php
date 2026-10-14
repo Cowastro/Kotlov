@@ -70,6 +70,55 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         ]);
     }
 
+    public function test_it_links_the_unmatched_darco_szk130_shutter_without_overwriting_retail(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-darco-szk130',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Шиберы дымохода',
+            'slug' => 'darco-shutters-test',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-009.397',
+            'name' => 'Шибер Darco SZK130-CZ2(ML) короткая ручка',
+            'slug' => 'darco-szk130-cz2-ml-test',
+            'price' => 127,
+            'in_stock' => false,
+            'stock_qty' => null,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'af1f3529-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000029',
+            'name' => 'Шибер каминный SZK 130-CZ2 (ML)',
+            'price_byn' => 67.99,
+            'stock_quantity' => 1,
+            'match_status' => 'unmatched',
+            'candidates' => [],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261014-s',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame('127.00', $product->price);
+        $this->assertTrue($product->in_stock);
+        $this->assertSame('1', (string) $product->stock_qty);
+    }
+
     public function test_it_dry_runs_and_applies_only_a_still_current_exact_candidate(): void
     {
         $source = IntegrationSource::query()->create([
