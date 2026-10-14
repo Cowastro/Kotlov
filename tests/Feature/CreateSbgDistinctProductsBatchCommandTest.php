@@ -10848,4 +10848,43 @@ XML;
             'is_active' => true,
         ]);
     }
+
+    public function test_it_excludes_the_misclassified_whatsminer_without_creating_a_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-misclassified-whatsminer',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '9ead3580-4751-11f0-ad62-1c1b0d1de7c2',
+            'external_code' => 'УТ-00009078',
+            'name' => 'М64 190Т',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'not-for-site-unmatched-20261014-eu',
+        ])->assertSuccessful();
+        $this->assertSame('unmatched', $item->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'not-for-site-unmatched-20261014-eu',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertNull($item->product_id);
+        $this->assertNull($item->target_category_id);
+        $this->assertSame('ignored', $item->match_status);
+        $this->assertSame('manual_ignore', $item->match_method);
+        $this->assertSame($productCount, Product::query()->count());
+    }
 }

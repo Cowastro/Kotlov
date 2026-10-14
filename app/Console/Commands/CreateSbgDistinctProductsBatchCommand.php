@@ -5382,6 +5382,17 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // WhatsMiner M64 190T is cryptocurrency-mining equipment, not an electric
+    // boiler. The 1C row is misclassified, has no customer price and must not
+    // produce a public catalog card.
+    private const BATCH_NOT_FOR_SITE_UNMATCHED_20261014_EU = [
+        'УТ-00009078' => [
+            'ignore_unmatched_not_for_site' => true,
+            'external_id' => '9ead3580-4751-11f0-ad62-1c1b0d1de7c2',
+            'fragments' => ['М64', '190Т'],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5539,6 +5550,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-corrected-20261014-er' => self::BATCH_UNMATCHED_CORRECTED_20261014_ER,
             'unmatched-researched-20261014-es' => self::BATCH_UNMATCHED_RESEARCHED_20261014_ES,
             'unmatched-researched-20261014-et' => self::BATCH_UNMATCHED_RESEARCHED_20261014_ET,
+            'not-for-site-unmatched-20261014-eu' => self::BATCH_NOT_FOR_SITE_UNMATCHED_20261014_EU,
             default => null,
         };
 
