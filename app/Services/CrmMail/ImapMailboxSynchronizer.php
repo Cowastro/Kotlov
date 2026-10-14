@@ -54,6 +54,7 @@ class ImapMailboxSynchronizer
             foreach ($numbers as $uid) {
                 if ($existingMessage = $existingUids->get((int) $uid)) {
                     $this->hydrateAttachments($imap, $mailbox, $existingMessage, (int) $uid);
+                    $this->refreshReceivedAt($imap, $existingMessage, (int) $uid);
                     $skipped++;
                     $mailbox->last_uid = max((int) $mailbox->last_uid, (int) $uid);
 
@@ -231,10 +232,45 @@ class ImapMailboxSynchronizer
 
     private function parseDate(?string $value): Carbon
     {
+        return $this->tryParseDate($value) ?? now()->utc();
+    }
+
+    private function tryParseDate(?string $value): ?Carbon
+    {
+        if (blank($value)) {
+            return null;
+        }
+
         try {
-            return filled($value) ? Carbon::parse($value) : now();
+            return Carbon::parse($value)->utc();
         } catch (Throwable) {
-            return now();
+            return null;
+        }
+    }
+
+    private function refreshReceivedAt($imap, CrmMailMessage $message, int $uid): void
+    {
+        $messageNumber = imap_msgno($imap, $uid);
+        if ($messageNumber < 1) {
+            return;
+        }
+
+        $header = imap_headerinfo($imap, $messageNumber);
+        $receivedAt = $this->tryParseDate($header->date ?? null);
+        if (! $receivedAt || $message->received_at?->equalTo($receivedAt)) {
+            return;
+        }
+
+        $message->forceFill(['received_at' => $receivedAt])->save();
+
+        $latestReceivedAt = $message->thread->messages()
+            ->whereNotNull('received_at')
+            ->max('received_at');
+
+        if ($latestReceivedAt) {
+            $message->thread->forceFill([
+                'last_message_at' => Carbon::parse($latestReceivedAt, 'UTC')->utc(),
+            ])->save();
         }
     }
 

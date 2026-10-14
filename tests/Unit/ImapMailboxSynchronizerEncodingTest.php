@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\CrmMail\ImapMailboxSynchronizer;
+use Carbon\Carbon;
 use ReflectionClass;
 use Tests\TestCase;
 
@@ -76,5 +77,18 @@ class ImapMailboxSynchronizerEncodingTest extends TestCase
         ];
 
         $this->assertSame('Счет на оплату.pdf', $method->invoke($service, $part));
+    }
+
+    public function test_it_normalizes_imap_header_dates_to_utc_before_storage(): void
+    {
+        $service = (new ReflectionClass(ImapMailboxSynchronizer::class))->newInstanceWithoutConstructor();
+        $method = new \ReflectionMethod($service, 'parseDate');
+
+        $date = $method->invoke($service, 'Wed, 14 Oct 2026 08:10:00 +0300');
+
+        $this->assertInstanceOf(Carbon::class, $date);
+        $this->assertSame('UTC', $date->timezoneName);
+        $this->assertSame('2026-10-14 05:10:00', $date->format('Y-m-d H:i:s'));
+        $this->assertSame('14.10.2026 08:10', $date->copy()->timezone('Europe/Minsk')->format('d.m.Y H:i'));
     }
 }
