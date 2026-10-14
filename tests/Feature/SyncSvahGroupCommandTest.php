@@ -83,6 +83,7 @@ class SyncSvahGroupCommandTest extends TestCase
             '--dry-run' => true,
             '--report' => $report,
         ])->assertSuccessful();
+
         $this->assertDatabaseMissing('suppliers', ['code' => 'svah_group']);
         $this->assertStringContainsString('site_only', (string) file_get_contents($report));
 

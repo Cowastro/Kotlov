@@ -9,17 +9,19 @@ use Symfony\Component\Console\Input\InputInterface;
 
 class SupplierSyncJournalRecorder
 {
-    /** @var array<int, array{command:string, run_id:int, started_at:float}> */
-    private array $runs = [];
-
     private const COMMAND_SUPPLIER_CODES = [
         'supplier:sync-rusklimat' => 'rusklimat',
         'supplier:sync-rusklimat-pricelist' => 'rusklimat',
         'supplier:sync-svah-group' => 'svah_group',
     ];
 
+    /** @var array<int, array{command:string, run_id:int, started_at:float, source_candidates:array<int, string>}> */
+    private array $runs = [];
+
     /** @var array<int, string> Commands invoked inside another tracked sync. */
     private array $nestedCommands = [];
+
+    public function __construct(private readonly SupplierSyncSourceArchive $sourceArchive) {}
 
     public function start(?string $command, InputInterface $input): void
     {
@@ -32,6 +34,7 @@ class SupplierSyncJournalRecorder
         // the complete daily run instead of one row per nested sheet.
         if ($this->runs !== []) {
             $this->nestedCommands[] = (string) $command;
+
             return;
         }
 
@@ -46,6 +49,7 @@ class SupplierSyncJournalRecorder
             'command' => $command,
             'run_id' => (int) $run->id,
             'started_at' => microtime(true),
+            'source_candidates' => $this->sourceCandidates((string) $command, $input),
         ];
     }
 
@@ -58,6 +62,7 @@ class SupplierSyncJournalRecorder
         $nestedPosition = $this->findNestedCommandPosition((string) $command);
         if ($nestedPosition !== null) {
             array_splice($this->nestedCommands, $nestedPosition, 1);
+
             return;
         }
 
@@ -83,6 +88,16 @@ class SupplierSyncJournalRecorder
                 'supplier_names' => $summary['suppliers'],
                 'updated_at' => now(),
             ]);
+
+            $run = SupplierSyncRun::query()->find($active['run_id']);
+            if ($run) {
+                try {
+                    $this->sourceArchive->archiveFirst($run, $active['source_candidates']);
+                } catch (\Throwable $e) {
+                    // A source archive failure must not hide the actual sync result.
+                    report($e);
+                }
+            }
         } catch (\Throwable $e) {
             report($e);
             SupplierSyncRun::query()->whereKey($active['run_id'])->update([
@@ -367,5 +382,29 @@ class SupplierSyncJournalRecorder
         }
 
         return $safe;
+    }
+
+    /** @return array<int, string> */
+    private function sourceCandidates(string $command, InputInterface $input): array
+    {
+        $values = [];
+
+        foreach ([$input->getOptions(), $input->getArguments()] as $collection) {
+            foreach ($collection as $value) {
+                foreach (is_array($value) ? $value : [$value] as $candidate) {
+                    if (is_string($candidate)
+                        && preg_match('/\.(?:csv|xlsx?|ods|xml|json|zip)$/i', trim($candidate))) {
+                        $values[] = trim($candidate);
+                    }
+                }
+            }
+        }
+
+        if ($command === 'supplier:sync-svah-group') {
+            $values[] = storage_path('app/pricelists/svah-group/latest.xlsx');
+            $values[] = storage_path('app/pricelists/svah-group/latest.xls');
+        }
+
+        return array_values(array_unique(array_filter($values)));
     }
 }

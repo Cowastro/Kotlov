@@ -16,6 +16,6 @@ class ListSupplierSyncRuns extends ListRecords
 
     public function getSubheading(): ?string
     {
-        return 'История запусков и изменений цен и остатков по поставщикам';
+        return 'История запусков, исходных файлов и изменений цен и остатков по всем поставщикам';
     }
 }

@@ -20,6 +20,8 @@ class SupplierSyncRunTextExporterTest extends TestCase
             'price_changes_count' => 1,
             'stock_changes_count' => 1,
             'supplier_names' => 'Лигмет',
+            'source_file_name' => 'price-list.xlsx',
+            'source_file_sha256' => str_repeat('a', 64),
         ]);
         $run->setRelation('changes', new Collection([
             new SupplierSyncChange([
@@ -39,6 +41,7 @@ class SupplierSyncRunTextExporterTest extends TestCase
 
         $this->assertStringStartsWith("\xEF\xBB\xBF", $export);
         $this->assertStringContainsString('Печь Berna Lux S', $export);
+        $this->assertStringContainsString('Исходный файл: price-list.xlsx', $export);
         $this->assertStringContainsString('Розничная цена: 500,00 BYN → 560,00 BYN', $export);
         $this->assertStringContainsString('Наличие: нет → есть', $export);
     }

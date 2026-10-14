@@ -13,6 +13,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
 
 class SupplierSyncRunResource extends Resource
 {
@@ -92,6 +93,13 @@ class SupplierSyncRunResource extends Resource
                         ? '—'
                         : number_format($state / 1000, 1, ',', ' ').' с')
                     ->alignRight(),
+
+                TextColumn::make('source_file_name')
+                    ->label('Исходный файл')
+                    ->placeholder('API / сайт')
+                    ->description(fn (SupplierSyncRun $record): ?string => $record->sourceFileSizeLabel())
+                    ->icon(fn (SupplierSyncRun $record): ?string => $record->hasArchivedSource() ? 'heroicon-o-table-cells' : null)
+                    ->limit(32),
             ])
             ->filters([
                 SelectFilter::make('status')
@@ -113,6 +121,15 @@ class SupplierSyncRunResource extends Resource
             ])
             ->defaultSort('started_at', 'desc')
             ->recordActions([
+                Action::make('downloadSource')
+                    ->label(fn (SupplierSyncRun $record): string => 'Скачать '.strtoupper((string) $record->source_file_type))
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('info')
+                    ->visible(fn (SupplierSyncRun $record): bool => $record->hasArchivedSource())
+                    ->action(fn (SupplierSyncRun $record) => Storage::disk('local')->download(
+                        $record->source_file_path,
+                        $record->source_file_name,
+                    )),
                 Action::make('downloadChanges')
                     ->label('Скачать TXT')
                     ->icon('heroicon-o-arrow-down-tray')

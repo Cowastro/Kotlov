@@ -26,6 +26,8 @@ class SupplierSyncRunTextExporter
             'Команда: '.($run->command ?: '—'),
             'Поставщик: '.($run->supplier_names ?: '—'),
             'Статус: '.$this->status($run->status),
+            'Исходный файл: '.($run->source_file_name ?: 'API / сайт'),
+            'SHA-256 файла: '.($run->source_file_sha256 ?: '—'),
             'Всего изменений: '.$run->changes_count,
             'Изменений цен: '.$run->price_changes_count,
             'Изменений остатков: '.$run->stock_changes_count,
