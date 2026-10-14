@@ -9891,4 +9891,85 @@ XML;
         $this->assertTrue((bool) $category->fresh()->is_active);
         $this->assertStringContainsString('ecs-sko.ru', $product->content_source_url);
     }
+
+    public function test_it_links_and_refreshes_the_existing_skamoenclosure_board_without_a_duplicate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-skamoenclosure-board',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $parent = Category::query()->firstOrCreate(['slug' => 'aksessuary-dlya-bani'], [
+            'name' => 'Аксессуары для бани',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'ognezashchitnye-plity-i-listy'], [
+            'name' => 'Огнезащитные плиты и листы',
+            'parent_id' => $parent->id,
+            'is_active' => true,
+        ]);
+        $legacyCategory = Category::query()->firstOrCreate(['slug' => 'oblicovki'], [
+            'name' => 'Порталы для электрокамина',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $legacyBrand = Brand::query()->firstOrCreate(['slug' => 'scamol'], [
+            'name' => 'Scamol',
+            'h1' => 'Scamol',
+            'is_active' => true,
+        ]);
+        $existing = Product::query()->create([
+            'category_id' => $legacyCategory->id,
+            'brand_id' => $legacyBrand->id,
+            'sku' => 'PS-009.751',
+            'name' => 'Плита изоляционная каминная SkamoEnclosure, 1220/1000/30',
+            'slug' => 'plita-izolyatsionnaya-kaminnaya-skamoenclosure-1220-1000-30',
+            'price' => 207,
+            'images' => [
+                'product/009/009751/5e885e19da27f.png',
+                'product/009/009751/skamoenclosure.jpg',
+            ],
+            'requires_price_confirmation' => true,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '62fffaa2-5064-11e9-b1db-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001545',
+            'name' => 'Плита каминная кремниево-кальциевая SkamoEnclosure, 1220/1000/30',
+            'price_byn' => 184,
+            'stock_quantity' => 20,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-ef',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertTrue($existing->is($product));
+        $this->assertSame(1, Product::query()->where('slug', $existing->slug)->count());
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('manual_search', $item->fresh()->match_method);
+        $this->assertSame('184.00', $product->price);
+        $this->assertSame('20', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertFalse((bool) $product->requires_price_confirmation);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('Skamol', $product->brand?->name);
+        $this->assertSame('Skamol Плита каминная SkamoEnclosure Board 1220×1000×30 мм', $product->name);
+        $this->assertSame('1000 °C', collect($product->specs)->firstWhere('key', 'Максимальная рабочая температура')['value']);
+        $this->assertSame('225 кг/м³', collect($product->specs)->firstWhere('key', 'Плотность')['value']);
+        $this->assertSame([
+            'product/009/009751/5e885e19da27f.png',
+            'product/009/009751/skamoenclosure.jpg',
+        ], $product->images);
+        $this->assertStringContainsString('skamoenclosure.com', $product->content_source_url);
+    }
 }

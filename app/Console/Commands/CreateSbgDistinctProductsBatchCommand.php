@@ -4810,6 +4810,50 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The public catalog already contains the exact PS-009.751 card, but it was
+    // left unlinked to 1C under the misspelled legacy brand "Scamol". Skamol's
+    // official data confirms the 1220 x 1000 x 30 mm SkamoEnclosure Board format,
+    // 225 kg/m3 density and 1000 C maximum service temperature. Reuse the clean
+    // existing gallery, correct the card and link it instead of creating a duplicate.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EF = [
+        'УТ-00001545' => [
+            'template_slug' => 'plita-izolyatsionnaya-kaminnaya-skamoenclosure-1220-1000-30',
+            'link_existing_slug' => 'plita-izolyatsionnaya-kaminnaya-skamoenclosure-1220-1000-30',
+            'refresh_existing' => true,
+            'allow_unmatched' => true,
+            'category_slug' => 'ognezashchitnye-plity-i-listy',
+            'fragments' => ['Плита каминная', 'SkamoEnclosure', '1220', '1000', '30'],
+            'link_fragments' => ['Плита', 'SkamoEnclosure', '1220', '1000', '30'],
+            'brand' => [
+                'name' => 'Skamol',
+                'slug' => 'skamol',
+                'country' => 'Дания',
+            ],
+            'name' => 'Skamol Плита каминная SkamoEnclosure Board 1220×1000×30 мм',
+            'retail' => 184.00,
+            'clear_price_confirmation' => true,
+            'source_url' => 'https://www.skamoenclosure.com/products.html',
+            'short' => 'Кальций-силикатная плита Skamol SkamoEnclosure Board 1220×1000×30 мм для строительства и теплоизоляции каминных коробов.',
+            'content' => '<p><strong>Skamol SkamoEnclosure Board 1220×1000×30 мм</strong> — лёгкая кальций-силикатная плита для строительства теплоизолированных каминных коробов.</p><p>Плита рассчитана на рабочую температуру до 1000 °C, обладает низкой теплопроводностью и поддаётся обработке обычным деревообрабатывающим инструментом. Монтаж выполняют как часть системы SkamoEnclosure с соблюдением проектных зазоров и инструкции производителя.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Кальций-силикатная каминная плита'],
+                ['key' => 'Серия', 'value' => 'SkamoEnclosure Board (Skamotec 225)'],
+                ['key' => 'Длина', 'value' => '1220 мм'],
+                ['key' => 'Ширина', 'value' => '1000 мм'],
+                ['key' => 'Толщина', 'value' => '30 мм'],
+                ['key' => 'Максимальная рабочая температура', 'value' => '1000 °C'],
+                ['key' => 'Плотность', 'value' => '225 кг/м³'],
+                ['key' => 'Теплопроводность', 'value' => '0,06 Вт/(м·К)'],
+                ['key' => 'Прочность на сжатие', 'value' => '2,8 МПа'],
+                ['key' => 'Прочность на изгиб', 'value' => '1,4 МПа'],
+                ['key' => 'Вес', 'value' => '8,2 кг'],
+                ['key' => 'Код производителя', 'value' => '24130002'],
+                ['key' => 'Бренд', 'value' => 'Skamol'],
+                ['key' => 'Страна бренда', 'value' => 'Дания'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4950,6 +4994,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-ec' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EC,
             'unmatched-researched-20261014-ed' => self::BATCH_UNMATCHED_RESEARCHED_20261014_ED,
             'unmatched-researched-20261014-ee' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EE,
+            'unmatched-researched-20261014-ef' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EF,
             default => null,
         };
 
