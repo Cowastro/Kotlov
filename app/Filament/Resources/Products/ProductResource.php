@@ -45,6 +45,7 @@ class ProductResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->withCount('marketResearchReports')
             ->with([
                 'category:id,name,slug',
                 'brand:id,name',

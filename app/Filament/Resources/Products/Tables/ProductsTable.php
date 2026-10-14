@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Tables;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
+use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
 use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\RunProductCatalogAiReview;
 use App\Jobs\RunProductSourceEnrichment;
@@ -406,6 +407,14 @@ class ProductsTable
                                 ]]),
                             ]);
                         }),
+                    Action::make('market_research_history')
+                        ->label(fn (Product $record): string => 'Исследования рынка ('.(int) ($record->market_research_reports_count ?? 0).')')
+                        ->icon('heroicon-o-archive-box')
+                        ->color('info')
+                        ->visible(fn (Product $record): bool => (int) ($record->market_research_reports_count ?? 0) > 0)
+                        ->url(fn (Product $record): string => MarketResearchReportResource::getUrl('index', [
+                            'filters' => ['product_id' => ['value' => $record->id]],
+                        ])),
                     Action::make('preview_source_enrichment')
                         ->label('Проверить из ссылки')
                         ->icon('heroicon-o-magnifying-glass')

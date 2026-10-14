@@ -17,6 +17,7 @@
         || ($pricing['purchase_price'] ?? null) !== null
         || ($pricing['margin_byn'] ?? null) !== null
         || $minimumSafe !== null;
+    $archive = (array) ($research['archive'] ?? []);
 @endphp
 
 <style>
@@ -122,7 +123,12 @@
                 @if (! empty($research['search_queries']))<div class="mr-eyebrow" style="margin-top:14px">Выполненные запросы</div><ol style="margin:7px 0 0;padding-left:20px;color:var(--muted);font-size:12px">@foreach ((array) $research['search_queries'] as $query)<li>{{ $query }}</li>@endforeach</ol>@endif
             </div></details>
 
-            <div class="mr-footer">Исследовано {{ $research['searched_at']?->format('d.m.Y H:i') ?? now()->format('d.m.Y H:i') }} · {{ $research['model'] ?? 'модель не указана' }} · Цена каталога не изменена</div>
+            <div class="mr-footer">
+                @if ($archive !== [])
+                    {{ ! empty($archive['reused']) ? 'Взято из карточки товара' : 'Сохранено в карточке товара' }} ·
+                @endif
+                Исследовано {{ $research['searched_at']?->format('d.m.Y H:i') ?? now()->format('d.m.Y H:i') }} · {{ $research['model'] ?? 'модель не указана' }} · Цена каталога не изменена
+            </div>
         </div>
     @endif
 </div>

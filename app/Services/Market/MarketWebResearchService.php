@@ -2,9 +2,12 @@
 
 namespace App\Services\Market;
 
+use App\Models\MarketResearchReport;
 use App\Models\Product;
+use DateTimeInterface;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -29,8 +32,15 @@ class MarketWebResearchService
     }
 
     /** @return array<string, mixed> */
-    public function research(Product $product, float $quotePrice): array
+    public function research(Product $product, float $quotePrice, bool $forceRefresh = false): array
     {
+        if (! $forceRefresh && $product->exists) {
+            $archived = $this->latestArchivedResearch($product, $quotePrice);
+            if ($archived !== null) {
+                return $archived;
+            }
+        }
+
         $provider = $this->provider();
         $safeMode = $provider['name'] === 'deepseek'
             && (bool) config('services.ai.market_research_safe_mode', true);
@@ -56,9 +66,9 @@ class MarketWebResearchService
             Str::lower(trim((string) $product->name)),
             number_format($quotePrice, 2, '.', ''),
         ]));
-        $cached = Cache::get($cacheKey);
+        $cached = $forceRefresh ? null : Cache::get($cacheKey);
         if (is_array($cached) && ($cached['status'] ?? null) === 'ready') {
-            return $cached;
+            return $this->archiveResearch($product, $cached);
         }
 
         $lock = Cache::lock($cacheKey.':lock', max(
@@ -143,7 +153,7 @@ class MarketWebResearchService
                             now()->addMinutes(max(1, (int) config('services.ai.market_research_cache_minutes', 360)))
                         );
 
-                        return $result;
+                        return $this->archiveResearch($product, $result);
                     }
 
                     $lastError = (string) ($result['message'] ?? 'модель не вернула структурированный отчёт');
@@ -159,6 +169,116 @@ class MarketWebResearchService
         } finally {
             $lock->release();
         }
+    }
+
+    /** @return array<string, mixed>|null */
+    private function latestArchivedResearch(Product $product, float $quotePrice): ?array
+    {
+        $report = MarketResearchReport::query()
+            ->where('product_id', $product->getKey())
+            ->whereNotNull('research_payload')
+            ->latest('researched_at')
+            ->latest('id')
+            ->first();
+        $research = $report?->research_payload;
+
+        if (! is_array($research) || ($research['status'] ?? null) !== 'ready') {
+            return null;
+        }
+
+        if (filled($research['searched_at'] ?? null) && ! ($research['searched_at'] instanceof DateTimeInterface)) {
+            $research['searched_at'] = Carbon::parse((string) $research['searched_at']);
+        }
+
+        return $this->withArchiveMetadata($this->withQuotePrice($research, $quotePrice), $report, true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $research
+     * @return array<string, mixed>
+     */
+    private function archiveResearch(Product $product, array $research): array
+    {
+        if (! $product->exists || ($research['status'] ?? null) !== 'ready') {
+            return $research;
+        }
+
+        $searchedAt = $research['searched_at'] ?? now();
+        $timestamp = $searchedAt instanceof DateTimeInterface
+            ? $searchedAt->format('YmdHis')
+            : Carbon::parse((string) $searchedAt)->format('YmdHis');
+        $fingerprint = substr(hash('sha256', json_encode([
+            $product->getKey(),
+            $research['model'] ?? null,
+            $research['sources'] ?? [],
+            $research['offers'] ?? [],
+            $timestamp,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)), 0, 12);
+        $median = data_get($research, 'market.median');
+
+        $report = MarketResearchReport::query()->firstOrCreate(
+            [
+                'product_id' => $product->getKey(),
+                'batch_code' => 'live-'.$product->getKey().'-'.$timestamp.'-'.$fingerprint,
+            ],
+            [
+                'review_reason' => 'Живое исследование из карточки товара или коммерческого предложения.',
+                'summary' => $research['summary'] ?? null,
+                'verdict' => $research['verdict'] ?? null,
+                'confidence' => (string) ($research['confidence'] ?? 'low'),
+                'decision' => 'consultation_hold',
+                'decision_reason' => 'Результат сохранён для повторного использования менеджерами; цена автоматически не изменялась.',
+                'price_before' => $product->price,
+                'recommended_price' => is_numeric($median) ? (float) $median : null,
+                'price_after' => $product->price,
+                'requires_price_confirmation' => true,
+                'search_queries' => array_values((array) ($research['search_queries'] ?? [])),
+                'rejected_candidates' => array_values((array) ($research['rejected_candidates'] ?? [])),
+                'excluded_offers' => array_values((array) ($research['excluded_offers'] ?? [])),
+                'research_payload' => $research,
+                'observations_snapshot' => array_values((array) ($research['offers'] ?? [])),
+                'research_model' => $research['model'] ?? null,
+                'researched_at' => $searchedAt,
+                'applied_at' => now(),
+            ],
+        );
+
+        return $this->withArchiveMetadata($research, $report, ! $report->wasRecentlyCreated);
+    }
+
+    /**
+     * @param  array<string, mixed>  $research
+     * @return array<string, mixed>
+     */
+    private function withQuotePrice(array $research, float $quotePrice): array
+    {
+        $research['quote_price'] = $quotePrice > 0 ? $quotePrice : null;
+        $median = data_get($research, 'market.median');
+        data_set(
+            $research,
+            'market.quote_delta_percent',
+            is_numeric($median) && (float) $median > 0 && $quotePrice > 0
+                ? round(($quotePrice - (float) $median) / (float) $median * 100, 1)
+                : null,
+        );
+
+        return $research;
+    }
+
+    /**
+     * @param  array<string, mixed>  $research
+     * @return array<string, mixed>
+     */
+    private function withArchiveMetadata(array $research, MarketResearchReport $report, bool $reused): array
+    {
+        $research['archive'] = [
+            'id' => $report->getKey(),
+            'product_id' => $report->product_id,
+            'reused' => $reused,
+            'saved_at' => $report->applied_at,
+        ];
+
+        return $research;
     }
 
     /** @return array<string, mixed> */
@@ -341,7 +461,7 @@ PROMPT;
     }
 
     /** @param array<string, mixed> $response
-     * @param array{name: string, label: string, api_key: string, responses_url: string, model: string} $provider
+     * @param  array{name: string, label: string, api_key: string, responses_url: string, model: string}  $provider
      * @return array<string, mixed>|null
      */
     private function repairDeepSeekResponse(array $response, array $provider, string $model): ?array
@@ -419,7 +539,7 @@ PROMPT;
     }
 
     /** @param array<string, mixed> $response
-     * @param array<string, mixed>|null $sourceResponse
+     * @param  array<string, mixed>|null  $sourceResponse
      * @return array<string, mixed>
      */
     private function normalize(
@@ -428,8 +548,7 @@ PROMPT;
         float $quotePrice,
         string $model,
         ?array $sourceResponse = null
-    ): array
-    {
+    ): array {
         $decoded = $this->decodeStructuredReport($this->outputText($response));
         if (! is_array($decoded)) {
             return $this->failure('Поиск завершился, но модель не вернула структурированный отчёт.');

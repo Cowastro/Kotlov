@@ -6,6 +6,7 @@ use App\Filament\Resources\CommercialDocuments\Pages\CreateCommercialDocument;
 use App\Filament\Resources\CommercialDocuments\Pages\EditCommercialDocument;
 use App\Filament\Resources\CommercialDocuments\Pages\ListCommercialDocuments;
 use App\Filament\Resources\CommercialDocuments\Pages\ViewCommercialDocument;
+use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
 use App\Models\CommercialDocument;
 use App\Models\Product;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
@@ -239,7 +240,7 @@ class CommercialDocumentResource extends Resource
                                 ->columnSpan(9),
                             SchemaActions::make([
                                 Action::make('compare_market')
-                                    ->label('Сравнить рынок')
+                                    ->label('Рынок / исследование')
                                     ->icon('heroicon-o-globe-alt')
                                     ->color('info')
                                     ->slideOver()
@@ -267,6 +268,50 @@ class CommercialDocumentResource extends Resource
                                             'pricing' => app(CommercialOfferCopilotService::class)->pricing($product->id, $quotePrice),
                                         ]);
                                     }),
+                                Action::make('refresh_market')
+                                    ->label('Обновить')
+                                    ->icon('heroicon-o-arrow-path')
+                                    ->color('warning')
+                                    ->requiresConfirmation()
+                                    ->modalHeading('Обновить исследование рынка?')
+                                    ->modalDescription('Будет выполнен новый веб-поиск. Новый результат сохранится в карточке товара и заменит сохранённый результат при следующих просмотрах.')
+                                    ->visible(fn (Get $get): bool => (int) $get('product_id') > 0)
+                                    ->action(function (Get $get): void {
+                                        $product = Product::query()->find((int) $get('product_id'));
+                                        if (! $product) {
+                                            Notification::make()->danger()->title('Сначала выберите товар')->send();
+
+                                            return;
+                                        }
+
+                                        $research = app(MarketWebResearchService::class)->research(
+                                            $product,
+                                            (float) $get('unit_price'),
+                                            forceRefresh: true,
+                                        );
+
+                                        Notification::make()
+                                            ->title(($research['status'] ?? null) === 'ready'
+                                                ? 'Исследование обновлено и сохранено'
+                                                : 'Не удалось обновить исследование')
+                                            ->body((string) (($research['status'] ?? null) === 'ready'
+                                                ? 'Следующий просмотр рынка возьмёт этот результат из карточки товара.'
+                                                : ($research['message'] ?? 'Провайдер не вернул готовый отчёт.')))
+                                            ->color(($research['status'] ?? null) === 'ready' ? 'success' : 'danger')
+                                            ->send();
+                                    }),
+                                Action::make('market_research_history')
+                                    ->label('История')
+                                    ->icon('heroicon-o-archive-box')
+                                    ->color('gray')
+                                    ->visible(fn (Get $get): bool => Product::query()
+                                        ->find((int) $get('product_id'))
+                                        ?->marketResearchReports()
+                                        ->exists() ?? false)
+                                    ->url(fn (Get $get): string => MarketResearchReportResource::getUrl('index', [
+                                        'filters' => ['product_id' => ['value' => (int) $get('product_id')]],
+                                    ]))
+                                    ->openUrlInNewTab(),
                             ])->key('pricing_actions')->columnSpan(3),
                         ]),
                 ]),
