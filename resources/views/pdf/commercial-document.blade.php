@@ -70,8 +70,9 @@
         </td>
         <td>
             <div class="party-title">Покупатель</div>
-            <strong>{{ $document->client_company ?: ($document->client_name ?: 'Не указан') }}</strong><br>
+            <strong>{{ $document->client_legal_name ?: ($document->client_company ?: ($document->client_name ?: 'Не указан')) }}</strong><br>
             @if($document->client_unp)УНП {{ $document->client_unp }}<br>@endif
+            @if($document->client_address){{ $document->client_address }}<br>@endif
             @if($document->client_name && $document->client_company)Контакт: {{ $document->client_name }}<br>@endif
             @if($document->client_phone){{ $document->client_phone }}<br>@endif
             @if($document->client_email){{ $document->client_email }}@endif

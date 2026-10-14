@@ -80,7 +80,7 @@ class CommercialDocumentClientResolver
             }
         }
 
-        $company = trim((string) $document->client_company);
+        $company = trim((string) ($document->client_company ?: $document->client_legal_name));
         if ($company === '') {
             return null;
         }
@@ -109,6 +109,7 @@ class CommercialDocumentClientResolver
     private function fillCounterparty(CrmCounterparty $counterparty, CommercialDocument $document): void
     {
         $company = trim((string) $document->client_company);
+        $legalName = trim((string) $document->client_legal_name);
         $contactName = trim((string) $document->client_name);
         $fallbackName = trim((string) ($document->client_email ?: $document->client_phone));
         $unp = trim((string) $document->client_unp);
@@ -122,12 +123,14 @@ class CommercialDocumentClientResolver
                 'status' => 'lead',
                 'name' => $name,
                 'public_name' => $company ?: $name,
-                'legal_name' => $company ?: null,
+                'legal_name' => $legalName ?: ($company ?: null),
                 'source' => 'manual',
             ]);
         }
 
         foreach ([
+            'legal_name' => $legalName,
+            'public_name' => $company,
             'unp' => trim((string) $document->client_unp),
             'legal_address' => trim((string) $document->client_address),
             'responsible_user_id' => $document->manager_id,

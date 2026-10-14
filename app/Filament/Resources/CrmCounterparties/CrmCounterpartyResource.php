@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\CrmCounterparties;
 
+use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\Pages\CreateCrmCounterparty;
 use App\Filament\Resources\CrmCounterparties\Pages\EditCrmCounterparty;
 use App\Filament\Resources\CrmCounterparties\Pages\ListCrmCounterparties;
 use App\Filament\Resources\CrmCounterparties\Pages\ViewCrmCounterparty;
+use App\Models\CommercialDocument;
 use App\Models\CrmCounterparty;
 use App\Models\User;
 use BackedEnum;
@@ -16,6 +18,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -103,10 +106,29 @@ class CrmCounterpartyResource extends Resource
                 TextEntry::make('contacts_count')->label('Контактных лиц')->state(fn (CrmCounterparty $record): int => $record->contacts()->count()),
                 TextEntry::make('calls_count')->label('Звонков')->state(fn (CrmCounterparty $record): int => $record->calls()->count()),
                 TextEntry::make('mail_threads_count')->label('Переписок')->state(fn (CrmCounterparty $record): int => $record->mailThreads()->count()),
+                TextEntry::make('commercial_documents_count')->label('КП и счетов')->state(fn (CrmCounterparty $record): int => $record->commercialDocuments()->count()),
                 TextEntry::make('external_identities_count')->label('Связей с 1С')
                     ->state(fn (CrmCounterparty $record): int => $record->externalIdentities()->count()),
                 TextEntry::make('one_c_manager_name')->label('Менеджер в 1С')->placeholder('Не указан'),
                 TextEntry::make('notes')->label('Примечание')->placeholder('—')->columnSpanFull(),
+            ]),
+            Section::make('Коммерческие предложения и счета')->schema([
+                RepeatableEntry::make('commercialDocuments')
+                    ->label('')
+                    ->schema([
+                        TextEntry::make('number')
+                            ->label('Документ')
+                            ->weight('bold')
+                            ->url(fn ($record): string => CommercialDocumentResource::getUrl('view', ['record' => $record])),
+                        TextEntry::make('issued_at')->label('Дата')->date('d.m.Y'),
+                        TextEntry::make('type')->label('Тип')->badge()
+                            ->formatStateUsing(fn (string $state): string => CommercialDocument::TYPES[$state] ?? $state),
+                        TextEntry::make('status')->label('Статус')->badge()
+                            ->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state),
+                        TextEntry::make('total')->label('Сумма')->money('BYN'),
+                        TextEntry::make('manager.name')->label('Менеджер')->placeholder('—'),
+                    ])
+                    ->columns(6),
             ]),
         ]);
     }

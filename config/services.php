@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'belarus_taxpayer_registry' => [
+        'url' => env('BELARUS_TAXPAYER_REGISTRY_URL', 'http://grp.nalog.gov.by/api/grp-public/data'),
+    ],
 
     /*
     |--------------------------------------------------------------------------

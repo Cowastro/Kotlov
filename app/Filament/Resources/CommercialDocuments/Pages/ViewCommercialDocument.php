@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CommercialDocuments\Pages;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
+use App\Services\CommercialDocuments\CommercialDocumentReadiness;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -29,6 +30,17 @@ class ViewCommercialDocument extends ViewRecord
                 ->icon('heroicon-o-envelope')
                 ->color('primary')
                 ->action(function (): void {
+                    $issues = app(CommercialDocumentReadiness::class)->issues($this->record);
+                    if ($issues !== []) {
+                        Notification::make()
+                            ->warning()
+                            ->title('Документ пока не готов к отправке')
+                            ->body(implode("\n", array_map(fn (string $issue): string => '• '.$issue, $issues)))
+                            ->send();
+
+                        return;
+                    }
+
                     try {
                         $thread = app(CommercialDocumentWorkflow::class)->createMailDraft($this->record, auth()->user());
                         Notification::make()->success()->title('Письмо с PDF готово')->body('Проверьте текст и отправьте письмо клиенту.')->send();

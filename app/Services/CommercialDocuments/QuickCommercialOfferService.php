@@ -341,8 +341,11 @@ class QuickCommercialOfferService
         return [
             'type' => 'quote',
             'crm_mail_thread_id' => $thread->id,
+            'crm_counterparty_id' => $counterparty?->id,
+            'crm_contact_id' => $thread->contact?->id,
             'client_name' => $thread->contact?->full_name ?: $analysis['contact_name'] ?: $thread->participant_name,
             'client_company' => $company,
+            'client_legal_name' => $counterparty?->legal_name ?: ($analysis['legal_name'] ?: $company),
             'client_email' => $thread->participant_email ?: ($analysis['emails'][0] ?? null),
             'client_phone' => $thread->contact?->phones_list ?: $counterparty?->phones_list ?: ($analysis['phones'][0] ?? null),
             'client_unp' => $counterparty?->unp ?: $analysis['unp'],

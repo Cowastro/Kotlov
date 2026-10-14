@@ -8,10 +8,13 @@ use App\Filament\Resources\CommercialDocuments\Pages\ListCommercialDocuments;
 use App\Filament\Resources\CommercialDocuments\Pages\ViewCommercialDocument;
 use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
 use App\Models\CommercialDocument;
+use App\Models\CrmContact;
 use App\Models\CrmCounterparty;
 use App\Models\Product;
+use App\Services\CommercialDocuments\CommercialDocumentReadiness;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
+use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Market\MarketWebResearchService;
 use App\Services\Telephony\PhoneNumber;
 use BackedEnum;
@@ -101,13 +104,75 @@ class CommercialDocumentResource extends Resource
                         ->getOptionLabelUsing(fn (mixed $value): ?string => self::counterpartyOptionLabel($value))
                         ->afterStateUpdated(fn (mixed $state, Set $set) => self::fillClientFromCounterparty($state, $set))
                         ->columnSpanFull(),
-                    Hidden::make('crm_contact_id'),
+                    Select::make('crm_contact_id')
+                        ->label('Контактное лицо CRM')
+                        ->placeholder('Выберите получателя коммерческого предложения')
+                        ->options(fn (Get $get): array => self::contactOptions($get('crm_counterparty_id')))
+                        ->searchable()
+                        ->live()
+                        ->afterStateUpdated(fn (mixed $state, Set $set) => self::fillClientFromContact($state, $set)),
                     TextInput::make('client_company')->label('Компания')->maxLength(255),
+                    TextInput::make('client_legal_name')->label('Юридическое название')->maxLength(255)->columnSpanFull(),
                     TextInput::make('client_name')->label('Контактное лицо')->maxLength(255),
                     TextInput::make('client_email')->label('Email')->email()->maxLength(255),
                     TextInput::make('client_phone')->label('Телефон')->tel()->maxLength(64),
                     TextInput::make('client_unp')->label('УНП / ИНН')->maxLength(32),
-                    Textarea::make('client_address')->label('Адрес')->rows(2),
+                    Textarea::make('client_address')->label('Юридический адрес')->rows(2),
+                    SchemaActions::make([
+                        Action::make('lookup_client_requisites')
+                            ->label('Подобрать реквизиты по УНП')
+                            ->icon('heroicon-o-magnifying-glass')
+                            ->color('info')
+                            ->modalHeading('Проверка реквизитов покупателя')
+                            ->modalDescription('Сначала используется карточка CRM / 1С, затем публичный реестр МНС. Проверьте найденные данные перед применением.')
+                            ->modalSubmitActionLabel('Применить реквизиты')
+                            ->fillForm(function (Get $get): array {
+                                $lookup = app(BelarusTaxpayerRegistry::class)->lookup((string) $get('client_unp'));
+                                if (! $lookup) {
+                                    Notification::make()
+                                        ->warning()
+                                        ->title('Реквизиты не найдены')
+                                        ->body('Проверьте УНП: для поиска белорусской организации требуется 9 цифр.')
+                                        ->send();
+                                }
+
+                                return [
+                                    'lookup_source' => $lookup['source'] ?? 'Не найдено',
+                                    'lookup_status' => $lookup['status'] ?? null,
+                                    'found_counterparty_id' => $lookup['crm_counterparty_id'] ?? null,
+                                    'found_unp' => $lookup['unp'] ?? $get('client_unp'),
+                                    'found_legal_name' => $lookup['legal_name'] ?? $get('client_legal_name'),
+                                    'found_company' => $lookup['short_name'] ?? $get('client_company'),
+                                    'found_address' => $lookup['address'] ?? $get('client_address'),
+                                    'found_email' => $lookup['email'] ?? $get('client_email'),
+                                    'found_phone' => $lookup['phone'] ?? $get('client_phone'),
+                                ];
+                            })
+                            ->schema([
+                                TextInput::make('lookup_source')->label('Источник')->readOnly(),
+                                TextInput::make('lookup_status')->label('Статус в источнике')->readOnly(),
+                                Hidden::make('found_counterparty_id'),
+                                TextInput::make('found_unp')->label('УНП')->required(),
+                                TextInput::make('found_company')->label('Краткое название')->required(),
+                                TextInput::make('found_legal_name')->label('Юридическое название')->required()->columnSpanFull(),
+                                Textarea::make('found_address')->label('Юридический адрес')->rows(2)->columnSpanFull(),
+                                TextInput::make('found_email')->label('Email')->email(),
+                                TextInput::make('found_phone')->label('Телефон'),
+                            ])
+                            ->action(function (array $data, Set $set): void {
+                                if ($data['found_counterparty_id'] ?? null) {
+                                    $set('crm_counterparty_id', $data['found_counterparty_id']);
+                                }
+                                $set('client_unp', $data['found_unp']);
+                                $set('client_company', $data['found_company']);
+                                $set('client_legal_name', $data['found_legal_name']);
+                                $set('client_address', $data['found_address'] ?? null);
+                                $set('client_email', $data['found_email'] ?? null);
+                                $set('client_phone', $data['found_phone'] ?? null);
+
+                                Notification::make()->success()->title('Реквизиты применены')->send();
+                            }),
+                    ])->columnSpanFull(),
                 ]),
 
             Section::make('ИИ-помощник подбора')
@@ -362,9 +427,19 @@ class CommercialDocumentResource extends Resource
                 TextEntry::make('status')->label('Статус')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state),
                 TextEntry::make('issued_at')->label('Дата')->date('d.m.Y'),
                 TextEntry::make('client_company')->label('Компания')->placeholder('—'),
+                TextEntry::make('client_legal_name')->label('Юридическое название')->placeholder('—'),
                 TextEntry::make('client_name')->label('Контакт')->placeholder('—'),
                 TextEntry::make('client_email')->label('Email')->placeholder('—')->copyable(),
                 TextEntry::make('client_phone')->label('Телефон')->placeholder('—')->copyable(),
+                TextEntry::make('client_unp')->label('УНП / ИНН')->placeholder('—')->copyable(),
+                TextEntry::make('client_address')->label('Юридический адрес')->placeholder('—')->columnSpan(2),
+            ]),
+            Section::make('Готовность к отправке')->schema([
+                TextEntry::make('readiness')
+                    ->label('Проверка данных')
+                    ->state(fn (CommercialDocument $record): string => app(CommercialDocumentReadiness::class)->summary($record))
+                    ->badge()
+                    ->color(fn (CommercialDocument $record): string => app(CommercialDocumentReadiness::class)->issues($record) === [] ? 'success' : 'warning'),
             ]),
             Section::make('Позиции')->schema([
                 RepeatableEntry::make('items')->label('')->schema([
@@ -543,10 +618,52 @@ class CommercialDocumentResource extends Resource
 
         $set('crm_contact_id', $contact?->id);
         $set('client_company', $counterparty->type === 'organization' ? ($counterparty->public_name ?: $counterparty->name) : null);
+        $set('client_legal_name', $counterparty->type === 'organization' ? ($counterparty->legal_name ?: $counterparty->name) : null);
         $set('client_name', $contact?->full_name ?: ($counterparty->type === 'person' ? $counterparty->name : null));
         $set('client_email', $points->firstWhere('type', 'email')?->value);
         $set('client_phone', $points->firstWhere('type', 'phone')?->value);
         $set('client_unp', $counterparty->unp);
         $set('client_address', $counterparty->legal_address ?: ($counterparty->actual_address ?: $counterparty->postal_address));
+    }
+
+    /** @return array<int, string> */
+    private static function contactOptions(mixed $counterpartyId): array
+    {
+        if (! $counterpartyId) {
+            return [];
+        }
+
+        return CrmContact::query()
+            ->where('counterparty_id', $counterpartyId)
+            ->where('is_active', true)
+            ->with('contactPoints')
+            ->orderByDesc('is_primary')
+            ->orderBy('full_name')
+            ->get()
+            ->mapWithKeys(function (CrmContact $contact): array {
+                $details = $contact->contactPoints
+                    ->where('is_active', true)
+                    ->pluck('value')
+                    ->take(2)
+                    ->implode(' · ');
+
+                return [$contact->id => $contact->full_name.($details ? ' · '.$details : '')];
+            })
+            ->all();
+    }
+
+    private static function fillClientFromContact(mixed $value, Set $set): void
+    {
+        $contact = $value
+            ? CrmContact::query()->with('contactPoints')->find($value)
+            : null;
+        if (! $contact) {
+            return;
+        }
+
+        $points = $contact->contactPoints->where('is_active', true);
+        $set('client_name', $contact->full_name);
+        $set('client_email', $points->firstWhere('type', 'email')?->value);
+        $set('client_phone', $points->firstWhere('type', 'phone')?->value);
     }
 }
