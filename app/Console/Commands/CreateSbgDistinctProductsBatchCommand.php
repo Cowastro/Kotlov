@@ -6,8 +6,10 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\Product;
+use App\Services\Integrations\IntegrationManualMatchRecorder;
 use App\Services\Integrations\IntegrationProductCreator;
 use App\Services\Integrations\IntegrationProductMatchDecision;
+use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -5276,9 +5278,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The first EQ production pass exposed an older exact 24 m² card that was
+    // not returned by the unmatched queue. Merge the newly-created duplicate
+    // into that canonical card, preserve the researched content and archive
+    // only the duplicate created by EQ.
+    private const BATCH_UNMATCHED_CORRECTED_20261014_ER = [
+        'УТ-00002044' => [
+            'merge_created_duplicate' => true,
+            'external_id' => '7c6d9745-996d-11e9-b0c6-1c1b0d1de7c2',
+            'duplicate_sku' => 'KOTLOV-022770',
+            'existing_sku' => 'PS-012.086',
+            'existing_slug' => 'folga-dlya-bani-alyuminievaya-50mkm-namotka-24m2',
+            'fragments' => ['Фольга', '50 мкм', '24м2'],
+            'category_slug' => 'otdelka-dlya-parnoj',
+            'name' => 'Фольга алюминиевая для бани 50 мкм, 1,2×20 м (24 м²)',
+            'retail' => 140.00,
+            'images' => ['img/products/sauna/aluminium-foil-50-micron-24m2-clean.jpg'],
+            'source_url' => 'https://7771.by/folga-50-mkm-24-m2',
+            'short' => 'Гладкая алюминиевая фольга толщиной 50 мкм для теплоотражающего и парозащитного слоя в банях и саунах; рулон 1,2×20 м, площадь 24 м².',
+            'content' => '<p><strong>Алюминиевая фольга 50 мкм, 24 м²</strong> применяется при отделке бань и саун как отражающий и парозащитный слой.</p><p>Рулон шириной 1,2 м и длиной 20 м закрывает до 24 м² поверхности. Фольгу монтируют отражающей стороной внутрь помещения с проклейкой нахлёстов и стыков алюминиевой лентой. Для сохранения воздушного зазора между фольгой и внутренней облицовкой используют обрешётку.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Алюминиевая фольга для бани'],
+                ['key' => 'Исполнение', 'value' => 'Гладкая, без основы'],
+                ['key' => 'Материал', 'value' => 'Алюминий'],
+                ['key' => 'Толщина', 'value' => '50 мкм'],
+                ['key' => 'Ширина', 'value' => '1,2 м'],
+                ['key' => 'Длина', 'value' => '20 м'],
+                ['key' => 'Площадь рулона', 'value' => '24 м²'],
+                ['key' => 'Назначение', 'value' => 'Теплоотражающий и парозащитный слой для бань и саун'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
+        IntegrationManualMatchRecorder $manualMatchRecorder,
+        SupplierProductAvailabilityService $availability,
     ): int {
         $rows = match ($this->option('batch')) {
             'chimney-priced-20261012-a' => self::BATCH_CHIMNEY_PRICED_20261012_A,
@@ -5428,6 +5464,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-eo' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EO,
             'unmatched-researched-20261014-ep' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EP,
             'unmatched-researched-20261014-eq' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EQ,
+            'unmatched-corrected-20261014-er' => self::BATCH_UNMATCHED_CORRECTED_20261014_ER,
             default => null,
         };
 
@@ -5449,6 +5486,85 @@ class CreateSbgDistinctProductsBatchCommand extends Command
 
         foreach ($rows as $code => $rule) {
             $items = IntegrationProduct::query()->with(['source', 'product'])->where('external_code', $code)->get();
+
+            if ($rule['merge_created_duplicate'] ?? false) {
+                $existing = Product::query()
+                    ->where('sku', $rule['existing_sku'])
+                    ->where('slug', $rule['existing_slug'])
+                    ->first();
+                $duplicate = Product::query()->where('sku', $rule['duplicate_sku'])->first();
+                if ($items->count() !== 1 || ! $existing || ! $duplicate) {
+                    $stats['blocked']++;
+                    $details[] = [$code, $rule['existing_sku'], 'blocked', 'missing unique 1C row, canonical card or duplicate'];
+
+                    continue;
+                }
+
+                $item = $items->first();
+                $alreadyMerged = (int) $item->product_id === (int) $existing->id
+                    && $item->match_status === 'matched'
+                    && $item->match_method === 'manual_search'
+                    && ! $duplicate->is_active
+                    && $duplicate->is_archived;
+                if ($alreadyMerged) {
+                    $stats['already']++;
+                    $details[] = [$code, $existing->sku, 'already', 'duplicate already merged into canonical card'];
+
+                    continue;
+                }
+
+                $valid = $item->source?->name === self::SOURCE_NAME
+                    && $item->source?->partnerName() === self::PARTNER_NAME
+                    && $item->external_id === $rule['external_id']
+                    && $item->match_status === 'matched'
+                    && $item->match_method === 'manual_created'
+                    && (int) $item->product_id === (int) $duplicate->id
+                    && (float) $item->stock_quantity > 0
+                    && $duplicate->is_active
+                    && ! $duplicate->is_archived
+                    && $this->containsAll($item->name, $rule['fragments'])
+                    && $this->hasNoKnownWatermarkSource($rule['images']);
+                if (! $valid) {
+                    $stats['blocked']++;
+                    $details[] = [$code, $existing->sku, 'blocked', 'source, identity or duplicate guard failed'];
+
+                    continue;
+                }
+
+                $stats['ready']++;
+                if ($apply) {
+                    DB::transaction(function () use (
+                        $item, $existing, $duplicate, $rule, $manualMatchRecorder, $availability
+                    ): void {
+                        $this->refreshExistingProduct($existing, $rule, $rule['images']);
+                        $item->forceFill([
+                            'product_id' => $existing->id,
+                            'target_category_id' => $existing->category_id,
+                            'match_status' => 'matched',
+                            'match_method' => 'manual_search',
+                            'match_confidence' => 1,
+                            'matched_at' => now(),
+                            'candidates' => null,
+                        ])->save();
+                        $manualMatchRecorder->record($item->fresh());
+                        $duplicate->forceFill([
+                            'stock_qty' => 0,
+                            'in_stock' => false,
+                            'is_active' => false,
+                            'is_archived' => true,
+                        ])->save();
+                        $availability->refresh($existing->id);
+                        $availability->refresh($duplicate->id);
+                    });
+                    $stats['linked']++;
+                    $stats['refreshed']++;
+                    $details[] = [$code, $existing->sku, 'merged', 'canonical card refreshed; generated duplicate archived'];
+                } else {
+                    $details[] = [$code, $existing->sku, 'ready', 'merge generated duplicate into canonical card'];
+                }
+
+                continue;
+            }
 
             if ($rule['ignore_unmatched_not_for_site'] ?? false) {
                 if ($items->count() !== 1) {

@@ -10624,4 +10624,83 @@ XML;
             'is_active' => true,
         ]);
     }
+
+    public function test_it_merges_the_generated_24_square_metre_foil_duplicate_into_the_existing_exact_card(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-sauna-foil-50-24-correction',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Отделка для парной',
+            'slug' => 'otdelka-dlya-parnoj',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $existing = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-012.086',
+            'name' => 'Фольга для бани алюминиевая 50мкм, намотка 24м2',
+            'slug' => 'folga-dlya-bani-alyuminievaya-50mkm-namotka-24m2',
+            'price' => 111,
+            'stock_qty' => 0,
+            'in_stock' => false,
+            'images' => ['product/old-foil.png'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $duplicate = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-022770',
+            'name' => 'Фольга алюминиевая для бани 50 мкм, 1,2×20 м (24 м²)',
+            'slug' => 'folga-aliuminievaia-dlia-bani-50-mkm-1220-m-24-m2',
+            'price' => 140,
+            'stock_qty' => 5,
+            'in_stock' => true,
+            'images' => ['img/products/sauna/aluminium-foil-50-micron-24m2-clean.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '7c6d9745-996d-11e9-b0c6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00002044',
+            'name' => 'Фольга 50 мкм (24м2)',
+            'price_byn' => 94.57,
+            'stock_quantity' => 5,
+            'stock_confirmed_at' => now(),
+            'product_id' => $duplicate->id,
+            'match_status' => 'matched',
+            'match_method' => 'manual_created',
+            'match_confidence' => 1,
+            'matched_at' => now(),
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-corrected-20261014-er',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $this->assertSame($existing->id, $item->fresh()->product_id);
+        $this->assertSame('manual_search', $item->fresh()->match_method);
+        $this->assertSame('140.00', $existing->fresh()->price);
+        $this->assertSame('5', (string) $existing->fresh()->stock_qty);
+        $this->assertTrue((bool) $existing->fresh()->in_stock);
+        $this->assertSame(['img/products/sauna/aluminium-foil-50-micron-24m2-clean.jpg'], $existing->fresh()->images);
+        $this->assertSame('50 мкм', collect($existing->fresh()->specs)->firstWhere('key', 'Толщина')['value']);
+        $this->assertFalse((bool) $duplicate->fresh()->is_active);
+        $this->assertTrue((bool) $duplicate->fresh()->is_archived);
+        $this->assertSame('0', (string) $duplicate->fresh()->stock_qty);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00002044',
+            'product_id' => $existing->id,
+            'product_sku' => 'PS-012.086',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
 }
