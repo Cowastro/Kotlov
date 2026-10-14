@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\CommercialDocuments\Pages\ListCommercialDocuments;
 use App\Filament\Widgets\CommercialDocumentsOverview;
+use App\Filament\Widgets\CommercialManagerPerformance;
 use App\Models\CommercialDocument;
 use App\Models\User;
 use App\Services\CommercialDocuments\CommercialDocumentAnalytics;
@@ -25,6 +26,9 @@ class CommercialDocumentAnalyticsTest extends TestCase
             'valid_until' => today()->addDay(),
         ]);
         CommercialDocument::query()->create([
+            'type' => 'quote', 'status' => 'needs_revision', 'total' => 1200,
+        ]);
+        CommercialDocument::query()->create([
             'type' => 'quote', 'status' => 'accepted', 'total' => 3000,
             'accepted_at' => now()->subDays(2),
         ]);
@@ -40,9 +44,9 @@ class CommercialDocumentAnalyticsTest extends TestCase
 
         $data = app(CommercialDocumentAnalytics::class)->summary();
 
-        $this->assertSame(1, $data['active_count']);
-        $this->assertSame(5000.0, $data['active_total']);
-        $this->assertSame(2, $data['needs_action_count']);
+        $this->assertSame(2, $data['active_count']);
+        $this->assertSame(6200.0, $data['active_total']);
+        $this->assertSame(3, $data['needs_action_count']);
         $this->assertSame(33.3, round((float) $data['conversion_percent'], 1));
         $this->assertSame(1, $data['won_count']);
         $this->assertSame(2, $data['lost_count']);
@@ -70,5 +74,26 @@ class CommercialDocumentAnalyticsTest extends TestCase
             ->assertSee('Требует действия')
             ->assertSee('Выиграно')
             ->assertSee('Потеряно');
+    }
+
+    public function test_manager_performance_widget_shows_conversion_and_won_total(): void
+    {
+        Carbon::setTestNow('2026-10-14 12:00:00');
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true, 'name' => 'Мария Продажи']);
+        CommercialDocument::query()->create([
+            'type' => 'quote', 'status' => 'accepted', 'manager_id' => $manager->id,
+            'accepted_at' => now(), 'total' => 4000,
+        ]);
+        CommercialDocument::query()->create([
+            'type' => 'quote', 'status' => 'rejected', 'manager_id' => $manager->id,
+            'closed_at' => now(), 'outcome_reason' => 'price', 'total' => 2000,
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(CommercialManagerPerformance::class)
+            ->assertSuccessful()
+            ->assertSee('Мария Продажи')
+            ->assertSee('50,0%')
+            ->assertSee('BYN');
     }
 }

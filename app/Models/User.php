@@ -150,6 +150,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Order::class);
     }
 
+    public function managedCommercialDocuments(): HasMany
+    {
+        return $this->hasMany(CommercialDocument::class, 'manager_id');
+    }
+
     public function managedOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'manager_id');

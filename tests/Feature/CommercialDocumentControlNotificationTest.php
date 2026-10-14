@@ -51,4 +51,23 @@ class CommercialDocumentControlNotificationTest extends TestCase
 
         $this->assertSame(1, $admin->notifications()->count());
     }
+
+    public function test_requested_revision_is_included_in_the_manager_control_queue(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $quote = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'needs_revision',
+            'manager_id' => $manager->id,
+            'total' => 1800,
+        ]);
+
+        $this->artisan('commercial-documents:notify-control')
+            ->expectsOutput('КП с отправленным напоминанием: 1')
+            ->assertSuccessful();
+
+        $notification = $manager->notifications()->firstOrFail();
+        $this->assertStringContainsString($quote->number, $notification->data['body']);
+        $this->assertStringContainsString('Создать новую редакцию', $notification->data['body']);
+    }
 }

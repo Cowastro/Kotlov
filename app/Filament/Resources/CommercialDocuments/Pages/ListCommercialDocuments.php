@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CommercialDocuments\Pages;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Widgets\CommercialDocumentsOverview;
+use App\Filament\Widgets\CommercialManagerPerformance;
 use App\Models\CommercialDocument;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
@@ -27,7 +28,7 @@ class ListCommercialDocuments extends ListRecords
 
     protected function getHeaderWidgets(): array
     {
-        return [CommercialDocumentsOverview::class];
+        return [CommercialDocumentsOverview::class, CommercialManagerPerformance::class];
     }
 
     public function getSubheading(): ?string
@@ -40,7 +41,8 @@ class ListCommercialDocuments extends ListRecords
         $needsAction = fn (Builder $query): Builder => $query
             ->where('type', 'quote')
             ->where(function (Builder $control): void {
-                $control->where(function (Builder $sent): void {
+                $control->where('status', 'needs_revision')
+                    ->orWhere(function (Builder $sent): void {
                     $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));
                 })->orWhere(function (Builder $accepted): void {
                     $accepted->where('status', 'accepted')->whereDoesntHave('order');
@@ -52,8 +54,8 @@ class ListCommercialDocuments extends ListRecords
                 ->modifyQueryUsing($needsAction)
                 ->badge($needsAction(CommercialDocument::query())->count() ?: null)->badgeColor('warning'),
             'active' => Tab::make('В работе')->icon('heroicon-o-clock')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', ['draft', 'sent']))
-                ->badge(CommercialDocument::query()->whereIn('status', ['draft', 'sent'])->count() ?: null),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', ['draft', 'sent', 'needs_revision']))
+                ->badge(CommercialDocument::query()->whereIn('status', ['draft', 'sent', 'needs_revision'])->count() ?: null),
             'won' => Tab::make('Выиграно')->icon('heroicon-o-check-circle')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', ['accepted', 'paid']))
                 ->badge(CommercialDocument::query()->whereIn('status', ['accepted', 'paid'])->count() ?: null)->badgeColor('success'),

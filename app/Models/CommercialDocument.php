@@ -17,6 +17,7 @@ class CommercialDocument extends Model
     public const STATUSES = [
         'draft' => 'Черновик',
         'sent' => 'Отправлен',
+        'needs_revision' => 'Нужна корректировка',
         'accepted' => 'Согласован',
         'paid' => 'Оплачен',
         'rejected' => 'Отказ клиента',
@@ -91,12 +92,17 @@ class CommercialDocument extends Model
 
     public function needsManagerControl(): bool
     {
-        return ($this->type === 'quote' && $this->status === 'sent' && $this->valid_until?->lte(today()->addDays(3)))
+        return ($this->type === 'quote' && $this->status === 'needs_revision')
+            || ($this->type === 'quote' && $this->status === 'sent' && $this->valid_until?->lte(today()->addDays(3)))
             || ($this->type === 'quote' && $this->status === 'accepted' && ! $this->order()->exists());
     }
 
     public function controlLabel(): string
     {
+        if ($this->type === 'quote' && $this->status === 'needs_revision') {
+            return 'Создать новую редакцию';
+        }
+
         if ($this->type === 'quote' && $this->status === 'accepted' && ! $this->order()->exists()) {
             return 'Создать заказ';
         }

@@ -507,6 +507,7 @@ class CommercialDocumentResource extends Resource
                 TextColumn::make('status')->label('Статус')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => match ($state) {
                         'sent', 'accepted', 'paid' => 'success',
+                        'needs_revision' => 'warning',
                         'rejected', 'cancelled' => 'danger',
                         'expired' => 'gray',
                         default => 'warning'
@@ -523,7 +524,7 @@ class CommercialDocumentResource extends Resource
                     ->badge()
                     ->color(fn (CommercialDocument $record): string => match ($record->controlLabel()) {
                         'Просрочено' => 'danger',
-                        'Истекает сегодня', 'Создать заказ' => 'warning',
+                        'Истекает сегодня', 'Создать заказ', 'Создать новую редакцию' => 'warning',
                         '—' => 'gray',
                         default => $record->needsManagerControl() ? 'info' : 'gray',
                     }),
@@ -534,7 +535,8 @@ class CommercialDocumentResource extends Resource
                 Filter::make('needs_control')
                     ->label('Требует действия')
                     ->query(fn (Builder $query): Builder => $query->where('type', 'quote')->where(function (Builder $control): void {
-                        $control->where(function (Builder $sent): void {
+                        $control->where('status', 'needs_revision')
+                            ->orWhere(function (Builder $sent): void {
                             $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));
                         })->orWhere(function (Builder $accepted): void {
                             $accepted->where('status', 'accepted')->whereDoesntHave('order');

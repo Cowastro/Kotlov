@@ -117,6 +117,28 @@ class ViewCommercialDocument extends ViewRecord
                     $this->record->refresh();
                     Notification::make()->success()->title('Отказ зафиксирован')->send();
                 }),
+            Action::make('request_revision')
+                ->label('Нужна корректировка')
+                ->icon('heroicon-o-pencil-square')
+                ->color('warning')
+                ->visible(fn (): bool => $this->record->type === 'quote'
+                    && in_array($this->record->status, ['sent', 'accepted'], true))
+                ->schema([
+                    Textarea::make('note')
+                        ->label('Что просит изменить клиент')
+                        ->placeholder('Например: заменить модель, пересчитать количество и срок поставки')
+                        ->required()
+                        ->rows(4),
+                ])
+                ->action(function (array $data): void {
+                    app(CommercialDocumentWorkflow::class)->requestRevision($this->record, $data['note']);
+                    $this->record->refresh();
+                    Notification::make()
+                        ->warning()
+                        ->title('Корректировка зафиксирована')
+                        ->body('Создайте новую редакцию — исходное КП останется в истории.')
+                        ->send();
+                }),
             Action::make('expire')
                 ->label('Срок истёк')
                 ->icon('heroicon-o-clock')

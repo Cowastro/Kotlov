@@ -165,6 +165,36 @@ class CommercialDocumentWorkflow
         });
     }
 
+    public function requestRevision(CommercialDocument $document, string $note): void
+    {
+        if ($document->type !== 'quote' || ! in_array($document->status, ['sent', 'accepted'], true)) {
+            throw new RuntimeException('Корректировку можно запросить только для отправленного или согласованного КП.');
+        }
+
+        $note = trim($note);
+        if ($note === '') {
+            throw new RuntimeException('Укажите, что именно требуется скорректировать.');
+        }
+
+        DB::transaction(function () use ($document, $note): void {
+            $document->forceFill([
+                'status' => 'needs_revision',
+                'accepted_at' => null,
+                'outcome_reason' => null,
+                'outcome_note' => $note,
+                'closed_at' => null,
+                'last_control_notified_at' => null,
+            ])->save();
+
+            $document->mailThread?->forceFill([
+                'sales_stage' => 'negotiation',
+                'status' => 'waiting_manager',
+                'next_follow_up_at' => now(),
+                'follow_up_note' => 'Подготовить новую редакцию КП: '.$note,
+            ])->save();
+        });
+    }
+
     public function expire(CommercialDocument $document): void
     {
         DB::transaction(function () use ($document): void {

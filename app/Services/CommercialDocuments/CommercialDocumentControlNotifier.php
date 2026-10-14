@@ -16,7 +16,9 @@ class CommercialDocumentControlNotifier
         $documents = CommercialDocument::query()
             ->with('manager')
             ->where(function ($control): void {
-                $control->where(function ($sent): void {
+                $control->where(function ($revision): void {
+                    $revision->where('type', 'quote')->where('status', 'needs_revision');
+                })->orWhere(function ($sent): void {
                     $sent->where('type', 'quote')->where('status', 'sent')
                         ->whereDate('valid_until', '<=', today()->addDays(3));
                 })->orWhere(function ($accepted): void {

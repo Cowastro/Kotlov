@@ -10,11 +10,12 @@ class CommercialDocumentAnalytics
     public function summary(): array
     {
         $periodStart = today()->subDays(29);
-        $activeQuotes = CommercialDocument::query()->where('type', 'quote')->where('status', 'sent');
+        $activeQuotes = CommercialDocument::query()->where('type', 'quote')->whereIn('status', ['sent', 'needs_revision']);
         $needsAction = CommercialDocument::query()
             ->where('type', 'quote')
             ->where(function ($control): void {
-                $control->where(function ($sent): void {
+                $control->where('status', 'needs_revision')
+                    ->orWhere(function ($sent): void {
                     $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));
                 })->orWhere(function ($accepted): void {
                     $accepted->where('status', 'accepted')->whereDoesntHave('order');

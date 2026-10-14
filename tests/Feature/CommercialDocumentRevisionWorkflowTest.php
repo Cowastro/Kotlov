@@ -93,6 +93,27 @@ class CommercialDocumentRevisionWorkflowTest extends TestCase
         $this->assertNotNull($invoice->fresh()->closed_at);
     }
 
+    public function test_manager_can_record_a_requested_correction_without_overwriting_the_sent_quote(): void
+    {
+        $thread = $this->thread();
+        $quote = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'sent',
+            'crm_mail_thread_id' => $thread->id,
+        ]);
+
+        app(CommercialDocumentWorkflow::class)->requestRevision($quote, 'Заменить модель и пересчитать доставку');
+
+        $quote->refresh();
+        $this->assertSame('needs_revision', $quote->status);
+        $this->assertSame('Заменить модель и пересчитать доставку', $quote->outcome_note);
+        $this->assertTrue($quote->needsManagerControl());
+        $this->assertSame('Создать новую редакцию', $quote->controlLabel());
+        $this->assertSame('negotiation', $thread->fresh()->sales_stage);
+        $this->assertSame('waiting_manager', $thread->fresh()->status);
+        $this->assertNotNull($thread->fresh()->next_follow_up_at);
+    }
+
     private function thread(): CrmMailThread
     {
         $mailbox = CrmMailbox::query()->create([
