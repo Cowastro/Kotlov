@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Facades\Storage;
 
 class SupplierSyncRun extends Model
@@ -26,6 +27,35 @@ class SupplierSyncRun extends Model
     public function changes(): HasMany
     {
         return $this->hasMany(SupplierSyncChange::class);
+    }
+
+    public function linkedSupplier(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Supplier::class,
+            SupplierSync::class,
+            'command',
+            'id',
+            'command',
+            'supplier_id',
+        );
+    }
+
+    public function changedSupplier(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            Supplier::class,
+            SupplierSyncChange::class,
+            'supplier_sync_run_id',
+            'id',
+            'id',
+            'supplier_id',
+        );
+    }
+
+    public function supplierForNavigation(): ?Supplier
+    {
+        return $this->linkedSupplier ?: $this->changedSupplier;
     }
 
     public function hasArchivedSource(): bool

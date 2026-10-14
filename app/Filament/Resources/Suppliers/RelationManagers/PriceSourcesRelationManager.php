@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Suppliers\RelationManagers;
 
+use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Models\SupplierSource;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -96,11 +97,15 @@ class PriceSourcesRelationManager extends RelationManager
                     ->boolean(),
             ])
             ->headerActions([
-                CreateAction::make()->label('Добавить прайс или остатки'),
+                CreateAction::make()
+                    ->label('Добавить прайс или остатки')
+                    ->visible(fn (): bool => SupplierResource::canEdit($this->getOwnerRecord())),
             ])
             ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
+                EditAction::make()
+                    ->visible(fn (): bool => SupplierResource::canEdit($this->getOwnerRecord())),
+                DeleteAction::make()
+                    ->visible(fn (): bool => SupplierResource::canEdit($this->getOwnerRecord())),
             ])
             ->emptyStateHeading('Прайсы пока не указаны')
             ->emptyStateDescription('Добавьте ссылку, формат и расписание обновления, чтобы менеджеры видели рабочий источник данных.');

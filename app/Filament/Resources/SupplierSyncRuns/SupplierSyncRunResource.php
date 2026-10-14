@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SupplierSyncRuns;
 
+use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Resources\SupplierSyncRuns\Pages\ListSupplierSyncRuns;
 use App\Models\SupplierSyncRun;
 use App\Services\SupplierSyncRunTextExporter;
@@ -13,6 +14,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 
 class SupplierSyncRunResource extends Resource
@@ -39,6 +41,11 @@ class SupplierSyncRunResource extends Resource
         return $schema->components([]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['linkedSupplier', 'changedSupplier']);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -52,8 +59,20 @@ class SupplierSyncRunResource extends Resource
                     ->label('Синхронизация')
                     ->searchable()
                     ->sortable()
-                    ->fontFamily('mono')
-                    ->description(fn (SupplierSyncRun $record): ?string => $record->supplier_names),
+                    ->fontFamily('mono'),
+
+                TextColumn::make('supplier_names')
+                    ->label('Поставщик')
+                    ->placeholder('—')
+                    ->icon('heroicon-o-truck')
+                    ->color(fn (SupplierSyncRun $record): string => $record->supplierForNavigation() ? 'primary' : 'gray')
+                    ->url(function (SupplierSyncRun $record): ?string {
+                        $supplier = $record->supplierForNavigation();
+
+                        return $supplier
+                            ? SupplierResource::getUrl('view', ['record' => $supplier], panel: 'admin')
+                            : null;
+                    }),
 
                 TextColumn::make('status')
                     ->label('Статус')

@@ -339,6 +339,7 @@ class SupplierResource extends Resource
                             : 'Настроить интеграцию')
                         ->icon(Heroicon::OutlinedSignal)
                         ->color('info')
+                        ->visible(fn (Supplier $record): bool => self::canEdit($record))
                         ->url(function (Supplier $record): string {
                             $source = $record->integrationSources
                                 ->firstWhere('driver', 'commerceml')
@@ -352,7 +353,8 @@ class SupplierResource extends Resource
                         ->label('Обновить курс НБРБ')
                         ->icon(Heroicon::OutlinedArrowPath)
                         ->color('info')
-                        ->visible(fn (Supplier $record) => $record->currency !== CurrencyPriceConverter::BASE_CURRENCY)
+                        ->visible(fn (Supplier $record): bool => self::canEdit($record)
+                            && $record->currency !== CurrencyPriceConverter::BASE_CURRENCY)
                         ->action(fn (Supplier $record) => self::refreshNbrbRate($record)),
                     self::automaticOrderTransferAction(),
                 ]),

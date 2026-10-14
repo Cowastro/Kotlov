@@ -9,8 +9,13 @@ use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Resources\Suppliers\SupplierResource;
+use App\Filament\Resources\SupplierSyncRuns\SupplierSyncRunResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\Order;
+use App\Models\Supplier;
+use App\Models\SupplierSync;
+use App\Models\SupplierSyncRun;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,6 +37,8 @@ class AdminManagerAccessTest extends TestCase
         $this->assertTrue($manager->canAccessPanel(Filament::getPanel('admin')));
         $this->assertTrue(OrderResource::canViewAny());
         $this->assertTrue(ContactRequestResource::canViewAny());
+        $this->assertTrue(SupplierResource::canViewAny());
+        $this->assertTrue(SupplierSyncRunResource::canViewAny());
         $this->assertFalse(OrderResource::canCreate());
         $this->assertTrue(OrderResource::canEdit(new Order));
         $this->assertFalse(OrderResource::canDelete(new Order));
@@ -73,6 +80,52 @@ class AdminManagerAccessTest extends TestCase
         $this->actingAs($manager)
             ->get(Dashboard::getUrl(panel: 'admin'))
             ->assertOk();
+    }
+
+    public function test_manager_can_follow_supplier_from_sync_journal_but_cannot_edit_it(): void
+    {
+        $manager = User::factory()->create([
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'manager-visible-supplier',
+            'name' => 'Поставщик для менеджера',
+            'is_active' => true,
+        ]);
+        SupplierSync::query()->create([
+            'supplier_id' => $supplier->id,
+            'key' => 'manager_visible_sync',
+            'name' => $supplier->name,
+            'code' => $supplier->code,
+            'title' => 'Тестовая синхронизация',
+            'command' => 'supplier:sync-manager-visible',
+            'is_active' => true,
+        ]);
+        SupplierSyncRun::query()->create([
+            'command' => 'supplier:sync-manager-visible',
+            'status' => 'success',
+            'supplier_names' => $supplier->name,
+            'started_at' => now(),
+            'finished_at' => now(),
+        ]);
+
+        $supplierUrl = SupplierResource::getUrl('view', ['record' => $supplier], panel: 'admin');
+
+        $this->actingAs($manager)
+            ->get(SupplierSyncRunResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText($supplier->name)
+            ->assertSee($supplierUrl, false);
+
+        $this->actingAs($manager)
+            ->get($supplierUrl)
+            ->assertOk();
+
+        $this->assertFalse(SupplierResource::canEdit($supplier));
+        $this->actingAs($manager)
+            ->get(SupplierResource::getUrl('edit', ['record' => $supplier], panel: 'admin'))
+            ->assertForbidden();
     }
 
     public function test_administrator_keeps_full_access_and_manager_role_is_assignable(): void
