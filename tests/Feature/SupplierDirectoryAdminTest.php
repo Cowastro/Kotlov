@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierSource;
 use App\Models\SupplierSync;
@@ -191,5 +193,47 @@ class SupplierDirectoryAdminTest extends TestCase
             'https://docs.google.com/spreadsheets/d/1Cucw7U8f2Qs6U7kcWZvrdwZitXgP17j5W0TcujUFiN8/edit?pli=1&gid=2059074837#gid=2059074837',
             $suppliers['maytek']->sources()->firstOrFail()->sourceUrl(),
         );
+    }
+
+    public function test_price_list_brand_migration_populates_brand_filter_for_known_and_inferred_suppliers(): void
+    {
+        $bania = Supplier::query()->updateOrCreate(['code' => 'bania'], ['name' => 'BANIA.by']);
+        $ligmet = Supplier::query()->updateOrCreate(['code' => 'ligmet'], ['name' => 'Лигмет груп']);
+        $thermostudio = Supplier::query()->updateOrCreate(['code' => 'thermostudio'], ['name' => 'Термостудия']);
+        $maitek = Supplier::query()->updateOrCreate(['code' => 'maitek-group'], ['name' => 'Майтек Групп']);
+        $other = Supplier::query()->create(['code' => 'price-derived', 'name' => 'Поставщик из товаров']);
+
+        $brands = collect([
+            ['name' => 'Теплодар', 'slug' => 'directory-teplodar'],
+            ['name' => 'Kratki', 'slug' => 'directory-kratki'],
+            ['name' => 'Bosch', 'slug' => 'directory-bosch'],
+            ['name' => 'СТЭН', 'slug' => 'directory-sten'],
+            ['name' => 'Бренд другого прайса', 'slug' => 'other-price-brand'],
+        ])->mapWithKeys(function (array $attributes): array {
+            $brand = Brand::query()->firstOrCreate(
+                ['name' => $attributes['name']],
+                ['slug' => $attributes['slug']],
+            );
+
+            return [$attributes['name'] => $brand];
+        });
+
+        $category = Category::query()->create(['name' => 'Тестовая категория', 'slug' => 'supplier-brand-test']);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brands['Бренд другого прайса']->id,
+            'supplier_id' => $other->id,
+            'name' => 'Товар другого поставщика',
+            'slug' => 'supplier-brand-derived-product',
+        ]);
+
+        $migration = require database_path('migrations/2026_10_14_150000_link_suppliers_to_price_list_brands.php');
+        $migration->up();
+
+        $this->assertTrue($bania->brands()->whereKey($brands['Теплодар']->id)->exists(), 'BANIA.by brand was not linked.');
+        $this->assertTrue($ligmet->brands()->whereKey($brands['Kratki']->id)->exists(), 'Ligmet brand was not linked.');
+        $this->assertTrue($thermostudio->brands()->whereKey($brands['Bosch']->id)->exists(), 'Thermostudio brand was not linked.');
+        $this->assertTrue($maitek->brands()->whereKey($brands['СТЭН']->id)->exists(), 'Maitek brand was not linked.');
+        $this->assertTrue($other->brands()->whereKey($brands['Бренд другого прайса']->id)->exists(), 'Inferred product brand was not linked.');
     }
 }
