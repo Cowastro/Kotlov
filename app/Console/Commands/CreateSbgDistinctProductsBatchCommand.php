@@ -5204,6 +5204,48 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // Santeh24 has the exact IWS 20A annealed pipe in stock at 18.53 BYN/m.
+    // OSN independently confirms its DN, diameters, wall, pressure and bend radius.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EP = [
+        'УТ-00002051' => [
+            'template_slug' => 'truba-eurotis-italiya-iz-nerzhaveyushhej-stali-34',
+            'allow_unmatched' => true,
+            'category_slug' => 'gofrirovanye-truby',
+            'external_id' => 'b322095c-9bb7-11e9-b0c6-1c1b0d1de7c2',
+            'external_sku' => 'IWS 20A',
+            'hydrate_external_sku' => true,
+            'fragments' => ['Труба гофр', 'SS304', 'Neptun IWS', '20A', 'отожженная'],
+            'brand' => [
+                'name' => 'Stahlmann',
+                'slug' => 'stahlmann',
+                'country' => 'Россия',
+            ],
+            'name' => 'Stahlmann Neptun IWS 20A Труба гофрированная AISI 304 DN20 отожжённая, 1 м',
+            'retail' => 18.53,
+            'images' => ['img/products/stahlmann/stahlmann-neptun-iws-20a-annealed.jpg'],
+            'source_url' => 'https://santeh24.by/catalog/shlangi_podvodka_gibkaya/shlangi_dlya_vody/truba_gofrirovannaya_iz_nerzhaveyushchey_stali/25794/',
+            'short' => 'Отожжённая гофрированная труба Stahlmann Neptun IWS 20A из нержавеющей стали AISI 304: DN20, Ø25,6 мм, 15 бар. Цена указана за 1 метр.',
+            'content' => '<p><strong>Stahlmann Neptun IWS 20A</strong> — отожжённая гофрированная труба из нержавеющей стали AISI 304 для водоснабжения и отопления.</p><p>Номинальный диаметр — DN20, наружный диаметр — 25,6 мм, внутренний — 21 мм. Отжиг делает трубу пластичной: её удобно прокладывать по сложной трассе с минимальным радиусом изгиба 40 мм без уменьшения проходного сечения.</p><p>Рабочее давление составляет 15 бар, рабочая температура — до 150 °C. Труба продаётся погонными метрами; для монтажа применяют совместимые фитинги Stahlmann / Neptun IWS.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гофрированная труба CSST'],
+                ['key' => 'Модель', 'value' => 'IWS 20A'],
+                ['key' => 'Исполнение', 'value' => 'Отожжённая'],
+                ['key' => 'Номинальный диаметр', 'value' => 'DN20'],
+                ['key' => 'Наружный диаметр', 'value' => '25,6 мм'],
+                ['key' => 'Внутренний диаметр', 'value' => '21 мм'],
+                ['key' => 'Толщина стенки', 'value' => '0,3 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь AISI 304'],
+                ['key' => 'Рабочее давление', 'value' => '15 бар'],
+                ['key' => 'Рабочая температура', 'value' => 'до 150 °C'],
+                ['key' => 'Минимальный радиус изгиба', 'value' => '40 мм'],
+                ['key' => 'Срок службы', 'value' => '30 лет'],
+                ['key' => 'Назначение', 'value' => 'Водоснабжение и отопление'],
+                ['key' => 'Единица продажи', 'value' => '1 погонный метр'],
+                ['key' => 'Бренд', 'value' => 'Stahlmann / Neptun IWS'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5354,6 +5396,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-em' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EM,
             'unmatched-researched-20261014-en' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EN,
             'unmatched-researched-20261014-eo' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EO,
+            'unmatched-researched-20261014-ep' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EP,
             default => null,
         };
 

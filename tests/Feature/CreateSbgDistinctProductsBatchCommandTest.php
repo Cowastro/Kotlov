@@ -10472,4 +10472,80 @@ XML;
             'is_active' => true,
         ]);
     }
+
+    public function test_it_creates_the_exact_stahlmann_neptun_iws_20a_annealed_pipe_per_metre(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-neptun-iws-20a',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $parent = Category::query()->create([
+            'name' => 'Трубы и фитинги',
+            'slug' => 'truby-i-fitingi',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Гофрированные трубы',
+            'slug' => 'gofrirovanye-truby',
+            'parent_id' => $parent->id,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-EUROTIS-PIPE-TEMPLATE',
+            'name' => 'Труба EUROTIS из нержавеющей стали 3/4',
+            'slug' => 'truba-eurotis-italiya-iz-nerzhaveyushhej-stali-34',
+            'price' => 49,
+            'images' => ['product/005/005763/765-truba-gofra.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'b322095c-9bb7-11e9-b0c6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00002051',
+            'external_sku' => null,
+            'name' => 'Труба гофр.из нерж.стали SS304 Neptun IWS 20A отожженная',
+            'price_byn' => null,
+            'stock_quantity' => 0.45,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-ep',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('18.53', $product->price);
+        // Product stock is the integer storefront summary; the exact fractional
+        // metre remains on the 1C source offer and drives positive availability.
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertSame('0.450', (string) $item->fresh()->stock_quantity);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+        $this->assertSame('IWS 20A', $item->fresh()->external_sku);
+        $this->assertSame('stahlmann', $product->brand->slug);
+        $this->assertSame('gofrirovanye-truby', $product->category->slug);
+        $this->assertSame('DN20', collect($product->specs)->firstWhere('key', 'Номинальный диаметр')['value']);
+        $this->assertSame('25,6 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр')['value']);
+        $this->assertSame('1 погонный метр', collect($product->specs)->firstWhere('key', 'Единица продажи')['value']);
+        $this->assertSame(['img/products/stahlmann/stahlmann-neptun-iws-20a-annealed.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/stahlmann/stahlmann-neptun-iws-20a-annealed.jpg'));
+        $this->assertStringContainsString('santeh24.by', $product->content_source_url);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'IWS 20A',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
 }
