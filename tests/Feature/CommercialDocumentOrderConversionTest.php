@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Events\NewOrderCreated;
+use App\Filament\Resources\CommercialDocuments\Pages\ViewCommercialDocument;
+use App\Filament\Resources\CrmCounterparties\Pages\ViewCrmCounterparty;
 use App\Models\CommercialDocument;
 use App\Models\CrmContact;
 use App\Models\CrmCounterparty;
@@ -11,6 +13,7 @@ use App\Models\User;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Livewire\Livewire;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -104,5 +107,39 @@ class CommercialDocumentOrderConversionTest extends TestCase
         $this->expectExceptionMessage('согласованного коммерческого предложения');
 
         app(CommercialDocumentWorkflow::class)->convertToOrder($quote, $manager);
+    }
+
+    public function test_manager_can_follow_the_order_from_quote_and_counterparty_cards(): void
+    {
+        Event::fake([NewOrderCreated::class]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $counterparty = CrmCounterparty::query()->create([
+            'type' => 'organization',
+            'classification' => 'b2b_partner',
+            'business_unit' => 'wholesale',
+            'status' => 'active',
+            'name' => 'Связанный клиент',
+            'source' => 'manual',
+        ]);
+        $quote = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'accepted',
+            'crm_counterparty_id' => $counterparty->id,
+            'client_company' => 'Связанный клиент',
+            'client_phone' => '+375291234567',
+        ]);
+        $quote->items()->create(['name' => 'Котёл', 'quantity' => 1, 'unit_price' => 1000]);
+        $order = app(CommercialDocumentWorkflow::class)->convertToOrder($quote->fresh(), $manager);
+
+        Livewire::actingAs($manager)
+            ->test(ViewCommercialDocument::class, ['record' => $quote->id])
+            ->assertSuccessful()
+            ->assertSee($order->number);
+
+        Livewire::actingAs($manager)
+            ->test(ViewCrmCounterparty::class, ['record' => $counterparty->id])
+            ->assertSuccessful()
+            ->assertSee('Заказы клиента')
+            ->assertSee($order->number);
     }
 }

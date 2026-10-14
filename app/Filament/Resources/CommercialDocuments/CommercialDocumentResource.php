@@ -7,6 +7,7 @@ use App\Filament\Resources\CommercialDocuments\Pages\EditCommercialDocument;
 use App\Filament\Resources\CommercialDocuments\Pages\ListCommercialDocuments;
 use App\Filament\Resources\CommercialDocuments\Pages\ViewCommercialDocument;
 use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
+use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CommercialDocument;
 use App\Models\CrmContact;
 use App\Models\CrmCounterparty;
@@ -75,7 +76,7 @@ class CommercialDocumentResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['manager', 'items', 'mailThread', 'clientCounterparty', 'clientContact']);
+        return parent::getEloquentQuery()->with(['manager', 'items', 'mailThread', 'clientCounterparty', 'clientContact', 'order']);
     }
 
     public static function form(Schema $schema): Schema
@@ -454,6 +455,10 @@ class CommercialDocumentResource extends Resource
                 TextEntry::make('outcome_reason')->label('Причина закрытия')->placeholder('—')
                     ->formatStateUsing(fn (?string $state): string => $state ? (CommercialDocument::OUTCOME_REASONS[$state] ?? $state) : '—'),
                 TextEntry::make('outcome_note')->label('Комментарий по результату')->placeholder('—')->columnSpan(2),
+                TextEntry::make('order.number')->label('Созданный заказ')->placeholder('Заказ ещё не создан')
+                    ->url(fn (CommercialDocument $record): ?string => $record->order
+                        ? OrderResource::getUrl('view', ['record' => $record->order])
+                        : null),
             ]),
             Section::make('Готовность к отправке')->schema([
                 TextEntry::make('readiness')
@@ -506,6 +511,11 @@ class CommercialDocumentResource extends Resource
                         default => 'warning'
                     }),
                 TextColumn::make('manager.name')->label('Менеджер')->placeholder('—'),
+                TextColumn::make('order.number')->label('Заказ')->placeholder('—')
+                    ->url(fn (CommercialDocument $record): ?string => $record->order
+                        ? OrderResource::getUrl('view', ['record' => $record->order])
+                        : null)
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('type')->label('Тип')->options(CommercialDocument::TYPES),

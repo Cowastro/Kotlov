@@ -7,8 +7,10 @@ use App\Filament\Resources\CrmCounterparties\Pages\CreateCrmCounterparty;
 use App\Filament\Resources\CrmCounterparties\Pages\EditCrmCounterparty;
 use App\Filament\Resources\CrmCounterparties\Pages\ListCrmCounterparties;
 use App\Filament\Resources\CrmCounterparties\Pages\ViewCrmCounterparty;
+use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CommercialDocument;
 use App\Models\CrmCounterparty;
+use App\Models\Order;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\EditAction;
@@ -165,6 +167,24 @@ class CrmCounterpartyResource extends Resource
                             ->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state),
                         TextEntry::make('total')->label('Сумма')->money('BYN'),
                         TextEntry::make('manager.name')->label('Менеджер')->placeholder('—'),
+                    ])
+                    ->columns(6),
+            ]),
+            Section::make('Заказы клиента')->schema([
+                RepeatableEntry::make('orders')
+                    ->label('')
+                    ->schema([
+                        TextEntry::make('number')
+                            ->label('Заказ')
+                            ->weight('bold')
+                            ->url(fn ($record): string => OrderResource::getUrl('view', ['record' => $record])),
+                        TextEntry::make('created_at')->label('Дата')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
+                        TextEntry::make('status')->label('Статус')->badge()
+                            ->formatStateUsing(fn (string $state): string => Order::STATUSES[$state] ?? $state),
+                        TextEntry::make('payment_status')->label('Оплата')->badge()
+                            ->formatStateUsing(fn (?string $state, Order $record): string => $record->paymentStatusLabel()),
+                        TextEntry::make('total')->label('Сумма')->money('BYN'),
+                        TextEntry::make('onec_order_number')->label('Номер 1С')->placeholder('Ещё не передан'),
                     ])
                     ->columns(6),
             ]),
