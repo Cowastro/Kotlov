@@ -206,6 +206,7 @@ jobs:
               audit-belomo)
                 "$PHP_BIN" artisan supplier:sync-belomo-pricelist \
                   --dry-run \
+                  --sync-elicon-retail \
                   --report=storage/app/reports/suppliers/belomo/current-audit.csv
                 ;;
               verify-commercial-pdf)
