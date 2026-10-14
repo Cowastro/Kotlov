@@ -10,6 +10,8 @@ use Illuminate\Support\Str;
 
 class SyncEliconGasMetersCommand extends Command
 {
+    private const MINIMUM_BELOMO_MARKUP_PERCENT = 20.0;
+
     protected $signature = 'supplier:sync-elicon-gas-meters
         {--apply : Write changes to the database}
         {--dry-run : Preview without writing changes to the database}
@@ -18,7 +20,7 @@ class SyncEliconGasMetersCommand extends Command
         {--no-images : Do not download product images}
         {--sleep=200 : Delay between product requests in milliseconds}';
 
-    protected $description = 'Scrape elicon.by gas meters and sync prices, cards, images, specs and product attributes.';
+    protected $description = 'Scrape elicon.by gas meters and sync cards while enforcing the BelOMO 20% retail markup floor.';
 
     private const SUPPLIER_CODE = 'elicon';
     private const CATEGORY_ID = 96;
@@ -28,7 +30,7 @@ class SyncEliconGasMetersCommand extends Command
     private string $supplierCurrency = CurrencyPriceConverter::BASE_CURRENCY;
     private float $supplierRate = 1.0;
 
-    /** @var array<int, array{compact:string,short:string}>|null */
+    /** @var array<int, array{compact:string,short:string,partner_price_byn:float}>|null */
     private ?array $allowedBelomoArticles = null;
 
     public function handle(): int
@@ -72,6 +74,7 @@ class SyncEliconGasMetersCommand extends Command
             $preview = [];
             foreach ($items as $item) {
                 $priceByn = CurrencyPriceConverter::convertToByn($item['price'], $this->supplierCurrency, $this->supplierRate);
+                $catalogPriceByn = $this->catalogRetailPrice($item['article'], $priceByn);
 
                 try {
                     $detail = $this->scrapeProduct($item['url']);
@@ -81,7 +84,7 @@ class SyncEliconGasMetersCommand extends Command
                             ? number_format($item['price'], 2, '.', '') . ' ' . $this->supplierCurrency
                             : 'no price',
                         'price_byn' => $priceByn !== null ? number_format($priceByn, 2, '.', '') : '—',
-                        'product' => $this->previewPriceAction($item, $priceByn),
+                        'product' => $this->previewPriceAction($item, $catalogPriceByn),
                         'images' => count(array_unique(array_filter(array_merge(
                             [$item['listing_image'] ?? null],
                             $detail['images_remote'] ?? []
@@ -96,7 +99,7 @@ class SyncEliconGasMetersCommand extends Command
                             ? number_format($item['price'], 2, '.', '') . ' ' . $this->supplierCurrency
                             : 'no price',
                         'price_byn' => $priceByn !== null ? number_format($priceByn, 2, '.', '') : '—',
-                        'product' => $this->previewPriceAction($item, $priceByn),
+                        'product' => $this->previewPriceAction($item, $catalogPriceByn),
                         'images' => 'error',
                         'attributes' => 'error',
                         'name' => mb_substr($item['name'], 0, 48),
@@ -135,6 +138,7 @@ class SyncEliconGasMetersCommand extends Command
                 $detail = $this->scrapeProduct($item['url']);
                 $merged = array_merge($item, $detail);
                 $merged['price_byn'] = CurrencyPriceConverter::convertToByn($merged['price'], $this->supplierCurrency, $this->supplierRate);
+                $merged['catalog_price_byn'] = $this->catalogRetailPrice($merged['article'], $merged['price_byn']);
 
                 $product = $this->findProduct($merged);
                 $isNew = ! $product;
@@ -180,7 +184,7 @@ class SyncEliconGasMetersCommand extends Command
             return self::FAILURE;
         }
 
-        $stats = ['updated' => 0, 'unchanged' => 0, 'no_price' => 0, 'not_matched' => 0];
+        $stats = ['updated' => 0, 'unchanged' => 0, 'minimum_floor' => 0, 'no_price' => 0, 'not_matched' => 0];
 
         foreach ($items as $i => $item) {
             $this->line(sprintf('[%d/%d] %s', $i + 1, count($items), $item['article']));
@@ -195,19 +199,28 @@ class SyncEliconGasMetersCommand extends Command
                 continue;
             }
 
+            $catalogPriceByn = $this->catalogRetailPrice($item['article'], $priceByn);
+            if ($catalogPriceByn === null) {
+                $stats['no_price']++;
+                continue;
+            }
+            if ($catalogPriceByn > $priceByn) {
+                $stats['minimum_floor']++;
+            }
+
             $product = $this->findProduct($item);
             if (! $product) {
                 $stats['not_matched']++;
                 continue;
             }
 
-            $changed = abs((float) $product->price - $priceByn) >= 0.01;
+            $changed = abs((float) $product->price - $catalogPriceByn) >= 0.01;
             if ($changed) {
                 DB::table('products')->where('id', $product->id)->update([
-                    'price' => $priceByn,
+                    'price' => $catalogPriceByn,
                     'updated_at' => $now,
                 ]);
-                $this->line(sprintf('  %.2f -> %.2f BYN', (float) $product->price, $priceByn));
+                $this->line(sprintf('  %.2f -> %.2f BYN', (float) $product->price, $catalogPriceByn));
             }
 
             DB::table('supplier_products')
@@ -280,6 +293,7 @@ class SyncEliconGasMetersCommand extends Command
         $this->allowedBelomoArticles ??= array_map(fn (array $row): array => [
             'compact' => $priceList->compactArticle($row['article']),
             'short' => $priceList->shortArticle($row['article']),
+            'partner_price_byn' => (float) $row['partner_price_byn'],
         ], $priceList->rows());
         $compact = $priceList->compactArticle($article);
         $short = $priceList->shortArticle($article);
@@ -287,6 +301,32 @@ class SyncEliconGasMetersCommand extends Command
         return collect($this->allowedBelomoArticles)->contains(
             fn (array $allowed): bool => $allowed['compact'] === $compact || $allowed['short'] === $short,
         );
+    }
+
+    private function catalogRetailPrice(string $article, ?float $eliconPriceByn): ?float
+    {
+        if ($eliconPriceByn === null) {
+            return null;
+        }
+
+        $priceList = new BelomoPriceList();
+        $compact = $priceList->compactArticle($article);
+        $short = $priceList->shortArticle($article);
+        $row = collect($this->allowedBelomoArticles ??= array_map(fn (array $priceRow): array => [
+            'compact' => $priceList->compactArticle($priceRow['article']),
+            'short' => $priceList->shortArticle($priceRow['article']),
+            'partner_price_byn' => (float) $priceRow['partner_price_byn'],
+        ], $priceList->rows()))->first(
+            fn (array $allowed): bool => $allowed['compact'] === $compact || $allowed['short'] === $short,
+        );
+        if (! $row) {
+            return round($eliconPriceByn, 2);
+        }
+
+        $costWithVat = round($row['partner_price_byn'] * 1.20, 2);
+        $minimum = ceil(($costWithVat * (1 + self::MINIMUM_BELOMO_MARKUP_PERCENT / 100)) * 100) / 100;
+
+        return max(round($eliconPriceByn, 2), $minimum);
     }
 
     private function productNodes(string $html): array
@@ -432,7 +472,7 @@ class SyncEliconGasMetersCommand extends Command
 
     private function upsertProduct(array $item, ?object $product, array $images, $now): int
     {
-        $price = $item['price_byn'] ?? null;
+        $price = $item['catalog_price_byn'] ?? $item['price_byn'] ?? null;
         $attrs = $item['attributes'] ?? [];
 
         if (empty($images) && $product?->images) {

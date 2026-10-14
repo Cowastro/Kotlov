@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Console\Commands\SyncBelomoPriceListCommand;
+use App\Console\Commands\SyncEliconGasMetersCommand;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -14,6 +15,23 @@ class BelomoCatalogCompletionTest extends TestCase
         $method = new ReflectionMethod($command, 'safeRetailPrice');
 
         $this->assertSame(204.87, $method->invoke($command, 153.65, 10.0));
+    }
+
+    public function test_minimum_retail_price_adds_vat_and_twenty_percent_markup(): void
+    {
+        $command = new SyncBelomoPriceListCommand();
+        $method = new ReflectionMethod($command, 'minimumRetailPrice');
+
+        $this->assertSame(221.26, $method->invoke($command, 153.65));
+    }
+
+    public function test_elicon_channel_cannot_lower_catalog_below_belomo_markup_floor(): void
+    {
+        $command = new SyncEliconGasMetersCommand();
+        $method = new ReflectionMethod($command, 'catalogRetailPrice');
+
+        $this->assertSame(221.26, $method->invoke($command, '1009.00.00.000-00', 165.39));
+        $this->assertSame(250.0, $method->invoke($command, '1009.00.00.000-00', 250.0));
     }
 
     public function test_image_donor_is_selected_only_from_the_same_article_family(): void

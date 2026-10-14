@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 
 class SyncBelomoPriceListCommand extends Command
 {
+    private const MINIMUM_RETAIL_MARKUP_PERCENT = 20.0;
+
     protected $signature = 'supplier:sync-belomo-pricelist
         {--apply : Записать поставщика, оптовые цены и связи}
         {--dry-run : Только аудит без записи}
@@ -19,7 +21,7 @@ class SyncBelomoPriceListCommand extends Command
         {--archive-artifacts : Перенести полезные связи и архивировать карточки БелОМО, которых нет в прайсе}
         {--report= : Путь CSV-отчёта}';
 
-    protected $description = 'Import the static BelOMO wholesale price list without VAT, preserving Elicon retail prices.';
+    protected $description = 'Import the BelOMO wholesale price list and keep retail at Elicon price or a 20% markup floor, whichever is higher.';
 
     private const SUPPLIER_CODE = 'sanbusinessgroup';
     private const SYNC_KEY = 'belomo_static_pricelist';
@@ -110,10 +112,11 @@ class SyncBelomoPriceListCommand extends Command
                 $retail = $this->eliconRetailPlan($fresh, $priceList);
                 $this->applyRetailPlan($retail['rows'], $now);
                 $this->info(sprintf(
-                    'Розница: точных цен Эликона %d; по идентичной модели %d; по стандартной наценке %d; изменено %d.',
+                    'Розница: точных цен Эликона %d; по идентичной модели %d; по стандартной наценке %d; поднято до минимальной наценки 20%% %d; изменено %d.',
                     $retail['metrics']['exact'],
                     $retail['metrics']['same_model'],
                     $retail['metrics']['markup'],
+                    $retail['metrics']['minimum_floor'],
                     $retail['metrics']['update'],
                 ));
             }
@@ -199,6 +202,7 @@ class SyncBelomoPriceListCommand extends Command
             'product_id', 'sku', 'retail_price_byn', 'margin_byn', 'is_active',
             'images_count', 'has_description', 'specs_count', 'card_ready',
             'target_retail_price_byn', 'retail_price_method', 'derived_markup_percent',
+            'minimum_retail_price_byn', 'minimum_markup_applied',
         ], ';');
         foreach ($classified as $item) {
             $product = $item['product'];
@@ -217,6 +221,8 @@ class SyncBelomoPriceListCommand extends Command
                 $retail ? number_format((float) $retail['target_price'], 2, '.', '') : '',
                 $retail['method'] ?? '',
                 isset($retail['markup_percent']) ? number_format((float) $retail['markup_percent'], 2, '.', '') : '',
+                isset($retail['minimum_price']) ? number_format((float) $retail['minimum_price'], 2, '.', '') : '',
+                ! empty($retail['minimum_floor_applied']) ? '1' : '0',
             ], ';');
         }
         foreach ($artifacts as $product) {
@@ -225,7 +231,7 @@ class SyncBelomoPriceListCommand extends Command
                 number_format((float) $product->price, 2, '.', ''), '', (bool) $product->is_active ? '1' : '0',
                 count($this->jsonArray($product->images ?? null)),
                 (filled($product->short_description ?? null) || filled($product->content ?? null)) ? '1' : '0',
-                count($this->jsonArray($product->specs ?? null)), '0', '', '', '',
+                count($this->jsonArray($product->specs ?? null)), '0', '', '', '', '', '',
             ], ';');
         }
         fclose($handle);
@@ -235,7 +241,7 @@ class SyncBelomoPriceListCommand extends Command
     private function ensureSupplier($now): int
     {
         $existing = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
-        $priceListNote = 'Прайс БелОМО от 15.09.2026 используется для оптовых цен счетчиков; розница поступает отдельно с сайта Эликона.';
+        $priceListNote = 'Прайс БелОМО от 15.09.2026 используется для оптовых цен счетчиков; розница берётся с Эликона, но не ниже оптовой цены с НДС и наценкой 20%.';
         if ($existing) {
             $notes = trim((string) $existing->notes);
             if (! str_contains($notes, $priceListNote)) {
@@ -470,7 +476,7 @@ class SyncBelomoPriceListCommand extends Command
 
             $price = round((float) $offer->price_byn, 2);
             $markup = $this->markupPercent((float) $item['row']['partner_price_byn'], $price);
-            $plans[$index] = $this->retailPlanRow($item, $price, 'elicon_exact', $markup);
+            $plans[$index] = $this->retailPlanRow($item, $price, 'elicon_exact');
             $exactPricesByName[$this->normalizedModelName($item['row']['name'])][] = $price;
             if ($markup >= 0) {
                 $markupsByVariant[$this->retailVariantKey($item['row'])][] = $markup;
@@ -492,7 +498,6 @@ class SyncBelomoPriceListCommand extends Command
                     $item,
                     $price,
                     'elicon_same_model',
-                    $this->markupPercent((float) $item['row']['partner_price_byn'], $price),
                 );
                 continue;
             }
@@ -501,11 +506,11 @@ class SyncBelomoPriceListCommand extends Command
             $familyMarkups = $markupsByFamily[$this->articleFamily($item['row']['article'])] ?? [];
             $markup = $this->median($variantMarkups) ?? $this->median($familyMarkups) ?? $globalMarkup;
             $price = round($this->priceWithVat((float) $item['row']['partner_price_byn']) * (1 + $markup / 100), 2);
-            $plans[$index] = $this->retailPlanRow($item, $price, 'derived_markup', $markup);
+            $plans[$index] = $this->retailPlanRow($item, $price, 'derived_markup');
         }
 
         $plans = array_values($plans);
-        $metrics = ['exact' => 0, 'same_model' => 0, 'markup' => 0, 'update' => 0, 'unchanged' => 0];
+        $metrics = ['exact' => 0, 'same_model' => 0, 'markup' => 0, 'minimum_floor' => 0, 'update' => 0, 'unchanged' => 0];
         foreach ($plans as $plan) {
             $metric = match ($plan['method']) {
                 'elicon_exact' => 'exact',
@@ -513,6 +518,9 @@ class SyncBelomoPriceListCommand extends Command
                 default => 'markup',
             };
             $metrics[$metric]++;
+            if ($plan['minimum_floor_applied']) {
+                $metrics['minimum_floor']++;
+            }
             $metrics[$plan['changed'] ? 'update' : 'unchanged']++;
         }
 
@@ -535,19 +543,31 @@ class SyncBelomoPriceListCommand extends Command
         });
     }
 
-    private function retailPlanRow(array $item, float $price, string $method, float $markup): array
+    private function retailPlanRow(array $item, float $price, string $method): array
     {
         $current = (float) ($item['product']->price ?? 0);
+        $minimumPrice = $this->minimumRetailPrice((float) $item['row']['partner_price_byn']);
+        $minimumFloorApplied = $price < $minimumPrice;
+        $target = max($price, $minimumPrice);
 
         return [
             'product_id' => (int) $item['product']->id,
             'article' => $item['row']['article'],
             'current_price' => $current,
-            'target_price' => $price,
+            'target_price' => $target,
             'method' => $method,
-            'markup_percent' => round($markup, 2),
-            'changed' => abs($current - $price) >= 0.01,
+            'markup_percent' => round($this->markupPercent((float) $item['row']['partner_price_byn'], $target), 2),
+            'minimum_price' => $minimumPrice,
+            'minimum_floor_applied' => $minimumFloorApplied,
+            'changed' => abs($current - $target) >= 0.01,
         ];
+    }
+
+    private function minimumRetailPrice(float $priceWithoutVat): float
+    {
+        $costWithVat = $this->priceWithVat($priceWithoutVat);
+
+        return ceil(($costWithVat * (1 + self::MINIMUM_RETAIL_MARKUP_PERCENT / 100)) * 100) / 100;
     }
 
     private function markupPercent(float $priceWithoutVat, float $retailPrice): float
@@ -778,7 +798,7 @@ class SyncBelomoPriceListCommand extends Command
             if (! $product || (float) ($product->price ?? 0) <= 0) $metrics['retail_missing']++;
             if (! $product || count($this->jsonArray($product->images ?? null)) === 0) $metrics['images_missing']++;
             if (! $product || (! filled($product->short_description ?? null) && ! filled($product->content ?? null))) $metrics['description_missing']++;
-            if ($product && (float) ($product->price ?? 0) > 0 && (float) $product->price < $this->priceWithVat($item['row']['partner_price_byn'])) $metrics['margin_conflict']++;
+            if ($product && (float) ($product->price ?? 0) > 0 && (float) $product->price < $this->minimumRetailPrice((float) $item['row']['partner_price_byn'])) $metrics['margin_conflict']++;
         }
         return $metrics;
     }
