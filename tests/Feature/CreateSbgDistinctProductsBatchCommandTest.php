@@ -10693,7 +10693,14 @@ XML;
         $this->assertSame('50 мкм', collect($existing->fresh()->specs)->firstWhere('key', 'Толщина')['value']);
         $this->assertFalse((bool) $duplicate->fresh()->is_active);
         $this->assertTrue((bool) $duplicate->fresh()->is_archived);
+        $this->assertSame('archived-duplicate-kotlov-022770-foil-24m2', $duplicate->fresh()->slug);
         $this->assertSame('0', (string) $duplicate->fresh()->stock_qty);
+        $this->assertDatabaseHas('redirects', [
+            'from_url' => '/otdelka-dlya-parnoj/folga-aliuminievaia-dlia-bani-50-mkm-1220-m-24-m2',
+            'to_url' => '/otdelka-dlya-parnoj/folga-dlya-bani-alyuminievaya-50mkm-namotka-24m2',
+            'status_code' => 301,
+            'is_active' => true,
+        ]);
         $this->assertDatabaseHas('supplier_product_mappings', [
             'supplier_code' => $source->matchingSupplierCode(),
             'supplier_article' => 'УТ-00002044',

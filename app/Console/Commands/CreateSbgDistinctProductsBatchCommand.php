@@ -5287,6 +5287,8 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'merge_created_duplicate' => true,
             'external_id' => '7c6d9745-996d-11e9-b0c6-1c1b0d1de7c2',
             'duplicate_sku' => 'KOTLOV-022770',
+            'duplicate_slug' => 'folga-aliuminievaia-dlia-bani-50-mkm-1220-m-24-m2',
+            'archived_duplicate_slug' => 'archived-duplicate-kotlov-022770-foil-24m2',
             'existing_sku' => 'PS-012.086',
             'existing_slug' => 'folga-dlya-bani-alyuminievaya-50mkm-namotka-24m2',
             'fragments' => ['Фольга', '50 мкм', '24м2'],
@@ -5501,11 +5503,21 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 }
 
                 $item = $items->first();
+                $duplicatePath = '/otdelka-dlya-parnoj/'.$rule['duplicate_slug'];
+                $canonicalPath = '/otdelka-dlya-parnoj/'.$rule['existing_slug'];
+                $redirectExists = DB::table('redirects')
+                    ->where('from_url', $duplicatePath)
+                    ->where('to_url', $canonicalPath)
+                    ->where('status_code', 301)
+                    ->where('is_active', true)
+                    ->exists();
                 $alreadyMerged = (int) $item->product_id === (int) $existing->id
                     && $item->match_status === 'matched'
                     && $item->match_method === 'manual_search'
                     && ! $duplicate->is_active
-                    && $duplicate->is_archived;
+                    && $duplicate->is_archived
+                    && $duplicate->slug === $rule['archived_duplicate_slug']
+                    && $redirectExists;
                 if ($alreadyMerged) {
                     $stats['already']++;
                     $details[] = [$code, $existing->sku, 'already', 'duplicate already merged into canonical card'];
@@ -5513,15 +5525,23 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                     continue;
                 }
 
+                $isOriginalMerge = $item->match_status === 'matched'
+                    && $item->match_method === 'manual_created'
+                    && (int) $item->product_id === (int) $duplicate->id
+                    && $duplicate->is_active
+                    && ! $duplicate->is_archived
+                    && $duplicate->slug === $rule['duplicate_slug'];
+                $isRedirectCompletion = $item->match_status === 'matched'
+                    && $item->match_method === 'manual_search'
+                    && (int) $item->product_id === (int) $existing->id
+                    && ! $duplicate->is_active
+                    && $duplicate->is_archived
+                    && $duplicate->slug === $rule['duplicate_slug'];
                 $valid = $item->source?->name === self::SOURCE_NAME
                     && $item->source?->partnerName() === self::PARTNER_NAME
                     && $item->external_id === $rule['external_id']
-                    && $item->match_status === 'matched'
-                    && $item->match_method === 'manual_created'
-                    && (int) $item->product_id === (int) $duplicate->id
                     && (float) $item->stock_quantity > 0
-                    && $duplicate->is_active
-                    && ! $duplicate->is_archived
+                    && ($isOriginalMerge || $isRedirectCompletion)
                     && $this->containsAll($item->name, $rule['fragments'])
                     && $this->hasNoKnownWatermarkSource($rule['images']);
                 if (! $valid) {
@@ -5534,7 +5554,8 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                 $stats['ready']++;
                 if ($apply) {
                     DB::transaction(function () use (
-                        $item, $existing, $duplicate, $rule, $manualMatchRecorder, $availability
+                        $item, $existing, $duplicate, $rule, $duplicatePath, $canonicalPath,
+                        $manualMatchRecorder, $availability
                     ): void {
                         $this->refreshExistingProduct($existing, $rule, $rule['images']);
                         $item->forceFill([
@@ -5548,11 +5569,22 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                         ])->save();
                         $manualMatchRecorder->record($item->fresh());
                         $duplicate->forceFill([
+                            'slug' => $rule['archived_duplicate_slug'],
                             'stock_qty' => 0,
                             'in_stock' => false,
                             'is_active' => false,
                             'is_archived' => true,
                         ])->save();
+                        DB::table('redirects')->updateOrInsert(
+                            ['from_url' => $duplicatePath],
+                            [
+                                'to_url' => $canonicalPath,
+                                'status_code' => 301,
+                                'is_active' => true,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ],
+                        );
                         $availability->refresh($existing->id);
                         $availability->refresh($duplicate->id);
                     });
