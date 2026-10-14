@@ -7,12 +7,14 @@ use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Models\Category;
+use App\Models\CrmMailMessage;
 use App\Services\CommercialDocuments\QuickCommercialOfferSaver;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -28,6 +30,8 @@ use Throwable;
 class ViewCrmMailThread extends ViewRecord
 {
     protected static string $resource = CrmMailThreadResource::class;
+
+    public ?int $forwardMessageId = null;
 
     public function mount(int|string $record): void
     {
@@ -110,6 +114,91 @@ class ViewCrmMailThread extends ViewRecord
                         Notification::make()->success()->title('Ответ отправлен')->send();
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('Письмо не отправлено')->body($exception->getMessage())->send();
+                    }
+                }),
+            Action::make('forward')
+                ->label('Переслать')
+                ->icon('heroicon-o-arrow-right')
+                ->color('gray')
+                ->visible(fn (): bool => $this->record->status !== 'draft')
+                ->fillForm(fn (): array => $this->forwardFormData())
+                ->schema([
+                    Select::make('address_book_to')
+                        ->label('Адресная книга — кому')
+                        ->options(fn (): array => CrmMailThreadResource::addressBookOptions())
+                        ->multiple()->searchable()->preload(),
+                    TagsInput::make('recipients')
+                        ->label('Кому')
+                        ->placeholder('recipient@example.com')
+                        ->helperText('Укажите хотя бы одного получателя вручную или выберите его из адресной книги.'),
+                    Select::make('address_book_cc')
+                        ->label('Адресная книга — копия')
+                        ->options(fn (): array => CrmMailThreadResource::addressBookOptions())
+                        ->multiple()->searchable()->preload(),
+                    TagsInput::make('cc')
+                        ->label('Копия (CC)')
+                        ->placeholder('copy@example.com'),
+                    TextInput::make('subject')
+                        ->label('Тема')
+                        ->required()
+                        ->maxLength(998),
+                    Textarea::make('body')
+                        ->label('Текст письма')
+                        ->rows(14)
+                        ->required()
+                        ->maxLength(50000),
+                    CheckboxList::make('original_attachments')
+                        ->label('Вложения исходного письма')
+                        ->options(fn (): array => $this->forwardAttachmentOptions())
+                        ->visible(fn (): bool => $this->forwardAttachmentOptions() !== [])
+                        ->columns(1),
+                    FileUpload::make('attachments')
+                        ->label('Добавить вложения')
+                        ->disk('local')
+                        ->directory('crm-mail-attachments')
+                        ->visibility('private')
+                        ->multiple()->maxFiles(10)->maxSize(15360)
+                        ->storeFileNamesIn('attachment_file_names')
+                        ->helperText('До 10 дополнительных файлов, каждый не более 15 МБ.'),
+                ])
+                ->modalHeading('Переслать письмо')
+                ->modalDescription('Получатели пересылки не изменят клиента, указанного в карточке переписки.')
+                ->modalSubmitActionLabel('Переслать')
+                ->modalWidth('4xl')
+                ->action(function (array $data): void {
+                    try {
+                        $message = $this->forwardSourceMessage();
+                        $recipients = CrmMailThreadResource::mergeRecipients($data, 'recipients', 'address_book_to');
+                        $cc = CrmMailThreadResource::mergeRecipients($data, 'cc', 'address_book_cc');
+                        $originalAttachments = $this->selectedForwardAttachments(
+                            $message,
+                            $data['original_attachments'] ?? [],
+                        );
+                        $attachments = array_merge(
+                            array_column($originalAttachments, 'path'),
+                            array_values($data['attachments'] ?? []),
+                        );
+                        $attachmentNames = collect($originalAttachments)
+                            ->mapWithKeys(fn (array $attachment): array => [$attachment['path'] => $attachment['name']])
+                            ->merge($data['attachment_file_names'] ?? [])
+                            ->all();
+
+                        app(CrmMailSender::class)->forward(
+                            $this->record,
+                            $message,
+                            $recipients,
+                            $data['subject'],
+                            $data['body'],
+                            auth()->user(),
+                            $cc,
+                            $attachments,
+                            $attachmentNames,
+                        );
+                        $this->forwardMessageId = null;
+                        $this->record->refresh();
+                        Notification::make()->success()->title('Письмо переслано')->send();
+                    } catch (Throwable $exception) {
+                        Notification::make()->danger()->title('Письмо не переслано')->body($exception->getMessage())->send();
                     }
                 }),
             Action::make('create_quote')
@@ -313,6 +402,70 @@ class ViewCrmMailThread extends ViewRecord
                     $this->redirect(CrmMailThreadResource::getUrl('index'));
                 }),
         ];
+    }
+
+    public function openForward(int $messageId): void
+    {
+        $this->record->messages()->findOrFail($messageId);
+        $this->forwardMessageId = $messageId;
+        $this->mountAction('forward');
+    }
+
+    private function forwardSourceMessage(): CrmMailMessage
+    {
+        $query = $this->record->messages();
+
+        if ($this->forwardMessageId !== null) {
+            return $query->findOrFail($this->forwardMessageId);
+        }
+
+        return $query->latest('received_at')->latest('id')->firstOrFail();
+    }
+
+    /** @return array<string, mixed> */
+    private function forwardFormData(): array
+    {
+        $message = $this->forwardSourceMessage();
+        $attachments = $this->forwardAttachmentOptions();
+
+        return [
+            'recipients' => [],
+            'cc' => [],
+            'subject' => preg_match('/^fwd?\s*:/iu', (string) $message->subject)
+                ? (string) $message->subject
+                : 'Fwd: '.($message->subject ?: 'Без темы'),
+            'body' => app(CrmMailSender::class)->forwardedText($message),
+            'original_attachments' => array_keys($attachments),
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function forwardAttachmentOptions(): array
+    {
+        return collect($this->forwardSourceMessage()->metadata['attachments'] ?? [])
+            ->filter(fn (mixed $attachment): bool => is_array($attachment)
+                && filled($attachment['path'] ?? null)
+                && str_starts_with((string) $attachment['path'], 'crm-mail-attachments/'))
+            ->mapWithKeys(fn (array $attachment): array => [
+                (string) $attachment['path'] => (string) ($attachment['name'] ?? basename((string) $attachment['path'])),
+            ])
+            ->all();
+    }
+
+    /** @return list<array{path: string, name: string}> */
+    private function selectedForwardAttachments(CrmMailMessage $message, array $selectedPaths): array
+    {
+        $selectedPaths = array_fill_keys(array_map('strval', $selectedPaths), true);
+
+        return collect($message->metadata['attachments'] ?? [])
+            ->filter(fn (mixed $attachment): bool => is_array($attachment)
+                && isset($selectedPaths[(string) ($attachment['path'] ?? '')]))
+            ->map(fn (array $attachment): array => [
+                'path' => (string) $attachment['path'],
+                'name' => (string) ($attachment['name'] ?? basename((string) $attachment['path'])),
+            ])
+            ->values()
+            ->all();
     }
 
     private function supplierEmailCardUrl(): ?string

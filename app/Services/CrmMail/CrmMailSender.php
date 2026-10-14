@@ -182,6 +182,125 @@ class CrmMailSender
         return $message;
     }
 
+    public function forward(
+        CrmMailThread $thread,
+        CrmMailMessage $source,
+        array $recipients,
+        string $subject,
+        string $body,
+        User $user,
+        array $cc = [],
+        array $attachments = [],
+        array $attachmentNames = [],
+    ): CrmMailMessage {
+        $mailbox = $thread->mailbox;
+
+        if ($source->thread_id !== $thread->id) {
+            throw new RuntimeException('Исходное письмо не относится к этой переписке.');
+        }
+        if (! $mailbox || ! $mailbox->is_enabled) {
+            throw new RuntimeException('Почтовый ящик отключён или не найден.');
+        }
+
+        $recipients = $this->normalizeAddresses($recipients);
+        $cc = array_values(array_diff($this->normalizeAddresses($cc), $recipients));
+        if ($recipients === []) {
+            throw new RuntimeException('Укажите хотя бы одного корректного получателя пересылки.');
+        }
+
+        $subject = trim($subject);
+        if ($subject === '') {
+            throw new RuntimeException('Укажите тему письма.');
+        }
+
+        $messageId = Str::uuid().'@'.parse_url(config('app.url'), PHP_URL_HOST);
+        $htmlBody = $this->brandedHtml($body, $user);
+        $plainBody = $this->brandedText($body, $user);
+        $attachmentMetadata = collect($attachments)->values()->map(function (mixed $path, int $index) use ($attachmentNames): array {
+            $path = (string) $path;
+
+            return [
+                'path' => $path,
+                'name' => (string) ($attachmentNames[$path] ?? $attachmentNames[$index] ?? basename($path)),
+            ];
+        })->filter(fn (array $file): bool => str_starts_with($file['path'], 'crm-mail-attachments/'))
+            ->unique('path')->values()->all();
+
+        $email = (new Email)
+            ->from(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
+            ->replyTo(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
+            ->to(...$recipients)
+            ->subject($subject)
+            ->text($plainBody)
+            ->html($htmlBody);
+        if ($cc !== []) {
+            $email->cc(...$cc);
+        }
+        $this->attachMetadata($email, $attachmentMetadata);
+        $email->getHeaders()->addIdHeader('Message-ID', $messageId);
+
+        $this->mailer($mailbox)->send($email);
+
+        $message = CrmMailMessage::create([
+            'thread_id' => $thread->id,
+            'mailbox_id' => $mailbox->id,
+            'sent_by_user_id' => $user->id,
+            'message_id' => $messageId,
+            'direction' => 'outgoing',
+            'from_name' => $mailbox->name,
+            'from_email' => $mailbox->email,
+            'to' => collect($recipients)->map(fn (string $email): array => ['name' => null, 'email' => $email])->all(),
+            'cc' => collect($cc)->map(fn (string $email): array => ['name' => null, 'email' => $email])->all(),
+            'subject' => $subject,
+            'text_body' => $plainBody,
+            'html_body' => $htmlBody,
+            'attachments_count' => count($attachmentMetadata),
+            'is_read' => true,
+            'sent_at' => now(),
+            'received_at' => now(),
+            'metadata' => [
+                'attachments' => $attachmentMetadata,
+                'forwarded_message_id' => $source->id,
+            ],
+        ]);
+
+        $thread->forceFill([
+            'assigned_user_id' => $thread->assigned_user_id ?: $user->id,
+            'messages_count' => $thread->messages_count + 1,
+            'last_message_at' => now(),
+            'handled_at' => now(),
+        ])->save();
+
+        return $message;
+    }
+
+    public function forwardedText(CrmMailMessage $message): string
+    {
+        $date = ($message->received_at ?? $message->sent_at)?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?? 'не указана';
+        $from = trim(collect([$message->from_name, $message->from_email])->filter()->implode(' <'));
+        if ($message->from_name && $message->from_email) {
+            $from .= '>';
+        }
+        $recipients = collect($message->to ?? [])->pluck('email')->filter()->implode(', ');
+        $originalBody = trim((string) ($message->text_body ?: strip_tags((string) $message->html_body)));
+
+        return "\n\n---------- Пересылаемое сообщение ----------\n"
+            .'От: '.($from ?: 'не указан')."\n"
+            .'Дата: '.$date."\n"
+            .'Кому: '.($recipients ?: 'не указано')."\n"
+            .'Тема: '.($message->subject ?: 'Без темы')."\n\n"
+            .$originalBody;
+    }
+
+    /** @return list<string> */
+    private function normalizeAddresses(array $addresses): array
+    {
+        return collect($addresses)
+            ->map(fn (mixed $address): string => mb_strtolower(trim((string) $address)))
+            ->filter(fn (string $address): bool => filter_var($address, FILTER_VALIDATE_EMAIL) !== false)
+            ->unique()->values()->all();
+    }
+
     /** @return list<string> */
     private function messageAddresses(?array $records): array
     {

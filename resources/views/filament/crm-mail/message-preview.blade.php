@@ -34,7 +34,16 @@
                 @endif
             </div>
         </div>
-        <time class="crm-mail-date">{{ $date?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?: '—' }}</time>
+        <div class="crm-mail-header-actions">
+            <time class="crm-mail-date">{{ $date?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?: '—' }}</time>
+            <button
+                type="button"
+                class="crm-mail-forward-button"
+                wire:click="openForward({{ (int) $message->id }})"
+                wire:loading.attr="disabled"
+                wire:target="openForward({{ (int) $message->id }})"
+            >↪ Переслать</button>
+        </div>
     </header>
 
     <div class="crm-mail-subject">{{ $message->subject ?: 'Без темы' }}</div>
@@ -120,6 +129,10 @@
         .crm-mail-address, .crm-mail-recipients, .crm-mail-date { color: rgb(161 161 170); font-size: 13px; }
         .crm-mail-recipients { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 5px; }
         .crm-mail-date { white-space: nowrap; }
+        .crm-mail-header-actions { display: grid; justify-items: end; gap: 9px; }
+        .crm-mail-forward-button { border: 1px solid rgb(82 82 91); border-radius: 8px; padding: 6px 10px; color: rgb(212 212 216); font-size: 13px; font-weight: 600; transition: border-color .15s ease, background-color .15s ease; }
+        .crm-mail-forward-button:hover { border-color: rgb(161 161 170); background: rgb(63 63 70 / .6); }
+        .crm-mail-forward-button:disabled { cursor: wait; opacity: .55; }
         .crm-mail-subject { padding: 18px 22px 0; color: rgb(250 250 250); font-size: 18px; font-weight: 700; line-height: 1.4; }
         .crm-mail-body { max-width: 1050px; padding: 18px 22px 26px; color: rgb(228 228 231); font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; }
         .crm-mail-body p { margin: 0 0 1em; }
@@ -143,6 +156,6 @@
         a.crm-mail-attachment { color: rgb(96 165 250); text-decoration: none; }
         a.crm-mail-attachment:hover { border-color: rgb(96 165 250); background: rgb(59 130 246 / .1); }
         .crm-mail-attachment small { margin-left: 6px; color: rgb(161 161 170); }
-        @media (max-width: 700px) { .crm-mail-header { grid-template-columns: 36px minmax(0, 1fr); } .crm-mail-avatar { width: 36px; height: 36px; } .crm-mail-date { grid-column: 2; } .crm-mail-subject, .crm-mail-body { padding-left: 16px; padding-right: 16px; } }
+        @media (max-width: 700px) { .crm-mail-header { grid-template-columns: 36px minmax(0, 1fr); } .crm-mail-avatar { width: 36px; height: 36px; } .crm-mail-header-actions { grid-column: 2; justify-items: start; } .crm-mail-subject, .crm-mail-body { padding-left: 16px; padding-right: 16px; } }
     </style>
 @endonce
