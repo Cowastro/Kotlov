@@ -50,6 +50,11 @@ class CommercialDocumentWorkflow
             }
 
             $locked->load('items');
+            $isPaid = CommercialDocument::query()
+                ->where('source_document_id', $locked->id)
+                ->where('type', 'invoice')
+                ->where('status', 'paid')
+                ->exists();
             $order = Order::query()->create([
                 'commercial_document_id' => $locked->id,
                 'crm_counterparty_id' => $locked->crm_counterparty_id,
@@ -66,7 +71,7 @@ class CommercialDocumentWorkflow
                 'delivery_type' => (float) $locked->delivery_price > 0 ? 'transport' : 'pickup',
                 'delivery_price' => $locked->delivery_price,
                 'payment_type' => 'invoice',
-                'payment_status' => 'pending',
+                'payment_status' => $isPaid ? 'paid' : 'pending',
                 'discount' => $locked->discount_total,
                 'subtotal' => $locked->subtotal,
                 'total' => $locked->total,
@@ -185,11 +190,40 @@ class CommercialDocumentWorkflow
             throw new RuntimeException('Оплату можно отметить только для счёта.');
         }
 
-        $document->forceFill([
-            'status' => 'paid',
-            'accepted_at' => $document->accepted_at ?: now(),
-            'closed_at' => now(),
-        ])->save();
+        DB::transaction(function () use ($document): void {
+            $invoice = CommercialDocument::query()
+                ->lockForUpdate()
+                ->with(['sourceDocument.order', 'sourceDocument.mailThread'])
+                ->findOrFail($document->id);
+
+            $invoice->forceFill([
+                'status' => 'paid',
+                'accepted_at' => $invoice->accepted_at ?: now(),
+                'closed_at' => now(),
+            ])->save();
+
+            $quote = $invoice->sourceDocument;
+            if (! $quote || $quote->type !== 'quote') {
+                return;
+            }
+
+            $quote->forceFill([
+                'status' => 'accepted',
+                'accepted_at' => $quote->accepted_at ?: now(),
+                'outcome_reason' => null,
+                'outcome_note' => null,
+                'closed_at' => null,
+            ])->save();
+
+            $quote->mailThread?->forceFill([
+                'sales_stage' => 'won',
+                'status' => 'closed',
+                'next_follow_up_at' => null,
+                'follow_up_note' => 'Счёт по коммерческому предложению оплачен.',
+            ])->save();
+
+            $quote->order?->forceFill(['payment_status' => 'paid'])->save();
+        });
     }
 
     public function createRevision(CommercialDocument $document, User $user): CommercialDocument

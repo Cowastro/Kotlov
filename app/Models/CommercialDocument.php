@@ -130,6 +130,11 @@ class CommercialDocument extends Model
         return $this->belongsTo(self::class, 'source_document_id');
     }
 
+    public function derivedDocuments(): HasMany
+    {
+        return $this->hasMany(self::class, 'source_document_id');
+    }
+
     public function revisionOf(): BelongsTo
     {
         return $this->belongsTo(self::class, 'revision_of_id');

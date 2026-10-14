@@ -219,4 +219,47 @@ class CommercialDocumentOrderConversionTest extends TestCase
         $this->assertSame('processing', $order->fresh()->status);
         $this->assertNotNull($delivery->queued_at);
     }
+
+    public function test_paid_invoice_updates_its_quote_and_existing_order(): void
+    {
+        Event::fake([NewOrderCreated::class]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $quote = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'accepted',
+            'client_company' => 'ООО «Оплаченный клиент»',
+            'client_phone' => '+375291234567',
+        ]);
+        $quote->items()->create(['name' => 'Печь', 'quantity' => 1, 'unit_price' => 3000]);
+
+        $workflow = app(CommercialDocumentWorkflow::class);
+        $order = $workflow->convertToOrder($quote->fresh(), $manager);
+        $invoice = $workflow->convertToInvoice($quote->fresh(), $manager);
+        $workflow->markPaid($invoice);
+
+        $this->assertSame('paid', $invoice->fresh()->status);
+        $this->assertSame('accepted', $quote->fresh()->status);
+        $this->assertSame('paid', $order->fresh()->payment_status);
+    }
+
+    public function test_order_created_after_invoice_payment_is_immediately_paid(): void
+    {
+        Event::fake([NewOrderCreated::class]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $quote = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'sent',
+            'client_company' => 'ООО «Клиент с предоплатой»',
+            'client_phone' => '+375291234567',
+        ]);
+        $quote->items()->create(['name' => 'Печь', 'quantity' => 1, 'unit_price' => 3200]);
+
+        $workflow = app(CommercialDocumentWorkflow::class);
+        $invoice = $workflow->convertToInvoice($quote->fresh(), $manager);
+        $workflow->markPaid($invoice);
+        $order = $workflow->convertToOrder($quote->fresh(), $manager);
+
+        $this->assertSame('accepted', $quote->fresh()->status);
+        $this->assertSame('paid', $order->payment_status);
+    }
 }
