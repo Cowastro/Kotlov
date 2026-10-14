@@ -962,4 +962,35 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             ->expectsOutputToContain('metric.observations=0')
             ->assertSuccessful();
     }
+
+    public function test_twenty_second_catalog_zero_price_batch_uses_exact_production_skus(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Тест двадцать второго пакета нулевых цен каталога',
+            'slug' => 'catalog-zero-price-batch-twenty-two-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+
+        foreach (['PS-000.900', 'PS-001.163', 'PS-001.164', 'PS-001.165', 'PS-001.166'] as $index => $sku) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => 'Точная production-модель '.$sku,
+                'slug' => 'catalog-zero-price-batch-twenty-two-'.$index,
+                'sku' => $sku,
+                'price' => 0,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+        }
+
+        $this->artisan('catalog:apply-market-price-batch', [
+            'batch' => '2026-10-14-catalog-zero-022',
+        ])
+            ->expectsOutputToContain('metric.status=dry_run')
+            ->expectsOutputToContain('metric.products=5')
+            ->expectsOutputToContain('metric.observations=0')
+            ->assertSuccessful();
+    }
 }
