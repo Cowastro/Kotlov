@@ -42,6 +42,7 @@ class CommercialDocument extends Model
         'client_name', 'client_company', 'client_legal_name', 'client_email', 'client_phone', 'client_unp', 'client_address',
         'issued_at', 'valid_until', 'currency', 'subtotal', 'discount_total', 'delivery_price', 'total',
         'vat_rate', 'payment_terms', 'delivery_terms', 'notes', 'seller_snapshot', 'sent_at', 'accepted_at', 'closed_at',
+        'last_control_notified_at',
     ];
 
     protected $casts = [
@@ -50,6 +51,7 @@ class CommercialDocument extends Model
         'sent_at' => 'datetime',
         'accepted_at' => 'datetime',
         'closed_at' => 'datetime',
+        'last_control_notified_at' => 'datetime',
         'ai_assisted' => 'boolean',
         'seller_snapshot' => 'array',
         'subtotal' => 'decimal:2',

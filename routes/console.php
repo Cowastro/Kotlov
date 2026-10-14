@@ -33,6 +33,12 @@ Schedule::command('commercial-documents:expire-quotes')
     ->withoutOverlapping(10)
     ->appendOutputTo(storage_path('logs/commercial-documents.log'));
 
+Schedule::command('commercial-documents:notify-control')
+    ->dailyAt('09:00')
+    ->timezone('Europe/Minsk')
+    ->withoutOverlapping(10)
+    ->appendOutputTo(storage_path('logs/commercial-documents.log'));
+
 // Черновики попадают в кабинет только у поставщиков, для которых администратор
 // отдельно включил автоматическую передачу после успешного контрольного периода.
 // У всех существующих поставщиков настройка по умолчанию выключена.
