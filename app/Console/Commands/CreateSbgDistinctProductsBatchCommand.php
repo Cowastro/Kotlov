@@ -3571,6 +3571,40 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_DISPUTED_20261014_DF = [
+        'УТ-00000455' => [
+            'document_dispute' => true,
+            'external_id' => 'b5470393-1f62-11e9-bad6-1c1b0d1de7c2',
+            'expected_price_byn' => 39.34,
+            'fragments' => ['КСРУ-180'],
+            'reason' => 'Краткое обозначение «КСРУ-180» не раскрывает производителя и тип изделия. В открытых каталогах оно пересекается с несовместимыми товарами: дымоходными коленами UMET KSRU, коленом Darco KSR диаметром 180 мм и электротехническими корпусами КСРУ. Цена 1С 39,34 BYN не подтверждает ни одну из этих идентификаций, поэтому создавать карточку, назначать характеристики и изображение небезопасно.',
+            'required_data' => [
+                'бренд или производитель',
+                'артикул производителя',
+                'штрихкод',
+                'фотография маркировки или упаковки',
+                'тип изделия и назначение',
+                'диаметр и угол поворота, если это элемент дымохода',
+                'материал и толщина стенки',
+                'полное товарное наименование',
+            ],
+            'evidence' => [
+                [
+                    'url' => 'https://www.umet.pl/pdf/Katalog-UMET-SPS-2015.pdf',
+                    'finding' => 'Каталог UMET использует обозначение KSRU для 90-градусных ревизионных дымоходных колен, но не подтверждает изделие KSRU-180 из строки 1С.',
+                ],
+                [
+                    'url' => 'https://kaminu.dp.ua/p3092483625-koleno-reviziej-darco.html',
+                    'finding' => 'Darco предлагает ревизионное колено диаметром 180 мм, однако его обозначение KSR 180/90-CZ 2 отличается от КСРУ-180.',
+                ],
+                [
+                    'url' => 'https://www.itergroup.ru/korpus-sborno-razborniy-universalniy-ksru/',
+                    'finding' => 'Аббревиатура КСРУ также применяется к электротехническим корпусам, что подтверждает неоднозначность исходного наименования.',
+                ],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3685,6 +3719,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-dc' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DC,
             'unmatched-researched-20261014-dd' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DD,
             'unmatched-researched-20261014-de' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DE,
+            'unmatched-disputed-20261014-df' => self::BATCH_UNMATCHED_DISPUTED_20261014_DF,
             default => null,
         };
 
@@ -3725,6 +3760,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                     continue;
                 }
 
+                $normalizedPrice = $item->normalizedPriceByn();
                 $valid = $item->source?->name === self::SOURCE_NAME
                     && $item->source?->partnerName() === self::PARTNER_NAME
                     && $item->match_status === 'unmatched'
@@ -3733,7 +3769,9 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                     && $item->external_id === $rule['external_id']
                     && blank($item->external_sku)
                     && blank($item->barcode)
-                    && $item->normalizedPriceByn() === null
+                    && (isset($rule['expected_price_byn'])
+                        ? $normalizedPrice !== null && abs($normalizedPrice - (float) $rule['expected_price_byn']) < 0.01
+                        : $normalizedPrice === null)
                     && $this->containsAll($item->name, $rule['fragments']);
 
                 if (! $valid) {

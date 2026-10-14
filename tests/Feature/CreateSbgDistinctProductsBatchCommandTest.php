@@ -8312,4 +8312,64 @@ XML;
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_documents_ksru_180_as_a_priced_but_unidentifiable_research_dispute(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-ksru-180',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'b5470393-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000455',
+            'external_sku' => null,
+            'barcode' => null,
+            'name' => 'КСРУ-180',
+            'price_byn' => 39.34,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-df',
+            '--code' => ['УТ-00000455'],
+        ])->assertSuccessful();
+        $this->assertSame('unmatched', $item->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-df',
+            '--code' => ['УТ-00000455'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $dispute = $item->candidates[0];
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertNull($item->product_id);
+        $this->assertSame('ambiguous', $item->match_status);
+        $this->assertSame('manual_research_unresolved', $item->match_method);
+        $this->assertSame('research_dispute', $dispute['type']);
+        $this->assertStringContainsString('КСРУ-180', $dispute['reason']);
+        $this->assertStringContainsString('39,34 BYN', $dispute['reason']);
+        $this->assertContains('артикул производителя', $dispute['required_data']);
+        $this->assertContains('фотография маркировки или упаковки', $dispute['required_data']);
+        $this->assertCount(3, $dispute['evidence']);
+        $this->assertSame('УТ-00000455', $dispute['source_identity']['external_code']);
+        $this->assertSame('КСРУ-180', $dispute['source_identity']['name']);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-df',
+            '--code' => ['УТ-00000455'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame('manual_research_unresolved', $item->fresh()->match_method);
+    }
 }
