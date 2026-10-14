@@ -54,9 +54,9 @@
 </script>
 @if ($browserFallback)
 <script type="module">
-    import * as pdfjsLib from '/vendor/pdfjs/pdf.min.js';
+    import * as pdfjsLib from '/js/pdfjs/pdf.min.js';
 
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/js/pdfjs/pdf.worker.min.js';
 
     const status = document.getElementById('recognition-status');
     const textarea = document.getElementById('pdf-text');
