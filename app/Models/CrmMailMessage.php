@@ -37,4 +37,15 @@ class CrmMailMessage extends Model
     {
         return $this->belongsTo(User::class, 'sent_by_user_id');
     }
+
+    public function isLatestInThread(): bool
+    {
+        $latestId = static::query()
+            ->where('thread_id', $this->thread_id)
+            ->orderByDesc('received_at')
+            ->orderByDesc('id')
+            ->value('id');
+
+        return (int) $latestId === (int) $this->id;
+    }
 }

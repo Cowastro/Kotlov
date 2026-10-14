@@ -402,6 +402,14 @@ class ViewCrmMailThread extends ViewRecord
         $this->mountAction('forward');
     }
 
+    public function openReply(int $messageId): void
+    {
+        $message = $this->record->messages()->findOrFail($messageId);
+        abort_unless($message->isLatestInThread(), 404);
+
+        $this->mountAction('reply');
+    }
+
     private function forwardSourceMessage(): CrmMailMessage
     {
         $query = $this->record->messages();

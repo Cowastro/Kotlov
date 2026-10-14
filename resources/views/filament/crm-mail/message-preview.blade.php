@@ -36,13 +36,24 @@
         </div>
         <div class="crm-mail-header-actions">
             <time class="crm-mail-date">{{ $date?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?: '—' }}</time>
-            <button
-                type="button"
-                class="crm-mail-forward-button"
-                wire:click="openForward({{ (int) $message->id }})"
-                wire:loading.attr="disabled"
-                wire:target="openForward({{ (int) $message->id }})"
-            >↪ Переслать</button>
+            <div class="crm-mail-message-actions">
+                @if ($isLatestMessage && $message->direction !== 'draft')
+                    <button
+                        type="button"
+                        class="crm-mail-reply-button"
+                        wire:click="openReply({{ (int) $message->id }})"
+                        wire:loading.attr="disabled"
+                        wire:target="openReply({{ (int) $message->id }})"
+                    >↩ Ответить</button>
+                @endif
+                <button
+                    type="button"
+                    class="crm-mail-forward-button"
+                    wire:click="openForward({{ (int) $message->id }})"
+                    wire:loading.attr="disabled"
+                    wire:target="openForward({{ (int) $message->id }})"
+                >↪ Переслать</button>
+            </div>
         </div>
     </header>
 
@@ -130,9 +141,11 @@
         .crm-mail-recipients { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 5px; }
         .crm-mail-date { white-space: nowrap; }
         .crm-mail-header-actions { display: grid; justify-items: end; gap: 9px; }
-        .crm-mail-forward-button { border: 1px solid rgb(82 82 91); border-radius: 8px; padding: 6px 10px; color: rgb(212 212 216); font-size: 13px; font-weight: 600; transition: border-color .15s ease, background-color .15s ease; }
-        .crm-mail-forward-button:hover { border-color: rgb(161 161 170); background: rgb(63 63 70 / .6); }
-        .crm-mail-forward-button:disabled { cursor: wait; opacity: .55; }
+        .crm-mail-message-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+        .crm-mail-forward-button, .crm-mail-reply-button { border: 1px solid rgb(82 82 91); border-radius: 8px; padding: 6px 10px; color: rgb(212 212 216); font-size: 13px; font-weight: 600; transition: border-color .15s ease, background-color .15s ease; }
+        .crm-mail-forward-button:hover, .crm-mail-reply-button:hover { border-color: rgb(161 161 170); background: rgb(63 63 70 / .6); }
+        .crm-mail-reply-button { border-color: rgb(217 119 6); color: rgb(251 191 36); }
+        .crm-mail-forward-button:disabled, .crm-mail-reply-button:disabled { cursor: wait; opacity: .55; }
         .crm-mail-subject { padding: 18px 22px 0; color: rgb(250 250 250); font-size: 18px; font-weight: 700; line-height: 1.4; }
         .crm-mail-body { max-width: 1050px; padding: 18px 22px 26px; color: rgb(228 228 231); font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; }
         .crm-mail-body p { margin: 0 0 1em; }

@@ -172,6 +172,7 @@ class CrmMailThreadResource extends Resource
                                 'message' => $record,
                                 'safeHtml' => app(CrmMailMessagePreview::class)->compactHtml($record),
                                 'originalHtml' => filled($record->html_body) ? (string) $record->html_body : null,
+                                'isLatestMessage' => $record->isLatestInThread(),
                             ])
                             ->columnSpanFull(),
                     ]),

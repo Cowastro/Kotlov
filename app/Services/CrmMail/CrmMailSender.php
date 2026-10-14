@@ -282,7 +282,7 @@ class CrmMailSender
             $from .= '>';
         }
         $recipients = collect($message->to ?? [])->pluck('email')->filter()->implode(', ');
-        $originalBody = trim((string) ($message->text_body ?: strip_tags((string) $message->html_body)));
+        $originalBody = app(CrmMailMessagePreview::class)->plainText($message);
 
         return "\n\n---------- Пересылаемое сообщение ----------\n"
             .'От: '.($from ?: 'не указан')."\n"

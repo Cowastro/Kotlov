@@ -10,6 +10,7 @@ use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
+use App\Services\CrmMail\CrmMailSender;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -111,5 +112,66 @@ class CrmMailReplyActionTest extends TestCase
 
         $this->assertSame(1, CrmContact::query()->count());
         $this->assertSame(1, CrmContactPoint::query()->where('normalized_value', 'anna@example.com')->count());
+    }
+
+    public function test_latest_message_opens_reply_action(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::query()->create([
+            'name' => 'KOTLOV',
+            'email' => 'latest-reply@kotlov.by',
+            'username' => 'latest-reply@kotlov.by',
+            'is_enabled' => true,
+        ]);
+        $thread = CrmMailThread::query()->create([
+            'mailbox_id' => $mailbox->id,
+            'thread_key' => hash('sha256', 'latest-reply@example.com'),
+            'participant_name' => 'Клиент',
+            'participant_email' => 'latest-reply@example.com',
+            'subject' => 'Запрос',
+            'status' => 'new',
+        ]);
+        CrmMailMessage::query()->create([
+            'thread_id' => $thread->id,
+            'mailbox_id' => $mailbox->id,
+            'direction' => 'incoming',
+            'from_email' => 'latest-reply@example.com',
+            'subject' => 'Запрос',
+            'text_body' => 'Первое письмо',
+            'received_at' => now()->subMinute(),
+        ]);
+        $latest = CrmMailMessage::query()->create([
+            'thread_id' => $thread->id,
+            'mailbox_id' => $mailbox->id,
+            'direction' => 'incoming',
+            'from_email' => 'latest-reply@example.com',
+            'subject' => 'Re: Запрос',
+            'text_body' => 'Последнее письмо',
+            'received_at' => now(),
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(ViewCrmMailThread::class, ['record' => $thread->getRouteKey()])
+            ->call('openReply', $latest->id)
+            ->assertActionMounted('reply');
+    }
+
+    public function test_forwarded_html_contains_readable_text_without_css(): void
+    {
+        $message = new CrmMailMessage([
+            'from_name' => 'Поставщик',
+            'from_email' => 'supplier@example.com',
+            'to' => [['email' => 'info@kotlov.by']],
+            'subject' => 'Заказ поставщику',
+            'text_body' => null,
+            'html_body' => '<html><head><style>tr.R4 { height: 46px; } td { border: #000 2px solid; }</style></head><body><h1>Заказ № 929412</h1><table><tr><td>Хомут трубный</td><td>4 шт.</td></tr></table></body></html>',
+        ]);
+
+        $text = app(CrmMailSender::class)->forwardedText($message);
+
+        $this->assertStringContainsString('Заказ № 929412', $text);
+        $this->assertStringContainsString('Хомут трубный', $text);
+        $this->assertStringNotContainsString('tr.R4', $text);
+        $this->assertStringNotContainsString('border:', $text);
     }
 }

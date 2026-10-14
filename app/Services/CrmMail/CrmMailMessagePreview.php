@@ -10,14 +10,29 @@ class CrmMailMessagePreview
 {
     public function compactHtml(CrmMailMessage $message, int $maxLength = 12000): string
     {
+        $text = $this->plainText($message);
+
+        if ($text === '') {
+            return '<p class="crm-mail-empty">Текст письма отсутствует.</p>';
+        }
+
+        if (mb_strlen($text) > $maxLength) {
+            $text = rtrim(mb_substr($text, 0, $maxLength))."\n\n… Письмо сокращено для быстрого просмотра. Полная HTML-версия доступна ниже.";
+        }
+
+        return nl2br(e($text));
+    }
+
+    public function plainText(CrmMailMessage $message, ?int $maxLength = null): string
+    {
         if (filled($message->html_body)) {
             $html = preg_replace(
-                '/<(style|script|head)\b[^>]*>.*?<\/\1\s*>/isu',
+                '/<(style|script|head|noscript|svg)\b[^>]*>.*?<\/\1\s*>/isu',
                 ' ',
                 (string) $message->html_body,
             );
             $html = preg_replace(
-                '/<(?:br\s*\/?|\/p|\/div|\/li|\/tr|\/h[1-6])\s*>/iu',
+                '/<(?:br\s*\/?|\/p|\/div|\/li|\/tr|\/td|\/th|\/h[1-6])\s*>/iu',
                 "\n",
                 (string) $html,
             );
@@ -29,15 +44,11 @@ class CrmMailMessagePreview
         $text = trim((string) preg_replace("/[\t ]+\n/u", "\n", $text));
         $text = (string) preg_replace("/\n{4,}/u", "\n\n\n", $text);
 
-        if ($text === '') {
-            return '<p class="crm-mail-empty">Текст письма отсутствует.</p>';
+        if ($maxLength !== null && mb_strlen($text) > $maxLength) {
+            return rtrim(mb_substr($text, 0, $maxLength));
         }
 
-        if (mb_strlen($text) > $maxLength) {
-            $text = rtrim(mb_substr($text, 0, $maxLength))."\n\n… Письмо сокращено для быстрого просмотра. Полная HTML-версия доступна ниже.";
-        }
-
-        return nl2br(e($text));
+        return $text;
     }
 
     public function html(CrmMailMessage $message): string
