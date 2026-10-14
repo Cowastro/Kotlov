@@ -8256,4 +8256,60 @@ XML;
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_creates_the_exact_siemens_gdb331_2e_linear_damper_actuator(): void
+    {
+        $source = IntegrationSource::query()->create(['code' => 'onec-sbg-unmatched-siemens-gdb331-2e', 'name' => '1С СанБизнесГруп', 'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'], 'is_active' => true, 'update_stock' => true]);
+        $category = Category::query()->firstOrCreate(['slug' => 'regulyatory'], ['name' => 'Регуляторы', 'parent_id' => 0]);
+        Product::query()->firstOrCreate(['slug' => 'kontroller-salus-pc11'], ['category_id' => $category->id, 'sku' => 'KOTLOV-003041', 'name' => 'Контроллер Salus PC11', 'price' => 205, 'images' => ['img/products/salus/template.jpg'], 'is_active' => true, 'is_archived' => false]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'siemens-gdb331-2e-production-row',
+            'external_code' => 'УТ-00000459',
+            'name' => 'Линейный привод АС240В, 3-поз.125НМ 150с Siemens',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-de', '--code' => ['УТ-00000459']])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-de', '--code' => ['УТ-00000459'], '--apply' => true])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product()->sole();
+        $brand = Brand::query()->where('slug', 'siemens')->sole();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame('GDB331.2E', $item->external_sku);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertSame('Siemens GDB331.2E Линейный привод воздушной заслонки, 230 В', $product->name);
+        $this->assertSame($brand->id, $product->brand_id);
+        $this->assertSame('443.00', $product->price);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('125 Н', collect($product->specs)->firstWhere('key', 'Линейное усилие')['value']);
+        $this->assertSame('230 В AC', collect($product->specs)->firstWhere('key', 'Напряжение питания')['value']);
+        $this->assertSame('7612914003386', collect($product->specs)->firstWhere('key', 'GTIN')['value']);
+        $this->assertSame(['img/products/siemens/siemens-gdb331-2e.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/siemens/siemens-gdb331-2e.jpg'));
+        $this->assertStringContainsString('hvac.de', $product->content_source_url);
+        $this->assertStringNotContainsString('125 н·м', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'GDB331.2E',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', ['--batch' => 'unmatched-researched-20261014-de', '--code' => ['УТ-00000459'], '--apply' => true])->assertSuccessful();
+        $this->assertSame($productCount + 1, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }

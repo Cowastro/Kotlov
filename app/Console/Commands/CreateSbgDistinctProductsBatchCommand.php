@@ -3524,6 +3524,53 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // Stuhr HVAC lists the exact Siemens GDB331.2E at 131.50 EUR. At the
+    // official NBRB rate of 3.3652 BYN/EUR on 2026-10-14 this is 442.52 BYN,
+    // rounded to 443 BYN retail. Siemens documentation confirms that the 1C
+    // wording uses the wrong unit: the linear force is 125 N, not 125 Nm.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DE = [
+        'УТ-00000459' => [
+            'template_slug' => 'kontroller-salus-pc11',
+            'allow_unmatched' => true,
+            'category_slug' => 'regulyatory',
+            'external_sku' => 'GDB331.2E',
+            'hydrate_external_sku' => true,
+            'fragments' => ['Линейный привод', 'АС240В', '3-поз.125НМ', '150с', 'Siemens'],
+            'brand' => [
+                'name' => 'Siemens',
+                'slug' => 'siemens',
+                'country' => 'Германия',
+            ],
+            'name' => 'Siemens GDB331.2E Линейный привод воздушной заслонки, 230 В',
+            'retail' => 443.00,
+            'images' => [
+                'img/products/siemens/siemens-gdb331-2e.jpg',
+            ],
+            'source_url' => 'https://hvac.de/en/414-gdb2e',
+            'short' => 'Линейный электропривод Siemens GDB331.2E для воздушных заслонок: 230 В AC, трёхпозиционное управление, усилие 125 Н, время хода 150 с.',
+            'content' => '<p><strong>Siemens GDB331.2E</strong> — линейный электропривод без пружинного возврата для управления воздушными заслонками в системах вентиляции и HVAC. Модель работает от сети 230 В AC и поддерживает трёхпозиционное управление.</p><p>Привод развивает линейное усилие 125 Н, имеет номинальный ход 60 мм и время позиционирования 150 с. Перед монтажом сверьте напряжение, тип управления, ход и механику заслонки.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Линейный привод воздушной заслонки'],
+                ['key' => 'Модель', 'value' => 'GDB331.2E'],
+                ['key' => 'Заказной номер', 'value' => 'BPZ:GDB331.2E'],
+                ['key' => 'Напряжение питания', 'value' => '230 В AC'],
+                ['key' => 'Управление', 'value' => 'Трёхпозиционное'],
+                ['key' => 'Линейное усилие', 'value' => '125 Н'],
+                ['key' => 'Номинальный ход', 'value' => '60 мм'],
+                ['key' => 'Время позиционирования', 'value' => '150 с'],
+                ['key' => 'Площадь заслонки', 'value' => 'до 0,8 м²'],
+                ['key' => 'Потребляемая мощность', 'value' => '1 Вт / 2 ВА'],
+                ['key' => 'Степень защиты', 'value' => 'IP40'],
+                ['key' => 'Длина кабеля', 'value' => '0,9 м'],
+                ['key' => 'Габариты', 'value' => '68 × 152 × 59 мм'],
+                ['key' => 'Масса', 'value' => '0,48 кг'],
+                ['key' => 'Температура эксплуатации', 'value' => 'от −32 до +55 °C'],
+                ['key' => 'GTIN', 'value' => '7612914003386'],
+                ['key' => 'Бренд', 'value' => 'Siemens'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3637,6 +3684,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-db' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DB,
             'unmatched-researched-20261014-dc' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DC,
             'unmatched-researched-20261014-dd' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DD,
+            'unmatched-researched-20261014-de' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DE,
             default => null,
         };
 
