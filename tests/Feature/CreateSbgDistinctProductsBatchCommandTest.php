@@ -9409,4 +9409,38 @@ XML;
         $this->assertSame('0,5 мм', collect($product->specs)->firstWhere('key', 'Толщина стали')['value']);
         $this->assertSame('TS.FRT.AKL.0080.62699', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
     }
+
+    public function test_it_documents_the_unpriced_gefest_pb03_stone_basket_as_a_research_dispute(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-gefest-pb03-basket',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '506c87af-4bb1-11e9-b781-1c1b0d1de7c2',
+            'external_code' => 'УТ-00001533',
+            'name' => 'Сетка на печь Ураган ПБ-03 П-3К',
+            'price_byn' => null,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-dw',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $this->assertSame('ambiguous', $item->match_status);
+        $this->assertSame('manual_research_unresolved', $item->match_method);
+        $this->assertNull($item->product_id);
+        $this->assertSame('research_dispute', $item->candidates[0]['type']);
+        $this->assertStringContainsString('кованая сетка-каменка', $item->candidates[0]['reason']);
+        $this->assertContains('актуальная закупочная или розничная цена', $item->candidates[0]['required_data']);
+    }
 }

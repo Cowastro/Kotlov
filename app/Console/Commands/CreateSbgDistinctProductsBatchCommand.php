@@ -4445,6 +4445,33 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // 1C identifies a standalone forged stone basket for the discontinued
+    // PB-03 Hurricane family but supplies no article, barcode or price.
+    // Public sources only price complete stove kits, not the basket itself.
+    private const BATCH_UNMATCHED_DISPUTED_20261014_DW = [
+        'УТ-00001533' => [
+            'document_dispute' => true,
+            'external_id' => '506c87af-4bb1-11e9-b781-1c1b0d1de7c2',
+            'fragments' => ['Сетка', 'Ураган', 'ПБ-03', 'П-3К'],
+            'reason' => 'Позиция идентифицирована как отдельная кованая сетка-каменка для банной печи Gefest Ураган ПБ-03, но 1С не передаёт цену, артикул и штрихкод. В открытых источниках публикуются цены комплектов печи с сеткой, а не самой сетки. Без закупочной или розничной цены и точного артикула карточку нельзя публиковать как готовую к продаже.',
+            'required_data' => [
+                'артикул или точная заводская модификация сетки',
+                'актуальная закупочная или розничная цена',
+                'фотография самой сетки или её маркировки',
+            ],
+            'evidence' => [
+                [
+                    'url' => 'https://vek-pechi.ru/upload/iblock/7c0/7c0e55478766004a007afea4063fc4b0.pdf',
+                    'finding' => 'Инструкция Gefest Ураган подтверждает сетку для камней в исполнении с индексом «С» и загрузку до 200 кг для ПБ-03.',
+                ],
+                [
+                    'url' => 'https://profsaunastroy.ru/drovyanye-pechi/gefest/gefest-uragan-%28pb-03ms-uragan%29',
+                    'finding' => 'Сетка 03-ЗК/03М Ураган указана в составе комплекта печи; отдельная цена сетки не приведена.',
+                ],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4576,6 +4603,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-dt' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DT,
             'unmatched-researched-20261014-du' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DU,
             'unmatched-researched-20261014-dv' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DV,
+            'unmatched-disputed-20261014-dw' => self::BATCH_UNMATCHED_DISPUTED_20261014_DW,
             default => null,
         };
 
