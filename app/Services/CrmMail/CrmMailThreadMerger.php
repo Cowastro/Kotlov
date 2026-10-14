@@ -20,7 +20,10 @@ class CrmMailThreadMerger
 
         $sourceEmail = mb_strtolower(trim((string) $source->participant_email));
         $targetEmail = mb_strtolower(trim((string) $target->participant_email));
-        if ($sourceEmail === '' || $sourceEmail !== $targetEmail) {
+        $sameCounterparty = $source->crm_counterparty_id
+            && $target->crm_counterparty_id
+            && (int) $source->crm_counterparty_id === (int) $target->crm_counterparty_id;
+        if (! $sameCounterparty && ($sourceEmail === '' || $sourceEmail !== $targetEmail)) {
             throw new RuntimeException('Карточки относятся к разным адресатам.');
         }
 
@@ -44,7 +47,22 @@ class CrmMailThreadMerger
             $source->delete();
 
             if ($target->commercialDocuments()->where('status', 'sent')->exists()) {
-                $target->markProposalSent($target->assigned_user_id);
+                $latestDirection = $target->messages()
+                    ->reorder()
+                    ->orderByDesc('received_at')
+                    ->orderByDesc('id')
+                    ->value('direction');
+
+                if ($latestDirection === 'incoming') {
+                    $target->forceFill([
+                        'sales_stage' => 'negotiation',
+                        'status' => 'waiting_manager',
+                        'next_follow_up_at' => now(),
+                        'follow_up_note' => 'Ответ клиента получен — требуется реакция менеджера.',
+                    ])->save();
+                } elseif ($latestDirection === 'outgoing') {
+                    $target->markProposalSent($target->assigned_user_id);
+                }
             }
 
             return $target->fresh(['messages', 'commercialDocuments']);

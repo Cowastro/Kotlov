@@ -13,6 +13,11 @@ use RuntimeException;
 
 class SupplierRequestMailDraftService
 {
+    public function __construct(
+        private readonly LeadMatcher $leadMatcher,
+        private readonly CrmMailThreadResolver $threadResolver,
+    ) {}
+
     public function create(
         CrmMailbox $mailbox,
         User $user,
@@ -34,19 +39,26 @@ class SupplierRequestMailDraftService
         }
 
         return DB::transaction(function () use ($mailbox, $user, $recipients, $cc, $subject, $body, $participantName, $attachmentMetadata, $primaryRecipient): CrmMailThread {
-            $thread = CrmMailThread::query()->create([
-                'mailbox_id' => $mailbox->id,
-                'assigned_user_id' => $user->id,
-                'thread_key' => hash('sha256', 'outgoing-draft|'.Str::uuid()),
-                'subject' => trim($subject),
-                'participant_name' => filled($participantName) ? trim((string) $participantName) : null,
-                'participant_email' => $primaryRecipient,
-                'status' => 'draft',
-                'priority' => 'normal',
-                'messages_count' => 1,
-                'unread_count' => 0,
-                'last_message_at' => now(),
-            ]);
+            [$counterparty, $contact] = $this->leadMatcher->resolve($primaryRecipient, $participantName, false);
+            $thread = $this->threadResolver->resolve($mailbox, $primaryRecipient, $counterparty?->id);
+
+            if (! $thread) {
+                $thread = CrmMailThread::query()->create([
+                    'mailbox_id' => $mailbox->id,
+                    'crm_counterparty_id' => $counterparty?->id,
+                    'crm_contact_id' => $contact?->id,
+                    'assigned_user_id' => $user->id,
+                    'thread_key' => hash('sha256', 'outgoing-draft|'.Str::uuid()),
+                    'subject' => trim($subject),
+                    'participant_name' => filled($participantName) ? trim((string) $participantName) : null,
+                    'participant_email' => $primaryRecipient,
+                    'status' => 'draft',
+                    'priority' => 'normal',
+                    'messages_count' => 0,
+                    'unread_count' => 0,
+                    'last_message_at' => now(),
+                ]);
+            }
 
             $thread->messages()->create([
                 'mailbox_id' => $mailbox->id,
@@ -63,6 +75,18 @@ class SupplierRequestMailDraftService
                 'received_at' => now(),
                 'metadata' => ['source' => 'manual_draft', 'attachments' => $attachmentMetadata],
             ]);
+
+            $thread->forceFill([
+                'crm_counterparty_id' => $thread->crm_counterparty_id ?: $counterparty?->id,
+                'crm_contact_id' => $thread->crm_contact_id ?: $contact?->id,
+                'assigned_user_id' => $thread->assigned_user_id ?: $user->id,
+                'subject' => trim($subject),
+                'participant_name' => filled($participantName) ? trim((string) $participantName) : $thread->participant_name,
+                'participant_email' => $primaryRecipient,
+                'status' => 'draft',
+                'messages_count' => $thread->messages()->count(),
+                'last_message_at' => now(),
+            ])->save();
 
             return $thread->fresh(['mailbox', 'messages']);
         });

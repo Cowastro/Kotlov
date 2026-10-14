@@ -8,13 +8,15 @@ use App\Models\CrmMailThread;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
 class ImapMailboxSynchronizer
 {
-    public function __construct(private readonly LeadMatcher $leadMatcher) {}
+    public function __construct(
+        private readonly LeadMatcher $leadMatcher,
+        private readonly CrmMailThreadResolver $threadResolver,
+    ) {}
 
     /** @return array{imported: int, skipped: int} */
     public function sync(CrmMailbox $mailbox): array
@@ -90,20 +92,31 @@ class ImapMailboxSynchronizer
                     $mailbox, $uid, $header, $fromEmail, $fromName, $subject, $messageId,
                     $inReplyTo, $bodies, $attachments, $counterparty, $contact
                 ): void {
-                    $threadKey = $this->threadKey($fromEmail, $subject, $inReplyTo);
                     $receivedAt = $this->parseDate($header->date ?? null);
-                    $thread = CrmMailThread::withTrashed()->firstOrCreate(
-                        ['mailbox_id' => $mailbox->id, 'thread_key' => $threadKey],
-                        [
-                            'crm_counterparty_id' => $counterparty?->id,
-                            'crm_contact_id' => $contact?->id,
-                            'subject' => $subject,
-                            'participant_name' => $fromName,
-                            'participant_email' => $fromEmail,
-                            'status' => 'new',
-                            'priority' => 'normal',
-                        ],
+                    $thread = $this->threadResolver->resolve(
+                        $mailbox,
+                        $fromEmail,
+                        $counterparty?->id,
+                        $inReplyTo,
                     );
+
+                    if (! $thread) {
+                        $thread = CrmMailThread::withTrashed()->firstOrCreate(
+                            [
+                                'mailbox_id' => $mailbox->id,
+                                'thread_key' => hash('sha256', $fromEmail.'|'.mb_strtolower(trim($subject))),
+                            ],
+                            [
+                                'crm_counterparty_id' => $counterparty?->id,
+                                'crm_contact_id' => $contact?->id,
+                                'subject' => $subject,
+                                'participant_name' => $fromName,
+                                'participant_email' => $fromEmail,
+                                'status' => 'new',
+                                'priority' => 'normal',
+                            ],
+                        );
+                    }
                     $wasTrashed = $thread->trashed();
 
                     if ($wasTrashed) {
@@ -211,25 +224,6 @@ class ImapMailboxSynchronizer
     private function cleanMessageId(?string $value): ?string
     {
         return filled($value) ? trim($value, " <>\t\n\r\0\x0B") : null;
-    }
-
-    private function threadKey(string $email, string $subject, ?string $inReplyTo): string
-    {
-        if ($inReplyTo) {
-            $existing = CrmMailMessage::query()->where('message_id', $inReplyTo)->first();
-
-            if ($existing) {
-                return $existing->thread->thread_key;
-            }
-        }
-
-        $normalizedSubject = Str::of($subject)
-            ->lower()
-            ->replaceMatches('/^(re|fw|fwd|ответ)\s*:\s*/ui', '')
-            ->squish()
-            ->value();
-
-        return hash('sha256', $email.'|'.$normalizedSubject);
     }
 
     private function parseDate(?string $value): Carbon

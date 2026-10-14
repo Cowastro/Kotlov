@@ -24,7 +24,10 @@ class CrmMailSender
         if ($thread->status !== 'draft') {
             throw new RuntimeException('Это письмо уже не является черновиком.');
         }
-        $draft = $thread->messages->firstWhere('direction', 'draft');
+        $draft = $thread->messages
+            ->where('direction', 'draft')
+            ->sortByDesc('id')
+            ->first();
         if (! $draft) {
             throw new RuntimeException('Текст почтового черновика не найден.');
         }

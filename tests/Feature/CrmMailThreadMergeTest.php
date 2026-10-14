@@ -78,8 +78,8 @@ class CrmMailThreadMergeTest extends TestCase
         $this->assertSame(3, $merged->messages->count());
         $this->assertSame('Re: КП-1 — согласование', $merged->subject);
         $this->assertTrue($merged->last_message_at->equalTo($latestMessageAt));
-        $this->assertSame('proposal_sent', $merged->sales_stage);
-        $this->assertSame('waiting_customer', $merged->status);
+        $this->assertSame('negotiation', $merged->sales_stage);
+        $this->assertSame('waiting_manager', $merged->status);
         $this->assertNotNull($merged->next_follow_up_at);
         $this->assertSame($target->id, CommercialDocument::query()->firstOrFail()->crm_mail_thread_id);
     }
