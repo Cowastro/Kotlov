@@ -1,0 +1,110 @@
+{
+    "code": "2026-10-14-catalog-zero-029",
+    "observed_at": "2026-10-14T06:31:50+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "Смолком",
+        "skus": [
+            "PS-002.638",
+            "PS-002.639",
+            "PS-002.640",
+            "PS-002.642",
+            "PS-002.643"
+        ],
+        "after_id": 2633,
+        "limit": 5,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [],
+    "products": [
+        {
+            "sku": "PS-002.638",
+            "review_reason": "Предложений портала Victoria Смолком с точным артикулом PS-002.638 не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Официальные и дилерские каталоги содержат другие модели с иными артикулами; точная карточка отсутствует.",
+                "confidence": "high",
+                "search_queries": [
+                    "портал Victoria Смолком PS-002.638 купить",
+                    "Смолком портал Victoria PS-002.638",
+                    "портал для электрокамина Victoria Смолком PS-002.638"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:30:51+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.639",
+            "review_reason": "Портал Vinchenza Смолком PS-002.639 не подтверждён ни одним активным предложением.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Белорусские магазины и открытые каталоги не содержат точного артикула; другие порталы отличаются моделью и исполнением.",
+                "confidence": "low",
+                "search_queries": [
+                    "Портал Vinchenza Смолком PS-002.639",
+                    "Смолком PS-002.639 портал",
+                    "Vinchenza портал Смолком Беларусь"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:31:08+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.640",
+            "review_reason": "Портал Voyage Смолком PS-002.640 не найден в Беларуси и соседних рынках.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Поиск по точному названию и артикулу не выявил ни одного торгового предложения.",
+                "confidence": "low",
+                "search_queries": [
+                    "Смолком Портал Voyage PS-002.640 купить",
+                    "портал Voyage Смолком PS-002.640",
+                    "Портал Voyage PS-002.640 Смолком"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:31:22+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.642",
+            "review_reason": "Портал Idyll Смолком PS-002.642 отсутствует в открытых предложениях белорусского рынка.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Прямых совпадений по артикулу и названию не обнаружено; требуется запрос производителю.",
+                "confidence": "high",
+                "search_queries": [
+                    "Портал Idyll Смолком PS-002.642",
+                    "Smolkom Idyll PS-002.642",
+                    "портал Idyll PS-002.642 Смолком"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:31:37+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.643",
+            "review_reason": "Для портала Laguna Смолком PS-002.643 не найдено ни одного точного активного предложения.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Найденные порталы Смолком имеют другие артикулы и характеристики и не используются для назначения цены.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Смолком Laguna PS-002.643",
+                    "портал Laguna Смолком PS-002.643",
+                    "PS-002.643 Смолком порталы"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:31:50+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
