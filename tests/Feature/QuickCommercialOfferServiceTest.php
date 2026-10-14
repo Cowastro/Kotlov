@@ -317,6 +317,20 @@ class QuickCommercialOfferServiceTest extends TestCase
         $this->assertSame([], $missingModel['suggestions']);
     }
 
+    public function test_structured_stove_parameters_build_a_clear_search_query(): void
+    {
+        $query = app(QuickCommercialOfferService::class)->buildSelectionQuery([
+            'selection_purpose' => 'bath',
+            'selection_size' => 18,
+            'selection_size_unit' => 'm3',
+            'selection_fuel' => 'wood',
+            'manual_product_query' => 'дымоход 115 мм',
+        ]);
+
+        $this->assertSame('банная печь для парной, 18 м³, дрова, дымоход 115 мм', $query);
+        $this->assertTrue(app(QuickCommercialOfferService::class)->selectionGuidance($query)['ready']);
+    }
+
     public function test_manual_market_query_can_become_an_inactive_draft_when_catalog_has_no_match(): void
     {
         $items = CrmMailThreadResource::quickOfferMissingItems([

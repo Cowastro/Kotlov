@@ -149,17 +149,22 @@ class QuickCommercialOfferService
         }
 
         return Product::query()
-            ->with(['brand', 'supplierProducts.supplier'])
+            ->with(['brand', 'category', 'supplierProducts.supplier'])
             ->where('is_active', true)
             ->where('is_archived', false)
             ->where(function ($query) use ($search, $tokens): void {
                 $query->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('h1', 'like', "%{$search}%");
+                    ->orWhere('h1', 'like', "%{$search}%")
+                    ->orWhere('short_description', 'like', "%{$search}%")
+                    ->orWhere('specs', 'like', "%{$search}%");
                 foreach ($tokens->take(10) as $token) {
                     $query->orWhere('name', 'like', "%{$token}%")
                         ->orWhere('sku', 'like', "%{$token}%")
                         ->orWhere('h1', 'like', "%{$token}%")
+                        ->orWhere('short_description', 'like', "%{$token}%")
+                        ->orWhere('specs', 'like', "%{$token}%")
+                        ->orWhereHas('category', fn ($category) => $category->where('name', 'like', "%{$token}%"))
                         ->orWhereHas('brand', fn ($brand) => $brand->where('name', 'like', "%{$token}%"))
                         ->orWhereHas('supplierProducts', fn ($supplierProduct) => $supplierProduct
                             ->where('supplier_name', 'like', "%{$token}%")
@@ -193,6 +198,39 @@ class QuickCommercialOfferService
         return $guidance + [
             'suggestions' => $guidance['ready'] ? $this->searchProducts($query) : [],
         ];
+    }
+
+    /** @param array<string, mixed> $parameters */
+    public function buildSelectionQuery(array $parameters): string
+    {
+        $purpose = [
+            'bath' => 'банная печь для парной',
+            'home' => 'отопительная печь для дома',
+            'boiler' => 'твердотопливный котёл',
+            'fireplace' => 'печь-камин',
+        ][$parameters['selection_purpose'] ?? ''] ?? null;
+        $fuel = [
+            'wood' => 'дрова',
+            'coal' => 'уголь',
+            'pellets' => 'пеллеты',
+            'gas' => 'газ',
+            'electric' => 'электричество',
+        ][$parameters['selection_fuel'] ?? ''] ?? null;
+        $size = filled($parameters['selection_size'] ?? null)
+            ? trim((string) $parameters['selection_size']).' '.(($parameters['selection_size_unit'] ?? 'm3') === 'm2' ? 'м²' : 'м³')
+            : null;
+        $manual = trim((string) ($parameters['manual_product_query'] ?? ''));
+
+        if ($purpose && Str::contains(Str::lower($manual), Str::lower($purpose))) {
+            return $manual;
+        }
+
+        return collect([
+            $purpose,
+            $size,
+            $fuel,
+            $manual ?: null,
+        ])->filter()->implode(', ');
     }
 
     /** @return array{ready: bool, message: string} */
@@ -307,6 +345,9 @@ class QuickCommercialOfferService
             $product->h1,
             $product->sku,
             $product->brand?->name,
+            $product->category?->name,
+            $product->short_description,
+            json_encode($product->specs, JSON_UNESCAPED_UNICODE),
             $supplierText,
         ])));
         $score = Str::contains($haystack, $source) ? 180 : 0;
