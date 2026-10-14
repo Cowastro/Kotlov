@@ -4595,6 +4595,47 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The exact D80/110 adapter is listed by a specialist retailer with the
+    // same name and dimensions: AISI 430, 0.5 mm and 230 mm high. The local
+    // product photo is the clean source photo and has no retailer watermark.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EA = [
+        'УТ-00009600' => [
+            'template' => 'PS-008.995',
+            'allow_unmatched' => true,
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'external_id' => 'b55770bf-7c3a-11f1-b4b9-1c1b0d1de7c2',
+            'external_sku' => 'TS.FRT.AKP.0080.82687',
+            'fragments' => ['Адаптер переход', 'Моно М-М', '430-0.5', 'D80/110'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Адаптер-переход Моно М-М (С) AISI 430 0,5 мм Ø80/110 (У)',
+            'retail' => 17.40,
+            'images' => [
+                'img/products/teplov-i-suhov/adapter-mono-mm-430-05-d80-110.jpg',
+            ],
+            'source_url' => 'https://pdmakarov.ru/catalog/dymohody/%D1%82%D0%B8%D1%81/%D0%B0%D0%B4%D0%B0%D0%BF%D1%82%D0%B5%D1%80-%D0%BF%D0%B5%D1%80%D0%B5%D1%85%D0%BE%D0%B4-%D0%BC%D0%BE%D0%BD%D0%BE-%D0%BC-%D0%BC-%D1%81-430-0%2C5-d80-110-%D1%83',
+            'short' => 'Одноконтурный адаптер-переход Теплов и Сухов для соединения патрубка Ø80 мм с дымоходом Ø110 мм, AISI 430 толщиной 0,5 мм.',
+            'content' => '<p><strong>Теплов и Сухов Адаптер-переход Моно М-М Ø80/110 мм</strong> — одноконтурный конусный элемент для соединения патрубка теплогенерирующего аппарата Ø80 мм с дымоходом Ø110 мм.</p><p>Изделие изготовлено из нержавеющей стали AISI 430 толщиной 0,5 мм. Соединение М-М рассчитано на совместимые элементы модульной системы. Перед монтажом необходимо сверить диаметры, направление сборки и рабочие условия дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Одноконтурный адаптер-переход'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Тип соединения', 'value' => 'М-М'],
+                ['key' => 'Входной диаметр', 'value' => '80 мм'],
+                ['key' => 'Выходной диаметр', 'value' => '110 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Высота', 'value' => '230 мм'],
+                ['key' => 'Артикул', 'value' => 'TS.FRT.AKP.0080.82687'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4730,6 +4771,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-dx' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DX,
             'unmatched-researched-20261014-dy' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DY,
             'unmatched-researched-20261014-dz' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DZ,
+            'unmatched-researched-20261014-ea' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EA,
             default => null,
         };
 
