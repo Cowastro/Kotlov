@@ -1,0 +1,371 @@
+{
+    "code": "2026-10-14-catalog-zero-031",
+    "observed_at": "2026-10-14T06:58:00+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "TMF",
+        "skus": [
+            "PS-002.724",
+            "PS-002.725",
+            "PS-002.726",
+            "PS-002.727",
+            "PS-002.729"
+        ],
+        "after_id": 2723,
+        "limit": 5,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [
+        {
+            "code": "web-vishop-by-20261014",
+            "name": "Vishop.by",
+            "kind": "competitor",
+            "base_url": "https://vishop.by",
+            "currency": "BYN",
+            "region": "Беларусь",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Независимые карточки точных модификаций TMF с ценой и наличием."
+        },
+        {
+            "code": "web-amazonka-by-20261014",
+            "name": "Amazonka.by",
+            "kind": "competitor",
+            "base_url": "https://amazonka.by",
+            "currency": "BYN",
+            "region": "Беларусь",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Независимые карточки точных модификаций TMF с ценой в BYN."
+        },
+        {
+            "code": "web-ultraprice-by-20261014",
+            "name": "ULTRAPRICE",
+            "kind": "competitor",
+            "base_url": "https://ultraprice.by",
+            "currency": "BYN",
+            "region": "Беларусь",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Независимая карточка точной модели TMF Огонь-батарея 7Б."
+        },
+        {
+            "code": "web-bania-by-20261014",
+            "name": "Банька",
+            "kind": "competitor",
+            "base_url": "https://bania.by",
+            "currency": "BYN",
+            "region": "Беларусь",
+            "freshness_hours": 168,
+            "minimum_match_confidence": 0.99,
+            "notes": "Независимая карточка точной модели TMF Огонь-батарея 7 Лайт."
+        }
+    ],
+    "products": [
+        {
+            "sku": "PS-002.724",
+            "review_reason": "Три независимых белорусских продавца подтверждают точную модификацию TMF Огонь-батарея 7Б; цену разрешено применить только после серверной проверки закупки и маржи.",
+            "force_consultation_hold": false,
+            "observations": [
+                {
+                    "source": "web-vishop-by-20261014",
+                    "url": "https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/pechi-i-kaminy-dlya-doma/otopitelnye-pechi-termofor/otopitelnaya-pech-termofor-ogon-batareya/otopitelnaya-pech-termofor-ogon-batareya-7b-antracit/",
+                    "external_name": "Отопительная печь Огонь-батарея 7Б антрацит",
+                    "model": "TMF Огонь-батарея 7Б антрацит",
+                    "package": "печь со стеклянной дверцей и встроенным теплообменником",
+                    "observed_price": 1215,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Vishop.by: модель 7Б, антрацит, теплообменник, 150 м³, цена 1 215 BYN, есть в наличии."
+                },
+                {
+                    "source": "web-amazonka-by-20261014",
+                    "url": "https://amazonka.by/otopitelnaya-pech-termofor-ogon-batareya-7b-antratsit",
+                    "external_name": "Отопительная печь Термофор Огонь-батарея 7Б антрацит",
+                    "model": "TMF Огонь-батарея 7Б антрацит",
+                    "package": "печь с водяным контуром",
+                    "observed_price": 1224,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Amazonka.by: точная модель 7Б антрацит, водяной контур, цена 1 224 BYN."
+                },
+                {
+                    "source": "web-ultraprice-by-20261014",
+                    "url": "https://ultraprice.by/product/svobodnostoyashchaya-pech-kamin-termofor-ogon-batareya-7b-antracit",
+                    "external_name": "Свободностоящая печь-камин Термофор Огонь-батарея 7Б (антрацит)",
+                    "model": "TMF Огонь-батарея 7Б антрацит",
+                    "package": null,
+                    "observed_price": 1372.70,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка ULTRAPRICE: точная модель 7Б (антрацит), 10 кВт, 150 м³, цена 1 372.70 BYN, в наличии."
+                }
+            ],
+            "research": {
+                "summary": "Три независимых домена подтверждают точную модификацию в диапазоне 1 215–1 372.70 BYN; медиана 1 224 BYN.",
+                "confidence": "high",
+                "search_queries": [
+                    "Огонь-батарея 7Б антрацит цена Беларусь",
+                    "Огонь-батарея 7Б антрацит купить Минск цена -kotlov.by"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:58:00+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.725",
+            "review_reason": "Точная модель TMF Огонь-батарея 9Б подтверждена только двумя независимыми продавцами; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-amazonka-by-20261014",
+                    "url": "https://amazonka.by/otopitelnaya-pech-termofor-ogon-batareya-9b-antratsit",
+                    "external_name": "Отопительная печь Термофор Огонь-батарея 9Б антрацит",
+                    "model": "TMF Огонь-батарея 9Б антрацит",
+                    "package": "печь с водяным контуром",
+                    "observed_price": 1039,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "order",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Amazonka.by: точная модель 9Б антрацит, цена 1 039 BYN, под заказ 3 дня."
+                },
+                {
+                    "source": "web-vishop-by-20261014",
+                    "url": "https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/pechi-i-kaminy-dlya-doma/otopitelnye-pechi-termofor/otopitelnaya-pech-termofor-ogon-batareya/otopitelnaya-pech-termofor-ogon-batareya-9b-antracit/",
+                    "external_name": "Отопительная печь Огонь-батарея 9Б антрацит",
+                    "model": "TMF Огонь-батарея 9Б антрацит",
+                    "package": "печь со встроенным баком для нагрева воды",
+                    "observed_price": 1340,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Vishop.by: модель 9Б антрацит, 200 м³, встроенный нагрев воды, цена 1 340 BYN."
+                }
+            ],
+            "research": {
+                "summary": "Два независимых точных предложения: 1 039 и 1 340 BYN; третьего независимого подтверждения нет.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Огонь-батарея 9Б антрацит цена Беларусь",
+                    "Огонь-батарея 9Б антрацит купить Минск цена -kotlov.by"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:58:00+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.726",
+            "review_reason": "Точная модель TMF Огонь-батарея 11Б подтверждена только двумя независимыми продавцами; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-amazonka-by-20261014",
+                    "url": "https://amazonka.by/otopitelnaya-pech-termofor-ogon-batareya-11b-antratsit",
+                    "external_name": "Отопительная печь Термофор Огонь-батарея 11Б антрацит",
+                    "model": "TMF Огонь-батарея 11Б антрацит",
+                    "package": "печь с водяным контуром",
+                    "observed_price": 1146,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "order",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Amazonka.by: точная модель 11Б антрацит, 250 м³, водяной контур, цена 1 146 BYN."
+                },
+                {
+                    "source": "web-vishop-by-20261014",
+                    "url": "https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/pechi-i-kaminy-dlya-doma/otopitelnye-pechi-termofor/otopitelnaya-pech-termofor-ogon-batareya/otopitelnaya-pech-termofor-ogon-batareya-11b-antracit/",
+                    "external_name": "Отопительная печь Огонь-батарея 11Б антрацит",
+                    "model": "TMF Огонь-батарея 11Б антрацит",
+                    "package": "печь со встроенным теплообменником",
+                    "observed_price": 1475,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Vishop.by: точная модель 11Б антрацит, 250 м³, цена 1 475 BYN, в наличии."
+                }
+            ],
+            "research": {
+                "summary": "Два независимых точных предложения: 1 146 и 1 475 BYN; региональные поддомены Amazonka не считаются отдельными источниками.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Огонь-батарея 11Б антрацит цена Беларусь",
+                    "Огонь-батарея 11Б антрацит купить Минск цена -kotlov.by"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:58:00+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.727",
+            "review_reason": "Точная модель TMF Огонь-батарея 5 Лайт подтверждена только двумя независимыми продавцами; сохранить консультационный режим.",
+            "force_consultation_hold": true,
+            "observations": [
+                {
+                    "source": "web-amazonka-by-20261014",
+                    "url": "https://amazonka.by/otopitelnaya-pech-termofor-ogon-batareya-5-layt-antratsit",
+                    "external_name": "Отопительная печь Термофор Огонь-батарея 5 Лайт антрацит",
+                    "model": "TMF Огонь-батарея 5 Лайт антрацит",
+                    "package": "печь с глухой дверцей",
+                    "observed_price": 832,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "order",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Amazonka.by: точная модель 5 Лайт антрацит, дверца без стекла, цена 832 BYN."
+                },
+                {
+                    "source": "web-vishop-by-20261014",
+                    "url": "https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/pechi-i-kaminy-dlya-doma/otopitelnye-pechi-termofor/otopitelnaya-pech-termofor-ogon-batareya-lait/otopitelnaya-pech-termofor-ogon-batareya-5-lait-antracit/",
+                    "external_name": "Отопительная печь Термофор Огонь-батарея 5 ЛАЙТ антрацит",
+                    "model": "TMF Огонь-батарея 5 Лайт антрацит",
+                    "package": "печь со стальной дверцей",
+                    "observed_price": 795,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Vishop.by: точная модель 5 Лайт антрацит, стальная дверца, цена 795 BYN."
+                }
+            ],
+            "research": {
+                "summary": "Два независимых точных предложения: 795 и 832 BYN; собственные региональные карточки KOTLOV исключены.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Огонь-батарея 5 Лайт антрацит цена Беларусь",
+                    "Огонь-батарея 5 Лайт антрацит купить Беларусь -kotlov.by"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:58:00+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.729",
+            "review_reason": "Три независимых белорусских продавца подтверждают точную модификацию TMF Огонь-батарея 7 Лайт; цену разрешено применить только после серверной проверки закупки и маржи.",
+            "force_consultation_hold": false,
+            "observations": [
+                {
+                    "source": "web-vishop-by-20261014",
+                    "url": "https://vishop.by/catalog/pechi--kotly--kaminy-dlya-bani--doma--dachi/pechi-i-kaminy-dlya-doma/otopitelnye-pechi-termofor/otopitelnaya-pech-termofor-ogon-batareya-lait/otopitelnaya-pech-termofor-ogon-batareya-7-lait-antracit/",
+                    "external_name": "Отопительная печь Термофор Огонь-батарея 7 ЛАЙТ антрацит",
+                    "model": "TMF Огонь-батарея 7 Лайт антрацит",
+                    "package": "печь со стальной дверцей",
+                    "observed_price": 926,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Vishop.by: точная модель 7 Лайт антрацит, стальная дверца, 150 м³, цена 926 BYN."
+                },
+                {
+                    "source": "web-amazonka-by-20261014",
+                    "url": "https://amazonka.by/otopitelnaya-pech-termofor-ogon-batareya-7-layt-antratsit",
+                    "external_name": "Отопительная печь Термофор Огонь-батарея 7 Лайт антрацит",
+                    "model": "TMF Огонь-батарея 7 Лайт антрацит",
+                    "package": "печь с дверцей без стекла",
+                    "observed_price": 967,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "order",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка Amazonka.by: точная модель 7 Лайт антрацит, 150 м³, дверца без стекла, цена 967 BYN."
+                },
+                {
+                    "source": "web-bania-by-20261014",
+                    "url": "https://bania.by/tmf-termofor?attrb%5B118%5D=1&attrb%5B32%5D=76&product_id=4848",
+                    "external_name": "Отопительная печь TMF Огонь-батарея 7 Лайт антрацит",
+                    "model": "TMF Огонь-батарея 7 Лайт антрацит",
+                    "package": "печь со стальной дверцей без стекла",
+                    "observed_price": 926,
+                    "currency": "BYN",
+                    "exchange_rate_to_byn": 1,
+                    "price_includes_vat": null,
+                    "availability_status": "in_stock",
+                    "match_method": "exact_model",
+                    "match_confidence": 0.99,
+                    "is_confirmed": true,
+                    "is_comparable": true,
+                    "validation_flags": [],
+                    "evidence": "Карточка bania.by: точная модель 7 Лайт антрацит, стальная дверца без стекла, цена 926 BYN, в наличии."
+                }
+            ],
+            "research": {
+                "summary": "Три независимых домена подтверждают точную модификацию в диапазоне 926–967 BYN; медиана 926 BYN.",
+                "confidence": "high",
+                "search_queries": [
+                    "Огонь-батарея 7 Лайт антрацит цена Беларусь",
+                    "Огонь-батарея 7 Лайт антрацит купить Минск -kotlov.by"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:58:00+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
