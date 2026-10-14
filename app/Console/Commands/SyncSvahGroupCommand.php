@@ -103,6 +103,7 @@ class SyncSvahGroupCommand extends Command
         $presentArticles = [];
         $applied = 0;
         $created = 0;
+        $archived = 0;
 
         DB::transaction(function () use (
             $classified,
@@ -114,6 +115,8 @@ class SyncSvahGroupCommand extends Command
             &$presentArticles,
             &$applied,
             &$created,
+            &$archived,
+            $reportRows,
         ): void {
             foreach ($classified as $item) {
                 $row = $item['row'];
@@ -164,6 +167,25 @@ class SyncSvahGroupCommand extends Command
                         $missing->pluck('product_id')->filter()->map(fn ($id): int => (int) $id)->all(),
                     );
                 }
+
+                $siteOnlyProductIds = collect($reportRows)
+                    ->where('status', 'site_only')
+                    ->pluck('product_id')
+                    ->filter()
+                    ->map(fn ($id): int => (int) $id)
+                    ->values();
+                if ($siteOnlyProductIds->isNotEmpty()) {
+                    $archived = DB::table('products')
+                        ->whereIn('id', $siteOnlyProductIds)
+                        ->update([
+                            'is_active' => false,
+                            'is_archived' => true,
+                            'in_stock' => false,
+                            'stock_qty' => 0,
+                            'availability_status' => 'out_of_stock',
+                            'updated_at' => $now,
+                        ]);
+                }
             }
         });
 
@@ -178,6 +200,7 @@ class SyncSvahGroupCommand extends Command
             $this->option('sync-retail-prices') ? 'обновлены' : 'без изменений',
         ));
         $this->line('metric.svah_group.created='.$created);
+        $this->line('metric.svah_group.archived='.$archived);
 
         if ($stats->get('ambiguous', 0) > 0) {
             $this->warn('Есть неоднозначные совпадения: они не применены, проверьте CSV-аудит.');

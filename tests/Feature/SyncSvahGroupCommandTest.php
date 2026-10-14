@@ -197,6 +197,9 @@ class SyncSvahGroupCommandTest extends TestCase
         $this->assertDatabaseHas('products', [
             'id' => $siteOnlyId,
             'price' => 1400,
+            'is_active' => false,
+            'is_archived' => true,
+            'stock_qty' => 0,
         ]);
     }
 
