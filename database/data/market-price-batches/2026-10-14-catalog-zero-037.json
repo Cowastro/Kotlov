@@ -1,0 +1,199 @@
+{
+    "code": "2026-10-14-catalog-zero-037",
+    "observed_at": "2026-10-14T08:05:00+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "skus": [
+            "PS-005.296", "PS-005.299", "PS-005.305", "PS-005.308", "PS-005.309",
+            "PS-005.310", "PS-005.311", "PS-005.333", "PS-005.334", "PS-005.354",
+            "PS-005.455", "PS-005.456", "PS-005.477", "PS-005.478", "PS-005.479",
+            "PS-005.480", "PS-005.481", "PS-005.482", "PS-005.504", "PS-005.505",
+            "PS-005.560", "PS-005.847", "PS-005.848", "PS-005.849", "PS-005.851"
+        ],
+        "after_id": 0,
+        "limit": 25,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [],
+    "products": [
+        {
+            "sku": "PS-005.296",
+            "review_reason": "Для Korado RADIK KLASIK 22 500x1600 найдена только устаревшая белорусская цена; актуальные точные предложения относятся к зарубежным рынкам.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Актуальной независимой цены в BYN нет.", "confidence": "high", "search_queries": ["Беларусь Korado Radik Klasik 22 500x1600 225001600 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.299",
+            "review_reason": "Korado RADIK KLASIK 22 500x900 подтверждён по точному размеру только предложениями в CZK; белорусской цены нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Зарубежные цены исключены из сопоставимого рынка.", "confidence": "high", "search_queries": ["Беларусь Korado Radik Klasik 22 500x900 22500900 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.305",
+            "review_reason": "Korado RADIK KLASIK 11 600x2000 имеет точные предложения только в EUR, RON и UAH; независимой цены в BYN нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точный код 116002000 подтверждён, но белорусский рынок не представлен.", "confidence": "high", "search_queries": ["Беларусь Korado Radik Klasik 11 600x2000 116002000 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.308",
+            "review_reason": "Для Korado RADIK VKM Exclusive 22 500x1000 независимой белорусской карточки с ценой не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Поиск ведёт на зарубежные VKM/VKU и устаревшие белорусские VK, которые не являются точным исполнением.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 22 500x1000 225001000 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.309",
+            "review_reason": "Для Korado RADIK VKM Exclusive 22 500x700 независимой актуальной цены в Беларуси нет; найденные точные размеры относятся к KLASIK и зарубежным рынкам.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Исполнение VKM Exclusive нельзя подменять KLASIK.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 22 500x700 22500700 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.310",
+            "review_reason": "Для Korado RADIK VKM Exclusive 22 500x800 независимой актуальной цены в Беларуси нет; зарубежные KLASIK/VKU несопоставимы.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точная серия VKM Exclusive с ценой в BYN не найдена.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 22 500x800 22500800 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.311",
+            "review_reason": "Для Korado RADIK VKM Exclusive 22 500x1100 найден только зарубежный прайс серии Plan VKM; независимой BYN-цены нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Зарубежный прайс не подтверждает розничный рынок Беларуси.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 22 500x1100 225001100 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.333",
+            "review_reason": "Korado RADIK KLASIK 22 500x700 имеет актуальные точные предложения только в EUR, CZK, RON и UAH; белорусской цены нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точный код K22500700 подтверждён, но предложения другого рынка исключены.", "confidence": "high", "search_queries": ["Беларусь Korado Radik Klasik 22 500x700 22500700 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.334",
+            "review_reason": "Для Korado RADIK KLASIK 22 500x1400 найдена только устаревшая белорусская цена; актуальные предложения указаны в EUR и CZK.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Актуальной независимой цены в BYN нет.", "confidence": "high", "search_queries": ["Беларусь Korado Radik Klasik 22 500x1400 225001400 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.354",
+            "review_reason": "Korado RADIK KLASIK 11 500x400 подтверждён точной зарубежной карточкой, но независимой цены в BYN нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точный код K11500400 найден только на рынке ЕС.", "confidence": "high", "search_queries": ["Беларусь Korado Radik Klasik 11 500x400 11500400 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.455",
+            "review_reason": "Для Korado RADIK VKM Exclusive 11 500x500 независимой белорусской карточки с ценой не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Общая белорусская страница VKM не содержит цены конкретного исполнения.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 11 500x500 11500500 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.456",
+            "review_reason": "Для Korado RADIK VKM Exclusive 22 500x600 независимой белорусской цены нет; точные предложения других серий и рынков исключены.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Серия и тип подключения должны совпадать, поэтому KLASIK не использован.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 22 500x600 22500600 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.477",
+            "review_reason": "Для KORADO KORAFLEX FK 20x9x100 независимой точной белорусской карточки с ценой не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Поиск смешивает KORAFLEX с теплоизоляцией K-FLEX; совпадения исключены.", "confidence": "high", "search_queries": ["Беларусь KORADO KORAFLEX FK 20x9x100 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.478",
+            "review_reason": "Для KORADO KORAFLEX FK 28x11x200 независимой точной белорусской цены не найдено; зарубежные размеры и серии несопоставимы.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Белорусская выдача не содержит точного товара с ценой.", "confidence": "high", "search_queries": ["Беларусь KORADO KORAFLEX FK 28x11x200 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.479",
+            "review_reason": "Для KORADO KORAFLEX FK 28x15x200 независимой точной белорусской карточки с ценой нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Найдены только зарубежные общие страницы серии без сопоставимой BYN-цены.", "confidence": "high", "search_queries": ["Беларусь KORADO KORAFLEX FK 28x15x200 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.480",
+            "review_reason": "Для KORADO KORAFLEX FK 34x9x200 независимой точной белорусской карточки с ценой нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точное исполнение не представлено независимыми продавцами Беларуси.", "confidence": "high", "search_queries": ["Беларусь KORADO KORAFLEX FK 34x9x200 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.481",
+            "review_reason": "Для KORADO KORAFLEX FK 42x9x200 независимой белорусской цены нет; выдача смешивает изделие с изоляцией K-FLEX.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Ложные совпадения по K-FLEX исключены.", "confidence": "high", "search_queries": ["Беларусь KORADO KORAFLEX FK 42x9x200 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.482",
+            "review_reason": "KORADO KORAFLEX FV 8x16x160 на собственном домене KOTLOV имеет цену по запросу; независимой цены в BYN не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Зарубежные предложения относятся к другим сериям Energy FVE или не имеют сопоставимой комплектации.", "confidence": "high", "search_queries": ["Беларусь KORADO KORAFLEX FV 8x16x160 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.504",
+            "review_reason": "Korado RADIK KLASIK 22 300x2300 имеет точные предложения только в RON и UAH; независимой цены в BYN нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точный код K223002300 подтверждён, но белорусский рынок не представлен.", "confidence": "high", "search_queries": ["Беларусь Korado Radik Klasik 22 300x2300 223002300 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.505",
+            "review_reason": "Korado RADIK KLASIK 22 900x700 подтверждён точными карточками в EUR и RON; независимой белорусской цены нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точный код K22900700 найден только на зарубежных рынках.", "confidence": "high", "search_queries": ["Беларусь Korado Radik Klasik 22 900x700 22900700 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.560",
+            "review_reason": "Для Korado RADIK VKM Exclusive 22 500x1200 независимой белорусской цены нет; найденные VKU и зарубежные предложения не являются точным исполнением.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Серия VKM Exclusive не подтверждена ценой в BYN.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 22 500x1200 225001200 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.847",
+            "review_reason": "Для Korado RADIK VKM Exclusive 22 600x1200 независимой белорусской цены нет; точные KLASIK/VKU в EUR не сопоставимы по серии.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точный размер найден за рубежом, но VKM Exclusive с BYN-ценой отсутствует.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 22 600x1200 226001200 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.848",
+            "review_reason": "Для Korado RADIK VKM Exclusive 22 600x1800 независимой белорусской цены нет; найденные предложения относятся к VK и зарубежным рынкам.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Различие VK/VKM Exclusive не позволяет переносить цену.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 22 600x1800 226001800 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.849",
+            "review_reason": "Название указывает Korado RADIK VKM Exclusive 216001400, а production URL содержит 226001400; конфликт типа 21/22 запрещает установку цены.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Карточка требует исправления идентичности до любого ценового сопоставления.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 21 600x1400 216001400 цена", "Korado 226001400 VKM Exclusive"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        },
+        {
+            "sku": "PS-005.851",
+            "review_reason": "Для Korado RADIK VKM Exclusive 21 600x1200 независимой белорусской цены нет; найденные VK и KINGRAD относятся к другим исполнениям.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точный тип и центральное нижнее подключение VKM Exclusive не подтверждены BYN-ценой.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 21 600x1200 216001200 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T08:05:00+00:00"}
+        }
+    ],
+    "failed_products": []
+}
