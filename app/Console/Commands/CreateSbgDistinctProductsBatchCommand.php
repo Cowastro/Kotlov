@@ -4324,6 +4324,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         'УТ-00000090' => [
             'template' => 'KOTLOV-022720',
             'allow_unmatched' => true,
+            'allowed_match_statuses' => ['unmatched', 'ambiguous'],
             'allow_brandless' => true,
             'force_brandless' => true,
             'category_slug' => 'gibkie-vozduhovody',
@@ -4347,6 +4348,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         'УТ-00000089' => [
             'template' => 'KOTLOV-022719',
             'allow_unmatched' => true,
+            'allowed_match_statuses' => ['unmatched', 'ambiguous'],
             'allow_brandless' => true,
             'force_brandless' => true,
             'category_slug' => 'gibkie-vozduhovody',
@@ -4916,6 +4918,8 @@ class CreateSbgDistinctProductsBatchCommand extends Command
 
             $candidateIds = collect($item->candidates)->pluck('product_id')->map(fn ($id): int => (int) $id);
             $normalizedPrice = $item->normalizedPriceByn();
+            $allowedMatchStatuses = $rule['allowed_match_statuses']
+                ?? [($allowUnmatched ? 'unmatched' : 'ambiguous')];
             $configuredBrand = $rule['brand'] ?? null;
             $brand = ($rule['force_brandless'] ?? false)
                 ? null
@@ -4933,7 +4937,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             );
             $valid = $item->source?->name === self::SOURCE_NAME
                 && $item->source?->partnerName() === self::PARTNER_NAME
-                && $item->match_status === ($allowUnmatched ? 'unmatched' : 'ambiguous')
+                && in_array($item->match_status, $allowedMatchStatuses, true)
                 && (float) $item->stock_quantity > 0
                 && ($normalizedPrice !== null || isset($rule['retail']))
                 && $category

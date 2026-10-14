@@ -9253,7 +9253,7 @@ XML;
                 'stock_quantity' => $row[3],
                 'stock_confirmed_at' => now(),
                 'product_id' => $code === 'УТ-00000091' ? $aluminium->id : null,
-                'match_status' => $code === 'УТ-00000091' ? 'matched' : 'unmatched',
+                'match_status' => $code === 'УТ-00000091' ? 'matched' : 'ambiguous',
                 'match_method' => $code === 'УТ-00000091' ? 'manual_created' : null,
             ])];
         });
