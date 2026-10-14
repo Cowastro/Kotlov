@@ -4636,6 +4636,46 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // Virage identifies the exact universal D80/120 version by manufacturer
+    // article TS.FRT.AKP.0080.82689 and confirms AISI 430 at 0.5 mm. The local
+    // image is the clean exact product photo without a retailer watermark.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EB = [
+        'УТ-00009584' => [
+            'template' => 'PS-008.995',
+            'allow_unmatched' => true,
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'external_id' => 'd3e53f30-6ef7-11f1-b4b9-1c1b0d1de7c2',
+            'external_sku' => 'TS.FRT.AKP.0080.82689',
+            'fragments' => ['Адаптер переход', 'Моно М-М', '430-0.5', 'D80/120'],
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'name' => 'Теплов и Сухов Адаптер-переход Моно М-М (С) AISI 430 0,5 мм Ø80/120 (У)',
+            'retail' => 17.40,
+            'images' => [
+                'img/products/teplov-i-suhov/adapter-mono-mm-430-05-d80-120.jpg',
+            ],
+            'source_url' => 'https://www.virage24.ru/product/adapter-kotla-perexod-mono-m-m-s-05mm-aisi-430-d80120-u-teplov-i-suxov-387384',
+            'short' => 'Одноконтурный адаптер-переход Теплов и Сухов для соединения патрубка Ø80 мм с дымоходом Ø120 мм, AISI 430 толщиной 0,5 мм.',
+            'content' => '<p><strong>Теплов и Сухов Адаптер-переход Моно М-М Ø80/120 мм</strong> — одноконтурный конусный элемент для соединения патрубка теплогенерирующего аппарата Ø80 мм с дымоходом Ø120 мм.</p><p>Изделие изготовлено из нержавеющей стали AISI 430 толщиной 0,5 мм. Соединение М-М рассчитано на совместимые элементы модульной системы. Перед монтажом необходимо сверить диаметры, направление сборки и рабочие условия дымохода.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Одноконтурный адаптер-переход'],
+                ['key' => 'Система', 'value' => 'Моно'],
+                ['key' => 'Тип соединения', 'value' => 'М-М'],
+                ['key' => 'Входной диаметр', 'value' => '80 мм'],
+                ['key' => 'Выходной диаметр', 'value' => '120 мм'],
+                ['key' => 'Материал', 'value' => 'Нержавеющая сталь'],
+                ['key' => 'Марка стали', 'value' => 'AISI 430'],
+                ['key' => 'Толщина стали', 'value' => '0,5 мм'],
+                ['key' => 'Артикул', 'value' => 'TS.FRT.AKP.0080.82689'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4772,6 +4812,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-dy' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DY,
             'unmatched-researched-20261014-dz' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DZ,
             'unmatched-researched-20261014-ea' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EA,
+            'unmatched-researched-20261014-eb' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EB,
             default => null,
         };
 
