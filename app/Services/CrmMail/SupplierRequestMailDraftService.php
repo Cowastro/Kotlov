@@ -68,6 +68,61 @@ class SupplierRequestMailDraftService
         });
     }
 
+    public function createInThread(
+        CrmMailThread $thread,
+        User $user,
+        string|array $recipients,
+        string $subject,
+        string $body,
+        ?string $participantName = null,
+        array $cc = [],
+        array $attachments = [],
+        array $attachmentNames = [],
+    ): CrmMailThread {
+        $recipients = $this->normalizeAddresses($recipients);
+        $cc = $this->normalizeAddresses($cc);
+        $attachmentMetadata = $this->attachmentMetadata($attachments, $attachmentNames);
+        $primaryRecipient = $recipients[0] ?? '';
+
+        if ($primaryRecipient === '') {
+            throw new RuntimeException('Укажите хотя бы одного получателя письма.');
+        }
+
+        return DB::transaction(function () use ($thread, $user, $recipients, $cc, $subject, $body, $participantName, $attachmentMetadata, $primaryRecipient): CrmMailThread {
+            $draft = $thread->messages()->where('direction', 'draft')->latest('id')->first()
+                ?? new CrmMailMessage(['thread_id' => $thread->id]);
+
+            $draft->fill([
+                'mailbox_id' => $thread->mailbox_id,
+                'sent_by_user_id' => $user->id,
+                'direction' => 'draft',
+                'from_name' => $thread->mailbox?->name,
+                'from_email' => $thread->mailbox?->email,
+                'to' => $this->addressRecords($recipients, $participantName),
+                'cc' => $this->addressRecords($cc),
+                'subject' => trim($subject),
+                'text_body' => trim($body),
+                'html_body' => null,
+                'attachments_count' => count($attachmentMetadata),
+                'is_read' => true,
+                'received_at' => now(),
+                'metadata' => ['source' => 'commercial_document', 'attachments' => $attachmentMetadata],
+            ])->save();
+
+            $thread->forceFill([
+                'assigned_user_id' => $thread->assigned_user_id ?: $user->id,
+                'subject' => trim($subject),
+                'participant_name' => $thread->participant_name ?: $participantName,
+                'participant_email' => $primaryRecipient,
+                'status' => 'draft',
+                'messages_count' => $thread->messages()->count(),
+                'last_message_at' => now(),
+            ])->save();
+
+            return $thread->fresh(['mailbox', 'messages']);
+        });
+    }
+
     public function sync(SupplierOrderRequest $request, ?User $user): CrmMailThread
     {
         $request->loadMissing(['order', 'items', 'supplier.crmCounterparty.contactPoints']);

@@ -28,6 +28,12 @@ class CrmMailSender
         if (! $draft) {
             throw new RuntimeException('Текст почтового черновика не найден.');
         }
+        $previousMessage = $thread->messages()
+            ->where('id', '!=', $draft->id)
+            ->whereNotNull('message_id')
+            ->latest('received_at')
+            ->latest('id')
+            ->first();
 
         $mailbox = $thread->mailbox;
         $messageId = Str::uuid().'@'.parse_url(config('app.url'), PHP_URL_HOST);
@@ -52,13 +58,18 @@ class CrmMailSender
         }
         $this->attachFiles($email, $draft);
         $email->getHeaders()->addIdHeader('Message-ID', $messageId);
+        if ($previousMessage?->message_id) {
+            $email->getHeaders()->addIdHeader('In-Reply-To', $previousMessage->message_id);
+            $email->getHeaders()->addTextHeader('References', $previousMessage->message_id);
+        }
 
         $this->mailer($mailbox)->send($email);
 
-        return DB::transaction(function () use ($thread, $draft, $user, $messageId, $plainBody, $htmlBody): CrmMailMessage {
+        return DB::transaction(function () use ($thread, $draft, $previousMessage, $user, $messageId, $plainBody, $htmlBody): CrmMailMessage {
             $draft->forceFill([
                 'sent_by_user_id' => $user->id,
                 'message_id' => $messageId,
+                'in_reply_to' => $previousMessage?->message_id,
                 'direction' => 'outgoing',
                 'to' => $draft->to,
                 'cc' => $draft->cc,
@@ -72,7 +83,7 @@ class CrmMailSender
             $thread->forceFill([
                 'assigned_user_id' => $thread->assigned_user_id ?: $user->id,
                 'status' => 'waiting_customer',
-                'messages_count' => 1,
+                'messages_count' => $thread->messages()->count(),
                 'last_message_at' => now(),
                 'handled_at' => now(),
             ])->save();
@@ -167,7 +178,8 @@ class CrmMailSender
 
         $thread->forceFill([
             'status' => 'waiting_customer',
-            'messages_count' => $thread->messages_count + 1,
+            'subject' => $subject,
+            'messages_count' => $thread->messages()->count(),
             'last_message_at' => now(),
             'handled_at' => now(),
         ])->save();

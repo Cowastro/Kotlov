@@ -137,8 +137,10 @@ class ImapMailboxSynchronizer
                     $thread->forceFill([
                         'crm_counterparty_id' => $thread->crm_counterparty_id ?? $counterparty?->id,
                         'crm_contact_id' => $thread->crm_contact_id ?? $contact?->id,
-                        'participant_name' => $thread->participant_name ?: $fromName,
-                        'messages_count' => $thread->messages_count + 1,
+                        'participant_name' => $fromName ?: $thread->participant_name,
+                        'participant_email' => $fromEmail,
+                        'subject' => $subject,
+                        'messages_count' => $thread->messages()->count(),
                         'unread_count' => $thread->unread_count + 1,
                         'last_message_at' => $receivedAt,
                         'status' => $wasTrashed || in_array($thread->status, ['closed', 'waiting_customer'], true)

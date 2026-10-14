@@ -73,8 +73,8 @@ class CommercialDocumentWorkflow
             'Документ приложен к письму в формате PDF.',
         ], fn ($line): bool => $line !== null));
 
-        $thread = app(SupplierRequestMailDraftService::class)->create(
-            $mailbox,
+        $drafts = app(SupplierRequestMailDraftService::class);
+        $draftArguments = [
             $user,
             [$document->client_email],
             $title,
@@ -83,7 +83,10 @@ class CommercialDocumentWorkflow
             [],
             [$attachment['path']],
             [$attachment['path'] => $attachment['name']],
-        );
+        ];
+        $thread = $document->mailThread
+            ? $drafts->createInThread($document->mailThread, ...$draftArguments)
+            : $drafts->create($mailbox, ...$draftArguments);
 
         $document->forceFill(['crm_mail_thread_id' => $thread->id])->save();
 

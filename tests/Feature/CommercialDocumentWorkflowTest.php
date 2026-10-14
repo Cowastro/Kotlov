@@ -163,6 +163,71 @@ class CommercialDocumentWorkflowTest extends TestCase
         $this->assertSame($thread->id, $document->fresh()->crm_mail_thread_id);
     }
 
+    public function test_mail_draft_for_an_existing_deal_stays_in_the_original_thread(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::query()->create([
+            'name' => 'KOTLOV',
+            'email' => 'deal-thread@kotlov.by',
+            'username' => 'deal-thread@kotlov.by',
+            'password' => 'secret',
+            'imap_host' => 'imap.example.com',
+            'imap_port' => 993,
+            'imap_encryption' => 'ssl',
+            'imap_folder' => 'INBOX',
+            'smtp_host' => 'smtp.example.com',
+            'smtp_port' => 465,
+            'smtp_encryption' => 'ssl',
+            'is_enabled' => true,
+        ]);
+        $thread = $mailbox->threads()->create([
+            'thread_key' => hash('sha256', 'original-deal-thread'),
+            'subject' => 'Запрос на поставку',
+            'participant_name' => 'Анна',
+            'participant_email' => 'anna@example.com',
+            'status' => 'in_progress',
+            'sales_stage' => 'qualification',
+            'priority' => 'normal',
+            'messages_count' => 1,
+            'unread_count' => 0,
+            'last_message_at' => now()->subHour(),
+        ]);
+        $thread->messages()->create([
+            'mailbox_id' => $mailbox->id,
+            'message_id' => 'request@example.com',
+            'direction' => 'incoming',
+            'from_name' => 'Анна',
+            'from_email' => 'anna@example.com',
+            'to' => [['name' => 'KOTLOV', 'email' => $mailbox->email]],
+            'subject' => 'Запрос на поставку',
+            'text_body' => 'Просим подготовить предложение.',
+            'is_read' => true,
+            'received_at' => now()->subHour(),
+        ]);
+        $document = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'crm_mail_thread_id' => $thread->id,
+            'client_name' => 'Анна',
+            'client_email' => 'anna@example.com',
+        ]);
+        $document->items()->create([
+            'name' => 'Котёл',
+            'quantity' => 1,
+            'unit_price' => 1000,
+            'vat_rate' => 20,
+        ]);
+
+        $draftThread = app(CommercialDocumentWorkflow::class)->createMailDraft($document, $user);
+
+        $this->assertSame($thread->id, $draftThread->id);
+        $this->assertSame($thread->id, $document->fresh()->crm_mail_thread_id);
+        $this->assertSame(2, $draftThread->messages_count);
+        $this->assertSame(['incoming', 'draft'], $draftThread->messages->pluck('direction')->all());
+        $this->assertSame('qualification', $draftThread->sales_stage);
+        $this->assertStringContainsString($document->number, $draftThread->subject);
+    }
+
     public function test_manager_can_create_and_update_commercial_documents(): void
     {
         $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);

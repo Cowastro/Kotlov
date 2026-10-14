@@ -196,7 +196,7 @@ class CrmMailThreadResource extends Resource
                     ->sortable(),
                 TextColumn::make('participant_name')->label('Отправитель')->weight('bold')->searchable()
                     ->description(fn (CrmMailThread $record): string => $record->participant_email),
-                TextColumn::make('subject')->label('Тема')->searchable()->limit(65)->wrap()
+                TextColumn::make('subject')->label('Последняя тема')->searchable()->limit(65)->wrap()
                     ->description(fn (CrmMailThread $record): string => $record->messages_count.' писем · непрочитанных '.$record->unread_count),
                 TextColumn::make('counterparty.name')->label('CRM')->placeholder('Новый лид')
                     ->description(fn (CrmMailThread $record): ?string => $record->contact?->full_name),
