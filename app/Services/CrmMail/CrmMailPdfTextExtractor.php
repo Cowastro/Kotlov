@@ -3,6 +3,7 @@
 namespace App\Services\CrmMail;
 
 use App\Models\CrmMailMessage;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -92,12 +93,12 @@ class CrmMailPdfTextExtractor
     {
         $key = trim((string) config('services.ai.api_key', ''));
         if ($key === '') {
-            return '';
+            throw new RuntimeException('На сервере не настроен ключ DeepSeek (AI_API_KEY).');
         }
 
         $pages = $this->renderPdfPages($path);
         if ($pages === []) {
-            return '';
+            throw new RuntimeException('Сервер не смог преобразовать страницы PDF в изображения. Проверьте установку Poppler (pdftoppm или pdftocairo).');
         }
 
         $content = [[
@@ -128,21 +129,38 @@ PROMPT,
             $client = $client->withOptions(['proxy' => $proxy]);
         }
 
-        $response = $client->retry(2, 750, throw: false)
-            ->post((string) config('services.ai.api_url', 'https://api.deepseek.com/chat/completions'), [
-                'model' => (string) config('services.ai.deepseek_document_model', 'deepseek-flash'),
-                'max_tokens' => 6_000,
-                'messages' => [[
-                    'role' => 'user',
-                    'content' => $content,
-                ]],
-            ]);
-
-        if (! $response->successful()) {
-            return '';
+        $url = trim((string) config('services.ai.api_url', ''));
+        if ($url === '') {
+            throw new RuntimeException('На сервере не указан адрес DeepSeek API (AI_API_URL).');
         }
 
-        return trim((string) data_get($response->json(), 'choices.0.message.content', ''));
+        try {
+            $response = $client->retry(2, 750, throw: false)
+                ->post($url, [
+                    'model' => (string) config('services.ai.deepseek_document_model', 'deepseek-flash'),
+                    'max_tokens' => 6_000,
+                    'messages' => [[
+                        'role' => 'user',
+                        'content' => $content,
+                    ]],
+                ]);
+        } catch (ConnectionException) {
+            throw new RuntimeException('Сервер не смог соединиться с DeepSeek. Повторите попытку через минуту.');
+        }
+
+        if (! $response->successful()) {
+            $apiMessage = trim((string) data_get($response->json(), 'error.message', ''));
+            $reason = $this->safeApiError($apiMessage);
+
+            throw new RuntimeException('DeepSeek вернул ошибку '.$response->status().($reason !== '' ? ': '.$reason : '.'));
+        }
+
+        $text = trim((string) data_get($response->json(), 'choices.0.message.content', ''));
+        if ($text === '') {
+            throw new RuntimeException('DeepSeek обработал страницы, но не вернул распознанный текст.');
+        }
+
+        return $text;
     }
 
     /** @return list<array{mime: string, data: string}> */
@@ -155,14 +173,23 @@ PROMPT,
 
         try {
             $prefix = $directory.DIRECTORY_SEPARATOR.'page';
-            $process = new Process([
-                (string) config('services.ai.pdftoppm_binary', 'pdftoppm'),
-                '-jpeg', '-r', '170', '-f', '1', '-l', '8', '-scale-to', '1800', $path, $prefix,
-            ]);
-            $process->setTimeout(60);
-            $process->run();
-            if (! $process->isSuccessful()) {
-                return [];
+            $commands = [
+                [
+                    (string) config('services.ai.pdftoppm_binary', 'pdftoppm'),
+                    '-jpeg', '-r', '170', '-f', '1', '-l', '8', '-scale-to', '1800', $path, $prefix,
+                ],
+                [
+                    'pdftocairo', '-jpeg', '-r', '170', '-f', '1', '-l', '8', '-scale-to', '1800', $path, $prefix,
+                ],
+            ];
+
+            foreach ($commands as $command) {
+                $process = new Process($command);
+                $process->setTimeout(60);
+                $process->run();
+                if ($process->isSuccessful() && (glob($prefix.'-*.jpg') ?: []) !== []) {
+                    break;
+                }
             }
 
             $files = glob($prefix.'-*.jpg') ?: [];
@@ -183,6 +210,17 @@ PROMPT,
             }
             @rmdir($directory);
         }
+    }
+
+    private function safeApiError(string $message): string
+    {
+        if ($message === '') {
+            return '';
+        }
+
+        $message = preg_replace('/sk-[A-Za-z0-9_-]+/i', '[ключ скрыт]', $message) ?? $message;
+
+        return mb_substr(strip_tags($message), 0, 300);
     }
 
     private function hasUsefulText(string $text): bool

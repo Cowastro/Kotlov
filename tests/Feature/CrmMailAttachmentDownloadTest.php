@@ -159,6 +159,34 @@ class CrmMailAttachmentDownloadTest extends TestCase
         ]))->assertForbidden();
     }
 
+    public function test_deepseek_api_error_is_shown_to_manager(): void
+    {
+        Storage::fake('local');
+        config([
+            'services.ai.api_key' => 'test-deepseek-key',
+            'services.ai.api_url' => 'https://api.deepseek.test/chat/completions',
+            'services.ai.deepseek_document_model' => 'deepseek-flash',
+            'services.ai.pdftotext_binary' => 'missing-pdftotext-for-test',
+        ]);
+        Http::fake([
+            'api.deepseek.test/*' => Http::response([
+                'error' => ['message' => 'Insufficient Balance'],
+            ], 402),
+        ]);
+        $this->bindPdfRendererStub();
+
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $path = 'crm-mail-attachments/incoming/1/105/01-scan.pdf';
+        $message = $this->messageWithAttachment($path, 'SCAN0102.PDF');
+        Storage::disk('local')->put($path, "%PDF-1.4\nscanned-image-only");
+
+        $this->actingAs($manager)->get(route('admin.crm-mail-messages.attachments.read-pdf', [
+            'message' => $message,
+            'attachment' => 0,
+        ]))->assertOk()
+            ->assertSee('DeepSeek вернул ошибку 402: Insufficient Balance');
+    }
+
     private function messageWithAttachment(
         string $path,
         string $name = 'order.pdf',
