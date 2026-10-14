@@ -1,0 +1,229 @@
+{
+    "code": "2026-10-14-catalog-zero-034",
+    "observed_at": "2026-10-14T07:30:00+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "skus": [
+            "PS-011.858", "PS-011.429", "PS-008.829", "PS-010.835", "PS-012.028",
+            "PS-008.635", "PS-012.165", "PS-008.476", "PS-008.497", "PS-008.541",
+            "PS-008.542", "PS-008.545", "PS-012.173", "PS-000.17524", "PS-000.17374",
+            "PS-000.17375", "PS-000.17376", "PS-000.17525", "PS-000.17369", "PS-000.17370",
+            "PS-000.17379", "PS-000.17528", "PS-000.17367", "PS-000.17377", "PS-000.17526"
+        ],
+        "after_id": 0,
+        "limit": 25,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [
+        {"code": "web-amazonka-by-20261014-p034", "name": "Amazonka.by", "kind": "competitor", "base_url": "https://amazonka.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точные карточки Kennet Ария 200 и RealFlame FireSpace 33 S IR."},
+        {"code": "web-kotelok-by-20261014-p034", "name": "КотелОК", "kind": "competitor", "base_url": "https://kotelok.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точная карточка TESY MaxEau Floor 150."},
+        {"code": "web-belotop-by-20261014-p034", "name": "Белотоп", "kind": "competitor", "base_url": "https://belotop.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точные карточки TESY MaxEau Floor 150 и UNIPUMP LPA 20-40 B."},
+        {"code": "web-tm24-by-20261014-p034", "name": "Термостудия", "kind": "competitor", "base_url": "https://tm24.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точная карточка Bosch GAZ 2000 W WBN 24 CRN."},
+        {"code": "web-yoursale-by-20261014-p034", "name": "Yoursale.by", "kind": "competitor", "base_url": "https://www.yoursale.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точная карточка портала Smolcom Stamford MB/JUP/SYM26 серого цвета."},
+        {"code": "web-ultraprice-by-20261014-p034", "name": "ULTRAPRICE", "kind": "competitor", "base_url": "https://ultraprice.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точная карточка Grundfos COMFORT 15-14 B PM."},
+        {"code": "web-progreem-by-20261014-p034", "name": "PROGREEM.BY", "kind": "competitor", "base_url": "https://progreem.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точная карточка UNIPUMP LPA 20-40 B 130."},
+        {"code": "web-teplosila-by-20261014-p034", "name": "Теплосила", "kind": "competitor", "base_url": "https://teplosila.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точная карточка Ariston Wi-Fi Gateway."},
+        {"code": "web-pricepulse-by-20261014-p034", "name": "Pricepulse.by / Onliner", "kind": "marketplace", "base_url": "https://pricepulse.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Агрегированное предложение точной модели Ariston Aures M 7.7."}
+    ],
+    "products": [
+        {
+            "sku": "PS-011.858",
+            "review_reason": "В карточке KOTLOV не указан размер рулона; найденные предложения Алукрафт относятся к 12, 18 и 30 м² и не позволяют установить точную модификацию.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Несовпадающие размеры и цены; точное сопоставление невозможно.", "confidence": "high", "search_queries": ["Беларусь купить Алукрафт фольга на бумажной основе цена BYN"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-011.429",
+            "review_reason": "Найдена только одна независимая белорусская цена точной модели Kennet Ария 200; этого недостаточно для изменения цены.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-amazonka-by-20261014-p034", "url": "https://amazonka.by/pech-otopitelnaya-kennet-ariya-200", "external_name": "Печь отопительная Kennet Ария 200", "model": "Kennet Ария 200", "package": "печь со стеклом", "observed_price": 815, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "preorder", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Amazonka.by: точная модель Kennet Ария 200, 815 BYN, под заказ 3 дня."}
+            ],
+            "research": {"summary": "Одна независимая цена в BYN; российская карточка производителя не является сопоставимым белорусским предложением.", "confidence": "high", "search_queries": ["Беларусь Kennet Ария 200 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-008.829",
+            "review_reason": "Две независимые белорусские цены TESY MaxEau Floor 150 не достигают порога трёх источников.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-kotelok-by-20261014-p034", "url": "https://lepel.kotelok.by/catalog/boilers/boyler-kosvennogo-nagreva-tesy-maxeau-floor-150/", "external_name": "Бойлер косвенного нагрева TESY MaxEau Floor 150", "model": "TESY MaxEau Floor 150", "package": "напольный бойлер 150 л", "observed_price": 2213.30, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "КотелОК: точная модель, 2 213,30 BYN, есть в наличии."},
+                {"source": "web-belotop-by-20261014-p034", "url": "https://belotop.by/vodonagrevateli/100-150-l", "external_name": "Бойлер косвенного нагрева TESY MaxEau Floor 150", "model": "TESY MaxEau Floor 150", "package": "напольный бойлер 150 л", "observed_price": 2283, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Белотоп: точная модель, 2 283 BYN, на складе."}
+            ],
+            "research": {"summary": "Две независимые точные цены 2 213,30 и 2 283 BYN.", "confidence": "high", "search_queries": ["Беларусь TESY MaxEau Floor 150 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-010.835",
+            "review_reason": "Одна независимая текущая цена Bosch GAZ 2000 W WBN 24 CRN; старую цену KOTLOV нельзя восстанавливать без трёх подтверждений.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-tm24-by-20261014-p034", "url": "https://tm24.by/bosch-gaz-2000-w-wbn-24-crn", "external_name": "Газовый котёл Bosch GAZ 2000 W WBN 24 CRN", "model": "Bosch GAZ 2000 W WBN 24 CRN", "package": "котёл 24 кВт, дымоход в комплекте", "observed_price": 2700, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Термостудия: точная модель, 2 700 BYN; в описании указан комплект дымоудаления 60/100 мм."}
+            ],
+            "research": {"summary": "Подтверждена одна независимая цена 2 700 BYN.", "confidence": "high", "search_queries": ["Беларусь Bosch Gaz 2000 W WBN 24 CRN цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-012.028",
+            "review_reason": "Белорусская цена точной Federica Bugatti 24В VARME BLACK найдена только на собственном домене KOTLOV; независимые предложения относятся к рынку России.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимой сопоставимой цены в BYN нет.", "confidence": "high", "search_queries": ["Беларусь Federica Bugatti 24В VARME BLACK цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-008.635",
+            "review_reason": "Для Grundfos MQ 3-45 в Беларуси найдены только цена по запросу и зарубежное предложение; актуальной сопоставимой цены в BYN нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Белорусское объявление без цены, зарубежная карточка исключена.", "confidence": "high", "search_queries": ["Беларусь Grundfos MQ 3-45 цена BYN"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-012.165",
+            "review_reason": "Найдена одна независимая цена точного портала Smolcom Stamford MB/JUP/SYM26 серого цвета.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-yoursale-by-20261014-p034", "url": "https://www.yoursale.by/electrofireplace/smolcom", "external_name": "Портал Smolcom Stamford MB/JUP/SYM26 (серый)", "model": "Smolcom Stamford MB/JUP/SYM26", "package": "серый портал", "observed_price": 1862.40, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Yoursale.by: точная модель и серый цвет, 1 862,40 BYN."}
+            ],
+            "research": {"summary": "Одна независимая точная цена 1 862,40 BYN.", "confidence": "high", "search_queries": ["Беларусь Smolcom Stamford MB/JUP/SYM26 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-008.476",
+            "review_reason": "Название указывает Grundfos ALPHA1 L 20-40 N, а URL товара — ALPHA1 L 15-40 130; конфликт идентичности запрещает установку цены.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Найдены только цена по запросу и старые прайс-листы; дополнительно конфликтует модель в URL.", "confidence": "high", "search_queries": ["Беларусь Grundfos ALPHA1 L 20-40 N цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-008.497",
+            "review_reason": "Товар не идентифицирован: в production указано только «Товар 8497», точную модель проверить невозможно.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Отсутствуют производитель и модель; рыночный поиск невозможен без риска ложного сопоставления.", "confidence": "high", "search_queries": ["Товар 8497 циркуляционный насос"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-008.541",
+            "review_reason": "Для точной модификации Grundfos COMFORT 15-14 BXT PM не найдено независимых белорусских цен; результаты относятся к B PM и BDT PM.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Модификации B PM/BDT не считаются точным совпадением BXT PM.", "confidence": "high", "search_queries": ["Беларусь Grundfos COMFORT 15-14 BXT PM цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-008.542",
+            "review_reason": "Найдена одна белорусская цена точной Grundfos COMFORT 15-14 B PM; зарубежные предложения не используются для белорусской розницы.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-ultraprice-by-20261014-p034", "url": "https://ultraprice.by/product/cirkulyacionnyj-nasos-grundfos-comfort-15-14-b-pm", "external_name": "Циркуляционный насос Grundfos COMFORT 15-14 B PM", "model": "Grundfos COMFORT 15-14 B PM", "package": "насос ГВС", "observed_price": 1011.26, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "ULTRAPRICE: точная модель 15-14 B PM, 1 011,26 BYN, в наличии."}
+            ],
+            "research": {"summary": "Одна независимая точная цена 1 011,26 BYN.", "confidence": "high", "search_queries": ["Беларусь Grundfos COMFORT 15-14 B PM цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-008.545",
+            "review_reason": "Две независимые белорусские цены UNIPUMP LPA 20-40 B 130 не достигают порога трёх источников.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-progreem-by-20261014-p034", "url": "https://progreem.by/catalog/otoplenie/nasosy-tsirkulyatsionnye/dlya-otopleniya/unipump/", "external_name": "Циркуляционный насос Unipump LPA 20-40 B 130", "model": "UNIPUMP LPA 20-40 B 130", "package": "монтажная длина 130 мм", "observed_price": 385.75, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "check", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "PROGREEM.BY: точная модель, 385,75 BYN, наличие уточняется."},
+                {"source": "web-belotop-by-20261014-p034", "url": "https://belotop.by/nasosy/montazhnaya-dlina-130", "external_name": "Насос циркуляционный Unipump LPA 20-40 B", "model": "UNIPUMP LPA 20-40 B 130", "package": "раздел насосов с монтажной длиной 130 мм", "observed_price": 364, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Белотоп: точная модель в разделе 130 мм, 364 BYN, на складе."}
+            ],
+            "research": {"summary": "Две независимые точные цены 364 и 385,75 BYN.", "confidence": "high", "search_queries": ["Беларусь UNIPUMP LPA 20-40 B 130 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-012.173",
+            "review_reason": "Найдена одна независимая белорусская цена RealFlame FireSpace 33 S IR; региональные домены KOTLOV исключены.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-amazonka-by-20261014-p034", "url": "https://amazonka.by/elektrokamin-realflame-firespace-33-s-ir-black", "external_name": "Электрокамин RealFlame Firespace 33 S IR Black", "model": "RealFlame FireSpace 33 S IR", "package": "чёрный электрический очаг", "observed_price": 1483, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "preorder", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Amazonka.by: точная модель FireSpace 33 S IR Black, 1 483 BYN, под заказ 3 дня."}
+            ],
+            "research": {"summary": "Одна независимая точная цена 1 483 BYN.", "confidence": "high", "search_queries": ["Беларусь RealFlame FireSpace 33 S IR цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17524",
+            "review_reason": "Найдена одна независимая белорусская цена Ariston Wi-Fi Gateway; второй продавец показывает цену по запросу и отсутствие.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-teplosila-by-20261014-p034", "url": "https://teplosila.by/blok-dispetcherizacii-ariston-wi-fi-gateway", "external_name": "Блок диспетчеризации Ariston Wi-Fi Gateway", "model": "Ariston Wi-Fi Gateway", "package": "модуль управления", "observed_price": 499, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Теплосила: точная модель Wi-Fi Gateway, 499 BYN, есть в наличии."}
+            ],
+            "research": {"summary": "Одна независимая положительная цена 499 BYN.", "confidence": "high", "search_queries": ["Беларусь Ariston WI-FI GATEWAY цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17374",
+            "review_reason": "Точная модель Ariston MARCO POLO Gi7 FF не подтверждена: результаты относятся к Gi7S 11L FFI NG и другим модификациям.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Конфликт обозначения модели, независимой цены точного варианта нет.", "confidence": "high", "search_queries": ["Беларусь Ariston MARCO POLO Gi7 FF цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17375",
+            "review_reason": "Для Ariston MARCO POLO M2 10L FF NG найдены только зарубежные и архивные предложения; актуальной цены в BYN нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Белорусских актуальных цен не найдено.", "confidence": "high", "search_queries": ["Беларусь Ariston MARCO POLO M2 10L FF NG цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17376",
+            "review_reason": "Ariston FAST 14 CF P представлен только архивными и зарубежными предложениями; свежей белорусской цены нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Актуальных независимых цен в BYN не найдено.", "confidence": "high", "search_queries": ["Беларусь Ariston FAST 14 CF P цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17525",
+            "review_reason": "Для Ariston FAST R 14 независимая белорусская цена не найдена; собственная карточка KOTLOV показывает цену по запросу.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых положительных цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь Ariston FAST R 14 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17369",
+            "review_reason": "Предложения Ariston CARES X 15 FF NG устарели либо относятся к новой CARES XC; свежих трёх источников нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Архивные цены и другая модификация XC исключены.", "confidence": "high", "search_queries": ["Беларусь Ariston CARES X 15 FF NG цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17370",
+            "review_reason": "Для Ariston CARES X 24 FF NG найдены старые либо зарубежные предложения; текущего белорусского набора из трёх цен нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Актуальных независимых сопоставимых цен в BYN недостаточно.", "confidence": "high", "search_queries": ["Беларусь Ariston CARES X 24 FF NG цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17379",
+            "review_reason": "Для Ariston CARES X 18 FF NG найдена только карточка с нулевой ценой и старые каталожные упоминания.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Положительной актуальной цены в BYN нет.", "confidence": "high", "search_queries": ["Беларусь Ariston CARES X 18 FF NG цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17528",
+            "review_reason": "Для Ariston HS XC 24 FF найдены только зарубежные карточки и предложения запчастей; белорусской цены котла нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых положительных цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь Ariston HS XC 24 FF цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17367",
+            "review_reason": "Для Ariston ATMOR IN-LINE 12K актуальных независимых предложений точной модели в Беларуси не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точная модель не представлена в актуальной белорусской выдаче.", "confidence": "high", "search_queries": ["Беларусь Ariston ATMOR IN-LINE 12K цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17377",
+            "review_reason": "Найдена одна агрегированная белорусская цена Ariston AURES M 7.7; независимых продавцов меньше трёх.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-pricepulse-by-20261014-p034", "url": "https://pricepulse.by/product/protochnyy-elektricheskiy-vodonagrevatel-ariston-aures-m-7-7-189407673", "external_name": "Проточный электрический водонагреватель Ariston Aures M 7.7", "model": "Ariston AURES M 7.7", "package": "проточный водонагреватель 7,7 кВт", "observed_price": 466.01, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "check", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Pricepulse со ссылкой на Onliner: точная модель 7,7 кВт, предложение 466,01 BYN."}
+            ],
+            "research": {"summary": "Одна агрегированная точная цена 466,01 BYN.", "confidence": "medium", "search_queries": ["Беларусь Ariston AURES M 7.7 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        },
+        {
+            "sku": "PS-000.17526",
+            "review_reason": "Ariston NTS FLAT PW 50 V подтверждается документацией как модель, но актуальных независимых белорусских цен не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Есть только сертификаты и страницы запчастей; рыночной цены в BYN нет.", "confidence": "high", "search_queries": ["Беларусь Ariston NTS FLAT PW 50 V цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:30:00+00:00"}
+        }
+    ],
+    "failed_products": []
+}
