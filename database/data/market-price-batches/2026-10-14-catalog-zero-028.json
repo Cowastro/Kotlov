@@ -1,0 +1,110 @@
+{
+    "code": "2026-10-14-catalog-zero-028",
+    "observed_at": "2026-10-14T06:25:00+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "Смолком",
+        "skus": [
+            "PS-002.612",
+            "PS-002.619",
+            "PS-002.622",
+            "PS-002.623",
+            "PS-002.633"
+        ],
+        "after_id": 2480,
+        "limit": 5,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [],
+    "products": [
+        {
+            "sku": "PS-002.612",
+            "review_reason": "Точных предложений портала Alexandria Смолком с артикулом PS-002.612 в Беларуси не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Ни официальный каталог, ни магазины и агрегаторы не содержат точной карточки; найденные порталы отличаются моделью или артикулом.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Портал Alexandria Смолком PS-002.612",
+                    "портал электрокамин Alexandria PS-002.612",
+                    "Smolcom PS-002.612 портал электрокамина"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:24:06+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.619",
+            "review_reason": "Портал Madrid Смолком с точным артикулом PS-002.619 отсутствует в доступных белорусских каталогах.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Найдены другие порталы Смолком с соседними артикулами, но ни один не совпадает с PS-002.619.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Портал Madrid Смолком PS-002.619",
+                    "Smolcom PS-002.619 портал",
+                    "PS-002.619 Madrid Смолком Беларусь"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:24:21+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.622",
+            "review_reason": "Активных предложений портала Marseille Смолком с артикулом PS-002.622 не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Поиск по названию, бренду и артикулу не выявил подтверждаемой карточки точной модели.",
+                "confidence": "low",
+                "search_queries": [
+                    "Портал Marseille Смолком PS-002.622 купить",
+                    "портал Marseille Смолком PS-002.622",
+                    "портал Marseille PS-002.622 Беларусь"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:24:34+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.623",
+            "review_reason": "Портал Mercia Смолком представлен только собственной карточкой KOTLOV без положительной цены и покупки.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Карточка KOTLOV содержит цену по запросу; другие модели Murano и Corsica отличаются артикулом и дизайном.",
+                "confidence": "low",
+                "search_queries": [
+                    "Портал Mercia Смолком PS-002.623 купить Беларусь",
+                    "Smolcom Mercia PS-002.623 электрокамин портал",
+                    "Портал Mercia артикул PS-002.623 Смолком"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:24:48+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.633",
+            "review_reason": "Точного предложения углового портала Stone Смолком PS-002.633 не найдено; ближайшие варианты имеют другие артикулы.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Stone Montebello PS-002.632 и угловой PS-012.136 не совпадают с требуемым артикулом и не используются как ценовые аналоги.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Портал Stone угловой Смолком PS-002.633",
+                    "PS-002.633 Smolcom портал",
+                    "Smolcom PS-002.633 угловой портал"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:25:00+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
