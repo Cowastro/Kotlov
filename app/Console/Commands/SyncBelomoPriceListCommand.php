@@ -29,12 +29,16 @@ class SyncBelomoPriceListCommand extends Command
         $classified = $this->classify($rows, $priceList, $supplierId);
         $reportPath = $this->writeReport($classified);
         $counts = collect($classified)->countBy('status');
+        $quality = $this->qualityMetrics($classified);
 
         $this->line($apply ? 'APPLY: прайс БелОМО будет привязан к поставщику СанБизнесГруп.' : 'DRY RUN: база не изменяется.');
         $this->line('metric.belomo.price_rows='.count($rows));
         $this->line('metric.belomo.matched='.$counts->get('matched', 0));
         $this->line('metric.belomo.create='.$counts->get('create', 0));
         $this->line('metric.belomo.ambiguous='.$counts->get('ambiguous', 0));
+        foreach ($quality as $metric => $value) {
+            $this->line('metric.belomo.'.$metric.'='.$value);
+        }
         $this->line('metric.belomo.report='.$reportPath);
 
         if (! $apply) {
@@ -133,7 +137,11 @@ class SyncBelomoPriceListCommand extends Command
         File::ensureDirectoryExists(dirname($path));
         $handle = fopen($path, 'wb');
         fwrite($handle, "\xEF\xBB\xBF");
-        fputcsv($handle, ['status', 'article', 'name', 'price_without_vat_byn', 'partner_price_with_vat_byn', 'product_id', 'sku', 'retail_price_byn'], ';');
+        fputcsv($handle, [
+            'status', 'article', 'name', 'price_without_vat_byn', 'partner_price_with_vat_byn',
+            'product_id', 'sku', 'retail_price_byn', 'margin_byn', 'is_active',
+            'images_count', 'has_description', 'specs_count', 'card_ready',
+        ], ';');
         foreach ($classified as $item) {
             $product = $item['product'];
             fputcsv($handle, [
@@ -141,6 +149,12 @@ class SyncBelomoPriceListCommand extends Command
                 number_format($item['row']['partner_price_byn'], 2, '.', ''),
                 number_format($this->priceWithVat($item['row']['partner_price_byn']), 2, '.', ''),
                 $product->id ?? '', $product->sku ?? '', isset($product->price) ? number_format((float) $product->price, 2, '.', '') : '',
+                isset($product->price) ? number_format((float) $product->price - $this->priceWithVat($item['row']['partner_price_byn']), 2, '.', '') : '',
+                $product ? ((bool) $product->is_active ? '1' : '0') : '',
+                $product ? count($this->jsonArray($product->images ?? null)) : 0,
+                $product && (filled($product->short_description ?? null) || filled($product->content ?? null)) ? '1' : '0',
+                $product ? count($this->jsonArray($product->specs ?? null)) : 0,
+                $this->cardIsReady($product) ? '1' : '0',
             ], ';');
         }
         fclose($handle);
@@ -282,5 +296,39 @@ class SyncBelomoPriceListCommand extends Command
     private function priceWithVat(float $priceWithoutVat): float
     {
         return round($priceWithoutVat * 1.20, 2);
+    }
+
+    private function cardIsReady(?object $product): bool
+    {
+        return $product !== null
+            && (bool) ($product->is_active ?? false)
+            && ! (bool) ($product->is_archived ?? false)
+            && (float) ($product->price ?? 0) > 0
+            && count($this->jsonArray($product->images ?? null)) > 0
+            && (filled($product->short_description ?? null) || filled($product->content ?? null));
+    }
+
+    /** @return array<string, int> */
+    private function qualityMetrics(array $classified): array
+    {
+        $metrics = ['card_ready' => 0, 'inactive' => 0, 'retail_missing' => 0, 'images_missing' => 0, 'description_missing' => 0, 'margin_conflict' => 0];
+        foreach ($classified as $item) {
+            $product = $item['product'];
+            if ($this->cardIsReady($product)) $metrics['card_ready']++;
+            if (! $product || ! (bool) ($product->is_active ?? false)) $metrics['inactive']++;
+            if (! $product || (float) ($product->price ?? 0) <= 0) $metrics['retail_missing']++;
+            if (! $product || count($this->jsonArray($product->images ?? null)) === 0) $metrics['images_missing']++;
+            if (! $product || (! filled($product->short_description ?? null) && ! filled($product->content ?? null))) $metrics['description_missing']++;
+            if ($product && (float) ($product->price ?? 0) > 0 && (float) $product->price < $this->priceWithVat($item['row']['partner_price_byn'])) $metrics['margin_conflict']++;
+        }
+        return $metrics;
+    }
+
+    private function jsonArray(mixed $value): array
+    {
+        if (is_array($value)) return $value;
+        if (! is_string($value) || trim($value) === '') return [];
+        $decoded = json_decode($value, true);
+        return is_array($decoded) ? $decoded : [];
     }
 }

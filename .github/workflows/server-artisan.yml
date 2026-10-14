@@ -20,6 +20,7 @@ on:
           - audit-unlinked-products
           - audit-price-integrity
           - audit-svah-group
+          - audit-belomo
           - verify-commercial-pdf
           - research-price-batch
           - upload-svah-pricelist
@@ -52,7 +53,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -202,6 +203,11 @@ jobs:
                   --dry-run \
                   --report=storage/app/reports/suppliers/svah-group/current-audit.csv
                 ;;
+              audit-belomo)
+                "$PHP_BIN" artisan supplier:sync-belomo-pricelist \
+                  --dry-run \
+                  --report=storage/app/reports/suppliers/belomo/current-audit.csv
+                ;;
               verify-commercial-pdf)
                 "$PHP_BIN" artisan commercial-documents:verify-pdf "${ARTISAN_ARGV[@]}"
                 ;;
@@ -314,7 +320,7 @@ jobs:
             grep '^metric\.svah_group\.' "$detail_log" || true
             echo "safe_svah_group_metrics_end"
           fi
-          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-belomo-pricelist" ]]; then
+          if [[ "$TASK" == "audit-belomo" || "${ARTISAN_ARGV[0]:-}" == "supplier:sync-belomo-pricelist" ]]; then
             echo "safe_belomo_metrics_begin"
             grep '^metric\.belomo\.' "$detail_log" || true
             echo "safe_belomo_metrics_end"
@@ -354,6 +360,31 @@ jobs:
         with:
           name: svah-group-current-audit
           path: artifacts/svah-group-current-audit.csv
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Download BelOMO audit
+        if: inputs.task == 'audit-belomo'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          set -euo pipefail
+          port="${SERVER_PORT:-22}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          mkdir -p artifacts
+          scp -q -i ~/.ssh/server_key -P "$port" \
+            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/reports/suppliers/belomo/current-audit.csv" \
+            artifacts/belomo-current-audit.csv
+
+      - name: Upload BelOMO audit artifact
+        if: inputs.task == 'audit-belomo'
+        uses: actions/upload-artifact@v6
+        with:
+          name: belomo-current-audit
+          path: artifacts/belomo-current-audit.csv
           if-no-files-found: error
           retention-days: 7
 
