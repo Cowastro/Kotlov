@@ -1,0 +1,208 @@
+{
+    "code": "2026-10-14-catalog-zero-035",
+    "observed_at": "2026-10-14T07:45:00+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "skus": [
+            "PS-000.17529", "PS-004.503", "KOTLOV-002092", "KOTLOV-006529", "KOTLOV-006531",
+            "KOTLOV-006536", "KOTLOV-006537", "KOTLOV-006542", "KOTLOV-006543", "KOTLOV-006544",
+            "KOTLOV-006555", "KOTLOV-006556", "KOTLOV-006557", "KOTLOV-004934", "Терморегулятор Ecoster 200",
+            "PS-010.754", "PS-010.755", "PS-010.756", "PS-010.757", "PS-010.758",
+            "PS-010.759", "PS-010.760", "PS-010.761", "PS-010.762", "PS-010.764"
+        ],
+        "after_id": 17526,
+        "limit": 25,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [
+        {"code": "web-artclimate-by-20261014-p035", "name": "Artclimate.by", "kind": "competitor", "base_url": "https://artclimate.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точная карточка Ariston ABS ANDRIS LUX 6 OR."},
+        {"code": "web-clime-by-20261014-p035", "name": "Clime.by", "kind": "competitor", "base_url": "https://clime.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точная карточка модуля Electrolux EAVS/I-30FA-BLACK."},
+        {"code": "web-fluger-by-20261014-p035", "name": "Fluger.by", "kind": "competitor", "base_url": "https://fluger.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точная карточка модуля Electrolux EAVS/I-30FA-BLACK."}
+    ],
+    "products": [
+        {
+            "sku": "PS-000.17529",
+            "review_reason": "Найдена одна независимая белорусская цена точной модели Ariston ABS ANDRIS LUX 6 OR; этого недостаточно для изменения цены.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-artclimate-by-20261014-p035", "url": "https://artclimate.by/vodonagrevatel-ariston-abs-andris-lux-6-or", "external_name": "Водонагреватель Ariston ABS Andris Lux 6 OR", "model": "Ariston ABS ANDRIS LUX 6 OR", "package": "6 л, установка над мойкой", "observed_price": 284.20, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "out_of_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": ["out_of_stock"], "evidence": "Artclimate.by: точная модель, цена 284,20 BYN, товар закончился."}
+            ],
+            "research": {"summary": "Одна точная белорусская карточка; зарубежные предложения исключены.", "confidence": "high", "search_queries": ["Беларусь Ariston ANDRIS LUX 6 OR цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-004.503",
+            "review_reason": "Для BIAWAR MEGA W-E 500 независимых белорусских цен не найдено; выдача ведёт на собственный каталог KOTLOV и другие объёмы.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точный объём 500 л не подтверждён независимой рыночной ценой.", "confidence": "high", "search_queries": ["Беларусь BIAWAR MEGA W-E 500 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-002092",
+            "review_reason": "Для комплекта Ballu H681 HEPA + угольный фильтр независимых карточек точной комплектации с ценой в BYN не найдено.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Точная связка фильтров для H681 не имеет подтверждённой белорусской цены.", "confidence": "high", "search_queries": ["Беларусь Ballu HEPA-фильтр угольный фильтр H681 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-006529",
+            "review_reason": "Бакелитовая ручка Blist с кодом 2943 не найдена как отдельная рыночная позиция.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Найдены только общие карточки печей Blist, не точная запчасть.", "confidence": "high", "search_queries": ["Blist 2943 бакелитовая ручка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-006531",
+            "review_reason": "Зольный ящик Blist Oganj с круглым регулятором не найден как отдельная запчасть с ценой.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Выдача содержит целые печи Oganj, а не сопоставимый зольный ящик.", "confidence": "high", "search_queries": ["Blist Зольный ящик Oganj круглый регулятор цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-006536",
+            "review_reason": "Аэрозольная краска Roberlo для Blist не подтверждена точной независимой карточкой.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Нет точной рыночной позиции с объёмом, цветом и ценой.", "confidence": "high", "search_queries": ["Blist Roberlo аэрозоль краска цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-006537",
+            "review_reason": "Никелированный наконечник Blist к зольному ящику не найден как отдельная рыночная позиция.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых точных предложений нет.", "confidence": "high", "search_queries": ["Blist наконечник никелированный к зольному ящику цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-006542",
+            "review_reason": "Термостойкое стекло Blist Polar 350x275 не найдено как точная отдельная запчасть с ценой.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Карточки печей Polar не подтверждают цену стекла 350x275.", "confidence": "high", "search_queries": ["Blist Polar 350x275 стекло цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-006543",
+            "review_reason": "Фиксатор стекла Blist не имеет модели или кода и не найден как точная отдельная позиция.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Недостаточная идентификация запчасти; сопоставление небезопасно.", "confidence": "high", "search_queries": ["Blist фиксатор стекла цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-006544",
+            "review_reason": "Чугунная крышка Blist Modena/Zar с кодом 003584 не найдена как отдельная рыночная позиция.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Поиск по коду и модели не дал точной карточки запчасти.", "confidence": "high", "search_queries": ["Blist 003584 крышка Modena Zar цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-006555",
+            "review_reason": "Белый уплотнительный шнур Blist 8x8 мм не найден с однозначной длиной комплекта и независимой ценой.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Без длины шнура предложения несопоставимы.", "confidence": "high", "search_queries": ["Blist шнур белый 8x8 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-006556",
+            "review_reason": "Серый уплотнительный шнур Blist 8x8 мм не найден с однозначной длиной комплекта и независимой ценой.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Без длины шнура предложения несопоставимы.", "confidence": "high", "search_queries": ["Blist шнур серый 8x8 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-006557",
+            "review_reason": "Чёрный уплотнительный шнур Blist 6x6 мм не найден с однозначной длиной комплекта и независимой ценой.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Без длины шнура предложения несопоставимы.", "confidence": "high", "search_queries": ["Blist шнур черный 6x6 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "KOTLOV-004934",
+            "review_reason": "Два независимых белорусских магазина подтверждают модуль Electrolux EAVS/I-30FA-BLACK по 730 BYN, но порог трёх источников не достигнут.",
+            "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-clime-by-20261014-p035", "url": "https://clime.by/minsk/electrolux/", "external_name": "Модуль приточно-вытяжной Electrolux для ENTERPRISE EAVS/I-30FA-BLACK", "model": "Electrolux EAVS/I-30FA-BLACK", "package": "приточно-вытяжной модуль 26 м³/ч", "observed_price": 730, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Clime.by: точная модель EAVS/I-30FA-BLACK, 730 BYN, в наличии."},
+                {"source": "web-fluger-by-20261014-p035", "url": "https://fluger.by/aksessuary/modul_pritochno_vytyazhnoy_electrolux_dlya_enterprise_sovmestim_s_modelyami_eacsi_09hen_blackwhiten8", "external_name": "Модуль приточно-вытяжной Electrolux для Enterprise", "model": "Electrolux EAVS/I-30FA-BLACK", "package": "приточно-вытяжной модуль 26 м³/ч", "observed_price": 730, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Fluger.by: точная модель EAVS/I-30FA-BLACK, 730 BYN, доступна к покупке."}
+            ],
+            "research": {"summary": "Две независимые точные цены по 730 BYN; объявление Kufar не считается отдельным магазином.", "confidence": "high", "search_queries": ["Беларусь Electrolux EAVS/I-30FA-BLACK цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "Терморегулятор Ecoster 200",
+            "review_reason": "Для ecoSTER 200 не найдено актуальных независимых белорусских карточек с положительной ценой; зарубежные версии и разные производители несопоставимы.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Результаты относятся к рынкам РФ/ЕС и различным совместимостям Zota, Plum и Biawar.", "confidence": "high", "search_queries": ["Беларусь Ecoster 200 терморегулятор цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-010.754",
+            "review_reason": "FireWay P101 имеет цены только на собственных доменах KOTLOV в Беларуси; независимые предложения относятся к рынку России.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay P101 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-010.755",
+            "review_reason": "FireWay P102 имеет белорусскую цену только на собственных доменах KOTLOV; российские карточки исключены.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay P102 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-010.756",
+            "review_reason": "FireWay P103 имеет белорусскую цену только на собственных доменах KOTLOV; несколько российских цен не являются белорусским рынком.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay P103 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-010.757",
+            "review_reason": "FireWay B101 имеет белорусскую цену только на собственных доменах KOTLOV; независимые предложения указаны в RUB.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay B101 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-010.758",
+            "review_reason": "FireWay B102 имеет белорусскую цену только на собственных доменах KOTLOV; независимые предложения указаны в RUB.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay B102 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-010.759",
+            "review_reason": "FireWay K211 не подтверждена независимыми белорусскими ценами; поисковая выдача смешивает дверку и духовой шкаф DS-K211.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Собственная цена KOTLOV исключена, независимой цены в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay K211 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-010.760",
+            "review_reason": "FireWay K201 не имеет независимых белорусских цен; карточки Молдовы и России исключены из сопоставимого рынка.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Собственная цена KOTLOV исключена, независимой цены в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay K201 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-010.761",
+            "review_reason": "FireWay K212 не имеет независимых белорусских цен; найденные предложения относятся к рынку России.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Собственная цена KOTLOV исключена, независимой цены в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay K212 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-010.762",
+            "review_reason": "Название указывает FireWay K202, но production URL содержит K404; конфликт точной модели запрещает установку цены.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Дополнительно независимых белорусских цен K202 нет.", "confidence": "high", "search_queries": ["Беларусь FireWay K202 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        },
+        {
+            "sku": "PS-010.764",
+            "review_reason": "FireWay K404 имеет цены только на собственных доменах KOTLOV в Беларуси; независимые предложения относятся к Молдове и России.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {"summary": "Независимых сопоставимых цен в BYN нет.", "confidence": "high", "search_queries": ["Беларусь FireWay K404 дверка цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T07:45:00+00:00"}
+        }
+    ],
+    "failed_products": []
+}

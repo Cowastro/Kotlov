@@ -1443,4 +1443,44 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             ->expectsOutputToContain('metric.prices_applied=0')
             ->assertSuccessful();
     }
+
+    public function test_thirty_fifth_catalog_zero_price_batch_preserves_evidence_and_holds_all_twenty_five_products(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Тест тридцать пятого пакета нулевых цен каталога',
+            'slug' => 'catalog-zero-price-batch-thirty-five-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+
+        $skus = [
+            'PS-000.17529', 'PS-004.503', 'KOTLOV-002092', 'KOTLOV-006529', 'KOTLOV-006531',
+            'KOTLOV-006536', 'KOTLOV-006537', 'KOTLOV-006542', 'KOTLOV-006543', 'KOTLOV-006544',
+            'KOTLOV-006555', 'KOTLOV-006556', 'KOTLOV-006557', 'KOTLOV-004934', 'Терморегулятор Ecoster 200',
+            'PS-010.754', 'PS-010.755', 'PS-010.756', 'PS-010.757', 'PS-010.758',
+            'PS-010.759', 'PS-010.760', 'PS-010.761', 'PS-010.762', 'PS-010.764',
+        ];
+
+        foreach ($skus as $index => $sku) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => 'Точная production-модель '.$sku,
+                'slug' => 'catalog-zero-price-batch-thirty-five-'.$index,
+                'sku' => $sku,
+                'price' => 0,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+        }
+
+        $this->artisan('catalog:apply-market-price-batch', [
+            'batch' => '2026-10-14-catalog-zero-035',
+        ])
+            ->expectsOutputToContain('metric.status=dry_run')
+            ->expectsOutputToContain('metric.products=25')
+            ->expectsOutputToContain('metric.observations=3')
+            ->expectsOutputToContain('metric.prices_applied=0')
+            ->assertSuccessful();
+    }
 }
