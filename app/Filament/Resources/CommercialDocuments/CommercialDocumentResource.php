@@ -8,10 +8,12 @@ use App\Filament\Resources\CommercialDocuments\Pages\ListCommercialDocuments;
 use App\Filament\Resources\CommercialDocuments\Pages\ViewCommercialDocument;
 use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
 use App\Models\CommercialDocument;
+use App\Models\CrmCounterparty;
 use App\Models\Product;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\Market\MarketWebResearchService;
+use App\Services\Telephony\PhoneNumber;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -65,7 +67,7 @@ class CommercialDocumentResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['manager', 'items', 'mailThread']);
+        return parent::getEloquentQuery()->with(['manager', 'items', 'mailThread', 'clientCounterparty', 'clientContact']);
     }
 
     public static function form(Schema $schema): Schema
@@ -89,6 +91,17 @@ class CommercialDocumentResource extends Resource
                 ->columns(2)
                 ->columnSpanFull()
                 ->schema([
+                    Select::make('crm_counterparty_id')
+                        ->label('Контрагент CRM')
+                        ->placeholder('Начните вводить компанию, УНП, email или телефон')
+                        ->helperText('Если контрагент не найден, он будет создан автоматически при сохранении документа.')
+                        ->searchable()
+                        ->live()
+                        ->getSearchResultsUsing(fn (string $search): array => self::searchCounterparties($search))
+                        ->getOptionLabelUsing(fn (mixed $value): ?string => self::counterpartyOptionLabel($value))
+                        ->afterStateUpdated(fn (mixed $state, Set $set) => self::fillClientFromCounterparty($state, $set))
+                        ->columnSpanFull(),
+                    Hidden::make('crm_contact_id'),
                     TextInput::make('client_company')->label('Компания')->maxLength(255),
                     TextInput::make('client_name')->label('Контактное лицо')->maxLength(255),
                     TextInput::make('client_email')->label('Email')->email()->maxLength(255),
@@ -468,5 +481,72 @@ class CommercialDocumentResource extends Resource
         $gross = (float) ($get('quantity') ?: 0) * (float) ($get('unit_price') ?: 0);
         $discount = (float) ($get('discount_percent') ?: 0);
         $set('line_total', round($gross * (1 - ($discount / 100)), 2));
+    }
+
+    /** @return array<int, string> */
+    private static function searchCounterparties(string $search): array
+    {
+        $search = trim($search);
+        $normalizedEmail = mb_strtolower($search);
+        $normalizedPhone = PhoneNumber::normalize($search);
+
+        return CrmCounterparty::query()
+            ->where(function (Builder $query) use ($search, $normalizedEmail, $normalizedPhone): void {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('public_name', 'like', "%{$search}%")
+                    ->orWhere('legal_name', 'like', "%{$search}%")
+                    ->orWhere('unp', 'like', "%{$search}%")
+                    ->orWhereHas('contactPoints', function (Builder $points) use ($normalizedEmail, $normalizedPhone): void {
+                        $points->where('normalized_value', 'like', "%{$normalizedEmail}%");
+                        if ($normalizedPhone) {
+                            $points->orWhere('normalized_value', 'like', "%{$normalizedPhone}%");
+                        }
+                    });
+            })
+            ->limit(30)
+            ->get()
+            ->mapWithKeys(fn (CrmCounterparty $counterparty): array => [
+                $counterparty->id => self::formatCounterpartyLabel($counterparty),
+            ])
+            ->all();
+    }
+
+    private static function counterpartyOptionLabel(mixed $value): ?string
+    {
+        $counterparty = CrmCounterparty::query()->find($value);
+
+        return $counterparty ? self::formatCounterpartyLabel($counterparty) : null;
+    }
+
+    private static function formatCounterpartyLabel(CrmCounterparty $counterparty): string
+    {
+        return $counterparty->name.($counterparty->unp ? ' · УНП '.$counterparty->unp : '');
+    }
+
+    private static function fillClientFromCounterparty(mixed $value, Set $set): void
+    {
+        if (! $value) {
+            $set('crm_contact_id', null);
+
+            return;
+        }
+
+        $counterparty = CrmCounterparty::query()
+            ->with(['contactPoints', 'contacts.contactPoints'])
+            ->find($value);
+        if (! $counterparty) {
+            return;
+        }
+
+        $contact = $counterparty->contacts->firstWhere('is_primary', true) ?? $counterparty->contacts->first();
+        $points = $contact?->contactPoints->isNotEmpty() ? $contact->contactPoints : $counterparty->contactPoints;
+
+        $set('crm_contact_id', $contact?->id);
+        $set('client_company', $counterparty->type === 'organization' ? ($counterparty->public_name ?: $counterparty->name) : null);
+        $set('client_name', $contact?->full_name ?: ($counterparty->type === 'person' ? $counterparty->name : null));
+        $set('client_email', $points->firstWhere('type', 'email')?->value);
+        $set('client_phone', $points->firstWhere('type', 'phone')?->value);
+        $set('client_unp', $counterparty->unp);
+        $set('client_address', $counterparty->legal_address ?: ($counterparty->actual_address ?: $counterparty->postal_address));
     }
 }

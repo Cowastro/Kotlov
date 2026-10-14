@@ -242,7 +242,7 @@ class CommercialDocumentWorkflowTest extends TestCase
             ->assertSeeText('ИИ-помощник подбора')
             ->assertSeeText('Подобрать товары')
             ->assertSeeText('Добавить выбранные в КП')
-            ->assertSeeText('Сравнить рынок')
+            ->assertSeeText('Рынок / исследование')
             ->assertSeeText('Условия оплаты')
             ->assertSeeText('Срок поставки');
     }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CommercialDocuments\Pages;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Models\Product;
+use App\Services\CommercialDocuments\CommercialDocumentClientResolver;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
 use Filament\Forms\Components\Repeater;
 use Filament\Notifications\Notification;
@@ -73,6 +74,7 @@ class CreateCommercialDocument extends CreateRecord
         if ($this->aiAssisted) {
             $record->forceFill(['ai_assisted' => true])->save();
         }
+        app(CommercialDocumentClientResolver::class)->sync($record);
         $record->recalculate();
 
         if ($this->createMailDraft && filter_var((string) $record->client_email, FILTER_VALIDATE_EMAIL)) {

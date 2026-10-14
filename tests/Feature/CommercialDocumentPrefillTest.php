@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\CommercialDocuments\Pages\CreateCommercialDocument;
 use App\Models\Category;
+use App\Models\CrmCounterparty;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -57,6 +58,16 @@ class CommercialDocumentPrefillTest extends TestCase
             'name' => $product->name,
             'quantity' => 1,
             'unit_price' => 3154,
+        ]);
+        $this->assertDatabaseHas('crm_counterparties', [
+            'name' => 'ОАО «Колпень-Агро»',
+            'classification' => 'b2b_prospect',
+            'status' => 'lead',
+        ]);
+        $counterparty = CrmCounterparty::query()->where('name', 'ОАО «Колпень-Агро»')->firstOrFail();
+        $this->assertDatabaseHas('commercial_documents', [
+            'client_company' => 'ОАО «Колпень-Агро»',
+            'crm_counterparty_id' => $counterparty->id,
         ]);
     }
 }
