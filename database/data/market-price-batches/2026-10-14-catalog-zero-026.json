@@ -1,0 +1,110 @@
+{
+    "code": "2026-10-14-catalog-zero-026",
+    "observed_at": "2026-10-14T06:09:33+00:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "brand": "Viadrus",
+        "skus": [
+            "PS-002.039",
+            "PS-002.040",
+            "PS-002.041",
+            "PS-002.042",
+            "PS-002.043"
+        ],
+        "after_id": 2038,
+        "limit": 5,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [],
+    "products": [
+        {
+            "sku": "PS-002.039",
+            "review_reason": "Найдена только собственная карточка KOTLOV для Viadrus Kolor 3 900/70; независимого подтверждения нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Единственная точная карточка показывает 85.47 BYN на KOTLOV; других белорусских предложений не обнаружено.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Viadrus Kolor 3 900/70 купить Беларусь",
+                    "Viadrus Kolor 3 900/70 радиатор PS-002.039",
+                    "Viadrus Kolor 3 900/70 Беларусь цена"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:08:26+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.040",
+            "review_reason": "Найдено одно белорусское предложение Viadrus Termo 500/95; независимых продавцов недостаточно.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Точная модель присутствует только у одного продавца; остальные результаты зарубежные либо без положительной цены.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Viadrus Termo 500/95 PS-002.040 Беларусь купить",
+                    "Viadrus Termo 500/95 цена BYN",
+                    "Viadrus Termo 500/95 радиатор купить Минск"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:08:42+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.041",
+            "review_reason": "Предложений Viadrus Termo 500/130 в Беларуси не найдено; модель 500/95 имеет другие характеристики.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Точная модель отсутствует. Viadrus Termo 500/95 отклонён из-за другой глубины, объёма воды и тепловой мощности.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Viadrus Termo 500/130 PS-002.041 купить Беларусь",
+                    "Viadrus Termo 500 130 радиатор цена Беларусь",
+                    "Viadrus Termo 500/130 Беларусь"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:08:56+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.042",
+            "review_reason": "Найдено только собственное предложение KOTLOV для Viadrus Termo 623/95; независимого сравнения нет.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Единственная белорусская карточка показывает 76.23 BYN за секцию; других точных предложений не выявлено.",
+                "confidence": "medium",
+                "search_queries": [
+                    "Радиатор Viadrus Termo 623/95 PS-002.042 Беларусь купить",
+                    "Viadrus Termo 623/95 радиатор цена BYN",
+                    "Viadrus Termo 623/95 Беларусь"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:09:13+00:00"
+            }
+        },
+        {
+            "sku": "PS-002.043",
+            "review_reason": "Найдено только собственное белорусское предложение Viadrus Termo 623/130; зарубежные рынки не подтверждают цену в BYN.",
+            "force_consultation_hold": true,
+            "observations": [],
+            "research": {
+                "summary": "Одно предложение KOTLOV недостаточно для конкурентного анализа; проверенные источники России, Украины и Польши не приняты как белорусская рыночная цена.",
+                "confidence": "low",
+                "search_queries": [
+                    "Viadrus Termo 623/130 купить Беларусь",
+                    "Радиатор Viadrus Termo 623/130 цена BYN",
+                    "Viadrus Termo 623/130 Минск купить"
+                ],
+                "model": "gpt-4.1",
+                "searched_at": "2026-10-14T06:09:33+00:00"
+            }
+        }
+    ],
+    "failed_products": []
+}
