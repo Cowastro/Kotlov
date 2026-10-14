@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\PriceList\SvahGroupPriceList;
+use App\Services\PriceList\SvahGroupCatalogContent;
 use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -30,8 +31,11 @@ class SyncSvahGroupCommand extends Command
 
     private const CACHE_DIRECTORY = 'pricelists/svah-group';
 
+    private const SUPPLIER_CONTACT = 'Виталий · +375 29 601-49-89';
+
     public function handle(
         SvahGroupPriceList $priceList,
+        SvahGroupCatalogContent $catalogContent,
         SupplierProductAvailabilityService $availability,
     ): int {
         $apply = (bool) $this->option('apply') && ! (bool) $this->option('dry-run');
@@ -56,6 +60,10 @@ class SyncSvahGroupCommand extends Command
         $reportRows = $this->auditRows($classified, $siteProducts);
         $reportPath = $this->writeReport($reportRows);
         $stats = collect($classified)->countBy('status');
+        $contentReady = count(array_filter(
+            $classified,
+            fn (array $item): bool => $catalogContent->profile($item['row']) !== null,
+        ));
 
         $this->table(['Статус', 'Количество'], [
             ['Совпало', $stats->get('matched', 0)],
@@ -72,6 +80,8 @@ class SyncSvahGroupCommand extends Command
             $reportRows,
             fn (array $row): bool => $row['status'] === 'site_only',
         )));
+        $this->line('metric.svah_group.content_ready='.$contentReady);
+        $this->line('metric.svah_group.content_missing='.max(0, count($classified) - $contentReady));
 
         foreach ($classified as $item) {
             $product = $item['product'];
@@ -99,6 +109,7 @@ class SyncSvahGroupCommand extends Command
             $classified,
             $supplierId,
             $syncId,
+            $catalogContent,
             $now,
             &$touchedProductIds,
             &$presentArticles,
@@ -114,10 +125,13 @@ class SyncSvahGroupCommand extends Command
 
                 $product = $item['product'];
                 $matchMethod = $item['match_method'];
+                $profile = $catalogContent->profile($row);
                 if ($product === null) {
-                    $product = $this->createProduct($row, $now);
+                    $product = $this->createProduct($row, $profile, $now);
                     $matchMethod = 'created_from_pricelist';
                     $created++;
+                } elseif ($profile !== null) {
+                    $product = $this->refreshCuratedProduct($product, $row, $profile, $now);
                 }
 
                 $this->upsertSupplierProduct($supplierId, $syncId, $product, $row, $matchMethod, $now);
@@ -390,11 +404,11 @@ class SyncSvahGroupCommand extends Command
         );
     }
 
-    private function createProduct(array $row, $now): object
+    private function createProduct(array $row, ?array $profile, $now): object
     {
         $brandId = $this->ensureBrand($row['brand'], $now);
         $categoryId = $this->categoryId($row['signature']);
-        $name = trim($row['name']);
+        $name = trim((string) ($profile['name'] ?? $row['name']));
         $productId = (int) DB::table('products')->insertGetId([
             'category_id' => $categoryId,
             'brand_id' => $brandId,
@@ -404,13 +418,16 @@ class SyncSvahGroupCommand extends Command
             'slug' => $this->uniqueSlug($name),
             'price' => $row['retail_price'],
             'currency' => 'BYN',
-            'images' => json_encode([]),
-            'specs' => json_encode([], JSON_UNESCAPED_UNICODE),
+            'short_description' => $profile['short_description'] ?? null,
+            'content' => $profile['content'] ?? null,
+            'images' => json_encode($profile['images'] ?? []),
+            'specs' => json_encode($profile['specs'] ?? [], JSON_UNESCAPED_UNICODE),
+            'content_source_url' => $profile['source_url'] ?? null,
             'unit' => 'шт',
             // The price list has no photos or full descriptions. Keep new
             // cards unpublished until content review, but immediately link
             // supplier price and stock so the operational data stays current.
-            'is_active' => false,
+            'is_active' => $profile !== null,
             'is_archived' => false,
             'in_stock' => $row['stock_quantity'] > 0,
             'availability_status' => $row['stock_quantity'] > 0 ? 'in_stock' : 'check',
@@ -423,6 +440,30 @@ class SyncSvahGroupCommand extends Command
         ]);
 
         return DB::table('products')->where('id', $productId)->firstOrFail();
+    }
+
+    private function refreshCuratedProduct(object $product, array $row, array $profile, $now): object
+    {
+        $name = trim((string) $profile['name']);
+        DB::table('products')->where('id', $product->id)->update([
+            'category_id' => $this->categoryId($row['signature']),
+            'brand_id' => $this->ensureBrand($row['brand'], $now),
+            'name' => $name,
+            'h1' => $name,
+            'short_description' => $profile['short_description'],
+            'content' => $profile['content'],
+            'images' => json_encode($profile['images'], JSON_UNESCAPED_UNICODE),
+            'specs' => json_encode($profile['specs'], JSON_UNESCAPED_UNICODE),
+            'content_source_url' => $profile['source_url'],
+            'requires_price_confirmation' => false,
+            'meta_title' => $name.' — купить в Беларуси | KOTLOV',
+            'meta_description' => 'Купить '.$name.' в KOTLOV: характеристики, цена, наличие и доставка по Беларуси.',
+            'is_active' => true,
+            'is_archived' => false,
+            'updated_at' => $now,
+        ]);
+
+        return DB::table('products')->where('id', $product->id)->firstOrFail();
     }
 
     private function ensureBrand(string $name, $now): int
@@ -522,6 +563,7 @@ class SyncSvahGroupCommand extends Command
                 'name' => self::SUPPLIER_NAME,
                 'currency' => 'BYN',
                 'currency_rate' => 1,
+                'contact' => self::SUPPLIER_CONTACT,
                 'notes' => 'Партнёрский прайс TATRA, SVAH и HOT: котлы и банные печи.',
                 'is_active' => true,
                 'updated_at' => $now,

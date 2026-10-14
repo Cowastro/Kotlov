@@ -96,6 +96,10 @@ class SyncSvahGroupCommandTest extends TestCase
 
         $supplierId = (int) DB::table('suppliers')->where('code', 'svah_group')->value('id');
         $this->assertGreaterThan(0, $supplierId);
+        $this->assertDatabaseHas('suppliers', [
+            'id' => $supplierId,
+            'contact' => 'Виталий · +375 29 601-49-89',
+        ]);
         $this->assertDatabaseHas('supplier_syncs', [
             'key' => 'svah_group_price_stock',
             'command' => 'supplier:sync-svah-group',
@@ -117,6 +121,20 @@ class SyncSvahGroupCommandTest extends TestCase
         ]);
         $this->assertSame(2719.50, (float) DB::table('products')->where('id', $boilerId)->value('price'));
         $this->assertSame(1481.76, (float) DB::table('products')->where('id', $stoveId)->value('price'));
+        $tatraProduct = DB::table('products')->where('id', $stoveId)->firstOrFail();
+        $this->assertSame('Tatra T16 Банная печь с навесным баком 80 л', $tatraProduct->name);
+        $this->assertTrue((bool) $tatraProduct->is_active);
+        $this->assertFalse((bool) $tatraProduct->requires_price_confirmation);
+        $this->assertStringContainsString('четырёхходовой теплообменник', $tatraProduct->content);
+        $this->assertSame(
+            ['img/products/tatra/tatra-t16-water-tank-80l-clean.png'],
+            json_decode($tatraProduct->images, true, 512, JSON_THROW_ON_ERROR),
+        );
+        $tatraSpecs = collect(json_decode($tatraProduct->specs, true, 512, JSON_THROW_ON_ERROR));
+        $this->assertSame('80 л', $tatraSpecs->firstWhere('key', 'Объём бака')['value']);
+        $this->assertSame('150 мм', $tatraSpecs->firstWhere('key', 'Диаметр дымохода')['value']);
+        $this->assertGreaterThanOrEqual(20, $tatraSpecs->count());
+        $this->assertFileExists(public_path('img/products/tatra/tatra-t16-water-tank-80l-clean.png'));
         $svahProduct = DB::table('products')->where('name', 'Печь банная SVAH Т16 сталь 8мм')->first();
         $hotProduct = DB::table('products')->where('name', 'Печь банная HOT T20')->first();
         $this->assertNotNull($svahProduct);
@@ -172,6 +190,50 @@ class SyncSvahGroupCommandTest extends TestCase
         $this->assertDatabaseHas('products', [
             'id' => $siteOnlyId,
             'price' => 1400,
+        ]);
+    }
+
+    public function test_it_creates_the_current_tatra_t16_card_with_complete_catalog_content_and_supplier_contact(): void
+    {
+        DB::table('categories')->insert([
+            'name' => 'Дровяные печи для бани',
+            'slug' => 'drovyanye-pechi-dlya-bani',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $path = $this->workbook([
+            ['Печи банные', 'Скидка 20%', null, null],
+            ['Печь банная Татра Т16 с баком 80л', 1200, 0, 1500],
+        ]);
+
+        $this->artisan('supplier:sync-svah-group', [
+            '--price-file' => $path,
+            '--apply' => true,
+            '--sync-retail-prices' => true,
+        ])->expectsOutputToContain('metric.svah_group.content_ready=1')
+            ->expectsOutputToContain('metric.svah_group.content_missing=0')
+            ->assertSuccessful();
+
+        $product = DB::table('products')->where('name', 'Tatra T16 Банная печь с навесным баком 80 л')->sole();
+        $this->assertSame(1500.00, (float) $product->price);
+        $this->assertTrue((bool) $product->is_active);
+        $this->assertFalse((bool) $product->in_stock);
+        $this->assertSame('https://www.snabcity.by/product/pech-dlya-bani-tatra16-v-komplekte-s-bakom/', $product->content_source_url);
+        $this->assertNotEmpty($product->short_description);
+        $this->assertNotEmpty($product->content);
+        $this->assertCount(1, json_decode($product->images, true, 512, JSON_THROW_ON_ERROR));
+        $this->assertGreaterThanOrEqual(20, count(json_decode($product->specs, true, 512, JSON_THROW_ON_ERROR)));
+        $this->assertDatabaseHas('suppliers', [
+            'code' => 'svah_group',
+            'contact' => 'Виталий · +375 29 601-49-89',
+        ]);
+        $this->assertDatabaseHas('supplier_products', [
+            'supplier_article' => 'TATRA-T16-TANK80',
+            'product_id' => $product->id,
+            'price_byn' => 1200,
+            'stock_quantity' => 0,
+            'in_stock' => false,
         ]);
     }
 
