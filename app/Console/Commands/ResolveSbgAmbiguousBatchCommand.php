@@ -379,6 +379,40 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         ],
     ];
 
+    /** @var array<string, array{sku:string,item:list<string>,product:list<string>,search:bool}> */
+    private const BATCH_EXACT_20261014_R = [
+        'УТ-00000080' => [
+            'sku' => 'PS-009.954',
+            'item' => ['Банная печь', 'Святогор', '8мм'],
+            'product' => ['Царь-Печи', 'Святогор', '8 мм'],
+            'search' => true,
+        ],
+        'УТ-00000079' => [
+            'sku' => 'PS-009.953',
+            'item' => ['Банная печь', 'Малуша', '8мм'],
+            'product' => ['Царь-Печи', 'Малуша', '8 мм'],
+            'search' => true,
+        ],
+        'УТ-00000077' => [
+            'sku' => 'PS-005.887',
+            'item' => ['Банная печь', 'Затея', '8мм'],
+            'product' => ['Царь-Печи', 'Затея', '8 мм'],
+            'search' => true,
+        ],
+        'УТ-00000075' => [
+            'sku' => 'PS-009.951',
+            'item' => ['Банная печь', 'Емеля', '8мм'],
+            'product' => ['Царь-Печи', 'Емеля', '8 мм'],
+            'search' => true,
+        ],
+        'УТ-00000074' => [
+            'sku' => 'PS-009.948',
+            'item' => ['Банная печь', 'Елисей', '8мм'],
+            'product' => ['Царь-Печи', 'Елисей', '8 мм'],
+            'search' => true,
+        ],
+    ];
+
     public function handle(IntegrationProductMatchDecision $decision, ProductSourceEnricher $enricher): int
     {
         $rows = match ($this->option('batch')) {
@@ -399,6 +433,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
             'exact-20261013-o' => self::BATCH_EXACT_20261013_O,
             'exact-20261013-p' => self::BATCH_EXACT_20261013_P,
             'exact-20261013-q' => self::BATCH_EXACT_20261013_Q,
+            'exact-20261014-r' => self::BATCH_EXACT_20261014_R,
             default => null,
         };
 
@@ -481,9 +516,10 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                 continue;
             }
 
-            if ($item->match_status !== 'ambiguous' || (float) $item->stock_quantity <= 0) {
+            $allowedStatuses = ($rule['search'] ?? false) ? ['ambiguous', 'unmatched'] : ['ambiguous'];
+            if (! in_array($item->match_status, $allowedStatuses, true) || (float) $item->stock_quantity <= 0) {
                 $stats['conflict']++;
-                $details[] = [$code, $rule['sku'], 'blocked', 'row is no longer an in-stock ambiguous item'];
+                $details[] = [$code, $rule['sku'], 'blocked', 'row is no longer an in-stock unresolved item'];
 
                 continue;
             }

@@ -15,6 +15,61 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_it_links_an_unmatched_tsar_pechi_card_without_overwriting_its_retail_price(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-tsar-pechi',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Печи для бани',
+            'slug' => 'bath-stoves-tsar-pechi-test',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-009.954',
+            'name' => 'Печь-каменка Царь-Печи Святогор (8 мм)',
+            'slug' => 'tsar-pechi-svyatogor-test',
+            'price' => 1566,
+            'in_stock' => false,
+            'stock_qty' => null,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'tsar-pechi-svyatogor',
+            'external_code' => 'УТ-00000080',
+            'name' => 'Банная печь "Святогор" (8мм)',
+            'price_byn' => 1253,
+            'stock_quantity' => 2,
+            'match_status' => 'unmatched',
+            'candidates' => [],
+        ]);
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261014-r',
+            '--code' => ['УТ-00000080'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame('1566.00', $product->price);
+        $this->assertTrue($product->in_stock);
+        $this->assertSame('2', (string) $product->stock_qty);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_article' => 'УТ-00000080',
+            'product_id' => $product->id,
+            'confidence' => 'manual',
+        ]);
+    }
+
     public function test_it_dry_runs_and_applies_only_a_still_current_exact_candidate(): void
     {
         $source = IntegrationSource::query()->create([
