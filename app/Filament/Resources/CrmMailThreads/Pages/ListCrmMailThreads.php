@@ -71,6 +71,16 @@ class ListCrmMailThreads extends ListRecords
                     ->where('unread_count', '>', 0)
                     ->count() ?: null)
                 ->badgeColor('warning'),
+            'incoming' => Tab::make('Входящие')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query
+                    ->whereNotIn('status', ['draft', 'spam'])
+                    ->latestMessageDirection('incoming'))
+                ->badge(CrmMailThread::query()
+                    ->whereNotIn('status', ['draft', 'spam'])
+                    ->latestMessageDirection('incoming')
+                    ->count() ?: null)
+                ->badgeColor('warning'),
             'potential_deals' => Tab::make('Потенциальные сделки')
                 ->icon('heroicon-o-currency-dollar')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->potentialDeals())
@@ -86,14 +96,14 @@ class ListCrmMailThreads extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'draft'))
                 ->badge(CrmMailThread::query()->where('status', 'draft')->count() ?: null)
                 ->badgeColor('warning'),
-            'sent' => Tab::make('Отправленные')
+            'sent' => Tab::make('Исходящие')
                 ->icon('heroicon-o-paper-airplane')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                    ->where('status', '!=', 'draft')
-                    ->whereHas('messages', fn (Builder $messages): Builder => $messages->where('direction', 'outgoing')))
+                    ->whereNotIn('status', ['draft', 'spam'])
+                    ->latestMessageDirection('outgoing'))
                 ->badge(CrmMailThread::query()
-                    ->where('status', '!=', 'draft')
-                    ->whereHas('messages', fn (Builder $messages): Builder => $messages->where('direction', 'outgoing'))
+                    ->whereNotIn('status', ['draft', 'spam'])
+                    ->latestMessageDirection('outgoing')
                     ->count() ?: null)
                 ->badgeColor('success'),
             'spam' => Tab::make('Спам')

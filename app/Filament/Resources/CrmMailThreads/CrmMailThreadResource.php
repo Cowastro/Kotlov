@@ -89,7 +89,7 @@ class CrmMailThreadResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with([
-            'mailbox', 'assignedUser', 'counterparty', 'contact', 'messages', 'commercialDocuments', 'supplierOrderRequest.order',
+            'mailbox', 'assignedUser', 'counterparty', 'contact', 'messages', 'latestMessage', 'commercialDocuments', 'supplierOrderRequest.order',
             'supplierOrderRequest.supplier.crmCounterparty',
         ]);
     }
@@ -543,15 +543,18 @@ class CrmMailThreadResource extends Resource
 
     public static function mailReadLabel(CrmMailThread $record): string
     {
+        $direction = match ($record->latestMessage?->direction) {
+            'incoming' => 'Входящее',
+            'outgoing' => 'Исходящее',
+            'draft' => 'Черновик',
+            default => 'Письмо',
+        };
+
         if ($record->unread_count > 0) {
-            return 'Непрочитано: '.$record->unread_count;
+            return $direction.' · непрочитано: '.$record->unread_count;
         }
 
-        return match ($record->status) {
-            'new' => 'Новое · прочитано',
-            'closed' => 'Закрыто · прочитано',
-            default => 'Прочитано',
-        };
+        return $direction.' · прочитано';
     }
 
     public static function mailReadIcon(CrmMailThread $record): string

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
@@ -91,6 +92,11 @@ class CrmMailThread extends Model
         return $this->hasMany(CrmMailMessage::class, 'thread_id')->orderBy('received_at');
     }
 
+    public function latestMessage(): HasOne
+    {
+        return $this->hasOne(CrmMailMessage::class, 'thread_id')->latestOfMany();
+    }
+
     public function commercialDocuments(): HasMany
     {
         return $this->hasMany(CommercialDocument::class, 'crm_mail_thread_id');
@@ -127,6 +133,14 @@ class CrmMailThread extends Model
         return $query->potentialDeals()
             ->whereNotNull('next_follow_up_at')
             ->where('next_follow_up_at', '<=', now());
+    }
+
+    public function scopeLatestMessageDirection(Builder $query, string $direction): Builder
+    {
+        return $query->whereHas(
+            'latestMessage',
+            fn (Builder $messages): Builder => $messages->where('direction', $direction),
+        );
     }
 
     public function isPotentialDeal(): bool
