@@ -152,6 +152,31 @@ class LegacySeoRedirectTest extends TestCase
         $this->assertNull($response->headers->get('Location'));
     }
 
+    public function test_gas_meter_category_on_city_host_redirects_to_primary_domain(): void
+    {
+        City::query()->firstOrCreate(['slug' => 'svetlogorsk'], [
+            'name' => 'Светлогорск',
+            'name_in' => 'в Светлогорске',
+            'name_title' => 'Светлогорске',
+            'is_active' => true,
+        ]);
+
+        $request = Request::create(
+            'https://svetlogorsk.kotlov.by/schetchiki-gaza?utm_source=google',
+            'GET',
+        );
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame(
+            'https://kotlov.by/schetchiki-gaza?utm_source=google',
+            $response->headers->get('Location'),
+        );
+    }
+
     public function test_exact_product_redirect_wins_over_broad_legacy_rules(): void
     {
         $category = Category::query()->firstOrCreate(['slug' => 'teplovyie-nasosyi'], [

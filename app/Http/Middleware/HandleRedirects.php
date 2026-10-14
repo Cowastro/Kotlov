@@ -15,6 +15,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 class HandleRedirects
 {
+    /**
+     * Categories promoted as one national landing page. City-host copies split
+     * ranking signals and can be selected by Google as the canonical instead.
+     */
+    private const PRIMARY_DOMAIN_CATEGORY_PATHS = [
+        '/schetchiki-gaza',
+    ];
+
     private const CITY_ALIASES = [
         'rechitsa' => 'rechica',
         'volojin' => 'volozhin',
@@ -51,6 +59,10 @@ class HandleRedirects
 
         if ($unknownCityRedirect = $this->redirectUnknownCityToBaseDomain($request)) {
             return $unknownCityRedirect;
+        }
+
+        if ($cityCategoryRedirect = $this->redirectPrimaryCategoryToBaseDomain($request, $path)) {
+            return $cityCategoryRedirect;
         }
 
         // Исключаем служебные пути
@@ -328,6 +340,30 @@ class HandleRedirects
         }
 
         $target = $request->getScheme() . '://' . $baseDomain . $request->getRequestUri();
+
+        return redirect()->away($target, 301);
+    }
+
+    private function redirectPrimaryCategoryToBaseDomain(Request $request, string $path): ?Response
+    {
+        if (! in_array($path, self::PRIMARY_DOMAIN_CATEGORY_PATHS, true)) {
+            return null;
+        }
+
+        $host = $request->getHost();
+        $baseDomain = config('app.base_domain', 'kotlov.by');
+
+        if (! str_ends_with($host, '.'.$baseDomain)) {
+            return null;
+        }
+
+        $subdomain = str_replace('.'.$baseDomain, '', $host);
+        if ($subdomain === '' || in_array($subdomain, ['www', 'new', 'admin'], true)) {
+            return null;
+        }
+
+        $query = $request->getQueryString();
+        $target = 'https://'.$baseDomain.$path.($query ? '?'.$query : '');
 
         return redirect()->away($target, 301);
     }

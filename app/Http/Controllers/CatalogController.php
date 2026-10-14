@@ -478,7 +478,9 @@ class CatalogController extends Controller
         $keywords = $replaceCityIn($category->meta_keywords)
             ?: ($name.', купить '.$nameLower.' '.$cityIn.', цена, каталог');
 
-        $canonicalBase = 'https://'.request()->getHost();
+        $canonicalBase = $category->slug === 'schetchiki-gaza'
+            ? 'https://'.config('app.base_domain', 'kotlov.by')
+            : 'https://'.request()->getHost();
         $canonical = $canonicalBase.'/'.$category->slug;
 
         // Schema.org BreadcrumbList
