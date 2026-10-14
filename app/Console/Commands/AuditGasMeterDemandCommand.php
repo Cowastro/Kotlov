@@ -8,6 +8,16 @@ use Illuminate\Support\Facades\File;
 
 class AuditGasMeterDemandCommand extends Command
 {
+    /**
+     * Archived Elicon-era cards that represent current BelOMO price-list items.
+     * Keep the mapping explicit: similar G-size alone is not enough to merge
+     * different side/length/execution variants.
+     */
+    private const LEGACY_SUPPLIER_ARTICLE_BY_PRODUCT_ID = [
+        22068 => '8336.00.00.000-06', // СГД4-3-1-G4ТИ, 110 мм, левый.
+        8592 => '8181.00.00.000-10',  // СГД-3Т-2-1-G6, 250 мм, левый.
+    ];
+
     protected $signature = 'orders:audit-gas-meter-demand
         {--days=365 : Период недавнего спроса}
         {--report= : Путь CSV-отчёта}';
@@ -31,12 +41,18 @@ class AuditGasMeterDemandCommand extends Command
             ->keyBy('id');
         $productIds = $products->keys()->all();
         $supplierId = (int) (DB::table('suppliers')->where('code', 'sanbusinessgroup')->value('id') ?? 0);
-        $supplierProductIds = DB::table('supplier_products')
+        $supplierProducts = DB::table('supplier_products')
             ->where('supplier_id', $supplierId)
             ->whereNotNull('product_id')
+            ->get(['product_id', 'supplier_article']);
+        $supplierProductIds = $supplierProducts
             ->pluck('product_id')
             ->map(fn ($id): int => (int) $id)
             ->flip();
+        $supplierArticleByProductId = $supplierProducts
+            ->mapWithKeys(fn (object $row): array => [(int) $row->product_id => (string) $row->supplier_article]);
+        $productIdBySupplierArticle = $supplierProducts
+            ->mapWithKeys(fn (object $row): array => [$this->normalizeArticle((string) $row->supplier_article) => (int) $row->product_id]);
 
         $items = DB::table('order_items as oi')
             ->join('orders as o', 'o.id', '=', 'oi.order_id')
@@ -53,9 +69,23 @@ class AuditGasMeterDemandCommand extends Command
         $grouped = $items->groupBy(fn (object $item): string => $item->product_id
             ? 'id:'.(int) $item->product_id
             : 'name:'.$this->normalizeName((string) $item->product_name));
-        $rows = $grouped->map(function ($demandItems) use ($products, $cutoff, $supplierProductIds): array {
+        $rows = $grouped->map(function ($demandItems) use (
+            $products,
+            $cutoff,
+            $supplierProductIds,
+            $supplierArticleByProductId,
+            $productIdBySupplierArticle
+        ): array {
             $first = $demandItems->first();
-            $product = $first->product_id ? $products->get((int) $first->product_id) : null;
+            $sourceProduct = $first->product_id ? $products->get((int) $first->product_id) : null;
+            $legacyArticle = $sourceProduct
+                ? (self::LEGACY_SUPPLIER_ARTICLE_BY_PRODUCT_ID[(int) $sourceProduct->id] ?? null)
+                : null;
+            $mappedProductId = $legacyArticle
+                ? $productIdBySupplierArticle->get($this->normalizeArticle($legacyArticle))
+                : null;
+            $product = $mappedProductId ? $products->get((int) $mappedProductId) : $sourceProduct;
+            $mappedFromLegacy = $sourceProduct && $product && (int) $sourceProduct->id !== (int) $product->id;
             $valid = $demandItems->reject(fn (object $item): bool => preg_match('/дубл|тест/iu', (string) $item->archive_reason) === 1);
             $recent = $valid->filter(fn (object $item): bool => \Illuminate\Support\Carbon::parse($item->created_at)->gte($cutoff));
             $validOrders = $valid->pluck('order_id')->unique()->count();
@@ -78,6 +108,10 @@ class AuditGasMeterDemandCommand extends Command
                 'product_id' => $product?->id ?? $first->product_id,
                 'sku' => $product?->sku ?? $first->product_sku,
                 'name' => $product?->name ?? $first->product_name,
+                'supplier_article' => $product ? $supplierArticleByProductId->get((int) $product->id) : null,
+                'mapped_from_product_id' => $mappedFromLegacy ? (int) $sourceProduct->id : null,
+                'mapped_from_sku' => $mappedFromLegacy ? $sourceProduct->sku : null,
+                'mapped_from_name' => $mappedFromLegacy ? $sourceProduct->name : null,
                 'active' => $active,
                 'supplier_linked' => $supplierLinked,
                 'archived_orders' => $demandItems->pluck('order_id')->unique()->count(),
@@ -115,6 +149,10 @@ class AuditGasMeterDemandCommand extends Command
                 'product_id' => (int) $product->id,
                 'sku' => $product->sku,
                 'name' => $product->name,
+                'supplier_article' => $supplierArticleByProductId->get((int) $product->id),
+                'mapped_from_product_id' => null,
+                'mapped_from_sku' => null,
+                'mapped_from_name' => null,
                 'active' => true,
                 'supplier_linked' => true,
                 'archived_orders' => 0,
@@ -142,7 +180,9 @@ class AuditGasMeterDemandCommand extends Command
         $handle = fopen($path, 'wb');
         fwrite($handle, "\xEF\xBB\xBF");
         $headers = array_keys($rows->first() ?? [
-                'product_id' => null, 'sku' => null, 'name' => null, 'active' => null, 'supplier_linked' => null,
+                'product_id' => null, 'sku' => null, 'name' => null, 'supplier_article' => null,
+            'mapped_from_product_id' => null, 'mapped_from_sku' => null, 'mapped_from_name' => null,
+            'active' => null, 'supplier_linked' => null,
             'archived_orders' => null, 'archived_quantity' => null, 'valid_orders' => null, 'valid_quantity' => null,
             'recent_orders' => null, 'recent_quantity' => null, 'excluded_test_duplicate_orders' => null,
             'last_request_at' => null, 'rating' => null, 'reviews_count' => null, 'views_count' => null,
@@ -170,5 +210,13 @@ class AuditGasMeterDemandCommand extends Command
     private function normalizeName(string $name): string
     {
         return mb_strtolower(preg_replace('/[^\pL\pN]+/u', '', $name) ?? $name);
+    }
+
+    private function normalizeArticle(string $article): string
+    {
+        $article = str_replace(['–', '—', '−'], '-', $article);
+        $article = preg_replace('/\s+/u', '', $article) ?? $article;
+
+        return mb_strtoupper(trim($article));
     }
 }
