@@ -18,15 +18,29 @@ class CommercialDocument extends Model
         'sent' => 'Отправлен',
         'accepted' => 'Согласован',
         'paid' => 'Оплачен',
+        'rejected' => 'Отказ клиента',
+        'expired' => 'Срок истёк',
         'cancelled' => 'Отменён',
     ];
 
+    public const OUTCOME_REASONS = [
+        'price' => 'Не устроила цена',
+        'delivery_time' => 'Не устроил срок поставки',
+        'competitor' => 'Выбран другой поставщик',
+        'budget' => 'Нет бюджета / закупка отложена',
+        'requirements_changed' => 'Изменилась потребность',
+        'no_response' => 'Клиент не отвечает',
+        'duplicate' => 'Дублирующее предложение',
+        'other' => 'Другая причина',
+    ];
+
     protected $fillable = [
-        'number', 'type', 'status', 'ai_assisted', 'source_document_id', 'created_by', 'manager_id', 'crm_mail_thread_id',
+        'number', 'type', 'status', 'outcome_reason', 'outcome_note', 'ai_assisted',
+        'source_document_id', 'revision_of_id', 'revision_number', 'created_by', 'manager_id', 'crm_mail_thread_id',
         'crm_counterparty_id', 'crm_contact_id',
         'client_name', 'client_company', 'client_legal_name', 'client_email', 'client_phone', 'client_unp', 'client_address',
         'issued_at', 'valid_until', 'currency', 'subtotal', 'discount_total', 'delivery_price', 'total',
-        'vat_rate', 'payment_terms', 'delivery_terms', 'notes', 'seller_snapshot', 'sent_at', 'accepted_at',
+        'vat_rate', 'payment_terms', 'delivery_terms', 'notes', 'seller_snapshot', 'sent_at', 'accepted_at', 'closed_at',
     ];
 
     protected $casts = [
@@ -34,6 +48,7 @@ class CommercialDocument extends Model
         'valid_until' => 'date',
         'sent_at' => 'datetime',
         'accepted_at' => 'datetime',
+        'closed_at' => 'datetime',
         'ai_assisted' => 'boolean',
         'seller_snapshot' => 'array',
         'subtotal' => 'decimal:2',
@@ -79,6 +94,16 @@ class CommercialDocument extends Model
     public function sourceDocument(): BelongsTo
     {
         return $this->belongsTo(self::class, 'source_document_id');
+    }
+
+    public function revisionOf(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'revision_of_id');
+    }
+
+    public function revisions(): HasMany
+    {
+        return $this->hasMany(self::class, 'revision_of_id')->orderBy('revision_number');
     }
 
     public function manager(): BelongsTo

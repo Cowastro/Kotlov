@@ -12,6 +12,122 @@ use RuntimeException;
 
 class CommercialDocumentWorkflow
 {
+    public function accept(CommercialDocument $document): void
+    {
+        DB::transaction(function () use ($document): void {
+            $document->forceFill([
+                'status' => 'accepted',
+                'accepted_at' => now(),
+                'outcome_reason' => null,
+                'outcome_note' => null,
+                'closed_at' => null,
+            ])->save();
+
+            $document->mailThread?->forceFill([
+                'sales_stage' => 'won',
+                'status' => 'closed',
+                'next_follow_up_at' => null,
+                'follow_up_note' => 'Коммерческое предложение согласовано клиентом.',
+            ])->save();
+        });
+    }
+
+    public function reject(CommercialDocument $document, string $reason, ?string $note = null): void
+    {
+        if (! array_key_exists($reason, CommercialDocument::OUTCOME_REASONS)) {
+            throw new RuntimeException('Выберите допустимую причину отказа.');
+        }
+
+        DB::transaction(function () use ($document, $reason, $note): void {
+            $document->forceFill([
+                'status' => 'rejected',
+                'outcome_reason' => $reason,
+                'outcome_note' => $note,
+                'closed_at' => now(),
+            ])->save();
+
+            $document->mailThread?->forceFill([
+                'sales_stage' => 'lost',
+                'status' => 'closed',
+                'next_follow_up_at' => null,
+                'follow_up_note' => 'Отказ: '.CommercialDocument::OUTCOME_REASONS[$reason].($note ? '. '.$note : ''),
+            ])->save();
+        });
+    }
+
+    public function expire(CommercialDocument $document): void
+    {
+        DB::transaction(function () use ($document): void {
+            $document->forceFill([
+                'status' => 'expired',
+                'outcome_reason' => 'no_response',
+                'outcome_note' => 'Срок действия предложения истёк.',
+                'closed_at' => now(),
+            ])->save();
+
+            $document->mailThread?->forceFill([
+                'sales_stage' => 'lost',
+                'status' => 'closed',
+                'next_follow_up_at' => null,
+                'follow_up_note' => 'Срок действия коммерческого предложения истёк.',
+            ])->save();
+        });
+    }
+
+    public function markPaid(CommercialDocument $document): void
+    {
+        if ($document->type !== 'invoice') {
+            throw new RuntimeException('Оплату можно отметить только для счёта.');
+        }
+
+        $document->forceFill([
+            'status' => 'paid',
+            'accepted_at' => $document->accepted_at ?: now(),
+            'closed_at' => now(),
+        ])->save();
+    }
+
+    public function createRevision(CommercialDocument $document, User $user): CommercialDocument
+    {
+        if ($document->type !== 'quote') {
+            throw new RuntimeException('Новую редакцию можно создать только для коммерческого предложения.');
+        }
+
+        return DB::transaction(function () use ($document, $user): CommercialDocument {
+            $document->loadMissing('items');
+            $rootId = $document->revision_of_id ?: $document->id;
+            $nextRevision = max(
+                (int) CommercialDocument::query()->whereKey($rootId)->value('revision_number'),
+                (int) CommercialDocument::query()->where('revision_of_id', $rootId)->max('revision_number'),
+            ) + 1;
+
+            $revision = $document->replicate([
+                'number', 'status', 'revision_of_id', 'revision_number', 'created_by',
+                'outcome_reason', 'outcome_note', 'sent_at', 'accepted_at', 'closed_at',
+            ]);
+            $revision->fill([
+                'number' => CommercialDocument::nextNumber('quote'),
+                'status' => 'draft',
+                'revision_of_id' => $rootId,
+                'revision_number' => $nextRevision,
+                'created_by' => $user->id,
+                'manager_id' => $user->id,
+                'issued_at' => today(),
+                'valid_until' => today()->addDays(10),
+            ])->save();
+
+            foreach ($document->items as $item) {
+                $revision->items()->create($item->only([
+                    'product_id', 'name', 'sku', 'unit', 'quantity', 'unit_price',
+                    'discount_percent', 'vat_rate', 'line_total', 'sort_order',
+                ]));
+            }
+            $revision->recalculate();
+
+            return $revision->fresh('items');
+        });
+    }
+
     public function convertToInvoice(CommercialDocument $quote, User $user): CommercialDocument
     {
         if ($quote->type !== 'quote') {
@@ -22,13 +138,15 @@ class CommercialDocumentWorkflow
             $quote->loadMissing('items');
             $invoice = $quote->replicate([
                 'number', 'type', 'status', 'source_document_id', 'created_by', 'manager_id',
-                'crm_mail_thread_id', 'sent_at', 'accepted_at',
+                'crm_mail_thread_id', 'revision_of_id', 'revision_number', 'outcome_reason', 'outcome_note',
+                'sent_at', 'accepted_at', 'closed_at',
             ]);
             $invoice->fill([
                 'number' => CommercialDocument::nextNumber('invoice'),
                 'type' => 'invoice',
                 'status' => 'draft',
                 'source_document_id' => $quote->id,
+                'revision_number' => 1,
                 'created_by' => $user->id,
                 'manager_id' => $user->id,
                 'valid_until' => today()->addDays(5),

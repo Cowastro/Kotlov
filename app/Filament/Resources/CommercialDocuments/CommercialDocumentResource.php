@@ -68,6 +68,11 @@ class CommercialDocumentResource extends Resource
         return 'Продажи';
     }
 
+    public static function canEdit($record): bool
+    {
+        return parent::canEdit($record) && $record->status === 'draft';
+    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with(['manager', 'items', 'mailThread', 'clientCounterparty', 'clientContact']);
@@ -87,6 +92,9 @@ class CommercialDocumentResource extends Resource
                     DatePicker::make('issued_at')->label('Дата')->default(today())->required()->native(false),
                     DatePicker::make('valid_until')->label('Действует до')->default(today()->addDays(10))->native(false),
                     Select::make('manager_id')->label('Менеджер')->relationship('manager', 'name')->default(fn () => auth()->id())->searchable()->preload(),
+                    Placeholder::make('revision_label')
+                        ->label('Редакция')
+                        ->content(fn (?CommercialDocument $record): string => '№ '.($record?->revision_number ?: 1)),
                 ]),
 
             Section::make('Клиент')
@@ -435,6 +443,7 @@ class CommercialDocumentResource extends Resource
                 TextEntry::make('type')->label('Тип')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::TYPES[$state] ?? $state),
                 TextEntry::make('status')->label('Статус')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state),
                 TextEntry::make('issued_at')->label('Дата')->date('d.m.Y'),
+                TextEntry::make('revision_number')->label('Редакция')->formatStateUsing(fn ($state): string => '№ '.($state ?: 1)),
                 TextEntry::make('client_company')->label('Компания')->placeholder('—'),
                 TextEntry::make('client_legal_name')->label('Юридическое название')->placeholder('—'),
                 TextEntry::make('client_name')->label('Контакт')->placeholder('—'),
@@ -442,6 +451,9 @@ class CommercialDocumentResource extends Resource
                 TextEntry::make('client_phone')->label('Телефон')->placeholder('—')->copyable(),
                 TextEntry::make('client_unp')->label('УНП / ИНН')->placeholder('—')->copyable(),
                 TextEntry::make('client_address')->label('Юридический адрес')->placeholder('—')->columnSpan(2),
+                TextEntry::make('outcome_reason')->label('Причина закрытия')->placeholder('—')
+                    ->formatStateUsing(fn (?string $state): string => $state ? (CommercialDocument::OUTCOME_REASONS[$state] ?? $state) : '—'),
+                TextEntry::make('outcome_note')->label('Комментарий по результату')->placeholder('—')->columnSpan(2),
             ]),
             Section::make('Готовность к отправке')->schema([
                 TextEntry::make('readiness')
@@ -477,7 +489,8 @@ class CommercialDocumentResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('number')->label('Номер')->searchable()->sortable()->weight('bold'),
+                TextColumn::make('number')->label('Номер')->searchable()->sortable()->weight('bold')
+                    ->description(fn (CommercialDocument $record): string => 'Редакция №'.($record->revision_number ?: 1)),
                 TextColumn::make('type')->label('Тип')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::TYPES[$state] ?? $state)
                     ->color(fn (string $state): string => $state === 'invoice' ? 'success' : 'info'),
                 TextColumn::make('issued_at')->label('Дата')->date('d.m.Y')->sortable(),
@@ -487,7 +500,10 @@ class CommercialDocumentResource extends Resource
                 TextColumn::make('total')->label('Сумма')->money('BYN')->sortable()->weight('bold'),
                 TextColumn::make('status')->label('Статус')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => match ($state) {
-                        'sent', 'accepted', 'paid' => 'success', 'cancelled' => 'danger', default => 'warning'
+                        'sent', 'accepted', 'paid' => 'success',
+                        'rejected', 'cancelled' => 'danger',
+                        'expired' => 'gray',
+                        default => 'warning'
                     }),
                 TextColumn::make('manager.name')->label('Менеджер')->placeholder('—'),
             ])
@@ -495,7 +511,10 @@ class CommercialDocumentResource extends Resource
                 SelectFilter::make('type')->label('Тип')->options(CommercialDocument::TYPES),
                 SelectFilter::make('status')->label('Статус')->options(CommercialDocument::STATUSES),
             ])
-            ->recordActions([ViewAction::make(), EditAction::make()])
+            ->recordActions([
+                ViewAction::make(),
+                EditAction::make()->visible(fn (CommercialDocument $record): bool => $record->status === 'draft'),
+            ])
             ->defaultSort('created_at', 'desc');
     }
 
