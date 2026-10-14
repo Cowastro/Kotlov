@@ -17,7 +17,7 @@ class ListSuppliers extends ListRecords
 
     public function getSubheading(): ?string
     {
-        return 'Компании, бренды и контакты. Нажмите на название прайса, чтобы открыть Google Drive или внешний источник.';
+        return 'Введите бренд в поиск — увидите поставщика, контакты и прямую ссылку на прайс.';
     }
 
     protected function getHeaderActions(): array

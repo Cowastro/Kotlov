@@ -95,6 +95,41 @@ class SupplierDirectoryAdminTest extends TestCase
         $this->assertTrue($brand->suppliers()->whereKey($supplier->id)->exists());
     }
 
+    public function test_manager_can_quickly_find_supplier_by_brand_search_or_filter(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'brand-search-supplier',
+            'name' => 'Компания нужного бренда',
+        ]);
+        $otherSupplier = Supplier::query()->create([
+            'code' => 'other-brand-supplier',
+            'name' => 'Посторонняя компания',
+        ]);
+        $brand = Brand::query()->create([
+            'name' => 'БыстроНаходимыйБренд',
+            'slug' => 'quickly-found-brand',
+        ]);
+        $otherBrand = Brand::query()->create([
+            'name' => 'ДругойБренд',
+            'slug' => 'other-brand',
+        ]);
+        $supplier->brands()->attach($brand);
+        $otherSupplier->brands()->attach($otherBrand);
+
+        Livewire::actingAs($admin)
+            ->test(ListSuppliers::class)
+            ->searchTable('БыстроНаходимыйБренд')
+            ->assertSeeText('Компания нужного бренда')
+            ->assertDontSeeText('Посторонняя компания');
+
+        Livewire::actingAs($admin)
+            ->test(ListSuppliers::class)
+            ->filterTable('brands', [$brand->id])
+            ->assertSeeText('Компания нужного бренда')
+            ->assertDontSeeText('Посторонняя компания');
+    }
+
     public function test_stale_running_sync_is_not_presented_as_currently_running(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);

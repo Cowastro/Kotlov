@@ -37,6 +37,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -314,6 +315,15 @@ class SupplierResource extends Resource
                         : 'Автопередача выключена')
                     ->badge()
                     ->color(fn (Supplier $record): string => $record->is_active ? 'success' : 'gray'),
+            ])
+            ->searchPlaceholder('Введите компанию или бренд...')
+            ->filters([
+                SelectFilter::make('brands')
+                    ->label('Бренд')
+                    ->relationship('brands', 'name', modifyQueryUsing: fn ($query) => $query->orderBy('name'))
+                    ->searchable()
+                    ->preload()
+                    ->multiple(),
             ])
             ->defaultSort('name')
             ->defaultPaginationPageOption(10)
