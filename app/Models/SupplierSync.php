@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\File;
 class SupplierSync extends Model
 {
     protected $fillable = [
+        'supplier_id',
         'key',
         'name',
         'code',
@@ -24,6 +26,11 @@ class SupplierSync extends Model
         'last_exit_code',
         'last_log_path',
     ];
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
 
     protected $casts = [
         'is_active' => 'boolean',
@@ -65,17 +72,17 @@ class SupplierSync extends Model
 
     public function getPhotosCountAttribute(): int
     {
-        if (! $this->image_disk_path) {
+        if (!$this->image_disk_path) {
             return 0;
         }
 
         $dir = public_path($this->image_disk_path);
 
-        if (! is_dir($dir)) {
+        if (!is_dir($dir)) {
             return 0;
         }
 
-        return count(glob($dir . '/*.{jpg,jpeg,png,webp}', GLOB_BRACE) ?: []);
+        return count(glob($dir.'/*.{jpg,jpeg,png,webp}', GLOB_BRACE) ?: []);
     }
 
     public function runSync(string $mode): array
@@ -104,7 +111,7 @@ class SupplierSync extends Model
 
     public function logContents(): string
     {
-        if (! $this->last_log_path || ! file_exists($this->last_log_path)) {
+        if (!$this->last_log_path || !file_exists($this->last_log_path)) {
             return 'Логов пока нет.';
         }
 
@@ -135,11 +142,11 @@ class SupplierSync extends Model
         $path = sprintf('%s/%s_%s_%s.log', $dir, $this->key, now()->format('Ymd_His'), $mode);
 
         file_put_contents($path, implode(PHP_EOL, [
-            'Supplier: ' . $this->key,
-            'Mode: ' . $mode,
-            'Command: ' . $this->command,
-            'Exit code: ' . $exitCode,
-            'Run at: ' . now()->toDateTimeString(),
+            'Supplier: '.$this->key,
+            'Mode: '.$mode,
+            'Command: '.$this->command,
+            'Exit code: '.$exitCode,
+            'Run at: '.now()->toDateTimeString(),
             str_repeat('-', 80),
             $output,
         ]));

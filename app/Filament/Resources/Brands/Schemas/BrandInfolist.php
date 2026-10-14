@@ -23,6 +23,11 @@ class BrandInfolist
                 TextEntry::make('producer')
                     ->placeholder('-')
                     ->columnSpanFull(),
+                TextEntry::make('suppliers.name')
+                    ->label('Поставщики')
+                    ->badge()
+                    ->placeholder('Не привязаны')
+                    ->columnSpanFull(),
                 TextEntry::make('content')
                     ->placeholder('-')
                     ->columnSpanFull(),

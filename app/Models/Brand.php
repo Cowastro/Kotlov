@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Brand extends Model
@@ -15,13 +16,18 @@ class Brand extends Model
     ];
 
     protected $casts = [
-        'is_active'   => 'boolean',
+        'is_active' => 'boolean',
         'is_featured' => 'boolean',
     ];
 
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    public function suppliers(): BelongsToMany
+    {
+        return $this->belongsToMany(Supplier::class)->withTimestamps();
     }
 
     public function getImageUrlAttribute(): string
@@ -43,26 +49,26 @@ class Brand extends Model
         }
 
         if (str_starts_with($path, 'img/') || str_starts_with($path, '/img/')) {
-            return '/' . ltrim($path, '/');
+            return '/'.ltrim($path, '/');
         }
 
         if (str_starts_with($path, 'brands/')) {
-            return asset('storage/' . $path);
+            return asset('storage/'.$path);
         }
 
         $legacyBrandPath = 'images/catalog_brand/'
-            . sprintf('%03d', floor(((int) $this->id) / 1000))
-            . '/'
-            . str_pad((string) $this->id, 6, '0', STR_PAD_LEFT)
-            . '/'
-            . $path;
+            .sprintf('%03d', floor(((int) $this->id) / 1000))
+            .'/'
+            .str_pad((string) $this->id, 6, '0', STR_PAD_LEFT)
+            .'/'
+            .$path;
 
         $legacyBrandFile = public_path($legacyBrandPath);
         if ($this->id && file_exists($legacyBrandFile)) {
-            return '/' . $legacyBrandPath;
+            return '/'.$legacyBrandPath;
         }
 
-        return '/proxy-image/' . ltrim($path, '/');
+        return '/proxy-image/'.ltrim($path, '/');
     }
 
     public function scopeActive($query)

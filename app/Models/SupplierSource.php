@@ -35,4 +35,35 @@ class SupplierSource extends Model
     {
         return $this->hasMany(SupplierImportRun::class, 'source_id');
     }
+
+    public function sourceUrl(): ?string
+    {
+        $url = collect([
+            data_get($this->config, 'url'),
+            data_get($this->config, 'folder_url'),
+            data_get($this->config, 'spreadsheet_url'),
+        ])->first(fn ($value): bool => filled($value));
+
+        return $url ? trim((string) $url) : null;
+    }
+
+    public function typeLabel(): string
+    {
+        return match ($this->type) {
+            'google_sheet' => 'Google Таблица',
+            'google_drive' => 'Папка Google Drive',
+            'excel' => 'Excel-файл',
+            'csv' => 'CSV-файл',
+            'api' => 'API',
+            'email' => 'Файл по email',
+            default => $this->type ?: 'Источник прайса',
+        };
+    }
+
+    public function scheduleLabel(): string
+    {
+        return filled($this->schedule_cron)
+            ? $this->schedule_cron
+            : 'По запросу';
+    }
 }

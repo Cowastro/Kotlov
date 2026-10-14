@@ -15,7 +15,7 @@ class Supplier extends Model
         'marketplace_commission_rate', 'settlement_terms_days', 'settlement_notes',
         'automatic_order_transfer_enabled', 'automatic_order_transfer_approved_at',
         'automatic_order_transfer_approved_by', 'automatic_order_transfer_note',
-        'contact', 'notes', 'is_active',
+        'contact', 'communication_channels', 'notes', 'is_active',
     ];
 
     protected $casts = [
@@ -25,6 +25,7 @@ class Supplier extends Model
         'settlement_terms_days' => 'integer',
         'automatic_order_transfer_enabled' => 'boolean',
         'automatic_order_transfer_approved_at' => 'datetime',
+        'communication_channels' => 'array',
     ];
 
     public function imports(): HasMany
@@ -119,6 +120,16 @@ class Supplier extends Model
     public function sources(): HasMany
     {
         return $this->hasMany(SupplierSource::class);
+    }
+
+    public function brands(): BelongsToMany
+    {
+        return $this->belongsToMany(Brand::class)->withTimestamps();
+    }
+
+    public function syncs(): HasMany
+    {
+        return $this->hasMany(SupplierSync::class);
     }
 
     public function integrationSources(): HasMany
