@@ -8432,4 +8432,64 @@ XML;
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame('manual_research_unresolved', $item->fresh()->match_method);
     }
+
+    public function test_it_documents_the_model_less_plum_pellet_controller_as_a_research_dispute(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-plum-controller',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'af1f3671-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000357',
+            'external_sku' => null,
+            'barcode' => null,
+            'name' => 'Контроллер пеллетных горелок PLUM',
+            'price_byn' => null,
+            'stock_quantity' => 2,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-dh',
+            '--code' => ['УТ-00000357'],
+        ])->assertSuccessful();
+        $this->assertSame('unmatched', $item->fresh()->match_status);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-dh',
+            '--code' => ['УТ-00000357'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $dispute = $item->candidates[0];
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertNull($item->product_id);
+        $this->assertSame('ambiguous', $item->match_status);
+        $this->assertSame('manual_research_unresolved', $item->match_method);
+        $this->assertSame('research_dispute', $dispute['type']);
+        $this->assertStringContainsString('ecoMAX/evoMAX', $dispute['reason']);
+        $this->assertStringContainsString('не связывается со старыми пультами OXI', $dispute['reason']);
+        $this->assertContains('точная модель и полное обозначение контроллера', $dispute['required_data']);
+        $this->assertContains('фотография шильдика и разъёмов', $dispute['required_data']);
+        $this->assertCount(3, $dispute['evidence']);
+        $this->assertSame('УТ-00000357', $dispute['source_identity']['external_code']);
+        $this->assertSame('Контроллер пеллетных горелок PLUM', $dispute['source_identity']['name']);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-dh',
+            '--code' => ['УТ-00000357'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame('manual_research_unresolved', $item->fresh()->match_method);
+    }
 }

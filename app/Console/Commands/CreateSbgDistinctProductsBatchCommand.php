@@ -3639,6 +3639,40 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    private const BATCH_UNMATCHED_DISPUTED_20261014_DH = [
+        'УТ-00000357' => [
+            'document_dispute' => true,
+            'external_id' => 'af1f3671-1f62-11e9-bad6-1c1b0d1de7c2',
+            'fragments' => ['Контроллер', 'пеллетных горелок', 'PLUM'],
+            'reason' => 'Название 1С «Контроллер пеллетных горелок PLUM» не содержит модели, исполнения, комплектации или версии прошивки. Под него подходят несовместимые контроллеры семейств ecoMAX/evoMAX 350, 360, 850, 860 и 920 с разными корпусами, панелями, входами, выходами и ценами. В строке нет артикула, штрихкода, цены или фотографии маркировки, поэтому безопасно выбрать конкретную карточку нельзя; позиция не связывается со старыми пультами OXI.',
+            'required_data' => [
+                'точная модель и полное обозначение контроллера',
+                'артикул производителя',
+                'штрихкод',
+                'фотография шильдика и разъёмов',
+                'фотография комплекта поставки',
+                'версия аппаратного исполнения и прошивки',
+                'совместимая горелка или котёл',
+                'состав комплекта, включая панель управления и датчики',
+                'закупочная цена',
+            ],
+            'evidence' => [
+                [
+                    'url' => 'https://hvac.plum.pl/en/product_category/pellet-boiler-controllers/',
+                    'finding' => 'Официальный каталог PLUM одновременно предлагает разные контроллеры evoMAX360P, evoMAX860P и evoMAX920P для пеллетных котлов.',
+                ],
+                [
+                    'url' => 'https://en.hemeltron.ee/kasutusjuhendid/83-kipi-rot-power',
+                    'finding' => 'Документация пеллетных горелок отдельно перечисляет PLUM ecoMAX 350, 850, 860 и 920, включая разные исполнения 850P2-C, 860P3 и 920P TOUCH.',
+                ],
+                [
+                    'url' => 'https://prom.ua/Kontroller-dlya-pelletnoj-gorelki.html',
+                    'finding' => 'Розничный рынок отдельно продаёт ecoMAX-360, ecoMAX-850 и ecoMAX-860 по существенно различающимся ценам, поэтому бренд без модели не определяет товар.',
+                ],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3755,6 +3789,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-de' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DE,
             'unmatched-disputed-20261014-df' => self::BATCH_UNMATCHED_DISPUTED_20261014_DF,
             'unmatched-disputed-20261014-dg' => self::BATCH_UNMATCHED_DISPUTED_20261014_DG,
+            'unmatched-disputed-20261014-dh' => self::BATCH_UNMATCHED_DISPUTED_20261014_DH,
             default => null,
         };
 
