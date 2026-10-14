@@ -1,0 +1,141 @@
+{
+    "code": "2026-10-14-catalog-zero-038",
+    "observed_at": "2026-10-14T10:35:00+02:00",
+    "review_required": true,
+    "selection": {
+        "production_only": true,
+        "active_only": true,
+        "unpriced_only": true,
+        "skus": [
+            "PS-005.852", "PS-005.853", "PS-005.854", "PS-005.886", "PS-005.901",
+            "PS-006.100", "PS-004.613", "PS-005.617", "PS-005.618", "PS-005.619",
+            "PS-005.620", "PS-005.651", "PS-005.683", "PS-005.769", "PS-005.897",
+            "PS-008.585", "PS-008.580", "PS-009.999", "PS-010.000", "PS-010.678",
+            "PS-010.679", "PS-010.680", "PS-010.681", "PS-010.682", "PS-011.609"
+        ],
+        "after_id": 0,
+        "limit": 25,
+        "source_queue": "storage/app/private/audit-38483709846/price-research-queue.csv"
+    },
+    "sources": [
+        {"code": "web-thermas-by-20261014-p038", "name": "Thermas.by", "kind": "competitor", "base_url": "https://thermas.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 168, "minimum_match_confidence": 0.99, "notes": "Точная модель Lammin ECO BM-500/80 с ценой за секцию."},
+        {"code": "web-obogreem-gomel-by-20261014-p038", "name": "Obogreem-gomel.by", "kind": "competitor", "base_url": "https://obogreem-gomel.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 2160, "minimum_match_confidence": 0.99, "notes": "Точная модель Lammin ECO BM-350/80 с ценой за секцию."},
+        {"code": "web-amazonka-by-20261014-p038", "name": "Amazonka.by", "kind": "competitor", "base_url": "https://amazonka.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 2880, "minimum_match_confidence": 0.99, "notes": "Точные карточки отопительных печей Nordflam и Pegas; товары под заказ."},
+        {"code": "web-ultraprice-by-20261014-p038", "name": "Ultraprice.by", "kind": "competitor", "base_url": "https://ultraprice.by", "currency": "BYN", "region": "Беларусь", "freshness_hours": 720, "minimum_match_confidence": 0.99, "notes": "Точная карточка Pegas Термо 100 Стекло в наличии."}
+    ],
+    "products": [
+        {
+            "sku": "PS-005.852", "review_reason": "Для Korado RADIK VKM Exclusive 21 600x1000 найдены только зарубежные цены; независимой актуальной цены в BYN нет.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Точный код 216001000 подтверждён только за пределами Беларуси.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 21 600x1000 216001000 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.853", "review_reason": "Для Korado RADIK VKM Exclusive 11 600x500 независимой белорусской цены нет; зарубежные предложения исключены.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Точное исполнение 11600500 не представлено ценой в BYN.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 11 600x500 11600500 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.854", "review_reason": "Для Korado RADIK VKM Exclusive 11 600x1400 найдены только предложения в иностранных валютах.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Независимой сопоставимой цены в BYN нет.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 11 600x1400 116001400 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.886", "review_reason": "Для Korado RADIK VKM Exclusive 11 500x600 независимой актуальной цены в Беларуси не найдено.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Общие страницы серии без точной цены не использованы.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 11 500x600 11500600 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.901", "review_reason": "Для Korado RADIK VKM Exclusive 11 500x400 независимой актуальной цены в BYN нет.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Точные зарубежные предложения не отражают белорусский рынок.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 11 500x400 11500400 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-006.100", "review_reason": "Для Korado RADIK VKM Exclusive 22 500x900 найдены только зарубежные предложения и общая белорусская страница без точной цены.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Точный код 22500900 не подтверждён ценой в BYN.", "confidence": "high", "search_queries": ["Беларусь Korado Radik VKM Exclusive 22 500x900 22500900 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-004.613", "review_reason": "Название комплекта Lammin неоднозначно, а точная независимая карточка в BYN не найдена; универсальные комплекты других брендов несопоставимы.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Комплектацию 1 x 1/2 нельзя надёжно подтвердить по названию карточки.", "confidence": "high", "search_queries": ["Беларусь Lammin комплект радиаторных пробок 1 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.617", "review_reason": "Для Lammin ECO AL-500/80 точная независимая белорусская цена за секцию не найдена.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Карточки без цены и предложения другой комплектации исключены.", "confidence": "high", "search_queries": ["Беларусь Lammin ECO AL-500/80 цена за секцию"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.618", "review_reason": "Найдена одна точная независимая белорусская цена Lammin ECO BM-500/80; одной точки недостаточно для установки цены.", "force_consultation_hold": true,
+            "observations": [{"source": "web-thermas-by-20261014-p038", "url": "https://thermas.by/lammin/", "external_name": "Радиатор биметаллический Lammin ECO BM 500/80", "model": "Lammin ECO BM-500/80", "package": "1 секция", "observed_price": 22.65, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Thermas.by: точная модель Lammin ECO BM 500/80, 22,65 BYN за секцию, доступна к покупке."}],
+            "research": {"summary": "Одна точная белорусская цена за секцию; подтверждение минимум тремя источниками отсутствует.", "confidence": "high", "search_queries": ["Беларусь Lammin ECO BM-500/80 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.619", "review_reason": "Для Lammin ECO AL-350/80 точная независимая цена в BYN не найдена.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Собственная карточка KOTLOV и предложения без цены исключены.", "confidence": "high", "search_queries": ["Беларусь Lammin ECO AL-350/80 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.620", "review_reason": "Найдена одна точная независимая белорусская цена Lammin ECO BM-350/80; одной точки недостаточно для изменения цены.", "force_consultation_hold": true,
+            "observations": [{"source": "web-obogreem-gomel-by-20261014-p038", "url": "https://obogreem-gomel.by/catalog/radiatory-otopleniya/bimetallicheskie-radiatory/", "external_name": "Радиатор биметаллический Lammin ECO BM 350/80", "model": "Lammin ECO BM-350/80", "package": "1 секция", "observed_price": 25.34, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": ["search_result_price"], "evidence": "Obogreem-gomel.by: точная модель Lammin ECO BM 350/80, 25,34 BYN за секцию."}],
+            "research": {"summary": "Одна точная белорусская цена за секцию; независимого подтверждения нет.", "confidence": "medium", "search_queries": ["Беларусь Lammin ECO BM-350/80 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.651", "review_reason": "Для Lammin Premium AL-500/80 актуальная независимая белорусская цена за секцию не найдена.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Найдены зарубежные предложения и карточки иных брендов.", "confidence": "high", "search_queries": ["Беларусь Lammin Premium AL-500/80 цена за секцию"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.683", "review_reason": "Точный комплект Lammin 3/4 с кронштейнами найден только за рубежом; белорусские предложения относятся к другим брендам.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Цена похожего комплекта другого производителя не переносилась.", "confidence": "high", "search_queries": ["Беларусь Lammin комплект радиаторных пробок 3/4 с кронштейнами цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.769", "review_reason": "Для Lammin Premium AL-350/80 независимая актуальная цена в BYN не найдена.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Белорусский рынок точной модели ценой не подтверждён.", "confidence": "high", "search_queries": ["Беларусь Lammin Premium AL-350/80 цена за секцию"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-005.897", "review_reason": "Для Lammin Premium BM-500/80 независимая актуальная белорусская цена за секцию не найдена.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Предложения ECO и других брендов не сопоставимы с серией Premium.", "confidence": "high", "search_queries": ["Беларусь Lammin Premium BM-500/80 цена за секцию"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-008.585", "review_reason": "Дублирующая карточка Lammin ECO AL-500/80 не подтверждена независимой белорусской ценой.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Карточки без цены и иные комплектации исключены.", "confidence": "high", "search_queries": ["Беларусь Lammin ECO AL-500/80 цена за секцию"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-008.580", "review_reason": "Для дублирующей карточки Lammin ECO BM-500/80 найдена только одна независимая цена; этого недостаточно для установки.", "force_consultation_hold": true,
+            "observations": [{"source": "web-thermas-by-20261014-p038", "url": "https://thermas.by/lammin/", "external_name": "Радиатор биметаллический Lammin ECO BM 500/80", "model": "Lammin ECO BM-500/80", "package": "1 секция", "observed_price": 22.65, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Thermas.by: точная модель Lammin ECO BM 500/80, 22,65 BYN за секцию, доступна к покупке."}],
+            "research": {"summary": "Одна точная цена за секцию применима к модели, но не даёт трёх независимых подтверждений.", "confidence": "high", "search_queries": ["Беларусь Lammin ECO BM-500/80 цена"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-009.999", "review_reason": "Для Nordflam Genua найдена одна независимая белорусская цена под заказ; одной точки недостаточно для изменения цены.", "force_consultation_hold": true,
+            "observations": [{"source": "web-amazonka-by-20261014-p038", "url": "https://amazonka.by/otopitelnaya-pech-nordflam-genua", "external_name": "Отопительная печь Nordflam Genua", "model": "Nordflam Genua", "package": "отопительная печь", "observed_price": 617, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "preorder", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": ["preorder"], "evidence": "Amazonka.by: точная модель Nordflam Genua, 617 BYN, под заказ 3 дня."}],
+            "research": {"summary": "Собственные домены KOTLOV исключены; осталось одно точное независимое предложение.", "confidence": "high", "search_queries": ["Nordflam Genua цена Беларусь купить", "\"Nordflam Genua\" BYN -site:kotlov.by"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-010.000", "review_reason": "Для Nordflam Padva независимой актуальной белорусской цены не найдено; результаты ведут только на домены KOTLOV.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Собственные цены исключены из независимого сравнения.", "confidence": "high", "search_queries": ["Nordflam Padva цена Беларусь купить", "\"Nordflam Padva\" BYN -site:kotlov.by"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-010.678", "review_reason": "Для Pegas Термо 100 найдена одна независимая белорусская цена под заказ; подтверждений недостаточно.", "force_consultation_hold": true,
+            "observations": [{"source": "web-amazonka-by-20261014-p038", "url": "https://amazonka.by/pech-otopitelnaya-pegas-termo-100", "external_name": "Печь отопительная Пегас Термо 100", "model": "Pegas Термо 100", "package": "отопительная печь", "observed_price": 602, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "preorder", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": ["preorder"], "evidence": "Amazonka.by: точная модель Pegas Термо 100, 602 BYN, под заказ."}],
+            "research": {"summary": "Одна точная независимая цена в BYN; собственная цена KOTLOV исключена.", "confidence": "high", "search_queries": ["Пегас Термо 100 цена Беларусь купить", "\"Пегас Термо 100\" BYN -site:kotlov.by -site:amazonka.by"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-010.679", "review_reason": "Для Pegas Термо 100 Стекло найдены две независимые белорусские цены, но до порога трёх источников не хватает одного подтверждения.", "force_consultation_hold": true,
+            "observations": [
+                {"source": "web-amazonka-by-20261014-p038", "url": "https://amazonka.by/pech-otopitelnaya-pegas-termo-100-steklo", "external_name": "Печь отопительная Пегас Термо 100 стекло", "model": "Pegas Термо 100 Стекло", "package": "отопительная печь со стеклом", "observed_price": 663, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "preorder", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": ["preorder"], "evidence": "Amazonka.by: точная модель Pegas Термо 100 Стекло, 663 BYN, под заказ 3 дня."},
+                {"source": "web-ultraprice-by-20261014-p038", "url": "https://ultraprice.by/product/svobodnostoyashchaya-pech-kamin-pegas-termo-100-steklo", "external_name": "Свободностоящая печь-камин Пегас Термо 100 Стекло", "model": "Pegas Термо 100 Стекло", "package": "отопительная печь со стеклом", "observed_price": 711.89, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "in_stock", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": [], "evidence": "Ultraprice.by: точная модель Pegas Термо 100 Стекло, 711,89 BYN, в наличии."}
+            ],
+            "research": {"summary": "Две точные независимые цены в BYN; автоматическая установка требует минимум три.", "confidence": "high", "search_queries": ["Пегас Термо 100 Стекло цена Беларусь купить", "\"Пегас Термо 100 Стекло\" BYN -site:kotlov.by -site:amazonka.by"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-010.680", "review_reason": "Для Pegas Термо 150 найдена одна независимая белорусская цена под заказ; одной точки недостаточно.", "force_consultation_hold": true,
+            "observations": [{"source": "web-amazonka-by-20261014-p038", "url": "https://amazonka.by/pech-otopitelnaya-pegas-termo-150", "external_name": "Печь отопительная Пегас Термо 150", "model": "Pegas Термо 150", "package": "отопительная печь", "observed_price": 765, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "preorder", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": ["preorder"], "evidence": "Amazonka.by: точная модель Pegas Термо 150, 765 BYN, под заказ 3 дня."}],
+            "research": {"summary": "Одна точная белорусская цена; российские предложения исключены.", "confidence": "high", "search_queries": ["\"Пегас Термо 150\" BYN Беларусь -site:kotlov.by", "site:amazonka.by \"Печь отопительная Пегас Термо 150\""], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-010.681", "review_reason": "Для Pegas Термо 150 Стекло независимой цены в BYN не найдено; точная цена есть только в RUB.", "force_consultation_hold": true, "observations": [],
+            "research": {"summary": "Российская цена исключена из белорусского рыночного сравнения.", "confidence": "high", "search_queries": ["\"Пегас Термо 150 Стекло\" BYN Беларусь -site:kotlov.by", "site:amazonka.by \"Печь отопительная Пегас Термо 150 стекло\""], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-010.682", "review_reason": "Для Pegas Термо 200 найдена одна независимая белорусская цена под заказ; подтверждений недостаточно.", "force_consultation_hold": true,
+            "observations": [{"source": "web-amazonka-by-20261014-p038", "url": "https://amazonka.by/pech-otopitelnaya-pegas-termo-200", "external_name": "Печь отопительная Пегас Термо 200", "model": "Pegas Термо 200", "package": "отопительная печь", "observed_price": 880, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "preorder", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": ["preorder"], "evidence": "Amazonka.by: точная модель Pegas Термо 200, 880 BYN, под заказ 3 дня."}],
+            "research": {"summary": "Одна точная независимая цена в BYN; собственная цена KOTLOV исключена.", "confidence": "high", "search_queries": ["\"Пегас Термо 200\" BYN Беларусь -site:kotlov.by", "site:amazonka.by \"Печь отопительная Пегас Термо 200\""], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        },
+        {
+            "sku": "PS-011.609", "review_reason": "Для Pegas V6 найдена одна независимая белорусская цена под заказ; одной точки недостаточно для установки цены.", "force_consultation_hold": true,
+            "observations": [{"source": "web-amazonka-by-20261014-p038", "url": "https://amazonka.by/pech-otopitelnaya-pegas-v6", "external_name": "Печь отопительная Пегас V6", "model": "Pegas V6", "package": "отопительная печь со стеклом и варочной плитой", "observed_price": 1170, "currency": "BYN", "exchange_rate_to_byn": 1, "price_includes_vat": null, "availability_status": "preorder", "match_method": "exact_model", "match_confidence": 0.99, "is_confirmed": true, "is_comparable": true, "validation_flags": ["preorder"], "evidence": "Amazonka.by: точная модель Pegas V6, 1 170 BYN, под заказ 3 дня."}],
+            "research": {"summary": "Одна точная независимая цена в BYN; российская карточка производителя без наличия не использована.", "confidence": "high", "search_queries": ["\"Пегас V6\" BYN Беларусь печь -site:kotlov.by"], "model": "gpt-4.1", "searched_at": "2026-10-14T10:35:00+02:00"}
+        }
+    ],
+    "failed_products": []
+}
