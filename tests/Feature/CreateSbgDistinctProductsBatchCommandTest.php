@@ -9025,4 +9025,93 @@ XML;
         $this->assertFileExists(public_path('img/products/plum/plum-ocp-2.webp'));
         $this->assertFileExists(public_path('img/products/plum/plum-ct7.webp'));
     }
+
+    public function test_it_creates_six_whole_unit_air_ducts_and_flags_two_fractional_rows(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-flexible-air-ducts',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $parent = Category::query()->firstOrCreate(['slug' => 'komplektuyushhie-dlya-otopleniya'], [
+            'name' => 'Комплектующие для отопления',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $parent->id,
+            'sku' => 'PS-005.763',
+            'name' => 'Шаблон гофрированной трубы',
+            'slug' => 'corrugated-pipe-template-for-air-ducts',
+            'price' => 1,
+            'images' => ['img/products/template-pipe.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $rows = [
+            ['af1f3577-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000107', 'Воздуховод гибкий гофррованный 150 (алюминий 3 м)', 7.60, 1],
+            ['af1f3574-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000104', 'Воздуховод гибкий гофрированный 200 (алюминий)', 8.56, 1],
+            ['af1f3571-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000101', 'Воздуховод гибкий гофрированный 130 (алюминий)', 4.64, 2],
+            ['af1f356f-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000099', 'Воздуховод гибкий гофрированный 130 (3м нерж.ст.)', 22.00, 6.5],
+            ['af1f356b-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000095', 'Воздуховод гибкий гофрированный 120 (3м нерж.ст)', 18.56, 0.5],
+            ['af1f356a-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000094', 'Воздуховод гибкий гофрированный 110 (алюминий)', 3.28, 2],
+            ['af1f3568-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000092', 'Воздуховод гибкий гофрированный 110 (3м нерж.ст)', 17.68, 8],
+            ['af1f3567-1f62-11e9-bad6-1c1b0d1de7c2', 'УТ-00000091', 'Воздуховод гибкий гофрированный 100 (алюминий)', 3.84, 3],
+        ];
+        $items = collect($rows)->mapWithKeys(function (array $row) use ($source): array {
+            $item = IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id,
+                'external_id' => $row[0],
+                'external_code' => $row[1],
+                'name' => $row[2],
+                'price_byn' => $row[3],
+                'stock_quantity' => $row[4],
+                'stock_confirmed_at' => now(),
+                'match_status' => 'unmatched',
+            ]);
+
+            return [$row[1] => $item];
+        });
+        $productCount = Product::query()->count();
+
+        $dryRunStatus = \Illuminate\Support\Facades\Artisan::call('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dq',
+        ]);
+        $this->assertSame(0, $dryRunStatus, \Illuminate\Support\Facades\Artisan::output());
+        $this->assertSame($productCount, Product::query()->count());
+
+        $applyStatus = \Illuminate\Support\Facades\Artisan::call('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dq',
+            '--apply' => true,
+        ]);
+        $this->assertSame(0, $applyStatus, \Illuminate\Support\Facades\Artisan::output());
+        $products = collect(['УТ-00000107', 'УТ-00000104', 'УТ-00000101', 'УТ-00000094', 'УТ-00000092', 'УТ-00000091'])
+            ->map(fn (string $code): Product => $items[$code]->fresh()->product()->sole());
+        $category = Category::query()->where('slug', 'gibkie-vozduhovody')->sole();
+        $this->assertSame($productCount + 6, Product::query()->count());
+        $this->assertSame($parent->id, $category->parent_id);
+        $this->assertSame(['7.60', '8.56', '4.64', '3.28', '17.68', '3.84'], $products->pluck('price')->all());
+        $this->assertSame(['1', '1', '2', '2', '8', '3'], $products->map(fn (Product $product): string => (string) $product->stock_qty)->all());
+        $this->assertTrue($products->every(fn (Product $product): bool => $product->category_id === $category->id && $product->brand_id === null));
+        $this->assertSame('Нержавеющая сталь', collect($products[4]->specs)->firstWhere('key', 'Материал')['value']);
+        $this->assertFileExists(public_path('img/products/air-ducts/flexible-aluminum-3m.jpg'));
+        $this->assertFileExists(public_path('img/products/air-ducts/flexible-stainless-3m.jpg'));
+
+        $disputeStatus = \Illuminate\Support\Facades\Artisan::call('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-disputed-20261014-dr',
+            '--apply' => true,
+        ]);
+        $this->assertSame(0, $disputeStatus, \Illuminate\Support\Facades\Artisan::output());
+        foreach (['УТ-00000099', 'УТ-00000095'] as $code) {
+            $item = $items[$code]->fresh();
+            $this->assertNull($item->product_id);
+            $this->assertSame('ambiguous', $item->match_status);
+            $this->assertSame('manual_research_unresolved', $item->match_method);
+            $this->assertContains('единица измерения в 1С', $item->candidates[0]['required_data']);
+        }
+        $this->assertSame($productCount + 6, Product::query()->count());
+    }
 }
