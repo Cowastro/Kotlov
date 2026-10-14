@@ -29,6 +29,11 @@ class GithubActionsOutputPrivacyTest extends TestCase
         $this->assertStringNotContainsString('Log file:', $queued);
         $this->assertStringNotContainsString('tail -c ', $queued);
         $this->assertStringNotContainsString('curl -sS -I', $queued);
+        $this->assertStringContainsString(
+            '[[ "$TASK" == "artisan-dry-run" && "${ARTISAN_ARGV[0]:-}" == "catalog:audit-price-integrity" ]]',
+            $manual,
+        );
+        $this->assertStringContainsString('grep \'^metric\\.\' "$detail_log" || true', $manual);
     }
 
     public function test_tracked_result_contains_no_raw_http_or_session_data(): void
