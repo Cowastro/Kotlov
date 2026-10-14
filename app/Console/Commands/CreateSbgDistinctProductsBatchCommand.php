@@ -4854,6 +4854,42 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The new 1C row has stock but no price. The exact current dealer listing
+    // is 1,964 RUB; at the 2026-10-14 reference rate this is 70.49 BYN.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_EG = [
+        'УТ-00009652' => [
+            'template' => 'PS-009.149',
+            'allow_unmatched' => true,
+            'category_slug' => 'perehody-adaptery-dymohod',
+            'external_sku' => 'TS.ST3.PRT.0150.78420',
+            'brand' => [
+                'name' => 'Теплов и Сухов',
+                'slug' => 'teplov-i-suhov',
+                'country' => 'Россия',
+            ],
+            'fragments' => ['Переход Моно/Термо', 'ПМТ-Р', '304-0.5/304', 'D150/210', 'М'],
+            'name' => 'Теплов и Сухов Переход Моно/Термо ПМТ-Р 304-0.5/304 D150/210 М',
+            'retail' => 70.50,
+            'images' => ['img/products/teplov-i-suhov/perehod-pmt-r-304-05-304-d150-210-m.jpg'],
+            'source_url' => 'https://kaminchi.ru/dimohod/dymoxody-modulnye-iz-nerzhaveyushhej-stali/dvustennye-sendvich-dymoxody/dymoxody-dvustennye-diametrom-150-mm/perekhod-mono-termo-pmt-r-304-0-5-304-d150-210-m1',
+            'short' => 'Стартовый переход «Теплов и Сухов» с одностенного дымохода Ø150 мм на утеплённую систему Ø150/210 мм.',
+            'content' => '<p><strong>Теплов и Сухов ПМТ-Р D150/210</strong> — стартовый элемент для перехода с одностенного дымового канала Ø150 мм на утеплённую двухконтурную систему Ø150/210 мм.</p><p>Внутренний и наружный контуры изготовлены из нержавеющей стали AISI 304 толщиной 0,5 мм. Переход закрывает торец теплоизоляции и устанавливается в совместимой модульной системе.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Переход с одностенного на утеплённый дымоход'],
+                ['key' => 'Модель', 'value' => 'ПМТ-Р'],
+                ['key' => 'Внутренний диаметр', 'value' => '150 мм'],
+                ['key' => 'Наружный диаметр', 'value' => '210 мм'],
+                ['key' => 'Марка стали внутреннего контура', 'value' => 'AISI 304'],
+                ['key' => 'Толщина стали внутреннего контура', 'value' => '0,5 мм'],
+                ['key' => 'Марка стали наружного контура', 'value' => 'AISI 304'],
+                ['key' => 'Толщина теплоизоляции', 'value' => '30 мм'],
+                ['key' => 'Артикул производителя', 'value' => 'TS.ST3.PRT.0150.78420'],
+                ['key' => 'Бренд', 'value' => 'Теплов и Сухов'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4995,6 +5031,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-ed' => self::BATCH_UNMATCHED_RESEARCHED_20261014_ED,
             'unmatched-researched-20261014-ee' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EE,
             'unmatched-researched-20261014-ef' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EF,
+            'unmatched-researched-20261014-eg' => self::BATCH_UNMATCHED_RESEARCHED_20261014_EG,
             default => null,
         };
 

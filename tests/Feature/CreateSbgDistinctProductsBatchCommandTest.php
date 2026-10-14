@@ -9972,4 +9972,57 @@ XML;
         ], $product->images);
         $this->assertStringContainsString('skamoenclosure.com', $product->content_source_url);
     }
+
+    public function test_it_creates_the_exact_304_mono_to_thermo_transition_with_researched_price(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-pmt-304-d150-210',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'perehody-adaptery-dymohod'], [
+            'name' => 'Переходы и адаптеры',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'PS-009.149',
+            'name' => 'Тестовый товар-шаблон',
+            'slug' => 'pmt-eg-test-template',
+            'price' => 10,
+            'images' => ['img/products/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'd86fa570-aaa4-11f1-b4b9-1c1b0d1de7c2',
+            'external_code' => 'УТ-00009652',
+            'external_sku' => 'TS.ST3.PRT.0150.78420',
+            'name' => 'Переход Моно/Термо ПМТ-Р 304-0.5/304 D150/210 М',
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-eg',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('70.50', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('TS.ST3.PRT.0150.78420', $item->fresh()->external_sku);
+        $this->assertSame('150 мм', collect($product->specs)->firstWhere('key', 'Внутренний диаметр')['value']);
+        $this->assertSame('210 мм', collect($product->specs)->firstWhere('key', 'Наружный диаметр')['value']);
+        $this->assertSame(['img/products/teplov-i-suhov/perehod-pmt-r-304-05-304-d150-210-m.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/teplov-i-suhov/perehod-pmt-r-304-05-304-d150-210-m.jpg'));
+        $this->assertStringContainsString('kaminchi.ru', $product->content_source_url);
+    }
 }
