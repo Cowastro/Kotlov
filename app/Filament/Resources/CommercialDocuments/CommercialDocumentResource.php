@@ -30,13 +30,11 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Actions as SchemaActions;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -432,37 +430,92 @@ class CommercialDocumentResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema->components([
-            Section::make('Документ')->columns(4)->schema([
+        return $schema
+            ->columns(['default' => 1, 'xl' => 12])
+            ->components([
+            Section::make('Готовность к отправке')
+                ->icon('heroicon-o-shield-check')
+                ->columnSpanFull()
+                ->schema([
+                    ViewEntry::make('readiness_overview')
+                        ->hiddenLabel()
+                        ->view('filament.commercial-documents.readiness-overview', fn (CommercialDocument $record): array => [
+                            'issues' => app(CommercialDocumentReadiness::class)->issues($record),
+                        ])
+                        ->columnSpanFull(),
+                ]),
+            Section::make('Документ и клиент')
+                ->icon('heroicon-o-document-text')
+                ->columns(['default' => 1, 'sm' => 2, 'xl' => 4])
+                ->columnSpan(['default' => 1, 'xl' => 8])
+                ->schema([
                 TextEntry::make('number')->label('Номер')->weight(FontWeight::Bold)->copyable(),
-                TextEntry::make('type')->label('Тип')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::TYPES[$state] ?? $state),
-                TextEntry::make('status')->label('Статус')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state),
+                TextEntry::make('type')->label('Тип')->badge()
+                    ->color(fn (string $state): string => $state === 'invoice' ? 'success' : 'info')
+                    ->formatStateUsing(fn (string $state): string => CommercialDocument::TYPES[$state] ?? $state),
+                TextEntry::make('status')->label('Статус')->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'sent', 'accepted', 'paid' => 'success',
+                        'rejected', 'cancelled' => 'danger',
+                        'expired' => 'gray',
+                        default => 'warning',
+                    })
+                    ->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state),
                 TextEntry::make('issued_at')->label('Дата')->date('d.m.Y'),
                 TextEntry::make('revision_number')->label('Редакция')->formatStateUsing(fn ($state): string => '№ '.($state ?: 1)),
-                TextEntry::make('client_company')->label('Компания')->placeholder('—'),
-                TextEntry::make('client_legal_name')->label('Юридическое название')->placeholder('—'),
-                TextEntry::make('client_name')->label('Контакт')->placeholder('—'),
-                TextEntry::make('client_email')->label('Email')->placeholder('—')->copyable(),
-                TextEntry::make('client_phone')->label('Телефон')->placeholder('—')->copyable(),
-                TextEntry::make('client_unp')->label('УНП / ИНН')->placeholder('—')->copyable(),
-                TextEntry::make('client_address')->label('Юридический адрес')->placeholder('—')->columnSpan(2),
-                TextEntry::make('outcome_reason')->label('Причина закрытия')->placeholder('—')
+                TextEntry::make('client_company')->label('Компания')
+                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_company)),
+                TextEntry::make('client_legal_name')->label('Юридическое название')
+                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_legal_name)),
+                TextEntry::make('client_name')->label('Контакт')
+                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_name)),
+                TextEntry::make('client_email')->label('Email')->copyable()
+                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_email)),
+                TextEntry::make('client_phone')->label('Телефон')->copyable()
+                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_phone)),
+                TextEntry::make('client_unp')->label('УНП / ИНН')->copyable()
+                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_unp)),
+                TextEntry::make('client_address')->label('Юридический адрес')->columnSpan(2)
+                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_address)),
+                TextEntry::make('outcome_reason')->label('Причина закрытия')
+                    ->visible(fn (CommercialDocument $record): bool => filled($record->outcome_reason))
                     ->formatStateUsing(fn (?string $state): string => $state ? (CommercialDocument::OUTCOME_REASONS[$state] ?? $state) : '—'),
-                TextEntry::make('outcome_note')->label('Комментарий по результату')->placeholder('—')->columnSpan(2),
-                TextEntry::make('order.number')->label('Созданный заказ')->placeholder('Заказ ещё не создан')
+                TextEntry::make('outcome_note')->label('Комментарий по результату')->columnSpan(2)
+                    ->visible(fn (CommercialDocument $record): bool => filled($record->outcome_note)),
+                TextEntry::make('order.number')->label('Созданный заказ')
+                    ->visible(fn (CommercialDocument $record): bool => $record->order !== null)
                     ->url(fn (CommercialDocument $record): ?string => $record->order
                         ? OrderResource::getUrl('view', ['record' => $record->order])
                         : null),
-            ]),
-            Section::make('Готовность к отправке')->schema([
-                TextEntry::make('readiness')
-                    ->label('Проверка данных')
-                    ->state(fn (CommercialDocument $record): string => app(CommercialDocumentReadiness::class)->summary($record))
-                    ->badge()
-                    ->color(fn (CommercialDocument $record): string => app(CommercialDocumentReadiness::class)->issues($record) === [] ? 'success' : 'warning'),
-            ]),
+                ]),
+            Section::make('Итого')
+                ->icon('heroicon-o-calculator')
+                ->columns(2)
+                ->columnSpan(['default' => 1, 'xl' => 4])
+                ->schema([
+                TextEntry::make('subtotal')->label('Товары')->money('BYN'),
+                TextEntry::make('discount_total')->label('Скидка')->money('BYN'),
+                TextEntry::make('delivery_price')->label('Доставка')->money('BYN'),
+                TextEntry::make('total')->label('К оплате')->money('BYN')->weight(FontWeight::Bold)->color('warning'),
+                TextEntry::make('payment_terms')->label('Оплата')->columnSpanFull(),
+                TextEntry::make('delivery_terms')->label('Срок поставки')->columnSpanFull(),
+                TextEntry::make('notes')->label('Примечание')->columnSpanFull()
+                    ->visible(fn (CommercialDocument $record): bool => filled($record->notes)),
+                ]),
+            Section::make('Позиции')
+                ->icon('heroicon-o-shopping-cart')
+                ->columnSpanFull()
+                ->schema([
+                    ViewEntry::make('items_overview')
+                        ->hiddenLabel()
+                        ->view('filament.commercial-documents.items-table', fn (CommercialDocument $record): array => [
+                            'items' => $record->items,
+                        ])
+                        ->columnSpanFull(),
+                ]),
             Section::make('История и изменения редакций')
                 ->description('Все версии КП сохранены отдельно. Откройте любую редакцию или посмотрите, что изменилось в текущей.')
+                ->columnSpanFull()
                 ->visible(fn (CommercialDocument $record): bool => app(CommercialDocumentRevisionComparison::class)->history($record)->count() > 1)
                 ->schema([
                     ViewEntry::make('revision_comparison')->hiddenLabel()
@@ -483,26 +536,6 @@ class CommercialDocumentResource extends Resource
                         })
                         ->columnSpanFull(),
                 ]),
-            Section::make('Позиции')->schema([
-                RepeatableEntry::make('items')->label('')->schema([
-                    Grid::make(12)->schema([
-                        TextEntry::make('name')->label('Товар')->weight(FontWeight::Bold)->columnSpan(5),
-                        TextEntry::make('sku')->label('Артикул')->placeholder('—')->columnSpan(2),
-                        TextEntry::make('quantity')->label('Количество')->suffix(fn ($record): string => ' '.$record->unit)->columnSpan(1),
-                        TextEntry::make('unit_price')->label('Цена')->money('BYN')->columnSpan(2),
-                        TextEntry::make('line_total')->label('Сумма')->money('BYN')->weight(FontWeight::Bold)->columnSpan(2),
-                    ]),
-                ])->columns(1),
-            ]),
-            Section::make('Итого')->columns(4)->schema([
-                TextEntry::make('subtotal')->label('Товары')->money('BYN'),
-                TextEntry::make('discount_total')->label('Скидка')->money('BYN'),
-                TextEntry::make('delivery_price')->label('Доставка')->money('BYN'),
-                TextEntry::make('total')->label('К оплате')->money('BYN')->weight(FontWeight::Bold)->color('warning'),
-                TextEntry::make('payment_terms')->label('Оплата')->columnSpan(2),
-                TextEntry::make('delivery_terms')->label('Срок поставки')->columnSpan(2),
-                TextEntry::make('notes')->label('Примечание')->placeholder('—')->columnSpanFull(),
-            ]),
         ]);
     }
 

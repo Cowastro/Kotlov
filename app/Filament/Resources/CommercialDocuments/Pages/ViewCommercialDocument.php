@@ -20,9 +20,28 @@ class ViewCommercialDocument extends ViewRecord
 {
     protected static string $resource = CommercialDocumentResource::class;
 
+    public function getTitle(): string
+    {
+        return $this->record->number;
+    }
+
+    public function getSubheading(): ?string
+    {
+        return implode(' · ', [
+            CommercialDocument::TYPES[$this->record->type] ?? $this->record->type,
+            CommercialDocument::STATUSES[$this->record->status] ?? $this->record->status,
+            $this->record->issued_at?->format('d.m.Y'),
+        ]);
+    }
+
     protected function getHeaderActions(): array
     {
         return [
+            EditAction::make()
+                ->label('Редактировать')
+                ->icon('heroicon-o-pencil-square')
+                ->color('primary')
+                ->visible(fn (): bool => $this->record->status === 'draft'),
             Action::make('pdf')
                 ->label('Открыть PDF')
                 ->icon('heroicon-o-document-arrow-down')
@@ -173,7 +192,6 @@ class ViewCommercialDocument extends ViewRecord
                     $this->record->refresh();
                     Notification::make()->success()->title('Счёт отмечен оплаченным')->send();
                 }),
-            EditAction::make()->visible(fn (): bool => $this->record->status === 'draft'),
         ];
     }
 }
