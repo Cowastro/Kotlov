@@ -9509,4 +9509,58 @@ XML;
         $this->assertSame('manual_research_unresolved', $unpriced->fresh()->match_method);
         $this->assertSame('research_dispute', $unpriced->fresh()->candidates[0]['type']);
     }
+
+    public function test_it_creates_the_exact_chistogrill_700ml_cleaner_with_a_clean_image(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-chistogrill-700',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Аксессуары для каминов',
+            'slug' => 'aksessuary-kaminy',
+            'parent_id' => 0,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'KOTLOV-000910',
+            'name' => 'Nordflam Решетка каминная AERO 90×800 белая',
+            'slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia',
+            'price' => 104,
+            'images' => ['img/products/nordflam/template.jpg'],
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '7bdf3dbf-9254-11e9-b722-1c1b0d1de7c2',
+            'external_code' => 'УТ-00002007',
+            'name' => 'Очиститель для гриля "ЧистоGRILL" 700мл',
+            'price_byn' => 12.67,
+            'stock_quantity' => 8,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dy',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $product = $item->fresh()->product()->sole();
+        $this->assertSame('ЧистоGRILL Спрей-очиститель для гриля, 700 мл', $product->name);
+        $this->assertSame('12.67', $product->price);
+        $this->assertSame('8', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('matched', $item->fresh()->match_status);
+        $this->assertSame('manual_created', $item->fresh()->match_method);
+        $this->assertSame('700 мл', collect($product->specs)->firstWhere('key', 'Объём')['value']);
+        $this->assertSame('ООО «Раута-Лес»', collect($product->specs)->firstWhere('key', 'Изготовитель')['value']);
+        $this->assertSame(['img/products/chistogrill/chistogrill-grill-cleaner-700ml.png'], $product->images);
+        $this->assertFileExists(public_path('img/products/chistogrill/chistogrill-grill-cleaner-700ml.png'));
+        $this->assertStringContainsString('siteapi.org', $product->content_source_url);
+    }
 }

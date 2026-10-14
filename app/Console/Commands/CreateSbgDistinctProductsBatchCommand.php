@@ -4519,6 +4519,43 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The manufacturer price list identifies the exact 700 ml ChistoGRILL
+    // trigger spray. The catalog image is an original generated mock-up and
+    // contains no third-party watermark.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DY = [
+        'УТ-00002007' => [
+            'template_slug' => 'nordflam-resetka-kaminnaia-aero-90800-belaia',
+            'allow_unmatched' => true,
+            'category_slug' => 'aksessuary-kaminy',
+            'external_id' => '7bdf3dbf-9254-11e9-b722-1c1b0d1de7c2',
+            'fragments' => ['Очиститель', 'гриля', 'ЧистоGRILL', '700мл'],
+            'brand' => [
+                'name' => 'ЧистоGRILL',
+                'slug' => 'chistogrill',
+                'country' => 'Россия',
+            ],
+            'name' => 'ЧистоGRILL Спрей-очиститель для гриля, 700 мл',
+            'retail' => 12.67,
+            'images' => [
+                'img/products/chistogrill/chistogrill-grill-cleaner-700ml.png',
+            ],
+            'source_url' => 'https://s.siteapi.org/6ef91087034ceb9.ru/docs/5yoqnsz55hs84s0kwgg4s80w48ggs0',
+            'short' => 'Готовый спрей ЧистоGRILL во флаконе с триггером для очистки решёток и рабочих поверхностей гриля.',
+            'content' => '<p><strong>ЧистоGRILL, 700 мл</strong> — готовый спрей-очиститель для ухода за грилем. Флакон с триггером помогает равномерно наносить средство на решётки и другие очищаемые поверхности.</p><p>Применяйте средство только на остывших поверхностях и в соответствии с инструкцией на этикетке. Перед обработкой проверьте совместимость состава с материалом на незаметном участке.</p><p><strong>Меры предосторожности:</strong> используйте защитные перчатки, избегайте попадания в глаза и храните средство в недоступном для детей месте.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Очиститель для гриля'],
+                ['key' => 'Модель', 'value' => 'ЧистоGRILL'],
+                ['key' => 'Объём', 'value' => '700 мл'],
+                ['key' => 'Форма', 'value' => 'Готовый спрей'],
+                ['key' => 'Упаковка', 'value' => 'Флакон с триггером'],
+                ['key' => 'Назначение', 'value' => 'Очистка решёток и рабочих поверхностей гриля'],
+                ['key' => 'Изготовитель', 'value' => 'ООО «Раута-Лес»'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+                ['key' => 'Бренд', 'value' => 'ЧистоGRILL'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -4652,6 +4689,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-dv' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DV,
             'unmatched-disputed-20261014-dw' => self::BATCH_UNMATCHED_DISPUTED_20261014_DW,
             'unmatched-researched-20261014-dx' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DX,
+            'unmatched-researched-20261014-dy' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DY,
             default => null,
         };
 
