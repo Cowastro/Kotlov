@@ -130,7 +130,7 @@ class B2bCatalogPricingTest extends TestCase
         $this->actingAs($user)
             ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 8])
             ->assertStatus(422)
-            ->assertJsonPath('message', 'Запрошенное количество превышает подтверждённый остаток 1С.');
+            ->assertJsonPath('message', 'Запрошенное количество превышает доступный остаток поставщика.');
     }
 
     public function test_checkout_revalidates_b2b_stock_after_item_was_added_to_cart(): void
@@ -155,7 +155,7 @@ class B2bCatalogPricingTest extends TestCase
                 'payment_type' => 'cash',
             ])
             ->assertRedirect(route('cart'))
-            ->assertSessionHas('error', 'B2B-заказ не создан: одна из позиций потеряла привязку или свежий подтверждённый остаток 1С.');
+            ->assertSessionHas('error', 'B2B-заказ не создан: одна из позиций потеряла привязку или больше недоступна в указанном количестве.');
 
         $this->assertDatabaseCount((new Order)->getTable(), 0);
     }
