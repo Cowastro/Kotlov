@@ -41,17 +41,18 @@ class SyncBelomoPriceListCommand extends Command
             return self::SUCCESS;
         }
 
-        $now = now();
-        $supplierId = $this->ensureSupplier($now);
-        $syncId = $this->ensureSync($now);
-        $sourceId = $this->ensureB2bSource($supplierId, $now);
-        $brandId = $this->brandId();
-        $categoryId = $this->categoryId();
-        $touched = [];
-        $created = 0;
-        $applied = 0;
+        try {
+            $now = now();
+            $supplierId = $this->ensureSupplier($now);
+            $syncId = $this->ensureSync($now);
+            $sourceId = $this->ensureB2bSource($supplierId, $now);
+            $brandId = $this->brandId();
+            $categoryId = $this->categoryId();
+            $touched = [];
+            $created = 0;
+            $applied = 0;
 
-        DB::transaction(function () use ($classified, $supplierId, $syncId, $sourceId, $brandId, $categoryId, $now, &$touched, &$created, &$applied): void {
+            DB::transaction(function () use ($classified, $supplierId, $syncId, $sourceId, $brandId, $categoryId, $now, &$touched, &$created, &$applied): void {
             foreach ($classified as $item) {
                 if ($item['status'] === 'ambiguous') {
                     continue;
@@ -66,14 +67,22 @@ class SyncBelomoPriceListCommand extends Command
                 $touched[] = (int) $product->id;
                 $applied++;
             }
-        });
+            });
 
-        $availability->refreshMany($touched, $now);
-        DB::table('supplier_sources')->where('supplier_id', $supplierId)->where('name', 'Прайс БелОМО 15.09.2026')->update(['last_run_at' => $now, 'updated_at' => $now]);
-        DB::table('supplier_syncs')->where('id', $syncId)->update(['last_run_at' => $now, 'updated_at' => $now]);
-        $this->info("Применено {$applied}; создано неактивных черновиков {$created}. Розничные цены Эликона не изменялись.");
-        $this->line('metric.belomo.applied='.$applied);
-        $this->line('metric.belomo.created='.$created);
+            $availability->refreshMany($touched, $now);
+            DB::table('supplier_sources')->where('supplier_id', $supplierId)->where('name', 'Прайс БелОМО 15.09.2026')->update(['last_run_at' => $now, 'updated_at' => $now]);
+            DB::table('supplier_syncs')->where('id', $syncId)->update(['last_run_at' => $now, 'updated_at' => $now]);
+            $this->info("Применено {$applied}; создано неактивных черновиков {$created}. Розничные цены Эликона не изменялись.");
+            $this->line('metric.belomo.applied='.$applied);
+            $this->line('metric.belomo.created='.$created);
+        } catch (\Throwable $exception) {
+            $safeMessage = preg_replace('/\s+/u', ' ', $exception->getMessage()) ?? 'unknown';
+            $safeMessage = preg_replace('/\([^)]*(?:password|secret|token|email)[^)]*\)/iu', '(redacted)', $safeMessage) ?? $safeMessage;
+            $this->line('metric.belomo.failure_class='.class_basename($exception));
+            $this->line('metric.belomo.failure='.Str::limit($safeMessage, 500, ''));
+
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }
