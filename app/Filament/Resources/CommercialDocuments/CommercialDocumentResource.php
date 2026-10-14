@@ -42,6 +42,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -516,10 +517,29 @@ class CommercialDocumentResource extends Resource
                         ? OrderResource::getUrl('view', ['record' => $record->order])
                         : null)
                     ->toggleable(),
+                TextColumn::make('control')
+                    ->label('Следующее действие')
+                    ->state(fn (CommercialDocument $record): string => $record->controlLabel())
+                    ->badge()
+                    ->color(fn (CommercialDocument $record): string => match ($record->controlLabel()) {
+                        'Просрочено' => 'danger',
+                        'Истекает сегодня', 'Создать заказ' => 'warning',
+                        '—' => 'gray',
+                        default => $record->needsManagerControl() ? 'info' : 'gray',
+                    }),
             ])
             ->filters([
                 SelectFilter::make('type')->label('Тип')->options(CommercialDocument::TYPES),
                 SelectFilter::make('status')->label('Статус')->options(CommercialDocument::STATUSES),
+                Filter::make('needs_control')
+                    ->label('Требует действия')
+                    ->query(fn (Builder $query): Builder => $query->where('type', 'quote')->where(function (Builder $control): void {
+                        $control->where(function (Builder $sent): void {
+                            $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));
+                        })->orWhere(function (Builder $accepted): void {
+                            $accepted->where('status', 'accepted')->whereDoesntHave('order');
+                        });
+                    })),
             ])
             ->recordActions([
                 ViewAction::make(),

@@ -27,6 +27,12 @@ Schedule::command('crm:mail-sync')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/crm-mail-sync.log'));
 
+Schedule::command('commercial-documents:expire-quotes')
+    ->dailyAt('00:15')
+    ->timezone('Europe/Minsk')
+    ->withoutOverlapping(10)
+    ->appendOutputTo(storage_path('logs/commercial-documents.log'));
+
 // Черновики попадают в кабинет только у поставщиков, для которых администратор
 // отдельно включил автоматическую передачу после успешного контрольного периода.
 // У всех существующих поставщиков настройка по умолчанию выключена.

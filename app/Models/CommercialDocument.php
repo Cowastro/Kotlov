@@ -87,6 +87,37 @@ class CommercialDocument extends Model
         $this->forceFill(['subtotal' => $subtotal, 'total' => $total])->saveQuietly();
     }
 
+    public function needsManagerControl(): bool
+    {
+        return ($this->type === 'quote' && $this->status === 'sent' && $this->valid_until?->lte(today()->addDays(3)))
+            || ($this->type === 'quote' && $this->status === 'accepted' && ! $this->order()->exists());
+    }
+
+    public function controlLabel(): string
+    {
+        if ($this->type === 'quote' && $this->status === 'accepted' && ! $this->order()->exists()) {
+            return 'Создать заказ';
+        }
+
+        if ($this->type !== 'quote' || $this->status !== 'sent' || ! $this->valid_until) {
+            return '—';
+        }
+
+        if ($this->valid_until->isBefore(today())) {
+            return 'Просрочено';
+        }
+
+        if ($this->valid_until->isToday()) {
+            return 'Истекает сегодня';
+        }
+
+        if ($this->valid_until->lte(today()->addDays(3))) {
+            return 'Связаться до '.$this->valid_until->format('d.m');
+        }
+
+        return 'Контроль '.$this->valid_until->format('d.m');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(CommercialDocumentItem::class)->orderBy('sort_order');
