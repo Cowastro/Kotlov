@@ -229,7 +229,7 @@ class SyncBelomoPriceListCommand extends Command
             'external_sku' => $row['article'], 'name' => $row['name'], 'price' => $row['partner_price_byn'],
             'price_currency' => 'BYN', 'price_currency_rate' => 1, 'price_tax_mode' => 'exclusive', 'price_vat_rate' => 20,
             'price_byn' => $this->priceWithVat($row['partner_price_byn']), 'stock_quantity' => 0,
-            'match_status' => 'matched', 'match_method' => 'belomo_article', 'match_confidence' => 100,
+            'match_status' => 'matched', 'match_method' => 'belomo_article', 'match_confidence' => 1,
             'payload' => json_encode(['procurement_mode' => true, 'vat_included' => false, 'source_document' => 'Цены БелОМО.pdf'], JSON_UNESCAPED_UNICODE),
             'matched_at' => $now, 'last_seen_at' => $now, 'last_offer_seen_at' => $now,
             'created_at' => $now, 'updated_at' => $now,
