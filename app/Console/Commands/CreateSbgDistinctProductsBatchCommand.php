@@ -3709,6 +3709,51 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // Kominki-Kominy lists the exact DARCO ROZ120-CZ at 15.38 PLN. At the
+    // official NBRB rate of 7.6845 BYN per 10 PLN on 2026-10-14 this is
+    // 11.82 BYN, rounded to 12 BYN retail.
+    private const BATCH_UNMATCHED_RESEARCHED_20261014_DJ = [
+        'УТ-00000326' => [
+            'template_slug' => 'rozeta-darco-roz120-cz-ml',
+            'link_existing_slug' => 'rozeta-darco-roz120-cz-ml',
+            'refresh_existing' => true,
+            'clear_price_confirmation' => true,
+            'allow_unmatched' => true,
+            'category_slug' => 'krepleniya-dymohod',
+            'external_sku' => 'WC-ROZ120-CZ',
+            'hydrate_external_sku' => true,
+            'fragments' => ['Кольцо декоративное', 'черное', '120-CZ', '(ML)'],
+            'link_fragments' => ['Darco', 'ROZ120-CZ', '(ML)'],
+            'brand' => [
+                'name' => 'Darco',
+                'slug' => 'darco',
+                'country' => 'Польша',
+            ],
+            'name' => 'Darco ROZ120-CZ (ML) Кольцо декоративное чёрное Ø120 мм',
+            'retail' => 12.00,
+            'images' => [
+                'img/products/darco/darco-roz120-cz-black-rosette.jpg',
+            ],
+            'source_url' => 'https://kominki-kominy.pl/produkt/rozeta-maskujaca-darco-120mm/',
+            'short' => 'Чёрное декоративное кольцо Darco ROZ120-CZ (ML) для аккуратной отделки места прохода дымоходной трубы Ø120 мм.',
+            'content' => '<p><strong>Darco ROZ120-CZ (ML)</strong> — декоративное маскирующее кольцо для дымохода диаметром 120 мм. Оно закрывает монтажный зазор вокруг трубы в месте её прохода через стену.</p><p>Кольцо изготовлено из чёрной стали DC01 толщиной 0,6 мм и окрашено термостойкой краской Senotherm. Допустимая постоянная рабочая температура — до 600 °C.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Декоративное маскирующее кольцо'],
+                ['key' => 'Модель', 'value' => 'ROZ120-CZ (ML)(SPK)'],
+                ['key' => 'Диаметр', 'value' => '120 мм'],
+                ['key' => 'Материал', 'value' => 'Чёрная сталь DC01'],
+                ['key' => 'Толщина стали', 'value' => '0,6 мм'],
+                ['key' => 'Покрытие', 'value' => 'Чёрная термостойкая краска Senotherm'],
+                ['key' => 'Максимальная рабочая температура', 'value' => '600 °C'],
+                ['key' => 'Масса', 'value' => '0,12 кг'],
+                ['key' => 'Артикул производителя', 'value' => 'WC-ROZ120-CZ'],
+                ['key' => 'EAN', 'value' => '5907587902039'],
+                ['key' => 'Бренд', 'value' => 'Darco'],
+                ['key' => 'Страна бренда', 'value' => 'Польша'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -3827,6 +3872,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-disputed-20261014-dg' => self::BATCH_UNMATCHED_DISPUTED_20261014_DG,
             'unmatched-disputed-20261014-dh' => self::BATCH_UNMATCHED_DISPUTED_20261014_DH,
             'unmatched-researched-20261014-di' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DI,
+            'unmatched-researched-20261014-dj' => self::BATCH_UNMATCHED_RESEARCHED_20261014_DJ,
             default => null,
         };
 

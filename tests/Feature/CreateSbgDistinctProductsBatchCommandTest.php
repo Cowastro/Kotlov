@@ -8548,4 +8548,104 @@ XML;
         $this->assertSame($productCount + 1, Product::query()->count());
         $this->assertSame($product->id, $item->fresh()->product_id);
     }
+
+    public function test_it_links_and_refreshes_the_exact_darco_roz120_black_rosette(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-unmatched-darco-roz120',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'krepleniya-dymohod'], [
+            'name' => 'Крепления и монтаж',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $brand = Brand::query()->firstOrCreate(['slug' => 'darco'], [
+            'name' => 'Darco',
+            'country' => 'Польша',
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-009.438',
+            'name' => 'Розета Darco ROZ120-CZ (ML)',
+            'slug' => 'rozeta-darco-roz120-cz-ml',
+            'price' => 19,
+            'images' => ['product/009/009438/old.jpg'],
+            'short_description' => 'Старое общее описание.',
+            'content' => '<p>Старое общее описание.</p>',
+            'requires_price_confirmation' => true,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'af1f3652-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000326',
+            'external_sku' => null,
+            'barcode' => null,
+            'name' => 'Кольцо декоративное черное 120-CZ (ML)',
+            'price_byn' => 9.60,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+            'candidates' => null,
+        ]);
+        $productCount = Product::query()->count();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dj',
+            '--code' => ['УТ-00000326'],
+        ])->assertSuccessful();
+        $this->assertNull($item->fresh()->product_id);
+        $this->assertSame('19.00', $product->fresh()->price);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dj',
+            '--code' => ['УТ-00000326'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product->refresh();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame('WC-ROZ120-CZ', $item->external_sku);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($category->id, $item->target_category_id);
+        $this->assertNull($item->candidates);
+        $this->assertSame('Darco ROZ120-CZ (ML) Кольцо декоративное чёрное Ø120 мм', $product->name);
+        $this->assertSame('12.00', $product->price);
+        $this->assertSame('1', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertFalse((bool) $product->requires_price_confirmation);
+        $this->assertSame('ROZ120-CZ (ML)(SPK)', collect($product->specs)->firstWhere('key', 'Модель')['value']);
+        $this->assertSame('WC-ROZ120-CZ', collect($product->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertSame(['img/products/darco/darco-roz120-cz-black-rosette.jpg'], $product->images);
+        $this->assertFileExists(public_path('img/products/darco/darco-roz120-cz-black-rosette.jpg'));
+        $this->assertStringContainsString('kominki-kominy.pl', $product->content_source_url);
+        $this->assertStringNotContainsString('розничная цена', mb_strtolower($product->content));
+        $this->assertStringNotContainsString('pln', mb_strtolower($product->content));
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'WC-ROZ120-CZ',
+            'product_id' => $product->id,
+            'product_sku' => 'PS-009.438',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261014-dj',
+            '--code' => ['УТ-00000326'],
+            '--apply' => true,
+        ])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($product->id, $item->fresh()->product_id);
+    }
 }
