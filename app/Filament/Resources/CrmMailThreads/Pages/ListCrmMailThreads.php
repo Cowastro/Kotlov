@@ -5,6 +5,7 @@ namespace App\Filament\Resources\CrmMailThreads\Pages;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Widgets\CrmMailHealthOverview;
 use App\Models\CrmMailbox;
+use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\ImapMailboxSynchronizer;
@@ -51,35 +52,30 @@ class ListCrmMailThreads extends ListRecords
 
     public function getTabs(): array
     {
+        $messageCounts = static::messageBadgeCounts();
+
         return [
             'inbox' => Tab::make('Рабочая почта')
                 ->icon('heroicon-o-inbox')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
                     ->whereNotIn('status', ['draft', 'spam'])
                     ->whereHas('messages', fn (Builder $messages): Builder => $messages->where('direction', 'incoming')))
-                ->badge(CrmMailThread::query()
-                    ->whereNotIn('status', ['draft', 'spam'])
-                    ->whereHas('messages', fn (Builder $messages): Builder => $messages->where('direction', 'incoming'))
-                    ->count()),
+                ->badge($messageCounts['inbox'] ?: null),
             'unread' => Tab::make('Непрочитанные')
                 ->icon('heroicon-o-envelope')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
                     ->whereNotIn('status', ['draft', 'spam'])
-                    ->where('unread_count', '>', 0))
-                ->badge(CrmMailThread::query()
-                    ->whereNotIn('status', ['draft', 'spam'])
-                    ->where('unread_count', '>', 0)
-                    ->count() ?: null)
+                    ->whereHas('messages', fn (Builder $messages): Builder => $messages
+                        ->where('direction', 'incoming')
+                        ->where('is_read', false)))
+                ->badge($messageCounts['unread'] ?: null)
                 ->badgeColor('warning'),
             'incoming' => Tab::make('Входящие')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
                     ->whereNotIn('status', ['draft', 'spam'])
                     ->latestMessageDirection('incoming'))
-                ->badge(CrmMailThread::query()
-                    ->whereNotIn('status', ['draft', 'spam'])
-                    ->latestMessageDirection('incoming')
-                    ->count() ?: null)
+                ->badge($messageCounts['incoming'] ?: null)
                 ->badgeColor('warning'),
             'potential_deals' => Tab::make('Потенциальные сделки')
                 ->icon('heroicon-o-currency-dollar')
@@ -94,31 +90,66 @@ class ListCrmMailThreads extends ListRecords
             'drafts' => Tab::make('Черновики')
                 ->icon('heroicon-o-document-text')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'draft'))
-                ->badge(CrmMailThread::query()->where('status', 'draft')->count() ?: null)
+                ->badge($messageCounts['drafts'] ?: null)
                 ->badgeColor('warning'),
             'sent' => Tab::make('Исходящие')
                 ->icon('heroicon-o-paper-airplane')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
                     ->whereNotIn('status', ['draft', 'spam'])
                     ->latestMessageDirection('outgoing'))
-                ->badge(CrmMailThread::query()
-                    ->whereNotIn('status', ['draft', 'spam'])
-                    ->latestMessageDirection('outgoing')
-                    ->count() ?: null)
+                ->badge($messageCounts['sent'] ?: null)
                 ->badgeColor('success'),
             'spam' => Tab::make('Спам')
                 ->icon('heroicon-o-no-symbol')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', 'spam'))
-                ->badge(CrmMailThread::query()->where('status', 'spam')->count() ?: null)
+                ->badge($messageCounts['spam'] ?: null)
                 ->badgeColor('danger'),
             'trash' => Tab::make('Корзина')
                 ->icon('heroicon-o-trash')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->onlyTrashed())
-                ->badge(CrmMailThread::onlyTrashed()->count() ?: null)
+                ->badge($messageCounts['trash'] ?: null)
                 ->badgeColor('danger'),
             'all' => Tab::make('Все письма')
                 ->icon('heroicon-o-queue-list')
-                ->badge(CrmMailThread::query()->count()),
+                ->badge($messageCounts['all']),
+        ];
+    }
+
+    /**
+     * Badge values count individual messages while the table remains grouped
+     * into threads. This prevents one long conversation from looking like one
+     * new email and keeps the navigation badge tied to unread mail, not CRM
+     * workflow statuses.
+     *
+     * @return array{inbox: int, unread: int, incoming: int, drafts: int, sent: int, spam: int, trash: int, all: int}
+     */
+    public static function messageBadgeCounts(): array
+    {
+        $activeMessages = fn () => CrmMailMessage::query()
+            ->whereHas('thread', fn (Builder $threads): Builder => $threads
+                ->whereNotIn('status', ['draft', 'spam']));
+
+        return [
+            'inbox' => $activeMessages()
+                ->whereHas('thread.messages', fn (Builder $messages): Builder => $messages
+                    ->where('direction', 'incoming'))
+                ->count(),
+            'unread' => $activeMessages()
+                ->where('direction', 'incoming')
+                ->where('is_read', false)
+                ->count(),
+            'incoming' => $activeMessages()->where('direction', 'incoming')->count(),
+            'drafts' => CrmMailMessage::query()
+                ->whereHas('thread', fn (Builder $threads): Builder => $threads->where('status', 'draft'))
+                ->count(),
+            'sent' => $activeMessages()->where('direction', 'outgoing')->count(),
+            'spam' => CrmMailMessage::query()
+                ->whereHas('thread', fn (Builder $threads): Builder => $threads->where('status', 'spam'))
+                ->count(),
+            'trash' => CrmMailMessage::query()
+                ->whereHas('thread', fn (Builder $threads): Builder => $threads->onlyTrashed())
+                ->count(),
+            'all' => CrmMailMessage::query()->whereHas('thread')->count(),
         ];
     }
 

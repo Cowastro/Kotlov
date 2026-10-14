@@ -76,7 +76,12 @@ class CrmMailThreadResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getEloquentQuery()->needsAttention()->count();
+        $count = CrmMailMessage::query()
+            ->where('direction', 'incoming')
+            ->where('is_read', false)
+            ->whereHas('thread', fn (Builder $query): Builder => $query
+                ->whereNotIn('status', ['draft', 'spam']))
+            ->count();
 
         return $count > 0 ? (string) $count : null;
     }

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
+use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
@@ -44,6 +45,40 @@ class CrmMailDirectionFilterTest extends TestCase
         $this->assertSame('Исходящее · прочитано', CrmMailThreadResource::mailReadLabel($outgoingThread));
     }
 
+    public function test_mail_badges_count_messages_and_navigation_badge_counts_only_unread_mail(): void
+    {
+        $mailbox = CrmMailbox::query()->create([
+            'name' => 'KOTLOV',
+            'email' => 'counters@kotlov.by',
+            'username' => 'counters@kotlov.by',
+            'is_enabled' => true,
+        ]);
+
+        $activeThread = $this->thread($mailbox, 'active@example.com');
+        $attentionWithoutUnread = $this->thread($mailbox, 'attention@example.com');
+        $attentionWithoutUnread->update(['status' => 'new', 'unread_count' => 7]);
+        $spamThread = $this->thread($mailbox, 'spam@example.com');
+        $spamThread->update(['status' => 'spam']);
+
+        $this->message($activeThread, 'incoming', 1, false);
+        $this->message($activeThread, 'incoming', 2, false);
+        $this->message($activeThread, 'outgoing', 3);
+        $this->message($attentionWithoutUnread, 'outgoing', 4);
+        $this->message($spamThread, 'incoming', 5, false);
+
+        $this->assertSame('2', CrmMailThreadResource::getNavigationBadge());
+        $this->assertSame([
+            'inbox' => 3,
+            'unread' => 2,
+            'incoming' => 2,
+            'drafts' => 0,
+            'sent' => 2,
+            'spam' => 1,
+            'trash' => 0,
+            'all' => 5,
+        ], ListCrmMailThreads::messageBadgeCounts());
+    }
+
     private function thread(CrmMailbox $mailbox, string $email): CrmMailThread
     {
         return CrmMailThread::query()->create([
@@ -59,7 +94,7 @@ class CrmMailDirectionFilterTest extends TestCase
         ]);
     }
 
-    private function message(CrmMailThread $thread, string $direction, int $minute): void
+    private function message(CrmMailThread $thread, string $direction, int $minute, bool $isRead = true): void
     {
         CrmMailMessage::query()->create([
             'thread_id' => $thread->id,
@@ -69,7 +104,7 @@ class CrmMailDirectionFilterTest extends TestCase
             'to' => [],
             'subject' => 'Тест направления',
             'text_body' => 'Текст',
-            'is_read' => true,
+            'is_read' => $isRead,
             'received_at' => now()->addMinutes($minute),
         ]);
     }
