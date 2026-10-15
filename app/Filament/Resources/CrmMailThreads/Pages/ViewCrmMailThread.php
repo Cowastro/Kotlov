@@ -33,6 +33,8 @@ class ViewCrmMailThread extends ViewRecord
 {
     protected static string $resource = CrmMailThreadResource::class;
 
+    protected array $extraBodyAttributes = ['class' => 'crm-mail-thread-page'];
+
     public ?int $forwardMessageId = null;
 
     public ?int $replyMessageId = null;

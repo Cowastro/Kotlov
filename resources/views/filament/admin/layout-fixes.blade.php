@@ -46,4 +46,16 @@
         min-width: 3.5rem;
         white-space: nowrap;
     }
+    @media (max-width: 700px) {
+        /* The message has its own card: avoid two extra padded cards on phones. */
+        .crm-mail-thread-page .fi-main { padding-inline: 8px; }
+        .crm-mail-conversation .fi-section-content { padding: 0; min-width: 0; }
+        .crm-mail-conversation .fi-in-repeatable.fi-contained > .fi-in-repeatable-item {
+            min-width: 0;
+            padding: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+    }
 </style>

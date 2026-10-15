@@ -17,20 +17,38 @@ class CrmMailMessagePreview
         $html = (string) $message->html_body;
         $logo = public_path('img/logo-black.png');
 
-        if (! is_file($logo)) {
-            return $html;
+        if (is_file($logo)) {
+            $logoContents = file_get_contents($logo);
+            if ($logoContents !== false) {
+                $html = str_ireplace('cid:kotlov-logo', 'data:image/png;base64,'.base64_encode($logoContents), $html);
+            }
         }
 
-        $logoContents = file_get_contents($logo);
-        if ($logoContents === false) {
-            return $html;
+        // Display-only adaptation inside the sandboxed iframe. Never rewrite
+        // stored/sent HTML or enable scripts/same-origin permissions.
+        $mobileHead = <<<'HTML'
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style id="crm-mail-mobile-preview">
+@media (max-width: 700px) {
+    body { margin: 0 !important; overflow-wrap: anywhere; }
+    img { max-width: 100%; }
+    .email-shell { padding: 0 !important; }
+    .email-card { max-width: 100% !important; border-radius: 0 !important; }
+    .email-pad { padding-left: 14px !important; padding-right: 14px !important; }
+    .email-logo { width: 160px !important; max-width: 100% !important; height: auto !important; }
+    .signature-column { display: block !important; width: auto !important; text-align: left !important; padding-left: 14px !important; padding-right: 14px !important; }
+    .signature-company { padding-top: 0 !important; }
+}
+</style>
+HTML;
+        if (preg_match('/<\/head\s*>/i', $html)) {
+            return preg_replace('/<\/head\s*>/i', $mobileHead.'</head>', $html, 1);
+        }
+        if (preg_match('/<html\b[^>]*>/i', $html)) {
+            return preg_replace('/(<html\b[^>]*>)/i', '$1<head>'.$mobileHead.'</head>', $html, 1);
         }
 
-        return str_ireplace(
-            'cid:kotlov-logo',
-            'data:image/png;base64,'.base64_encode($logoContents),
-            $html,
-        );
+        return '<!doctype html><html><head>'.$mobileHead.'</head><body>'.$html.'</body></html>';
     }
 
     public function hasVisibleContent(CrmMailMessage $message): bool

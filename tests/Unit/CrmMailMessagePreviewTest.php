@@ -9,6 +9,33 @@ use Tests\TestCase;
 
 class CrmMailMessagePreviewTest extends TestCase
 {
+    public function test_mobile_adaptation_only_changes_the_preview_not_the_saved_email(): void
+    {
+        $original = '<!doctype html><html><head><style>.email-pad{padding:32px}</style></head><body><table class="email-card"><tr><td class="email-pad">В резерве</td></tr></table></body></html>';
+        $message = new CrmMailMessage(['html_body' => $original]);
+
+        $html = app(CrmMailMessagePreview::class)->originalHtml($message);
+
+        $this->assertSame($original, $message->html_body);
+        $this->assertStringContainsString('<meta name="viewport"', $html);
+        $this->assertStringContainsString('id="crm-mail-mobile-preview"', $html);
+        $this->assertStringContainsString('@media (max-width: 700px)', $html);
+        $this->assertStringContainsString('padding-left: 14px !important', $html);
+        $this->assertStringContainsString('<td class="email-pad">В резерве</td>', $html);
+        $this->assertLessThan(strpos($html, '</head>'), strpos($html, 'id="crm-mail-mobile-preview"'));
+    }
+
+    public function test_html_fragments_also_receive_a_responsive_preview_document(): void
+    {
+        $message = new CrmMailMessage(['html_body' => '<p>Короткий ответ</p>']);
+        $html = app(CrmMailMessagePreview::class)->originalHtml($message);
+
+        $this->assertStringStartsWith('<!doctype html><html><head>', $html);
+        $this->assertStringContainsString('<body><p>Короткий ответ</p></body>', $html);
+        $this->assertStringContainsString('.signature-column', $html);
+        $this->assertStringNotContainsString('<script', $html);
+    }
+
     public function test_it_resolves_the_embedded_brand_logo_for_the_crm_preview(): void
     {
         $message = new CrmMailMessage([

@@ -2,11 +2,32 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\CrmMailThreads\Pages\ViewCrmMailThread;
 use App\Models\CrmMailMessage;
+use App\Services\CrmMail\CrmMailMessagePreview;
 use Tests\TestCase;
 
 class CrmMailMessagePreviewViewTest extends TestCase
 {
+    public function test_mobile_original_preview_uses_small_gutters_and_keeps_the_iframe_sandboxed(): void
+    {
+        $message = new CrmMailMessage([
+            'direction' => 'outgoing', 'subject' => 'В резерве', 'text_body' => 'В резерве',
+            'html_body' => '<p>В резерве</p>',
+        ]);
+        $html = view('filament.crm-mail.message-preview', [
+            'message' => $message, 'safeHtml' => 'В резерве', 'hasVisibleBody' => true,
+            'originalHtml' => app(CrmMailMessagePreview::class)->originalHtml($message),
+        ])->render();
+
+        $this->assertStringContainsString('.crm-mail-original { min-width: 0; padding: 10px 6px; }', $html);
+        $this->assertMatchesRegularExpression('/<iframe\b[^>]*\bsandbox\s/s', $html);
+        $this->assertStringNotContainsString('allow-scripts', $html);
+        $this->assertStringNotContainsString('allow-same-origin', $html);
+        $page = new ViewCrmMailThread;
+        $this->assertSame('crm-mail-thread-page', $page->getExtraBodyAttributes()['class']);
+    }
+
     public function test_attachment_only_message_does_not_render_an_empty_body_or_original_frame(): void
     {
         $message = new CrmMailMessage([

@@ -216,6 +216,20 @@
         a.crm-mail-attachment { color: rgb(96 165 250); text-decoration: none; }
         a.crm-mail-attachment:hover { border-color: rgb(96 165 250); background: rgb(59 130 246 / .1); }
         .crm-mail-attachment small { margin-left: 6px; color: rgb(161 161 170); }
-        @media (max-width: 700px) { .crm-mail-header { grid-template-columns: 36px minmax(0, 1fr); } .crm-mail-avatar { width: 36px; height: 36px; } .crm-mail-header-actions { grid-column: 2; justify-items: start; } .crm-mail-subject, .crm-mail-body { padding-left: 16px; padding-right: 16px; } }
+        @media (max-width: 700px) {
+            .crm-mail-card { min-width: 0; max-width: 100%; border-radius: 8px; }
+            .crm-mail-header { grid-template-columns: 32px minmax(0, 1fr); gap: 9px; padding: 12px; }
+            .crm-mail-avatar { width: 32px; height: 32px; }
+            .crm-mail-sender, .crm-mail-address, .crm-mail-recipients { min-width: 0; overflow-wrap: anywhere; }
+            .crm-mail-header-actions { grid-column: 1 / -1; justify-items: start; }
+            .crm-mail-message-actions { justify-content: flex-start; }
+            .crm-mail-subject, .crm-mail-body, .crm-mail-attachments { padding-left: 12px; padding-right: 12px; }
+            .crm-mail-subject { overflow-wrap: anywhere; }
+            .crm-mail-original { min-width: 0; padding: 10px 6px; }
+            .crm-mail-original-toggle { max-width: calc(100% - 12px); margin-inline: 6px; text-align: left; }
+            .crm-mail-original-frame { display: block; max-width: 100%; margin-top: 10px; border-radius: 6px; }
+            .crm-mail-attachment-group { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+            .crm-mail-attachment { min-width: 0; overflow-wrap: anywhere; }
+        }
     </style>
 @endonce

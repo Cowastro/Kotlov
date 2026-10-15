@@ -175,6 +175,7 @@ class CrmMailThreadResource extends Resource
                 TextEntry::make('follow_up_note')->label('Что напомнить')->placeholder('Не заполнено')->columnSpanFull(),
             ]),
             Section::make('Переписка')
+                ->extraAttributes(['class' => 'crm-mail-conversation'])
                 ->description('Входящие и ответы сотрудников собраны в одной цепочке.')
                 ->columnSpanFull()
                 ->schema([
