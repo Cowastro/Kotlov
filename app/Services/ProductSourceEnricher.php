@@ -49,7 +49,7 @@ class ProductSourceEnricher
             throw new \InvalidArgumentException('Invalid source URL.');
         }
 
-        $parsed = $this->normalizeParsedData($parsed);
+        $parsed = $this->normalizeParsedData($parsed, $this->sourceImageLimit($sourceUrl));
         $parsed = $this->adaptParsedDataForProduct($parsed, $product, $sourceUrl);
         if (($options['prefer_resize_cache_images'] ?? false) === true) {
             $parsed['images'] = $this->preferResizeCacheImages($parsed['images']);
@@ -818,7 +818,20 @@ class ProductSourceEnricher
             $parsed['short_description'] = $this->sourceSummary((string) $parsed['description']);
         }
 
-        return $this->normalizeParsedData($parsed);
+        if ($this->isPkMercuryUrl($url)) {
+            $parsed['documents'] = array_values(array_merge($parsed['documents'], [
+                [
+                    'label' => 'Техническая информация производителя',
+                    'url' => 'https://pkmercury.by/poleznaya-informacziya/',
+                ],
+                [
+                    'label' => 'Сертификаты производителя',
+                    'url' => 'https://pkmercury.by/sertifikaty/',
+                ],
+            ]));
+        }
+
+        return $this->normalizeParsedData($parsed, $this->sourceImageLimit($url));
     }
 
     private function isSupplierPromoDescription(string $text): bool
@@ -835,7 +848,7 @@ class ProductSourceEnricher
         return mb_strlen($summary) <= 240 ? $summary : Str::words($summary, 30, '…');
     }
 
-    private function normalizeParsedData(array $parsed): array
+    private function normalizeParsedData(array $parsed, int $imageLimit = 4): array
     {
         return [
             'title' => $this->cleanText((string) ($parsed['title'] ?? '')),
@@ -854,8 +867,18 @@ class ProductSourceEnricher
             'images' => array_values(array_slice(array_filter(array_map(
                 fn ($url) => $this->normalizeUrlForValidation((string) $url),
                 (array) ($parsed['images'] ?? [])
-            )), 0, 4)),
+            )), 0, max(1, $imageLimit))),
         ];
+    }
+
+    private function sourceImageLimit(string $url): int
+    {
+        return $this->isPkMercuryUrl($url) ? 12 : 4;
+    }
+
+    private function isPkMercuryUrl(string $url): bool
+    {
+        return str_ends_with(mb_strtolower((string) parse_url($url, PHP_URL_HOST)), 'pkmercury.by');
     }
 
     private function normalizeUrlForValidation(string $url): string
@@ -1994,13 +2017,32 @@ class ProductSourceEnricher
 
             foreach ($matches[1] ?? $matches[0] as $url) {
                 $url = $this->absoluteUrl((string) $url, $pageUrl);
-                if (filter_var($url, FILTER_VALIDATE_URL) && ! str_contains($url, '/bitrix/')) {
+                if (filter_var($url, FILTER_VALIDATE_URL)
+                    && ! str_contains($url, '/bitrix/')
+                    && $this->isSupportedVideoUrl($url)) {
                     return $url;
                 }
             }
         }
 
         return '';
+    }
+
+    private function isSupportedVideoUrl(string $url): bool
+    {
+        $host = mb_strtolower((string) parse_url($url, PHP_URL_HOST));
+        $path = mb_strtolower((string) parse_url($url, PHP_URL_PATH));
+
+        if (preg_match('/\.(?:mp4|webm|mov)$/i', $path)) {
+            return true;
+        }
+
+        return $host === 'youtu.be'
+            || (str_ends_with($host, 'youtube.com') && preg_match('~^/(?:watch|embed/|shorts/|live/)~', $path))
+            || (str_ends_with($host, 'youtube-nocookie.com') && str_starts_with($path, '/embed/'))
+            || (str_ends_with($host, 'rutube.ru') && preg_match('~/(?:video|play/embed)/~', $path))
+            || (str_ends_with($host, 'vimeo.com') && preg_match('~/\d+~', $path))
+            || ($host === 'vk.com' && str_contains($path, '/video'));
     }
 
     private function extractServiceInfo(string $html): array

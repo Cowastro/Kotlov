@@ -84,4 +84,42 @@ class ProductSourceEnricherTest extends TestCase
         );
         $this->assertSame($sanitized, $enricher->sanitizeDescriptionHtml($sanitized));
     }
+
+    public function test_pkmercury_pages_keep_a_large_gallery_and_add_official_resources(): void
+    {
+        $images = implode('', array_map(
+            fn (int $number): string => sprintf(
+                '<a href="https://pkmercury.by/wp-content/uploads/2025/06/tverdotoplivnyj-kotel-kstb-95-1t-izobrazhenie-%d.jpg"><img src="https://pkmercury.by/wp-content/uploads/2025/06/tverdotoplivnyj-kotel-kstb-95-1t-izobrazhenie-%d-1024x1024.jpg"></a>',
+                $number,
+                $number,
+            ),
+            range(1, 12),
+        ));
+
+        $html = '<html><head><meta property="og:image" content="https://pkmercury.by/wp-content/uploads/2025/06/tverdotoplivnyj-kotel-kstb-95-1t.jpg"></head><body>'
+            .$images
+            .'<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TEST"></iframe>'
+            .'<a href="https://www.youtube.com/channel/UCB0aeZpMU4W67QL1ZIPD4ow">Youtube</a>'
+            .'</body></html>';
+
+        $method = new ReflectionMethod(ProductSourceEnricher::class, 'parsePage');
+        $parsed = $method->invoke(
+            new ProductSourceEnricher(),
+            $html,
+            'https://pkmercury.by/product/tverdotoplivnyj-kotel-kstb-95-1t/'
+        );
+
+        $this->assertCount(12, $parsed['images']);
+        $this->assertSame('', $parsed['video_url']);
+        $this->assertSame([
+            [
+                'label' => 'Техническая информация производителя',
+                'url' => 'https://pkmercury.by/poleznaya-informacziya/',
+            ],
+            [
+                'label' => 'Сертификаты производителя',
+                'url' => 'https://pkmercury.by/sertifikaty/',
+            ],
+        ], $parsed['documents']);
+    }
 }
