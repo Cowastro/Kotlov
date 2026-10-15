@@ -413,20 +413,61 @@ class CommercialDocumentResource extends Resource
                     TextInput::make('discount_total')->label('Дополнительная скидка')->numeric()->minValue(0)->default(0)->prefix('BYN'),
                     TextInput::make('delivery_price')->label('Доставка')->numeric()->minValue(0)->default(0)->prefix('BYN'),
                     Select::make('currency')->label('Валюта')->options(['BYN' => 'BYN'])->default('BYN')->required(),
+                    Select::make('payment_terms_preset')
+                        ->label('Типовая оплата')
+                        ->placeholder('Выберите готовый вариант')
+                        ->options(self::paymentTermsPresets())
+                        ->native(false)
+                        ->live()
+                        ->dehydrated(false)
+                        ->afterStateUpdated(fn (mixed $state, Set $set) => filled($state) ? $set('payment_terms', $state) : null),
                     TextInput::make('payment_terms')
                         ->label('Условия оплаты')
                         ->placeholder('Например: 100% предоплата')
                         ->default('Безналичный расчёт по выставленному счёту.')
                         ->maxLength(255)
                         ->columnSpan(2),
+                    Select::make('delivery_terms_preset')
+                        ->label('Типовая поставка')
+                        ->placeholder('Выберите готовый вариант')
+                        ->options(self::deliveryTermsPresets())
+                        ->native(false)
+                        ->live()
+                        ->dehydrated(false)
+                        ->afterStateUpdated(fn (mixed $state, Set $set) => filled($state) ? $set('delivery_terms', $state) : null),
                     TextInput::make('delivery_terms')
                         ->label('Срок поставки')
                         ->placeholder('Например: 3–5 рабочих дней после оплаты')
                         ->default('Срок и способ поставки согласовываются с менеджером.')
-                        ->maxLength(255),
+                        ->maxLength(255)
+                        ->columnSpan(2),
                     Textarea::make('notes')->label('Примечание для клиента')->rows(3)->columnSpanFull(),
                 ]),
         ]);
+    }
+
+    /** @return array<string, string> */
+    public static function paymentTermsPresets(): array
+    {
+        return [
+            'Безналичный расчёт по выставленному счёту.' => 'Безналичный расчёт по счёту',
+            '100% предоплата.' => '100% предоплата',
+            '50% предоплата, 50% перед отгрузкой.' => '50% предоплата / 50% перед отгрузкой',
+            'Оплата по факту поставки.' => 'Оплата по факту поставки',
+            'Отсрочка платежа 5 банковских дней.' => 'Отсрочка 5 банковских дней',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public static function deliveryTermsPresets(): array
+    {
+        return [
+            'Срок и способ поставки согласовываются с менеджером.' => 'По согласованию с менеджером',
+            '1–2 рабочих дня после оплаты.' => '1–2 рабочих дня после оплаты',
+            '3–5 рабочих дней после оплаты.' => '3–5 рабочих дней после оплаты',
+            '10–15 рабочих дней после оплаты.' => '10–15 рабочих дней после оплаты',
+            'Самовывоз со склада.' => 'Самовывоз со склада',
+        ];
     }
 
     public static function infolist(Schema $schema): Schema

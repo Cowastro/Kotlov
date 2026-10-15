@@ -245,8 +245,30 @@ class CommercialDocumentWorkflowTest extends TestCase
             ->assertSeeText('Найти в базе')
             ->assertSeeText('Добавить выбранные в КП')
             ->assertSeeText('Рынок / исследование')
+            ->assertSeeText('Типовая оплата')
+            ->assertSeeText('Типовая поставка')
             ->assertSeeText('Условия оплаты')
             ->assertSeeText('Срок поставки');
+    }
+
+    public function test_commercial_document_has_popular_payment_and_delivery_presets(): void
+    {
+        $this->assertArrayHasKey(
+            '100% предоплата.',
+            CommercialDocumentResource::paymentTermsPresets(),
+        );
+        $this->assertArrayHasKey(
+            '50% предоплата, 50% перед отгрузкой.',
+            CommercialDocumentResource::paymentTermsPresets(),
+        );
+        $this->assertArrayHasKey(
+            '3–5 рабочих дней после оплаты.',
+            CommercialDocumentResource::deliveryTermsPresets(),
+        );
+        $this->assertArrayHasKey(
+            'Самовывоз со склада.',
+            CommercialDocumentResource::deliveryTermsPresets(),
+        );
     }
 
     public function test_manager_can_find_and_add_product_from_database(): void
