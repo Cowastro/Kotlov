@@ -233,75 +233,8 @@
                                 </div>
                                 <div class="br-line"></div>
 
-                                {{-- Бренды --}}
-                                @if ($brands->count() > 0 && !request('brand'))
-                                    @php
-                                        $brandsTop  = $brands->sortByDesc('products_count')->take(10);
-                                        $brandsRest = $brands->sortByDesc('products_count')->skip(10);
-                                        $activeBrandInRest = $brandsRest->contains('id', (int) request('brand'));
-                                    @endphp
-                                    <div class="widget-facet">
-                                        <div class="facet-title" data-bs-target="#brands" role="button"
-                                            data-bs-toggle="collapse" aria-expanded="true">
-                                            <h6>Бренды</h6>
-                                            <span class="icon icon-CaretDown"></span>
-                                        </div>
-                                        <div id="brands" class="collapse show">
-                                            <ul class="collapse-body filter-group-check" id="brands-list">
-
-                                                {{-- Топ-10 по количеству товаров --}}
-                                                @foreach ($brandsTop as $brand)
-                                                    <li class="list-item">
-                                                        <input type="radio" name="brand" class="tf-check style-2"
-                                                            id="brand-{{ $brand->id }}"
-                                                            value="{{ $brand->id }}"
-                                                            {{ request('brand') == $brand->id ? 'checked' : '' }}
-                                                            onchange="applyFilter('brand', '{{ $brand->id }}')">
-                                                        <label for="brand-{{ $brand->id }}" class="label">
-                                                            <span class="brand-text">{{ $brand->name }}</span>
-                                                            <span class="count">({{ $brand->products_count }})</span>
-                                                        </label>
-                                                    </li>
-                                                @endforeach
-
-                                                {{-- Остальные бренды — скрыты если нет активного выбора в них --}}
-                                                @if ($brandsRest->count() > 0)
-                                                    <div id="brands-more" style="{{ $activeBrandInRest ? '' : 'display:none' }}">
-                                                        @foreach ($brandsRest as $brand)
-                                                            <li class="list-item">
-                                                                <input type="radio" name="brand" class="tf-check style-2"
-                                                                    id="brand-{{ $brand->id }}"
-                                                                    value="{{ $brand->id }}"
-                                                                    {{ request('brand') == $brand->id ? 'checked' : '' }}
-                                                                    onchange="applyFilter('brand', '{{ $brand->id }}')">
-                                                                <label for="brand-{{ $brand->id }}" class="label">
-                                                                    <span class="brand-text">{{ $brand->name }}</span>
-                                                                    <span class="count">({{ $brand->products_count }})</span>
-                                                                </label>
-                                                            </li>
-                                                        @endforeach
-                                                    </div>
-
-                                                    <li class="list-item mt-8">
-                                                        <button type="button" onclick="toggleBrands(this)"
-                                                            data-total="{{ $brands->count() }}"
-                                                            data-expanded="{{ $activeBrandInRest ? '1' : '0' }}"
-                                                            style="background:none;border:none;padding:0;cursor:pointer;color:inherit;"
-                                                            class="text-caption-01 cl-text-2 d-flex align-items-center gap-4 link">
-                                                            @if ($activeBrandInRest)
-                                                                Скрыть <i class="icon icon-CaretUp fs-12 ms-4"></i>
-                                                            @else
-                                                                Показать все ({{ $brands->count() }}) <i class="icon icon-CaretDown fs-12 ms-4"></i>
-                                                            @endif
-                                                        </button>
-                                                    </li>
-                                                @endif
-
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <div class="br-line"></div>
-                                @endif
+                                {{-- Производитель --}}
+                                @include('partials.catalog-brand-filter', ['brands' => $brands])
 
                                 {{-- Атрибуты категории (select-тип, in_filter=true) --}}
                                 @foreach ($filterAttributes as $attr)
@@ -340,8 +273,8 @@
 
                                 {{-- Кнопка сброса --}}
                                 @php
-                                    $hasActiveCatalogFilters = count(request()->except('sort', 'page', 'brand')) > 0;
-                                    $resetCatalogUrl = url()->current() . (request('brand') ? '?' . http_build_query(['brand' => (int) request('brand')]) : '');
+                                    $hasActiveCatalogFilters = count(request()->except('sort', 'page')) > 0;
+                                    $resetCatalogUrl = url()->current();
                                 @endphp
                                 @if ($hasActiveCatalogFilters)
                                     <a href="{{ $resetCatalogUrl }}" class="tf-btn btn-outline w-100 mt-8">
