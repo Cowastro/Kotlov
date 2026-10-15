@@ -28,7 +28,10 @@ return new class extends Migration
                 $table->timestamp('revoked_at')->nullable()->index();
                 $table->unsignedInteger('open_count')->default(0);
                 $table->timestamps();
-                $table->index(['commercial_document_id', 'revoked_at']);
+                $table->index(
+                    ['commercial_document_id', 'revoked_at'],
+                    'cd_portal_link_document_revoked_idx',
+                );
             });
         }
 
