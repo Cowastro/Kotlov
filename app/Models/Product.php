@@ -477,10 +477,65 @@ class Product extends Model
 
     public function scopePrioritizeConfirmedStock($query)
     {
+        $productId = $query->getModel()->qualifyColumn('id');
+        $requiresConfirmation = $query->getModel()->qualifyColumn('requires_price_confirmation');
+        $availability = $query->getModel()->qualifyColumn('availability_status');
+        $supplierFreshAfter = now()->subHours(SupplierProduct::STALE_AFTER_HOURS);
+        $integrationFreshAfter = now()->subMinutes(15);
+        $oneCFreshAfter = now()->subMinutes(IntegrationSource::ONE_C_STOCK_MIN_VALIDITY_MINUTES);
+
         return $query->orderByRaw(
-            'CASE WHEN '.$this->qualifyColumn('in_stock').' = 1'
-            .' AND '.$this->qualifyColumn('availability_status').' = ? THEN 0 ELSE 1 END',
-            [self::AVAILABILITY_IN_STOCK]
+            "CASE WHEN {$requiresConfirmation} = 0
+                AND ({$availability} IS NULL OR {$availability} != ?)
+                AND (
+                    EXISTS (
+                        SELECT 1 FROM supplier_products AS catalog_supplier_stock
+                        WHERE catalog_supplier_stock.product_id = {$productId}
+                          AND catalog_supplier_stock.stock_quantity > 0
+                          AND COALESCE(
+                              catalog_supplier_stock.last_stock_synced_at,
+                              catalog_supplier_stock.last_synced_at,
+                              catalog_supplier_stock.updated_at
+                          ) >= ?
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM integration_products AS catalog_integration_stock
+                        INNER JOIN integration_sources AS catalog_stock_source
+                            ON catalog_stock_source.id = catalog_integration_stock.integration_source_id
+                        WHERE catalog_integration_stock.product_id = {$productId}
+                          AND catalog_integration_stock.match_status = 'matched'
+                          AND catalog_integration_stock.stock_quantity > 0
+                          AND catalog_stock_source.is_active = 1
+                          AND (
+                              (
+                                  catalog_stock_source.code != 'onec'
+                                  AND catalog_stock_source.driver != 'commerceml'
+                                  AND catalog_integration_stock.stock_confirmed_at >= ?
+                              )
+                              OR (
+                                  (catalog_stock_source.code = 'onec' OR catalog_stock_source.driver = 'commerceml')
+                                  AND (
+                                      catalog_integration_stock.stock_confirmed_at >= ?
+                                      OR EXISTS (
+                                          SELECT 1 FROM integration_exchange_runs AS catalog_stock_run
+                                          WHERE catalog_stock_run.integration_source_id = catalog_stock_source.id
+                                            AND catalog_stock_run.status = 'success'
+                                            AND catalog_stock_run.operation = 'catalog'
+                                            AND catalog_stock_run.finished_at >= ?
+                                      )
+                                  )
+                              )
+                          )
+                    )
+                ) THEN 0 ELSE 1 END",
+            [
+                self::AVAILABILITY_OUT_OF_STOCK,
+                $supplierFreshAfter,
+                $integrationFreshAfter,
+                $oneCFreshAfter,
+                $oneCFreshAfter,
+            ]
         );
     }
 

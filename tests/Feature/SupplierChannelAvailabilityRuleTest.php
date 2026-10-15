@@ -104,6 +104,49 @@ class SupplierChannelAvailabilityRuleTest extends TestCase
         $this->assertFalse($product->fresh()->canBePurchased());
     }
 
+    public function test_catalog_sort_prioritizes_only_products_with_fresh_confirmed_stock(): void
+    {
+        $unlinked = $this->product('SORT-UNLINKED', true);
+        $unlinked->forceFill(['price' => 1])->save();
+        $stale = $this->product('SORT-STALE', true);
+        $stale->forceFill(['price' => 5])->save();
+        $fresh = $this->product('SORT-FRESH', true);
+        $fresh->forceFill(['price' => 300])->save();
+
+        $supplier = Supplier::query()->create([
+            'code' => 'catalog-stock-priority',
+            'name' => 'Поставщик сортировки остатков',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $stale->id,
+            'supplier_article' => 'SORT-STALE',
+            'in_stock' => true,
+            'stock_quantity' => 2,
+            'last_stock_synced_at' => now()->subHours(SupplierProduct::STALE_AFTER_HOURS + 1),
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $fresh->id,
+            'supplier_article' => 'SORT-FRESH',
+            'in_stock' => true,
+            'stock_quantity' => 2,
+            'last_stock_synced_at' => now(),
+        ]);
+
+        $ordered = Product::query()
+            ->whereKey([$unlinked->id, $stale->id, $fresh->id])
+            ->withSupplierChannels()
+            ->prioritizeConfirmedStock()
+            ->orderBy('price')
+            ->get();
+
+        $this->assertSame([$fresh->id, $unlinked->id, $stale->id], $ordered->pluck('id')->all());
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $ordered->first()->effectiveAvailabilityStatus());
+        $this->assertSame(Product::AVAILABILITY_CHECK, $ordered->get(1)->effectiveAvailabilityStatus());
+        $this->assertSame(Product::AVAILABILITY_CHECK, $ordered->get(2)->effectiveAvailabilityStatus());
+    }
+
     public function test_one_c_stock_remains_valid_for_a_day_and_then_requires_consultation(): void
     {
         $product = $this->product('STALE-ONE-C', true);
