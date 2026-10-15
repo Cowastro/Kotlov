@@ -311,6 +311,10 @@ class CommercialDocumentWorkflowTest extends TestCase
             'Самовывоз со склада.',
             CommercialDocumentResource::deliveryTermsPresets(),
         );
+        $this->assertArrayHasKey(
+            'Доставка до склада покупателя.',
+            CommercialDocumentResource::deliveryTermsPresets(),
+        );
     }
 
     public function test_commercial_document_requires_payment_and_delivery_terms(): void
