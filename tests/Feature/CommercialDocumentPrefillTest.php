@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CommercialDocuments\Pages\CreateCommercialDocument;
+use App\Filament\Resources\Products\Actions\CreateCommercialDocumentAction;
+use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Products\Pages\ViewProduct;
 use App\Models\Category;
 use App\Models\CrmCounterparty;
@@ -162,5 +165,85 @@ class CommercialDocumentPrefillTest extends TestCase
         $this->assertSame('Иван Петров', $component->get('data.client_name'));
         $this->assertSame('ivan@example.com', $component->get('data.client_email'));
         $this->assertSame(2.0, (float) collect($component->get('data.items'))->first()['quantity']);
+    }
+
+    public function test_manager_can_start_a_commercial_offer_from_product_list_with_latest_active_deal_suggested(): void
+    {
+        $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Товары для КП из списка',
+            'slug' => 'product-list-commercial-offer',
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Коллектор для КП из списка',
+            'slug' => 'product-list-commercial-offer-item',
+            'sku' => 'KOTLOV-TEST-QUOTE',
+            'price' => 750,
+            'currency' => 'BYN',
+            'unit' => 'шт.',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $counterparty = CrmCounterparty::query()->create([
+            'type' => 'organization',
+            'classification' => 'b2b_prospect',
+            'business_unit' => 'wholesale',
+            'status' => 'lead',
+            'name' => 'Последний активный клиент',
+            'public_name' => 'Последний активный клиент',
+            'source' => 'email',
+        ]);
+        $mailbox = CrmMailbox::query()->firstOrFail();
+        $mailbox->threads()->create([
+            'thread_key' => hash('sha256', 'older-active-product-list-deal'),
+            'subject' => 'Старый запрос',
+            'participant_email' => 'old@example.com',
+            'status' => 'in_progress',
+            'sales_stage' => 'qualification',
+            'priority' => 'normal',
+            'last_message_at' => now()->subDays(2),
+        ]);
+        $latest = $mailbox->threads()->create([
+            'crm_counterparty_id' => $counterparty->id,
+            'thread_key' => hash('sha256', 'latest-active-product-list-deal'),
+            'subject' => 'Последний запрос на КП',
+            'participant_name' => 'Отдел закупок',
+            'participant_email' => 'latest@example.com',
+            'status' => 'in_progress',
+            'sales_stage' => 'negotiation',
+            'priority' => 'high',
+            'last_message_at' => now(),
+        ]);
+
+        $this->actingAs($user);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $this->assertSame($latest->id, CreateCommercialDocumentAction::suggestedThreadId());
+
+        Livewire::test(ListProducts::class)
+            ->mountTableAction('create_commercial_document', $product)
+            ->assertTableActionDataSet([
+                'quantity' => 1,
+                'crm_mail_thread_id' => $latest->id,
+                'create_mail_draft' => true,
+            ]);
+
+        Livewire::test(ListProducts::class)
+            ->assertTableActionVisible('create_commercial_document', $product)
+            ->callTableAction('create_commercial_document', $product, [
+                'quantity' => 3,
+                'crm_mail_thread_id' => $latest->id,
+                'create_mail_draft' => true,
+            ])
+            ->assertHasNoTableActionErrors()
+            ->assertRedirect(CommercialDocumentResource::getUrl('create'));
+
+        $this->assertSame([$product->id], session('commercial_document_product_ids'));
+        $this->assertSame(3.0, session('commercial_document_product_quantities')[$product->id]);
+        $this->assertSame($latest->id, session('commercial_document_prefill.crm_mail_thread_id'));
+        $this->assertSame($counterparty->id, session('commercial_document_prefill.crm_counterparty_id'));
+        $this->assertTrue(session('commercial_document_create_mail_draft'));
     }
 }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Tables;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
+use App\Filament\Resources\Products\Actions\CreateCommercialDocumentAction;
 use App\Filament\Resources\Products\Actions\ManualPricingAction;
 use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\RunProductCatalogAiReview;
@@ -394,6 +395,9 @@ class ProductsTable
                 panel: 'admin',
             ))
             ->recordActions([
+                CreateCommercialDocumentAction::make()
+                    ->iconButton()
+                    ->tooltip('Создать КП и привязать к лиду'),
                 ActionGroup::make([
                     Action::make('market_price_details')
                         ->label('Рынок и цены')

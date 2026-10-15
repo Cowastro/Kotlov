@@ -27,6 +27,7 @@ final class CreateCommercialDocumentAction
                 && CommercialDocumentResource::canCreate())
             ->fillForm(fn (): array => [
                 'quantity' => 1,
+                'crm_mail_thread_id' => self::suggestedThreadId(),
                 'create_mail_draft' => true,
             ])
             ->form([
@@ -40,7 +41,7 @@ final class CreateCommercialDocumentAction
                 Select::make('crm_mail_thread_id')
                     ->label('Сделка / переписка с клиентом')
                     ->placeholder('Без привязки — заполнить клиента вручную')
-                    ->helperText('Можно выбрать существующее обращение из почты. КП сохранится в этой сделке, а данные клиента заполнятся автоматически.')
+                    ->helperText('Последняя активная сделка предложена автоматически. Проверьте клиента или выберите другой недавний лид — КП сохранится в этой сделке.')
                     ->searchable()
                     ->live()
                     ->options(fn (): array => self::recentThreadOptions())
@@ -80,6 +81,15 @@ final class CreateCommercialDocumentAction
 
                 return redirect(CommercialDocumentResource::getUrl('create'));
             });
+    }
+
+    public static function suggestedThreadId(): ?int
+    {
+        return self::threadQuery()
+            ->potentialDeals()
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('id')
+            ->value('id');
     }
 
     /** @return array<int, string> */
