@@ -5527,6 +5527,50 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // OGS-R-3-NR-i is the larger insulated OLE-PRO separator, not the KOTLOV
+    // GE G-70/3 suggested by fuzzy matching. The retail is the current
+    // 5,669.61 UAH market price converted at the NBRB 2026-10-15 official
+    // rate of 6.6879 BYN per 100 UAH.
+    private const BATCH_AMBIGUOUS_RESEARCHED_20261015_EY = [
+        'УТ-00000127' => [
+            'template' => 'PS-008.926',
+            'candidate' => 'PS-008.926',
+            'category_slug' => 'gidravlicheskie-razdeliteli-i-kollektory',
+            'external_id' => 'af1f358b-1f62-11e9-bad6-1c1b0d1de7c2',
+            'fragments' => ['Гидравлический разделитель', 'ОГС-P-3-НР-i'],
+            'brand' => [
+                'name' => 'OLE-PRO',
+                'slug' => 'ole-pro',
+                'country' => 'Украина',
+                'content' => '<p><strong>OLE-PRO</strong> — украинский производитель оборудования для котельных и систем отопления.</p>',
+            ],
+            'name' => 'OLE-PRO Гидравлический разделитель ОГС-Р-3-НР-i, до 67 кВт',
+            'retail' => 379.18,
+            'images' => ['https://formulatepla.ua/pub/media/catalog/product/_/2/_2_14_1.jpg'],
+            'source_url' => 'https://formulatepla.ua/gidrostrilka-v-utepljuvachi-ogs-r-3-nr-i-do-67-kvt-ole-pro.html',
+            'short' => 'Вертикальный теплоизолированный гидравлический разделитель OLE-PRO для котельных мощностью до 67 кВт, расход до 2,9 м³/ч.',
+            'content' => '<p><strong>OLE-PRO ОГС-Р-3-НР-i</strong> — вертикальный гидравлический разделитель для систем отопления мощностью до 67 кВт. Он разделяет котловой и отопительный контуры, устраняя взаимное влияние насосов и стабилизируя работу системы.</p><p>Корпус изготовлен из холоднокатаной стали толщиной 3 мм, патрубки — из бесшовной трубы со стенкой 4 мм. Наружные резьбовые подключения имеют размер 1″, межосевое расстояние составляет 150 мм.</p><p>В комплект входят автоматический воздухоотводчик, кран для слива, заглушка 1/2″ и теплоизоляция EPP. Максимальное рабочее давление — 6 бар, температура теплоносителя — до 110 °C.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гидравлический разделитель'],
+                ['key' => 'Модель', 'value' => 'ОГС-Р-3-НР-i'],
+                ['key' => 'Максимальная мощность', 'value' => '67 кВт'],
+                ['key' => 'Исполнение', 'value' => 'Вертикальное, в теплоизоляции'],
+                ['key' => 'Подключение', 'value' => '1″ НР × 1″ НР'],
+                ['key' => 'Межосевое расстояние', 'value' => '150 мм'],
+                ['key' => 'Максимальный расход', 'value' => '2,9 м³/ч'],
+                ['key' => 'Максимальное рабочее давление', 'value' => '6 бар'],
+                ['key' => 'Максимальная рабочая температура', 'value' => '110 °C'],
+                ['key' => 'Материал', 'value' => 'Холоднокатаная сталь'],
+                ['key' => 'Толщина стали корпуса', 'value' => '3 мм'],
+                ['key' => 'Толщина стенки патрубков', 'value' => '4 мм'],
+                ['key' => 'Воздухоотводчик', 'value' => 'Автоматический, в комплекте'],
+                ['key' => 'Дренажный кран', 'value' => 'В комплекте'],
+                ['key' => 'Теплоизоляция', 'value' => 'EPP, 50 г/л'],
+                ['key' => 'Страна производства', 'value' => 'Украина'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5688,6 +5732,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261015-ev' => self::BATCH_UNMATCHED_RESEARCHED_20261015_EV,
             'unmatched-researched-20261015-ew' => self::BATCH_UNMATCHED_RESEARCHED_20261015_EW,
             'ambiguous-researched-20261015-ex' => self::BATCH_AMBIGUOUS_RESEARCHED_20261015_EX,
+            'ambiguous-researched-20261015-ey' => self::BATCH_AMBIGUOUS_RESEARCHED_20261015_EY,
             default => null,
         };
 
