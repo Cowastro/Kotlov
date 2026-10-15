@@ -31,7 +31,6 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
@@ -47,6 +46,7 @@ class ProductsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('is_archived', false))
             ->columns([
                 ImageColumn::make('images')
                     ->label('Фото')
@@ -312,47 +312,6 @@ class ProductsTable
             ->defaultSort('created_at', 'desc')
             ->paginated([25, 50, 100])
             ->filters([
-                TernaryFilter::make('is_active')
-                    ->label('Карточка сайта')
-                    ->placeholder('Все')
-                    ->trueLabel('Только активные')
-                    ->falseLabel('Только отключённые'),
-
-                TernaryFilter::make('is_archived')
-                    ->label('Архив')
-                    ->placeholder('Все')
-                    ->trueLabel('Только архив')
-                    ->falseLabel('Без архива')
-                    ->default(false),
-                TernaryFilter::make('in_stock')
-                    ->label('В наличии на сайте')
-                    ->placeholder('Все')
-                    ->trueLabel('Да — можно продавать')
-                    ->falseLabel('Нет — не в наличии')
-                    ->queries(
-                        true: fn (Builder $query): Builder => self::wherePubliclyInStock($query),
-                        false: fn (Builder $query): Builder => self::whereNotPubliclyInStock($query),
-                    ),
-
-                SelectFilter::make('availability_status')
-                    ->label('Статус наличия')
-                    ->options(Product::availabilityStatusOptions())
-                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
-                        Product::AVAILABILITY_IN_STOCK => self::whereEffectivelyInStock($query),
-                        Product::AVAILABILITY_CHECK => self::whereAvailabilityNeedsCheck($query),
-                        Product::AVAILABILITY_OUT_OF_STOCK => self::whereEffectivelyOutOfStock($query),
-                        default => $query,
-                    }),
-
-                TernaryFilter::make('is_featured')
-                    ->label('Хит продаж'),
-
-                TernaryFilter::make('is_new')
-                    ->label('Новинки'),
-
-                TernaryFilter::make('is_sale')
-                    ->label('Акции'),
-
                 SelectFilter::make('category_id')
                     ->label('Категория')
                     ->relationship('category', 'name')
@@ -374,20 +333,15 @@ class ProductsTable
                         : $query
                     ),
 
-                Filter::make('without_photo')
-                    ->label('Без фото')
-                    ->query(fn (Builder $query) => $query->where(function ($q) {
-                        $q->whereNull('images')
-                            ->orWhere('images', '[]')
-                            ->orWhere('images', '""')
-                            ->orWhereRaw('JSON_LENGTH(images) = 0');
-                    }))
-                    ->toggle(),
-
-                Filter::make('without_price')
-                    ->label('Без цены')
-                    ->query(fn (Builder $query) => $query->where('price', 0)->orWhereNull('price'))
-                    ->toggle(),
+                TernaryFilter::make('in_stock')
+                    ->label('Наличие')
+                    ->placeholder('Все')
+                    ->trueLabel('В наличии')
+                    ->falseLabel('Нет в наличии')
+                    ->queries(
+                        true: fn (Builder $query): Builder => self::wherePubliclyInStock($query),
+                        false: fn (Builder $query): Builder => self::whereNotPubliclyInStock($query),
+                    ),
             ])
             ->recordUrl(fn (Product $record): string => ProductResource::getUrl(
                 'view',

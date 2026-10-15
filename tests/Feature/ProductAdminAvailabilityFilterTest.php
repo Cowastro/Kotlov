@@ -16,6 +16,18 @@ class ProductAdminAvailabilityFilterTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_product_filters_are_limited_to_fast_search_fields(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        $component = Livewire::actingAs($admin)->test(ListProducts::class);
+
+        $this->assertSame(
+            ['category_id', 'brand_id', 'supplier', 'in_stock'],
+            array_keys($component->instance()->getTable()->getFilters()),
+        );
+    }
+
     public function test_in_stock_filter_only_keeps_products_that_are_really_for_sale_on_the_site(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
@@ -100,17 +112,6 @@ class ProductAdminAvailabilityFilterTest extends TestCase
             ])
             ->assertCanNotSeeTableRecords([$publiclyInStock]);
 
-        Livewire::actingAs($admin)
-            ->test(ListProducts::class)
-            ->filterTable('availability_status', Product::AVAILABILITY_CHECK)
-            ->assertCanSeeTableRecords([$needsCheck, $unlinkedInStockFlag])
-            ->assertCanNotSeeTableRecords([$publiclyInStock, $explicitlyOut]);
-
-        Livewire::actingAs($admin)
-            ->test(ListProducts::class)
-            ->filterTable('availability_status', Product::AVAILABILITY_OUT_OF_STOCK)
-            ->assertCanSeeTableRecords([$inactiveWithSupplierStock, $explicitlyOut])
-            ->assertCanNotSeeTableRecords([$publiclyInStock, $needsCheck, $unlinkedInStockFlag]);
     }
 
     private function product(Category $category, string $sku, array $attributes): Product
