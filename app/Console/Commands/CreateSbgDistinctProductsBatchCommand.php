@@ -5393,6 +5393,51 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The warehouse row is the exact older PS-008.932 card, but the 1C name
+    // uses a hyphen instead of the slash from the storefront card. Restore
+    // that exact link, keep the clean five-photo gallery and move the product
+    // into the public hydraulic-separator category with complete specifications.
+    private const BATCH_UNMATCHED_RESEARCHED_20261015_EV = [
+        'УТ-00003559' => [
+            'template' => 'PS-008.932',
+            'link_existing_sku' => 'PS-008.932',
+            'allow_unmatched' => true,
+            'refresh_existing' => true,
+            'clear_price_confirmation' => true,
+            'category_slug' => 'gidravlicheskie-razdeliteli-i-kollektory',
+            'external_id' => '2d42dbdd-6a78-11ea-a266-1c1b0d1de7c2',
+            'fragments' => ['Гидравлический коллектор', 'ГРК-70-3', 'горизонтальный'],
+            'link_fragments' => ['Гидравлический разделитель', 'ГРК-70/3'],
+            'name' => 'Гидравлический разделитель с коллектором KOTLOV GE ГРК-70/3',
+            'retail' => 244.80,
+            'source_url' => 'https://gidropt.ru/catalog/kollektory-gidrostrelki-smesitelnye-uzly-avtomatika/gidrostrelki-gidrorazdeliteli/gidrostrelki-s-kollektorom/5866/',
+            'short' => 'Горизонтальный гидравлический разделитель с коллектором на 3 отопительных контура, мощность до 70 кВт; выходы расположены на две стороны по схеме 1+1+1.',
+            'content' => '<p><strong>KOTLOV GE ГРК-70/3</strong> совмещает гидравлический разделитель и распределительный коллектор для трёх отопительных контуров. Узел развязывает котловой и потребительские контуры, помогает насосам работать независимо и упрощает монтаж многоконтурной системы.</p><p>Модель рассчитана на мощность до 70 кВт. Выходы трёх контуров расположены на двух сторонах по схеме 1+1+1. Подключение котла универсальное — слева или справа. Котловые патрубки имеют наружную резьбу 1 1/4″, выводы контуров — наружную резьбу 1″.</p><p>Корпус изготовлен из стали с лакокрасочным покрытием. Предусмотрены резьбовые выходы 1/2″ для воздухоотводчика, слива и термометра; сами принадлежности, теплоизоляция и крепёж в комплект не входят.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гидравлический разделитель с коллектором'],
+                ['key' => 'Модель', 'value' => 'ГРК-70/3'],
+                ['key' => 'Количество контуров', 'value' => '3'],
+                ['key' => 'Максимальная мощность', 'value' => '70 кВт'],
+                ['key' => 'Расположение выводов', 'value' => 'На две стороны, схема 1+1+1'],
+                ['key' => 'Подключение котла', 'value' => 'Универсальное, слева или справа'],
+                ['key' => 'Котловые патрубки', 'value' => '1 1/4″ НР'],
+                ['key' => 'Патрубки контуров', 'value' => '1″ НР'],
+                ['key' => 'Межосевое расстояние патрубков котла', 'value' => '160 мм'],
+                ['key' => 'Межосевое расстояние выводов контуров', 'value' => '125 мм'],
+                ['key' => 'Максимальное рабочее давление', 'value' => '6 бар'],
+                ['key' => 'Максимальная рабочая температура', 'value' => '175 °C'],
+                ['key' => 'Материал', 'value' => 'Сталь'],
+                ['key' => 'Покрытие', 'value' => 'Лакокрасочное'],
+                ['key' => 'Габариты (Ш×В×Г)', 'value' => '500×310×100 мм'],
+                ['key' => 'Гарантия', 'value' => '5 лет'],
+                ['key' => 'Воздухоотводчик', 'value' => 'Нет, предусмотрен выход 1/2″ ВР'],
+                ['key' => 'Дренажный кран', 'value' => 'Нет, предусмотрен выход 1/2″ ВР'],
+                ['key' => 'Термометр', 'value' => 'Нет, предусмотрен выход 1/2″ ВР'],
+                ['key' => 'Теплоизоляция', 'value' => 'Нет'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5551,6 +5596,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-es' => self::BATCH_UNMATCHED_RESEARCHED_20261014_ES,
             'unmatched-researched-20261014-et' => self::BATCH_UNMATCHED_RESEARCHED_20261014_ET,
             'not-for-site-unmatched-20261014-eu' => self::BATCH_NOT_FOR_SITE_UNMATCHED_20261014_EU,
+            'unmatched-researched-20261015-ev' => self::BATCH_UNMATCHED_RESEARCHED_20261015_EV,
             default => null,
         };
 
