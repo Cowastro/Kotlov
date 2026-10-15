@@ -8,6 +8,31 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
 class CrmMailMessagePreview
 {
+    public function originalHtml(CrmMailMessage $message): ?string
+    {
+        if (blank($message->html_body)) {
+            return null;
+        }
+
+        $html = (string) $message->html_body;
+        $logo = public_path('img/logo-black.png');
+
+        if (! is_file($logo)) {
+            return $html;
+        }
+
+        $logoContents = file_get_contents($logo);
+        if ($logoContents === false) {
+            return $html;
+        }
+
+        return str_ireplace(
+            'cid:kotlov-logo',
+            'data:image/png;base64,'.base64_encode($logoContents),
+            $html,
+        );
+    }
+
     public function hasVisibleContent(CrmMailMessage $message): bool
     {
         $text = $this->plainText($message);

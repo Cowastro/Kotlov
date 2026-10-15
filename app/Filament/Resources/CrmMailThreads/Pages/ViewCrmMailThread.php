@@ -33,6 +33,11 @@ class ViewCrmMailThread extends ViewRecord
 
     public ?int $forwardMessageId = null;
 
+    public ?int $replyMessageId = null;
+
+    /** @var array<int> */
+    public array $initiallyUnreadMessageIds = [];
+
     public function mount(int|string $record): void
     {
         parent::mount($record);
@@ -40,6 +45,14 @@ class ViewCrmMailThread extends ViewRecord
             $this->record = app(SupplierRequestMailDraftService::class)
                 ->refreshRecipientFromSupplier($this->record);
         }
+
+        $this->initiallyUnreadMessageIds = $this->record->messages()
+            ->where('direction', 'incoming')
+            ->where('is_read', false)
+            ->pluck('id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
+
         $this->record->messages()->where('direction', 'incoming')->update(['is_read' => true]);
         $this->record->forceFill(['unread_count' => 0])->save();
 
@@ -95,10 +108,11 @@ class ViewCrmMailThread extends ViewRecord
                         ->helperText('До 10 файлов, каждый не более 15 МБ.'),
                 ])
                 ->modalHeading('Отправить ответ клиенту')
-                ->modalDescription(fn (): string => 'Письмо будет отправлено на '.$this->record->participant_email)
+                ->modalDescription(fn (): string => 'Ответ на «'.($this->replySourceMessage()->subject ?: 'Без темы').'» будет отправлен на '.$this->replyRecipient())
                 ->modalSubmitActionLabel('Отправить письмо')
                 ->action(function (array $data): void {
                     try {
+                        $message = $this->replySourceMessage();
                         app(CrmMailSender::class)->reply(
                             $this->record,
                             $data['body'],
@@ -106,7 +120,9 @@ class ViewCrmMailThread extends ViewRecord
                             CrmMailThreadResource::mergeRecipients($data, 'cc', 'address_book_cc'),
                             $data['attachments'] ?? [],
                             $data['attachment_file_names'] ?? [],
+                            $message,
                         );
+                        $this->replyMessageId = null;
                         $this->record->refresh();
                         Notification::make()->success()->title('Ответ отправлен')->send();
                     } catch (Throwable $exception) {
@@ -405,9 +421,41 @@ class ViewCrmMailThread extends ViewRecord
     public function openReply(int $messageId): void
     {
         $message = $this->record->messages()->findOrFail($messageId);
-        abort_unless($message->isLatestInThread(), 404);
+        abort_unless($message->direction === 'incoming', 404);
 
+        $this->replyMessageId = $message->id;
         $this->mountAction('reply');
+    }
+
+    private function replySourceMessage(): CrmMailMessage
+    {
+        $query = $this->record->messages();
+
+        if ($this->replyMessageId !== null) {
+            return $query->findOrFail($this->replyMessageId);
+        }
+
+        $incoming = $query->reorder()
+            ->where('direction', 'incoming')
+            ->latest('received_at')
+            ->latest('id')
+            ->first();
+
+        return $incoming ?? $this->record->messages()
+            ->reorder()
+            ->where('direction', '!=', 'draft')
+            ->latest('received_at')
+            ->latest('id')
+            ->firstOrFail();
+    }
+
+    private function replyRecipient(): string
+    {
+        $message = $this->replySourceMessage();
+
+        return $message->direction === 'incoming' && filter_var($message->from_email, FILTER_VALIDATE_EMAIL)
+            ? (string) $message->from_email
+            : (string) $this->record->participant_email;
     }
 
     private function forwardSourceMessage(): CrmMailMessage

@@ -38,5 +38,6 @@ class CrmMailMessagePreviewViewTest extends TestCase
         $this->assertStringNotContainsString('<iframe', $html);
         $this->assertDoesNotMatchRegularExpression('/<button[^>]+crm-mail-original-toggle/s', $html);
         $this->assertStringNotContainsString('<div class="crm-mail-body"', $html);
+        $this->assertStringContainsString('wire:click="openReply(', $html);
     }
 }

@@ -94,7 +94,12 @@ class CrmMailThreadResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with([
-            'mailbox', 'assignedUser', 'counterparty', 'contact', 'messages', 'latestMessage', 'commercialDocuments', 'supplierOrderRequest.order',
+            'mailbox', 'assignedUser', 'counterparty', 'contact',
+            'messages' => fn ($query) => $query
+                ->reorder()
+                ->orderByDesc('received_at')
+                ->orderByDesc('id'),
+            'latestMessage', 'commercialDocuments', 'supplierOrderRequest.order',
             'supplierOrderRequest.supplier.crmCounterparty',
         ]);
     }
@@ -173,15 +178,16 @@ class CrmMailThreadResource extends Resource
                 ->schema([
                     RepeatableEntry::make('messages')->hiddenLabel()->schema([
                         ViewEntry::make('mail_preview')->hiddenLabel()
-                            ->view('filament.crm-mail.message-preview', function (CrmMailMessage $record): array {
+                            ->view('filament.crm-mail.message-preview', function (CrmMailMessage $record, mixed $livewire): array {
                                 $preview = app(CrmMailMessagePreview::class);
 
                                 return [
                                     'message' => $record,
                                     'safeHtml' => $preview->compactHtml($record),
                                     'hasVisibleBody' => $preview->hasVisibleContent($record),
-                                    'originalHtml' => filled($record->html_body) ? (string) $record->html_body : null,
-                                    'isLatestMessage' => $record->isLatestInThread(),
+                                    'originalHtml' => $preview->originalHtml($record),
+                                    'wasUnread' => $livewire instanceof ViewCrmMailThread
+                                        && in_array((int) $record->id, $livewire->initiallyUnreadMessageIds, true),
                                 ];
                             })
                             ->columnSpanFull(),

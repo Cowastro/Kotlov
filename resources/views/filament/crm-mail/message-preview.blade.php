@@ -11,12 +11,13 @@
     $attachments = collect($message->metadata['attachments'] ?? [])->values();
     $date = $message->received_at ?? $message->sent_at;
     $hasVisibleBody = $hasVisibleBody ?? true;
+    $wasUnread = $wasUnread ?? false;
     $showBody = $hasVisibleBody || $attachments->isEmpty();
     $hasOriginalHtml = $hasVisibleBody && filled($originalHtml);
 @endphp
 
 <article
-    class="crm-mail-card {{ $isIncoming ? 'is-incoming' : 'is-outgoing' }}"
+    class="crm-mail-card {{ $isIncoming ? 'is-incoming' : 'is-outgoing' }} {{ $wasUnread ? 'is-unread' : '' }}"
     x-data="{ originalOpen: @js($hasOriginalHtml) }"
 >
     <header class="crm-mail-header">
@@ -27,6 +28,9 @@
             <div class="crm-mail-sender-line">
                 <strong>{{ $message->from_name ?: $message->from_email ?: 'Неизвестный отправитель' }}</strong>
                 <span class="crm-mail-direction">{{ $directionLabel }}</span>
+                @if ($wasUnread)
+                    <span class="crm-mail-unread-badge"><span aria-hidden="true"></span>Не прочитано</span>
+                @endif
             </div>
             <div class="crm-mail-address">{{ $message->from_email }}</div>
             <div class="crm-mail-recipients">
@@ -39,7 +43,7 @@
         <div class="crm-mail-header-actions">
             <time class="crm-mail-date">{{ $date?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?: '—' }}</time>
             <div class="crm-mail-message-actions">
-                @if ($isLatestMessage && $message->direction !== 'draft')
+                @if ($message->direction === 'incoming')
                     <button
                         type="button"
                         class="crm-mail-reply-button"
@@ -146,10 +150,14 @@
     <style>
         .crm-mail-card { overflow: hidden; border: 1px solid rgb(63 63 70); border-left: 4px solid rgb(59 130 246); border-radius: 14px; background: rgb(24 24 27); box-shadow: 0 10px 28px rgb(0 0 0 / .12); }
         .crm-mail-card.is-outgoing { border-left-color: rgb(34 197 94); }
+        .crm-mail-card.is-unread { border-color: rgb(245 158 11); border-left-width: 6px; box-shadow: 0 0 0 1px rgb(245 158 11 / .28), 0 12px 30px rgb(0 0 0 / .18); }
+        .crm-mail-card.is-unread .crm-mail-header { background: rgb(120 53 15 / .24); }
         .crm-mail-header { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 18px 20px 14px; background: rgb(39 39 42 / .7); }
         .crm-mail-avatar { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 999px; background: rgb(234 88 12); color: white; font-weight: 700; }
         .crm-mail-sender-line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: rgb(244 244 245); }
         .crm-mail-direction { border: 1px solid rgb(82 82 91); border-radius: 999px; padding: 2px 8px; color: rgb(161 161 170); font-size: 12px; }
+        .crm-mail-unread-badge { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgb(245 158 11 / .7); border-radius: 999px; padding: 2px 9px; background: rgb(245 158 11 / .13); color: rgb(253 230 138); font-size: 12px; font-weight: 700; }
+        .crm-mail-unread-badge > span { width: 8px; height: 8px; border-radius: 999px; background: rgb(245 158 11); box-shadow: 0 0 0 3px rgb(245 158 11 / .2); }
         .crm-mail-address, .crm-mail-recipients, .crm-mail-date { color: rgb(161 161 170); font-size: 13px; }
         .crm-mail-recipients { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 5px; }
         .crm-mail-date { white-space: nowrap; }

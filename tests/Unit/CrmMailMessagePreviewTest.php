@@ -9,6 +9,19 @@ use Tests\TestCase;
 
 class CrmMailMessagePreviewTest extends TestCase
 {
+    public function test_it_resolves_the_embedded_brand_logo_for_the_crm_preview(): void
+    {
+        $message = new CrmMailMessage([
+            'html_body' => '<header><img src="cid:kotlov-logo" alt="KOTLOV.BY"></header>',
+        ]);
+
+        $html = app(CrmMailMessagePreview::class)->originalHtml($message);
+
+        $this->assertStringContainsString('src="data:image/png;base64,', $html);
+        $this->assertStringNotContainsString('cid:kotlov-logo', $html);
+        $this->assertStringContainsString('alt="KOTLOV.BY"', $html);
+    }
+
     #[Test]
     public function it_keeps_readable_email_markup_and_removes_unsafe_or_tracking_content(): void
     {

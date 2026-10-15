@@ -156,6 +156,51 @@ class CrmMailReplyActionTest extends TestCase
             ->assertActionMounted('reply');
     }
 
+    public function test_older_incoming_message_can_open_its_own_reply_action(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::query()->create([
+            'name' => 'KOTLOV',
+            'email' => 'reply-to-older@kotlov.by',
+            'username' => 'reply-to-older@kotlov.by',
+            'is_enabled' => true,
+        ]);
+        $thread = CrmMailThread::query()->create([
+            'mailbox_id' => $mailbox->id,
+            'thread_key' => hash('sha256', 'reply-to-older@example.com'),
+            'participant_name' => 'Клиент',
+            'participant_email' => 'latest-address@example.com',
+            'subject' => 'Последняя тема',
+            'status' => 'new',
+        ]);
+        $older = CrmMailMessage::query()->create([
+            'thread_id' => $thread->id,
+            'mailbox_id' => $mailbox->id,
+            'message_id' => 'older-message@example.com',
+            'direction' => 'incoming',
+            'from_email' => 'older-address@example.com',
+            'subject' => 'Более ранняя тема',
+            'text_body' => 'Первое письмо',
+            'received_at' => now()->subHour(),
+        ]);
+        CrmMailMessage::query()->create([
+            'thread_id' => $thread->id,
+            'mailbox_id' => $mailbox->id,
+            'message_id' => 'newer-message@example.com',
+            'direction' => 'incoming',
+            'from_email' => 'latest-address@example.com',
+            'subject' => 'Последняя тема',
+            'text_body' => 'Второе письмо',
+            'received_at' => now(),
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(ViewCrmMailThread::class, ['record' => $thread->getRouteKey()])
+            ->call('openReply', $older->id)
+            ->assertSet('replyMessageId', $older->id)
+            ->assertActionMounted('reply');
+    }
+
     public function test_forwarded_html_contains_readable_text_without_css(): void
     {
         $message = new CrmMailMessage([

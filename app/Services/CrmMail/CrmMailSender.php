@@ -118,24 +118,33 @@ class CrmMailSender
         array $cc = [],
         array $attachments = [],
         array $attachmentNames = [],
+        ?CrmMailMessage $replyTo = null,
     ): CrmMailMessage {
         $mailbox = $thread->mailbox;
 
         if (! $mailbox || ! $mailbox->is_enabled) {
             throw new RuntimeException('Почтовый ящик отключён или не найден.');
         }
-        if (! filter_var($thread->participant_email, FILTER_VALIDATE_EMAIL)) {
+        if ($replyTo !== null && ($replyTo->thread_id !== $thread->id || $replyTo->direction === 'draft')) {
+            throw new RuntimeException('Выбранное письмо не подходит для ответа в этой переписке.');
+        }
+
+        $recipientEmail = $replyTo?->direction === 'incoming' && filter_var($replyTo->from_email, FILTER_VALIDATE_EMAIL)
+            ? mb_strtolower(trim((string) $replyTo->from_email))
+            : mb_strtolower(trim((string) $thread->participant_email));
+        if (! filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
             throw new RuntimeException('Укажите корректный email получателя перед отправкой.');
         }
 
-        $lastMessage = $thread->messages()->reorder()
-            ->whereNotNull('message_id')
+        $replyTo ??= $thread->messages()->reorder()
+            ->where('direction', 'incoming')
             ->orderByDesc('received_at')
             ->orderByDesc('id')
             ->first();
-        $subject = preg_match('/^re\s*:/i', (string) $thread->subject)
-            ? $thread->subject
-            : 'Re: '.$thread->subject;
+        $sourceSubject = (string) ($replyTo?->subject ?: $thread->subject);
+        $subject = preg_match('/^re\s*:/i', $sourceSubject)
+            ? $sourceSubject
+            : 'Re: '.$sourceSubject;
         $messageId = Str::uuid().'@'.parse_url(config('app.url'), PHP_URL_HOST);
         $htmlBody = $this->brandedHtml($body, $user);
         $plainBody = $this->brandedText($body, $user);
@@ -146,7 +155,7 @@ class CrmMailSender
         $email = (new Email)
             ->from(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
             ->replyTo(sprintf('%s <%s>', $mailbox->name, $mailbox->email))
-            ->to($thread->participant_email)
+            ->to($recipientEmail)
             ->subject($subject)
             ->text($plainBody)
             ->html($htmlBody);
@@ -164,9 +173,9 @@ class CrmMailSender
         })->filter(fn (array $file): bool => str_starts_with($file['path'], 'crm-mail-attachments/'))->values()->all();
         $this->attachMetadata($email, $attachmentMetadata);
         $email->getHeaders()->addIdHeader('Message-ID', $messageId);
-        if ($lastMessage?->message_id) {
-            $email->getHeaders()->addIdHeader('In-Reply-To', $lastMessage->message_id);
-            $email->getHeaders()->addTextHeader('References', $lastMessage->message_id);
+        if ($replyTo?->message_id) {
+            $email->getHeaders()->addIdHeader('In-Reply-To', $replyTo->message_id);
+            $email->getHeaders()->addTextHeader('References', $replyTo->message_id);
         }
 
         $this->mailer($mailbox)->send($email);
@@ -176,11 +185,16 @@ class CrmMailSender
             'mailbox_id' => $mailbox->id,
             'sent_by_user_id' => $user->id,
             'message_id' => $messageId,
-            'in_reply_to' => $lastMessage?->message_id,
+            'in_reply_to' => $replyTo?->message_id,
             'direction' => 'outgoing',
             'from_name' => $mailbox->name,
             'from_email' => $mailbox->email,
-            'to' => [['name' => $thread->participant_name, 'email' => $thread->participant_email]],
+            'to' => [[
+                'name' => $replyTo?->direction === 'incoming' && filled($replyTo->from_name)
+                    ? $replyTo->from_name
+                    : $thread->participant_name,
+                'email' => $recipientEmail,
+            ]],
             'cc' => collect($cc)->map(fn (string $email): array => ['name' => null, 'email' => $email])->all(),
             'subject' => $subject,
             'text_body' => $plainBody,
