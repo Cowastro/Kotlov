@@ -2,18 +2,30 @@
 
 namespace App\Filament\Resources\MarketResearchReports;
 
+use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\MarketResearchReports\Pages\ListMarketResearchReports;
+use App\Models\CrmMailbox;
 use App\Models\MarketResearchReport;
+use App\Models\Supplier;
+use App\Services\CrmMail\CrmMailSender;
 use App\Services\Market\MarketResearchReportPresenter;
+use App\Services\Market\MarketResearchSupplierInquiry;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Throwable;
 
 class MarketResearchReportResource extends Resource
 {
@@ -68,6 +80,81 @@ class MarketResearchReportResource extends Resource
                 SelectFilter::make('product_id')->label('Товар')->relationship('product', 'name')->searchable()->preload(),
             ])
             ->recordActions([
+                Action::make('request_b2b_price')
+                    ->label('Запросить B2B-цену')
+                    ->icon(Heroicon::OutlinedEnvelope)
+                    ->color('primary')
+                    ->modalWidth('4xl')
+                    ->modalHeading(fn (MarketResearchReport $record): string => 'Запрос партнёрской цены · '.($record->product?->name ?? 'товар'))
+                    ->modalDescription('Письмо запросит именно партнёрскую закупочную цену, наличие, остаток, срок отгрузки и срок действия цены.')
+                    ->modalSubmitActionLabel('Создать и отправить запрос')
+                    ->fillForm(fn (MarketResearchReport $record): array => app(MarketResearchSupplierInquiry::class)->formData($record))
+                    ->form(fn (MarketResearchReport $record): array => [
+                        Select::make('supplier_id')
+                            ->label('Поставщик')
+                            ->options(fn (): array => app(MarketResearchSupplierInquiry::class)->supplierOptions())
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->required()
+                            ->afterStateUpdated(function (mixed $state, Set $set) use ($record): void {
+                                $supplier = Supplier::query()
+                                    ->with('crmCounterparty.contactPoints')
+                                    ->find($state);
+                                $set('recipient', $supplier?->contactEmailAddresses()[0] ?? '');
+                                $set('body', app(MarketResearchSupplierInquiry::class)->body($record, $supplier));
+                            }),
+                        Select::make('mailbox_id')
+                            ->label('Отправить из ящика')
+                            ->options(fn (): array => CrmMailbox::query()->where('is_enabled', true)->pluck('name', 'id')->all())
+                            ->required(),
+                        TextInput::make('recipient')
+                            ->label('Email поставщика')
+                            ->email()
+                            ->required(),
+                        TextInput::make('subject')
+                            ->label('Тема')
+                            ->required()
+                            ->maxLength(255),
+                        Textarea::make('body')
+                            ->label('Текст запроса')
+                            ->rows(16)
+                            ->required()
+                            ->maxLength(30000),
+                        Toggle::make('send_now')
+                            ->label('Отправить сразу')
+                            ->helperText('Если выключить, письмо сохранится в почте как черновик для дополнительной проверки.')
+                            ->default(true),
+                    ])
+                    ->action(function (MarketResearchReport $record, array $data) {
+                        try {
+                            $supplier = Supplier::query()->findOrFail((int) $data['supplier_id']);
+                            $mailbox = CrmMailbox::query()->findOrFail((int) $data['mailbox_id']);
+                            $user = auth()->user();
+                            $thread = app(MarketResearchSupplierInquiry::class)->createDraft(
+                                $record,
+                                $supplier,
+                                $mailbox,
+                                $user,
+                                (string) $data['recipient'],
+                                (string) $data['subject'],
+                                (string) $data['body'],
+                            );
+
+                            if ((bool) ($data['send_now'] ?? false)) {
+                                app(CrmMailSender::class)->sendDraft($thread, $user);
+                                Notification::make()->success()->title('Запрос B2B-цены отправлен')->body($supplier->name)->send();
+                            } else {
+                                Notification::make()->success()->title('Черновик запроса создан')->body($supplier->name)->send();
+                            }
+
+                            return redirect(CrmMailThreadResource::getUrl('view', ['record' => $thread]));
+                        } catch (Throwable $exception) {
+                            Notification::make()->danger()->title('Не удалось подготовить запрос')->body($exception->getMessage())->send();
+
+                            return null;
+                        }
+                    }),
                 Action::make('details')
                     ->label('Открыть анализ')
                     ->icon(Heroicon::OutlinedDocumentMagnifyingGlass)
