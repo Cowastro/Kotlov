@@ -25,11 +25,7 @@ final class CreateCommercialDocumentAction
             ->visible(fn (): bool => auth()->user() instanceof User
                 && auth()->user()->isManager()
                 && CommercialDocumentResource::canCreate())
-            ->fillForm(fn (): array => [
-                'quantity' => 1,
-                'crm_mail_thread_id' => self::suggestedThreadId(),
-                'create_mail_draft' => true,
-            ])
+            ->fillForm(fn (): array => self::initialFormData())
             ->form([
                 TextInput::make('quantity')
                     ->label('Количество товара')
@@ -38,12 +34,18 @@ final class CreateCommercialDocumentAction
                     ->step(0.001)
                     ->default(1)
                     ->required(),
+                Toggle::make('link_to_thread')
+                    ->label('Привязать к запросу / сделке')
+                    ->helperText('Выключите, если КП создаётся без входящего запроса. Клиента и реквизиты можно заполнить вручную на следующем шаге.')
+                    ->live(),
                 Select::make('crm_mail_thread_id')
                     ->label('Сделка / переписка с клиентом')
-                    ->placeholder('Без привязки — заполнить клиента вручную')
-                    ->helperText('Последняя активная сделка предложена автоматически. Проверьте клиента или выберите другой недавний лид — КП сохранится в этой сделке.')
+                    ->placeholder('Выберите запрос или недавний лид')
+                    ->helperText('Последняя активная сделка предложена автоматически. Проверьте клиента или выберите другую — КП сохранится в выбранной сделке.')
                     ->searchable()
                     ->live()
+                    ->required(fn (Get $get): bool => (bool) $get('link_to_thread'))
+                    ->visible(fn (Get $get): bool => (bool) $get('link_to_thread'))
                     ->options(fn (): array => self::recentThreadOptions())
                     ->getSearchResultsUsing(fn (string $search): array => self::searchThreadOptions($search))
                     ->getOptionLabelUsing(fn ($value): ?string => self::threadOptionLabel(
@@ -53,7 +55,7 @@ final class CreateCommercialDocumentAction
                     ->label('После сохранения подготовить письмо с PDF')
                     ->helperText('Черновик ответа появится в выбранной переписке. Перед отправкой его можно проверить и изменить.')
                     ->default(true)
-                    ->visible(fn (Get $get): bool => filled($get('crm_mail_thread_id'))),
+                    ->visible(fn (Get $get): bool => (bool) $get('link_to_thread') && filled($get('crm_mail_thread_id'))),
             ])
             ->modalHeading(fn (Product $record): string => 'Создать КП · '.$record->name)
             ->modalDescription('Товар и его текущая цена будут добавлены в коммерческое предложение. На следующем шаге можно проверить цену, скидку, реквизиты и условия поставки.')
@@ -61,7 +63,8 @@ final class CreateCommercialDocumentAction
             ->action(function (Product $record, array $data) {
                 abort_unless(auth()->user() instanceof User && auth()->user()->isManager(), 403);
 
-                $thread = filled($data['crm_mail_thread_id'] ?? null)
+                $linkToThread = (bool) ($data['link_to_thread'] ?? filled($data['crm_mail_thread_id'] ?? null));
+                $thread = $linkToThread && filled($data['crm_mail_thread_id'] ?? null)
                     ? CrmMailThread::query()
                         ->with(['counterparty.contacts.contactPoints', 'counterparty.contactPoints', 'contact.contactPoints'])
                         ->findOrFail((int) $data['crm_mail_thread_id'])
@@ -81,6 +84,19 @@ final class CreateCommercialDocumentAction
 
                 return redirect(CommercialDocumentResource::getUrl('create'));
             });
+    }
+
+    /** @return array<string, mixed> */
+    public static function initialFormData(): array
+    {
+        $threadId = self::suggestedThreadId();
+
+        return [
+            'quantity' => 1,
+            'link_to_thread' => filled($threadId),
+            'crm_mail_thread_id' => $threadId,
+            'create_mail_draft' => true,
+        ];
     }
 
     public static function suggestedThreadId(): ?int

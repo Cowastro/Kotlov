@@ -226,6 +226,7 @@ class CommercialDocumentPrefillTest extends TestCase
             ->mountTableAction('create_commercial_document', $product)
             ->assertTableActionDataSet([
                 'quantity' => 1,
+                'link_to_thread' => true,
                 'crm_mail_thread_id' => $latest->id,
                 'create_mail_draft' => true,
             ]);
@@ -234,6 +235,7 @@ class CommercialDocumentPrefillTest extends TestCase
             ->assertTableActionVisible('create_commercial_document', $product)
             ->callTableAction('create_commercial_document', $product, [
                 'quantity' => 3,
+                'link_to_thread' => true,
                 'crm_mail_thread_id' => $latest->id,
                 'create_mail_draft' => true,
             ])
@@ -245,5 +247,55 @@ class CommercialDocumentPrefillTest extends TestCase
         $this->assertSame($latest->id, session('commercial_document_prefill.crm_mail_thread_id'));
         $this->assertSame($counterparty->id, session('commercial_document_prefill.crm_counterparty_id'));
         $this->assertTrue(session('commercial_document_create_mail_draft'));
+    }
+
+    public function test_manager_can_start_a_standalone_commercial_offer_even_when_a_recent_deal_exists(): void
+    {
+        $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Товары для КП без запроса',
+            'slug' => 'standalone-commercial-offer',
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Товар для КП без входящего запроса',
+            'slug' => 'standalone-commercial-offer-item',
+            'sku' => 'KOTLOV-STANDALONE-QUOTE',
+            'price' => 500,
+            'currency' => 'BYN',
+            'unit' => 'шт.',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $thread = CrmMailbox::query()->firstOrFail()->threads()->create([
+            'thread_key' => hash('sha256', 'standalone-commercial-offer-recent-thread'),
+            'subject' => 'Другой недавний запрос',
+            'participant_email' => 'other@example.com',
+            'status' => 'in_progress',
+            'sales_stage' => 'qualification',
+            'priority' => 'normal',
+            'last_message_at' => now(),
+        ]);
+
+        $this->actingAs($user);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        session()->put('commercial_document_prefill', ['crm_mail_thread_id' => $thread->id]);
+        session()->put('commercial_document_create_mail_draft', true);
+
+        Livewire::test(ListProducts::class)
+            ->callTableAction('create_commercial_document', $product, [
+                'quantity' => 2,
+                'link_to_thread' => false,
+                'crm_mail_thread_id' => $thread->id,
+                'create_mail_draft' => true,
+            ])
+            ->assertHasNoTableActionErrors()
+            ->assertRedirect(CommercialDocumentResource::getUrl('create'));
+
+        $this->assertSame([$product->id], session('commercial_document_product_ids'));
+        $this->assertSame(2.0, session('commercial_document_product_quantities')[$product->id]);
+        $this->assertNull(session('commercial_document_prefill'));
+        $this->assertNull(session('commercial_document_create_mail_draft'));
     }
 }
