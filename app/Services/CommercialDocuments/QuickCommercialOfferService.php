@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 
 class QuickCommercialOfferService
 {
+    public const MANUAL_SUGGESTION_LIMIT = 5;
+
     private const STOP_WORDS = [
         'fw', 'fwd', 're', 'запрос', 'коммерческого', 'коммерческое', 'предложение', 'предложения',
         'просим', 'прошу', 'цена', 'цены', 'стоимость', 'наличие', 'срок', 'поставка', 'поставки',
@@ -271,9 +273,16 @@ class QuickCommercialOfferService
     public function manualSelection(string $query): array
     {
         $guidance = $this->selectionGuidance($query);
+        $suggestions = $guidance['ready']
+            ? array_slice($this->searchProducts($query), 0, self::MANUAL_SUGGESTION_LIMIT, true)
+            : [];
 
-        return $guidance + [
-            'suggestions' => $guidance['ready'] ? $this->searchProducts($query) : [],
+        return [
+            ...$guidance,
+            'message' => $guidance['ready']
+                ? $guidance['message'].' Для выбора показываем не больше '.self::MANUAL_SUGGESTION_LIMIT.' самых подходящих товаров.'
+                : $guidance['message'],
+            'suggestions' => $suggestions,
         ];
     }
 

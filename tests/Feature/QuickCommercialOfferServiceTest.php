@@ -290,6 +290,33 @@ class QuickCommercialOfferServiceTest extends TestCase
         $this->assertStringContainsString('В наличии', $byWords[$product->id]);
     }
 
+    public function test_manual_selection_shows_at_most_five_best_products(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Ограниченный подбор', 'slug' => 'limited-manual-selection', 'is_active' => true,
+        ]);
+
+        foreach (range(1, 8) as $number) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => "Промышленный циркуляционный насос {$number}",
+                'slug' => "limited-manual-pump-{$number}",
+                'sku' => "LIMIT-{$number}",
+                'price' => 100 + $number,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+                'in_stock' => true,
+            ]);
+        }
+
+        $result = app(QuickCommercialOfferService::class)
+            ->manualSelection('промышленный циркуляционный насос');
+
+        $this->assertCount(QuickCommercialOfferService::MANUAL_SUGGESTION_LIMIT, $result['suggestions']);
+        $this->assertStringContainsString('не больше 5', $result['message']);
+    }
+
     public function test_simple_catalog_search_finds_products_by_generic_name_without_auto_selection_logic(): void
     {
         $category = Category::query()->create([
