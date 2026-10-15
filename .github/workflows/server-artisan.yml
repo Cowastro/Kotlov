@@ -284,13 +284,11 @@ jobs:
           echo "detail_log=$detail_log"
           if [[ "$TASK" == "deploy-safe" && "$status" -ne 0 ]]; then
             echo "safe_deploy_diagnostic_begin"
-            # Deployment output contains only Git, Composer and Artisan
-            # diagnostics. Redact common credential/value patterns and URLs
-            # before publishing the final diagnostic lines to Actions.
-            tail -n 100 "$detail_log" \
-              | sed -E \
-                  -e 's#https?://[^[:space:]]+#<url-redacted>#g' \
-                  -e 's#(password|passwd|token|secret|api[_-]?key)([=:][^[:space:]]*)#\1=<redacted>#Ig'
+            # Keep deployment diagnostics aggregate-only. Raw output can contain
+            # customer data, credentials or URLs even after best-effort redaction.
+            echo "git_failure_lines=$(grep -Eic '(^|[[:space:]])(fatal:|error:)|git.*(failed|failure)' "$detail_log" || true)"
+            echo "composer_failure_lines=$(grep -Eic 'composer.*(error|failed|failure)|requirements could not be resolved' "$detail_log" || true)"
+            echo "migration_failure_lines=$(grep -Eic 'SQLSTATE|migration.*(failed|failure)|QueryException' "$detail_log" || true)"
             echo "safe_deploy_diagnostic_end"
           fi
           if [[ "$TASK" == "verify-commercial-pdf" ]]; then
