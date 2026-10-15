@@ -110,6 +110,10 @@ class ProductSourceEnricherTest extends TestCase
         );
 
         $this->assertCount(12, $parsed['images']);
+        $this->assertSame([], array_values(array_filter(
+            $parsed['images'],
+            fn (string $url): bool => ! str_contains($url, '/wp-content/uploads/')
+        )));
         $this->assertSame('', $parsed['video_url']);
         $this->assertSame([
             [

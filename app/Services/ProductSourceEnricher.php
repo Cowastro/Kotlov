@@ -2197,10 +2197,10 @@ class ProductSourceEnricher
 
     private function extractImages(string $html, string $pageUrl): array
     {
-        if ($this->isEliconUrl($pageUrl)) {
-            $eliconImages = $this->extractWooCommerceProductGalleryImages($html, $pageUrl);
-            if ($eliconImages !== []) {
-                return $eliconImages;
+        if ($this->isEliconUrl($pageUrl) || $this->isPkMercuryUrl($pageUrl)) {
+            $galleryImages = $this->extractWooCommerceProductGalleryImages($html, $pageUrl);
+            if ($galleryImages !== []) {
+                return $galleryImages;
             }
         }
 
@@ -2277,7 +2277,7 @@ class ProductSourceEnricher
         $images = $this->expandedImageCandidates($images);
         usort($images, fn (string $left, string $right): int => $this->imageQualityScore($right) <=> $this->imageQualityScore($left));
 
-        return array_values(array_slice($images, 0, 8));
+        return array_values(array_slice($images, 0, $this->sourceImageLimit($pageUrl)));
     }
 
     /**
@@ -2356,8 +2356,8 @@ class ProductSourceEnricher
         $path = (string) parse_url($url, PHP_URL_PATH);
         $host = (string) parse_url($url, PHP_URL_HOST);
 
-        if ($host === 'teplo.by' && str_starts_with($path, '/uploads/')) {
-            $url = str_replace('://teplo.by/uploads/', '://teplo.by/wp-content/uploads/', $url);
+        if (($host === 'teplo.by' || str_ends_with($host, 'pkmercury.by')) && str_starts_with($path, '/uploads/')) {
+            $url = str_replace('://' . $host . '/uploads/', '://' . $host . '/wp-content/uploads/', $url);
             $path = (string) parse_url($url, PHP_URL_PATH);
         }
 
@@ -2529,7 +2529,7 @@ class ProductSourceEnricher
                 file_put_contents($dir . DIRECTORY_SEPARATOR . $filename, $body);
                 $saved[] = self::IMAGE_DIR . '/' . $filename;
 
-                if (count($saved) >= 4) {
+                if (count($saved) >= $this->sourceImageLimit($sourceUrl)) {
                     break;
                 }
             } catch (\Throwable) {
