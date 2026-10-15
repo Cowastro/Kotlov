@@ -61,6 +61,7 @@ class MarketResearchSupplierInquiry
 
         return [
             'supplier_id' => $supplier?->id,
+            'participant_name' => $supplier?->name,
             'mailbox_id' => $mailbox?->id,
             'recipient' => $supplier?->contactEmailAddresses()[0] ?? '',
             'subject' => $this->subject($report),
@@ -94,10 +95,11 @@ class MarketResearchSupplierInquiry
 
     public function createDraft(
         MarketResearchReport $report,
-        Supplier $supplier,
+        ?Supplier $supplier,
         CrmMailbox $mailbox,
         User $user,
         string $recipient,
+        ?string $participantName,
         string $subject,
         string $body,
     ): CrmMailThread {
@@ -105,18 +107,22 @@ class MarketResearchSupplierInquiry
             throw new RuntimeException('Укажите корректный email поставщика.');
         }
 
-        return DB::transaction(function () use ($report, $supplier, $mailbox, $user, $recipient, $subject, $body): CrmMailThread {
+        $participantName = filled($participantName)
+            ? trim((string) $participantName)
+            : $supplier?->name;
+
+        return DB::transaction(function () use ($report, $supplier, $mailbox, $user, $recipient, $participantName, $subject, $body): CrmMailThread {
             $thread = $this->drafts->create(
                 $mailbox,
                 $user,
                 $recipient,
                 $subject,
                 $body,
-                $supplier->name,
+                $participantName,
             );
 
             $thread->forceFill([
-                'crm_counterparty_id' => $supplier->crm_counterparty_id ?: $thread->crm_counterparty_id,
+                'crm_counterparty_id' => $supplier?->crm_counterparty_id ?: $thread->crm_counterparty_id,
                 'manager_note' => 'Запрос партнёрской B2B-цены из анализа рынка №'.$report->id.'.',
             ])->save();
 
@@ -127,7 +133,7 @@ class MarketResearchSupplierInquiry
                     ...$metadata,
                     'source' => 'market_research_b2b_inquiry',
                     'market_research_report_id' => $report->id,
-                    'supplier_id' => $supplier->id,
+                    'supplier_id' => $supplier?->id,
                     'product_id' => $report->product_id,
                 ]])->save();
             }

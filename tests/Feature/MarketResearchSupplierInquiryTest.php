@@ -74,6 +74,7 @@ class MarketResearchSupplierInquiryTest extends TestCase
             $mailbox,
             $manager,
             'sales@supplier.test',
+            'Произвольная компания',
             $service->subject($report),
             $body,
         );
@@ -88,5 +89,21 @@ class MarketResearchSupplierInquiryTest extends TestCase
         $this->assertSame('market_research_b2b_inquiry', $draft->metadata['source']);
         $this->assertSame($report->id, $draft->metadata['market_research_report_id']);
         $this->assertSame('sales@supplier.test', $thread->participant_email);
+        $this->assertSame('Произвольная компания', $thread->participant_name);
+
+        $manualThread = $service->createDraft(
+            $report,
+            null,
+            $mailbox,
+            $manager,
+            'other@arbitrary.test',
+            'Компания вне справочника',
+            $service->subject($report),
+            $body,
+        );
+
+        $this->assertSame('other@arbitrary.test', $manualThread->participant_email);
+        $this->assertSame('Компания вне справочника', $manualThread->participant_name);
+        $this->assertNull($manualThread->messages()->latest('id')->firstOrFail()->metadata['supplier_id']);
     }
 }

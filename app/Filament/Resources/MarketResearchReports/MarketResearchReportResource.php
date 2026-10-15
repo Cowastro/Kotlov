@@ -86,22 +86,24 @@ class MarketResearchReportResource extends Resource
                     ->color('primary')
                     ->modalWidth('4xl')
                     ->modalHeading(fn (MarketResearchReport $record): string => 'Запрос партнёрской цены · '.($record->product?->name ?? 'товар'))
-                    ->modalDescription('Короткий запрос актуальной партнёрской B2B-цены и наличия на складе.')
+                    ->modalDescription('Можно выбрать поставщика из базы или указать произвольную компанию и email вручную.')
                     ->modalSubmitActionLabel('Создать и отправить запрос')
                     ->fillForm(fn (MarketResearchReport $record): array => app(MarketResearchSupplierInquiry::class)->formData($record))
                     ->form([
                         Select::make('supplier_id')
-                            ->label('Поставщик')
+                            ->label('Поставщик из базы')
                             ->options(fn (): array => app(MarketResearchSupplierInquiry::class)->supplierOptions())
                             ->searchable()
                             ->preload()
                             ->live()
-                            ->required()
+                            ->placeholder('Необязательно')
+                            ->helperText('Если нужной компании нет, оставьте поле пустым и укажите её данные ниже.')
                             ->afterStateUpdated(function (mixed $state, Set $set): void {
                                 $supplier = Supplier::query()
                                     ->with('crmCounterparty.contactPoints')
                                     ->find($state);
                                 $set('recipient', $supplier?->contactEmailAddresses()[0] ?? '');
+                                $set('participant_name', $supplier?->name ?? '');
                             }),
                         Select::make('mailbox_id')
                             ->label('Отправить из ящика')
@@ -111,6 +113,10 @@ class MarketResearchReportResource extends Resource
                             ->label('Email поставщика')
                             ->email()
                             ->required(),
+                        TextInput::make('participant_name')
+                            ->label('Компания или контакт')
+                            ->placeholder('Необязательно')
+                            ->maxLength(255),
                         TextInput::make('subject')
                             ->label('Тема')
                             ->required()
@@ -127,7 +133,9 @@ class MarketResearchReportResource extends Resource
                     ])
                     ->action(function (MarketResearchReport $record, array $data) {
                         try {
-                            $supplier = Supplier::query()->findOrFail((int) $data['supplier_id']);
+                            $supplier = filled($data['supplier_id'] ?? null)
+                                ? Supplier::query()->find((int) $data['supplier_id'])
+                                : null;
                             $mailbox = CrmMailbox::query()->findOrFail((int) $data['mailbox_id']);
                             $user = auth()->user();
                             $thread = app(MarketResearchSupplierInquiry::class)->createDraft(
@@ -136,15 +144,16 @@ class MarketResearchReportResource extends Resource
                                 $mailbox,
                                 $user,
                                 (string) $data['recipient'],
+                                $data['participant_name'] ?? null,
                                 (string) $data['subject'],
                                 (string) $data['body'],
                             );
 
                             if ((bool) ($data['send_now'] ?? false)) {
                                 app(CrmMailSender::class)->sendDraft($thread, $user);
-                                Notification::make()->success()->title('Запрос B2B-цены отправлен')->body($supplier->name)->send();
+                                Notification::make()->success()->title('Запрос B2B-цены отправлен')->body($supplier?->name ?: (string) $data['recipient'])->send();
                             } else {
-                                Notification::make()->success()->title('Черновик запроса создан')->body($supplier->name)->send();
+                                Notification::make()->success()->title('Черновик запроса создан')->body($supplier?->name ?: (string) $data['recipient'])->send();
                             }
 
                             return redirect(CrmMailThreadResource::getUrl('view', ['record' => $thread]));
