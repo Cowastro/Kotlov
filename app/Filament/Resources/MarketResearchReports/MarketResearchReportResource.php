@@ -13,6 +13,7 @@ use App\Services\Market\MarketResearchSupplierInquiry;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -117,6 +118,10 @@ class MarketResearchReportResource extends Resource
                             ->label('Компания или контакт')
                             ->placeholder('Необязательно')
                             ->maxLength(255),
+                        TagsInput::make('cc')
+                            ->label('Копия (CC)')
+                            ->placeholder('copy@example.com')
+                            ->helperText('Можно указать несколько адресов. После каждого адреса нажмите Enter.'),
                         TextInput::make('subject')
                             ->label('Тема')
                             ->required()
@@ -144,6 +149,7 @@ class MarketResearchReportResource extends Resource
                                 $mailbox,
                                 $user,
                                 (string) $data['recipient'],
+                                (array) ($data['cc'] ?? []),
                                 $data['participant_name'] ?? null,
                                 (string) $data['subject'],
                                 (string) $data['body'],

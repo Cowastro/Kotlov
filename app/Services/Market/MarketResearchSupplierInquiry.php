@@ -64,6 +64,7 @@ class MarketResearchSupplierInquiry
             'participant_name' => $supplier?->name,
             'mailbox_id' => $mailbox?->id,
             'recipient' => $supplier?->contactEmailAddresses()[0] ?? '',
+            'cc' => [],
             'subject' => $this->subject($report),
             'body' => $this->body($report),
             'send_now' => true,
@@ -99,6 +100,7 @@ class MarketResearchSupplierInquiry
         CrmMailbox $mailbox,
         User $user,
         string $recipient,
+        array $cc,
         ?string $participantName,
         string $subject,
         string $body,
@@ -111,7 +113,7 @@ class MarketResearchSupplierInquiry
             ? trim((string) $participantName)
             : $supplier?->name;
 
-        return DB::transaction(function () use ($report, $supplier, $mailbox, $user, $recipient, $participantName, $subject, $body): CrmMailThread {
+        return DB::transaction(function () use ($report, $supplier, $mailbox, $user, $recipient, $cc, $participantName, $subject, $body): CrmMailThread {
             $thread = $this->drafts->create(
                 $mailbox,
                 $user,
@@ -119,6 +121,7 @@ class MarketResearchSupplierInquiry
                 $subject,
                 $body,
                 $participantName,
+                $cc,
             );
 
             $thread->forceFill([
