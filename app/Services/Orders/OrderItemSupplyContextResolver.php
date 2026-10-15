@@ -48,6 +48,29 @@ class OrderItemSupplyContextResolver
             return $this->fromSupplierProduct($item, $recommendedLegacy, $candidateCount);
         }
 
+        if ((float) ($item->product?->manual_purchase_price_byn ?? 0) > 0) {
+            return $this->pricedContext($item, (float) $item->product->manual_purchase_price_byn, [
+                'status' => 'manual',
+                'route_label' => 'Ручной режим — поставщик не указан',
+                'supplier_id' => null,
+                'supplier_name' => null,
+                'supplier_contact' => null,
+                'source_label' => 'Цена введена вручную',
+                'integration_source_id' => null,
+                'channel' => 'manual',
+                'wholesale_price_label' => 'Закупочная цена введена вручную',
+                'price_tax_mode' => 'unknown',
+                'vat_rate' => null,
+                'stock_quantity' => null,
+                'stock_label' => 'Наличие уточняется вручную',
+                'is_available' => null,
+                'candidate_count' => 0,
+                'is_explicit' => true,
+                'is_current_recommendation' => true,
+                'is_snapshot' => false,
+            ]);
+        }
+
         return [
             'status' => 'unresolved',
             'route_label' => 'Поставщик не определён',

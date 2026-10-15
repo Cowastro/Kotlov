@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Pages;
 
+use App\Filament\Resources\Products\Actions\ManualPricingAction;
 use App\Filament\Resources\Products\Pages\Concerns\HasProductMarketResearchActions;
 use App\Filament\Resources\Products\ProductResource;
 use Filament\Actions\EditAction;
@@ -21,6 +22,7 @@ class ViewProduct extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            ManualPricingAction::make(),
             ...$this->productMarketResearchActions(),
             EditAction::make(),
         ];

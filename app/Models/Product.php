@@ -40,7 +40,7 @@ class Product extends Model
     protected $fillable = [
         'category_id', 'brand_id', 'supplier_id',
         'name', 'slug', 'h1', 'sku',
-        'price', 'price_old', 'currency',
+        'price', 'price_old', 'manual_purchase_price_byn', 'manual_price_updated_by', 'manual_price_updated_at', 'currency',
         'content', 'short_description',
         'images', 'specs', 'service_info', 'documents', 'promo_flags', 'video_url', 'content_source_url',
         'weight', 'unit', 'warranty',
@@ -66,6 +66,8 @@ class Product extends Model
         'is_sale' => 'boolean',
         'price' => 'decimal:2',
         'price_old' => 'decimal:2',
+        'manual_purchase_price_byn' => 'decimal:2',
+        'manual_price_updated_at' => 'datetime',
         'popularity_score' => 'decimal:4',
         'popularity_updated_at' => 'datetime',
     ];

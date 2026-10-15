@@ -104,6 +104,11 @@ class ProductInfolist
                                     ->money('BYN')
                                     ->placeholder('—'),
 
+                                TextEntry::make('manual_purchase_price_byn')
+                                    ->label('Закупка вручную')
+                                    ->money('BYN')
+                                    ->placeholder('—'),
+
                                 TextEntry::make('currency')
                                     ->label('Валюта'),
 

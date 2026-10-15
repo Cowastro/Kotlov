@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Tables;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
+use App\Filament\Resources\Products\Actions\ManualPricingAction;
 use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\RunProductCatalogAiReview;
 use App\Jobs\RunProductSourceEnrichment;
@@ -413,6 +414,7 @@ class ProductsTable
                                 ]]),
                             ]);
                         }),
+                    ManualPricingAction::make(),
                     Action::make('market_research_history')
                         ->label(fn (Product $record): string => 'Исследования рынка ('.(int) ($record->market_research_reports_count ?? 0).')')
                         ->icon('heroicon-o-archive-box')
@@ -883,6 +885,10 @@ class ProductsTable
             $channels->push('Старый канал');
         }
 
+        if ($channels->isEmpty() && (float) $record->manual_purchase_price_byn > 0) {
+            return 'Вручную';
+        }
+
         return $channels->unique()->implode(' + ') ?: 'Не настроен';
     }
 
@@ -895,7 +901,13 @@ class ProductsTable
             ->map(fn ($price): float => (float) $price)
             ->filter(fn (float $price): bool => $price > 0);
 
-        return $prices->isEmpty() ? null : (float) $prices->min();
+        if ($prices->isNotEmpty()) {
+            return (float) $prices->min();
+        }
+
+        return (float) $record->manual_purchase_price_byn > 0
+            ? (float) $record->manual_purchase_price_byn
+            : null;
     }
 
     private static function supplierStock(object $record): ?int
