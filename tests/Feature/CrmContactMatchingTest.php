@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\CrmContacts\CrmContactResource;
+use App\Filament\Resources\CrmContacts\Pages\EditCrmContact;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Models\CrmContact;
 use App\Models\CrmContactPoint;
@@ -10,6 +11,7 @@ use App\Models\CrmCounterparty;
 use App\Models\TelephonyCall;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class CrmContactMatchingTest extends TestCase
@@ -98,5 +100,47 @@ class CrmContactMatchingTest extends TestCase
         $this->actingAs($manager)
             ->get(CrmContactResource::getUrl('create', panel: 'admin'))
             ->assertOk();
+    }
+
+    public function test_manager_can_replace_imported_contact_name_and_requisites(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $counterparty = CrmCounterparty::query()->create([
+            'name' => 'Pavel',
+            'classification' => 'b2b_partner',
+            'business_unit' => 'wholesale',
+        ]);
+        $contact = CrmContact::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'full_name' => 'Pavel',
+            'position' => 'Инженер МТС',
+            'is_primary' => true,
+            'is_active' => true,
+        ]);
+        $point = CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'contact_id' => $contact->id,
+            'type' => 'email',
+            'value' => 'old@example.com',
+            'is_primary' => true,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($manager);
+
+        $component = Livewire::test(EditCrmContact::class, ['record' => $contact->getRouteKey()]);
+        $contactPoints = $component->get('data.contactPoints');
+        $contactPoints[array_key_first($contactPoints)]['value'] = 'new@example.com';
+
+        $component
+            ->set('data.full_name', 'Павел Иванов')
+            ->set('data.position', 'Главный инженер')
+            ->set('data.contactPoints', $contactPoints)
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame('Павел Иванов', $contact->fresh()->full_name);
+        $this->assertSame('Главный инженер', $contact->fresh()->position);
+        $this->assertSame('new@example.com', $point->fresh()->value);
     }
 }

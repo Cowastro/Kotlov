@@ -22,9 +22,20 @@ class CommercialDocumentClientResolver
             $this->fillCounterparty($counterparty, $document);
             $counterparty->save();
 
-            $contact = $this->findOrCreateContact($counterparty, $document);
-            $this->syncContactPoint($counterparty, $contact, 'email', $document->client_email);
-            $this->syncContactPoint($counterparty, $contact, 'phone', $document->client_phone);
+            $selectedContact = $document->crm_contact_id
+                ? CrmContact::query()
+                    ->where('counterparty_id', $counterparty->id)
+                    ->with('contactPoints')
+                    ->find($document->crm_contact_id)
+                : null;
+            $contact = $selectedContact ?? $this->findOrCreateContact($counterparty, $document);
+
+            if ($selectedContact) {
+                $this->fillDocumentFromCrm($document, $counterparty, $selectedContact);
+            } else {
+                $this->syncContactPoint($counterparty, $contact, 'email', $document->client_email);
+                $this->syncContactPoint($counterparty, $contact, 'phone', $document->client_phone);
+            }
 
             $document->forceFill([
                 'crm_counterparty_id' => $counterparty->id,
@@ -33,6 +44,31 @@ class CommercialDocumentClientResolver
 
             return $counterparty;
         });
+    }
+
+    private function fillDocumentFromCrm(
+        CommercialDocument $document,
+        CrmCounterparty $counterparty,
+        CrmContact $contact,
+    ): void {
+        $points = $contact->contactPoints
+            ->where('is_active', true)
+            ->sortByDesc('is_primary');
+
+        $document->forceFill([
+            'client_name' => $contact->full_name,
+            'client_company' => $counterparty->type === 'organization'
+                ? ($counterparty->public_name ?: $counterparty->name)
+                : null,
+            'client_legal_name' => $counterparty->type === 'organization'
+                ? ($counterparty->legal_name ?: $counterparty->name)
+                : null,
+            'client_email' => $points->firstWhere('type', 'email')?->value,
+            'client_phone' => $points->firstWhere('type', 'phone')?->value,
+            'client_unp' => $counterparty->unp,
+            'client_address' => $counterparty->legal_address
+                ?: ($counterparty->actual_address ?: $counterparty->postal_address),
+        ]);
     }
 
     private function hasClientIdentity(CommercialDocument $document): bool

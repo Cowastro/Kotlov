@@ -120,4 +120,59 @@ class CommercialDocumentClientResolverTest extends TestCase
         $this->assertSame($counterparty->id, $document->fresh()->crm_counterparty_id);
         $this->assertSame(1, CrmCounterparty::query()->count());
     }
+
+    public function test_selected_crm_contact_is_authoritative_over_stale_document_details(): void
+    {
+        $counterparty = CrmCounterparty::query()->create([
+            'type' => 'organization',
+            'classification' => 'b2b_partner',
+            'business_unit' => 'wholesale',
+            'status' => 'active',
+            'name' => 'Мозырский лесозавод',
+            'public_name' => 'Мозырский лесозавод',
+            'legal_name' => 'ООО «Мозырский лесозавод»',
+            'unp' => '400000001',
+            'legal_address' => 'г. Мозырь, ул. Лесная, 1',
+            'source' => 'manual',
+        ]);
+        $contact = CrmContact::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'full_name' => 'Павел Иванов',
+            'is_primary' => true,
+            'is_active' => true,
+        ]);
+        CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'contact_id' => $contact->id,
+            'type' => 'email',
+            'value' => 'new@example.com',
+            'is_primary' => true,
+            'is_active' => true,
+        ]);
+        $document = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'crm_counterparty_id' => $counterparty->id,
+            'crm_contact_id' => $contact->id,
+            'client_company' => 'Pavel',
+            'client_name' => 'Pavel',
+            'client_email' => 'old@example.com',
+            'client_phone' => '+375 29 000-00-00',
+        ]);
+
+        app(CommercialDocumentClientResolver::class)->sync($document);
+
+        $document->refresh();
+        $this->assertSame('Павел Иванов', $contact->fresh()->full_name);
+        $this->assertSame('Павел Иванов', $document->client_name);
+        $this->assertSame('Мозырский лесозавод', $document->client_company);
+        $this->assertSame('ООО «Мозырский лесозавод»', $document->client_legal_name);
+        $this->assertSame('new@example.com', $document->client_email);
+        $this->assertNull($document->client_phone);
+        $this->assertSame('400000001', $document->client_unp);
+        $this->assertSame('г. Мозырь, ул. Лесная, 1', $document->client_address);
+        $this->assertDatabaseMissing('crm_contact_points', [
+            'counterparty_id' => $counterparty->id,
+            'normalized_value' => 'old@example.com',
+        ]);
+    }
 }
