@@ -15,6 +15,59 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_it_creates_distinct_ole_pro_accessories_with_live_stock_and_no_changes_to_templates(): void
+    {
+        $supplier = Supplier::query()->create(['code' => 'sbg-ole-accessories', 'name' => 'ООО «СанБизнесГруп»']);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-ole-accessories', 'name' => '1С СанБизнесГруп', 'supplier_id' => $supplier->id,
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'], 'is_active' => true, 'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Гидравлика', 'slug' => 'gidravlicheskie-razdeliteli-i-kollektory', 'parent_id' => 0,
+        ]);
+        $brand = Brand::query()->create(['name' => 'OLE-PRO', 'slug' => 'ole-pro']);
+        $rules = (new \ReflectionClass(\App\Console\Commands\CreateSbgDistinctProductsBatchCommand::class))
+            ->getConstant('BATCH_OLE_PRO_ACCESSORIES_20261015_FB');
+        $stocks = ['УТ-00002512' => 4, 'УТ-00002517' => 8, 'УТ-00002521' => 8];
+        $templates = [];
+        foreach ($rules as $code => $rule) {
+            $template = Product::query()->create([
+                'sku' => $rule['template'], 'name' => 'Existing template '.$code, 'slug' => 'ole-template-'.$code,
+                'category_id' => $category->id, 'brand_id' => $brand->id, 'price' => 379.18,
+            ]);
+            $templates[] = [$template, $template->fresh()->getAttributes()];
+            IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id, 'external_id' => $rule['external_id'],
+                'external_code' => $code, 'name' => implode(' ', $rule['fragments']),
+                'match_status' => 'unmatched', 'stock_quantity' => $stocks[$code], 'stock_confirmed_at' => now(),
+            ]);
+        }
+        $args = ['--batch' => 'ole-pro-accessories-20261015-fb'];
+        $this->artisan('integration:create-sbg-distinct-products', $args)->assertSuccessful();
+        $this->assertSame(0, IntegrationProduct::query()->whereNotNull('product_id')->count());
+        $this->artisan('integration:create-sbg-distinct-products', $args + ['--apply' => true])->assertSuccessful();
+        foreach ($rules as $code => $rule) {
+            $item = IntegrationProduct::query()->where('external_code', $code)->firstOrFail();
+            $product = $item->product;
+            $this->assertSame('matched', $item->match_status);
+            $this->assertSame($supplier->id, $product->supplier_id);
+            $this->assertSame($rule['name'], $product->name);
+            $this->assertSame($stocks[$code], (int) $product->stock_qty);
+            $this->assertSame($rule['images'], $product->images);
+            $this->assertFileExists(public_path($product->images[0]));
+            $this->assertSame((float) $rule['retail'], (float) $product->price);
+            $this->assertGreaterThanOrEqual(8, count($product->specs));
+            $this->assertSame($product->name, $product->h1);
+            $this->assertNotEmpty($product->meta_description);
+        }
+        $count = Product::query()->count();
+        $this->artisan('integration:create-sbg-distinct-products', $args + ['--apply' => true])->assertSuccessful();
+        $this->assertSame($count, Product::query()->count());
+        foreach ($templates as [$template, $before]) {
+            $this->assertSame($before, $template->fresh()->getAttributes());
+        }
+    }
+
     public function test_it_repairs_the_source_supplier_on_the_existing_ole_pro_valve_without_creating_a_duplicate(): void
     {
         $supplier = Supplier::query()->create(['code' => 'sbg', 'name' => 'ООО «СанБизнесГруп»', 'is_active' => true]);
