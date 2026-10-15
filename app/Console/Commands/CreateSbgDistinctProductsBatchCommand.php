@@ -5438,6 +5438,51 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The warehouse row is the exact older PS-008.933 card. Restore that
+    // permanent link, keep its clean two-photo gallery and publish the stock
+    // in the hydraulic-separator category with researched specifications.
+    private const BATCH_UNMATCHED_RESEARCHED_20261015_EW = [
+        'УТ-00003558' => [
+            'template' => 'PS-008.933',
+            'link_existing_sku' => 'PS-008.933',
+            'allow_unmatched' => true,
+            'refresh_existing' => true,
+            'clear_price_confirmation' => true,
+            'category_slug' => 'gidravlicheskie-razdeliteli-i-kollektory',
+            'external_id' => '2d42dbdc-6a78-11ea-a266-1c1b0d1de7c2',
+            'fragments' => ['Гидравлический коллектор', 'ГРК-70-3М', 'горизонтальный'],
+            'link_fragments' => ['Гидравлический разделитель', 'ГРК-70/3M'],
+            'name' => 'Гидравлический разделитель с коллектором KOTLOV GE ГРК-70/3М',
+            'retail' => 244.80,
+            'source_url' => 'https://gidropt.ru/catalog/kollektory-gidrostrelki-smesitelnye-uzly-avtomatika/gidrostrelki-gidrorazdeliteli/gidrostrelki-s-kollektorom/5865/',
+            'short' => 'Горизонтальный гидравлический разделитель с коллектором на 3 отопительных контура, мощность до 70 кВт; выходы расположены по схеме 2+1.',
+            'content' => '<p><strong>KOTLOV GE ГРК-70/3М</strong> совмещает гидравлический разделитель и распределительный коллектор для трёх отопительных контуров. Узел развязывает котловой и потребительские контуры, помогает насосам работать независимо и упрощает монтаж многоконтурной системы.</p><p>Модель рассчитана на мощность до 70 кВт. Два выхода контуров расположены попеременно на одной стороне, третий — на противоположной, по схеме 2+1. Подключение котла универсальное — слева или справа. Котловые патрубки имеют наружную резьбу 1 1/4″, выводы контуров — наружную резьбу 1″.</p><p>Корпус изготовлен из стали с лакокрасочным покрытием. Предусмотрены резьбовые выходы 1/2″ для воздухоотводчика, слива и термометра; сами принадлежности, теплоизоляция и крепёж в комплект не входят.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Гидравлический разделитель с коллектором'],
+                ['key' => 'Модель', 'value' => 'ГРК-70/3М'],
+                ['key' => 'Количество контуров', 'value' => '3'],
+                ['key' => 'Максимальная мощность', 'value' => '70 кВт'],
+                ['key' => 'Расположение выводов', 'value' => 'По схеме 2+1: два на одной стороне, один на противоположной'],
+                ['key' => 'Направление выводов', 'value' => 'Вверх или вниз'],
+                ['key' => 'Подключение котла', 'value' => 'Универсальное, слева или справа'],
+                ['key' => 'Котловые патрубки', 'value' => '1 1/4″ НР'],
+                ['key' => 'Патрубки контуров', 'value' => '1″ НР'],
+                ['key' => 'Межосевое расстояние патрубков котла', 'value' => '160 мм'],
+                ['key' => 'Межосевое расстояние выводов контуров', 'value' => '125 мм'],
+                ['key' => 'Максимальное рабочее давление', 'value' => '6 бар'],
+                ['key' => 'Максимальная рабочая температура', 'value' => '175 °C'],
+                ['key' => 'Материал', 'value' => 'Сталь'],
+                ['key' => 'Покрытие', 'value' => 'Лакокрасочное'],
+                ['key' => 'Габариты (Ш×В×Г)', 'value' => '722×310×100 мм'],
+                ['key' => 'Гарантия', 'value' => '5 лет'],
+                ['key' => 'Воздухоотводчик', 'value' => 'Нет, предусмотрен выход 1/2″ ВР'],
+                ['key' => 'Дренажный кран', 'value' => 'Нет, предусмотрен выход 1/2″ ВР'],
+                ['key' => 'Термометр', 'value' => 'Нет, предусмотрен выход 1/2″ ВР'],
+                ['key' => 'Теплоизоляция', 'value' => 'Нет'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -5597,6 +5642,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'unmatched-researched-20261014-et' => self::BATCH_UNMATCHED_RESEARCHED_20261014_ET,
             'not-for-site-unmatched-20261014-eu' => self::BATCH_NOT_FOR_SITE_UNMATCHED_20261014_EU,
             'unmatched-researched-20261015-ev' => self::BATCH_UNMATCHED_RESEARCHED_20261015_EV,
+            'unmatched-researched-20261015-ew' => self::BATCH_UNMATCHED_RESEARCHED_20261015_EW,
             default => null,
         };
 

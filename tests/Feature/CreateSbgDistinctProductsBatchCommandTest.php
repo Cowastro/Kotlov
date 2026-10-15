@@ -10974,4 +10974,91 @@ XML;
             'is_active' => true,
         ]);
     }
+
+    public function test_it_links_and_refreshes_the_existing_grk_70_3m_hydraulic_separator(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-grk-70-3m',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $oldCategory = Category::query()->create([
+            'name' => 'Группы быстрого монтажа котельных',
+            'slug' => 'gruppy-bystrogo-montazha-kotelnyx',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $targetCategory = Category::query()->create([
+            'name' => 'Гидравлические разделители и коллекторы',
+            'slug' => 'gidravlicheskie-razdeliteli-i-kollektory',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $brand = Brand::query()->create([
+            'name' => 'Велес Электро',
+            'slug' => 'veles-elektro',
+        ]);
+        $existing = Product::query()->create([
+            'category_id' => $oldCategory->id,
+            'brand_id' => $brand->id,
+            'sku' => 'PS-008.933',
+            'name' => 'Гидравлический разделитель KOTLOV GE ГРК-70/3M',
+            'slug' => 'gidravlicheskiy-razdelitel-hotta-grk-70_3m',
+            'price' => 244.80,
+            'stock_qty' => 0,
+            'in_stock' => false,
+            'images' => [
+                'product/008/008933/647dcebac1dd6.jpg',
+                'product/008/008933/647dcebac1eaf.jpg',
+            ],
+            'requires_price_confirmation' => true,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => '2d42dbdc-6a78-11ea-a266-1c1b0d1de7c2',
+            'external_code' => 'УТ-00003558',
+            'name' => 'Гидравлический коллектор ГРК-70-3М горизонтальный',
+            'price_byn' => null,
+            'stock_quantity' => 7,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261015-ew',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $existing->refresh();
+        $item->refresh();
+        $this->assertSame($existing->id, $item->product_id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_search', $item->match_method);
+        $this->assertSame($targetCategory->id, $existing->category_id);
+        $this->assertSame('244.80', $existing->price);
+        $this->assertSame('7', (string) $existing->stock_qty);
+        $this->assertTrue((bool) $existing->in_stock);
+        $this->assertFalse((bool) $existing->requires_price_confirmation);
+        $this->assertSame('Гидравлический разделитель с коллектором KOTLOV GE ГРК-70/3М', $existing->name);
+        $this->assertSame('По схеме 2+1: два на одной стороне, один на противоположной', collect($existing->specs)->firstWhere('key', 'Расположение выводов')['value']);
+        $this->assertSame('722×310×100 мм', collect($existing->specs)->firstWhere('key', 'Габариты (Ш×В×Г)')['value']);
+        $this->assertSame([
+            'product/008/008933/647dcebac1dd6.jpg',
+            'product/008/008933/647dcebac1eaf.jpg',
+        ], $existing->images);
+        $this->assertStringContainsString('gidropt.ru', $existing->content_source_url);
+        $this->assertStringContainsString('трёх отопительных контуров', $existing->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00003558',
+            'product_id' => $existing->id,
+            'product_sku' => 'PS-008.933',
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
 }
