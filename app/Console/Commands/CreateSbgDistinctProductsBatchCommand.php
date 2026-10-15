@@ -5847,6 +5847,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'link_existing_sku' => 'PS-011.846',
             'link_fragments' => ['OKM-F-25-10-10'],
             'refresh_existing' => true,
+            'assign_source_supplier' => true,
             'clear_price_confirmation' => true,
             'brand' => ['name' => 'OLE-PRO', 'slug' => 'ole-pro', 'country' => 'Украина'],
             'name' => 'OLE-PRO Комплект трёхходового клапана с приводом OKM-F-25-10-10',
@@ -6505,6 +6506,9 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             }
 
             $item = $items->first();
+            if ($rule['assign_source_supplier'] ?? false) {
+                $rule['source_supplier_id'] = $item->source?->supplier_id;
+            }
             $portableImages = $rule['images'] ?? $this->portableImages($template);
             if ($item->product_id) {
                 $isExpectedExistingLink = $linkProduct
@@ -6728,6 +6732,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
 
         $product->forceFill([
             'category_id' => $category?->id ?? $product->category_id,
+            'supplier_id' => $rule['source_supplier_id'] ?? $product->supplier_id,
             'brand_id' => isset($rule['brand'])
                 ? $this->findBrand($rule['brand'])?->id ?? $product->brand_id
                 : $product->brand_id,

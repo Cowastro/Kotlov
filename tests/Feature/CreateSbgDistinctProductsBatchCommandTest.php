@@ -7,12 +7,55 @@ use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
+use App\Models\Supplier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class CreateSbgDistinctProductsBatchCommandTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_it_repairs_the_source_supplier_on_the_existing_ole_pro_valve_without_creating_a_duplicate(): void
+    {
+        $supplier = Supplier::query()->create(['code' => 'sbg', 'name' => 'ООО «СанБизнесГруп»', 'is_active' => true]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg', 'name' => '1С СанБизнесГруп',
+            'supplier_id' => $supplier->id,
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true, 'update_stock' => true,
+        ]);
+        $category = Category::query()->create(['name' => 'Арматура', 'slug' => 'krany-i-zapornaya-armatura', 'parent_id' => 0]);
+        $brand = Brand::query()->create(['name' => 'OLE-PRO', 'slug' => 'ole-pro']);
+        $product = Product::query()->create([
+            'category_id' => $category->id, 'brand_id' => $brand->id,
+            'sku' => 'PS-011.846', 'slug' => 'existing-ole-valve',
+            'name' => 'Комплект регулирующий OKM-F-25-10-10 Ole-Pro', 'price' => 384.30,
+            'stock_qty' => 7, 'in_stock' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'dc461558-b92e-11e9-a205-1c1b0d1de7c2',
+            'external_code' => 'УТ-00002320', 'name' => $product->name,
+            'stock_quantity' => 7, 'product_id' => $product->id,
+            'match_status' => 'matched', 'match_method' => 'manual_search',
+        ]);
+        $args = ['--batch' => 'ole-pro-researched-20261015-fa', '--code' => ['УТ-00002320']];
+        $productCount = Product::query()->count();
+        $this->artisan('integration:create-sbg-distinct-products', $args)->assertSuccessful();
+        $this->assertNull($product->fresh()->supplier_id);
+        $this->artisan('integration:create-sbg-distinct-products', $args + ['--apply' => true])->assertSuccessful();
+        $product->refresh();
+        $this->assertSame($supplier->id, $product->supplier_id);
+        $this->assertSame($product->id, $item->fresh()->product_id);
+        $this->assertSame('PS-011.846', $product->sku);
+        $this->assertSame('existing-ole-valve', $product->slug);
+        $this->assertSame('160.00', $product->price);
+        $this->assertSame('7', (string) $product->stock_qty);
+        $this->assertTrue($product->in_stock);
+        $this->artisan('integration:create-sbg-distinct-products', $args + ['--apply' => true])->assertSuccessful();
+        $this->assertSame($productCount, Product::query()->count());
+        $this->assertSame($supplier->id, $product->fresh()->supplier_id);
+    }
 
     public function test_it_dry_runs_then_creates_a_complete_distinct_variant_card(): void
     {
