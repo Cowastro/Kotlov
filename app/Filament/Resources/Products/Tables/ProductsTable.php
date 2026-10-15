@@ -61,7 +61,11 @@ class ProductsTable
                     ->wrap()
                     ->width('18rem')
                     ->grow(false)
-                    ->url(fn (Product $record): string => ProductResource::getUrl('edit', ['record' => $record], panel: 'admin')),
+                    ->url(fn (Product $record): string => ProductResource::getUrl(
+                        ProductResource::canEdit($record) ? 'edit' : 'view',
+                        ['record' => $record],
+                        panel: 'admin',
+                    )),
 
                 TextColumn::make('frontend_url')
                     ->label('Карточка')
@@ -421,6 +425,7 @@ class ProductsTable
                         ->label('Исследовать рынок')
                         ->icon('heroicon-o-globe-alt')
                         ->color('info')
+                        ->visible(fn (Product $record): bool => ProductResource::canEdit($record))
                         ->slideOver()
                         ->modalWidth('7xl')
                         ->modalHeading(fn (Product $record): string => 'Исследование рынка · '.$record->name)
@@ -435,6 +440,7 @@ class ProductsTable
                         ->label('Проверить из ссылки')
                         ->icon('heroicon-o-magnifying-glass')
                         ->color(fn (Product $record): string => self::hasProductImages($record) ? 'gray' : 'warning')
+                        ->visible(fn (Product $record): bool => ProductResource::canEdit($record))
                         ->form(self::sourceEnrichmentForm(includePreviewToggle: false))
                         ->modalHeading('Проверить данные из ссылки')
                         ->modalDescription('База не изменится. Результат сохранится в уведомлениях.')
@@ -445,6 +451,7 @@ class ProductsTable
                         ->label('Обновить из ссылки')
                         ->icon('heroicon-o-arrow-path')
                         ->color(fn (Product $record): string => self::hasProductImages($record) ? 'success' : 'warning')
+                        ->visible(fn (Product $record): bool => ProductResource::canEdit($record))
                         ->form(self::sourceEnrichmentForm(includePreviewToggle: false))
                         ->requiresConfirmation()
                         ->modalHeading('Обновить товар из ссылки')
@@ -703,7 +710,7 @@ class ProductsTable
                         }),
 
                     DeleteBulkAction::make(),
-                ]),
+                ])->visible(fn (): bool => ProductResource::canEdit(new Product)),
             ]);
     }
 

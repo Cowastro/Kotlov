@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Pages\Concerns;
 
 use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
+use App\Filament\Resources\Products\ProductResource;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\Market\MarketWebResearchService;
 use Filament\Actions\Action;
@@ -18,6 +19,7 @@ trait HasProductMarketResearchActions
                 ->label('Исследовать рынок')
                 ->icon('heroicon-o-globe-alt')
                 ->color('info')
+                ->visible(fn (): bool => ProductResource::canEdit($this->record))
                 ->slideOver()
                 ->modalWidth('7xl')
                 ->modalHeading(fn (): string => 'Исследование рынка · '.$this->record->name)
@@ -38,6 +40,7 @@ trait HasProductMarketResearchActions
                 ->label('Обновить исследование')
                 ->icon('heroicon-o-arrow-path')
                 ->color('warning')
+                ->visible(fn (): bool => ProductResource::canEdit($this->record))
                 ->requiresConfirmation()
                 ->modalHeading('Выполнить новое исследование?')
                 ->modalDescription('Система заново проверит интернет-источники и сохранит новый результат в истории товара.')

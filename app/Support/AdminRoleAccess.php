@@ -66,6 +66,7 @@ final class AdminRoleAccess
         MarketPriceObservation::class => ['viewAny', 'view'],
         MarketPriceCollectionRun::class => ['viewAny', 'view'],
         MarketResearchReport::class => ['viewAny', 'view'],
+        Product::class => ['viewAny', 'view'],
         Supplier::class => ['viewAny', 'view'],
         SupplierSyncRun::class => ['viewAny', 'view'],
         TelephonyCall::class => ['viewAny', 'view', 'update'],

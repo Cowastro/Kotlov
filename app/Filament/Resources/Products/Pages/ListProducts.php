@@ -33,6 +33,7 @@ class ListProducts extends ListRecords
                 ->label('Импорт цен')
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('gray')
+                ->visible(fn (): bool => ProductResource::canCreate())
                 ->form([
                     FileUpload::make('csv_file')
                         ->label('CSV/XLSX-файл с ценами')

@@ -13,6 +13,8 @@ use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Resources\SupplierSyncRuns\SupplierSyncRunResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\Order;
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierSync;
 use App\Models\SupplierSyncRun;
@@ -44,7 +46,11 @@ class AdminManagerAccessTest extends TestCase
         $this->assertFalse(OrderResource::canDelete(new Order));
 
         $this->assertFalse(UserResource::canViewAny());
-        $this->assertFalse(ProductResource::canViewAny());
+        $this->assertTrue(ProductResource::canViewAny());
+        $this->assertTrue(ProductResource::canView(new Product));
+        $this->assertFalse(ProductResource::canCreate());
+        $this->assertFalse(ProductResource::canEdit(new Product));
+        $this->assertFalse(ProductResource::canDelete(new Product));
         $this->assertFalse(IntegrationSourceResource::canViewAny());
         $this->assertFalse(AiAssistant::canAccess());
         $this->assertFalse(OneCSetup::canAccess());
@@ -60,6 +66,33 @@ class AdminManagerAccessTest extends TestCase
         $this->actingAs($manager)
             ->get(OrderResource::getUrl('index', panel: 'admin'))
             ->assertOk();
+
+        $category = Category::query()->create([
+            'name' => 'Каталог менеджера',
+            'slug' => 'manager-catalog',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Товар в режиме просмотра',
+            'slug' => 'manager-read-only-product',
+            'sku' => 'MANAGER-VIEW-001',
+        ]);
+
+        $this->actingAs($manager)
+            ->get(ProductResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText($product->name);
+
+        $this->actingAs($manager)
+            ->get(ProductResource::getUrl('view', ['record' => $product], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText($product->name);
+
+        $this->actingAs($manager)
+            ->get(ProductResource::getUrl('edit', ['record' => $product], panel: 'admin'))
+            ->assertForbidden();
 
         $this->actingAs($manager)
             ->get(UserResource::getUrl('index', panel: 'admin'))
