@@ -23,6 +23,11 @@ class ListCrmMailThreads extends ListRecords
 {
     protected static string $resource = CrmMailThreadResource::class;
 
+    public function getDefaultActiveTab(): string|int|null
+    {
+        return 'needs_response';
+    }
+
     public function getSubheading(): ?string
     {
         return 'Входящие, исходящие, черновики, спам и история общения с клиентами и поставщиками в одном месте.';

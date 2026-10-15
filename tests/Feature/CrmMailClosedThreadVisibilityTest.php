@@ -56,7 +56,7 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
 
         $this->actingAs($manager);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
-        $page = Livewire::test(ListCrmMailThreads::class)->set('activeTab', 'needs_response');
+        $page = Livewire::test(ListCrmMailThreads::class)->assertSet('activeTab', 'needs_response');
         $page->assertCanSeeTableRecords([$threads['new'], $threads['waiting_manager']])
             ->assertCanNotSeeTableRecords($threads->except(['new', 'waiting_manager'])->values())
             ->assertCanNotSeeTableRecords([$trashed]);
