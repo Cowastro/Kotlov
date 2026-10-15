@@ -36,6 +36,7 @@ class ImportConfirmedPurchasePricesTest extends TestCase
         $this->assertSame($product->id, $source->product_id);
         $this->assertSame(139.46, (float) $source->price_byn);
         $this->assertSame('2026-03-13', $source->document_date->toDateString());
+        $this->assertSame('Документ поставщика №УТ-353 от 13.03.2026', $source->documentLabel());
         $this->assertSame($before, $product->fresh()->getAttributes());
         $this->assertSame(400.0, (float) $other->fresh()->price);
         $wholesalePrice = new \ReflectionMethod(ProductsTable::class, 'wholesalePrice');

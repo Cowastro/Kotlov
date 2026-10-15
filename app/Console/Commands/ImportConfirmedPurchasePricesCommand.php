@@ -113,7 +113,7 @@ class ImportConfirmedPurchasePricesCommand extends Command
                             }
                             ProductPurchasePriceSource::query()->create([
                                 'product_id' => $row['product_id'], 'supplier_id' => $supplier->id,
-                                'source_type' => ProductPurchasePriceSource::TYPE_SUPPLIER_INVOICE,
+                                'source_type' => ProductPurchasePriceSource::TYPE_SUPPLIER_PRICE_DOCUMENT,
                                 'supplier_name' => $supplier->name, 'document_number' => $document,
                                 'document_date' => $date, 'source_price' => $row['source_unit_price'],
                                 'currency' => 'BYN', 'currency_rate' => 1, 'price_tax_mode' => $tax,

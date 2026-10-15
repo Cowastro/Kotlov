@@ -11,6 +11,8 @@ class ProductPurchasePriceSource extends Model
 {
     public const TYPE_SUPPLIER_INVOICE = 'supplier_invoice';
 
+    public const TYPE_SUPPLIER_PRICE_DOCUMENT = 'supplier_price_document';
+
     protected $fillable = [
         'product_id', 'supplier_id', 'created_by', 'source_type', 'supplier_name',
         'document_number', 'document_date', 'valid_until', 'source_price', 'currency',
@@ -73,6 +75,8 @@ class ProductPurchasePriceSource extends Model
         $number = filled($this->document_number) ? ' №'.$this->document_number : '';
         $date = $this->document_date ? ' от '.$this->document_date->format('d.m.Y') : '';
 
-        return 'Счёт поставщика'.$number.$date;
+        $label = $this->source_type === self::TYPE_SUPPLIER_INVOICE ? 'Счёт поставщика' : 'Документ поставщика';
+
+        return $label.$number.$date;
     }
 }
