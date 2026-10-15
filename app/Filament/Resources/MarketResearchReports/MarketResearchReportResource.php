@@ -4,6 +4,7 @@ namespace App\Filament\Resources\MarketResearchReports;
 
 use App\Filament\Resources\MarketResearchReports\Pages\ListMarketResearchReports;
 use App\Models\MarketResearchReport;
+use App\Services\Market\MarketResearchReportPresenter;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Resources\Resource;
@@ -74,7 +75,17 @@ class MarketResearchReportResource extends Resource
                     ->modalWidth('7xl')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Закрыть')
-                    ->modalContent(fn (MarketResearchReport $record) => view('filament.market.research-report-details', ['report' => $record])),
+                    ->modalContent(function (MarketResearchReport $record) {
+                        return view('filament.market.research-report-details', [
+                            'report' => $record,
+                            ...app(MarketResearchReportPresenter::class)->present($record),
+                        ]);
+                    }),
+                Action::make('pdf')
+                    ->label('PDF')
+                    ->icon(Heroicon::OutlinedArrowDownTray)
+                    ->url(fn (MarketResearchReport $record): string => route('admin.market-research-reports.pdf', $record))
+                    ->openUrlInNewTab(),
             ])
             ->defaultSort('applied_at', 'desc');
     }

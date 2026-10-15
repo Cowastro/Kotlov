@@ -23,6 +23,7 @@ use App\Http\Controllers\HeatPumpLandingController;
 use App\Http\Controllers\InstallerAccountController;
 use App\Http\Controllers\InstallerController;
 use App\Http\Controllers\InstallRequestController;
+use App\Http\Controllers\MarketResearchReportPdfController;
 use App\Http\Controllers\OneCExchangeController;
 use App\Http\Controllers\PartnerApplicationController;
 use App\Http\Controllers\ProductController;
@@ -60,6 +61,10 @@ Route::match(['get', 'post'], '/1c/exchange/{source}', OneCExchangeController::c
 Route::get('/admin/commercial-documents/{commercialDocument}/pdf', CommercialDocumentPdfController::class)
     ->middleware('auth')
     ->name('admin.commercial-documents.pdf');
+
+Route::get('/admin/market-research-reports/{marketResearchReport}/pdf', MarketResearchReportPdfController::class)
+    ->middleware('auth')
+    ->name('admin.market-research-reports.pdf');
 
 Route::prefix('offer')->group(function (): void {
     Route::get('/access/{token}', [CommercialDocumentPortalController::class, 'access'])
