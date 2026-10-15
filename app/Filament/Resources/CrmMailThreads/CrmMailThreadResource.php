@@ -52,7 +52,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -236,15 +235,6 @@ class CrmMailThreadResource extends Resource
                     ->color(fn (string $state): string => match ($state) {
                         'urgent' => 'danger', 'high' => 'warning', 'low' => 'gray', default => 'info',
                     }),
-                TextColumn::make('next_follow_up_at')->label('Напоминание')
-                    ->state(fn (CrmMailThread $record): ?string => static::followUpLabel($record))
-                    ->badge()
-                    ->placeholder('—')
-                    ->color(fn (CrmMailThread $record): string => static::followUpColor($record))
-                    ->description(fn (CrmMailThread $record): ?string => filled($record->follow_up_note)
-                        ? Str::limit($record->follow_up_note, 55)
-                        : null)
-                    ->tooltip(fn (CrmMailThread $record): ?string => $record->follow_up_note),
                 TextColumn::make('status')->label('Состояние')->badge()->sortable()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => static::statusColor($state)),
@@ -266,11 +256,16 @@ class CrmMailThreadResource extends Resource
             ])
             ->recordActions([
                 ViewAction::make()->label('Открыть')
+                    ->iconButton()
+                    ->tooltip('Открыть письмо')
                     ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()),
-                ManageMailThreadNotesAction::make(),
+                ManageMailThreadNotesAction::make()
+                    ->iconButton(),
                 Action::make('quick_quote')
                     ->label('Быстрое КП')
                     ->icon('heroicon-o-document-currency-dollar')
+                    ->iconButton()
+                    ->tooltip('Создать коммерческое предложение')
                     ->color('success')
                     ->visible(fn (CrmMailThread $record): bool => ! $record->trashed() && $record->status !== 'draft')
                     ->modalHeading('Быстрое коммерческое предложение')

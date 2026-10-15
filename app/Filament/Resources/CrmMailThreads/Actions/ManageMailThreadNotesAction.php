@@ -19,6 +19,7 @@ final class ManageMailThreadNotesAction
         return Action::make('manage_notes')
             ->label('Заметка и напоминание')
             ->icon('heroicon-o-bell-alert')
+            ->tooltip(fn (CrmMailThread $record): string => self::tooltip($record))
             ->color(fn (CrmMailThread $record): string => match (true) {
                 $record->next_follow_up_at?->isPast() => 'danger',
                 in_array($record->priority, ['high', 'urgent'], true) => 'warning',
@@ -93,5 +94,23 @@ final class ManageMailThreadNotesAction
                         : 'Напоминание для этой переписки выключено.')
                     ->send();
             });
+    }
+
+    private static function tooltip(CrmMailThread $record): string
+    {
+        $parts = ['Заметка и напоминание'];
+
+        if ($record->next_follow_up_at !== null) {
+            $parts[] = ($record->next_follow_up_at->isPast() ? 'Просрочено: ' : 'Напомнить: ')
+                .$record->next_follow_up_at->timezone('Europe/Minsk')->format('d.m H:i');
+        }
+
+        if (filled($record->follow_up_note)) {
+            $parts[] = (string) $record->follow_up_note;
+        } elseif (filled($record->manager_note)) {
+            $parts[] = (string) $record->manager_note;
+        }
+
+        return implode(' · ', $parts);
     }
 }
