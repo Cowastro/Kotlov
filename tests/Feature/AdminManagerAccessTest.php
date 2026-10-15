@@ -9,12 +9,13 @@ use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\Pages\ListProducts;
+use App\Filament\Resources\Products\Pages\ViewProduct;
 use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Resources\SupplierSyncRuns\SupplierSyncRunResource;
 use App\Filament\Resources\Users\UserResource;
-use App\Models\Order;
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierSync;
@@ -145,6 +146,34 @@ class AdminManagerAccessTest extends TestCase
             $this->assertSame($viewUrl, $component->instance()->getTable()->getRecordUrl($product));
             $this->assertSame($viewUrl, $nameColumn->getUrl());
         }
+    }
+
+    public function test_manager_can_start_market_research_from_read_only_product_preview(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Исследование рынка менеджером',
+            'slug' => 'manager-market-research',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Товар для исследования рынка',
+            'slug' => 'manager-market-research-product',
+            'sku' => 'MANAGER-RESEARCH-001',
+            'price' => 100,
+        ]);
+        $manager = User::factory()->create([
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(ViewProduct::class, ['record' => $product->getRouteKey()])
+            ->assertActionVisible('research_market')
+            ->assertActionHidden('refresh_market_research');
     }
 
     public function test_manager_can_follow_supplier_from_sync_journal_but_cannot_edit_it(): void

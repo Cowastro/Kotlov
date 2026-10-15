@@ -19,7 +19,7 @@ trait HasProductMarketResearchActions
                 ->label('Исследовать рынок')
                 ->icon('heroicon-o-globe-alt')
                 ->color('info')
-                ->visible(fn (): bool => ProductResource::canEdit($this->record))
+                ->visible(fn (): bool => ProductResource::canView($this->record))
                 ->slideOver()
                 ->modalWidth('7xl')
                 ->modalHeading(fn (): string => 'Исследование рынка · '.$this->record->name)
