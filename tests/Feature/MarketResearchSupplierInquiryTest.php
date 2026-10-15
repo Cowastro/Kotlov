@@ -67,7 +67,7 @@ class MarketResearchSupplierInquiryTest extends TestCase
         ]);
 
         $service = app(MarketResearchSupplierInquiry::class);
-        $body = $service->body($report, $supplier);
+        $body = $service->body($report);
         $thread = $service->createDraft(
             $report,
             $supplier,
@@ -80,10 +80,11 @@ class MarketResearchSupplierInquiryTest extends TestCase
 
         $draft = $thread->messages()->where('direction', 'draft')->firstOrFail();
 
-        $this->assertStringContainsString('партнёрскую B2B-цену', $draft->text_body);
-        $this->assertStringContainsString('наличие и доступное количество', $draft->text_body);
-        $this->assertStringContainsString('8 487,00 BYN', $draft->text_body);
-        $this->assertStringContainsString('6 710,00 BYN', $draft->text_body);
+        $this->assertStringContainsString('актуальную партнёрскую B2B-цену и наличие на складе', $draft->text_body);
+        $this->assertStringContainsString('Котёл Practic 72', $draft->text_body);
+        $this->assertStringNotContainsString('PS-010.366', $draft->text_body);
+        $this->assertStringNotContainsString('BYN', $draft->text_body);
+        $this->assertStringNotContainsString('минимальн', mb_strtolower($draft->text_body));
         $this->assertSame('market_research_b2b_inquiry', $draft->metadata['source']);
         $this->assertSame($report->id, $draft->metadata['market_research_report_id']);
         $this->assertSame('sales@supplier.test', $thread->participant_email);

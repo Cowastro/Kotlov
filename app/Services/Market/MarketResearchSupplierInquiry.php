@@ -14,7 +14,6 @@ use RuntimeException;
 class MarketResearchSupplierInquiry
 {
     public function __construct(
-        private readonly MarketResearchReportPresenter $presenter,
         private readonly SupplierRequestMailDraftService $drafts,
     ) {}
 
@@ -65,7 +64,7 @@ class MarketResearchSupplierInquiry
             'mailbox_id' => $mailbox?->id,
             'recipient' => $supplier?->contactEmailAddresses()[0] ?? '',
             'subject' => $this->subject($report),
-            'body' => $this->body($report, $supplier),
+            'body' => $this->body($report),
             'send_now' => true,
         ];
     }
@@ -73,47 +72,23 @@ class MarketResearchSupplierInquiry
     public function subject(MarketResearchReport $report): string
     {
         $product = $report->product;
-        $sku = filled($product?->sku) ? ' ['.$product->sku.']' : '';
 
-        return 'Запрос партнёрской B2B-цены — '.($product?->name ?? 'товар').$sku;
+        return 'Запрос цены и наличия — '.($product?->name ?? 'товар');
     }
 
-    public function body(MarketResearchReport $report, ?Supplier $supplier = null): string
+    public function body(MarketResearchReport $report): string
     {
         $report->loadMissing('product');
-        $presentation = $this->presenter->present($report);
-        $research = $presentation['research'];
         $product = $report->product;
-        $retailPrice = $product?->price ?: $report->price_after ?: $report->price_before;
-        $marketPrice = $research['market']['median'] ?? null;
-        $lines = [
-            'Здравствуйте'.($supplier ? ', команда '.$supplier->name : '').'!',
-            '',
-            'Просим предоставить актуальные партнёрские B2B-условия для KOTLOV.BY по позиции:',
-            '',
-            'Товар: '.($product?->name ?? ($research['product_name'] ?? 'товар')),
-            'Артикул: '.($product?->sku ?: ($research['sku'] ?? 'не указан')),
-        ];
-
-        if ($retailPrice !== null && (float) $retailPrice > 0) {
-            $lines[] = 'Текущая цена в нашем каталоге: '.$this->money((float) $retailPrice);
-        }
-        if ($marketPrice !== null && (float) $marketPrice > 0) {
-            $lines[] = 'Ориентир розничного рынка по актуальному анализу: '.$this->money((float) $marketPrice);
-        }
 
         return implode("\n", [
-            ...$lines,
+            'Здравствуйте!',
             '',
-            'Просим указать:',
-            '1. Нашу партнёрскую B2B-цену (отдельно отметьте, включает ли она НДС).',
-            '2. Актуальное наличие и доступное количество на складе.',
-            '3. Ближайший срок отгрузки.',
-            '4. Срок действия предложенной цены.',
+            'Просим сообщить актуальную партнёрскую B2B-цену и наличие на складе:',
             '',
-            'Важно: нам нужна именно партнёрская закупочная цена для дилера, а не публичная розничная цена.',
+            $product?->name ?? 'Товар',
             '',
-            'Заранее благодарим за оперативный ответ.',
+            'Спасибо.',
         ]);
     }
 
@@ -159,10 +134,5 @@ class MarketResearchSupplierInquiry
 
             return $thread->fresh(['mailbox', 'messages']);
         });
-    }
-
-    private function money(float $value): string
-    {
-        return number_format($value, 2, ',', ' ').' BYN';
     }
 }

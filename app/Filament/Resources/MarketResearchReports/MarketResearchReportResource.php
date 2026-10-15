@@ -86,10 +86,10 @@ class MarketResearchReportResource extends Resource
                     ->color('primary')
                     ->modalWidth('4xl')
                     ->modalHeading(fn (MarketResearchReport $record): string => 'Запрос партнёрской цены · '.($record->product?->name ?? 'товар'))
-                    ->modalDescription('Письмо запросит именно партнёрскую закупочную цену, наличие, остаток, срок отгрузки и срок действия цены.')
+                    ->modalDescription('Короткий запрос актуальной партнёрской B2B-цены и наличия на складе.')
                     ->modalSubmitActionLabel('Создать и отправить запрос')
                     ->fillForm(fn (MarketResearchReport $record): array => app(MarketResearchSupplierInquiry::class)->formData($record))
-                    ->form(fn (MarketResearchReport $record): array => [
+                    ->form([
                         Select::make('supplier_id')
                             ->label('Поставщик')
                             ->options(fn (): array => app(MarketResearchSupplierInquiry::class)->supplierOptions())
@@ -97,12 +97,11 @@ class MarketResearchReportResource extends Resource
                             ->preload()
                             ->live()
                             ->required()
-                            ->afterStateUpdated(function (mixed $state, Set $set) use ($record): void {
+                            ->afterStateUpdated(function (mixed $state, Set $set): void {
                                 $supplier = Supplier::query()
                                     ->with('crmCounterparty.contactPoints')
                                     ->find($state);
                                 $set('recipient', $supplier?->contactEmailAddresses()[0] ?? '');
-                                $set('body', app(MarketResearchSupplierInquiry::class)->body($record, $supplier));
                             }),
                         Select::make('mailbox_id')
                             ->label('Отправить из ящика')
