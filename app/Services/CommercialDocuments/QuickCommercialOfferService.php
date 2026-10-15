@@ -277,39 +277,6 @@ class QuickCommercialOfferService
         ];
     }
 
-    /** @param array<string, mixed> $parameters */
-    public function buildSelectionQuery(array $parameters): string
-    {
-        $purpose = [
-            'bath' => 'банная печь для парной',
-            'home' => 'отопительная печь для дома',
-            'boiler' => 'твердотопливный котёл',
-            'fireplace' => 'печь-камин',
-        ][$parameters['selection_purpose'] ?? ''] ?? null;
-        $fuel = [
-            'wood' => 'дрова',
-            'coal' => 'уголь',
-            'pellets' => 'пеллеты',
-            'gas' => 'газ',
-            'electric' => 'электричество',
-        ][$parameters['selection_fuel'] ?? ''] ?? null;
-        $size = filled($parameters['selection_size'] ?? null)
-            ? trim((string) $parameters['selection_size']).' '.(($parameters['selection_size_unit'] ?? 'm3') === 'm2' ? 'м²' : 'м³')
-            : null;
-        $manual = trim((string) ($parameters['manual_product_query'] ?? ''));
-
-        if ($purpose && Str::contains(Str::lower($manual), Str::lower($purpose))) {
-            return $manual;
-        }
-
-        return collect([
-            $purpose,
-            $size,
-            $fuel,
-            $manual ?: null,
-        ])->filter()->implode(', ');
-    }
-
     /** @return array{ready: bool, message: string} */
     public function selectionGuidance(string $query): array
     {

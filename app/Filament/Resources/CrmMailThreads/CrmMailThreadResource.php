@@ -798,34 +798,10 @@ class CrmMailThreadResource extends Resource
     public static function manualProductSearchFields(): array
     {
         return [
-            Section::make('Быстрые параметры печи')
-                ->description('Заполните то, что уже известно. Если данных мало, система сформирует вопросы клиенту.')
-                ->compact()
-                ->columns(4)
-                ->schema([
-                    Select::make('selection_purpose')->label('Назначение')->options([
-                        'bath' => 'Баня / сауна',
-                        'home' => 'Отопление дома',
-                        'boiler' => 'Твердотопливный котёл',
-                        'fireplace' => 'Печь-камин',
-                    ])->native(false),
-                    TextInput::make('selection_size')->label('Площадь / объём')->numeric()->minValue(1),
-                    Select::make('selection_size_unit')->label('Единица')->options([
-                        'm3' => 'м³ — объём',
-                        'm2' => 'м² — площадь',
-                    ])->default('m3')->native(false),
-                    Select::make('selection_fuel')->label('Топливо')->options([
-                        'wood' => 'Дрова',
-                        'coal' => 'Уголь',
-                        'pellets' => 'Пеллеты',
-                        'gas' => 'Газ',
-                        'electric' => 'Электричество',
-                    ])->native(false),
-                ])->columnSpanFull(),
             TextInput::make('manual_product_query')
-                ->label('Модель или дополнительные пожелания')
+                ->label('Что нужно подобрать')
                 ->placeholder('Например: Tatra KT95-N, дымоход 115 мм, бюджет до 5000 BYN')
-                ->helperText('Если данных для печи недостаточно, система сначала подскажет, что спросить у клиента. Ничего не добавляется в КП автоматически.')
+                ->helperText('Опишите запрос одной строкой. Если данных мало, система подскажет, что уточнить.')
                 ->maxLength(500)
                 ->columnSpanFull(),
             Hidden::make('manual_suggestion_ids')->default([]),
@@ -834,25 +810,16 @@ class CrmMailThreadResource extends Resource
                 ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
             SchemaActions::make([
                 Action::make('match_manual_product')
-                    ->label('Проверить запрос и найти в базе')
+                    ->label('Найти в базе')
                     ->icon('heroicon-o-magnifying-glass')
                     ->color('warning')
                     ->action(function (Get $get, Set $set): void {
-                        $query = app(QuickCommercialOfferService::class)->buildSelectionQuery([
-                            'selection_purpose' => $get('selection_purpose'),
-                            'selection_size' => $get('selection_size'),
-                            'selection_size_unit' => $get('selection_size_unit'),
-                            'selection_fuel' => $get('selection_fuel'),
-                            'manual_product_query' => $get('manual_product_query'),
-                        ]);
+                        $query = trim((string) $get('manual_product_query'));
                         if (mb_strlen($query) < 3) {
-                            Notification::make()->warning()->title('Укажите хотя бы один параметр или модель')->send();
+                            Notification::make()->warning()->title('Опишите, что нужно подобрать')->send();
 
                             return;
                         }
-
-                        $set('manual_product_query', $query);
-
                         $result = app(QuickCommercialOfferService::class)->manualSelection($query);
                         $suggestionIds = array_map('intval', array_keys($result['suggestions']));
                         $set('manual_suggestion_ids', $suggestionIds);
