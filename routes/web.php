@@ -11,6 +11,7 @@ use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CatalogIndexController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CommercialDocumentPdfController;
+use App\Http\Controllers\CommercialDocumentPortalController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\CrmMailAttachmentController;
@@ -59,6 +60,34 @@ Route::match(['get', 'post'], '/1c/exchange/{source}', OneCExchangeController::c
 Route::get('/admin/commercial-documents/{commercialDocument}/pdf', CommercialDocumentPdfController::class)
     ->middleware('auth')
     ->name('admin.commercial-documents.pdf');
+
+Route::prefix('offer')->group(function (): void {
+    Route::get('/access/{token}', [CommercialDocumentPortalController::class, 'access'])
+        ->where('token', '[A-Za-z0-9]{80}')
+        ->name('commercial-portal.access');
+    Route::post('/access/{token}', [CommercialDocumentPortalController::class, 'activate'])
+        ->where('token', '[A-Za-z0-9]{80}')
+        ->middleware('throttle:10,1')
+        ->name('commercial-portal.activate');
+    Route::get('/verify/{challenge:public_id}', [CommercialDocumentPortalController::class, 'verifyForm'])
+        ->name('commercial-portal.verify-form');
+    Route::post('/verify/{challenge:public_id}', [CommercialDocumentPortalController::class, 'verify'])
+        ->middleware('throttle:10,10')
+        ->name('commercial-portal.verify');
+    Route::get('/{link:public_id}', [CommercialDocumentPortalController::class, 'show'])
+        ->name('commercial-portal.show');
+    Route::get('/{link:public_id}/pdf', [CommercialDocumentPortalController::class, 'pdf'])
+        ->name('commercial-portal.pdf');
+    Route::post('/{link:public_id}/accept', [CommercialDocumentPortalController::class, 'accept'])
+        ->middleware('throttle:10,1')
+        ->name('commercial-portal.accept');
+    Route::post('/{link:public_id}/revision', [CommercialDocumentPortalController::class, 'requestRevision'])
+        ->middleware('throttle:10,1')
+        ->name('commercial-portal.revision');
+    Route::post('/{link:public_id}/reject', [CommercialDocumentPortalController::class, 'reject'])
+        ->middleware('throttle:10,1')
+        ->name('commercial-portal.reject');
+});
 
 Route::get('/admin/crm-mail-messages/{message}/attachments/{attachment}', CrmMailAttachmentController::class)
     ->whereNumber('attachment')

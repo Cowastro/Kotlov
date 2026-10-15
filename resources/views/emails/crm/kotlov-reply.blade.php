@@ -38,6 +38,13 @@
                 <tr>
                     <td class="email-pad" style="padding:36px 32px 30px;font-size:16px;line-height:1.65;color:#202020;">
                         {!! nl2br(e(trim($body))) !!}
+                        @if(filled($portalUrl ?? null))
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin-top:24px;">
+                                <tr><td style="background:#DC4646;border-radius:9px;">
+                                    <a href="{{ $portalUrl }}" style="display:inline-block;padding:13px 22px;color:#ffffff;font-weight:700;text-decoration:none;">Открыть предложение онлайн</a>
+                                </td></tr>
+                            </table>
+                        @endif
                     </td>
                 </tr>
                 <tr>

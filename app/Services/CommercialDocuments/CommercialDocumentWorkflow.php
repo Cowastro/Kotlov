@@ -348,6 +348,9 @@ class CommercialDocumentWorkflow
             throw new RuntimeException('Нет активного почтового ящика. Проверьте раздел «Настройка почты».');
         }
 
+        $portalLink = $document->type === 'quote'
+            ? app(CommercialDocumentPortal::class)->publish($document, $user)
+            : null;
         $attachment = app(CommercialDocumentPdf::class)->storeForMail($document);
         $title = CommercialDocument::TYPES[$document->type].' '.$document->number;
         $body = implode("\n", array_filter([
@@ -358,6 +361,9 @@ class CommercialDocumentWorkflow
             $document->valid_until ? 'Документ действителен до '.$document->valid_until->format('d.m.Y').'.' : null,
             '',
             'Документ приложен к письму в формате PDF.',
+            $portalLink ? '' : null,
+            $portalLink ? 'Открыть предложение онлайн: '.app(CommercialDocumentPortal::class)->url($portalLink) : null,
+            $portalLink ? 'Регистрация и пароль не требуются. Ссылка действует до '.$portalLink->expires_at->format('d.m.Y H:i').' и защищена подтверждением устройства.' : null,
         ], fn ($line): bool => $line !== null));
 
         $drafts = app(SupplierRequestMailDraftService::class);

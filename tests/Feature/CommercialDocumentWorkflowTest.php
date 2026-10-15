@@ -158,6 +158,8 @@ class CommercialDocumentWorkflowTest extends TestCase
         $this->assertSame('draft', $thread->status);
         $this->assertSame('anna@example.com', $thread->participant_email);
         $this->assertStringContainsString($document->number, $thread->subject);
+        $this->assertStringContainsString('Открыть предложение онлайн:', $message->text_body);
+        $this->assertSame(1, $document->portalLinks()->count());
         $this->assertSame(1, $message->attachments_count);
         Storage::disk('local')->assertExists($attachment['path']);
         $this->assertSame($thread->id, $document->fresh()->crm_mail_thread_id);

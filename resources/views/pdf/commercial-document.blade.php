@@ -36,6 +36,11 @@
         .footer { margin-top: 26px; border-top: 1px solid #d4d4d4; padding-top: 10px; }
         .signature { width: 100%; border-collapse: collapse; }
         .signature td { width: 50%; vertical-align: bottom; }
+        .online { margin-top: 16px; padding: 10px; border: 1px solid #e0e0e0; background: #fafafa; }
+        .online-table { width: 100%; border-collapse: collapse; }
+        .online-qr { width: 82px; text-align: right; }
+        .online-qr img { width: 72px; height: 72px; }
+        .online-url { font-size: 8px; color: #555; word-wrap: break-word; }
         .muted { color: #737373; }
     </style>
 </head>
@@ -124,6 +129,19 @@
     </tr>
 </table>
 @if($document->notes)<div class="note"><strong>Примечание</strong><br>{{ $document->notes }}</div>@endif
+
+@if($portalUrl)
+<div class="online">
+    <table class="online-table"><tr>
+        <td>
+            <strong style="font-size:12px">Предложение доступно онлайн</strong><br>
+            Посмотрите фотографии и характеристики товаров, примите предложение или запросите изменения.<br>
+            <span class="online-url">{{ $portalUrl }}</span>
+        </td>
+        @if($portalQr)<td class="online-qr"><img src="{{ $portalQr }}" alt="QR"></td>@endif
+    </tr></table>
+</div>
+@endif
 
 <div class="footer">
     <table class="signature">

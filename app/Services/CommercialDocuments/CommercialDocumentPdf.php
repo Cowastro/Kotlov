@@ -3,15 +3,23 @@
 namespace App\Services\CommercialDocuments;
 
 use App\Models\CommercialDocument;
+use chillerlan\QRCode\QRCode;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class CommercialDocumentPdf
 {
     public function render(CommercialDocument $document): string
     {
         $document->loadMissing(['items', 'manager', 'sourceDocument']);
+        $portalLink = $document->portalLinks()
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now())
+            ->latest('id')
+            ->first();
+        $portalUrl = $portalLink ? app(CommercialDocumentPortal::class)->url($portalLink) : null;
         $options = new Options;
         $options->set('defaultFont', 'DejaVu Sans');
         $options->set('isRemoteEnabled', false);
@@ -23,6 +31,8 @@ class CommercialDocumentPdf
             'seller' => $this->sellerDetails($document),
             'logo' => $this->logoDataUri(),
             'amountWords' => $this->amountWords((float) $document->total),
+            'portalUrl' => $portalUrl,
+            'portalQr' => $portalUrl ? $this->qrDataUri($portalUrl) : null,
         ])->render(), 'UTF-8');
         $dompdf->setPaper('A4');
         $dompdf->render();
@@ -64,6 +74,19 @@ class CommercialDocumentPdf
         }
 
         return 'data:image/png;base64,'.base64_encode((string) file_get_contents($path));
+    }
+
+    private function qrDataUri(string $url): ?string
+    {
+        if (! class_exists(QRCode::class)) {
+            return null;
+        }
+
+        try {
+            return (new QRCode)->render($url);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     private function amountWords(float $amount): string

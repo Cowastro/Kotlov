@@ -180,4 +180,14 @@ class CommercialDocument extends Model
     {
         return $this->hasOne(Order::class);
     }
+
+    public function portalLinks(): HasMany
+    {
+        return $this->hasMany(CommercialDocumentPortalLink::class);
+    }
+
+    public function portalEvents(): HasMany
+    {
+        return $this->hasMany(CommercialDocumentPortalEvent::class);
+    }
 }

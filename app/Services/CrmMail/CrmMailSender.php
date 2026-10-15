@@ -105,10 +105,35 @@ class CrmMailSender
 
     public function markCommercialDocumentsSent(CrmMailThread $thread): int
     {
-        return CommercialDocument::query()
+        $documents = CommercialDocument::query()
             ->where('crm_mail_thread_id', $thread->id)
             ->where('status', 'draft')
-            ->update(['status' => 'sent', 'sent_at' => now()]);
+            ->get();
+
+        foreach ($documents as $document) {
+            $document->forceFill(['status' => 'sent', 'sent_at' => now()])->save();
+
+            if ($document->type !== 'quote' || ! $document->revision_of_id) {
+                continue;
+            }
+
+            CommercialDocument::query()
+                ->where(function ($query) use ($document): void {
+                    $query->whereKey($document->revision_of_id)
+                        ->orWhere('revision_of_id', $document->revision_of_id);
+                })
+                ->where('id', '!=', $document->id)
+                ->whereIn('status', ['sent', 'accepted'])
+                ->update([
+                    'status' => 'needs_revision',
+                    'accepted_at' => null,
+                    'outcome_reason' => null,
+                    'outcome_note' => 'Заменено редакцией '.$document->number.'.',
+                    'closed_at' => null,
+                ]);
+        }
+
+        return $documents->count();
     }
 
     public function reply(
@@ -404,8 +429,11 @@ class CrmMailSender
 
     public function brandedHtml(string $body, User $user): string
     {
+        preg_match('/Открыть предложение онлайн:\s*(https?:\/\/\S+)/u', $body, $portalMatch);
+
         return view('emails.crm.kotlov-reply', [
             'body' => $body,
+            'portalUrl' => $portalMatch[1] ?? null,
             'managerName' => $user->name,
             'managerJobTitle' => $user->job_title,
             'managerPhone' => $user->phone,

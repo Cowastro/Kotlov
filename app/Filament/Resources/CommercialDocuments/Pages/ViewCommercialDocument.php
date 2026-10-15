@@ -6,6 +6,7 @@ use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CommercialDocument;
+use App\Services\CommercialDocuments\CommercialDocumentPortal;
 use App\Services\CommercialDocuments\CommercialDocumentReadiness;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
 use Filament\Actions\Action;
@@ -71,6 +72,38 @@ class ViewCommercialDocument extends ViewRecord
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('Не удалось подготовить письмо')->body($exception->getMessage())->send();
                     }
+                }),
+            Action::make('publish_online')
+                ->label('Онлайн-ссылка')
+                ->icon('heroicon-o-qr-code')
+                ->color('primary')
+                ->visible(fn (): bool => $this->record->type === 'quote'
+                    && ! in_array($this->record->status, ['expired', 'cancelled'], true))
+                ->action(function (): void {
+                    try {
+                        $portal = app(CommercialDocumentPortal::class);
+                        $link = $portal->publish($this->record, auth()->user());
+                        Notification::make()
+                            ->success()
+                            ->title('Онлайн-предложение готово')
+                            ->body($portal->url($link))
+                            ->persistent()
+                            ->send();
+                    } catch (Throwable $exception) {
+                        Notification::make()->danger()->title('Не удалось создать ссылку')->body($exception->getMessage())->send();
+                    }
+                }),
+            Action::make('revoke_online')
+                ->label('Отозвать онлайн-доступ')
+                ->icon('heroicon-o-lock-closed')
+                ->color('danger')
+                ->visible(fn (): bool => $this->record->portalLinks()
+                    ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                ->requiresConfirmation()
+                ->action(function (): void {
+                    $link = $this->record->portalLinks()->whereNull('revoked_at')->latest('id')->firstOrFail();
+                    app(CommercialDocumentPortal::class)->revoke($link);
+                    Notification::make()->success()->title('Онлайн-доступ отозван')->send();
                 }),
             Action::make('convert')
                 ->label('Сделать счёт')

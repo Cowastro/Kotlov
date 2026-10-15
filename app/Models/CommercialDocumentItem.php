@@ -9,7 +9,7 @@ class CommercialDocumentItem extends Model
 {
     protected $fillable = [
         'commercial_document_id', 'product_id', 'name', 'sku', 'unit', 'quantity',
-        'unit_price', 'discount_percent', 'vat_rate', 'line_total', 'sort_order',
+        'unit_price', 'discount_percent', 'vat_rate', 'line_total', 'sort_order', 'portal_snapshot',
     ];
 
     protected $casts = [
@@ -18,6 +18,7 @@ class CommercialDocumentItem extends Model
         'discount_percent' => 'decimal:2',
         'vat_rate' => 'decimal:2',
         'line_total' => 'decimal:2',
+        'portal_snapshot' => 'array',
     ];
 
     protected static function booted(): void

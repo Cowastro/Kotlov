@@ -48,4 +48,32 @@ class CommercialDocumentMailStatusTest extends TestCase
         $this->assertSame('rejected', $rejected->fresh()->status);
         $this->assertSame('price', $rejected->fresh()->outcome_reason);
     }
+
+    public function test_sending_new_revision_makes_previous_revision_non_actionable(): void
+    {
+        $mailbox = CrmMailbox::query()->create([
+            'name' => 'KOTLOV', 'email' => 'revision-status@kotlov.by', 'username' => 'revision-status@kotlov.by',
+        ]);
+        $thread = CrmMailThread::query()->create([
+            'mailbox_id' => $mailbox->id,
+            'thread_key' => 'commercial-revision-status',
+            'participant_email' => 'client@example.com',
+        ]);
+        $original = CommercialDocument::query()->create([
+            'type' => 'quote', 'status' => 'sent', 'crm_mail_thread_id' => $thread->id,
+        ]);
+        $revision = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'draft',
+            'revision_of_id' => $original->id,
+            'revision_number' => 2,
+            'crm_mail_thread_id' => $thread->id,
+        ]);
+
+        app(CrmMailSender::class)->markCommercialDocumentsSent($thread);
+
+        $this->assertSame('needs_revision', $original->fresh()->status);
+        $this->assertSame('sent', $revision->fresh()->status);
+        $this->assertStringContainsString($revision->number, $original->fresh()->outcome_note);
+    }
 }

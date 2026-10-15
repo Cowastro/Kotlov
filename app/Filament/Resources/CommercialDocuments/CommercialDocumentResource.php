@@ -12,6 +12,7 @@ use App\Models\CommercialDocument;
 use App\Models\CrmContact;
 use App\Models\CrmCounterparty;
 use App\Models\Product;
+use App\Services\CommercialDocuments\CommercialDocumentPortal;
 use App\Services\CommercialDocuments\CommercialDocumentReadiness;
 use App\Services\CommercialDocuments\CommercialDocumentRevisionComparison;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
@@ -442,6 +443,47 @@ class CommercialDocumentResource extends Resource
                         ->view('filament.commercial-documents.readiness-overview', fn (CommercialDocument $record): array => [
                             'issues' => app(CommercialDocumentReadiness::class)->issues($record),
                         ])
+                        ->columnSpanFull(),
+                ]),
+            Section::make('Онлайн-предложение')
+                ->icon('heroicon-o-qr-code')
+                ->columns(['default' => 1, 'sm' => 2, 'xl' => 4])
+                ->columnSpanFull()
+                ->visible(fn (CommercialDocument $record): bool => $record->portalLinks()->exists())
+                ->schema([
+                    TextEntry::make('portal_state')
+                        ->label('Доступ')
+                        ->badge()
+                        ->state(function (CommercialDocument $record): string {
+                            $link = $record->portalLinks()->latest('id')->first();
+                            if (! $link || $link->revoked_at) {
+                                return 'Отозван';
+                            }
+
+                            return $link->expires_at->isPast() ? 'Срок ссылки истёк' : 'Активен';
+                        })
+                        ->color(fn (string $state): string => $state === 'Активен' ? 'success' : 'gray'),
+                    TextEntry::make('portal_views')
+                        ->label('Просмотры')
+                        ->state(fn (CommercialDocument $record): int => $record->portalEvents()->where('type', 'proposal_viewed')->count()),
+                    TextEntry::make('portal_devices')
+                        ->label('Подтверждённые устройства')
+                        ->state(fn (CommercialDocument $record): int => $record->portalLinks()
+                            ->withCount(['sessions' => fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now())])
+                            ->latest('id')->first()?->sessions_count ?? 0),
+                    TextEntry::make('portal_last_opened')
+                        ->label('Последнее открытие')
+                        ->state(fn (CommercialDocument $record) => $record->portalLinks()->max('last_opened_at'))
+                        ->dateTime('d.m.Y H:i')
+                        ->placeholder('Ещё не открывали'),
+                    TextEntry::make('portal_url')
+                        ->label('Ссылка для клиента')
+                        ->state(function (CommercialDocument $record): string {
+                            $link = $record->portalLinks()->whereNull('revoked_at')->latest('id')->first();
+
+                            return $link ? app(CommercialDocumentPortal::class)->url($link) : '—';
+                        })
+                        ->copyable()
                         ->columnSpanFull(),
                 ]),
             Section::make('Документ и клиент')
