@@ -176,6 +176,31 @@ class CommercialDocumentPortalTest extends TestCase
         $this->get($portal->url($link))->assertGone()->assertSee('недоступно');
     }
 
+    public function test_manager_can_revoke_one_device_without_revoking_link(): void
+    {
+        [$quote, $manager] = $this->quote();
+        $portal = app(CommercialDocumentPortal::class);
+        $link = $portal->publish($quote, $manager);
+        $session = $link->sessions()->create([
+            'token_hash' => hash('sha256', 'manager-revoked-device'),
+            'device_label' => 'Телефон · Chrome',
+            'authorized_at' => now(),
+            'last_seen_at' => now(),
+            'expires_at' => now()->addDays(30),
+        ]);
+
+        $portal->revokeSession($session, $manager);
+
+        $this->assertNotNull($session->fresh()->revoked_at);
+        $this->assertNull($link->fresh()->revoked_at);
+        $this->assertDatabaseHas('commercial_document_portal_events', [
+            'commercial_document_id' => $quote->id,
+            'portal_link_id' => $link->id,
+            'portal_session_id' => $session->id,
+            'type' => 'device_revoked',
+        ]);
+    }
+
     public function test_published_offer_pdf_contains_online_block_and_remains_renderable(): void
     {
         [$quote, $manager] = $this->quote();

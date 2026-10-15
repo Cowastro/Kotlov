@@ -7,6 +7,7 @@ use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
+use App\Services\CommercialDocuments\CommercialDocumentPortal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -131,6 +132,8 @@ class CrmMailSender
                     'outcome_note' => 'Заменено редакцией '.$document->number.'.',
                     'closed_at' => null,
                 ]);
+
+            app(CommercialDocumentPortal::class)->revokeSupersededRevisionLinks($document);
         }
 
         return $documents->count();

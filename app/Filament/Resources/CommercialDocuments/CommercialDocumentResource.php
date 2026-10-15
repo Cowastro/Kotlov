@@ -548,6 +548,26 @@ class CommercialDocumentResource extends Resource
                             })
                             ->copyable()
                             ->columnSpanFull(),
+                        ViewEntry::make('portal_devices_list')
+                            ->hiddenLabel()
+                            ->view('filament.commercial-documents.portal-devices', function (CommercialDocument $record): array {
+                                $link = $record->portalLinks()->latest('id')->first();
+
+                                return [
+                                    'sessions' => $link?->sessions()->latest('authorized_at')->get() ?? collect(),
+                                ];
+                            })
+                            ->columnSpanFull(),
+                        ViewEntry::make('portal_events_list')
+                            ->hiddenLabel()
+                            ->view('filament.commercial-documents.portal-events', fn (CommercialDocument $record): array => [
+                                'events' => $record->portalEvents()
+                                    ->with('session')
+                                    ->latest('occurred_at')
+                                    ->limit(50)
+                                    ->get(),
+                            ])
+                            ->columnSpanFull(),
                     ]),
                 Section::make('Документ и клиент')
                     ->icon('heroicon-o-document-text')

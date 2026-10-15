@@ -239,6 +239,43 @@ class ViewCommercialDocument extends ViewRecord
                     app(CommercialDocumentPortal::class)->revoke($link);
                     Notification::make()->success()->title('Онлайн-доступ отозван')->send();
                 }),
+            Action::make('revoke_portal_device')
+                ->label('Отключить устройство')
+                ->icon('heroicon-o-device-phone-mobile')
+                ->color('danger')
+                ->visible(fn (): bool => $this->record->portalLinks()
+                    ->whereHas('sessions', fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now()))
+                    ->exists())
+                ->schema([
+                    Select::make('session_id')
+                        ->label('Подтверждённое устройство')
+                        ->options(function (): array {
+                            $link = $this->record->portalLinks()
+                                ->whereHas('sessions', fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now()))
+                                ->latest('id')
+                                ->first();
+
+                            return $link?->sessions()
+                                ->whereNull('revoked_at')
+                                ->where('expires_at', '>', now())
+                                ->latest('last_seen_at')
+                                ->get()
+                                ->mapWithKeys(fn ($session): array => [
+                                    $session->id => ($session->device_label ?: 'Неизвестное устройство')
+                                        .' · последнее посещение '.($session->last_seen_at?->format('d.m.Y H:i') ?: 'не было'),
+                                ])->all() ?? [];
+                        })
+                        ->required(),
+                ])
+                ->requiresConfirmation()
+                ->modalHeading('Отключить выбранное устройство?')
+                ->modalDescription('На этом устройстве потребуется повторное подтверждение кодом из email.')
+                ->action(function (array $data): void {
+                    $link = $this->record->portalLinks()->latest('id')->firstOrFail();
+                    $session = $link->sessions()->findOrFail((int) $data['session_id']);
+                    app(CommercialDocumentPortal::class)->revokeSession($session, auth()->user());
+                    Notification::make()->success()->title('Устройство отключено')->send();
+                }),
             Action::make('convert')
                 ->label('Сделать счёт')
                 ->icon('heroicon-o-arrow-path-rounded-square')

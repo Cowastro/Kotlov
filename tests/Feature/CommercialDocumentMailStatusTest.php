@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\CommercialDocument;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
+use App\Services\CommercialDocuments\CommercialDocumentPortal;
 use App\Services\CrmMail\CrmMailSender;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -61,6 +62,7 @@ class CommercialDocumentMailStatusTest extends TestCase
         ]);
         $original = CommercialDocument::query()->create([
             'type' => 'quote', 'status' => 'sent', 'crm_mail_thread_id' => $thread->id,
+            'client_email' => 'client@example.com',
         ]);
         $revision = CommercialDocument::query()->create([
             'type' => 'quote',
@@ -69,11 +71,26 @@ class CommercialDocumentMailStatusTest extends TestCase
             'revision_number' => 2,
             'crm_mail_thread_id' => $thread->id,
         ]);
+        $oldLink = app(CommercialDocumentPortal::class)->publish($original);
+        $oldSession = $oldLink->sessions()->create([
+            'token_hash' => hash('sha256', 'old-device'),
+            'device_label' => 'Компьютер · Chrome',
+            'authorized_at' => now(),
+            'last_seen_at' => now(),
+            'expires_at' => now()->addDays(30),
+        ]);
 
         app(CrmMailSender::class)->markCommercialDocumentsSent($thread);
 
         $this->assertSame('needs_revision', $original->fresh()->status);
         $this->assertSame('sent', $revision->fresh()->status);
         $this->assertStringContainsString($revision->number, $original->fresh()->outcome_note);
+        $this->assertNotNull($oldLink->fresh()->revoked_at);
+        $this->assertNotNull($oldSession->fresh()->revoked_at);
+        $this->assertDatabaseHas('commercial_document_portal_events', [
+            'commercial_document_id' => $original->id,
+            'portal_link_id' => $oldLink->id,
+            'type' => 'link_revoked',
+        ]);
     }
 }

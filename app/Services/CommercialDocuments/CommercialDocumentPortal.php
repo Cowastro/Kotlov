@@ -171,11 +171,59 @@ class CommercialDocumentPortal
         ]);
     }
 
-    public function revoke(CommercialDocumentPortalLink $link): void
+    public function revoke(CommercialDocumentPortalLink $link, array $metadata = []): void
     {
+        if ($link->revoked_at) {
+            return;
+        }
+
         $link->forceFill(['revoked_at' => now()])->save();
         $link->sessions()->whereNull('revoked_at')->update(['revoked_at' => now()]);
-        $this->event($link, null, 'link_revoked');
+        $this->event($link, null, 'link_revoked', metadata: $metadata);
+    }
+
+    public function revokeSession(CommercialDocumentPortalSession $session, ?User $user = null): void
+    {
+        if ($session->revoked_at) {
+            return;
+        }
+
+        $session->loadMissing('link');
+        $session->forceFill(['revoked_at' => now()])->save();
+        $this->event($session->link, $session, 'device_revoked', metadata: [
+            'revoked_by' => $user?->id,
+            'device_label' => $session->device_label,
+        ]);
+    }
+
+    public function revokeSupersededRevisionLinks(CommercialDocument $document): int
+    {
+        if ($document->type !== 'quote' || ! $document->revision_of_id) {
+            return 0;
+        }
+
+        $rootId = $document->revision_of_id;
+        $superseded = CommercialDocument::query()
+            ->where(function ($query) use ($rootId): void {
+                $query->whereKey($rootId)->orWhere('revision_of_id', $rootId);
+            })
+            ->where('id', '!=', $document->id)
+            ->with(['portalLinks' => fn ($query) => $query->whereNull('revoked_at')])
+            ->get();
+
+        $revoked = 0;
+        foreach ($superseded as $previous) {
+            foreach ($previous->portalLinks as $link) {
+                $this->revoke($link, [
+                    'reason' => 'superseded_revision',
+                    'replaced_by_document_id' => $document->id,
+                    'replaced_by_number' => $document->number,
+                ]);
+                $revoked++;
+            }
+        }
+
+        return $revoked;
     }
 
     public function refreshSnapshot(CommercialDocument $document): void

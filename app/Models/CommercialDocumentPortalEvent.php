@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CommercialDocumentPortalEvent extends Model
 {
@@ -12,4 +13,9 @@ class CommercialDocumentPortalEvent extends Model
     ];
 
     protected $casts = ['metadata' => 'array', 'occurred_at' => 'datetime'];
+
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(CommercialDocumentPortalSession::class, 'portal_session_id');
+    }
 }
