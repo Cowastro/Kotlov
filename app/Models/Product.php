@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Product extends Model
@@ -679,5 +680,10 @@ class Product extends Model
     public function marketResearchReports(): HasMany
     {
         return $this->hasMany(MarketResearchReport::class);
+    }
+
+    public function latestMarketResearchReport(): HasOne
+    {
+        return $this->hasOne(MarketResearchReport::class)->latestOfMany('researched_at');
     }
 }

@@ -11,6 +11,7 @@ use App\Jobs\RunProductCatalogAiReview;
 use App\Jobs\RunProductSourceEnrichment;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\MarketResearchReport;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
@@ -352,6 +353,16 @@ class ProductsTable
                 CreateCommercialDocumentAction::make()
                     ->iconButton()
                     ->tooltip('Создать КП и привязать к лиду'),
+                Action::make('review_high_market_price')
+                    ->label('Цена выше рынка')
+                    ->icon('heroicon-o-flag')
+                    ->iconButton()
+                    ->color('danger')
+                    ->tooltip(fn (Product $record): string => self::highMarketPriceTooltip($record))
+                    ->visible(fn (Product $record): bool => self::latestHighMarketPriceReport($record) !== null)
+                    ->url(fn (Product $record): string => MarketResearchReportResource::getUrl('index', [
+                        'filters' => ['product_id' => ['value' => $record->id]],
+                    ])),
                 ActionGroup::make([
                     Action::make('market_price_details')
                         ->label('Рынок и цены')
@@ -677,6 +688,35 @@ class ProductsTable
                     DeleteBulkAction::make(),
                 ])->visible(fn (): bool => ProductResource::canEdit(new Product)),
             ]);
+    }
+
+    private static function latestHighMarketPriceReport(Product $product): ?MarketResearchReport
+    {
+        $report = $product->latestMarketResearchReport;
+
+        if (! $report) {
+            return null;
+        }
+
+        $currentPrice = round((float) $product->price, 2);
+        $recommendedPrice = round((float) $report->recommended_price, 2);
+
+        return $recommendedPrice > 0 && $currentPrice - $recommendedPrice >= 0.01
+            ? $report
+            : null;
+    }
+
+    private static function highMarketPriceTooltip(Product $product): string
+    {
+        $report = self::latestHighMarketPriceReport($product);
+
+        if (! $report) {
+            return 'Открыть анализ рынка';
+        }
+
+        return 'Цена выше рынка: '.number_format((float) $product->price, 2, ',', ' ')
+            .' → '.number_format((float) $report->recommended_price, 2, ',', ' ')
+            .' BYN. Открыть анализ и пересмотреть решение';
     }
 
     /** @return array<string, mixed> */
