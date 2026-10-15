@@ -40,6 +40,7 @@ class TechnicalProductSelectionTest extends TestCase
             $this->assertStringContainsString('product:'.$product->id, $prompt);
             $this->assertStringNotContainsString('product:'.$archived->id, $prompt);
             $this->assertStringContainsString('supplier:'.$offer->id, $prompt);
+
             return $tokens === 3000;
         })->andReturn(json_encode(['summary' => 'Нужна проверка кривой.', 'matches' => [
             ['key' => 'product:'.$product->id, 'price' => 1, 'confirmed' => ['Бак 24 л'], 'check' => ['Кривая Q/H']],
@@ -112,6 +113,7 @@ class TechnicalProductSelectionTest extends TestCase
     private function product(string $name, string $slug, array $extra = []): Product
     {
         $category = Category::query()->firstOrCreate(['slug' => 'selection-pumps'], ['name' => 'Насосы', 'is_active' => true]);
+
         return Product::query()->create([
             'category_id' => $category->id, 'name' => $name, 'slug' => $slug, 'sku' => 'TECH-'.$slug,
             'price' => 500, 'currency' => 'BYN', 'is_active' => true, 'is_archived' => false,

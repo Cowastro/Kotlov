@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Product;
 use App\Models\IntegrationProduct;
+use App\Models\Product;
 use App\Models\SupplierProduct;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;

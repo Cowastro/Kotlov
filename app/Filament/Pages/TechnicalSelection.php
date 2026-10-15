@@ -16,16 +16,23 @@ use Throwable;
 class TechnicalSelection extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-sparkles';
+
     protected static ?string $navigationLabel = 'AI-подбор';
+
     protected static ?string $title = 'AI-подбор по задаче';
+
     protected static ?int $navigationSort = 5;
+
     protected string $view = 'filament.pages.technical-selection';
 
     public string $prompt = '';
+
     #[Locked]
     public array $result = [];
+
     #[Locked]
     public array $externalResult = [];
+
     public array $selected = [];
 
     public static function canAccess(): bool
@@ -78,6 +85,7 @@ class TechnicalSelection extends Page
             ->where('is_active', true)->where('is_archived', false)->pluck('id')->all();
         if ($ids === []) {
             Notification::make()->warning()->title('Выберите товары из результатов подбора')->send();
+
             return null;
         }
         session()->put('commercial_document_product_ids', $ids);
@@ -92,6 +100,7 @@ class TechnicalSelection extends Page
         $key = 'technical-selection:'.auth()->id();
         if (RateLimiter::tooManyAttempts($key, 6)) {
             Notification::make()->warning()->title('Слишком много запросов. Повторите через минуту.')->send();
+
             return false;
         }
         RateLimiter::hit($key, 60);
