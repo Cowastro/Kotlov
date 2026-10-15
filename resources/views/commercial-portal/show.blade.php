@@ -29,6 +29,7 @@
             @foreach($document->items as $item)
                 @php
                     $snapshot = $item->portal_snapshot ?? [];
+                    $catalogUrl = $snapshot['catalog_url'] ?? null;
                     $image = $snapshot['images'][0] ?? null;
                     $attributes = collect($snapshot['attributes'] ?? [])->take(10);
                     if ($attributes->isEmpty()) {
@@ -41,7 +42,13 @@
                 <article class="item">
                     @if($image)<img class="item-image" src="{{ $image }}" alt="">@else<div class="item-image"></div>@endif
                     <div>
-                        <h3>{{ $item->name }}</h3>
+                        <h3>
+                            @if($catalogUrl)
+                                <a class="item-title-link" href="{{ $catalogUrl }}" target="_blank" rel="noopener noreferrer">{{ $item->name }}</a>
+                            @else
+                                {{ $item->name }}
+                            @endif
+                        </h3>
                         <div class="sku">{{ $item->sku ? 'Артикул '.$item->sku.' · ' : '' }}{{ rtrim(rtrim(number_format((float)$item->quantity, 3, ',', ' '), '0'), ',') }} {{ $item->unit }}</div>
                         @if($snapshot['short_description'] ?? null)<p>{{ strip_tags($snapshot['short_description']) }}</p>@endif
                         @if($attributes->isNotEmpty())
@@ -50,7 +57,7 @@
                             </div>
                         @endif
                         @if($snapshot['warranty'] ?? null)<p class="small">Гарантия: {{ $snapshot['warranty'] }}</p>@endif
-                        @if($snapshot['catalog_url'] ?? null)<a href="{{ $snapshot['catalog_url'] }}" target="_blank" rel="noopener noreferrer">Карточка товара в каталоге</a>@endif
+                        @if($catalogUrl)<a class="catalog-link" href="{{ $catalogUrl }}" target="_blank" rel="noopener noreferrer">Посмотреть товар на сайте <span aria-hidden="true">↗</span></a>@endif
                     </div>
                     <div class="price"><strong>{{ number_format((float)$item->line_total, 2, ',', ' ') }} {{ $document->currency }}</strong><span class="small">{{ number_format((float)$item->unit_price, 2, ',', ' ') }} за {{ $item->unit }}</span></div>
                 </article>

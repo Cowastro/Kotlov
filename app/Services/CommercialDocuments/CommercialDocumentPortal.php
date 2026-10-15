@@ -3,10 +3,12 @@
 namespace App\Services\CommercialDocuments;
 
 use App\Models\CommercialDocument;
+use App\Models\CommercialDocumentItem;
 use App\Models\CommercialDocumentPortalChallenge;
 use App\Models\CommercialDocumentPortalEvent;
 use App\Models\CommercialDocumentPortalLink;
 use App\Models\CommercialDocumentPortalSession;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -195,6 +197,11 @@ class CommercialDocumentPortal
         }
     }
 
+    public function ensureSnapshot(CommercialDocument $document): void
+    {
+        $this->snapshot($document);
+    }
+
     private function createDeviceSession(CommercialDocumentPortalLink $link, Request $request): CommercialDocumentPortalSession
     {
         $secret = Str::random(80);
@@ -216,11 +223,15 @@ class CommercialDocumentPortal
     {
         $document->load('items.product.attributeValues.attribute', 'items.product.attributeValues.option', 'items.product.category', 'items.product.brand');
         foreach ($document->items as $item) {
-            if ((! $force && $item->portal_snapshot) || ! $item->product) {
+            if (! $force && $item->portal_snapshot) {
                 continue;
             }
 
-            $product = $item->product;
+            $product = $this->resolveCatalogProduct($item);
+            if (! $product) {
+                continue;
+            }
+
             $brand = trim((string) $product->brand?->name);
             $attributes = $product->attributeValues
                 ->filter(fn ($value) => $value->hasDisplayValue())
@@ -236,25 +247,58 @@ class CommercialDocumentPortal
                 $attributes->prepend(['name' => 'Бренд', 'value' => $brand]);
             }
 
-            $item->forceFill(['portal_snapshot' => [
-                'name' => $item->name,
-                'sku' => $item->sku,
-                'short_description' => $product->short_description,
-                'content' => $product->content,
-                'images' => collect($product->imagePaths())->take(4)->map(
-                    fn ($path, $index) => $product->imageUrl((int) $index)
-                )->values()->all(),
-                'specs' => is_array($product->specs) ? $product->specs : [],
-                'brand' => $brand ?: null,
-                'attributes' => $attributes->all(),
-                'warranty' => $product->warranty,
-                'availability' => $product->availabilityLabel(),
-                'catalog_url' => $product->category?->slug && $product->slug
-                    ? url('/'.$product->category->slug.'/'.$product->slug)
-                    : null,
-                'captured_at' => now()->toIso8601String(),
-            ]])->saveQuietly();
+            $item->forceFill([
+                'product_id' => $product->id,
+                'portal_snapshot' => [
+                    'name' => $item->name,
+                    'sku' => $item->sku,
+                    'short_description' => $product->short_description,
+                    'content' => $product->content,
+                    'images' => collect($product->imagePaths())->take(4)->map(
+                        fn ($path, $index) => $product->imageUrl((int) $index)
+                    )->values()->all(),
+                    'specs' => is_array($product->specs) ? $product->specs : [],
+                    'brand' => $brand ?: null,
+                    'attributes' => $attributes->all(),
+                    'warranty' => $product->warranty,
+                    'availability' => $product->availabilityLabel(),
+                    'catalog_url' => $product->category?->slug && $product->slug
+                        ? url('/'.$product->category->slug.'/'.$product->slug)
+                        : null,
+                    'captured_at' => now()->toIso8601String(),
+                ],
+            ])->saveQuietly();
         }
+    }
+
+    private function resolveCatalogProduct(CommercialDocumentItem $item): ?Product
+    {
+        if ($item->product) {
+            return $item->product;
+        }
+
+        $sku = trim((string) $item->sku);
+        if ($sku === '') {
+            return null;
+        }
+
+        $products = Product::query()
+            ->with(['attributeValues.attribute', 'attributeValues.option', 'category', 'brand'])
+            ->where('sku', $sku)
+            ->where('is_active', true)
+            ->where('is_archived', false)
+            ->limit(3)
+            ->get();
+
+        if ($products->count() === 1) {
+            return $products->first();
+        }
+
+        $itemName = mb_strtolower(trim((string) $item->name));
+
+        return $products->first(
+            fn (Product $product): bool => mb_strtolower(trim((string) $product->name)) === $itemName
+        );
     }
 
     private function sessionKey(CommercialDocumentPortalLink $link): string

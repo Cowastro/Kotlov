@@ -17,7 +17,7 @@ use Throwable;
 
 class CommercialDocumentPortalController extends Controller
 {
-    public function preview(CommercialDocument $commercialDocument)
+    public function preview(CommercialDocument $commercialDocument, CommercialDocumentPortal $portal)
     {
         $link = $commercialDocument->portalLinks()
             ->whereNull('revoked_at')
@@ -25,6 +25,7 @@ class CommercialDocumentPortalController extends Controller
             ->latest('id')
             ->firstOrFail();
 
+        $portal->ensureSnapshot($commercialDocument);
         $link->loadMissing(['document.items.product', 'document.manager', 'document.order']);
 
         return response()->view('commercial-portal.show', [
@@ -107,6 +108,7 @@ class CommercialDocumentPortalController extends Controller
     public function show(CommercialDocumentPortalLink $link, Request $request, CommercialDocumentPortal $portal)
     {
         [$link, $session] = $this->authorize($link, $request, $portal);
+        $portal->ensureSnapshot($link->document);
         $link->increment('open_count');
         $link->forceFill(['last_opened_at' => now()])->save();
         $portal->event($link, $session, 'proposal_viewed', $request);

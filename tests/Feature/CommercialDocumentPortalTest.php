@@ -112,6 +112,27 @@ class CommercialDocumentPortalTest extends TestCase
         $this->assertNotEmpty($snapshot['captured_at']);
     }
 
+    public function test_missing_product_relation_is_restored_from_exact_sku_and_catalog_link_is_shown(): void
+    {
+        [$quote, $manager, $product] = $this->quote(withProduct: true);
+        $portal = app(CommercialDocumentPortal::class);
+        $portal->publish($quote, $manager);
+        $quote->items()->firstOrFail()->forceFill([
+            'product_id' => null,
+            'portal_snapshot' => null,
+        ])->saveQuietly();
+
+        $response = $this->actingAs($manager)
+            ->get(route('admin.commercial-documents.online-preview', $quote))
+            ->assertOk()
+            ->assertSee('Посмотреть товар на сайте');
+
+        $item = $quote->items()->firstOrFail();
+        $this->assertSame($product->id, $item->product_id);
+        $this->assertSame(url('/portal-products/portal-pump'), $item->portal_snapshot['catalog_url']);
+        $response->assertSee($item->portal_snapshot['catalog_url'], false);
+    }
+
     public function test_explicit_snapshot_refresh_uses_current_product_brand_instead_of_stale_brand_attribute(): void
     {
         [$quote, $manager, $product] = $this->quote(withProduct: true);
