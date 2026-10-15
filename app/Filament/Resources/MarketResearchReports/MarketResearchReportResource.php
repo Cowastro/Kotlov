@@ -9,6 +9,7 @@ use App\Models\MarketResearchReport;
 use App\Models\Supplier;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\Market\MarketResearchReportPresenter;
+use App\Services\Market\MarketResearchReportPriceApplier;
 use App\Services\Market\MarketResearchSupplierInquiry;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -81,6 +82,46 @@ class MarketResearchReportResource extends Resource
                 SelectFilter::make('product_id')->label('Товар')->relationship('product', 'name')->searchable()->preload(),
             ])
             ->recordActions([
+                Action::make('apply_site_price')
+                    ->label('Применить цену на сайте')
+                    ->icon(Heroicon::OutlinedCheckCircle)
+                    ->color('warning')
+                    ->visible(fn (MarketResearchReport $record): bool => (auth()->user()?->isAdmin() ?? false)
+                        && (float) $record->recommended_price > 0
+                        && $record->product !== null
+                        && abs((float) $record->product->price - (float) $record->recommended_price) >= 0.01)
+                    ->modalHeading(fn (MarketResearchReport $record): string => 'Применить цену · '.($record->product?->name ?? 'товар'))
+                    ->modalDescription(fn (MarketResearchReport $record): string => 'Цена на сайте изменится с '
+                        .number_format((float) $record->product?->price, 2, ',', ' ').' на '
+                        .number_format((float) $record->recommended_price, 2, ',', ' ').' BYN. '
+                        .'Цена применяется независимо от направления изменения: выше или ниже текущей.')
+                    ->fillForm(fn (MarketResearchReport $record): array => [
+                        'reason' => 'Цена подтверждена по анализу рынка '.$record->batch_code,
+                    ])
+                    ->form([
+                        Textarea::make('reason')
+                            ->label('Причина решения')
+                            ->required()
+                            ->minLength(10)
+                            ->rows(3),
+                    ])
+                    ->modalSubmitActionLabel('Применить цену')
+                    ->requiresConfirmation()
+                    ->action(function (MarketResearchReport $record, array $data): void {
+                        app(MarketResearchReportPriceApplier::class)->apply(
+                            $record,
+                            auth()->user(),
+                            (string) $data['reason'],
+                            request()->ip(),
+                            request()->userAgent(),
+                        );
+
+                        Notification::make()
+                            ->success()
+                            ->title('Цена на сайте обновлена')
+                            ->body(number_format((float) $record->recommended_price, 2, ',', ' ').' BYN')
+                            ->send();
+                    }),
                 Action::make('request_b2b_price')
                     ->label('Запросить B2B-цену')
                     ->icon(Heroicon::OutlinedEnvelope)
