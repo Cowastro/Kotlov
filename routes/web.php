@@ -66,6 +66,10 @@ Route::get('/admin/market-research-reports/{marketResearchReport}/pdf', MarketRe
     ->middleware('auth')
     ->name('admin.market-research-reports.pdf');
 
+Route::get('/admin/commercial-documents/{commercialDocument}/online-preview', [CommercialDocumentPortalController::class, 'preview'])
+    ->middleware('auth')
+    ->name('admin.commercial-documents.online-preview');
+
 Route::prefix('offer')->group(function (): void {
     Route::get('/access/{token}', [CommercialDocumentPortalController::class, 'access'])
         ->where('token', '[A-Za-z0-9]{80}')

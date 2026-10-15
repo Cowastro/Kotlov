@@ -2,10 +2,12 @@
 
 @php
     $statusLabels = \App\Models\CommercialDocument::STATUSES;
-    $actionable = $document->status === 'sent' && (!$document->valid_until || !$document->valid_until->isPast());
+    $preview = $preview ?? false;
+    $actionable = !$preview && $document->status === 'sent' && (!$document->valid_until || !$document->valid_until->isPast());
 @endphp
 
 @section('content')
+@if($preview)<div class="notice">Режим предпросмотра администратора. Клиентская ссылка не активирована, статистика не изменяется.</div>@endif
 @if(session('portal_success'))<div class="notice">{{ session('portal_success') }}</div>@endif
 @if($errors->any())<div class="notice error">{{ $errors->first() }}</div>@endif
 
@@ -16,7 +18,7 @@
         <span class="status">{{ $statusLabels[$document->status] ?? $document->status }}</span>
         <span>от {{ $document->issued_at->format('d.m.Y') }}</span>
         @if($document->valid_until)<span>действительно до {{ $document->valid_until->format('d.m.Y') }}</span>@endif
-        <span>{{ $session->device_label }}</span>
+        <span>{{ $preview ? 'Предпросмотр администратора' : $session->device_label }}</span>
     </div>
 </section>
 
@@ -71,9 +73,11 @@
             @if((float)$document->discount_total > 0)<div class="sum-row"><span>Скидка</span><strong>− {{ number_format((float)$document->discount_total, 2, ',', ' ') }}</strong></div>@endif
             @if((float)$document->delivery_price > 0)<div class="sum-row"><span>Доставка</span><strong>{{ number_format((float)$document->delivery_price, 2, ',', ' ') }}</strong></div>@endif
             <div class="sum-row total"><span>Итого</span><span>{{ number_format((float)$document->total, 2, ',', ' ') }} {{ $document->currency }}</span></div>
-            <a class="button secondary" href="{{ route('commercial-portal.pdf', $link->public_id) }}" target="_blank">Открыть PDF</a>
+            <a class="button secondary" href="{{ $preview ? route('admin.commercial-documents.pdf', $document) : route('commercial-portal.pdf', $link->public_id) }}" target="_blank">Открыть PDF</a>
 
-            @if($document->status === 'accepted' && $document->order)
+            @if($preview)
+                <div class="notice" style="margin-top:14px">Кнопки принятия, изменения и отказа доступны только клиенту.</div>
+            @elseif($document->status === 'accepted' && $document->order)
                 <div class="notice" style="margin-top:14px">Заказ {{ $document->order->number }} создан и передан менеджеру.</div>
             @elseif($actionable)
                 <form method="post" action="{{ route('commercial-portal.accept', $link->public_id) }}">

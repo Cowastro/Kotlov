@@ -59,6 +59,25 @@ class CommercialDocumentPortalTest extends TestCase
         $this->assertDatabaseCount('commercial_document_portal_sessions', 1);
     }
 
+    public function test_admin_preview_does_not_activate_client_link_or_change_view_statistics(): void
+    {
+        [$quote, $manager] = $this->quote();
+        $link = app(CommercialDocumentPortal::class)->publish($quote, $manager);
+
+        $this->actingAs($manager)
+            ->get(route('admin.commercial-documents.online-preview', $quote))
+            ->assertOk()
+            ->assertSee('Режим предпросмотра администратора')
+            ->assertSee('Кнопки принятия, изменения и отказа доступны только клиенту');
+
+        $this->assertDatabaseCount('commercial_document_portal_sessions', 0);
+        $this->assertSame(0, $link->fresh()->open_count);
+        $this->assertDatabaseMissing('commercial_document_portal_events', [
+            'portal_link_id' => $link->id,
+            'type' => 'proposal_viewed',
+        ]);
+    }
+
     public function test_accepting_offer_creates_exactly_one_order(): void
     {
         Event::fake([NewOrderCreated::class]);

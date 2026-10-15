@@ -93,6 +93,14 @@ class ViewCommercialDocument extends ViewRecord
                         Notification::make()->danger()->title('Не удалось создать ссылку')->body($exception->getMessage())->send();
                     }
                 }),
+            Action::make('preview_online')
+                ->label('Предпросмотр онлайн')
+                ->icon('heroicon-o-eye')
+                ->color('gray')
+                ->visible(fn (): bool => $this->record->portalLinks()
+                    ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                ->url(fn (): string => route('admin.commercial-documents.online-preview', $this->record))
+                ->openUrlInNewTab(),
             Action::make('revoke_online')
                 ->label('Отозвать онлайн-доступ')
                 ->icon('heroicon-o-lock-closed')

@@ -17,6 +17,26 @@ use Throwable;
 
 class CommercialDocumentPortalController extends Controller
 {
+    public function preview(CommercialDocument $commercialDocument)
+    {
+        $link = $commercialDocument->portalLinks()
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now())
+            ->latest('id')
+            ->firstOrFail();
+
+        $link->loadMissing(['document.items.product', 'document.manager', 'document.order']);
+
+        return response()->view('commercial-portal.show', [
+            'link' => $link,
+            'document' => $link->document,
+            'session' => null,
+            'preview' => true,
+        ])->header('Cache-Control', 'private, no-store, max-age=0')
+            ->header('Referrer-Policy', 'no-referrer')
+            ->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
     public function access(string $token, CommercialDocumentPortal $portal)
     {
         try {
@@ -95,6 +115,7 @@ class CommercialDocumentPortalController extends Controller
             'link' => $link,
             'document' => $link->document,
             'session' => $session,
+            'preview' => false,
         ])->header('Cache-Control', 'private, no-store, max-age=0')
             ->header('Referrer-Policy', 'no-referrer')
             ->header('X-Robots-Tag', 'noindex, nofollow');
