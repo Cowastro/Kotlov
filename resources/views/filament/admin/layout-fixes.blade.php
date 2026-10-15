@@ -13,11 +13,14 @@
     .fi-ta-ctn {
         min-width: 0;
         max-width: 100%;
-        overflow: hidden;
+        /* Filament renders the filters dropdown inside this container. Hiding
+           overflow clips the dropdown at the bottom edge of short tables. */
+        overflow: visible;
     }
 
     .fi-ta-content-ctn {
         max-width: 100%;
+        overflow-x: auto;
         overscroll-behavior-inline: contain;
     }
 
