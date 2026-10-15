@@ -146,6 +146,13 @@
             </div>
         @endif
 
+        @if (! $isB2bOffer && $availabilityStatus === 'in_stock')
+            <div class="product-card-availability" aria-label="Товар в наличии на складе">
+                <span class="product-card-availability__dot" aria-hidden="true"></span>
+                <span>В наличии</span>
+            </div>
+        @endif
+
         <div class="price-wrap">
             <span class="price-new text-primary fw-semibold">{{ $price }}</span>
             @if ($priceOld)

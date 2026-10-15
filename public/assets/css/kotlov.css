@@ -674,6 +674,28 @@ body {
     display: none;
 }
 
+/* Наличие в каталоге: тихий сигнал рядом с основной информацией,
+   без конкуренции с акциями и новинками на фотографии. */
+.product-card-availability {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 6px;
+    color: #3f7d4b;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.product-card-availability__dot {
+    width: 6px;
+    height: 6px;
+    flex: 0 0 6px;
+    border-radius: 50%;
+    background: #4b9b5c;
+    box-shadow: 0 0 0 3px rgba(75, 155, 92, .1);
+}
+
 @media (max-width: 575px) {
     #gridLayout {
         gap: 16px 10px;
@@ -790,6 +812,18 @@ body {
     #gridLayout .card-product_info .price-old {
         font-size: 12px;
         line-height: 1.3;
+    }
+
+    #gridLayout .product-card-availability {
+        gap: 5px;
+        font-size: 10px;
+    }
+
+    #gridLayout .product-card-availability__dot {
+        width: 5px;
+        height: 5px;
+        flex-basis: 5px;
+        box-shadow: 0 0 0 2px rgba(75, 155, 92, .1);
     }
 }
 

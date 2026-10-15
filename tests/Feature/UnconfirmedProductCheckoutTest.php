@@ -94,8 +94,19 @@ class UnconfirmedProductCheckoutTest extends TestCase
                 ->assertSee('33.00 BYN')
                 ->assertSee('Заказать консультацию')
                 ->assertSee('data-can-buy="0"', false)
+                ->assertDontSee('product-card-availability', false)
                 ->assertDontSee('btn-add-to-cart', false);
         }
+    }
+
+    public function test_grid_card_shows_a_quiet_stock_marker_only_for_confirmed_stock(): void
+    {
+        $product = $this->confirmedProduct(120)->load('category');
+
+        $this->view('partials.product-card', ['product' => $product])
+            ->assertSee('product-card-availability', false)
+            ->assertSeeText('В наличии')
+            ->assertSee('Товар в наличии на складе');
     }
 
     public function test_product_page_keeps_the_retail_price_visible_while_stock_requires_confirmation(): void
