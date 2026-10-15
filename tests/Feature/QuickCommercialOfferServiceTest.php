@@ -365,7 +365,7 @@ class QuickCommercialOfferServiceTest extends TestCase
         ));
     }
 
-    public function test_manual_product_search_summary_shows_found_product_labels(): void
+    public function test_manual_product_search_explains_automatic_choice_and_shows_simple_selector(): void
     {
         $summary = CrmMailThreadResource::manualProductSearchSummary([
             'ready' => true,
@@ -376,9 +376,13 @@ class QuickCommercialOfferServiceTest extends TestCase
             ],
         ]);
 
-        $this->assertStringContainsString('Найдено в базе:', $summary);
-        $this->assertStringContainsString('Котёл КСТБ 95-1Т · арт. КСТБ-95', $summary);
-        $this->assertStringContainsString('Котёл КСТБ 95-1ТМ · арт. КСТБ-95М', $summary);
+        $this->assertStringContainsString('Самый точный вариант уже выбран для КП', $summary);
+
+        $fields = CrmMailThreadResource::manualProductSearchFields();
+        $this->assertTrue(collect($fields)->contains(
+            fn (mixed $field): bool => method_exists($field, 'getName')
+                && $field->getName() === 'manual_product_choice',
+        ));
     }
 
     public function test_it_saves_recognized_client_contacts_and_creates_inactive_product_draft(): void

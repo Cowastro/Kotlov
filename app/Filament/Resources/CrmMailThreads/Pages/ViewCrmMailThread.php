@@ -23,6 +23,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
 use Throwable;
@@ -216,7 +217,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->modalHeading('Быстрое коммерческое предложение')
                 ->modalDescription('Для разбора используются тема, текст письма и PDF-вложения. Товары ищутся напрямую в нашей базе. Проверьте данные — после сохранения система подготовит PDF и черновик ответа.')
                 ->modalSubmitActionLabel('Создать КП и письмо')
-                ->modalWidth('5xl')
+                ->modalWidth('7xl')
                 ->fillForm(function (): array {
                     $prepared = app(QuickCommercialOfferService::class)->prepare($this->record);
 
@@ -228,37 +229,53 @@ class ViewCrmMailThread extends ViewRecord
                     ]);
                 })
                 ->schema([
-                    TextInput::make('client_company')->label('Компания')->required()->maxLength(255),
-                    TextInput::make('client_name')->label('Контактное лицо')->maxLength(255),
-                    TextInput::make('client_email')->label('Email')->email()->required()->maxLength(255),
-                    TextInput::make('client_phone')->label('Телефон')->maxLength(80),
-                    TextInput::make('client_unp')->label('УНП')->length(9),
-                    TextInput::make('client_address')->label('Юридический адрес')->maxLength(500)->columnSpanFull(),
-                    Textarea::make('analysis_summary')->label('Результат автоматического разбора')
-                        ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
-                    Toggle::make('save_client_to_crm')->label('Сохранить компанию и контактное лицо в CRM')
-                        ->helperText('Будут сохранены только проверенные вами реквизиты и контакты.'),
-                    Textarea::make('unmatched_items_summary')->label('Не найдено в каталоге')
-                        ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
-                    ...CrmMailThreadResource::manualProductSearchFields(),
-                    Toggle::make('create_missing_products')->label('Создать черновики отсутствующих товаров')->live()
-                        ->helperText('Если товара нет в базе, будет создана неактивная карточка из ручного запроса. Она не появится на сайте до проверки менеджером.'),
-                    Select::make('draft_category_id')->label('Категория для новых черновиков')
-                        ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all())
-                        ->searchable()->visible(fn (Get $get): bool => (bool) $get('create_missing_products'))
-                        ->required(fn (Get $get): bool => (bool) $get('create_missing_products')),
-                    Select::make('product_ids')
-                        ->label('Товары для КП')
-                        ->multiple()->required(fn (Get $get): bool => ! (bool) $get('create_missing_products'))->searchable()
-                        ->options(function (Get $get): array {
-                            $service = app(QuickCommercialOfferService::class);
+                    Section::make('Клиент')
+                        ->compact()
+                        ->columns(2)
+                        ->schema([
+                            TextInput::make('client_company')->label('Компания')->required()->maxLength(255),
+                            TextInput::make('client_name')->label('Контактное лицо')->maxLength(255),
+                            TextInput::make('client_email')->label('Email')->email()->required()->maxLength(255),
+                            TextInput::make('client_phone')->label('Телефон')->maxLength(80),
+                            TextInput::make('client_unp')->label('УНП')->length(9),
+                            TextInput::make('client_address')->label('Юридический адрес')->maxLength(500),
+                            Toggle::make('save_client_to_crm')->label('Сохранить клиента в CRM')
+                                ->helperText('Сохраняются только проверенные поля.')
+                                ->columnSpanFull(),
+                        ]),
+                    Section::make('Автоматический разбор письма')
+                        ->compact()
+                        ->collapsible()
+                        ->collapsed()
+                        ->schema([
+                            Textarea::make('analysis_summary')->label('Что распознано')
+                                ->disabled()->dehydrated(false)->rows(2),
+                            Textarea::make('unmatched_items_summary')->label('Не найдено в каталоге')
+                                ->disabled()->dehydrated(false)->rows(2),
+                        ]),
+                    Section::make('Подбор товара')
+                        ->compact()
+                        ->schema([
+                            ...CrmMailThreadResource::manualProductSearchFields(),
+                            Toggle::make('create_missing_products')->label('Создать черновик, если товара нет')->live()
+                                ->helperText('Черновик не появится на сайте до проверки.'),
+                            Select::make('draft_category_id')->label('Категория нового черновика')
+                                ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all())
+                                ->searchable()->visible(fn (Get $get): bool => (bool) $get('create_missing_products'))
+                                ->required(fn (Get $get): bool => (bool) $get('create_missing_products')),
+                            Select::make('product_ids')
+                                ->label('Товары для КП')
+                                ->multiple()->required(fn (Get $get): bool => ! (bool) $get('create_missing_products'))->searchable()
+                                ->options(function (Get $get): array {
+                                    $service = app(QuickCommercialOfferService::class);
 
-                            return $service->productLabels((array) $get('manual_suggestion_ids'))
-                                + $service->prepare($this->record)['suggestions'];
-                        })
-                        ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->searchProducts($search))
-                        ->getOptionLabelsUsing(fn (array $values): array => app(QuickCommercialOfferService::class)->productLabels($values))
-                        ->helperText('Сверху — варианты, найденные по теме, тексту и артикулам письма. Можно найти любой товар каталога.'),
+                                    return $service->productLabels((array) $get('manual_suggestion_ids'))
+                                        + $service->prepare($this->record)['suggestions'];
+                                })
+                                ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->searchProducts($search))
+                                ->getOptionLabelsUsing(fn (array $values): array => app(QuickCommercialOfferService::class)->productLabels($values))
+                                ->helperText('Найденные варианты показаны выше. Можно найти любой товар каталога.'),
+                        ]),
                 ])
                 ->action(function (array $data) {
                     $prepared = app(QuickCommercialOfferService::class)->prepare($this->record);
