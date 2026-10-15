@@ -97,8 +97,7 @@
 </table>
 
 @if($research['rejected_candidates'] !== [])
-    <h2>Отклонённые варианты</h2>
-    <div class="panel"><ol class="rejected">
+    <div class="panel" style="margin-top:18px"><h2 style="margin-top:0">Отклонённые варианты</h2><ol class="rejected">
         @foreach($research['rejected_candidates'] as $candidate)
             <li><strong>{{ $candidate['title'] ?? $candidate['url'] ?? 'Похожая позиция' }}</strong><div class="reason">{{ $candidate['reason'] ?? 'Не соответствует проверяемой модели.' }}</div></li>
         @endforeach
