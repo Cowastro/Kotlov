@@ -818,19 +818,6 @@ class ProductSourceEnricher
             $parsed['short_description'] = $this->sourceSummary((string) $parsed['description']);
         }
 
-        if ($this->isPkMercuryUrl($url)) {
-            $parsed['documents'] = array_values(array_merge($parsed['documents'], [
-                [
-                    'label' => 'Техническая информация производителя',
-                    'url' => 'https://pkmercury.by/poleznaya-informacziya/',
-                ],
-                [
-                    'label' => 'Сертификаты производителя',
-                    'url' => 'https://pkmercury.by/sertifikaty/',
-                ],
-            ]));
-        }
-
         return $this->normalizeParsedData($parsed, $this->sourceImageLimit($url));
     }
 

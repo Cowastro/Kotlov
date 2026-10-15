@@ -85,7 +85,7 @@ class ProductSourceEnricherTest extends TestCase
         $this->assertSame($sanitized, $enricher->sanitizeDescriptionHtml($sanitized));
     }
 
-    public function test_pkmercury_pages_keep_a_large_gallery_and_add_official_resources(): void
+    public function test_pkmercury_pages_keep_a_large_gallery_without_adding_manufacturer_page_links(): void
     {
         $images = implode('', array_map(
             fn (int $number): string => sprintf(
@@ -115,15 +115,6 @@ class ProductSourceEnricherTest extends TestCase
             fn (string $url): bool => ! str_contains($url, '/wp-content/uploads/')
         )));
         $this->assertSame('', $parsed['video_url']);
-        $this->assertSame([
-            [
-                'label' => 'Техническая информация производителя',
-                'url' => 'https://pkmercury.by/poleznaya-informacziya/',
-            ],
-            [
-                'label' => 'Сертификаты производителя',
-                'url' => 'https://pkmercury.by/sertifikaty/',
-            ],
-        ], $parsed['documents']);
+        $this->assertSame([], $parsed['documents']);
     }
 }
