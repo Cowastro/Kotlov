@@ -176,6 +176,25 @@ class CommercialDocumentPortal
         $this->event($link, null, 'link_revoked');
     }
 
+    public function refreshSnapshot(CommercialDocument $document): void
+    {
+        if ($document->type !== 'quote') {
+            throw new RuntimeException('Онлайн-доступ создаётся только для коммерческого предложения.');
+        }
+
+        $this->snapshot($document, true);
+
+        $link = $document->portalLinks()
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now())
+            ->latest('id')
+            ->first();
+
+        if ($link) {
+            $this->event($link, null, 'snapshot_refreshed');
+        }
+    }
+
     private function createDeviceSession(CommercialDocumentPortalLink $link, Request $request): CommercialDocumentPortalSession
     {
         $secret = Str::random(80);
@@ -193,21 +212,29 @@ class CommercialDocumentPortal
         return $session;
     }
 
-    private function snapshot(CommercialDocument $document): void
+    private function snapshot(CommercialDocument $document, bool $force = false): void
     {
-        $document->loadMissing('items.product.attributeValues.attribute', 'items.product.attributeValues.option', 'items.product.category');
+        $document->load('items.product.attributeValues.attribute', 'items.product.attributeValues.option', 'items.product.category', 'items.product.brand');
         foreach ($document->items as $item) {
-            if ($item->portal_snapshot || ! $item->product) {
+            if ((! $force && $item->portal_snapshot) || ! $item->product) {
                 continue;
             }
 
             $product = $item->product;
+            $brand = trim((string) $product->brand?->name);
             $attributes = $product->attributeValues
                 ->filter(fn ($value) => $value->hasDisplayValue())
                 ->map(fn ($value) => [
                     'name' => $value->attribute?->name,
                     'value' => $value->display_value,
-                ])->filter(fn ($value) => filled($value['name']))->values()->all();
+                ])
+                ->filter(fn ($value) => filled($value['name']))
+                ->reject(fn ($value) => mb_strtolower(trim((string) $value['name'])) === 'бренд')
+                ->values();
+
+            if ($brand !== '') {
+                $attributes->prepend(['name' => 'Бренд', 'value' => $brand]);
+            }
 
             $item->forceFill(['portal_snapshot' => [
                 'name' => $item->name,
@@ -218,7 +245,8 @@ class CommercialDocumentPortal
                     fn ($path, $index) => $product->imageUrl((int) $index)
                 )->values()->all(),
                 'specs' => is_array($product->specs) ? $product->specs : [],
-                'attributes' => $attributes,
+                'brand' => $brand ?: null,
+                'attributes' => $attributes->all(),
                 'warranty' => $product->warranty,
                 'availability' => $product->availabilityLabel(),
                 'catalog_url' => $product->category?->slug && $product->slug

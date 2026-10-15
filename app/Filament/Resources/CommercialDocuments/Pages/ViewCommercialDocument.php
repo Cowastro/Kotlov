@@ -101,6 +101,23 @@ class ViewCommercialDocument extends ViewRecord
                     ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
                 ->url(fn (): string => route('admin.commercial-documents.online-preview', $this->record))
                 ->openUrlInNewTab(),
+            Action::make('refresh_online')
+                ->label('Обновить онлайн-КП')
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->visible(fn (): bool => $this->record->portalLinks()
+                    ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                ->requiresConfirmation()
+                ->modalHeading('Обновить товары в онлайн-КП?')
+                ->modalDescription('Названия, бренд, описание, характеристики и изображения будут повторно взяты из актуального каталога. Ссылка клиента останется прежней.')
+                ->action(function (): void {
+                    try {
+                        app(CommercialDocumentPortal::class)->refreshSnapshot($this->record);
+                        Notification::make()->success()->title('Онлайн-КП обновлено')->send();
+                    } catch (Throwable $exception) {
+                        Notification::make()->danger()->title('Не удалось обновить онлайн-КП')->body($exception->getMessage())->send();
+                    }
+                }),
             Action::make('revoke_online')
                 ->label('Отозвать онлайн-доступ')
                 ->icon('heroicon-o-lock-closed')

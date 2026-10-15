@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Events\NewOrderCreated;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\CommercialDocument;
 use App\Models\CommercialDocumentPortalChallenge;
@@ -109,6 +110,39 @@ class CommercialDocumentPortalTest extends TestCase
 
         $this->assertSame('Зафиксированное описание товара', $snapshot['short_description']);
         $this->assertNotEmpty($snapshot['captured_at']);
+    }
+
+    public function test_explicit_snapshot_refresh_uses_current_product_brand_instead_of_stale_brand_attribute(): void
+    {
+        [$quote, $manager, $product] = $this->quote(withProduct: true);
+        $brand = Brand::query()->firstOrCreate(
+            ['slug' => 'kotlov-pro'],
+            ['name' => 'KOTLOV PRO', 'is_active' => true],
+        );
+        $product->update(['brand_id' => $brand->id]);
+
+        $portal = app(CommercialDocumentPortal::class);
+        $portal->publish($quote, $manager);
+
+        $quote->items()->firstOrFail()->forceFill([
+            'portal_snapshot' => [
+                'attributes' => [['name' => 'Бренд', 'value' => 'КСТБ']],
+                'captured_at' => now()->subDay()->toIso8601String(),
+            ],
+        ])->save();
+
+        $portal->refreshSnapshot($quote);
+        $snapshot = $quote->items()->firstOrFail()->portal_snapshot;
+
+        $this->assertSame('KOTLOV PRO', $snapshot['brand']);
+        $this->assertSame(
+            [['name' => 'Бренд', 'value' => 'KOTLOV PRO']],
+            array_values(array_filter($snapshot['attributes'], fn (array $attribute): bool => $attribute['name'] === 'Бренд')),
+        );
+        $this->assertDatabaseHas('commercial_document_portal_events', [
+            'commercial_document_id' => $quote->id,
+            'type' => 'snapshot_refreshed',
+        ]);
     }
 
     public function test_expired_or_revoked_link_cannot_be_opened(): void
