@@ -499,6 +499,7 @@ class CommercialDocumentResource extends Resource
                                     'sources' => $record->items
                                         ->pluck('product.purchasePriceSources')
                                         ->flatten()
+                                    ->filter()
                                         ->sortByDesc('confirmed_at')
                                         ->values(),
                                 ];
