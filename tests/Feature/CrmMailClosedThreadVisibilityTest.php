@@ -60,7 +60,7 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
         $page->assertCanSeeTableRecords([$threads['new'], $threads['waiting_manager']])
             ->assertCanNotSeeTableRecords($threads->except(['new', 'waiting_manager'])->values())
             ->assertCanNotSeeTableRecords([$trashed]);
-        $this->assertSame(2, $page->instance()->getTabs()['needs_response']->getBadge());
+        $this->assertSame('2', $page->instance()->getTabs()['needs_response']->getBadge());
     }
 
     private function thread(CrmMailbox $mailbox, string $email, string $status): CrmMailThread
