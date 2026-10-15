@@ -214,7 +214,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->color('success')
                 ->visible(fn (): bool => $this->record->status !== 'draft')
                 ->modalHeading('Быстрое коммерческое предложение')
-                ->modalDescription('Для разбора используются тема, текст письма и PDF-вложения. Сканированные PDF распознаются ИИ, затем DeepSeek предлагает товары. Проверьте данные — после сохранения система подготовит PDF и черновик ответа.')
+                ->modalDescription('Для разбора используются тема, текст письма и PDF-вложения. Товары ищутся напрямую в нашей базе. Проверьте данные — после сохранения система подготовит PDF и черновик ответа.')
                 ->modalSubmitActionLabel('Создать КП и письмо')
                 ->modalWidth('5xl')
                 ->fillForm(function (): array {

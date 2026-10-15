@@ -365,6 +365,22 @@ class QuickCommercialOfferServiceTest extends TestCase
         ));
     }
 
+    public function test_manual_product_search_summary_shows_found_product_labels(): void
+    {
+        $summary = CrmMailThreadResource::manualProductSearchSummary([
+            'ready' => true,
+            'message' => 'Найдены близкие совпадения.',
+            'suggestions' => [
+                15 => 'Котёл КСТБ 95-1Т · арт. КСТБ-95 · 9 500,00 BYN · В наличии',
+                18 => 'Котёл КСТБ 95-1ТМ · арт. КСТБ-95М · 9 800,00 BYN · Уточняйте наличие',
+            ],
+        ]);
+
+        $this->assertStringContainsString('Найдено в базе:', $summary);
+        $this->assertStringContainsString('Котёл КСТБ 95-1Т · арт. КСТБ-95', $summary);
+        $this->assertStringContainsString('Котёл КСТБ 95-1ТМ · арт. КСТБ-95М', $summary);
+    }
+
     public function test_it_saves_recognized_client_contacts_and_creates_inactive_product_draft(): void
     {
         $mailbox = CrmMailbox::query()->create([

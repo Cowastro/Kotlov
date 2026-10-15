@@ -804,10 +804,11 @@ class CrmMailThreadResource extends Resource
                 ->helperText('Опишите запрос одной строкой. Если данных мало, система подскажет, что уточнить.')
                 ->maxLength(500)
                 ->columnSpanFull(),
-            Hidden::make('manual_suggestion_ids')->default([]),
+            Hidden::make('manual_suggestion_ids')->default([])->live(),
             Textarea::make('manual_product_summary')
-                ->label('Результат ручного подбора')
-                ->disabled()->dehydrated(false)->rows(2)->columnSpanFull(),
+                ->label('Найденные товары в базе')
+                ->helperText('Поиск выполняется напрямую по каталогу без DeepSeek. Выберите нужный товар ниже в поле «Товары для КП».')
+                ->disabled()->dehydrated(false)->rows(5)->columnSpanFull(),
             SchemaActions::make([
                 Action::make('match_manual_product')
                     ->label('Найти в базе')
@@ -823,11 +824,14 @@ class CrmMailThreadResource extends Resource
                         $result = app(QuickCommercialOfferService::class)->manualSelection($query);
                         $suggestionIds = array_map('intval', array_keys($result['suggestions']));
                         $set('manual_suggestion_ids', $suggestionIds);
-                        $set('manual_product_summary', ! $result['ready']
-                            ? $result['message']
-                            : ($suggestionIds === []
-                                ? 'Достаточно близких совпадений в нашей базе нет. Уточните модель или выполните поиск на рынке.'
-                                : $result['message'].' Найдено вариантов: '.count($suggestionIds).'.'));
+                        $set('manual_product_summary', static::manualProductSearchSummary($result));
+
+                        // Однозначный результат можно безопасно добавить сразу. Если найдено
+                        // несколько вариантов, показываем их все, но выбор оставляем менеджеру.
+                        if (count($suggestionIds) === 1) {
+                            $selectedIds = array_map('intval', (array) $get('product_ids'));
+                            $set('product_ids', array_values(array_unique(array_merge($selectedIds, $suggestionIds))));
+                        }
 
                         Notification::make()
                             ->title(! $result['ready'] ? 'Нужно уточнить параметры' : ($suggestionIds === [] ? 'Точного совпадения нет' : 'Подходящие варианты найдены'))
@@ -851,6 +855,23 @@ class CrmMailThreadResource extends Resource
                     ])),
             ])->key('quick_offer_manual_product_actions')->columnSpanFull(),
         ];
+    }
+
+    /** @param array{ready: bool, message: string, suggestions: array<int, string>} $result */
+    public static function manualProductSearchSummary(array $result): string
+    {
+        if (! $result['ready']) {
+            return $result['message'];
+        }
+
+        if ($result['suggestions'] === []) {
+            return 'Достаточно близких совпадений в нашей базе нет. Уточните модель или выполните поиск на рынке.';
+        }
+
+        return $result['message']."\n\nНайдено в базе:\n"
+            .collect($result['suggestions'])
+                ->map(fn (string $label): string => '• '.$label)
+                ->implode("\n");
     }
 
     /** @return list<array<string, mixed>> */
