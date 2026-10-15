@@ -331,6 +331,10 @@ class CatalogController extends Controller
         $isPipesCatalog = $category->slug === 'truby-i-fitingi'
             || $category->parent?->slug === 'truby-i-fitingi';
 
+        // Confirmed stock is the primary catalogue order for every user-selected
+        // sort. Price, popularity, name and novelty only sort within each group.
+        $query->prioritizeConfirmedStock();
+
         switch (request('sort')) {
             case 'price_asc':
                 $query->orderBy('price');

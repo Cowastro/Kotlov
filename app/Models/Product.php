@@ -475,6 +475,15 @@ class Product extends Model
             ->orderByPopularity();
     }
 
+    public function scopePrioritizeConfirmedStock($query)
+    {
+        return $query->orderByRaw(
+            'CASE WHEN '.$this->qualifyColumn('in_stock').' = 1'
+            .' AND '.$this->qualifyColumn('availability_status').' = ? THEN 0 ELSE 1 END',
+            [self::AVAILABILITY_IN_STOCK]
+        );
+    }
+
     public function scopeOrderByPopularity($query)
     {
         return $query

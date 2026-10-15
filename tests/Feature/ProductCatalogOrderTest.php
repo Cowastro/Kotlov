@@ -136,6 +136,24 @@ class ProductCatalogOrderTest extends TestCase
         $this->assertSame([3, 2, 1], $orderedIds);
     }
 
+    public function test_confirmed_stock_stays_first_for_every_secondary_sort(): void
+    {
+        DB::table('catalog_order_products')->insert([
+            ['id' => 1, 'name' => 'Дешёвый под заказ', 'price' => 10, 'in_stock' => false, 'availability_status' => Product::AVAILABILITY_CHECK],
+            ['id' => 2, 'name' => 'Дорогой в наличии', 'price' => 300, 'in_stock' => true, 'availability_status' => Product::AVAILABILITY_IN_STOCK],
+            ['id' => 3, 'name' => 'Дешёвый в наличии', 'price' => 200, 'in_stock' => true, 'availability_status' => Product::AVAILABILITY_IN_STOCK],
+            ['id' => 4, 'name' => 'Старый флаг наличия', 'price' => 5, 'in_stock' => true, 'availability_status' => Product::AVAILABILITY_CHECK],
+        ]);
+
+        $orderedIds = CatalogOrderProduct::query()
+            ->prioritizeConfirmedStock()
+            ->orderBy('price')
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame([3, 2, 4, 1], $orderedIds);
+    }
+
     public function test_default_catalog_order_combines_priority_brand_and_availability(): void
     {
         DB::table('catalog_order_products')->insert([
