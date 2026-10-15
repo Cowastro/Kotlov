@@ -40,6 +40,29 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
             ->assertCanSeeTableRecords([$open, $closed]);
     }
 
+    public function test_reaction_tab_includes_read_new_leads_and_needed_replies_only(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::create(['name' => 'Reaction', 'email' => 'reaction@example.com', 'username' => 'reaction@example.com']);
+        $threads = collect(['new', 'waiting_manager', 'in_progress', 'waiting_customer', 'closed', 'spam', 'draft'])
+            ->mapWithKeys(function (string $status) use ($mailbox): array {
+                $thread = $this->thread($mailbox, $status.'@example.com', $status);
+                $this->incomingMessage($thread, $mailbox, $status);
+
+                return [$status => $thread];
+            });
+        $trashed = $this->thread($mailbox, 'trashed@example.com', 'new');
+        $trashed->delete();
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $page = Livewire::test(ListCrmMailThreads::class)->set('activeTab', 'needs_response');
+        $page->assertCanSeeTableRecords([$threads['new'], $threads['waiting_manager']])
+            ->assertCanNotSeeTableRecords($threads->except(['new', 'waiting_manager'])->values())
+            ->assertCanNotSeeTableRecords([$trashed]);
+        $this->assertSame(2, $page->instance()->getTabs()['needs_response']->getBadge());
+    }
+
     private function thread(CrmMailbox $mailbox, string $email, string $status): CrmMailThread
     {
         return CrmMailThread::query()->create([

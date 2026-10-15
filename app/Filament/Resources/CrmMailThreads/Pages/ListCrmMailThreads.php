@@ -61,6 +61,11 @@ class ListCrmMailThreads extends ListRecords
                     ->whereNotIn('status', ['draft', 'spam', 'closed'])
                     ->whereHas('messages', fn (Builder $messages): Builder => $messages->where('direction', 'incoming')))
                 ->badge($messageCounts['inbox'] ?: null),
+            'needs_response' => Tab::make('Требуют реакции')
+                ->icon('heroicon-o-flag')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', ['new', 'waiting_manager']))
+                ->badge(CrmMailThread::query()->whereIn('status', ['new', 'waiting_manager'])->count() ?: null)
+                ->badgeColor('danger'),
             'unread' => Tab::make('Непрочитанные')
                 ->icon('heroicon-o-envelope')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
