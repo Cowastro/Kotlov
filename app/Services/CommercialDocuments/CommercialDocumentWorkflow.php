@@ -339,9 +339,14 @@ class CommercialDocumentWorkflow
         if (! filter_var((string) $document->client_email, FILTER_VALIDATE_EMAIL)) {
             throw new RuntimeException('Сначала укажите email клиента в карточке документа.');
         }
-        if ($document->mailThread?->status === 'draft') {
-            return $document->mailThread;
-        }
+
+        // The create form persists relationship repeaters after the parent
+        // document. Always calculate the current item totals immediately
+        // before composing the message so its amount and PDF cannot contain
+        // the parent's initial zero values. Re-running this method refreshes
+        // an existing unsent draft instead of returning stale contents.
+        $document->recalculate();
+        $document->refresh();
 
         $mailbox = CrmMailbox::query()->where('is_enabled', true)->first();
         if (! $mailbox) {

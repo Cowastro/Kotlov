@@ -75,8 +75,16 @@ class CreateCommercialDocument extends CreateRecord
         if ($this->aiAssisted) {
             $record->forceFill(['ai_assisted' => true])->save();
         }
+
+        return $record;
+    }
+
+    protected function afterCreate(): void
+    {
+        $record = $this->record;
         app(CommercialDocumentClientResolver::class)->sync($record);
         $record->recalculate();
+        $record->refresh();
 
         if ($this->createMailDraft && filter_var((string) $record->client_email, FILTER_VALIDATE_EMAIL)) {
             try {
@@ -91,8 +99,6 @@ class CreateCommercialDocument extends CreateRecord
                     ->body($exception->getMessage())->send();
             }
         }
-
-        return $record;
     }
 
     protected function getRedirectUrl(): string

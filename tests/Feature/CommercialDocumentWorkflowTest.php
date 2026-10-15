@@ -165,6 +165,48 @@ class CommercialDocumentWorkflowTest extends TestCase
         $this->assertSame($thread->id, $document->fresh()->crm_mail_thread_id);
     }
 
+    public function test_existing_mail_draft_is_refreshed_with_recalculated_total(): void
+    {
+        Storage::fake('local');
+        $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        CrmMailbox::query()->create([
+            'name' => 'KOTLOV',
+            'email' => 'documents-refresh@kotlov.by',
+            'username' => 'documents-refresh@kotlov.by',
+            'password' => 'secret',
+            'imap_host' => 'imap.example.com',
+            'imap_port' => 993,
+            'imap_encryption' => 'ssl',
+            'imap_folder' => 'INBOX',
+            'smtp_host' => 'smtp.example.com',
+            'smtp_port' => 465,
+            'smtp_encryption' => 'ssl',
+            'is_enabled' => true,
+        ]);
+        $document = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'client_name' => 'Pavel',
+            'client_email' => 'pavel@example.com',
+        ]);
+
+        $thread = app(CommercialDocumentWorkflow::class)->createMailDraft($document, $user);
+        $this->assertStringContainsString('Сумма: 0,00 BYN.', $thread->messages->last()->text_body);
+
+        $document->items()->create([
+            'name' => 'Гидравлический разделитель',
+            'quantity' => 1,
+            'unit_price' => 379.18,
+            'vat_rate' => 20,
+        ]);
+
+        $refreshed = app(CommercialDocumentWorkflow::class)->createMailDraft($document, $user);
+
+        $this->assertSame($thread->id, $refreshed->id);
+        $this->assertSame(1, $refreshed->messages()->where('direction', 'draft')->count());
+        $this->assertStringContainsString('Сумма: 379,18 BYN.', $refreshed->messages->last()->text_body);
+        $this->assertSame('379.18', $document->fresh()->total);
+    }
+
     public function test_mail_draft_for_an_existing_deal_stays_in_the_original_thread(): void
     {
         Storage::fake('local');

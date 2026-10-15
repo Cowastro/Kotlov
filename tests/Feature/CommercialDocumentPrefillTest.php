@@ -8,12 +8,14 @@ use App\Filament\Resources\Products\Actions\CreateCommercialDocumentAction;
 use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Products\Pages\ViewProduct;
 use App\Models\Category;
-use App\Models\CrmCounterparty;
+use App\Models\CrmMailMessage;
 use App\Models\CrmMailbox;
+use App\Models\CrmCounterparty;
 use App\Models\Product;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -23,6 +25,7 @@ class CommercialDocumentPrefillTest extends TestCase
 
     public function test_selected_mail_product_is_prefilled_in_new_commercial_offer(): void
     {
+        Storage::fake('local');
         $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $category = Category::query()->create([
             'name' => 'Котлы для быстрого КП',
@@ -42,11 +45,27 @@ class CommercialDocumentPrefillTest extends TestCase
         ]);
 
         $this->actingAs($user);
+        CrmMailbox::query()->create([
+            'name' => 'KOTLOV',
+            'email' => 'prefill-test@kotlov.by',
+            'username' => 'prefill-test@kotlov.by',
+            'password' => 'secret',
+            'imap_host' => 'imap.example.com',
+            'imap_port' => 993,
+            'imap_encryption' => 'ssl',
+            'imap_folder' => 'INBOX',
+            'smtp_host' => 'smtp.example.com',
+            'smtp_port' => 465,
+            'smtp_encryption' => 'ssl',
+            'is_enabled' => true,
+        ]);
         session()->put('commercial_document_prefill', [
             'type' => 'quote',
             'client_company' => 'ОАО «Колпень-Агро»',
+            'client_email' => 'buyer@example.com',
             'client_default_discount_percent' => 10,
         ]);
+        session()->put('commercial_document_create_mail_draft', true);
         session()->put('commercial_document_product_ids', [$product->id]);
         session()->put('commercial_document_product_quantities', [$product->id => 1]);
 
@@ -80,6 +99,8 @@ class CommercialDocumentPrefillTest extends TestCase
             'client_company' => 'ОАО «Колпень-Агро»',
             'crm_counterparty_id' => $counterparty->id,
         ]);
+        $draft = CrmMailMessage::query()->where('direction', 'draft')->firstOrFail();
+        $this->assertStringContainsString('Сумма: 2 838,60 BYN.', $draft->text_body);
     }
 
     public function test_manager_can_start_a_linked_commercial_offer_from_product_preview(): void
