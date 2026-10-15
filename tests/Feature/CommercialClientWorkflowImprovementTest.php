@@ -47,9 +47,19 @@ class CommercialClientWorkflowImprovementTest extends TestCase
         $this->assertSame('г. Минск, ул. Селицкого, д. 39Б', $result['address']);
     }
 
-    public function test_taxpayer_registry_prefers_existing_crm_and_does_not_call_remote_service(): void
+    public function test_taxpayer_registry_enriches_existing_crm_record_with_official_requisites(): void
     {
-        Http::fake();
+        Http::fake([
+            'grp.nalog.gov.by/*' => Http::response([
+                'row' => [
+                    'vunp' => '193000002',
+                    'vnaimp' => 'Общество с ограниченной ответственностью «Официальный клиент»',
+                    'vnaimk' => 'ООО «Официальный клиент»',
+                    'vpadres' => 'г. Минск, ул. Реестровая, 10',
+                    'vkods' => 'Действующий',
+                ],
+            ]),
+        ]);
         $counterparty = CrmCounterparty::query()->create([
             'type' => 'organization',
             'classification' => 'b2b_partner',
@@ -60,12 +70,46 @@ class CommercialClientWorkflowImprovementTest extends TestCase
             'unp' => '193000002',
             'source' => '1c_trade',
         ]);
+        CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'type' => 'email',
+            'value' => 'local@example.by',
+            'normalized_value' => 'local@example.by',
+            'is_primary' => true,
+            'is_active' => true,
+        ]);
 
         $result = app(BelarusTaxpayerRegistry::class)->lookup('193000002');
 
+        $this->assertSame('CRM / 1С + Реестр МНС Республики Беларусь', $result['source']);
+        $this->assertSame($counterparty->id, $result['crm_counterparty_id']);
+        $this->assertSame('ООО «Официальный клиент»', $result['short_name']);
+        $this->assertSame('г. Минск, ул. Реестровая, 10', $result['address']);
+        $this->assertSame('Действующий', $result['status']);
+        $this->assertSame('local@example.by', $result['email']);
+        Http::assertSentCount(1);
+    }
+
+    public function test_taxpayer_registry_falls_back_to_crm_when_public_registry_is_unavailable(): void
+    {
+        Http::fake(['grp.nalog.gov.by/*' => Http::response([], 503)]);
+        $counterparty = CrmCounterparty::query()->create([
+            'type' => 'organization',
+            'classification' => 'b2b_partner',
+            'business_unit' => 'wholesale',
+            'status' => 'active',
+            'name' => 'Локальный клиент',
+            'legal_name' => 'ООО «Локальный клиент»',
+            'unp' => '193000005',
+            'legal_address' => 'г. Минск, ул. Локальная, 5',
+            'source' => '1c_trade',
+        ]);
+
+        $result = app(BelarusTaxpayerRegistry::class)->lookup('193000005');
+
         $this->assertSame('CRM / 1С', $result['source']);
         $this->assertSame($counterparty->id, $result['crm_counterparty_id']);
-        Http::assertNothingSent();
+        $this->assertSame('г. Минск, ул. Локальная, 5', $result['address']);
     }
 
     public function test_readiness_reports_missing_requisites_and_accepts_a_complete_document(): void

@@ -4,6 +4,7 @@ namespace App\Services\Crm;
 
 use App\Models\CrmCounterparty;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 
 class BelarusTaxpayerRegistry
@@ -21,8 +22,8 @@ class BelarusTaxpayerRegistry
             ->where('unp', $unp)
             ->first();
 
-        if ($local) {
-            return [
+        $localData = $local
+            ? [
                 'source' => 'CRM / 1С',
                 'crm_counterparty_id' => $local->id,
                 'unp' => $local->unp,
@@ -32,8 +33,8 @@ class BelarusTaxpayerRegistry
                 'email' => $local->contactPoints->firstWhere('type', 'email')?->value,
                 'phone' => $local->contactPoints->firstWhere('type', 'phone')?->value,
                 'status' => CrmCounterparty::STATUSES[$local->status] ?? $local->status,
-            ];
-        }
+            ]
+            : null;
 
         try {
             $response = Http::acceptJson()
@@ -44,20 +45,20 @@ class BelarusTaxpayerRegistry
                     'charset' => 'UTF-8',
                     'type' => 'json',
                 ]);
-        } catch (ConnectionException) {
-            return null;
+        } catch (ConnectionException|RequestException) {
+            return $localData;
         }
 
         if (! $response->successful()) {
-            return null;
+            return $localData;
         }
 
         $row = $response->json('row') ?? $response->json('ROW');
         if (! is_array($row) || trim((string) ($row['vunp'] ?? $row['VUNP'] ?? '')) !== $unp) {
-            return null;
+            return $localData;
         }
 
-        return [
+        $registryData = [
             'source' => 'Реестр МНС Республики Беларусь',
             'crm_counterparty_id' => null,
             'unp' => $unp,
@@ -69,6 +70,23 @@ class BelarusTaxpayerRegistry
             'status' => $this->value($row, 'vkods'),
             'registered_at' => $this->value($row, 'dreg'),
             'tax_office' => $this->value($row, 'vmns'),
+        ];
+
+        if (! $localData) {
+            return $registryData;
+        }
+
+        return [
+            ...$localData,
+            ...$registryData,
+            'source' => 'CRM / 1С + Реестр МНС Республики Беларусь',
+            'crm_counterparty_id' => $localData['crm_counterparty_id'],
+            'legal_name' => $registryData['legal_name'] ?: $localData['legal_name'],
+            'short_name' => $registryData['short_name'] ?: $localData['short_name'],
+            'address' => $registryData['address'] ?: $localData['address'],
+            'email' => $localData['email'],
+            'phone' => $localData['phone'],
+            'status' => $registryData['status'] ?: $localData['status'],
         ];
     }
 
