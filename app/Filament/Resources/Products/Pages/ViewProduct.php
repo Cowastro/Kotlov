@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Pages;
 
+use App\Filament\Resources\Products\Actions\CreateCommercialDocumentAction;
 use App\Filament\Resources\Products\Actions\ManualPricingAction;
 use App\Filament\Resources\Products\Pages\Concerns\HasProductMarketResearchActions;
 use App\Filament\Resources\Products\ProductResource;
@@ -22,6 +23,7 @@ class ViewProduct extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            CreateCommercialDocumentAction::make(),
             ManualPricingAction::make(),
             ...$this->productMarketResearchActions(),
             EditAction::make(),
