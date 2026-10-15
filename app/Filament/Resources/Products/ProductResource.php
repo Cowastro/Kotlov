@@ -8,6 +8,7 @@ use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Products\Pages\ViewProduct;
 use App\Filament\Resources\Products\RelationManagers\AttributeValuesRelationManager;
 use App\Filament\Resources\Products\RelationManagers\IntegrationProductsRelationManager;
+use App\Filament\Resources\Products\RelationManagers\PurchasePriceSourcesRelationManager;
 use App\Filament\Resources\Products\RelationManagers\SupplierProductsRelationManager;
 use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Filament\Resources\Products\Schemas\ProductInfolist;
@@ -81,6 +82,7 @@ class ProductResource extends Resource
     public static function getRelations(): array
     {
         return [
+            PurchasePriceSourcesRelationManager::class,
             IntegrationProductsRelationManager::class,
             SupplierProductsRelationManager::class,
             AttributeValuesRelationManager::class,

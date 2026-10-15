@@ -6,15 +6,23 @@ use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CommercialDocument;
+use App\Models\IntegrationSource;
+use App\Models\Supplier;
 use App\Services\CommercialDocuments\CommercialDocumentPortal;
 use App\Services\CommercialDocuments\CommercialDocumentReadiness;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
+use App\Services\Pricing\ConfirmedPurchasePriceService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Utilities\Get;
+use Illuminate\Support\HtmlString;
 use Throwable;
 
 class ViewCommercialDocument extends ViewRecord
@@ -43,6 +51,107 @@ class ViewCommercialDocument extends ViewRecord
                 ->icon('heroicon-o-pencil-square')
                 ->color('primary')
                 ->visible(fn (): bool => $this->record->status === 'draft'),
+            Action::make('confirm_purchase_price')
+                ->label('Добавить счёт поставщика')
+                ->icon('heroicon-o-document-check')
+                ->color('warning')
+                ->visible(fn (): bool => $this->record->items()->whereNotNull('product_id')->exists())
+                ->modalHeading('Подтверждённая закупочная цена')
+                ->modalDescription('Счёт станет источником закупочной цены для расчёта маржи и проверки готовности коммерческого предложения.')
+                ->schema([
+                    Select::make('commercial_document_item_id')
+                        ->label('Позиция коммерческого предложения')
+                        ->options(fn (): array => $this->record->items()
+                            ->whereNotNull('product_id')
+                            ->get()
+                            ->mapWithKeys(fn ($item): array => [
+                                $item->id => $item->name.' · '.number_format((float) $item->unit_price, 2, ',', ' ').' BYN',
+                            ])->all())
+                        ->required()
+                        ->searchable(),
+                    Select::make('supplier_id')
+                        ->label('Поставщик из базы')
+                        ->options(fn (): array => Supplier::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
+                        ->searchable()
+                        ->preload()
+                        ->helperText('Необязательно: если поставщика ещё нет в базе, укажите компанию ниже.'),
+                    TextInput::make('supplier_name')
+                        ->label('Компания поставщика')
+                        ->required(fn (Get $get): bool => blank($get('supplier_id'))),
+                    TextInput::make('document_number')
+                        ->label('Номер счёта')
+                        ->placeholder('Например, 9558'),
+                    DatePicker::make('document_date')
+                        ->label('Дата счёта')
+                        ->default(today())
+                        ->native(false)
+                        ->required(),
+                    DatePicker::make('valid_until')
+                        ->label('Цена действует до')
+                        ->default(today()->addDays(3))
+                        ->native(false),
+                    TextInput::make('source_price')
+                        ->label('Цена из счёта за единицу')
+                        ->numeric()
+                        ->minValue(0.01)
+                        ->required(),
+                    Select::make('currency')
+                        ->label('Валюта')
+                        ->options(['BYN' => 'BYN', 'RUB' => 'RUB', 'EUR' => 'EUR', 'USD' => 'USD'])
+                        ->default('BYN')
+                        ->live()
+                        ->required(),
+                    TextInput::make('currency_rate')
+                        ->label('Курс к BYN')
+                        ->numeric()
+                        ->minValue(0.000001)
+                        ->visible(fn (Get $get): bool => ($get('currency') ?: 'BYN') !== 'BYN')
+                        ->required(fn (Get $get): bool => ($get('currency') ?: 'BYN') !== 'BYN'),
+                    Select::make('price_tax_mode')
+                        ->label('НДС в указанной цене')
+                        ->options([
+                            IntegrationSource::PRICE_TAX_INCLUSIVE => 'Цена уже с НДС',
+                            IntegrationSource::PRICE_TAX_EXCLUSIVE => 'Цена без НДС — добавить НДС',
+                        ])
+                        ->default(IntegrationSource::PRICE_TAX_INCLUSIVE)
+                        ->live()
+                        ->required(),
+                    TextInput::make('vat_rate')
+                        ->label('Ставка НДС')
+                        ->numeric()
+                        ->suffix('%')
+                        ->default(20)
+                        ->minValue(0)
+                        ->required(),
+                    FileUpload::make('attachment_path')
+                        ->label('Входящий счёт поставщика')
+                        ->helperText('Необязательно. PDF, JPG, PNG или WEBP до 10 МБ. Файл хранится приватно.')
+                        ->disk('local')
+                        ->directory('supplier-price-evidence')
+                        ->visibility('private')
+                        ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+                        ->maxSize(10240),
+                    Textarea::make('notes')
+                        ->label('Комментарий')
+                        ->rows(2),
+                ])
+                ->modalSubmitActionLabel('Сохранить источник цены')
+                ->action(function (array $data): void {
+                    $item = $this->record->items()->whereKey((int) $data['commercial_document_item_id'])->firstOrFail();
+                    abort_unless($item->product_id && auth()->user(), 403);
+
+                    $source = app(ConfirmedPurchasePriceService::class)->create($item->product, $data, auth()->user());
+                    $this->record->refresh();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Источник закупочной цены сохранён')
+                        ->body(new HtmlString(
+                            e($source->documentLabel()).'<br>'.e($source->supplierDisplayName() ?: 'Поставщик не указан')
+                            .' · <strong>'.number_format((float) $source->price_byn, 2, ',', ' ').' BYN с НДС</strong>'
+                        ))
+                        ->send();
+                }),
             Action::make('pdf')
                 ->label('Открыть PDF')
                 ->icon('heroicon-o-document-arrow-down')

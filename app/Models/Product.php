@@ -204,6 +204,11 @@ class Product extends Model
             ->contains(fn (IntegrationProduct $item): bool => $item->hasFreshPositiveStock());
     }
 
+    public function purchasePriceSources(): HasMany
+    {
+        return $this->hasMany(ProductPurchasePriceSource::class);
+    }
+
     public function scopeWithSupplierChannels($query)
     {
         return $query->with([

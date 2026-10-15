@@ -6,6 +6,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\ProductPurchasePriceSource;
 use App\Models\SupplierProduct;
 use Illuminate\Support\Collection;
 
@@ -26,6 +27,7 @@ class OrderItemSupplyContextResolver
 
         $item->loadMissing([
             'integrationProduct.source.supplier',
+            'product.purchasePriceSources.supplier',
             'product.integrationProducts.source.supplier.latestChannelTransition',
             'product.supplierProducts.supplier.latestChannelTransition',
         ]);
@@ -34,9 +36,15 @@ class OrderItemSupplyContextResolver
             return $this->fromIntegrationProduct($item, $item->integrationProduct, true);
         }
 
+        $confirmedSources = $this->confirmedPurchasePriceSources($item);
         $integrationOffers = $this->integrationOffers($item);
         $legacyOffers = $this->legacyOffers($item);
-        $candidateCount = $integrationOffers->count() + $legacyOffers->count();
+        $candidateCount = $confirmedSources->count() + $integrationOffers->count() + $legacyOffers->count();
+
+        $confirmedSource = $confirmedSources->first();
+        if ($confirmedSource) {
+            return $this->fromConfirmedPurchasePriceSource($item, $confirmedSource, $candidateCount);
+        }
 
         $recommendedIntegration = $integrationOffers->first();
         if ($recommendedIntegration) {
@@ -114,6 +122,7 @@ class OrderItemSupplyContextResolver
     {
         $order->loadMissing([
             'items.integrationProduct.source.supplier.latestChannelTransition',
+            'items.product.purchasePriceSources.supplier',
             'items.product.integrationProducts.source.supplier.latestChannelTransition',
             'items.product.supplierProducts.supplier.latestChannelTransition',
         ]);
@@ -155,6 +164,15 @@ class OrderItemSupplyContextResolver
             'items_count' => $contexts->count(),
             'priced_items_count' => $pricedContexts->count(),
         ];
+    }
+
+    /** @return Collection<int, ProductPurchasePriceSource> */
+    private function confirmedPurchasePriceSources(OrderItem $item): Collection
+    {
+        return collect($item->product?->purchasePriceSources)
+            ->filter(fn (ProductPurchasePriceSource $source): bool => $source->isUsable())
+            ->sortByDesc(fn (ProductPurchasePriceSource $source): int => $source->confirmed_at?->getTimestamp() ?? 0)
+            ->values();
     }
 
     /** @return Collection<int, IntegrationProduct> */
@@ -244,6 +262,38 @@ class OrderItemSupplyContextResolver
             'is_available' => $this->legacyOfferAvailable($offer),
             'candidate_count' => $candidateCount,
             'is_explicit' => false,
+            'is_current_recommendation' => true,
+            'is_snapshot' => false,
+        ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function fromConfirmedPurchasePriceSource(
+        OrderItem $item,
+        ProductPurchasePriceSource $source,
+        int $candidateCount,
+    ): array {
+        $taxLabel = $source->price_tax_mode === IntegrationSource::PRICE_TAX_EXCLUSIVE
+            ? 'цена без НДС пересчитана с НДС '.number_format((float) $source->vat_rate, 0).'%'
+            : 'цена с НДС';
+
+        return $this->pricedContext($item, (float) $source->price_byn, [
+            'status' => 'supplier_purchase',
+            'route_label' => 'Закупка по подтверждённому счёту',
+            'supplier_id' => $source->supplier_id,
+            'supplier_name' => $source->supplierDisplayName(),
+            'supplier_contact' => $source->supplier?->contactSummary(),
+            'source_label' => $source->documentLabel(),
+            'integration_source_id' => null,
+            'channel' => 'supplier_invoice',
+            'wholesale_price_label' => 'Подтверждено документом · '.$taxLabel,
+            'price_tax_mode' => $source->price_tax_mode,
+            'vat_rate' => (float) $source->vat_rate,
+            'stock_quantity' => null,
+            'stock_label' => 'Наличие уточняется по счёту',
+            'is_available' => null,
+            'candidate_count' => $candidateCount,
+            'is_explicit' => true,
             'is_current_recommendation' => true,
             'is_snapshot' => false,
         ]);

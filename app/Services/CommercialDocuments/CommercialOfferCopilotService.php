@@ -102,6 +102,8 @@ class CommercialOfferCopilotService
             'quote_market_position' => $quotePosition,
             'quote_market_delta_percent' => $quoteDeltaPercent,
             'supplier_name' => $supply['supplier_name'],
+            'purchase_price_source' => $supply['source_label'],
+            'purchase_price_label' => $supply['wholesale_price_label'],
             'stock_label' => $supply['stock_label'],
             'purchase_price' => $purchasePrice,
             'margin_byn' => $margin,

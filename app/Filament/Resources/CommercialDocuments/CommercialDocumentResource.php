@@ -475,151 +475,170 @@ class CommercialDocumentResource extends Resource
         return $schema
             ->columns(['default' => 1, 'xl' => 12])
             ->components([
-            Section::make('Готовность к отправке')
-                ->icon('heroicon-o-shield-check')
-                ->columnSpanFull()
-                ->schema([
-                    ViewEntry::make('readiness_overview')
-                        ->hiddenLabel()
-                        ->view('filament.commercial-documents.readiness-overview', fn (CommercialDocument $record): array => [
-                            'issues' => app(CommercialDocumentReadiness::class)->issues($record),
-                        ])
-                        ->columnSpanFull(),
-                ]),
-            Section::make('Онлайн-предложение')
-                ->icon('heroicon-o-qr-code')
-                ->columns(['default' => 1, 'sm' => 2, 'xl' => 4])
-                ->columnSpanFull()
-                ->visible(fn (CommercialDocument $record): bool => $record->portalLinks()->exists())
-                ->schema([
-                    TextEntry::make('portal_state')
-                        ->label('Доступ')
-                        ->badge()
-                        ->state(function (CommercialDocument $record): string {
-                            $link = $record->portalLinks()->latest('id')->first();
-                            if (! $link || $link->revoked_at) {
-                                return 'Отозван';
-                            }
+                Section::make('Готовность к отправке')
+                    ->icon('heroicon-o-shield-check')
+                    ->columnSpanFull()
+                    ->schema([
+                        ViewEntry::make('readiness_overview')
+                            ->hiddenLabel()
+                            ->view('filament.commercial-documents.readiness-overview', fn (CommercialDocument $record): array => [
+                                'issues' => app(CommercialDocumentReadiness::class)->issues($record),
+                            ])
+                            ->columnSpanFull(),
+                    ]),
+                Section::make('Основания закупочной цены')
+                    ->icon('heroicon-o-document-check')
+                    ->columnSpanFull()
+                    ->schema([
+                        ViewEntry::make('purchase_price_sources')
+                            ->hiddenLabel()
+                            ->view('filament.commercial-documents.purchase-price-sources', function (CommercialDocument $record): array {
+                                $record->loadMissing('items.product.purchasePriceSources.supplier');
 
-                            return $link->expires_at->isPast() ? 'Срок ссылки истёк' : 'Активен';
-                        })
-                        ->color(fn (string $state): string => $state === 'Активен' ? 'success' : 'gray'),
-                    TextEntry::make('portal_views')
-                        ->label('Просмотры')
-                        ->state(fn (CommercialDocument $record): int => $record->portalEvents()->where('type', 'proposal_viewed')->count()),
-                    TextEntry::make('portal_devices')
-                        ->label('Подтверждённые устройства')
-                        ->state(fn (CommercialDocument $record): int => $record->portalLinks()
-                            ->withCount(['sessions' => fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now())])
-                            ->latest('id')->first()?->sessions_count ?? 0),
-                    TextEntry::make('portal_last_opened')
-                        ->label('Последнее открытие')
-                        ->state(fn (CommercialDocument $record) => $record->portalLinks()->max('last_opened_at'))
-                        ->dateTime('d.m.Y H:i')
-                        ->placeholder('Ещё не открывали'),
-                    TextEntry::make('portal_url')
-                        ->label('Ссылка для клиента')
-                        ->state(function (CommercialDocument $record): string {
-                            $link = $record->portalLinks()->whereNull('revoked_at')->latest('id')->first();
+                                return [
+                                    'sources' => $record->items
+                                        ->pluck('product.purchasePriceSources')
+                                        ->flatten()
+                                        ->sortByDesc('confirmed_at')
+                                        ->values(),
+                                ];
+                            })
+                            ->columnSpanFull(),
+                    ]),
+                Section::make('Онлайн-предложение')
+                    ->icon('heroicon-o-qr-code')
+                    ->columns(['default' => 1, 'sm' => 2, 'xl' => 4])
+                    ->columnSpanFull()
+                    ->visible(fn (CommercialDocument $record): bool => $record->portalLinks()->exists())
+                    ->schema([
+                        TextEntry::make('portal_state')
+                            ->label('Доступ')
+                            ->badge()
+                            ->state(function (CommercialDocument $record): string {
+                                $link = $record->portalLinks()->latest('id')->first();
+                                if (! $link || $link->revoked_at) {
+                                    return 'Отозван';
+                                }
 
-                            return $link ? app(CommercialDocumentPortal::class)->url($link) : '—';
-                        })
-                        ->copyable()
-                        ->columnSpanFull(),
-                ]),
-            Section::make('Документ и клиент')
-                ->icon('heroicon-o-document-text')
-                ->columns(['default' => 1, 'sm' => 2, 'xl' => 4])
-                ->columnSpan(['default' => 1, 'xl' => 8])
-                ->schema([
-                TextEntry::make('number')->label('Номер')->weight(FontWeight::Bold)->copyable(),
-                TextEntry::make('type')->label('Тип')->badge()
-                    ->color(fn (string $state): string => $state === 'invoice' ? 'success' : 'info')
-                    ->formatStateUsing(fn (string $state): string => CommercialDocument::TYPES[$state] ?? $state),
-                TextEntry::make('status')->label('Статус')->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'sent', 'accepted', 'paid' => 'success',
-                        'rejected', 'cancelled' => 'danger',
-                        'expired' => 'gray',
-                        default => 'warning',
-                    })
-                    ->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state),
-                TextEntry::make('issued_at')->label('Дата')->date('d.m.Y'),
-                TextEntry::make('revision_number')->label('Редакция')->formatStateUsing(fn ($state): string => '№ '.($state ?: 1)),
-                TextEntry::make('client_company')->label('Компания')
-                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_company)),
-                TextEntry::make('client_legal_name')->label('Юридическое название')
-                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_legal_name)),
-                TextEntry::make('client_name')->label('Контакт')
-                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_name)),
-                TextEntry::make('client_email')->label('Email')->copyable()
-                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_email)),
-                TextEntry::make('client_phone')->label('Телефон')->copyable()
-                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_phone)),
-                TextEntry::make('client_unp')->label('УНП / ИНН')->copyable()
-                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_unp)),
-                TextEntry::make('client_address')->label('Юридический адрес')->columnSpan(2)
-                    ->visible(fn (CommercialDocument $record): bool => filled($record->client_address)),
-                TextEntry::make('outcome_reason')->label('Причина закрытия')
-                    ->visible(fn (CommercialDocument $record): bool => filled($record->outcome_reason))
-                    ->formatStateUsing(fn (?string $state): string => $state ? (CommercialDocument::OUTCOME_REASONS[$state] ?? $state) : '—'),
-                TextEntry::make('outcome_note')->label('Комментарий по результату')->columnSpan(2)
-                    ->visible(fn (CommercialDocument $record): bool => filled($record->outcome_note)),
-                TextEntry::make('order.number')->label('Созданный заказ')
-                    ->visible(fn (CommercialDocument $record): bool => $record->order !== null)
-                    ->url(fn (CommercialDocument $record): ?string => $record->order
-                        ? OrderResource::getUrl('view', ['record' => $record->order])
-                        : null),
-                ]),
-            Section::make('Итого')
-                ->icon('heroicon-o-calculator')
-                ->columns(2)
-                ->columnSpan(['default' => 1, 'xl' => 4])
-                ->schema([
-                TextEntry::make('subtotal')->label('Товары')->money('BYN'),
-                TextEntry::make('discount_total')->label('Скидка')->money('BYN'),
-                TextEntry::make('delivery_price')->label('Доставка')->money('BYN'),
-                TextEntry::make('total')->label('К оплате')->money('BYN')->weight(FontWeight::Bold)->color('warning'),
-                TextEntry::make('payment_terms')->label('Оплата')->columnSpanFull(),
-                TextEntry::make('delivery_terms')->label('Срок поставки')->columnSpanFull(),
-                TextEntry::make('notes')->label('Примечание')->columnSpanFull()
-                    ->visible(fn (CommercialDocument $record): bool => filled($record->notes)),
-                ]),
-            Section::make('Позиции')
-                ->icon('heroicon-o-shopping-cart')
-                ->columnSpanFull()
-                ->schema([
-                    ViewEntry::make('items_overview')
-                        ->hiddenLabel()
-                        ->view('filament.commercial-documents.items-table', fn (CommercialDocument $record): array => [
-                            'items' => $record->items,
-                        ])
-                        ->columnSpanFull(),
-                ]),
-            Section::make('История и изменения редакций')
-                ->description('Все версии КП сохранены отдельно. Откройте любую редакцию или посмотрите, что изменилось в текущей.')
-                ->columnSpanFull()
-                ->visible(fn (CommercialDocument $record): bool => app(CommercialDocumentRevisionComparison::class)->history($record)->count() > 1)
-                ->schema([
-                    ViewEntry::make('revision_comparison')->hiddenLabel()
-                        ->view('filament.commercial-documents.revision-comparison', function (CommercialDocument $record): array {
-                            $service = app(CommercialDocumentRevisionComparison::class);
+                                return $link->expires_at->isPast() ? 'Срок ссылки истёк' : 'Активен';
+                            })
+                            ->color(fn (string $state): string => $state === 'Активен' ? 'success' : 'gray'),
+                        TextEntry::make('portal_views')
+                            ->label('Просмотры')
+                            ->state(fn (CommercialDocument $record): int => $record->portalEvents()->where('type', 'proposal_viewed')->count()),
+                        TextEntry::make('portal_devices')
+                            ->label('Подтверждённые устройства')
+                            ->state(fn (CommercialDocument $record): int => $record->portalLinks()
+                                ->withCount(['sessions' => fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now())])
+                                ->latest('id')->first()?->sessions_count ?? 0),
+                        TextEntry::make('portal_last_opened')
+                            ->label('Последнее открытие')
+                            ->state(fn (CommercialDocument $record) => $record->portalLinks()->max('last_opened_at'))
+                            ->dateTime('d.m.Y H:i')
+                            ->placeholder('Ещё не открывали'),
+                        TextEntry::make('portal_url')
+                            ->label('Ссылка для клиента')
+                            ->state(function (CommercialDocument $record): string {
+                                $link = $record->portalLinks()->whereNull('revoked_at')->latest('id')->first();
 
-                            return [
-                                'comparison' => $service->compare($record),
-                                'document' => $record,
-                                'history' => $service->history($record)->map(fn (CommercialDocument $revision): array => [
-                                    'number' => $revision->number,
-                                    'revision_number' => $revision->revision_number ?: 1,
-                                    'status' => CommercialDocument::STATUSES[$revision->status] ?? $revision->status,
-                                    'current' => $revision->is($record),
-                                    'url' => self::getUrl('view', ['record' => $revision]),
-                                ])->all(),
-                            ];
-                        })
-                        ->columnSpanFull(),
-                ]),
-        ]);
+                                return $link ? app(CommercialDocumentPortal::class)->url($link) : '—';
+                            })
+                            ->copyable()
+                            ->columnSpanFull(),
+                    ]),
+                Section::make('Документ и клиент')
+                    ->icon('heroicon-o-document-text')
+                    ->columns(['default' => 1, 'sm' => 2, 'xl' => 4])
+                    ->columnSpan(['default' => 1, 'xl' => 8])
+                    ->schema([
+                        TextEntry::make('number')->label('Номер')->weight(FontWeight::Bold)->copyable(),
+                        TextEntry::make('type')->label('Тип')->badge()
+                            ->color(fn (string $state): string => $state === 'invoice' ? 'success' : 'info')
+                            ->formatStateUsing(fn (string $state): string => CommercialDocument::TYPES[$state] ?? $state),
+                        TextEntry::make('status')->label('Статус')->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                'sent', 'accepted', 'paid' => 'success',
+                                'rejected', 'cancelled' => 'danger',
+                                'expired' => 'gray',
+                                default => 'warning',
+                            })
+                            ->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state),
+                        TextEntry::make('issued_at')->label('Дата')->date('d.m.Y'),
+                        TextEntry::make('revision_number')->label('Редакция')->formatStateUsing(fn ($state): string => '№ '.($state ?: 1)),
+                        TextEntry::make('client_company')->label('Компания')
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->client_company)),
+                        TextEntry::make('client_legal_name')->label('Юридическое название')
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->client_legal_name)),
+                        TextEntry::make('client_name')->label('Контакт')
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->client_name)),
+                        TextEntry::make('client_email')->label('Email')->copyable()
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->client_email)),
+                        TextEntry::make('client_phone')->label('Телефон')->copyable()
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->client_phone)),
+                        TextEntry::make('client_unp')->label('УНП / ИНН')->copyable()
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->client_unp)),
+                        TextEntry::make('client_address')->label('Юридический адрес')->columnSpan(2)
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->client_address)),
+                        TextEntry::make('outcome_reason')->label('Причина закрытия')
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->outcome_reason))
+                            ->formatStateUsing(fn (?string $state): string => $state ? (CommercialDocument::OUTCOME_REASONS[$state] ?? $state) : '—'),
+                        TextEntry::make('outcome_note')->label('Комментарий по результату')->columnSpan(2)
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->outcome_note)),
+                        TextEntry::make('order.number')->label('Созданный заказ')
+                            ->visible(fn (CommercialDocument $record): bool => $record->order !== null)
+                            ->url(fn (CommercialDocument $record): ?string => $record->order
+                                ? OrderResource::getUrl('view', ['record' => $record->order])
+                                : null),
+                    ]),
+                Section::make('Итого')
+                    ->icon('heroicon-o-calculator')
+                    ->columns(2)
+                    ->columnSpan(['default' => 1, 'xl' => 4])
+                    ->schema([
+                        TextEntry::make('subtotal')->label('Товары')->money('BYN'),
+                        TextEntry::make('discount_total')->label('Скидка')->money('BYN'),
+                        TextEntry::make('delivery_price')->label('Доставка')->money('BYN'),
+                        TextEntry::make('total')->label('К оплате')->money('BYN')->weight(FontWeight::Bold)->color('warning'),
+                        TextEntry::make('payment_terms')->label('Оплата')->columnSpanFull(),
+                        TextEntry::make('delivery_terms')->label('Срок поставки')->columnSpanFull(),
+                        TextEntry::make('notes')->label('Примечание')->columnSpanFull()
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->notes)),
+                    ]),
+                Section::make('Позиции')
+                    ->icon('heroicon-o-shopping-cart')
+                    ->columnSpanFull()
+                    ->schema([
+                        ViewEntry::make('items_overview')
+                            ->hiddenLabel()
+                            ->view('filament.commercial-documents.items-table', fn (CommercialDocument $record): array => [
+                                'items' => $record->items,
+                            ])
+                            ->columnSpanFull(),
+                    ]),
+                Section::make('История и изменения редакций')
+                    ->description('Все версии КП сохранены отдельно. Откройте любую редакцию или посмотрите, что изменилось в текущей.')
+                    ->columnSpanFull()
+                    ->visible(fn (CommercialDocument $record): bool => app(CommercialDocumentRevisionComparison::class)->history($record)->count() > 1)
+                    ->schema([
+                        ViewEntry::make('revision_comparison')->hiddenLabel()
+                            ->view('filament.commercial-documents.revision-comparison', function (CommercialDocument $record): array {
+                                $service = app(CommercialDocumentRevisionComparison::class);
+
+                                return [
+                                    'comparison' => $service->compare($record),
+                                    'document' => $record,
+                                    'history' => $service->history($record)->map(fn (CommercialDocument $revision): array => [
+                                        'number' => $revision->number,
+                                        'revision_number' => $revision->revision_number ?: 1,
+                                        'status' => CommercialDocument::STATUSES[$revision->status] ?? $revision->status,
+                                        'current' => $revision->is($record),
+                                        'url' => self::getUrl('view', ['record' => $revision]),
+                                    ])->all(),
+                                ];
+                            })
+                            ->columnSpanFull(),
+                    ]),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -702,6 +721,7 @@ class CommercialDocumentResource extends Resource
         $parts = [
             '<strong>Оценка:</strong> '.e((string) $pricing['label']).($pricing['quote_market_delta_percent'] !== null ? ' ('.number_format((float) $pricing['quote_market_delta_percent'], 1, ',', ' ').'% к медиане)' : ''),
             $pricing['purchase_price'] !== null ? '<strong>Закупка:</strong> '.self::money($pricing['purchase_price']) : '<strong>Закупка:</strong> нет данных',
+            filled($pricing['purchase_price_source'] ?? null) ? '<strong>Источник закупки:</strong> '.e((string) $pricing['purchase_price_source']) : null,
             $pricing['margin_byn'] !== null ? '<strong>Маржа:</strong> '.self::money($pricing['margin_byn']).' / '.number_format((float) $pricing['margin_percent'], 1, ',', ' ').'%' : '<strong>Маржа:</strong> нет данных',
             ($market['status'] ?? null) === 'ready'
                 ? '<strong>Рынок:</strong> '.self::money($market['minimum']).'–'.self::money($market['maximum']).', медиана '.self::money($market['median']).' ('.(int) $market['sources_count'].' ист.)'
@@ -725,6 +745,7 @@ class CommercialDocumentResource extends Resource
         $parts = [
             'Оценка: '.(string) $pricing['label'].($pricing['quote_market_delta_percent'] !== null ? ' ('.number_format((float) $pricing['quote_market_delta_percent'], 1, ',', ' ').'% к медиане)' : ''),
             $pricing['purchase_price'] !== null ? 'Закупка: '.self::money($pricing['purchase_price']) : 'Закупка: нет данных',
+            filled($pricing['purchase_price_source'] ?? null) ? 'Источник закупки: '.(string) $pricing['purchase_price_source'] : null,
             $pricing['margin_byn'] !== null ? 'Маржа: '.self::money($pricing['margin_byn']).' / '.number_format((float) $pricing['margin_percent'], 1, ',', ' ').'%' : 'Маржа: нет данных',
             ($market['status'] ?? null) === 'ready'
                 ? 'Рынок: '.self::money($market['minimum']).'–'.self::money($market['maximum']).', медиана '.self::money($market['median']).', источников '.(int) $market['sources_count']
