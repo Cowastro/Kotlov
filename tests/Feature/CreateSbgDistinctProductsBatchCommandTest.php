@@ -11061,4 +11061,81 @@ XML;
             'is_active' => true,
         ]);
     }
+
+    public function test_it_creates_the_distinct_ole_pro_ogs_r_2_separator_instead_of_the_fuzzy_candidate(): void
+    {
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-ole-pro-ogs-r-2',
+            'name' => '1С СанБизнесГруп',
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Гидравлические разделители и коллекторы',
+            'slug' => 'gidravlicheskie-razdeliteli-i-kollektory',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $templateBrand = Brand::query()->create([
+            'name' => 'Велес Электро',
+            'slug' => 'veles-elektro',
+        ]);
+        $olePro = Brand::query()->create([
+            'name' => 'OLE-PRO',
+            'slug' => 'ole-pro',
+            'country' => 'Украина',
+        ]);
+        $candidate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $templateBrand->id,
+            'sku' => 'PS-008.924',
+            'name' => 'Гидравлический разделитель KOTLOV GE Г-50/2',
+            'slug' => 'gidravlicheskiy-razdelitel-hotta-g-50_2',
+            'price' => 106.08,
+            'images' => ['product/008/008924/template.jpg'],
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'af1f358a-1f62-11e9-bad6-1c1b0d1de7c2',
+            'external_code' => 'УТ-00000126',
+            'name' => 'Гидравлический разделитель ОГС-P-2-НР-i',
+            'price_byn' => null,
+            'stock_quantity' => 9,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'ambiguous',
+            'match_method' => 'fuzzy_name',
+            'candidates' => [['product_id' => $candidate->id, 'score' => 0.8261]],
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'ambiguous-researched-20261015-ex',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $this->assertNotNull($product);
+        $this->assertNotSame($candidate->id, $product->id);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame($olePro->id, $product->brand_id);
+        $this->assertSame('402.42', $product->price);
+        $this->assertSame('9', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('OLE-PRO Гидравлический разделитель ОГС-Р-2-НР-i, до 58 кВт', $product->name);
+        $this->assertSame(['https://formulatepla.ua/pub/media/catalog/product/_/2/_2_14.jpg'], $product->images);
+        $this->assertSame('2,5 м³/ч', collect($product->specs)->firstWhere('key', 'Максимальный расход')['value']);
+        $this->assertStringContainsString('formulatepla.ua', $product->content_source_url);
+        $this->assertStringContainsString('холоднокатаной стали', $product->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00000126',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
 }
