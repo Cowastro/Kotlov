@@ -19,7 +19,7 @@ class RefreshCommercialDocumentDraftCommand extends Command
         $document = CommercialDocument::query()->findOrFail((int) $this->argument('document'));
         $thread = $document->mailThread;
 
-        if (! $thread || $thread->status !== 'draft') {
+        if (! $thread || ! $thread->messages()->where('direction', 'draft')->exists()) {
             throw new RuntimeException('У документа нет связанного неотправленного черновика.');
         }
 

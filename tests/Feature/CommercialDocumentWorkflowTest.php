@@ -187,6 +187,7 @@ class CommercialDocumentWorkflowTest extends TestCase
             'type' => 'quote',
             'client_name' => 'Pavel',
             'client_email' => 'pavel@example.com',
+            'manager_id' => $user->id,
         ]);
 
         $thread = app(CommercialDocumentWorkflow::class)->createMailDraft($document, $user);
@@ -199,7 +200,11 @@ class CommercialDocumentWorkflowTest extends TestCase
             'vat_rate' => 20,
         ]);
 
-        $refreshed = app(CommercialDocumentWorkflow::class)->createMailDraft($document, $user);
+        $thread->forceFill(['status' => 'in_progress'])->save();
+        $this->artisan('commercial-documents:refresh-draft', ['document' => $document->id])
+            ->expectsOutputToContain('draft_refreshed=1')
+            ->assertSuccessful();
+        $refreshed = $thread->fresh('messages');
 
         $this->assertSame($thread->id, $refreshed->id);
         $this->assertSame(1, $refreshed->messages()->where('direction', 'draft')->count());
