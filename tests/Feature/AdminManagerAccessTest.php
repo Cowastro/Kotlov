@@ -8,6 +8,7 @@ use App\Filament\Pages\OneCSetup;
 use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Resources\SupplierSyncRuns\SupplierSyncRunResource;
@@ -21,6 +22,7 @@ use App\Models\SupplierSyncRun;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AdminManagerAccessTest extends TestCase
@@ -113,6 +115,36 @@ class AdminManagerAccessTest extends TestCase
         $this->actingAs($manager)
             ->get(Dashboard::getUrl(panel: 'admin'))
             ->assertOk();
+    }
+
+    public function test_product_row_opens_read_only_view_by_default_for_manager_and_admin(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Просмотр каталога',
+            'slug' => 'catalog-view-default',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Товар для просмотра',
+            'slug' => 'default-product-view',
+            'sku' => 'DEFAULT-VIEW-001',
+        ]);
+        $viewUrl = ProductResource::getUrl('view', ['record' => $product], panel: 'admin');
+
+        foreach (['manager', 'admin'] as $role) {
+            $user = User::factory()->create(['role' => $role, 'is_active' => true]);
+            $this->actingAs($user);
+            Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+            $component = Livewire::test(ListProducts::class);
+            $nameColumn = $component->instance()->getTable()->getColumn('name');
+            $nameColumn->record($product);
+
+            $this->assertSame($viewUrl, $component->instance()->getTable()->getRecordUrl($product));
+            $this->assertSame($viewUrl, $nameColumn->getUrl());
+        }
     }
 
     public function test_manager_can_follow_supplier_from_sync_journal_but_cannot_edit_it(): void

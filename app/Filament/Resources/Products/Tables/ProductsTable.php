@@ -63,7 +63,7 @@ class ProductsTable
                     ->width('18rem')
                     ->grow(false)
                     ->url(fn (Product $record): string => ProductResource::getUrl(
-                        ProductResource::canEdit($record) ? 'edit' : 'view',
+                        'view',
                         ['record' => $record],
                         panel: 'admin',
                     )),
@@ -388,6 +388,11 @@ class ProductsTable
                     ->query(fn (Builder $query) => $query->where('price', 0)->orWhereNull('price'))
                     ->toggle(),
             ])
+            ->recordUrl(fn (Product $record): string => ProductResource::getUrl(
+                'view',
+                ['record' => $record],
+                panel: 'admin',
+            ))
             ->recordActions([
                 ActionGroup::make([
                     Action::make('market_price_details')
