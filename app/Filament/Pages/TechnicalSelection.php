@@ -58,7 +58,7 @@ class TechnicalSelection extends Page
         } catch (Throwable $e) {
             report($e);
             Notification::make()->warning()->title('Подбор не выполнен')
-                ->body($e instanceof \RuntimeException ? $e->getMessage() : 'Сервис временно недоступен. Повторите позже.')->send();
+                ->body($e::class === \RuntimeException::class ? $e->getMessage() : 'Сервис временно недоступен. Повторите позже.')->send();
         }
     }
 

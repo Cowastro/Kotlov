@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\AiContentEnricher;
+use App\Services\Market\MarketWebResearchService;
 use App\Services\TechnicalProductSelection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -108,6 +109,27 @@ class TechnicalProductSelectionTest extends TestCase
     {
         $this->actingAs(User::factory()->create(['role' => 'client']));
         $this->get('/admin/technical-selection')->assertForbidden();
+    }
+
+    public function test_external_price_research_is_not_presented_as_engineering_approval(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'manager']));
+        $this->mock(TechnicalProductSelection::class)->shouldReceive('search')->once()->andReturn([
+            'request' => 'Нужен насос', 'task' => 'Насос', 'summary' => 'Нужна проверка',
+            'requirements' => [], 'questions' => [], 'queries' => ['насос'], 'matches' => [],
+            'procurement_request' => 'Подберите насос', 'candidate_count' => 0, 'searched_at' => '15.10.2026',
+        ]);
+        $this->mock(MarketWebResearchService::class)->shouldReceive('researchQuery')->once()
+            ->with('Нужен насос')->andReturn([
+                'status' => 'ready', 'summary' => 'Безусловно подходит', 'verdict' => 'Покупайте немедленно',
+                'offers' => [['title' => 'Вариант со страницы продавца', 'seller' => 'Продавец', 'price_byn' => 300,
+                    'url' => 'https://example.com/pump', 'evidence' => 'Максимальный напор 45 м']],
+                'sources' => [],
+            ]);
+        Livewire::test(TechnicalSelection::class)->set('prompt', 'Нужен насос')->call('search')->call('searchOutside')
+            ->assertSee('Вариант со страницы продавца')
+            ->assertSee('Техническое соответствие не подтверждено')
+            ->assertDontSee('Безусловно подходит')->assertDontSee('Покупайте немедленно');
     }
 
     private function product(string $name, string $slug, array $extra = []): Product

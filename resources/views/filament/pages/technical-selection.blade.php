@@ -54,7 +54,8 @@
                 <div class="ts-actions"><x-filament::button wire:click="searchOutside" color="gray" icon="heroicon-o-globe-alt" wire:loading.attr="disabled" wire:target="search,searchOutside">Поиск вне каталога</x-filament::button><span wire:loading wire:target="searchOutside" role="status">Исследование рынка…</span></div>
                 <p class="ts-muted" style="margin-top:10px">Отдельный API-запрос. Результат зависит от настроенного провайдера: если веб-поиск недоступен, система не подтвердит продавцов и цены.</p>
                 @if ($externalResult)
-                    <p class="ts-line" style="margin-top:16px">{{ $externalResult['message'] ?? $externalResult['summary'] ?? '' }}</p>
+                    <p class="ts-line" style="margin-top:16px">{{ ($externalResult['status'] ?? '') === 'error' ? ($externalResult['message'] ?? 'Внешний поиск недоступен.') : 'Найдены источники для проверки закупки. Цены ниже — предложения продавцов, не согласованные партнёрские входные цены. Техническое соответствие не подтверждено.' }}</p>
+                    <p class="ts-warning" style="margin-top:12px">Не заказывайте товар только по совпадению цифр в карточке. Для насосов максимальные расход, напор и глубина всасывания не подтверждают одновременную работу в требуемой точке. Нужны документация, кривая Q/H и проверка условий установки.</p>
                     @foreach ($externalResult['offers'] ?? [] as $offer)
                         <p style="margin-top:12px">{{ $offer['title'] ?? '' }} · {{ $offer['seller'] ?? '' }} · {{ isset($offer['price_byn']) && $offer['price_byn'] > 0 ? number_format($offer['price_byn'], 2, ',', ' ').' BYN' : 'Цену уточнить' }}<br>{{ $offer['evidence'] ?? '' }}</p>
                         @if (in_array(parse_url($offer['url'] ?? '', PHP_URL_SCHEME), ['http', 'https'], true))
@@ -66,7 +67,9 @@
                             <p style="margin-top:10px"><a class="ts-warning" href="{{ $source['url'] }}" target="_blank" rel="noopener noreferrer">{{ $source['title'] ?? $source['url'] }} ↗</a></p>
                         @endif
                     @endforeach
-                    <p class="ts-line ts-warning">{{ $externalResult['verdict'] ?? '' }}</p>
+                    @if (empty($externalResult['offers']) && empty($externalResult['sources']))
+                        <p class="ts-muted">Подтверждённых предложений и источников не найдено. Запросите подбор у поставщика.</p>
+                    @endif
                 @endif
             </section>
         @endif
