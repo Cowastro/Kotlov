@@ -198,6 +198,9 @@ class CrmMailModuleTest extends TestCase
         $this->assertStringContainsString('+375 (29) 000-00-00', $html);
         $this->assertStringNotContainsString('<script>', $html);
         $this->assertStringContainsString('&lt;script&gt;', $html);
+        $this->assertStringContainsString('ООО «СанБизнесГруп»', $html);
+        $this->assertStringContainsString('220075, г. Минск, ул. Селицкого, д. 39Б', $html);
+        $this->assertStringNotContainsString('ООО «СБГ бай»', $html);
         $this->assertStringContainsString('Команда KOTLOV.BY', $text);
         $this->assertStringContainsString('Менеджер по продажам', $text);
         $this->assertStringContainsString('+375 (29) 000-00-00', $text);
