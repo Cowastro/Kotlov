@@ -282,6 +282,17 @@ jobs:
           echo "error_lines=$(grep -Eic 'error|exception|failed|critical' "$detail_log" || true)"
           echo "warning_lines=$(grep -Eic 'warning|warn' "$detail_log" || true)"
           echo "detail_log=$detail_log"
+          if [[ "$TASK" == "deploy-safe" && "$status" -ne 0 ]]; then
+            echo "safe_deploy_diagnostic_begin"
+            # Deployment output contains only Git, Composer and Artisan
+            # diagnostics. Redact common credential/value patterns and URLs
+            # before publishing the final diagnostic lines to Actions.
+            tail -n 100 "$detail_log" \
+              | sed -E \
+                  -e 's#https?://[^[:space:]]+#<url-redacted>#g' \
+                  -e 's#(password|passwd|token|secret|api[_-]?key)([=:][^[:space:]]*)#\1=<redacted>#Ig'
+            echo "safe_deploy_diagnostic_end"
+          fi
           if [[ "$TASK" == "verify-commercial-pdf" ]]; then
             echo "safe_diagnostic_output_begin"
             cat "$detail_log"
