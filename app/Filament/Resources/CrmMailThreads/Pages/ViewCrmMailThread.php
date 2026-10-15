@@ -79,11 +79,9 @@ class ViewCrmMailThread extends ViewRecord
         return [
             Action::make('take')
                 ->label('Взять в работу')->icon('heroicon-o-hand-raised')->color('warning')
-                ->visible(fn (): bool => $this->record->status !== 'draft'
-                    && ($this->record->assigned_user_id !== auth()->id() || $this->record->status === 'new'))
+                ->visible(fn (): bool => $this->canTakeThread())
                 ->action(function (): void {
-                    $this->record->takeFor((int) auth()->id());
-                    $this->record->refresh();
+                    $this->takeThread();
                 }),
             Action::make('reply')
                 ->label('Ответить')->icon('heroicon-o-paper-airplane')->color('primary')
@@ -124,7 +122,7 @@ class ViewCrmMailThread extends ViewRecord
                             $message,
                         );
                         $this->replyMessageId = null;
-                        $this->record->refresh();
+                        $this->refreshThreadForDisplay();
                         Notification::make()->success()->title('Ответ отправлен')->send();
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('Письмо не отправлено')->body($exception->getMessage())->send();
@@ -203,7 +201,7 @@ class ViewCrmMailThread extends ViewRecord
                             $attachmentNames,
                         );
                         $this->forwardMessageId = null;
-                        $this->record->refresh();
+                        $this->refreshThreadForDisplay();
                         Notification::make()->success()->title('Письмо переслано')->send();
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('Письмо не переслано')->body($exception->getMessage())->send();
@@ -320,7 +318,7 @@ class ViewCrmMailThread extends ViewRecord
                         $data['attachments'] ?? [],
                         $data['attachment_file_names'] ?? [],
                     );
-                    $this->record->refresh();
+                    $this->refreshThreadForDisplay();
                     Notification::make()->success()->title('Черновик сохранён')->send();
                 }),
             Action::make('add_supplier_email')
@@ -386,7 +384,7 @@ class ViewCrmMailThread extends ViewRecord
                             $data['attachment_file_names'] ?? [],
                         );
                         app(CrmMailSender::class)->sendDraft($thread, auth()->user());
-                        $this->record->refresh();
+                        $this->refreshThreadForDisplay();
                         Notification::make()->success()->title('Письмо отправлено')->send();
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('Письмо не отправлено')->body($exception->getMessage())->send();
@@ -433,6 +431,56 @@ class ViewCrmMailThread extends ViewRecord
         $this->record->messages()->findOrFail($messageId);
         $this->forwardMessageId = $messageId;
         $this->mountAction('forward');
+    }
+
+    public function canTakeThread(): bool
+    {
+        return $this->record->status !== 'draft'
+            && ($this->record->assigned_user_id !== auth()->id() || $this->record->status === 'new');
+    }
+
+    public function canMarkPotentialDeal(): bool
+    {
+        return ! in_array($this->record->status, ['draft', 'spam'], true)
+            && blank($this->record->sales_stage);
+    }
+
+    public function takeThread(): void
+    {
+        if (! $this->canTakeThread()) {
+            return;
+        }
+
+        $this->record->takeFor((int) auth()->id());
+        $this->refreshThreadForDisplay();
+        Notification::make()->success()->title('Переписка взята в работу')->send();
+    }
+
+    public function markPotentialDeal(): void
+    {
+        if (! $this->canMarkPotentialDeal()) {
+            return;
+        }
+
+        $this->record->update([
+            'sales_stage' => 'new_inquiry',
+            'assigned_user_id' => $this->record->assigned_user_id ?: auth()->id(),
+            'next_follow_up_at' => now()->addWeekday()->setTime(10, 0),
+            'follow_up_note' => 'Уточнить потребность клиента и следующий шаг.',
+        ]);
+        $this->refreshThreadForDisplay();
+        Notification::make()->success()->title('Добавлено в потенциальные сделки')->send();
+    }
+
+    private function refreshThreadForDisplay(): void
+    {
+        $this->record->refresh();
+        $this->record->load([
+            'messages' => fn ($query) => $query
+                ->reorder()
+                ->orderByDesc('received_at')
+                ->orderByDesc('id'),
+        ]);
     }
 
     public function openReply(int $messageId): void

@@ -189,6 +189,12 @@ class CrmMailThreadResource extends Resource
                                     'originalHtml' => $preview->originalHtml($record),
                                     'wasUnread' => $livewire instanceof ViewCrmMailThread
                                         && in_array((int) $record->id, $livewire->initiallyUnreadMessageIds, true),
+                                    'isLatestMessage' => $livewire instanceof ViewCrmMailThread
+                                        && (int) $livewire->getRecord()->messages->first()?->id === (int) $record->id,
+                                    'canTakeThread' => $livewire instanceof ViewCrmMailThread
+                                        && $livewire->canTakeThread(),
+                                    'canMarkPotentialDeal' => $livewire instanceof ViewCrmMailThread
+                                        && $livewire->canMarkPotentialDeal(),
                                 ];
                             })
                             ->columnSpanFull(),

@@ -8,8 +8,10 @@ use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
+use App\Services\CrmMail\CrmMailSender;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Mockery;
 use Tests\TestCase;
 
 class CrmMailThreadUnreadPresentationTest extends TestCase
@@ -46,6 +48,90 @@ class CrmMailThreadUnreadPresentationTest extends TestCase
         $this->assertTrue($unread->fresh()->is_read);
         $this->assertTrue($read->fresh()->is_read);
         $this->assertSame(0, $thread->fresh()->unread_count);
+    }
+
+    public function test_forwarded_message_is_shown_above_older_messages_without_reloading_page(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        [$mailbox, $thread] = $this->mailThread();
+        $source = $this->message($mailbox, $thread, 'Старое письмо', now()->subMinute(), true);
+
+        $sender = Mockery::mock(CrmMailSender::class);
+        $sender->shouldReceive('forwardedText')
+            ->once()
+            ->withArgs(fn (CrmMailMessage $message): bool => $message->is($source))
+            ->andReturn('Пересылаем сообщение.');
+        $sender->shouldReceive('forward')
+            ->once()
+            ->andReturnUsing(function (
+                CrmMailThread $sentThread,
+                CrmMailMessage $sentSource,
+                array $recipients,
+                string $subject,
+                string $body,
+                User $user,
+            ) use ($mailbox): CrmMailMessage {
+                return CrmMailMessage::query()->create([
+                    'thread_id' => $sentThread->id,
+                    'mailbox_id' => $mailbox->id,
+                    'sent_by_user_id' => $user->id,
+                    'direction' => 'outgoing',
+                    'from_name' => 'KOTLOV',
+                    'from_email' => $mailbox->email,
+                    'to' => collect($recipients)->map(fn (string $email): array => ['email' => $email])->all(),
+                    'subject' => $subject,
+                    'text_body' => $body,
+                    'is_read' => true,
+                    'received_at' => now(),
+                    'sent_at' => now(),
+                ]);
+            });
+        $this->app->instance(CrmMailSender::class, $sender);
+
+        $component = Livewire::actingAs($manager)
+            ->test(ViewCrmMailThread::class, ['record' => $thread->getRouteKey()])
+            ->call('openForward', $source->id)
+            ->fillForm([
+                'recipients' => ['recipient@example.com'],
+                'cc' => [],
+                'subject' => 'Новое пересланное письмо',
+                'body' => 'Пересылаем сообщение.',
+                'original_attachments' => [],
+                'attachments' => [],
+            ])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $html = $component->html();
+        $newPosition = mb_strpos($html, 'Новое пересланное письмо');
+        $oldPosition = mb_strpos($html, 'Старое письмо');
+
+        $this->assertIsInt($newPosition);
+        $this->assertIsInt($oldPosition);
+        $this->assertLessThan($oldPosition, $newPosition);
+    }
+
+    public function test_latest_message_has_quick_lead_actions(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        [$mailbox, $thread] = $this->mailThread();
+        $this->message($mailbox, $thread, 'Запрос клиента', now());
+
+        Livewire::actingAs($manager)
+            ->test(ViewCrmMailThread::class, ['record' => $thread->getRouteKey()])
+            ->assertSee('wire:click="takeThread"', false)
+            ->assertSee('wire:click="markPotentialDeal"', false)
+            ->call('takeThread')
+            ->call('markPotentialDeal')
+            ->assertDontSee('wire:click="takeThread"', false)
+            ->assertDontSee('wire:click="markPotentialDeal"', false);
+
+        $thread->refresh();
+        $this->assertSame($manager->id, $thread->assigned_user_id);
+        $this->assertSame('in_progress', $thread->status);
+        $this->assertSame('new_inquiry', $thread->sales_stage);
+        $this->assertNotNull($thread->next_follow_up_at);
+        $this->assertSame('Уточнить потребность клиента и следующий шаг.', $thread->follow_up_note);
     }
 
     /** @return array{CrmMailbox, CrmMailThread} */
