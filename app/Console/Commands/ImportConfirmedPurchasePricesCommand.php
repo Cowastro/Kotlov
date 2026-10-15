@@ -131,10 +131,23 @@ class ImportConfirmedPurchasePricesCommand extends Command
             $directory = storage_path('app/reports/'.$supplier->code);
             File::ensureDirectoryExists($directory);
             $path = $directory.'/confirmed_purchase_'.($this->option('apply') ? 'apply' : 'preview').'_'.now()->format('Ymd_His').'.csv';
+            $reportRows = array_map(fn ($row) => [
+                ...$row,
+                'supplier_title' => $row['supplier_article'],
+                'new_supplier_cost' => $row['purchase_price_byn'],
+                'product_retail_price' => $row['retail_price_unchanged'],
+                'reason' => match ($row['status']) {
+                    'matched' => 'Точное совпадение модели. Предварительный расчёт без записи цены.',
+                    'updated' => 'Закупочная цена с НДС сохранена по документу '.$document.' от '.$date.'. Розница и остатки не изменены.',
+                    'unchanged' => 'Эта закупочная цена уже подтверждена данным документом.',
+                    'not_found' => 'Точная активная карточка не найдена. Цена не записана.',
+                    default => 'Сопоставление неоднозначно. Цена не записана.',
+                },
+            ], $rows);
             $handle = fopen($path, 'wb');
-            fputcsv($handle, array_keys($rows[0]), ';', '"', '');
-            foreach ($rows as $row) {
-                fputcsv($handle, $row, ';', '"', '');
+            fputcsv($handle, array_keys($reportRows[0]), ',', '"', '');
+            foreach ($reportRows as $row) {
+                fputcsv($handle, $row, ',', '"', '');
             }
             fclose($handle);
             $this->table(['Model', 'Product', 'BYN incl. VAT', 'Status'], array_map(fn ($r) => [

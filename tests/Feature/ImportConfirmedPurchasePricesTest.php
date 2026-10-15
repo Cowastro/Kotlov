@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductPurchasePriceSource;
@@ -21,6 +22,15 @@ class ImportConfirmedPurchasePricesTest extends TestCase
         $before = $product->fresh()->getAttributes();
         $this->artisan('products:import-confirmed-purchase-prices', $options)->assertSuccessful();
         $this->assertDatabaseCount('product_purchase_price_sources', 0);
+        $reports = glob(storage_path('app/reports/test-purchase/confirmed_purchase_preview_*.csv'));
+        sort($reports);
+        $report = fopen(end($reports), 'rb');
+        $headers = fgetcsv($report);
+        $reportRow = array_combine($headers, fgetcsv($report));
+        fclose($report);
+        $this->assertSame((string) $product->id, $reportRow['product_id']);
+        $this->assertSame('139.46', $reportRow['new_supplier_cost']);
+        $this->assertSame('matched', $reportRow['status']);
         $this->artisan('products:import-confirmed-purchase-prices', [...$options, '--apply' => true])->assertSuccessful();
         $source = ProductPurchasePriceSource::query()->sole();
         $this->assertSame($product->id, $source->product_id);
@@ -28,6 +38,8 @@ class ImportConfirmedPurchasePricesTest extends TestCase
         $this->assertSame('2026-03-13', $source->document_date->toDateString());
         $this->assertSame($before, $product->fresh()->getAttributes());
         $this->assertSame(400.0, (float) $other->fresh()->price);
+        $wholesalePrice = new \ReflectionMethod(ProductsTable::class, 'wholesalePrice');
+        $this->assertSame(139.46, $wholesalePrice->invoke(null, $product->fresh()));
         $this->artisan('products:import-confirmed-purchase-prices', [...$options, '--apply' => true])->assertSuccessful();
         $this->assertDatabaseCount('product_purchase_price_sources', 1);
     }

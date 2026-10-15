@@ -61,6 +61,7 @@ class ProductResource extends Resource
                 'integrationProducts.source.supplier:id,crm_counterparty_id,name,contact',
                 'integrationProducts.source.supplier.crmCounterparty.contactPoints',
                 'marketPriceObservations.source',
+                'purchasePriceSources',
             ]);
     }
 

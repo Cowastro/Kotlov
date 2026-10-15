@@ -903,6 +903,14 @@ class ProductsTable
 
     private static function wholesalePrice(object $record): ?float
     {
+        $confirmed = $record->purchasePriceSources
+            ->filter(fn ($source): bool => $source->isUsable())
+            ->sortByDesc(fn ($source): int => $source->confirmed_at?->getTimestamp() ?? 0)
+            ->first();
+        if ($confirmed) {
+            return (float) $confirmed->price_byn;
+        }
+
         $integrationItems = self::activeIntegrationItems($record);
         $prices = ($integrationItems->isNotEmpty()
             ? $integrationItems->map(fn ($item): ?float => $item->normalizedPriceByn())
