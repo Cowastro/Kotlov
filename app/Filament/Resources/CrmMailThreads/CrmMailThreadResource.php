@@ -81,7 +81,7 @@ class CrmMailThreadResource extends Resource
             ->where('direction', 'incoming')
             ->where('is_read', false)
             ->whereHas('thread', fn (Builder $query): Builder => $query
-                ->whereNotIn('status', ['draft', 'spam']))
+                ->whereNotIn('status', ['draft', 'spam', 'closed']))
             ->count();
 
         return $count > 0 ? (string) $count : null;

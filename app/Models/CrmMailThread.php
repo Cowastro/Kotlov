@@ -144,7 +144,9 @@ class CrmMailThread extends Model
 
     public function scopePotentialDeals(Builder $query): Builder
     {
-        return $query->whereIn('sales_stage', self::OPEN_SALES_STAGES);
+        return $query
+            ->where('status', '!=', 'closed')
+            ->whereIn('sales_stage', self::OPEN_SALES_STAGES);
     }
 
     public function scopeFollowUpDue(Builder $query): Builder

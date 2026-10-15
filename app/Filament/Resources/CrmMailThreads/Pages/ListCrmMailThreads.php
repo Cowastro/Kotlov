@@ -58,13 +58,13 @@ class ListCrmMailThreads extends ListRecords
             'inbox' => Tab::make('Рабочая почта')
                 ->icon('heroicon-o-inbox')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                    ->whereNotIn('status', ['draft', 'spam'])
+                    ->whereNotIn('status', ['draft', 'spam', 'closed'])
                     ->whereHas('messages', fn (Builder $messages): Builder => $messages->where('direction', 'incoming')))
                 ->badge($messageCounts['inbox'] ?: null),
             'unread' => Tab::make('Непрочитанные')
                 ->icon('heroicon-o-envelope')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                    ->whereNotIn('status', ['draft', 'spam'])
+                    ->whereNotIn('status', ['draft', 'spam', 'closed'])
                     ->whereHas('messages', fn (Builder $messages): Builder => $messages
                         ->where('direction', 'incoming')
                         ->where('is_read', false)))
@@ -73,7 +73,7 @@ class ListCrmMailThreads extends ListRecords
             'incoming' => Tab::make('Входящие')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                    ->whereNotIn('status', ['draft', 'spam'])
+                    ->whereNotIn('status', ['draft', 'spam', 'closed'])
                     ->latestMessageDirection('incoming'))
                 ->badge($messageCounts['incoming'] ?: null)
                 ->badgeColor('warning'),
@@ -95,7 +95,7 @@ class ListCrmMailThreads extends ListRecords
             'sent' => Tab::make('Исходящие')
                 ->icon('heroicon-o-paper-airplane')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                    ->whereNotIn('status', ['draft', 'spam'])
+                    ->whereNotIn('status', ['draft', 'spam', 'closed'])
                     ->latestMessageDirection('outgoing'))
                 ->badge($messageCounts['sent'] ?: null)
                 ->badgeColor('success'),
@@ -127,7 +127,7 @@ class ListCrmMailThreads extends ListRecords
     {
         $activeMessages = fn () => CrmMailMessage::query()
             ->whereHas('thread', fn (Builder $threads): Builder => $threads
-                ->whereNotIn('status', ['draft', 'spam']));
+                ->whereNotIn('status', ['draft', 'spam', 'closed']));
 
         return [
             'inbox' => $activeMessages()
