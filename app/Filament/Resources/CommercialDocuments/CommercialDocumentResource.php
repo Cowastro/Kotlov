@@ -425,6 +425,7 @@ class CommercialDocumentResource extends Resource
                         ->label('Условия оплаты')
                         ->placeholder('Например: 100% предоплата')
                         ->default('Безналичный расчёт по выставленному счёту.')
+                        ->required()
                         ->maxLength(255)
                         ->columnSpan(2),
                     Select::make('delivery_terms_preset')
@@ -439,6 +440,7 @@ class CommercialDocumentResource extends Resource
                         ->label('Срок поставки')
                         ->placeholder('Например: 3–5 рабочих дней после оплаты')
                         ->default('Срок и способ поставки согласовываются с менеджером.')
+                        ->required()
                         ->maxLength(255)
                         ->columnSpan(2),
                     Textarea::make('notes')->label('Примечание для клиента')->rows(3)->columnSpanFull(),

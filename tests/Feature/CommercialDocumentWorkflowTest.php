@@ -271,6 +271,23 @@ class CommercialDocumentWorkflowTest extends TestCase
         );
     }
 
+    public function test_commercial_document_requires_payment_and_delivery_terms(): void
+    {
+        $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        Livewire::actingAs($user)
+            ->test(CreateCommercialDocument::class)
+            ->fillForm([
+                'payment_terms' => '',
+                'delivery_terms' => '',
+            ])
+            ->call('create')
+            ->assertHasErrors([
+                'data.payment_terms' => 'required',
+                'data.delivery_terms' => 'required',
+            ]);
+    }
+
     public function test_manager_can_find_and_add_product_from_database(): void
     {
         $user = User::factory()->create(['role' => 'manager', 'is_active' => true]);
