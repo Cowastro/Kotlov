@@ -303,10 +303,8 @@ class ImapMailboxSynchronizer
 
         $this->walkParts($imap, $messageNumber, $structure, '', $result);
 
-        if (! $result['text'] && ! $result['html']) {
-            $result['text'] = trim((string) imap_body($imap, $messageNumber, FT_PEEK)) ?: null;
-        }
-
+        // An attachment-only multipart message has no displayable body. The
+        // raw IMAP body contains MIME headers and encoded attachment bytes.
         return $result;
     }
 
@@ -324,10 +322,20 @@ class ImapMailboxSynchronizer
 
         $isAttachment = isset($part->disposition) && in_array(strtoupper($part->disposition), ['ATTACHMENT', 'INLINE'], true)
             && ($part->dparameters ?? []);
-        if ($isAttachment || ($part->type ?? null) !== TYPETEXT) {
+        if ($isAttachment || ($part->type ?? null) !== 0
+            || filled($this->attachmentFilename($part))
+            || ! in_array(strtoupper($part->subtype ?? 'PLAIN'), ['PLAIN', 'HTML'], true)) {
             return;
         }
 
+        $body = $this->readTextPart($imap, $messageNumber, $part, $prefix);
+        $subtype = strtoupper($part->subtype ?? 'PLAIN');
+        $key = $subtype === 'HTML' ? 'html' : 'text';
+        $result[$key] ??= trim($body) ?: null;
+    }
+
+    protected function readTextPart($imap, int $messageNumber, object $part, string $prefix): string
+    {
         $body = $prefix === ''
             ? (string) imap_body($imap, $messageNumber, FT_PEEK)
             : (string) imap_fetchbody($imap, $messageNumber, $prefix, FT_PEEK);
@@ -336,10 +344,7 @@ class ImapMailboxSynchronizer
             ENCQUOTEDPRINTABLE => quoted_printable_decode($body),
             default => $body,
         };
-        $body = $this->toUtf8($body, $this->partCharset($part));
-        $subtype = strtoupper($part->subtype ?? 'PLAIN');
-        $key = $subtype === 'HTML' ? 'html' : 'text';
-        $result[$key] ??= trim($body) ?: null;
+        return $this->toUtf8($body, $this->partCharset($part));
     }
 
     private function partCharset(object $part): ?string
