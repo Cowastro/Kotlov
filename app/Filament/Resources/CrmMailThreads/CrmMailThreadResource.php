@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CrmMailThreads;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
+use App\Filament\Resources\CrmMailThreads\Actions\ManageMailThreadNotesAction;
 use App\Filament\Resources\CrmMailThreads\Pages\EditCrmMailThread;
 use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
 use App\Filament\Resources\CrmMailThreads\Pages\ViewCrmMailThread;
@@ -51,6 +52,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -170,8 +172,8 @@ class CrmMailThreadResource extends Resource
                         'record' => $record->supplierOrderRequest->order_id,
                     ]))
                     ->color('primary'),
-                TextEntry::make('manager_note')->label('Итог / следующий шаг')->placeholder('Не заполнен')->columnSpanFull(),
-                TextEntry::make('follow_up_note')->label('Задача контроля')->placeholder('Не заполнена')->columnSpanFull(),
+                TextEntry::make('manager_note')->label('Внутренняя заметка')->placeholder('Не заполнена')->columnSpanFull(),
+                TextEntry::make('follow_up_note')->label('Что напомнить')->placeholder('Не заполнено')->columnSpanFull(),
             ]),
             Section::make('Переписка')
                 ->description('Входящие и ответы сотрудников собраны в одной цепочке.')
@@ -220,7 +222,12 @@ class CrmMailThreadResource extends Resource
                 TextColumn::make('participant_name')->label('Отправитель')->weight('bold')->searchable()
                     ->description(fn (CrmMailThread $record): string => $record->participant_email),
                 TextColumn::make('subject')->label('Последняя тема')->searchable()->limit(65)->wrap()
-                    ->description(fn (CrmMailThread $record): string => $record->messages_count.' писем · непрочитанных '.$record->unread_count),
+                    ->description(fn (CrmMailThread $record): string => $record->messages_count.' писем · непрочитанных '.$record->unread_count)
+                    ->icon(fn (CrmMailThread $record): ?string => filled($record->manager_note)
+                        ? 'heroicon-o-document-text'
+                        : null)
+                    ->iconColor('warning')
+                    ->tooltip(fn (CrmMailThread $record): ?string => $record->manager_note),
                 TextColumn::make('counterparty.name')->label('CRM')->placeholder('Новый лид')
                     ->description(fn (CrmMailThread $record): ?string => $record->contact?->full_name),
                 TextColumn::make('assignedUser.name')->label('Ответственный')->placeholder('Не назначен'),
@@ -229,6 +236,15 @@ class CrmMailThreadResource extends Resource
                     ->color(fn (string $state): string => match ($state) {
                         'urgent' => 'danger', 'high' => 'warning', 'low' => 'gray', default => 'info',
                     }),
+                TextColumn::make('next_follow_up_at')->label('Напоминание')
+                    ->state(fn (CrmMailThread $record): ?string => static::followUpLabel($record))
+                    ->badge()
+                    ->placeholder('—')
+                    ->color(fn (CrmMailThread $record): string => static::followUpColor($record))
+                    ->description(fn (CrmMailThread $record): ?string => filled($record->follow_up_note)
+                        ? Str::limit($record->follow_up_note, 55)
+                        : null)
+                    ->tooltip(fn (CrmMailThread $record): ?string => $record->follow_up_note),
                 TextColumn::make('status')->label('Состояние')->badge()->sortable()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => static::statusColor($state)),
@@ -238,8 +254,7 @@ class CrmMailThreadResource extends Resource
                     ->color(fn (?string $state): string => static::salesStageColor($state))
                     ->icon(fn (CrmMailThread $record): ?string => static::commercialOfferIcon($record))
                     ->iconColor(fn (CrmMailThread $record): string => static::commercialOfferIconColor($record))
-                    ->tooltip(fn (CrmMailThread $record): ?string => static::commercialOfferTooltip($record))
-                    ->description(fn (CrmMailThread $record): ?string => static::followUpLabel($record)),
+                    ->tooltip(fn (CrmMailThread $record): ?string => static::commercialOfferTooltip($record)),
             ])
             ->defaultSort('last_message_at', 'desc')
             ->filters([
@@ -252,6 +267,7 @@ class CrmMailThreadResource extends Resource
             ->recordActions([
                 ViewAction::make()->label('Открыть')
                     ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()),
+                ManageMailThreadNotesAction::make(),
                 Action::make('quick_quote')
                     ->label('Быстрое КП')
                     ->icon('heroicon-o-document-currency-dollar')
@@ -534,7 +550,7 @@ class CrmMailThreadResource extends Resource
 
     public static function followUpLabel(CrmMailThread $record): ?string
     {
-        if (! $record->next_follow_up_at || ! $record->isPotentialDeal()) {
+        if (! $record->next_follow_up_at) {
             return null;
         }
 
@@ -545,7 +561,7 @@ class CrmMailThreadResource extends Resource
 
     public static function followUpColor(CrmMailThread $record): string
     {
-        if ($record->next_follow_up_at?->isPast() && $record->isPotentialDeal()) {
+        if ($record->next_follow_up_at?->isPast()) {
             return 'danger';
         }
 

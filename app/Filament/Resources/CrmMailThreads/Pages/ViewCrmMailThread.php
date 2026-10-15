@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CrmMailThreads\Pages;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
+use App\Filament\Resources\CrmMailThreads\Actions\ManageMailThreadNotesAction;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Models\Category;
@@ -77,6 +78,7 @@ class ViewCrmMailThread extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            ManageMailThreadNotesAction::make(),
             Action::make('take')
                 ->label('Взять в работу')->icon('heroicon-o-hand-raised')->color('warning')
                 ->visible(fn (): bool => $this->canTakeThread())

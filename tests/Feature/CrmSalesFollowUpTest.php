@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
+use App\Filament\Resources\CrmMailThreads\Pages\ViewCrmMailThread;
 use App\Models\CommercialDocument;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
@@ -55,6 +56,48 @@ class CrmSalesFollowUpTest extends TestCase
 
         $this->assertNull($thread->fresh()->sales_stage);
         $this->assertNull($thread->fresh()->next_follow_up_at);
+    }
+
+    public function test_manager_can_add_an_internal_note_and_reminder_to_any_mail_thread(): void
+    {
+        Carbon::setTestNow('2026-10-15 12:00:00');
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $thread = $this->thread([
+            'status' => 'in_progress',
+            'subject' => 'Уточнение цены поставщика',
+            'sales_stage' => null,
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(ViewCrmMailThread::class, ['record' => $thread->getRouteKey()])
+            ->assertActionVisible('manage_notes')
+            ->callAction('manage_notes', [
+                'priority' => 'urgent',
+                'manager_note' => 'Важно получить цену с НДС.',
+                'reminder_enabled' => true,
+                'next_follow_up_at' => '2026-10-16 10:00:00',
+                'follow_up_note' => 'Проверить ответ поставщика и перезвонить.',
+            ])
+            ->assertHasNoActionErrors();
+
+        $thread->refresh();
+
+        $this->assertSame('urgent', $thread->priority);
+        $this->assertSame('Важно получить цену с НДС.', $thread->manager_note);
+        $this->assertSame('Проверить ответ поставщика и перезвонить.', $thread->follow_up_note);
+        $this->assertSame('2026-10-16 10:00:00', $thread->next_follow_up_at->format('Y-m-d H:i:s'));
+        $this->assertNull($thread->sales_stage);
+
+        Carbon::setTestNow('2026-10-16 10:01:00');
+
+        $this->assertTrue(CrmMailThread::query()->followUpDue()->whereKey($thread)->exists());
+        $this->assertStringStartsWith('Просрочено: 16.10 ', CrmMailThreadResource::followUpLabel($thread));
+
+        Livewire::actingAs($manager)
+            ->test(ListCrmMailThreads::class)
+            ->set('activeTab', 'follow_up')
+            ->assertSee('Уточнение цены поставщика')
+            ->assertSee('Просрочено');
     }
 
     public function test_ai_created_sent_offer_has_visible_marker_in_deals_list(): void

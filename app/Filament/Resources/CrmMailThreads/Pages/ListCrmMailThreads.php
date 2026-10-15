@@ -48,8 +48,8 @@ class ListCrmMailThreads extends ListRecords
         if ($dueCount > 0) {
             Notification::make()
                 ->warning()
-                ->title('Пора проконтролировать потенциальные сделки')
-                ->body('Просроченных контактов: '.$dueCount.'. Откройте вкладку «Нужен контроль».')
+                ->title('Есть просроченные напоминания по почте')
+                ->body('Переписок, к которым нужно вернуться: '.$dueCount.'. Откройте вкладку «Нужен контроль».')
                 ->persistent()
                 ->send();
         }

@@ -151,7 +151,8 @@ class CrmMailThread extends Model
 
     public function scopeFollowUpDue(Builder $query): Builder
     {
-        return $query->potentialDeals()
+        return $query
+            ->whereNotIn('status', ['closed', 'spam'])
             ->whereNotNull('next_follow_up_at')
             ->where('next_follow_up_at', '<=', now());
     }
