@@ -122,6 +122,10 @@ class MarketResearchReportResource extends Resource
                             ->label('Копия (CC)')
                             ->placeholder('copy@example.com')
                             ->helperText('Можно указать несколько адресов. После каждого адреса нажмите Enter.'),
+                        Toggle::make('attach_russian_representative')
+                            ->label('Приложить реквизиты ООО «МПГ» (РФ)')
+                            ->helperText('Для российских поставщиков: к письму добавится PDF с реквизитами российского представительства (ИНН 6732146305), а в запрос — пояснение для выставления счёта и поставки в РФ.')
+                            ->default(false),
                         TextInput::make('subject')
                             ->label('Тема')
                             ->required()
@@ -153,6 +157,7 @@ class MarketResearchReportResource extends Resource
                                 $data['participant_name'] ?? null,
                                 (string) $data['subject'],
                                 (string) $data['body'],
+                                (bool) ($data['attach_russian_representative'] ?? false),
                             );
 
                             if ((bool) ($data['send_now'] ?? false)) {

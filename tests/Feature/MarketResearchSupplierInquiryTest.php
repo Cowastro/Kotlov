@@ -10,6 +10,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Market\MarketResearchSupplierInquiry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MarketResearchSupplierInquiryTest extends TestCase
@@ -18,6 +19,7 @@ class MarketResearchSupplierInquiryTest extends TestCase
 
     public function test_it_creates_a_supplier_mail_draft_focused_on_partner_b2b_terms(): void
     {
+        Storage::fake('local');
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $mailbox = CrmMailbox::query()->firstOrCreate(['email' => 'info@kotlov.by'], [
             'name' => 'KOTLOV.BY',
@@ -78,6 +80,7 @@ class MarketResearchSupplierInquiryTest extends TestCase
             'Произвольная компания',
             $service->subject($report),
             $body,
+            true,
         );
 
         $draft = $thread->messages()->where('direction', 'draft')->firstOrFail();
@@ -92,6 +95,11 @@ class MarketResearchSupplierInquiryTest extends TestCase
         $this->assertSame('sales@supplier.test', $thread->participant_email);
         $this->assertSame('Произвольная компания', $thread->participant_name);
         $this->assertSame('copy@supplier.test', $draft->cc[0]['email']);
+        $this->assertSame(1, $draft->attachments_count);
+        $this->assertSame('crm-mail-attachments/system/mpg-requisites.pdf', $draft->metadata['attachments'][0]['path']);
+        $this->assertSame('Реквизиты ООО МПГ.pdf', $draft->metadata['attachments'][0]['name']);
+        $this->assertStringContainsString('ИНН 6732146305', $draft->text_body);
+        Storage::disk('local')->assertExists('crm-mail-attachments/system/mpg-requisites.pdf');
 
         $manualThread = $service->createDraft(
             $report,

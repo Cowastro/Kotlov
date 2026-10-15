@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 class MarketResearchSupplierInquiry
@@ -65,6 +66,7 @@ class MarketResearchSupplierInquiry
             'mailbox_id' => $mailbox?->id,
             'recipient' => $supplier?->contactEmailAddresses()[0] ?? '',
             'cc' => [],
+            'attach_russian_representative' => false,
             'subject' => $this->subject($report),
             'body' => $this->body($report),
             'send_now' => true,
@@ -104,6 +106,7 @@ class MarketResearchSupplierInquiry
         ?string $participantName,
         string $subject,
         string $body,
+        bool $attachRussianRepresentative = false,
     ): CrmMailThread {
         if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
             throw new RuntimeException('Укажите корректный email поставщика.');
@@ -113,7 +116,12 @@ class MarketResearchSupplierInquiry
             ? trim((string) $participantName)
             : $supplier?->name;
 
-        return DB::transaction(function () use ($report, $supplier, $mailbox, $user, $recipient, $cc, $participantName, $subject, $body): CrmMailThread {
+        return DB::transaction(function () use ($report, $supplier, $mailbox, $user, $recipient, $cc, $participantName, $subject, $body, $attachRussianRepresentative): CrmMailThread {
+            [$attachments, $attachmentNames] = $this->russianRepresentativeAttachment($attachRussianRepresentative);
+            if ($attachRussianRepresentative) {
+                $body = rtrim($body)."\n\nДля оформления поставки и выставления счёта в РФ используйте реквизиты нашего российского представительства ООО «МИНСКАЯ ПРОМЫШЛЕННАЯ ГРУППА» (ИНН 6732146305). Реквизиты приложены к письму.";
+            }
+
             $thread = $this->drafts->create(
                 $mailbox,
                 $user,
@@ -122,6 +130,8 @@ class MarketResearchSupplierInquiry
                 $body,
                 $participantName,
                 $cc,
+                $attachments,
+                $attachmentNames,
             );
 
             $thread->forceFill([
@@ -143,5 +153,23 @@ class MarketResearchSupplierInquiry
 
             return $thread->fresh(['mailbox', 'messages']);
         });
+    }
+
+    /** @return array{0: list<string>, 1: array<string, string>} */
+    private function russianRepresentativeAttachment(bool $attach): array
+    {
+        if (! $attach) {
+            return [[], []];
+        }
+
+        $source = resource_path('documents/mpg-requisites.pdf');
+        if (! is_file($source)) {
+            throw new RuntimeException('Файл реквизитов ООО «МПГ» не найден.');
+        }
+
+        $path = 'crm-mail-attachments/system/mpg-requisites.pdf';
+        Storage::disk('local')->put($path, file_get_contents($source));
+
+        return [[$path], [$path => 'Реквизиты ООО МПГ.pdf']];
     }
 }
