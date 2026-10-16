@@ -12,6 +12,7 @@ use App\Models\SupplierProduct;
 use App\Models\SupplierSource;
 use App\Models\SupplierSync;
 use App\Services\SupplierProductAvailabilityService;
+use App\Services\Suppliers\OmenergoCatalog;
 use App\Services\Suppliers\OmenergoPriceList;
 use App\Services\Telephony\PhoneNumber;
 use Illuminate\Console\Command;
@@ -59,6 +60,7 @@ class SyncOmenergoCommand extends Command
             }
             $classified = $this->classify($rows, $parser, $supplier);
             $this->report($classified);
+            $this->auditCurrentState($supplier);
             $apply = $this->option('apply') && ! $this->option('dry-run');
             if (! $apply) {
                 return self::SUCCESS;
@@ -165,9 +167,14 @@ class SyncOmenergoCommand extends Command
     {
         $products = Product::with('brand')->get();
         $names = [];
+        $modelAliases = [];
+        $catalog = new OmenergoCatalog;
         $articles = [];
         foreach ($products as $product) {
             $names[$parser->nameKey($product->name)][] = $product->id;
+            if ($product->brand) {
+                $modelAliases[$parser->nameKey($product->brand->name).'|'.$catalog->key($product->name)][] = $product->id;
+            }
             if ($product->sku) {
                 $articles[$parser->articleKey($product->sku)][] = $product->id;
             }
@@ -183,6 +190,7 @@ class SyncOmenergoCommand extends Command
                 foreach ([$row['name'], $row['invoice_name'], $parser->productName($row)] as $name) {
                     $matches = array_merge($matches, $names[$parser->nameKey($name)] ?? []);
                 }
+                $matches = array_merge($matches, $modelAliases[$parser->nameKey($row['brand']).'|'.$catalog->key($row['name'])] ?? []);
             }
             $matches = array_values(array_unique($matches));
             $row['product_id'] = count($matches) === 1 ? $matches[0] : null;
@@ -199,6 +207,11 @@ class SyncOmenergoCommand extends Command
                 $key = $parser->nameKey($row['name']);
                 foreach ($products as $product) {
                     if ($product->brand && $parser->nameKey($product->brand->name) === $parser->nameKey($row['brand'])) {
+                        preg_match_all('/\d+(?:[.,]\d+)?/u', $row['name'], $sourceNumbers);
+                        preg_match_all('/\d+(?:[.,]\d+)?/u', $product->name, $productNumbers);
+                        if ($sourceNumbers[0] !== $productNumbers[0]) {
+                            continue;
+                        }
                         similar_text($key, $parser->nameKey($product->name), $score);
                         if ($score >= 88) {
                             $row['suggestions'][] = $product->id.':'.$product->name;
@@ -262,6 +275,26 @@ class SyncOmenergoCommand extends Command
         ]);
 
         return [$supplier, $source, $sync];
+    }
+
+    private function auditCurrentState(?Supplier $supplier): void
+    {
+        $links = $supplier?->supplierProducts()->with('product')->get() ?? collect();
+        $products = $links->pluck('product')->filter();
+        $stats = [
+            'supplier_exists' => $supplier ? 1 : 0,
+            'crm_linked' => $supplier?->crm_counterparty_id ? 1 : 0,
+            'contact_points' => $supplier?->crmCounterparty?->contactPoints()->where('is_active', true)->count() ?? 0,
+            'source_enabled' => $supplier?->sources()->where('is_active', true)->count() ?? 0,
+            'current_links' => $links->count(),
+            'current_active_cards' => $products->where('is_active', true)->count(),
+            'current_cards_with_images' => $products->filter(fn ($p) => ! empty($p->images))->count(),
+            'current_cards_with_specs' => $products->filter(fn ($p) => count($p->specs ?? []) >= 9)->count(),
+            'current_local_image_files' => $products->sum(fn ($p) => count(array_filter($p->images ?? [], fn ($path) => is_string($path) && str_starts_with($path, 'img/products/omenergo/') && is_file(public_path($path))))),
+        ];
+        foreach ($stats as $key => $value) {
+            $this->line("metric.omenergo.{$key}={$value}");
+        }
     }
 
     private function createProduct(array $row, OmenergoPriceList $parser, Supplier $supplier): Product

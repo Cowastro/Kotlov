@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\CrmContactPoint;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -67,5 +69,18 @@ class SyncOmenergoCommandTest extends TestCase
         $row = (new OmenergoPriceList)->parse($csv)[0];
         $this->assertTrue($row['technical_conflict']);
         $this->assertStringNotContainsString('8000', (new OmenergoPriceList)->content($row));
+    }
+
+    public function test_documented_model_alias_links_existing_card_instead_of_creating_duplicate(): void
+    {
+        Storage::fake('local');
+        $brand = Brand::firstOrCreate(['name' => 'Энергия'], ['slug' => 'energy-test', 'is_active' => true]);
+        $category = Category::firstOrCreate(['slug' => 'energy-test'], ['name' => 'Тест стабилизаторов']);
+        $existing = Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Стабилизатор напряжения Энергия Voltron РСН-1', 'sku' => 'KOTLOV-ENERGY-TEST', 'slug' => 'existing-voltron-test']);
+        Http::fake([OmenergoPriceList::CSV_URL => Http::response($this->feed())]);
+        $this->artisan('supplier:sync-omenergo', ['--apply' => true, '--confirm-pricing' => true, '--create-new' => true])->assertSuccessful();
+        $link = SupplierProduct::where('supplier_article_normalized', 'E0101-1')->firstOrFail();
+        $this->assertSame($existing->id, $link->product_id);
+        $this->assertDatabaseMissing('products', ['sku' => 'OMENERGO-E0101-1']);
     }
 }
