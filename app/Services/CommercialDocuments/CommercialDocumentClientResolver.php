@@ -8,6 +8,7 @@ use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
 use App\Services\Telephony\PhoneNumber;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CommercialDocumentClientResolver
 {
@@ -40,6 +41,7 @@ class CommercialDocumentClientResolver
             $document->forceFill([
                 'crm_counterparty_id' => $counterparty->id,
                 'crm_contact_id' => $contact?->id,
+                'client_unp' => $counterparty->unp,
             ])->saveQuietly();
 
             return $counterparty;
@@ -164,10 +166,19 @@ class CommercialDocumentClientResolver
             ]);
         }
 
+        // A non-empty number entered in the quote updates the directory.
+        // An empty quote field must never erase a known taxpayer number.
+        if ($unp !== '') {
+            if ($counterparty->exists && $counterparty->unp !== $unp
+                && CrmCounterparty::query()->where('unp', $unp)->whereKeyNot($counterparty->id)->exists()) {
+                throw ValidationException::withMessages(['client_unp' => 'Этот УНП уже записан у другого контрагента. Выберите его из справочника.']);
+            }
+            $counterparty->unp = $unp;
+        }
+
         foreach ([
             'legal_name' => $legalName,
             'public_name' => $company,
-            'unp' => trim((string) $document->client_unp),
             'legal_address' => trim((string) $document->client_address),
             'responsible_user_id' => $document->manager_id,
         ] as $attribute => $value) {

@@ -131,7 +131,13 @@ class CommercialDocumentResource extends Resource
                     TextInput::make('client_name')->label('Контактное лицо')->maxLength(255),
                     TextInput::make('client_email')->label('Email')->email()->maxLength(255),
                     TextInput::make('client_phone')->label('Телефон')->tel()->maxLength(64),
-                    TextInput::make('client_unp')->label('УНП / ИНН')->maxLength(32),
+                    TextInput::make('client_unp')->label('УНП / ИНН')->maxLength(32)
+                        ->helperText('Сохраняется у контрагента и подставляется в следующие КП. Пустое поле не удаляет УНП из справочника.')
+                        ->afterStateHydrated(function (TextInput $component, Get $get, mixed $state): void {
+                            if (blank($state) && $get('crm_counterparty_id')) {
+                                $component->state(CrmCounterparty::query()->whereKey($get('crm_counterparty_id'))->value('unp'));
+                            }
+                        }),
                     Textarea::make('client_address')->label('Юридический адрес')->rows(2),
                     SchemaActions::make([
                         Action::make('lookup_client_requisites')
