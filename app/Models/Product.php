@@ -46,7 +46,7 @@ class Product extends Model
         'images', 'specs', 'service_info', 'documents', 'promo_flags', 'video_url', 'content_source_url',
         'weight', 'unit', 'warranty',
         'is_active', 'is_archived', 'in_stock', 'availability_status', 'stock_qty',
-        'requires_price_confirmation',
+        'requires_price_confirmation', 'manual_stock_management',
         'is_featured', 'is_new', 'is_sale', 'sort_order',
         'meta_title', 'meta_keywords', 'meta_description',
         'rating', 'reviews_count', 'views_count', 'popularity_score', 'popularity_updated_at',
@@ -61,6 +61,7 @@ class Product extends Model
         'is_active' => 'boolean',
         'is_archived' => 'boolean',
         'requires_price_confirmation' => 'boolean',
+        'manual_stock_management' => 'boolean',
         'in_stock' => 'boolean',
         'is_featured' => 'boolean',
         'is_new' => 'boolean',
@@ -100,6 +101,12 @@ class Product extends Model
         // a manager to confirm that the retail price still covers procurement.
         if ($this->requires_price_confirmation) {
             return self::AVAILABILITY_CHECK;
+        }
+
+        if ($this->manual_stock_management) {
+            return $status === self::AVAILABILITY_IN_STOCK && $this->in_stock
+                ? self::AVAILABILITY_IN_STOCK
+                : self::AVAILABILITY_CHECK;
         }
 
         // "В наличии" is allowed only when a linked supplier channel confirms
@@ -487,6 +494,8 @@ class Product extends Model
         $productId = $query->getModel()->qualifyColumn('id');
         $requiresConfirmation = $query->getModel()->qualifyColumn('requires_price_confirmation');
         $availability = $query->getModel()->qualifyColumn('availability_status');
+        $manualStock = $query->getModel()->qualifyColumn('manual_stock_management');
+        $inStock = $query->getModel()->qualifyColumn('in_stock');
         $supplierFreshAfter = now()->subHours(SupplierProduct::STALE_AFTER_HOURS);
         $integrationFreshAfter = now()->subMinutes(15);
         $oneCFreshAfter = now()->subMinutes(IntegrationSource::ONE_C_STOCK_MIN_VALIDITY_MINUTES);
@@ -495,6 +504,8 @@ class Product extends Model
             "CASE WHEN {$requiresConfirmation} = 0
                 AND ({$availability} IS NULL OR {$availability} != ?)
                 AND (
+                    ({$manualStock} = 1 AND {$availability} = 'in_stock' AND {$inStock} = 1)
+                    OR ({$manualStock} = 0 AND (
                     EXISTS (
                         SELECT 1 FROM supplier_products AS catalog_supplier_stock
                         WHERE catalog_supplier_stock.product_id = {$productId}
@@ -535,7 +546,7 @@ class Product extends Model
                               )
                           )
                     )
-                ) THEN 0 ELSE 1 END",
+                ))) THEN 0 ELSE 1 END",
             [
                 self::AVAILABILITY_OUT_OF_STOCK,
                 $supplierFreshAfter,

@@ -32,6 +32,7 @@ class SupplierProductAvailabilityService
         $now ??= now();
         $products = DB::table('products')
             ->whereIn('id', $productIds)
+            ->where('manual_stock_management', false)
             ->get(['id', 'in_stock', 'stock_qty', 'availability_status'])
             ->keyBy('id');
         $stockByProduct = Schema::hasTable('supplier_products') && Schema::hasTable('suppliers')

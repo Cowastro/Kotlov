@@ -114,6 +114,11 @@ class ProductForm
                                                     ->label('В наличии')
                                                     ->default(true),
 
+                                                Toggle::make('manual_stock_management')
+                                                    ->label('Управлять наличием вручную')
+                                                    ->helperText('Наличие сохраняется без ограничения 24 часа. Когда товар закончится, измените статус наличия вручную.')
+                                                    ->columnSpanFull(),
+
                                                 Select::make('availability_status')
                                                     ->label('Статус наличия')
                                                     ->options(Product::availabilityStatusOptions())
@@ -474,10 +479,10 @@ class ProductForm
         }
 
         $suppliers = collect([
-                filled($product->supplier_id)
-                    ? Supplier::query()->find($product->supplier_id)
-                    : null,
-            ])
+            filled($product->supplier_id)
+                ? Supplier::query()->find($product->supplier_id)
+                : null,
+        ])
             ->merge($product->supplierProducts->pluck('supplier'))
             ->merge($product->integrationProducts->pluck('source.supplier'))
             ->filter(fn ($supplier): bool => $supplier instanceof Supplier

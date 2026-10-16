@@ -57,6 +57,11 @@ class OrderItem extends Model
 
             $context = app(OrderItemSupplyContextResolver::class)->resolve($item);
 
+            if ($item->product?->manual_stock_management) {
+                $context['is_available'] = $item->product->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK;
+                $context['stock_quantity'] = $context['is_available'] ? $item->product->stock_qty : null;
+            }
+
             $item->forceFill([
                 'supply_status' => $context['status'],
                 'supply_route_label' => $context['route_label'],

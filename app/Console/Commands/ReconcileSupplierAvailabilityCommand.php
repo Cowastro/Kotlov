@@ -56,6 +56,7 @@ class ReconcileSupplierAvailabilityCommand extends Command
 
         if (! (bool) $this->option('apply')) {
             $this->warn('Предпросмотр: данные не изменены. Для исправления добавьте --apply.');
+
             return self::SUCCESS;
         }
 
@@ -67,6 +68,7 @@ class ReconcileSupplierAvailabilityCommand extends Command
         // the boolean in-stock flag, even for manually managed products that do
         // not currently have an active supplier link.
         DB::table('products')
+            ->where('manual_stock_management', false)
             ->where('availability_status', Product::AVAILABILITY_CHECK)
             ->where('in_stock', true)
             ->update([
@@ -88,7 +90,7 @@ class ReconcileSupplierAvailabilityCommand extends Command
 
         $after = $this->inconsistencyCounts();
         $this->newLine();
-        $this->info('Пересчитано связанных товаров: ' . count($productIds));
+        $this->info('Пересчитано связанных товаров: '.count($productIds));
         $this->info('Печей без поставщика переведено в «цену и наличие уточняйте»: '.$guardedStoves);
         $this->table(['Проверка после исправления', 'Количество'], $this->rows($after));
         $this->writeMetrics('after', $after);
@@ -133,6 +135,7 @@ class ReconcileSupplierAvailabilityCommand extends Command
 
         return [
             'false_positive' => DB::table('products as p')
+                ->where('p.manual_stock_management', false)
                 ->where('p.in_stock', true)
                 ->where('p.is_archived', false)
                 ->where(fn ($query) => $query
@@ -145,6 +148,7 @@ class ReconcileSupplierAvailabilityCommand extends Command
                         ->whereNotExists($hasConfirmedStock)))
                 ->count(),
             'false_negative' => DB::table('products as p')
+                ->where('p.manual_stock_management', false)
                 ->where('p.in_stock', false)
                 ->where('p.is_archived', false)
                 ->where(fn ($query) => $query
@@ -154,6 +158,7 @@ class ReconcileSupplierAvailabilityCommand extends Command
                         ->whereExists($hasConfirmedStock)))
                 ->count(),
             'uncertain_in_stock' => DB::table('products as p')
+                ->where('p.manual_stock_management', false)
                 ->where('p.availability_status', Product::AVAILABILITY_CHECK)
                 ->where('p.in_stock', true)
                 ->where('p.is_archived', false)
@@ -200,6 +205,7 @@ class ReconcileSupplierAvailabilityCommand extends Command
             ->where('guard_ip.match_status', 'matched');
 
         return DB::table('products as p')
+            ->where('p.manual_stock_management', false)
             ->whereIn('p.category_id', $categoryIds)
             ->where('p.is_archived', false)
             ->whereNotExists($hasActiveLegacyLink)
