@@ -6,6 +6,8 @@ use App\Models\CommercialDocument;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\User;
+use App\Services\CommercialDocuments\CommercialDocumentAnalytics;
+use App\Services\CommercialDocuments\CommercialDocumentControlNotifier;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -114,6 +116,31 @@ class CommercialDocumentRevisionWorkflowTest extends TestCase
         $this->assertSame('negotiation', $thread->fresh()->sales_stage);
         $this->assertSame('waiting_manager', $thread->fresh()->status);
         $this->assertNotNull($thread->fresh()->next_follow_up_at);
+    }
+
+    public function test_created_revision_resolves_the_original_action_and_sent_revision_replaces_it(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $original = CommercialDocument::create([
+            'type' => 'quote', 'status' => 'needs_revision', 'manager_id' => $manager->id,
+        ]);
+        $revision = app(CommercialDocumentWorkflow::class)->createRevision($original, $manager);
+
+        $this->assertFalse($original->needsManagerControl());
+        $this->assertSame('Новая редакция подготовлена', $original->statusLabel());
+        $this->assertSame('Открыть редакцию №2', $original->controlLabel());
+        $this->assertSame([$revision->id], CommercialDocument::currentRevision()->whereIn('id', [$original->id, $revision->id])->pluck('id')->all());
+        $this->assertSame(0, app(CommercialDocumentControlNotifier::class)->notify());
+        $this->assertSame(0, app(CommercialDocumentAnalytics::class)->summary()['needs_action_count']);
+
+        $revision->update(['status' => 'sent']);
+        $this->assertSame('Заменена новой редакцией', $original->statusLabel());
+        $this->assertSame('needs_revision', $original->fresh()->status);
+        $this->assertSame('Открыть редакцию №2', $original->controlLabel());
+
+        $revision->update(['status' => 'cancelled']);
+        $this->assertTrue($original->needsManagerControl());
+        $this->assertSame('Создать новую редакцию', $original->controlLabel());
     }
 
     private function thread(): CrmMailThread

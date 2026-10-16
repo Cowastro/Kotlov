@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -105,6 +106,10 @@ class CommercialDocument extends Model
 
     public function needsManagerControl(): bool
     {
+        if ($this->newerRevision()) {
+            return false;
+        }
+
         return ($this->type === 'quote' && $this->status === 'needs_revision')
             || ($this->type === 'quote' && $this->status === 'sent' && $this->valid_until?->lte(today()->addDays(3)))
             || ($this->type === 'quote' && $this->status === 'accepted' && ! $this->order()->exists());
@@ -112,6 +117,10 @@ class CommercialDocument extends Model
 
     public function controlLabel(): string
     {
+        if ($newer = $this->newerRevision()) {
+            return 'Открыть редакцию №'.$newer->revision_number;
+        }
+
         if ($this->type === 'quote' && $this->status === 'needs_revision') {
             return 'Создать новую редакцию';
         }
@@ -142,6 +151,46 @@ class CommercialDocument extends Model
     public function items(): HasMany
     {
         return $this->hasMany(CommercialDocumentItem::class)->orderBy('sort_order');
+    }
+
+    public function newerRevision(): ?self
+    {
+        if ($this->type !== 'quote') {
+            return null;
+        }
+
+        return self::query()
+            ->where('type', 'quote')
+            ->where('revision_of_id', $this->revision_of_id ?: $this->id)
+            ->where('revision_number', '>', $this->revision_number ?: 1)
+            ->where('status', '!=', 'cancelled')
+            ->orderByDesc('revision_number')
+            ->first();
+    }
+
+    public function statusLabel(): string
+    {
+        if ($newer = $this->newerRevision()) {
+            return $newer->status === 'draft'
+                ? 'Новая редакция подготовлена'
+                : 'Заменена новой редакцией';
+        }
+
+        return self::STATUSES[$this->status] ?? $this->status;
+    }
+
+    public function scopeCurrentRevision(Builder $query): Builder
+    {
+        return $query->where(function (Builder $current): void {
+            $current->where('commercial_documents.type', '!=', 'quote')
+                ->orWhereNotExists(function ($newer): void {
+                    $newer->selectRaw('1')->from('commercial_documents as newer_revision')
+                        ->where('newer_revision.type', 'quote')
+                        ->whereRaw('newer_revision.revision_of_id = COALESCE(commercial_documents.revision_of_id, commercial_documents.id)')
+                        ->whereColumn('newer_revision.revision_number', '>', 'commercial_documents.revision_number')
+                        ->where('newer_revision.status', '!=', 'cancelled');
+                });
+        });
     }
 
     public function sourceDocument(): BelongsTo

@@ -14,6 +14,7 @@ class CommercialDocumentControlNotifier
     public function notify(): int
     {
         $documents = CommercialDocument::query()
+            ->currentRevision()
             ->with('manager')
             ->where(function ($control): void {
                 $control->where(function ($revision): void {

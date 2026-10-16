@@ -39,14 +39,15 @@ class ListCommercialDocuments extends ListRecords
     public function getTabs(): array
     {
         $needsAction = fn (Builder $query): Builder => $query
+            ->currentRevision()
             ->where('type', 'quote')
             ->where(function (Builder $control): void {
                 $control->where('status', 'needs_revision')
                     ->orWhere(function (Builder $sent): void {
-                    $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));
-                })->orWhere(function (Builder $accepted): void {
-                    $accepted->where('status', 'accepted')->whereDoesntHave('order');
-                });
+                        $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));
+                    })->orWhere(function (Builder $accepted): void {
+                        $accepted->where('status', 'accepted')->whereDoesntHave('order');
+                    });
             });
 
         return [
@@ -54,8 +55,8 @@ class ListCommercialDocuments extends ListRecords
                 ->modifyQueryUsing($needsAction)
                 ->badge($needsAction(CommercialDocument::query())->count() ?: null)->badgeColor('warning'),
             'active' => Tab::make('В работе')->icon('heroicon-o-clock')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', ['draft', 'sent', 'needs_revision']))
-                ->badge(CommercialDocument::query()->whereIn('status', ['draft', 'sent', 'needs_revision'])->count() ?: null),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->currentRevision()->whereIn('status', ['draft', 'sent', 'needs_revision']))
+                ->badge(CommercialDocument::query()->currentRevision()->whereIn('status', ['draft', 'sent', 'needs_revision'])->count() ?: null),
             'won' => Tab::make('Выиграно')->icon('heroicon-o-check-circle')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', ['accepted', 'paid']))
                 ->badge(CommercialDocument::query()->whereIn('status', ['accepted', 'paid'])->count() ?: null)->badgeColor('success'),

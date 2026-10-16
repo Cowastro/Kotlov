@@ -614,13 +614,13 @@ class CommercialDocumentResource extends Resource
                             ->color(fn (string $state): string => $state === 'invoice' ? 'success' : 'info')
                             ->formatStateUsing(fn (string $state): string => CommercialDocument::TYPES[$state] ?? $state),
                         TextEntry::make('status')->label('Статус')->badge()
-                            ->color(fn (string $state): string => match ($state) {
+                            ->color(fn (string $state, CommercialDocument $record): string => $record->newerRevision() ? 'gray' : match ($state) {
                                 'sent', 'accepted', 'paid' => 'success',
                                 'rejected', 'cancelled' => 'danger',
                                 'expired' => 'gray',
                                 default => 'warning',
                             })
-                            ->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state),
+                            ->formatStateUsing(fn (CommercialDocument $record): string => $record->statusLabel()),
                         TextEntry::make('issued_at')->label('Дата')->date('d.m.Y'),
                         TextEntry::make('revision_number')->label('Редакция')->formatStateUsing(fn ($state): string => '№ '.($state ?: 1)),
                         TextEntry::make('client_company')->label('Компания')
@@ -696,7 +696,7 @@ class CommercialDocumentResource extends Resource
                                     'history' => $service->history($record)->map(fn (CommercialDocument $revision): array => [
                                         'number' => $revision->number,
                                         'revision_number' => $revision->revision_number ?: 1,
-                                        'status' => CommercialDocument::STATUSES[$revision->status] ?? $revision->status,
+                                        'status' => $revision->statusLabel(),
                                         'current' => $revision->is($record),
                                         'url' => self::getUrl('view', ['record' => $revision]),
                                     ])->all(),
@@ -721,8 +721,8 @@ class CommercialDocumentResource extends Resource
                     ->description(fn (CommercialDocument $record): ?string => $record->client_email),
                 TextColumn::make('items_count')->label('Позиций')->counts('items')->alignCenter(),
                 TextColumn::make('total')->label('Сумма')->money('BYN')->sortable()->weight('bold'),
-                TextColumn::make('status')->label('Статус')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::STATUSES[$state] ?? $state)
-                    ->color(fn (string $state): string => match ($state) {
+                TextColumn::make('status')->label('Статус')->badge()->formatStateUsing(fn (CommercialDocument $record): string => $record->statusLabel())
+                    ->color(fn (string $state, CommercialDocument $record): string => $record->newerRevision() ? 'gray' : match ($state) {
                         'sent', 'accepted', 'paid' => 'success',
                         'needs_revision' => 'warning',
                         'rejected', 'cancelled' => 'danger',
@@ -738,6 +738,8 @@ class CommercialDocumentResource extends Resource
                 TextColumn::make('control')
                     ->label('Следующее действие')
                     ->state(fn (CommercialDocument $record): string => $record->controlLabel())
+                    ->url(fn (CommercialDocument $record): ?string => ($newer = $record->newerRevision())
+                        ? self::getUrl('view', ['record' => $newer]) : null)
                     ->badge()
                     ->color(fn (CommercialDocument $record): string => match ($record->controlLabel()) {
                         'Просрочено' => 'danger',
@@ -751,7 +753,7 @@ class CommercialDocumentResource extends Resource
                 SelectFilter::make('status')->label('Статус')->options(CommercialDocument::STATUSES),
                 Filter::make('needs_control')
                     ->label('Требует действия')
-                    ->query(fn (Builder $query): Builder => $query->where('type', 'quote')->where(function (Builder $control): void {
+                    ->query(fn (Builder $query): Builder => $query->currentRevision()->where('type', 'quote')->where(function (Builder $control): void {
                         $control->where('status', 'needs_revision')
                             ->orWhere(function (Builder $sent): void {
                                 $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));

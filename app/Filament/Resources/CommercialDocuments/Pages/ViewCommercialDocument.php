@@ -390,7 +390,7 @@ class ViewCommercialDocument extends ViewRecord
                 ->label('Новая редакция')
                 ->icon('heroicon-o-document-duplicate')
                 ->color('warning')
-                ->visible(fn (): bool => $this->record->type === 'quote' && $this->record->status !== 'draft')
+                ->visible(fn (): bool => $this->record->type === 'quote' && $this->record->status !== 'draft' && ! $this->record->newerRevision())
                 ->requiresConfirmation()
                 ->modalDescription('Будет создан новый черновик с теми же клиентом, товарами и ценами. Отправленная редакция останется неизменной.')
                 ->action(function (): void {
