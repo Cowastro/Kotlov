@@ -104,7 +104,7 @@ class OmenergoCatalog
         // Legacy РСН is a different 10% revision; Neo/HV also remain distinct.
         // Evidence: energy-ltd.ru/products/stabilizator-napryazheniya-energiya-voltron-500-hp,
         // manufacturer article E0101-0153 and linked Voltron 500–20000 passport.
-        if (preg_match('/voltron\s*\d+/iu', $name)) {
+        if (preg_match('/voltron[\s-]*\d+/iu', $name)) {
             $name = preg_replace('/\(\s*(?:hp|5%)\s*\)/iu', '', $name);
         }
 

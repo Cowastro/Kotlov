@@ -56,6 +56,7 @@ class OmenergoCatalogTest extends TestCase
         $this->assertSame($c->key('Энергия Voltron 500 (HP)'), $c->key('Стабилизатор напряжения для отопительных систем Энергия Voltron 500'));
         $this->assertNotSame($c->key('Энергия Voltron 500 (HP)'), $c->key('Энергия Voltron Neo 500'));
         $this->assertNotSame($c->key('Энергия Voltron 500 (HP)'), $c->key('Энергия Voltron РСН-500'));
+        $this->assertSame($c->key('Энергия Voltron 500 (HP)'), $c->key('Стабилизатор напряжения Энергия Voltron-500 (5%)'));
         $this->assertNotSame($c->key('Энергия Ultra 5000'), $c->key('Энергия Ultra 5000 (HV)'));
         $this->assertSame($c->key('Стабилизатор напряжения Энерготех NORMA 3500ВА'), $c->key('Стабилизатор напряжения NORMA 3500'));
         $this->assertNull($c->find(['name' => 'Энергия Voltron 500 (HP)'], [['name' => 'Voltron 500', 'url' => 'a'], ['name' => 'Voltron 500', 'url' => 'b']]));

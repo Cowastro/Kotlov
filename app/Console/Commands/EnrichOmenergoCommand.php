@@ -37,7 +37,7 @@ class EnrichOmenergoCommand extends Command
 
             return self::FAILURE;
         }
-        $stats = ['scanned' => 0, 'updated' => 0, 'published' => 0, 'images_saved' => 0, 'documents_saved' => 0, 'no_source' => 0, 'identity_mismatch' => 0, 'technical_review' => 0, 'errors' => 0];
+        $stats = ['scanned' => 0, 'updated' => 0, 'published' => 0, 'images_saved' => 0, 'documents_saved' => 0, 'no_source' => 0, 'identity_mismatch' => 0, 'technical_review' => 0, 'held_photo' => 0, 'held_specs' => 0, 'held_archived' => 0, 'held_price' => 0, 'errors' => 0];
         $review = [];
         try {
             $index = $catalog->index((bool) $this->option('refresh-index'));
@@ -126,6 +126,12 @@ class EnrichOmenergoCommand extends Command
                         $product->is_active = true;
                     }
                     $product->save();
+                    if (! $product->is_active) {
+                        $stats['held_photo'] += (int) ! $this->hasVerifiedLocalPhoto($product->images ?? []);
+                        $stats['held_specs'] += (int) (count($page['specs']) < 3);
+                        $stats['held_archived'] += (int) $product->is_archived;
+                        $stats['held_price'] += (int) ((float) $product->price <= 0);
+                    }
                     $link->forceFill(['source_url' => $entry['url']])->save();
                     $stats['updated']++;
                 } catch (\Throwable $e) {

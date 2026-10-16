@@ -34,6 +34,7 @@ class SyncOmenergoCommand extends Command
         {--update-content : Populate verified sheet content, independent of daily price sync}
         {--csv-file= : Read a saved source CSV instead of downloading}
         {--review-two : Export only the two explicitly authorized unresolved identity rows; dry-run only}
+        {--archive-replaced : Preview or archive unlinked old cards only when a unique verified active replacement exists}
         {--report= : Write a complete review CSV to this path}';
 
     protected $description = 'Omenergo: dealer Google Sheet, exact catalog matching, CRM contacts and safe daily updates.';
@@ -61,6 +62,9 @@ class SyncOmenergoCommand extends Command
             $supplier = Supplier::where('code', 'omenergo')->first();
             if ($supplier && ! $supplier->is_active) {
                 throw new RuntimeException('Omenergo supplier is disabled.');
+            }
+            if ($this->option('archive-replaced')) {
+                return $this->archiveReplaced($supplier);
             }
             $classified = $this->classify($rows, $parser, $supplier);
             if ($this->option('review-two')) {
@@ -259,6 +263,79 @@ class SyncOmenergoCommand extends Command
         }
 
         return $rows;
+    }
+
+    private function archiveReplaced(?Supplier $supplier): int
+    {
+        if (! $supplier) {
+            throw new RuntimeException('Omenergo must be configured before reviewing old cards.');
+        }
+        $catalog = new OmenergoCatalog;
+        $linked = $supplier->supplierProducts()->with('product')->get()->pluck('product')->filter();
+        $replacements = $linked->filter(fn ($p) => $this->eligibleReplacement($p))
+            ->groupBy(fn ($p) => $p->brand_id.'|'.$p->category_id.'|'.$catalog->key($p->name));
+        $stats = ['archive_candidates' => 0, 'archive_protected' => 0, 'archive_no_unique_replacement' => 0, 'archived' => 0];
+        $apply = $this->option('apply') && ! $this->option('dry-run');
+        DB::transaction(function () use ($linked, $replacements, $catalog, &$stats, $apply): void {
+            $oldCards = Product::whereNotIn('id', $linked->pluck('id'))->where('is_archived', false)
+                ->whereIn('brand_id', $linked->pluck('brand_id')->filter()->unique())
+                ->whereIn('category_id', $linked->pluck('category_id')->filter()->unique())
+                ->withCount(['supplierProducts', 'integrationProducts'])->lockForUpdate()->get();
+            $plan = [];
+            foreach ($oldCards as $old) {
+                if ($old->supplier_products_count > 0 || $old->integration_products_count > 0 || $old->supplier_id !== null
+                    || $old->manual_stock_management || $old->in_stock || (float) $old->stock_qty > 0 || (float) $old->manual_purchase_price_byn > 0) {
+                    $stats['archive_protected']++;
+
+                    continue;
+                }
+                $matches = $replacements->get($old->brand_id.'|'.$old->category_id.'|'.$catalog->key($old->name), collect());
+                if ($matches->count() !== 1) {
+                    $stats['archive_no_unique_replacement']++;
+
+                    continue;
+                }
+                $stats['archive_candidates']++;
+                $plan[] = ['before' => $old->getAttributes(), 'replacement_id' => $matches->first()->id];
+            }
+            Storage::disk('local')->put('omenergo/archive-review/'.now()->format('Ymd_His_u').'.json', json_encode(['apply' => $apply, 'cards' => $plan], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+            if ($apply) {
+                foreach ($plan as $entry) {
+                    $replacement = Product::whereKey($entry['replacement_id'])->lockForUpdate()->first();
+                    if (! $replacement || ! $this->eligibleReplacement($replacement)
+                        || $replacement->brand_id !== $entry['before']['brand_id'] || $replacement->category_id !== $entry['before']['category_id']
+                        || $catalog->key($replacement->name) !== $catalog->key($entry['before']['name'])) {
+                        throw new RuntimeException('Replacement changed during archive review; no cards were archived.');
+                    }
+                    Product::whereKey($entry['before']['id'])->update(['is_archived' => true]);
+                    $stats['archived']++;
+                }
+            }
+        });
+        foreach ($stats as $key => $value) {
+            $this->line("metric.omenergo.{$key}={$value}");
+        }
+        if ($stats['archived'] > 0) {
+            Cache::forget('nav:brands');
+            Cache::forget('nav:categories:orderable:v1');
+            Cache::forget('catalog:global-price-range');
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function eligibleReplacement(Product $product): bool
+    {
+        return $product->is_active && ! $product->is_archived && str_starts_with((string) $product->sku, 'OMENERGO-')
+            && (float) $product->price > 0 && count($product->specs ?? []) >= 8
+            && collect($product->images ?? [])->contains(function ($path): bool {
+                if (! is_string($path) || ! str_starts_with($path, 'img/products/omenergo/') || ! is_file(public_path($path))) {
+                    return false;
+                }
+                $size = @getimagesize(public_path($path));
+
+                return $size && min($size[0], $size[1]) >= 200;
+            });
     }
 
     private function ensureSupplier(): array
