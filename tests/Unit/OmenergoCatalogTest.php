@@ -50,8 +50,12 @@ class OmenergoCatalogTest extends TestCase
     public function test_only_documented_aliases_match_and_variants_remain_distinct(): void
     {
         $c = new OmenergoCatalog;
+        $this->assertTrue($c->distinctFamilies('Энергия Voltron 3000 (HP)', 'Стабилизатор напряжения Энергия Voltron Neo 3000'));
+        $this->assertTrue($c->distinctFamilies('Энергия Люкс 1000', 'Стабилизатор напряжения Энергия АРС-1000'));
+        $this->assertFalse($c->distinctFamilies('Энергия Voltron 3000 (HP)', 'Энергия Voltron 3000 (HP) X'));
         $this->assertSame($c->key('Энергия Voltron 500 (HP)'), $c->key('Стабилизатор напряжения для отопительных систем Энергия Voltron 500'));
         $this->assertNotSame($c->key('Энергия Voltron 500 (HP)'), $c->key('Энергия Voltron Neo 500'));
+        $this->assertNotSame($c->key('Энергия Voltron 500 (HP)'), $c->key('Энергия Voltron РСН-500'));
         $this->assertNotSame($c->key('Энергия Ultra 5000'), $c->key('Энергия Ultra 5000 (HV)'));
         $this->assertSame($c->key('Стабилизатор напряжения Энерготех NORMA 3500ВА'), $c->key('Стабилизатор напряжения NORMA 3500'));
         $this->assertNull($c->find(['name' => 'Энергия Voltron 500 (HP)'], [['name' => 'Voltron 500', 'url' => 'a'], ['name' => 'Voltron 500', 'url' => 'b']]));

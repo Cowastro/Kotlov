@@ -100,12 +100,12 @@ class OmenergoCatalog
         $name = preg_replace('/\b(?:энергия|энерготех|стабилизатор|напряжения|сетевой|фильтр|со|для|отопительных|систем|источник|бесперебойного|питания)\b/iu', '', $name);
         $name = strtr($name, ['асн' => 'ach', 'арс' => 'apc', 'настенный' => 'навесной', 'трехфазный' => '', 'х' => 'x', 'ё' => 'е']);
         $name = preg_replace('/(\d+)\s*ва\b/iu', '$1', $name);
-        // Voltron (HP), Voltron (5%) and Voltron РСН are the same
-        // manufacturer series; Neo and HV are intentionally never removed.
+        // Voltron (HP) and Voltron (5%) are the same revision.
+        // Legacy РСН is a different 10% revision; Neo/HV also remain distinct.
         // Evidence: energy-ltd.ru/products/stabilizator-napryazheniya-energiya-voltron-500-hp,
         // manufacturer article E0101-0153 and linked Voltron 500–20000 passport.
-        if (preg_match('/voltron\s*(?:рсн\s*[- ]?)?\d+/iu', $name)) {
-            $name = preg_replace('/\(\s*(?:hp|5%)\s*\)|\bрсн\b/iu', '', $name);
+        if (preg_match('/voltron\s*\d+/iu', $name)) {
+            $name = preg_replace('/\(\s*(?:hp|5%)\s*\)/iu', '', $name);
         }
 
         return preg_replace('/[^\p{L}\p{N}]+/u', '', $name);
@@ -135,6 +135,21 @@ class OmenergoCatalog
         }
 
         return count($matches) === 1 ? $matches[0] : null;
+    }
+
+    public function distinctFamilies(string $left, string $right): bool
+    {
+        $a = mb_strtolower($left);
+        $b = mb_strtolower($right);
+        // E0101-0157 Voltron HP and E0101-0310 Voltron Neo are separate
+        // factory models. Likewise, Люкс and АРС are distinct series.
+        if (str_contains($a, 'voltron') && str_contains($b, 'voltron')
+            && (str_contains($a, 'neo') !== str_contains($b, 'neo'))) {
+            return true;
+        }
+
+        return (str_contains($a, 'люкс') && preg_match('/\b(?:арс|apc)\b/iu', $b))
+            || (str_contains($b, 'люкс') && preg_match('/\b(?:арс|apc)\b/iu', $a));
     }
 
     public function page(string $url): array

@@ -83,7 +83,7 @@ class SyncOmenergoCommand extends Command
                 return self::SUCCESS;
             }
             $this->report($classified);
-            $this->auditCurrentState($supplier);
+            $this->auditCurrentState($supplier, $rows);
             $apply = $this->option('apply') && ! $this->option('dry-run');
             if (! $apply) {
                 return self::SUCCESS;
@@ -230,6 +230,9 @@ class SyncOmenergoCommand extends Command
                 $key = $parser->nameKey($row['name']);
                 foreach ($products as $product) {
                     if ($product->brand && $parser->nameKey($product->brand->name) === $parser->nameKey($row['brand'])) {
+                        if ($catalog->distinctFamilies($row['name'], $product->name)) {
+                            continue;
+                        }
                         preg_match_all('/\d+(?:[.,]\d+)?/u', $row['name'], $sourceNumbers);
                         preg_match_all('/\d+(?:[.,]\d+)?/u', $product->name, $productNumbers);
                         if ($sourceNumbers[0] !== $productNumbers[0]) {
@@ -300,10 +303,11 @@ class SyncOmenergoCommand extends Command
         return [$supplier, $source, $sync];
     }
 
-    private function auditCurrentState(?Supplier $supplier): void
+    private function auditCurrentState(?Supplier $supplier, array $rows): void
     {
         $links = $supplier?->supplierProducts()->with('product')->get() ?? collect();
         $products = $links->pluck('product')->filter();
+        $feed = collect($rows)->keyBy('article_key');
         $stats = [
             'supplier_exists' => $supplier ? 1 : 0,
             'crm_linked' => $supplier?->crm_counterparty_id ? 1 : 0,
@@ -313,6 +317,13 @@ class SyncOmenergoCommand extends Command
             'current_active_cards' => $products->where('is_active', true)->count(),
             'current_cards_with_images' => $products->filter(fn ($p) => ! empty($p->images))->count(),
             'current_cards_with_specs' => $products->filter(fn ($p) => count($p->specs ?? []) >= 9)->count(),
+            'current_purchase_mismatches' => $links->filter(fn ($link) => $feed->has($link->supplier_article_normalized) && abs((float) $link->price_byn - (float) $feed[$link->supplier_article_normalized]['dealer']) > 0.005)->count(),
+            'current_retail_mismatches' => $links->filter(fn ($link) => $link->product && $feed->has($link->supplier_article_normalized) && abs((float) $link->product->price - (float) $feed[$link->supplier_article_normalized]['retail']) > 0.005)->count(),
+            'current_stale_links' => $links->filter(fn ($link) => ! $link->last_synced_at || $link->last_synced_at->lt(now()->subHours(24)))->count(),
+            'current_invented_quantities' => $links->filter(fn ($link) => in_array($link->raw['stock_text'] ?? '', ['*', '**', '***'], true) && $link->stock_quantity !== null)->count(),
+            'current_active_without_local_photos' => $products->filter(fn ($p) => $p->is_active && ! collect($p->images ?? [])->contains(fn ($path) => is_string($path) && str_starts_with($path, 'img/products/omenergo/') && is_file(public_path($path))))->count(),
+            'current_inactive_with_images' => $products->filter(fn ($p) => ! $p->is_active && ! empty($p->images))->count(),
+            'current_cards_with_local_documents' => $products->filter(fn ($p) => collect($p->documents ?? [])->contains(fn ($doc) => is_array($doc) && str_starts_with($doc['url'] ?? '', '/docs/omenergo/') && is_file(public_path(ltrim($doc['url'], '/')))))->count(),
             'current_local_image_files' => $products->sum(fn ($p) => count(array_filter($p->images ?? [], fn ($path) => is_string($path) && str_starts_with($path, 'img/products/omenergo/') && is_file(public_path($path))))),
         ];
         foreach ($stats as $key => $value) {

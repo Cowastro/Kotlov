@@ -108,11 +108,29 @@ class SyncOmenergoCommandTest extends TestCase
         Storage::fake('local');
         $brand = Brand::firstOrCreate(['name' => 'Энергия'], ['slug' => 'energy-test', 'is_active' => true]);
         $category = Category::firstOrCreate(['slug' => 'energy-test'], ['name' => 'Тест стабилизаторов']);
-        $existing = Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Стабилизатор напряжения Энергия Voltron РСН-1', 'sku' => 'KOTLOV-ENERGY-TEST', 'slug' => 'existing-voltron-test']);
+        $existing = Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Стабилизатор напряжения Энергия Voltron 1 (5%)', 'sku' => 'KOTLOV-ENERGY-TEST', 'slug' => 'existing-voltron-test']);
         Http::fake([OmenergoPriceList::CSV_URL => Http::response($this->feed())]);
         $this->artisan('supplier:sync-omenergo', ['--apply' => true, '--confirm-pricing' => true, '--create-new' => true])->assertSuccessful();
         $link = SupplierProduct::where('supplier_article_normalized', 'E0101-1')->firstOrFail();
         $this->assertSame($existing->id, $link->product_id);
         $this->assertDatabaseMissing('products', ['sku' => 'OMENERGO-E0101-1']);
+    }
+
+    public function test_distinct_series_do_not_block_new_cards_or_reuse_old_products(): void
+    {
+        Storage::fake('local');
+        $brand = Brand::firstOrCreate(['name' => 'Энергия'], ['slug' => 'energy-series']);
+        $category = Category::create(['name' => 'Тест серий', 'slug' => 'energy-series']);
+        $neo = Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Стабилизатор напряжения Энергия Voltron Neo 3', 'slug' => 'old-neo']);
+        $apc = Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Стабилизатор напряжения Энергия АРС-1000', 'slug' => 'old-apc']);
+        $csv = str_replace('Энергия Voltron 1 (HP)', 'Энергия Люкс 1000', $this->feed());
+        Http::fake([OmenergoPriceList::CSV_URL => Http::response($csv)]);
+        $this->artisan('supplier:sync-omenergo', ['--apply' => true, '--confirm-pricing' => true, '--create-new' => true])->assertSuccessful();
+        $this->assertDatabaseHas('products', ['sku' => 'OMENERGO-E0101-1']);
+        $this->assertDatabaseHas('products', ['sku' => 'OMENERGO-E0101-3']);
+        $this->assertDatabaseMissing('supplier_products', ['product_id' => $neo->id]);
+        $this->assertDatabaseMissing('supplier_products', ['product_id' => $apc->id]);
+        $this->assertFalse($neo->fresh()->is_archived);
+        $this->assertFalse($apc->fresh()->is_archived);
     }
 }
