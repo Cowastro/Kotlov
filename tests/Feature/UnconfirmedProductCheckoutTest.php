@@ -90,7 +90,10 @@ class UnconfirmedProductCheckoutTest extends TestCase
         $product = $this->unconfirmedProduct()->load('category');
 
         $this->view('partials.product-card', ['product' => $product])
-            ->assertSee('card-product--consultation', false);
+            ->assertSee('card-product--consultation', false)
+            ->assertSee('btn-product-consultation', false)
+            ->assertSee('icon-Question', false)
+            ->assertSee('product-consultation-label', false);
 
         foreach (['partials.product-card', 'partials.product-card-list'] as $view) {
             $this->view($view, ['product' => $product])
@@ -111,6 +114,28 @@ class UnconfirmedProductCheckoutTest extends TestCase
             ->assertSee('product-card-availability', false)
             ->assertSeeText('В наличии')
             ->assertSee('Товар в наличии на складе');
+    }
+
+    public function test_confirmed_product_can_be_bought_from_mobile_and_desktop_with_the_same_retail_price(): void
+    {
+        $product = $this->confirmedProduct(120)->load('category');
+
+        foreach (['Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'] as $userAgent) {
+            $this->withHeader('User-Agent', $userAgent);
+
+            foreach (['partials.product-card', 'partials.product-card-list'] as $view) {
+                $this->view($view, ['product' => $product])
+                    ->assertSee('btn-add-to-cart', false)
+                    ->assertSee('data-can-buy="1"', false)
+                    ->assertDontSee('Заказать консультацию');
+            }
+
+            $this->postJson('/cart/add', ['product_id' => $product->id])
+                ->assertOk();
+
+            $this->assertEquals(120, session('cart')[$product->id]['price']);
+            $this->assertSame('retail', session('cart')[$product->id]['pricing_type']);
+        }
     }
 
     public function test_product_page_keeps_the_retail_price_visible_while_stock_requires_confirmation(): void

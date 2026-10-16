@@ -114,8 +114,10 @@
                 <span class="add-to-cart-label">В корзину</span>
             </a>
             @else
-            <a href="#ask" data-bs-toggle="modal" class="tf-btn btn-white small w-100">
-                Заказать консультацию
+            <a href="#ask" data-bs-toggle="modal" class="tf-btn btn-white small w-100 btn-product-consultation"
+                aria-label="Заказать консультацию: {{ $product->name }}" title="Уточнить условия заказа">
+                <i class="icon icon-Question" aria-hidden="true"></i>
+                <span class="product-consultation-label">Заказать консультацию</span>
             </a>
             @endif
         </div>

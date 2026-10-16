@@ -767,7 +767,8 @@ body {
         left: auto;
     }
 
-    #gridLayout .product-action_bot .btn-add-to-cart {
+    #gridLayout .product-action_bot .btn-add-to-cart,
+    #gridLayout .product-action_bot .btn-product-consultation {
         width: 36px;
         min-width: 36px;
         height: 36px;
@@ -780,54 +781,13 @@ body {
         justify-content: center;
     }
 
-    #gridLayout .product-action_bot .btn-add-to-cart .icon {
+    #gridLayout .product-action_bot .btn-add-to-cart .icon,
+    #gridLayout .product-action_bot .btn-product-consultation .icon {
         font-size: 17px;
     }
 
-    /* Consultation is a full text action, not the compact cart icon.
-       Keep it and the secondary actions in separate normal-flow rows. */
-    #gridLayout .card-product--consultation .card-product_wrapper.square {
-        aspect-ratio: auto;
-        display: flex;
-        flex-direction: column;
-    }
-
-    #gridLayout .card-product--consultation .product-img {
-        flex: 0 0 auto;
-        aspect-ratio: 1;
-    }
-
-    #gridLayout .card-product--consultation .product-action_list {
-        position: static;
-        justify-content: center;
-        margin: 6px 0;
-        min-height: 36px;
-    }
-
-    #gridLayout .card-product--consultation .product-action_bot {
-        position: static;
-        inset: auto;
-        transform: none;
-        opacity: 1;
-        visibility: visible;
-        width: 100%;
-        padding: 0 2px 4px;
-    }
-
-    #gridLayout .card-product--consultation .product-action_bot .tf-btn {
-        min-width: 0;
-        width: 100%;
-        min-height: 40px;
-        height: auto;
-        padding: 7px 6px;
-        border-radius: 8px;
-        font-size: 12px;
-        line-height: 1.35;
-        white-space: normal;
-        text-align: center;
-    }
-
-    #gridLayout .add-to-cart-label {
+    #gridLayout .add-to-cart-label,
+    #gridLayout .product-consultation-label {
         display: none;
     }
 
