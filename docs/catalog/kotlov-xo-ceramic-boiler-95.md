@@ -39,3 +39,11 @@ Retouch prompt:
 Command: `catalog:publish-kotlov-ceramic-boiler` (dry run); add `--apply` to publish. Existing exact identity only; conflicting SKU/slug/brand or an existing integration link blocks writes. Images and existing KOTLOV brand / pellet-boiler category are required. Repeated application creates no duplicate.
 
 Public URL: `/kotly-na-pelletah/pelletnyy-kotel-kotlov-xo-ceramic-pro-95-kvt-bunker-1500`.
+
+## Technical expansion and SEO
+
+On user request, added the original unmodified base-boiler cutaway extracted from the supplied DOC as `public/img/products/kotlov-xo-boiler-95/base-boiler-cutaway.png`, both in the gallery and in the description with an enlargement link and explanatory numbered components. It describes the base body, not the exact XO mounting configuration.
+
+Flue-gas temperature is **at least 140 °C**, not a maximum or a fixed setpoint. This agrees in the supplied DOC and the manufacturer's generic pellet-boiler page. Working water pressure **up to 0.25 MPa (2.5 bar)** and minimum water temperature **55 °C** agree in both sources and are explicitly scoped to the base body. The two sources disagree on maximum water temperature (95 vs 90 °C) and draft (20 vs 40 Pa), so neither contradictory value is published. In particular, no full package certification or efficiency is inferred from these fields.
+
+The KOTLOV promotion page separately confirms the burner flow **up to 335 m³/h at 200 °C**; 200 °C is the reference condition for that flow, not a boiler operating limit. Burner-only dimensions, mass and electrical power are labelled separately from the package. Added technical headings, visible FAQs and revised title/description without changing retail, nominal boiler power or stock.
