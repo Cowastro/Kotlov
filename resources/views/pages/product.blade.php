@@ -1092,6 +1092,9 @@
 </main>
 
 @push('styles')
+@if (str_contains((string) $product->content, 'product-description-faq'))
+<link rel="stylesheet" href="{{ asset('css/product-description-faq.css') }}">
+@endif
 <style>
 @media (max-width: 767px) {
     .hotta-product-gallery .tf-product-media-main {

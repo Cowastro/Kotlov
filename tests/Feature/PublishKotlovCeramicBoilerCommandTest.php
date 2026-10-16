@@ -44,6 +44,12 @@ class PublishKotlovCeramicBoilerCommandTest extends TestCase
         $this->assertSame('не более 0,25 МПа / 2,5 бар', $specs['Рабочее давление воды базового котла']);
         $this->assertStringContainsString('95 кВт', $boiler->meta_title);
         $this->assertStringContainsString('25 600', $boiler->meta_description);
+        $this->assertSame(4, substr_count($boiler->content, '<details name="kotlov-boiler-faq"'));
+        $this->assertStringContainsString('aria-labelledby="kotlov-boiler-faq-title"', $boiler->content);
+        $this->get('/kotly-na-pelletah/'.PublishKotlovCeramicBoilerCommand::SLUG)
+            ->assertOk()
+            ->assertSee('css/product-description-faq.css', false)
+            ->assertSee('<summary>Входит ли бункер в цену?</summary>', false);
         $boiler->update(['stock_qty' => 2, 'in_stock' => true, 'availability_status' => Product::AVAILABILITY_IN_STOCK]);
         $this->artisan('catalog:publish-kotlov-ceramic-boiler', ['--apply' => true])->assertSuccessful();
         $this->assertSame($initialCount + 1, Product::query()->count());
