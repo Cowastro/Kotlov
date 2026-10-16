@@ -112,7 +112,7 @@ class Product extends Model
         // "В наличии" is allowed only when a linked supplier channel confirms
         // a positive/available stock.  A bare flag on the product card is not
         // enough: it can be left over after a link or an import was disabled.
-        if ($this->hasAvailableSupplierChannel()) {
+        if ($this->hasAvailableSupplierChannel() || $this->hasFreshConfirmedPresence()) {
             return self::AVAILABILITY_IN_STOCK;
         }
 
@@ -150,30 +150,26 @@ class Product extends Model
         return $status === self::AVAILABILITY_CHECK ? 'Доступно к заказу' : 'Нет в наличии';
     }
 
-    /** Public wording only: never changes checkout or inventory-confirmation guards. */
+    /** The same resolved state is used by public labels, the cart and checkout. */
     public function publicAvailabilityStatus(): string
     {
-        $status = $this->effectiveAvailabilityStatus();
-        if ($status === self::AVAILABILITY_IN_STOCK && ! $this->manual_stock_management && $this->confirmedStockQuantity() === null) {
-            $status = self::AVAILABILITY_CHECK;
-        }
-        if ($status === self::AVAILABILITY_CHECK && ! $this->manual_stock_management && ! $this->requires_price_confirmation) {
-            $links = $this->relationLoaded('supplierProducts')
-                ? $this->supplierProducts
-                : $this->supplierProducts()->with('supplier:id,code,is_active')->get();
-            foreach ($links as $link) {
-                $confirmedAt = $link->last_stock_synced_at ?? $link->last_synced_at;
-                if ($link->stock_quantity !== null || ! $link->in_stock || ! $confirmedAt || $confirmedAt->lt(now()->subHours(SupplierProduct::STALE_AFTER_HOURS))
-                    || ! in_array($link->stock_status, ['low_without_quantity', 'available_without_quantity', 'available', 'in_stock'], true)
-                    || $link->supplier?->is_active !== true) {
-                    continue;
-                }
+        return $this->effectiveAvailabilityStatus();
+    }
 
-                return self::AVAILABILITY_IN_STOCK;
-            }
-        }
+    private function hasFreshConfirmedPresence(): bool
+    {
+        $links = $this->relationLoaded('supplierProducts')
+            ? $this->supplierProducts
+            : $this->supplierProducts()->with('supplier:id,code,is_active')->get();
 
-        return $status;
+        return $links->contains(function (SupplierProduct $link): bool {
+            $confirmedAt = $link->last_stock_synced_at ?? $link->last_synced_at;
+
+            return $link->stock_quantity === null && $link->in_stock
+                && $confirmedAt?->gte(now()->subHours(SupplierProduct::STALE_AFTER_HOURS))
+                && in_array($link->stock_status, ['low_without_quantity', 'available_without_quantity', 'available', 'in_stock'], true)
+                && $link->supplier?->is_active === true;
+        });
     }
 
     /** Exact fresh channel quantities only, never the potentially stale integer summary. */
@@ -214,9 +210,8 @@ class Product extends Model
     }
 
     /**
-     * A public retail checkout requires a confirmed positive supplier balance.
-     * Products marked "Уточняйте наличие" remain visible, but must use the
-     * consultation flow instead of producing an unfulfillable order.
+     * The owner permits normal checkout for fresh confirmed availability with
+     * or without a numeric balance. Unknown quantities remain null.
      */
     public function canBePurchased(): bool
     {
@@ -259,9 +254,10 @@ class Product extends Model
     {
         $legacyAvailable = $this->relationLoaded('supplierProducts')
             ? $this->supplierProducts->contains(
-                fn (SupplierProduct $item): bool => $item->hasFreshPositiveStock()
+                fn (SupplierProduct $item): bool => $item->supplier?->is_active === true && $item->hasFreshPositiveStock()
             )
             : $this->supplierProducts()
+                ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true))
                 ->where('stock_quantity', '>', 0)
                 ->whereRaw(
                     'COALESCE(last_stock_synced_at, last_synced_at, updated_at) >= ?',

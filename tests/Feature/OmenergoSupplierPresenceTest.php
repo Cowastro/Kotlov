@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
+use App\Services\CartAvailabilityGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,18 +24,24 @@ class OmenergoSupplierPresenceTest extends TestCase
         return [$product, $supplier, $link];
     }
 
-    public function test_qualitative_stock_changes_label_but_never_confirms_checkout_or_quantity(): void
+    public function test_confirmed_qualitative_stock_permits_checkout_without_inventing_quantity(): void
     {
         [$product, $supplier, $link] = $this->card();
         $this->assertSame('В наличии', $product->availabilityLabel());
-        $this->assertFalse($product->canBePurchased());
-        $this->assertTrue($product->requiresAvailabilityConfirmation());
+        $this->assertTrue($product->canBePurchased());
+        $this->assertFalse($product->requiresAvailabilityConfirmation());
         $this->assertNull($link->fresh()->stock_quantity);
         $link->update(['stock_status' => 'low_without_quantity']);
         $this->assertSame('В наличии', $product->fresh()->availabilityLabel());
         $eager = Product::withSupplierChannels()->findOrFail($product->id);
         $this->assertSame('В наличии', $eager->availabilityLabel());
-        $this->assertFalse($eager->canBePurchased());
+        $this->assertTrue($eager->canBePurchased());
+        $this->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2])->assertOk();
+        $this->assertFalse(session('cart')[$product->id]['requires_availability_confirmation']);
+        $this->assertNull($link->fresh()->stock_quantity);
+        $link->update(['last_stock_synced_at' => now()->subHours(25)]);
+        $reconciled = app(CartAvailabilityGuard::class)->reconcileRetailItems(session('cart'));
+        $this->assertTrue($reconciled['cart'][$product->id]['requires_availability_confirmation']);
     }
 
     public function test_stale_disabled_and_price_hold_channels_cannot_advertise_supplier_presence(): void
@@ -48,11 +55,13 @@ class OmenergoSupplierPresenceTest extends TestCase
         $supplier->update(['is_active' => true]);
         $product->update(['requires_price_confirmation' => true]);
         $this->assertSame('Доступно к заказу', $product->fresh()->availabilityLabel());
+        $this->assertFalse($product->fresh()->canBePurchased());
+        $this->assertTrue($product->fresh()->requiresAvailabilityConfirmation());
         $product->update(['requires_price_confirmation' => false, 'is_archived' => true]);
         $this->assertSame('Нет в наличии', $product->fresh()->availabilityLabel());
     }
 
-    public function test_product_page_displays_supplier_label_without_changing_confirmation_status(): void
+    public function test_page_grid_and_list_use_same_confirmed_availability_as_checkout(): void
     {
         [$product] = $this->card();
         $response = $this->get('/supplier-presence/omen-presence')->assertOk();
@@ -63,10 +72,10 @@ class OmenergoSupplierPresenceTest extends TestCase
             $html = view($partial, ['product' => Product::withSupplierChannels()->with('category')->findOrFail($product->id)])->render();
             $this->assertTrue(str_contains($html, 'В наличии'), $partial.' must show unified availability.');
             $this->assertStringNotContainsString('у поставщика', $html);
-            $this->assertTrue(str_contains($html, 'data-needs-confirmation="1"'), $partial.' must retain manager confirmation.');
+            $this->assertTrue(str_contains($html, 'data-needs-confirmation="0"'), $partial.' must allow the approved normal checkout.');
         }
-        $this->assertSame('check', $product->fresh()->effectiveAvailabilityStatus());
-        $this->assertFalse($product->fresh()->canBePurchased());
+        $this->assertSame('in_stock', $product->fresh()->effectiveAvailabilityStatus());
+        $this->assertTrue($product->fresh()->canBePurchased());
     }
 
     public function test_archived_card_does_not_publish_old_price_as_a_search_offer(): void
@@ -97,5 +106,18 @@ class OmenergoSupplierPresenceTest extends TestCase
         $this->assertSame('Доступно к заказу', $product->fresh()->availabilityLabel());
         $product->update(['manual_stock_management' => true, 'in_stock' => true, 'availability_status' => 'in_stock', 'stock_qty' => 3]);
         $this->assertSame('В наличии: 3 шт.', $product->fresh()->publicAvailabilityLabel());
+    }
+
+    public function test_zero_under_order_and_manual_override_do_not_confirm_qualitative_stock(): void
+    {
+        [$product, $supplier, $link] = $this->card();
+        $link->update(['stock_quantity' => 0]);
+        $this->assertSame('Доступно к заказу', $product->fresh()->availabilityLabel());
+        $this->assertTrue($product->fresh()->requiresAvailabilityConfirmation());
+        $link->update(['stock_quantity' => null, 'stock_status' => 'under_order']);
+        $this->assertSame('Доступно к заказу', $product->fresh()->availabilityLabel());
+        $link->update(['stock_status' => 'available_without_quantity']);
+        $product->update(['manual_stock_management' => true, 'in_stock' => false, 'stock_qty' => 0]);
+        $this->assertSame('Доступно к заказу', $product->fresh()->availabilityLabel());
     }
 }
