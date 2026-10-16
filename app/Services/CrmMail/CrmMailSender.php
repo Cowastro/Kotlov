@@ -129,7 +129,7 @@ class CrmMailSender
                     'status' => 'needs_revision',
                     'accepted_at' => null,
                     'outcome_reason' => null,
-                    'outcome_note' => 'Заменено редакцией '.$document->number.'.',
+                    'outcome_note' => 'Заменено документом '.$document->reference().'.',
                     'closed_at' => null,
                 ]);
 

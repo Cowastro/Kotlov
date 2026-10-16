@@ -57,7 +57,7 @@
         </td>
         <td class="doc-box">
             <div class="doc-type">{!! $document->type === 'invoice' ? 'Счёт<br>на оплату' : 'Коммерческое<br>предложение' !!}</div>
-            <div class="doc-number">№ {{ $document->number }} от {{ $document->issued_at->format('d.m.Y') }}</div>
+            <div class="doc-number">№ {{ $document->number }}@if($document->type === 'quote'), редакция №{{ $document->revision_number ?: 1 }}@endif от {{ $document->issued_at->format('d.m.Y') }}</div>
             @if($document->valid_until)<div class="muted">действителен до {{ $document->valid_until->format('d.m.Y') }}</div>@endif
         </td>
     </tr>

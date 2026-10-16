@@ -85,6 +85,17 @@ class CommercialDocument extends Model
         return sprintf('%s-%s-%05d', $prefix, $year, $lastId);
     }
 
+    public function reference(bool $includeFirstRevision = false): string
+    {
+        $revision = (int) ($this->revision_number ?: 1);
+
+        if ($this->type !== 'quote' || ($revision === 1 && ! $includeFirstRevision)) {
+            return (string) $this->number;
+        }
+
+        return $this->number.', редакция №'.$revision;
+    }
+
     public function recalculate(): void
     {
         $subtotal = round((float) $this->items()->sum('line_total'), 2);

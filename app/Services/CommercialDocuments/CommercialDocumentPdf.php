@@ -44,7 +44,9 @@ class CommercialDocumentPdf
     {
         $filename = $document->type === 'invoice'
             ? 'Счет-'.$document->number.'.pdf'
-            : 'Коммерческое-предложение-'.$document->number.'.pdf';
+            : 'Коммерческое-предложение-'.$document->number
+                .((int) $document->revision_number > 1 ? '-редакция-'.$document->revision_number : '')
+                .'.pdf';
         $path = 'crm-mail-attachments/commercial-documents/'.$document->id.'/'.$filename;
         Storage::disk('local')->put($path, $this->render($document));
 

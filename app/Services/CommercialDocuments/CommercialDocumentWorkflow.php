@@ -265,8 +265,9 @@ class CommercialDocumentWorkflow
         return DB::transaction(function () use ($document, $user): CommercialDocument {
             $document->loadMissing('items');
             $rootId = $document->revision_of_id ?: $document->id;
+            $root = CommercialDocument::query()->lockForUpdate()->findOrFail($rootId);
             $nextRevision = max(
-                (int) CommercialDocument::query()->whereKey($rootId)->value('revision_number'),
+                (int) $root->revision_number,
                 (int) CommercialDocument::query()->where('revision_of_id', $rootId)->max('revision_number'),
             ) + 1;
 
@@ -275,7 +276,7 @@ class CommercialDocumentWorkflow
                 'outcome_reason', 'outcome_note', 'sent_at', 'accepted_at', 'closed_at',
             ]);
             $revision->fill([
-                'number' => CommercialDocument::nextNumber('quote'),
+                'number' => $root->number,
                 'status' => 'draft',
                 'revision_of_id' => $rootId,
                 'revision_number' => $nextRevision,
@@ -357,11 +358,11 @@ class CommercialDocumentWorkflow
             ? app(CommercialDocumentPortal::class)->publish($document, $user)
             : null;
         $attachment = app(CommercialDocumentPdf::class)->storeForMail($document);
-        $title = CommercialDocument::TYPES[$document->type].' '.$document->number;
+        $title = CommercialDocument::TYPES[$document->type].' '.$document->reference();
         $body = implode("\n", array_filter([
             'Здравствуйте'.($document->client_name ? ', '.$document->client_name : '').'!',
             '',
-            'Направляем '.$this->accusativeType($document->type).' '.$document->number.' от '.$document->issued_at->format('d.m.Y').'.',
+            'Направляем '.$this->accusativeType($document->type).' '.$document->reference().' от '.$document->issued_at->format('d.m.Y').'.',
             'Сумма: '.number_format((float) $document->total, 2, ',', ' ').' '.$document->currency.'.',
             $document->valid_until ? 'Документ действителен до '.$document->valid_until->format('d.m.Y').'.' : null,
             '',

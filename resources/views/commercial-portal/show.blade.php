@@ -1,4 +1,4 @@
-@extends('commercial-portal.layout', ['title' => 'Предложение '.$document->number])
+@extends('commercial-portal.layout', ['title' => 'Предложение '.$document->reference()])
 
 @php
     $statusLabels = \App\Models\CommercialDocument::STATUSES;
@@ -15,6 +15,7 @@
     <div class="eyebrow">Коммерческое предложение</div>
     <h1>№ {{ $document->number }}</h1>
     <div class="meta">
+        <span>Редакция №{{ $document->revision_number ?: 1 }}</span>
         <span class="status">{{ $statusLabels[$document->status] ?? $document->status }}</span>
         <span>от {{ $document->issued_at->format('d.m.Y') }}</span>
         @if($document->valid_until)<span>действительно до {{ $document->valid_until->format('d.m.Y') }}</span>@endif

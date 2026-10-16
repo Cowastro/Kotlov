@@ -103,10 +103,10 @@ class CommercialDocumentPortal
         ]);
 
         Mail::raw(
-            "Код подтверждения для предложения {$link->document->number}: {$code}\n\nКод действует 10 минут. Если вы не запрашивали доступ, проигнорируйте письмо.",
+            "Код подтверждения для предложения {$link->document->reference()}: {$code}\n\nКод действует 10 минут. Если вы не запрашивали доступ, проигнорируйте письмо.",
             fn ($message) => $message
                 ->to($link->document->client_email)
-                ->subject('Код доступа к предложению '.$link->document->number)
+                ->subject('Код доступа к предложению '.$link->document->reference())
         );
         $this->event($link, null, 'verification_code_sent', $request);
 
@@ -217,7 +217,7 @@ class CommercialDocumentPortal
                 $this->revoke($link, [
                     'reason' => 'superseded_revision',
                     'replaced_by_document_id' => $document->id,
-                    'replaced_by_number' => $document->number,
+                    'replaced_by_number' => $document->reference(),
                 ]);
                 $revoked++;
             }

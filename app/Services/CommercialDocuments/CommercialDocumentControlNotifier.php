@@ -56,7 +56,7 @@ class CommercialDocumentControlNotifier
         foreach ($groups as $group) {
             $controlled = $group['documents']->unique('id')->values();
             $details = $controlled->take(6)->map(
-                fn (CommercialDocument $document): string => $document->number.' — '.$document->controlLabel(),
+                fn (CommercialDocument $document): string => $document->reference().' — '.$document->controlLabel(),
             )->implode("\n");
             if ($controlled->count() > 6) {
                 $details .= "\nЕщё: ".($controlled->count() - 6);

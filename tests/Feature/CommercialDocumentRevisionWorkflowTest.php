@@ -46,7 +46,9 @@ class CommercialDocumentRevisionWorkflowTest extends TestCase
         $this->assertSame(3, $third->revision_number);
         $this->assertSame('Насос', $third->items->first()->name);
         $this->assertSame('950.00', $third->total);
-        $this->assertNotSame($original->number, $second->number);
+        $this->assertSame($original->number, $second->number);
+        $this->assertSame($original->number, $third->number);
+        $this->assertSame($original->number.', редакция №2', $second->reference());
     }
 
     public function test_acceptance_and_rejection_update_the_mail_sales_stage(): void
