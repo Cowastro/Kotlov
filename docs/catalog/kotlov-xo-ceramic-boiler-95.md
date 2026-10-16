@@ -30,6 +30,12 @@ Exact final edit prompt:
 
 ## Publication
 
+Additional real workshop photograph: `public/img/products/kotlov-xo-boiler-95/installation-retouched-v1.png`, lightly retouched with built-in imagegen. It remains an example of the base boiler/hopper layout, with explicit disclosure that its burner and automation differ from the offered KOTLOV kit. It is the second gallery image, not presented as evidence of an installed current XO package.
+
+Retouch prompt:
+
+> undefined
+
 Command: `catalog:publish-kotlov-ceramic-boiler` (dry run); add `--apply` to publish. Existing exact identity only; conflicting SKU/slug/brand or an existing integration link blocks writes. Images and existing KOTLOV brand / pellet-boiler category are required. Repeated application creates no duplicate.
 
 Public URL: `/kotly-na-pelletah/pelletnyy-kotel-kotlov-xo-ceramic-pro-95-kvt-bunker-1500`.

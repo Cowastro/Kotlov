@@ -31,7 +31,7 @@ class PublishKotlovCeramicBoilerCommandTest extends TestCase
         $this->assertSame('25600.00', $boiler->price);
         $this->assertFalse($boiler->in_stock);
         $this->assertFalse($boiler->requires_price_confirmation);
-        $this->assertCount(4, $boiler->images);
+        $this->assertCount(5, $boiler->images);
         $this->assertStringContainsString('1,5 м³', $boiler->content);
         $this->assertStringContainsString('не нужно покупать отдельный интернет-модуль', $boiler->content);
         $this->assertStringContainsString('95 кВт', $boiler->name);

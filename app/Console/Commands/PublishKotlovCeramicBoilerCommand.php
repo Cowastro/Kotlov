@@ -41,6 +41,7 @@ class PublishKotlovCeramicBoilerCommand extends Command
         }
         $images = [
             '/img/products/kotlov-xo-boiler-95/kit-visualization-v5.png',
+            '/img/products/kotlov-xo-boiler-95/installation-retouched-v1.png',
             '/img/products/kotlov-xo-boiler-95/ceramic-pro-100.jpg',
             '/img/promotions/kotlov-xo-ceramic-pro-real-firebox.jpg',
             '/img/promotions/kotlov-xo-ceramic-pro-real-controller.jpg',
@@ -107,7 +108,7 @@ class PublishKotlovCeramicBoilerCommand extends Command
 <h3>Подбор и поставка</h3>
 <p>Поставка под заказ. Срок изготовления и доставки уточняется при оформлении. Перед заказом проверяем тепловую нагрузку, дымоход, тягу, размеры котельной и место для бункера со шнеком. Монтаж, дымоход, обвязка и пусконаладка рассчитываются отдельно и в указанную стоимость оборудования не включены.</p>
 <p>Гарантия на котёл — 30 месяцев; на горелку KOTLOV XO Ceramic PRO — 24 месяца при соблюдении условий эксплуатации и гарантийного обслуживания.</p>
-<p><small>Главное изображение — визуализация компоновки комплекта, не фотография готовой установки. Фотографии горелки, топки и контроллера показывают оборудование серии Ceramic PRO / XO. Исполнение и размещение узлов согласуются при заказе.</small></p>
+<p><small>Главное изображение — визуализация компоновки комплекта, не фотография готовой установки. Реальное фото установки в галерее показывает пример компоновки базового котла и бункера; горелка и автоматика на этом фото отличаются от комплектации KOTLOV. Отдельные фотографии горелки, топки и контроллера показывают оборудование серии Ceramic PRO / XO. Исполнение и размещение узлов согласуются при заказе.</small></p>
 <p><a href="/docs/kotlov-xo-controller-1-2os-ru.pdf" target="_blank" rel="noopener">Скачать инструкцию контроллера XO 1.0S/2.0S (PDF)</a>. <a href="/akcii/kotlov-xo-ceramic-pro">Подробнее о горелке KOTLOV XO Ceramic PRO</a>.</p>
 HTML;
     }
