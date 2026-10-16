@@ -702,7 +702,7 @@
 
                 {{-- Описание --}}
                 <div class="tab-pane active show" id="description" role="tabpanel">
-                    <div class="tab-content_desc">
+                    <div class="tab-content_desc site-prose">
                         @if ($product->content)
                             <div class="box-desc">
                                 <div class="desc_info cl-text-2">
@@ -726,7 +726,7 @@
                 {{-- Характеристики --}}
                 @if ($hasSpecs)
                     <div class="tab-pane" id="specifications" role="tabpanel">
-                        <div class="tab-content_desc">
+                        <div class="tab-content_desc site-prose">
                             <table class="table table-bordered table-striped">
                                 <tbody>
                                     @if ($attributeValues->count() > 0)
@@ -792,7 +792,7 @@
                 {{-- Сервис --}}
                 @if (!empty($serviceInfo))
                     <div class="tab-pane" id="service-info" role="tabpanel">
-                        <div class="tab-content_desc">
+                        <div class="tab-content_desc site-prose">
                             <table class="table table-bordered table-striped">
                                 <tbody>
                                     @foreach ($serviceInfo as $label => $value)
@@ -812,7 +812,7 @@
                 {{-- Документы --}}
                 @if (!empty($documents))
                     <div class="tab-pane" id="documents" role="tabpanel">
-                        <div class="tab-content_desc">
+                        <div class="tab-content_desc site-prose">
                             <div class="d-flex flex-column gap-3">
                                 @foreach ($documents as $document)
                                     @php
@@ -833,7 +833,7 @@
                 {{-- Отзывы --}}
                 @if ($videoUrl)
                     <div class="tab-pane" id="video" role="tabpanel">
-                        <div class="tab-content_desc">
+                        <div class="tab-content_desc site-prose">
                             <div class="product-video-wrap">
                                 @if ($videoEmbedUrl)
                                     <iframe

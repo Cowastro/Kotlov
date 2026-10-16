@@ -1,0 +1,151 @@
+/* Desktop reading system. Mobile/tablet typography intentionally stays unchanged. */
+@media (min-width: 992px) {
+    #wrapper :where(h1, h2, h3) {
+        font-weight: 700;
+    }
+
+    .main-page-title :is(h1, h2, h3),
+    .blog-heading .entry-title {
+        font-size: clamp(30px, 2.8vw, 40px);
+        line-height: 1.25;
+        font-weight: 700;
+        text-wrap: balance;
+    }
+
+    .tf-product-info-heading .product-infor-name {
+        font-size: clamp(28px, 2.3vw, 36px);
+        line-height: 1.3;
+        font-weight: 700;
+    }
+
+    :is(.site-prose, .tf-rte) {
+        color: #374151;
+        font-size: 16px;
+        line-height: 1.75;
+        overflow-wrap: break-word;
+    }
+
+    .site-prose .desc_info,
+    :is(.site-prose, .tf-rte) .cl-text-2 {
+        color: #374151 !important;
+    }
+
+    .site-prose .desc_info,
+    .blog-body.site-prose {
+        display: block;
+    }
+
+    :is(.site-prose, .tf-rte) :where(h1, h2, h3, h4, h5, h6) {
+        color: #1b2430;
+        font-weight: 700;
+        line-height: 1.35;
+        margin: 28px 0 12px;
+        text-wrap: pretty;
+    }
+
+    :is(.site-prose, .tf-rte) :where(h1, h2) {
+        font-size: 28px;
+    }
+
+    :is(.site-prose, .tf-rte) :where(h3) {
+        font-size: 22px;
+    }
+
+    :is(.site-prose, .tf-rte) :where(h4, h5, h6) {
+        font-size: 18px;
+    }
+
+    :is(.site-prose, .tf-rte) :where(h1, h2, h3, h4, h5, h6):first-child {
+        margin-top: 0;
+    }
+
+    :is(.site-prose, .tf-rte) :where(p) {
+        max-width: 88ch;
+        margin: 0 0 16px;
+        font-size: inherit;
+        line-height: inherit;
+    }
+
+    :is(.site-prose, .tf-rte) :where(strong, b) {
+        color: #1f2937;
+        font-weight: 700;
+    }
+
+    :is(.site-prose, .tf-rte) :where(ul, ol) {
+        max-width: 88ch;
+        margin: 12px 0 20px;
+        padding-left: 24px;
+    }
+
+    :is(.site-prose, .tf-rte) :where(ul) {
+        list-style: disc;
+    }
+
+    :is(.site-prose, .tf-rte) :where(ol) {
+        list-style: decimal;
+    }
+
+    :is(.site-prose, .tf-rte) :where(li) {
+        list-style: inherit;
+        padding-left: 3px;
+        margin-bottom: 7px;
+        line-height: 1.65;
+    }
+
+    :is(.site-prose, .tf-rte) :where(li)::marker {
+        color: #657181;
+    }
+
+    :is(.site-prose, .tf-rte) :where(table) {
+        width: 100%;
+        max-width: 1040px;
+        margin: 20px 0 28px;
+        border-collapse: collapse;
+        border: 1px solid #e2e7ed;
+        font-size: 15px;
+        line-height: 1.6;
+        background: #fff;
+    }
+
+    :is(.site-prose, .tf-rte) :where(th, td) {
+        padding: 13px 18px;
+        border: 0;
+        border-bottom: 1px solid #e2e7ed;
+        text-align: left;
+        vertical-align: top;
+        color: #374151;
+        background: transparent;
+    }
+
+    :is(.site-prose, .tf-rte) :where(th) {
+        font-weight: 700;
+        color: #1b2430;
+        background: #edf1f5;
+    }
+
+    :is(.site-prose, .tf-rte) :where(tbody tr:nth-child(even)) {
+        background: #f7f9fb;
+    }
+
+    :is(.site-prose, .tf-rte) :where(td:first-child) {
+        font-weight: 600;
+    }
+
+    .section-product-description .site-prose :where(td:first-child:nth-last-child(2)) {
+        width: 56%;
+    }
+
+    .section-product-description .tab-btn-wrap-v1 {
+        gap: 28px;
+    }
+
+    .section-product-description .tf-btn-tab .h5 {
+        font-size: 17px;
+        font-weight: 600 !important;
+        line-height: 1.5;
+    }
+
+    .section-product-description .tf-btn-tab.active {
+        color: #1b2430;
+    }
+}

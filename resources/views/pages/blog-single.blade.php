@@ -307,7 +307,7 @@
                                 </div>
                             @endif
 
-                            <div class="blog-body d-grid gap-16">
+                            <div class="blog-body site-prose d-grid gap-16">
                                 {!! $post->content !!}
                             </div>
 

@@ -108,7 +108,7 @@
                         <p class="brand-detail-kicker">О бренде</p>
                         <p>Главное о продукции, сериях и выборе оборудования {{ $brandName }}.</p>
                     </div>
-                    <article class="brand-detail-content-panel brand-detail-content tf-rte">
+                    <article class="brand-detail-content-panel brand-detail-content tf-rte site-prose">
                         {!! $cleanContent !!}
                     </article>
                 </div>
