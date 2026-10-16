@@ -137,8 +137,8 @@ class CommercialDocumentPortalTest extends TestCase
     {
         [$quote, $manager, $product] = $this->quote(withProduct: true);
         $brand = Brand::query()->firstOrCreate(
-            ['slug' => 'kotlov-pro'],
-            ['name' => 'KOTLOV PRO', 'is_active' => true],
+            ['slug' => 'kotlov'],
+            ['name' => 'KOTLOV', 'is_active' => true],
         );
         $product->update(['brand_id' => $brand->id]);
 
@@ -155,9 +155,9 @@ class CommercialDocumentPortalTest extends TestCase
         $portal->refreshSnapshot($quote);
         $snapshot = $quote->items()->firstOrFail()->portal_snapshot;
 
-        $this->assertSame('KOTLOV PRO', $snapshot['brand']);
+        $this->assertSame('KOTLOV', $snapshot['brand']);
         $this->assertSame(
-            [['name' => 'Бренд', 'value' => 'KOTLOV PRO']],
+            [['name' => 'Бренд', 'value' => 'KOTLOV']],
             array_values(array_filter($snapshot['attributes'], fn (array $attribute): bool => $attribute['name'] === 'Бренд')),
         );
         $this->assertDatabaseHas('commercial_document_portal_events', [

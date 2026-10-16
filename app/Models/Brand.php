@@ -5,9 +5,28 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\ValidationException;
 
 class Brand extends Model
 {
+    public static function isKotlovAlias(string $value): bool
+    {
+        return in_array(preg_replace('/[\s_-]+/u', '', mb_strtolower(trim($value))), ['kotlov', 'kotlovpro', 'koktlov'], true);
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Brand $brand): void {
+            if (! self::isKotlovAlias((string) $brand->name) && ! self::isKotlovAlias((string) $brand->slug)) {
+                return;
+            }
+            $canonicalId = self::query()->where('slug', 'kotlov')->value('id');
+            if ($canonicalId && (int) $brand->id !== (int) $canonicalId) {
+                throw ValidationException::withMessages(['name' => 'Это бренд KOTLOV. Выберите существующий KOTLOV; PRO — серия, а не отдельный бренд.']);
+            }
+        });
+    }
+
     protected $fillable = [
         'name', 'slug', 'h1', 'logo', 'country',
         'producer', 'content',
