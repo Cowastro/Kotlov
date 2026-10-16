@@ -95,6 +95,66 @@ class SyncOmenergoCommandTest extends TestCase
         $this->assertSame($before, SupplierProduct::count());
     }
 
+    public function test_audit_includes_unlinked_legacy_cards_outside_supplier_brand_and_category_ids(): void
+    {
+        Http::fake([OmenergoPriceList::CSV_URL => Http::response($this->feed())]);
+        $category = Category::create(['name' => 'Другая категория', 'slug' => 'legacy-audit']);
+        foreach ([['Энергия APC-500', true, false], ['Энерготех OLD', false, false], ['Энергия APC-1000', true, true], ['Другой бренд', true, false]] as $i => [$name, $active, $archived]) {
+            Product::create(['category_id' => $category->id, 'name' => $name, 'slug' => 'audit-'.$i, 'is_active' => $active, 'is_archived' => $archived, 'price' => 140]);
+        }
+        $this->artisan('supplier:sync-omenergo', ['--dry-run' => true])
+            ->expectsOutput('metric.omenergo.catalog_cards=3')
+            ->expectsOutput('metric.omenergo.catalog_unlinked_active=1')
+            ->expectsOutput('metric.omenergo.catalog_unlinked_hidden=1')
+            ->expectsOutput('metric.omenergo.catalog_unlinked_archived=1')
+            ->assertSuccessful();
+        $this->assertSame(4, Product::where('price', 140)->count());
+    }
+
+    public function test_apc_restore_preserves_original_identity_and_moves_exact_supplier_link_only(): void
+    {
+        Storage::fake('local');
+        $csv = str_replace(['Е0101-1,', 'Энергия Voltron 1 (HP)'], ['Е0101-0131,', 'Энергия APC 500'], $this->feed());
+        Http::fake([OmenergoPriceList::CSV_URL => Http::response($csv)]);
+        $supplier = Supplier::create(['name' => 'ОмЭнерго', 'code' => 'omenergo', 'is_active' => true]);
+        $brand = Brand::create(['name' => 'Энергия', 'slug' => 'apc-restore']);
+        $category = Category::create(['name' => 'Стабилизаторы', 'slug' => 'apc-restore']);
+        $path = 'img/products/omenergo/apc-restore-test.png';
+        $file = public_path($path);
+        $this->assertFileDoesNotExist($file);
+        if (! is_dir(dirname($file))) {
+            mkdir(dirname($file), 0775, true);
+        }
+        $chunk = fn ($type, $data) => pack('N', strlen($data)).$type.$data.pack('N', crc32($type.$data));
+        file_put_contents($file, "\x89PNG\r\n\x1a\n".$chunk('IHDR', pack('NNCCCCC', 220, 220, 8, 2, 0, 0, 0)).$chunk('IDAT', gzcompress(str_repeat("\0".str_repeat("\0\0\0", 220), 220))).$chunk('IEND', ''));
+        try {
+            $base = ['category_id' => $category->id, 'brand_id' => $brand->id, 'in_stock' => false, 'stock_qty' => null];
+            $old = Product::create($base + ['name' => 'Стабилизатор напряжения Энергия АРС-500', 'sku' => 'PS-007.028', 'slug' => 'original-apc', 'price' => 140, 'is_archived' => true, 'views_count' => 77]);
+            $new = Product::create($base + ['name' => 'Стабилизатор напряжения Энергия APC 500', 'sku' => 'OMENERGO-E0101-0131', 'slug' => 'new-apc', 'price' => 226.35, 'is_active' => true, 'images' => [$path], 'specs' => array_fill(0, 8, ['key' => 'Параметр', 'value' => '500'])]);
+            $link = SupplierProduct::create(['supplier_id' => $supplier->id, 'product_id' => $new->id, 'supplier_article' => 'Е0101-0131', 'supplier_article_normalized' => 'E0101-0131', 'price_byn' => 188.63, 'currency' => 'BYN']);
+            $this->artisan('supplier:sync-omenergo', ['--restore-selling-apc' => true, '--dry-run' => true])->assertSuccessful();
+            $this->assertTrue($old->fresh()->is_archived);
+            $new->update(['price' => 140]);
+            $this->artisan('supplier:sync-omenergo', ['--restore-selling-apc' => true, '--apply' => true])->assertFailed();
+            $this->assertSame($new->id, $link->fresh()->product_id);
+            $new->update(['price' => 226.35]);
+            $this->artisan('supplier:sync-omenergo', ['--restore-selling-apc' => true, '--apply' => true])->assertSuccessful();
+            $this->assertSame($old->id, $link->fresh()->product_id);
+            $this->assertSame('PS-007.028', $old->fresh()->sku);
+            $this->assertSame('original-apc', $old->fresh()->slug);
+            $this->assertSame(77, $old->fresh()->views_count);
+            $this->assertSame('226.35', $old->fresh()->price);
+            $this->assertSame([$path], $old->fresh()->images);
+            $this->assertTrue($old->fresh()->is_featured);
+            $this->assertFalse($old->fresh()->is_archived);
+            $this->assertTrue($new->fresh()->is_archived);
+            $this->assertNotEmpty(Storage::disk('local')->allFiles('omenergo/restore-review'));
+            $this->artisan('supplier:sync-omenergo', ['--restore-selling-apc' => true, '--apply' => true])->assertSuccessful();
+        } finally {
+            unlink($file);
+        }
+    }
+
     public function test_conflicting_sheet_power_is_not_published_as_fact(): void
     {
         $csv = str_replace(['Энергия Voltron 1 (HP)', 'Релейный стабилизатор, 5% точность.'], ['Энергия ACH 10000', 'Релейный стабилизатор, 8000 ВА, 5% точность.'], $this->feed(1));

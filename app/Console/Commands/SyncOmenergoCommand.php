@@ -34,6 +34,7 @@ class SyncOmenergoCommand extends Command
         {--update-content : Populate verified sheet content, independent of daily price sync}
         {--csv-file= : Read a saved source CSV instead of downloading}
         {--review-two : Export only the two explicitly authorized unresolved identity rows; dry-run only}
+        {--restore-selling-apc : Restore original PS-007.028 with the verified APC 500 supplier binding and content}
         {--archive-replaced : Preview or archive unlinked old cards only when a unique verified active replacement exists}
         {--archive-unreplaced-five : Archive exactly five explicitly approved old unlinked cards without a unique replacement}
         {--report= : Write a complete review CSV to this path}';
@@ -63,6 +64,9 @@ class SyncOmenergoCommand extends Command
             $supplier = Supplier::where('code', 'omenergo')->first();
             if ($supplier && ! $supplier->is_active) {
                 throw new RuntimeException('Omenergo supplier is disabled.');
+            }
+            if ($this->option('restore-selling-apc')) {
+                return $this->restoreSellingApc($supplier, $rows);
             }
             if ($this->option('archive-replaced') || $this->option('archive-unreplaced-five')) {
                 return $this->archiveReplaced($supplier);
@@ -344,6 +348,66 @@ class SyncOmenergoCommand extends Command
         return self::SUCCESS;
     }
 
+    private function restoreSellingApc(?Supplier $supplier, array $rows): int
+    {
+        $feed = collect($rows)->firstWhere('article_key', 'E0101-0131');
+        if (! $supplier || ! $feed) {
+            throw new RuntimeException('Verified APC 500 feed row is required.');
+        }
+        $apply = $this->option('apply') && ! $this->option('dry-run');
+        $restored = DB::transaction(function () use ($supplier, $feed, $apply): int {
+            $originals = Product::where('sku', 'PS-007.028')->lockForUpdate()->get();
+            $links = $supplier->supplierProducts()->where('supplier_article_normalized', 'E0101-0131')->lockForUpdate()->get();
+            if ($originals->count() !== 1 || $links->count() !== 1) {
+                throw new RuntimeException('APC original card or supplier binding is not unique.');
+            }
+            $original = $originals->sole();
+            $link = $links->sole();
+            if ((int) $link->product_id === $original->id) {
+                if (! $original->is_active || $original->is_archived || ! $original->is_featured) {
+                    throw new RuntimeException('Restored APC state requires manual review.');
+                }
+
+                return 0;
+            }
+            $replacement = Product::whereKey($link->product_id)->lockForUpdate()->firstOrFail();
+            $catalog = new OmenergoCatalog;
+            if (! $original->is_archived || ! $this->eligibleReplacement($replacement)
+                || $replacement->sku !== 'OMENERGO-E0101-0131'
+                || $original->brand_id !== $replacement->brand_id || $original->category_id !== $replacement->category_id
+                || $catalog->key($original->name) !== $catalog->key($replacement->name)
+                || $catalog->key($replacement->name) !== $catalog->key($feed['name'])
+                || abs((float) $replacement->price - (float) $feed['retail']) > 0.005
+                || abs((float) $link->price_byn - (float) $feed['dealer']) > 0.005
+                || $original->supplierProducts()->exists() || $original->integrationProducts()->exists()
+                || $original->supplier_id !== null || $original->manual_stock_management || $original->in_stock
+                || (float) $original->stock_qty > 0 || (float) $original->manual_purchase_price_byn > 0
+                || $replacement->supplierProducts()->count() !== 1 || $replacement->integrationProducts()->exists()) {
+                throw new RuntimeException('APC identity, pricing, media or stock guard failed; nothing changed.');
+            }
+            if (! $apply) {
+                return 0;
+            }
+            $snapshot = json_encode(['original' => $original->getAttributes(), 'replacement' => $replacement->getAttributes(), 'supplier_link' => $link->getAttributes()], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+            if (! Storage::disk('local')->put('omenergo/restore-review/'.now()->format('Ymd_His_u').'.json', $snapshot)) {
+                throw new RuntimeException('APC backup could not be saved; nothing changed.');
+            }
+            // Keep the original ID, SKU, URL, order history and popularity counters.
+            $original->fill($replacement->only(['name', 'h1', 'price', 'currency', 'unit', 'content', 'short_description', 'images', 'specs', 'documents', 'weight', 'warranty', 'meta_title', 'meta_description']));
+            $original->forceFill(['supplier_id' => $supplier->id, 'is_active' => true, 'is_archived' => false, 'is_featured' => true])->save();
+            $link->forceFill(['product_id' => $original->id, 'product_sku' => $original->sku])->save();
+            $replacement->forceFill(['is_active' => false, 'is_archived' => true])->save();
+            app(SupplierProductAvailabilityService::class)->refreshMany([$original->id, $replacement->id]);
+
+            return 1;
+        });
+        $this->line('metric.omenergo.apc_restore_verified=1');
+        $this->line('metric.omenergo.apc_restored='.$restored);
+        Cache::forget('catalog:global-price-range');
+
+        return self::SUCCESS;
+    }
+
     private function eligibleReplacement(Product $product): bool
     {
         return $product->is_active && ! $product->is_archived && str_starts_with((string) $product->sku, 'OMENERGO-')
@@ -405,7 +469,17 @@ class SyncOmenergoCommand extends Command
         $links = $supplier?->supplierProducts()->with('product')->get() ?? collect();
         $products = $links->pluck('product')->filter();
         $feed = collect($rows)->keyBy('article_key');
+        // Audit the whole branded catalog, not just the successfully imported links.
+        // Old cards may have another category, no brand relation, or a duplicate brand.
+        $catalogCards = Product::with('brand')->get()->filter(fn ($product) => preg_match('/(?<![\p{L}\p{N}])(?:энергия|энерготех|energiya|energotex|energotech)(?![\p{L}\p{N}])/iu',
+            $product->name.' '.($product->brand?->name ?? '')) === 1
+            || $products->contains('id', $product->id));
+        $legacy = $catalogCards->whereNotIn('id', $products->pluck('id'));
         $stats = [
+            'catalog_cards' => $catalogCards->count(),
+            'catalog_unlinked_active' => $legacy->filter(fn ($product) => $product->is_active && ! $product->is_archived)->count(),
+            'catalog_unlinked_hidden' => $legacy->filter(fn ($product) => ! $product->is_active && ! $product->is_archived)->count(),
+            'catalog_unlinked_archived' => $legacy->where('is_archived', true)->count(),
             'supplier_exists' => $supplier ? 1 : 0,
             'crm_linked' => $supplier?->crm_counterparty_id ? 1 : 0,
             'contact_points' => $supplier?->crmCounterparty?->contactPoints()->where('is_active', true)->count() ?? 0,
