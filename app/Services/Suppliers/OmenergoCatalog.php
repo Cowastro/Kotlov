@@ -20,7 +20,7 @@ class OmenergoCatalog
 
     public function index(bool $refresh = false): array
     {
-        $path = 'omenergo/catalog-index-v2.json';
+        $path = 'omenergo/catalog-index-v3.json';
         if (! $refresh && Storage::disk('local')->exists($path)) {
             return json_decode(Storage::disk('local')->get($path), true, flags: JSON_THROW_ON_ERROR);
         }
@@ -186,6 +186,10 @@ class OmenergoCatalog
             $entries[] = ['name' => $page['name'], 'article' => $page['article'], 'url' => $variantUrl, 'factory' => true];
         }
         $entries[] = ['name' => 'Стабилизатор напряжения Энерготех INFINITY 50000х3', 'article' => 'ET11-08', 'url' => 'https://www.energoteh.ru/catalog/seriya-infinity/trekhfaznyy-energotekh-infinity-50000x3/', 'factory' => true];
+        // Selected variants observed through the manufacturer's public
+        // power/battery switcher; the family default is a different 12V SKU.
+        $entries[] = ['name' => 'ИБП Pro OnLine 1000 230В-24В Tower', 'article' => 'Е0201-0071', 'url' => 'https://xn--c1adkrq9eta.xn--p1ai/product/ibp-pro-online-tower?pv=30142', 'factory' => true];
+        $entries[] = ['name' => 'ИБП Pro OnLine 2000 230В-48В Tower', 'article' => 'Е0201-0072', 'url' => 'https://xn--c1adkrq9eta.xn--p1ai/product/ibp-pro-online-tower?pv=30143', 'factory' => true];
 
         return $entries;
     }
@@ -280,6 +284,17 @@ class OmenergoCatalog
             $parser = new OmenergoPriceList;
             if ($row['brand'] !== 'Энергия' || $parser->articleKey($page['article']) !== $parser->articleKey($row['article'])) {
                 return false;
+            }
+            // Distributor headings omit the battery voltage for this exact
+            // Pro series. Require the article, model, VA and battery table.
+            if (preg_match('/^Энергия ИБП Pro-(\d+)\s+(12|24)V$/iu', trim($row['name']), $pro)) {
+                if (! preg_match('/^Интерактивный ИБП Энергия Pro-'.preg_quote($pro[1], '/').'$/iu', trim($page['name']))) {
+                    return false;
+                }
+                $specs = array_column($page['specs'] ?? [], 'value', 'key');
+
+                return preg_match('/^'.preg_quote($pro[2], '/').'(?:\s*\(2x12 АКБ\))?$/u', $specs['Напряжение АКБ, В'] ?? '') === 1
+                    && preg_match('/^'.preg_quote($pro[1], '/').'\s*ВА$/iu', $specs['Номинальная/ пороговая мощность'] ?? '') === 1;
             }
             // A supplier typo must not turn Expert 350 (220V) into Expert 800.
             preg_match_all('/\d+(?:[.,]\d+)?/u', $row['name'], $rowNumbers);

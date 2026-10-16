@@ -7,6 +7,25 @@ use PHPUnit\Framework\TestCase;
 
 class OmenergoCatalogTest extends TestCase
 {
+    public function test_pro_heading_without_battery_voltage_requires_exact_article_and_technical_values(): void
+    {
+        $c = new OmenergoCatalog;
+        $row = ['name' => 'Энергия ИБП Pro-3400 24V', 'brand' => 'Энергия', 'article' => 'Е0201-0032'];
+        $page = ['name' => 'Интерактивный ИБП Энергия Pro-3400', 'article' => 'Е0201-0032', 'specs' => [
+            ['key' => 'Напряжение АКБ, В', 'value' => '24 (2x12 АКБ)'],
+            ['key' => 'Номинальная/ пороговая мощность', 'value' => '3400 ВА'],
+        ]];
+        $this->assertTrue($c->identityMatches($row, $page));
+        $page['specs'][0]['value'] = '12';
+        $this->assertFalse($c->identityMatches($row, $page));
+        $page['specs'][0]['value'] = '24 (2x12 АКБ)';
+        $page['article'] = 'Е0201-0033';
+        $this->assertFalse($c->identityMatches($row, $page));
+        $page['article'] = 'Е0201-0032';
+        $page['specs'][1]['value'] = '5000 ВА';
+        $this->assertFalse($c->identityMatches($row, $page));
+    }
+
     public function test_old_garant_requires_matching_capacity_and_battery_voltage(): void
     {
         $c = new OmenergoCatalog;
