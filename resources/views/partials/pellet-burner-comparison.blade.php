@@ -40,7 +40,7 @@
                                 <td>{{ $powerMatch[1] ?? 'Уточнить' }}{{ isset($powerMatch[1]) ? ' кВт' : '' }}</td>
                                 <td>{{ $comparisonNotes[$product->slug] ?? 'Подбор по параметрам объекта' }}</td>
                                 <td class="pellet-comparison__price">{{ number_format((float) $product->price, 0, '.', ' ') }} BYN</td>
-                                <td>{{ $product->availabilityLabel() }}</td>
+                                <td>{{ $product->publicAvailabilityLabel() }}</td>
                             </tr>
                         @endforeach
                     </tbody>

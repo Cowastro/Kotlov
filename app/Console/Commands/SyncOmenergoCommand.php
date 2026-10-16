@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
 use App\Models\Product;
+use App\Models\Redirect;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\SupplierSource;
@@ -35,6 +36,7 @@ class SyncOmenergoCommand extends Command
         {--csv-file= : Read a saved source CSV instead of downloading}
         {--review-two : Export only the two explicitly authorized unresolved identity rows; dry-run only}
         {--restore-selling-apc : Restore original PS-007.028 with the verified APC 500 supplier binding and content}
+        {--restore-matching-legacy : Move exact verified supplier bindings back onto unique original legacy cards}
         {--archive-replaced : Preview or archive unlinked old cards only when a unique verified active replacement exists}
         {--archive-unreplaced-five : Archive exactly five explicitly approved old unlinked cards without a unique replacement}
         {--report= : Write a complete review CSV to this path}';
@@ -67,6 +69,9 @@ class SyncOmenergoCommand extends Command
             }
             if ($this->option('restore-selling-apc')) {
                 return $this->restoreSellingApc($supplier, $rows);
+            }
+            if ($this->option('restore-matching-legacy')) {
+                return $this->restoreMatchingLegacy($supplier, $rows, $parser);
             }
             if ($this->option('archive-replaced') || $this->option('archive-unreplaced-five')) {
                 return $this->archiveReplaced($supplier);
@@ -404,6 +409,89 @@ class SyncOmenergoCommand extends Command
         $this->line('metric.omenergo.apc_restore_verified=1');
         $this->line('metric.omenergo.apc_restored='.$restored);
         Cache::forget('catalog:global-price-range');
+
+        return self::SUCCESS;
+    }
+
+    private function restoreMatchingLegacy(?Supplier $supplier, array $rows, OmenergoPriceList $parser): int
+    {
+        if (! $supplier) {
+            throw new RuntimeException('Omenergo supplier must exist.');
+        }
+        $apply = $this->option('apply') && ! $this->option('dry-run');
+        $catalog = new OmenergoCatalog;
+        $feed = collect($rows)->keyBy('article_key');
+        $identity = fn ($product) => $parser->nameKey($product->brand?->name ?? '').'|'.$parser->nameKey($product->category?->name ?? '').'|'.$catalog->key($product->name);
+        $stats = ['legacy_restore_candidates' => 0, 'legacy_restore_ambiguous' => 0, 'legacy_restore_protected' => 0, 'legacy_restored' => 0];
+        DB::transaction(function () use ($supplier, $apply, $catalog, $feed, $identity, &$stats): void {
+            $links = $supplier->supplierProducts()->lockForUpdate()->get();
+            $brandNames = $feed->pluck('brand')->unique()->values();
+            $cards = Product::where(fn ($query) => $query->whereIn('id', $links->pluck('product_id'))
+                ->orWhereHas('brand', fn ($brand) => $brand->whereIn('name', $brandNames)))
+                ->with(['brand', 'category'])->withCount(['supplierProducts', 'integrationProducts'])->lockForUpdate()->get();
+            $legacy = $cards->filter(fn ($p) => ! str_starts_with((string) $p->sku, 'OMENERGO-') && ! $links->contains('product_id', $p->id))->groupBy($identity);
+            $newCards = $cards->filter(fn ($p) => $this->eligibleReplacement($p))->groupBy($identity);
+            $plan = [];
+            foreach ($links as $link) {
+                $new = $cards->firstWhere('id', $link->product_id);
+                $row = $feed->get($link->supplier_article_normalized);
+                if (! $new || ! $row || ! $this->eligibleReplacement($new)) {
+                    continue;
+                }
+                $matches = $legacy->get($identity($new), collect());
+                if ($matches->isEmpty()) {
+                    continue;
+                }
+                if ($matches->count() !== 1 || $newCards->get($identity($new))->count() !== 1) {
+                    $stats['legacy_restore_ambiguous']++;
+
+                    continue;
+                }
+                $old = $matches->sole();
+                if ($catalog->key($row['name']) !== $catalog->key($new->name)
+                    || abs((float) $new->price - (float) $row['retail']) > 0.005
+                    || abs((float) $link->price_byn - (float) $row['dealer']) > 0.005
+                    || $old->supplier_products_count > 0 || $old->integration_products_count > 0 || $old->supplier_id !== null
+                    || $old->manual_stock_management || $old->in_stock || (float) $old->stock_qty > 0 || (float) $old->manual_purchase_price_byn > 0
+                    || (int) $new->supplier_products_count !== 1 || $new->integration_products_count > 0 || $new->manual_stock_management) {
+                    $stats['legacy_restore_protected']++;
+
+                    continue;
+                }
+                $plan[] = ['old' => $old, 'new' => $new, 'link' => $link];
+            }
+            $stats['legacy_restore_candidates'] = count($plan);
+            if (! $apply || $plan === []) {
+                return;
+            }
+            $snapshot = collect($plan)->map(fn ($entry) => array_map(fn ($model) => $model->getAttributes(), $entry))->all();
+            if (! Storage::disk('local')->put('omenergo/restore-review/legacy_'.now()->format('Ymd_His_u').'.json', json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR))) {
+                throw new RuntimeException('Legacy card backup could not be saved; nothing changed.');
+            }
+            foreach ($plan as ['old' => $old, 'new' => $new, 'link' => $link]) {
+                $old->fill($new->only(['name', 'h1', 'price', 'currency', 'unit', 'content', 'short_description', 'images', 'specs', 'documents', 'weight', 'warranty', 'meta_title', 'meta_description']));
+                $old->forceFill(['supplier_id' => $supplier->id, 'is_active' => true, 'is_archived' => false])->save();
+                $link->forceFill(['product_id' => $old->id, 'product_sku' => $old->sku])->save();
+                $new->forceFill(['is_active' => false, 'is_archived' => true])->save();
+                $from = '/'.$new->category->slug.'/'.$new->slug;
+                $to = '/'.$old->category->slug.'/'.$old->slug;
+                $redirect = Redirect::where('from_url', $from)->lockForUpdate()->first();
+                if ($redirect && $redirect->is_active && $redirect->to_url !== $to) {
+                    throw new RuntimeException('Conflicting legacy redirect; transaction rolled back.');
+                }
+                Redirect::updateOrCreate(['from_url' => $from], ['to_url' => $to, 'status_code' => 301, 'is_active' => true]);
+                app(SupplierProductAvailabilityService::class)->refreshMany([$old->id, $new->id]);
+                $stats['legacy_restored']++;
+            }
+        });
+        foreach ($stats as $key => $value) {
+            $this->line("metric.omenergo.{$key}={$value}");
+        }
+        if ($stats['legacy_restored'] > 0) {
+            Cache::forget('nav:brands');
+            Cache::forget('nav:categories:orderable:v1');
+            Cache::forget('catalog:global-price-range');
+        }
 
         return self::SUCCESS;
     }

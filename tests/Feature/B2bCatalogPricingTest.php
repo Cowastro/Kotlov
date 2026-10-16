@@ -78,7 +78,7 @@ class B2bCatalogPricingTest extends TestCase
             ->assertJsonPath('subtotal', 368.76);
     }
 
-    public function test_public_product_page_shows_the_actual_site_stock_quantity(): void
+    public function test_public_product_page_shows_fresh_channel_quantity_instead_of_stale_summary(): void
     {
         [$product, $user] = $this->catalogFixture(approved: false);
         $product->update(['stock_qty' => 9]);
@@ -86,7 +86,8 @@ class B2bCatalogPricingTest extends TestCase
         $this->actingAs($user)
             ->get('/'.$product->category->slug.'/'.$product->slug)
             ->assertOk()
-            ->assertSeeText('В наличии: 9 шт.');
+            ->assertSeeText('В наличии: 7 шт.')
+            ->assertDontSeeText('В наличии: 9 шт.');
     }
 
     public function test_cart_uses_wholesale_price_for_approved_partner(): void

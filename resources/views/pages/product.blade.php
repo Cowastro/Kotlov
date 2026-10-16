@@ -204,7 +204,8 @@
                                         : $product->canBeOrdered();
                                     $availabilityLabel = $b2bOffer
                                         ? (\App\Models\Product::availabilityStatusOptions()[$availabilityStatus] ?? 'Уточняйте наличие')
-                                        : $product->availabilityLabel();
+                                        : $product->publicAvailabilityLabel();
+                                    $displayAvailabilityStatus = $b2bOffer ? $availabilityStatus : $product->publicAvailabilityStatus();
                                     $displayPrice = $b2bComparison['wholesale_price'] ?? (float) $product->price;
                                     $showPreviewPrice = request()->boolean('admin-preview')
                                         && auth()->user()?->isManager()
@@ -318,13 +319,13 @@
                                                 {{ $b2bOffer->formattedStockQuantity() }}
                                             @endif
                                         </span>
-                                    @elseif ($availabilityStatus === 'in_stock')
+                                    @elseif ($displayAvailabilityStatus === 'in_stock')
                                         <span class="stock in-stock fw-medium text-success">
-                                            <i class="icon icon-CheckCircle"></i> В наличии@if($product->stock_qty !== null && (int) $product->stock_qty > 0): {{ number_format((float) $product->stock_qty, 0, ',', ' ') }} шт.@endif
+                                            <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }}
                                         </span>
-                                    @elseif ($availabilityStatus === 'check')
+                                    @elseif ($displayAvailabilityStatus === 'check')
                                         <span class="stock check-stock fw-medium" style="color:#b45309;">
-                                            <i class="icon icon-CheckCircle" style="color:#b45309;"></i> {{ $availabilityLabel === 'Уточняйте наличие' ? 'Доступен к заказу' : $availabilityLabel }}
+                                            <i class="icon icon-CheckCircle" style="color:#b45309;"></i> {{ $availabilityLabel }}
                                         </span>
                                         <p class="text-caption-01 cl-text-2 mt-4 mb-0">Менеджер подтвердит наличие и срок поставки после оформления.</p>
                                     @else

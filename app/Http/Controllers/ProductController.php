@@ -164,7 +164,7 @@ class ProductController extends Controller
             $schema['brand'] = ['@type' => 'Brand', 'name' => $brandName];
         }
         if ($product->price && ! $product->is_archived) {
-            $availability = match ($product->effectiveAvailabilityStatus()) {
+            $availability = match ($product->publicAvailabilityStatus()) {
                 Product::AVAILABILITY_IN_STOCK => 'https://schema.org/InStock',
                 Product::AVAILABILITY_CHECK => 'https://schema.org/LimitedAvailability',
                 default => 'https://schema.org/OutOfStock',

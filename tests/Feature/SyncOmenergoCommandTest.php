@@ -150,6 +150,37 @@ class SyncOmenergoCommandTest extends TestCase
             $this->assertTrue($new->fresh()->is_archived);
             $this->assertNotEmpty(Storage::disk('local')->allFiles('omenergo/restore-review'));
             $this->artisan('supplier:sync-omenergo', ['--restore-selling-apc' => true, '--apply' => true])->assertSuccessful();
+            $legacy = Product::create($base + ['name' => 'Энергия Voltron 2 (5%)', 'sku' => 'LEGACY-2', 'slug' => 'legacy-original', 'price' => 140, 'is_archived' => true, 'is_featured' => true, 'views_count' => 42]);
+            $duplicate = Product::create($base + ['name' => 'Энергия Voltron 2 (HP)', 'sku' => 'OMENERGO-E0101-2', 'slug' => 'legacy-new', 'price' => 226.35, 'is_active' => true, 'images' => [$path], 'specs' => $new->specs]);
+            $legacyLink = SupplierProduct::create(['supplier_id' => $supplier->id, 'product_id' => $duplicate->id, 'supplier_article' => 'Е0101-2', 'supplier_article_normalized' => 'E0101-2', 'price_byn' => 188.63]);
+            $legacy->update(['manual_stock_management' => true]);
+            $this->artisan('supplier:sync-omenergo', ['--restore-matching-legacy' => true, '--apply' => true])
+                ->expectsOutput('metric.omenergo.legacy_restore_protected=1')->assertSuccessful();
+            $this->assertSame($duplicate->id, $legacyLink->fresh()->product_id);
+            $legacy->update(['manual_stock_management' => false]);
+            $ambiguous = Product::create($base + ['name' => $legacy->name, 'slug' => 'ambiguous-legacy', 'is_archived' => true]);
+            $this->artisan('supplier:sync-omenergo', ['--restore-matching-legacy' => true, '--apply' => true])
+                ->expectsOutput('metric.omenergo.legacy_restore_ambiguous=1')->assertSuccessful();
+            $this->assertSame($duplicate->id, $legacyLink->fresh()->product_id);
+            $ambiguous->update(['name' => 'Энергия Voltron Neo 2']);
+            $this->artisan('supplier:sync-omenergo', ['--restore-matching-legacy' => true, '--dry-run' => true])
+                ->expectsOutput('metric.omenergo.legacy_restore_candidates=1')->assertSuccessful();
+            $this->assertTrue($legacy->fresh()->is_archived);
+            $this->artisan('supplier:sync-omenergo', ['--restore-matching-legacy' => true, '--apply' => true])->assertSuccessful();
+            $this->assertSame($legacy->id, $legacyLink->fresh()->product_id);
+            $this->assertSame('legacy-original', $legacy->fresh()->slug);
+            $this->assertSame(42, $legacy->fresh()->views_count);
+            $this->assertTrue($legacy->fresh()->is_featured);
+            $this->assertFalse($legacy->fresh()->is_archived);
+            $this->assertSame('226.35', $legacy->fresh()->price);
+            $this->assertTrue($duplicate->fresh()->is_archived);
+            $this->assertDatabaseHas('redirects', ['from_url' => '/apc-restore/legacy-new', 'to_url' => '/apc-restore/legacy-original', 'status_code' => 301]);
+            $this->get('/apc-restore/legacy-new')->assertRedirect('/apc-restore/legacy-original');
+            $this->artisan('supplier:sync-omenergo', ['--apply' => true, '--confirm-pricing' => true])->assertSuccessful();
+            $this->assertSame($legacy->id, $legacyLink->fresh()->product_id);
+            $this->assertTrue($legacy->fresh()->is_featured);
+            $this->artisan('supplier:sync-omenergo', ['--restore-matching-legacy' => true, '--apply' => true])
+                ->expectsOutput('metric.omenergo.legacy_restored=0')->assertSuccessful();
         } finally {
             unlink($file);
         }

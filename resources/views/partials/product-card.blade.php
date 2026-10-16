@@ -5,7 +5,8 @@
     $imageHover = $product->imageUrl(1);
 
     $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus') ? $product->effectiveAvailabilityStatus() : ($product->in_stock ? 'in_stock' : 'out_of_stock');
-    $availabilityLabel = method_exists($product, 'availabilityLabel') ? $product->availabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
+    $availabilityLabel = method_exists($product, 'publicAvailabilityLabel') ? $product->publicAvailabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
+    $displayAvailabilityStatus = method_exists($product, 'publicAvailabilityStatus') ? $product->publicAvailabilityStatus() : $availabilityStatus;
     $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
     $b2bOffer = $b2bComparison['offer'] ?? null;
     $isB2bOffer = $b2bOffer !== null;
@@ -149,15 +150,15 @@
             </div>
         @endif
 
-        @if (! $isB2bOffer && $availabilityStatus === 'in_stock')
-            <div class="product-card-availability" aria-label="Товар в наличии на складе">
+        @if (! $isB2bOffer && $displayAvailabilityStatus === 'in_stock')
+            <div class="product-card-availability" aria-label="{{ $availabilityLabel }}">
                 <span class="product-card-availability__dot" aria-hidden="true"></span>
-                <span>В наличии</span>
+                <span>{{ $availabilityLabel }}</span>
             </div>
-        @elseif (! $isB2bOffer && $availabilityStatus === 'check')
+        @elseif (! $isB2bOffer && $displayAvailabilityStatus === 'check')
             <div class="product-card-availability" aria-label="Товар доступен к заказу, наличие подтвердит менеджер">
                 <span class="product-card-availability__dot" aria-hidden="true"></span>
-                <span>{{ $availabilityLabel === 'Уточняйте наличие' ? 'Доступен к заказу' : $availabilityLabel }}</span>
+                <span>{{ $availabilityLabel }}</span>
             </div>
         @endif
 

@@ -105,7 +105,7 @@ class UnconfirmedProductCheckoutTest extends TestCase
         $this->view('partials.product-card', ['product' => $product])
             ->assertDontSee('card-product--consultation', false)
             ->assertSee('btn-add-to-cart', false)
-            ->assertSeeText('Доступен к заказу');
+            ->assertSeeText('Доступно к заказу');
 
         foreach (['partials.product-card', 'partials.product-card-list'] as $view) {
             $this->view($view, ['product' => $product])
@@ -124,7 +124,7 @@ class UnconfirmedProductCheckoutTest extends TestCase
             ->assertDontSee('card-product--consultation', false)
             ->assertSee('product-card-availability', false)
             ->assertSeeText('В наличии')
-            ->assertSee('Товар в наличии на складе');
+            ->assertSee('aria-label="В наличии', false);
     }
 
     public function test_confirmed_product_can_be_bought_from_mobile_and_desktop_with_the_same_retail_price(): void
@@ -156,7 +156,7 @@ class UnconfirmedProductCheckoutTest extends TestCase
         $this->get('/'.$product->category->slug.'/'.$product->slug)
             ->assertOk()
             ->assertSee('33.00 BYN')
-            ->assertSee('Доступен к заказу')
+            ->assertSee('Доступно к заказу')
             ->assertSee('Менеджер подтвердит наличие и срок поставки после оформления.')
             ->assertSee('btn-add-to-cart', false);
     }

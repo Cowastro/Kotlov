@@ -7,7 +7,8 @@
     $imageUrl2 = $product->imageUrl(1);
 
     $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus') ? $product->effectiveAvailabilityStatus() : ($product->in_stock ? 'in_stock' : 'out_of_stock');
-    $availabilityLabel = method_exists($product, 'availabilityLabel') ? $product->availabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
+    $availabilityLabel = method_exists($product, 'publicAvailabilityLabel') ? $product->publicAvailabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
+    $displayAvailabilityStatus = method_exists($product, 'publicAvailabilityStatus') ? $product->publicAvailabilityStatus() : $availabilityStatus;
     $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
     $b2bOffer = $b2bComparison['offer'] ?? null;
     $isB2bOffer = $b2bOffer !== null;
@@ -154,13 +155,13 @@
                         {{ $b2bOffer->formattedStockQuantity() }}
                     @endif
                 </span>
-            @elseif ($availabilityStatus === 'in_stock')
+            @elseif ($displayAvailabilityStatus === 'in_stock')
                 <span class="text-caption-01 text-success">
-                    <i class="icon icon-CheckCircle"></i> В наличии
+                    <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }}
                 </span>
-            @elseif ($availabilityStatus === 'check')
+            @elseif ($displayAvailabilityStatus === 'check')
                 <span class="text-caption-01 text-warning">
-                    <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel === 'Уточняйте наличие' ? 'Доступен к заказу' : $availabilityLabel }} · наличие и срок подтвердит менеджер
+                    <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }} · наличие и срок подтвердит менеджер
                 </span>
             @else
                 <span class="text-caption-01 text-danger">

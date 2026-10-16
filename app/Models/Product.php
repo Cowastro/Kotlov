@@ -128,30 +128,78 @@ class Product extends Model
 
     public function availabilityLabel(): string
     {
+        return match ($this->publicAvailabilityStatus()) {
+            self::AVAILABILITY_IN_STOCK => 'В наличии',
+            self::AVAILABILITY_CHECK => 'Доступно к заказу',
+            default => 'Нет в наличии',
+        };
+    }
+
+    public function publicAvailabilityLabel(): string
+    {
+        $status = $this->publicAvailabilityStatus();
+        if ($status === self::AVAILABILITY_IN_STOCK) {
+            $quantity = $this->confirmedStockQuantity();
+            $unit = in_array($this->unit, [null, '', 'шт', 'шт.'], true) ? 'шт.' : $this->unit;
+
+            return $quantity !== null
+                ? 'В наличии: '.rtrim(rtrim(number_format($quantity, 3, ',', ' '), '0'), ',').' '.$unit
+                : 'В наличии';
+        }
+
+        return $status === self::AVAILABILITY_CHECK ? 'Доступно к заказу' : 'Нет в наличии';
+    }
+
+    /** Public wording only: never changes checkout or inventory-confirmation guards. */
+    public function publicAvailabilityStatus(): string
+    {
         $status = $this->effectiveAvailabilityStatus();
+        if ($status === self::AVAILABILITY_IN_STOCK && ! $this->manual_stock_management && $this->confirmedStockQuantity() === null) {
+            $status = self::AVAILABILITY_CHECK;
+        }
         if ($status === self::AVAILABILITY_CHECK && ! $this->manual_stock_management && ! $this->requires_price_confirmation) {
             $links = $this->relationLoaded('supplierProducts')
                 ? $this->supplierProducts
                 : $this->supplierProducts()->with('supplier:id,code,is_active')->get();
-            $labels = [];
             foreach ($links as $link) {
                 $confirmedAt = $link->last_stock_synced_at ?? $link->last_synced_at;
                 if ($link->stock_quantity !== null || ! $link->in_stock || ! $confirmedAt || $confirmedAt->lt(now()->subHours(SupplierProduct::STALE_AFTER_HOURS))
-                    || ! in_array($link->stock_status, ['low_without_quantity', 'available_without_quantity'], true)
-                    || $link->supplier?->code !== 'omenergo' || ! $link->supplier->is_active) {
+                    || ! in_array($link->stock_status, ['low_without_quantity', 'available_without_quantity', 'available', 'in_stock'], true)
+                    || $link->supplier?->is_active !== true) {
                     continue;
                 }
-                $labels[] = $link->stock_status;
-            }
-            if (in_array('available_without_quantity', $labels, true)) {
-                return 'В наличии у поставщика';
-            }
-            if (in_array('low_without_quantity', $labels, true)) {
-                return 'Мало у поставщика';
+
+                return self::AVAILABILITY_IN_STOCK;
             }
         }
 
-        return self::availabilityStatusOptions()[$status] ?? 'Уточняйте наличие';
+        return $status;
+    }
+
+    /** Exact fresh channel quantities only, never the potentially stale integer summary. */
+    public function confirmedStockQuantity(): ?float
+    {
+        if ($this->effectiveAvailabilityStatus() !== self::AVAILABILITY_IN_STOCK) {
+            return null;
+        }
+        if ($this->manual_stock_management) {
+            return (float) $this->stock_qty > 0 ? (float) $this->stock_qty : null;
+        }
+        $integrations = $this->relationLoaded('integrationProducts')
+            ? $this->integrationProducts
+            : $this->integrationProducts()->with('source')->get();
+        $quantities = $integrations->filter(fn ($item) => $item->match_status === 'matched' && $item->hasFreshPositiveStock())
+            ->groupBy('integration_source_id')->map(fn ($items) => (float) $items->max('stock_quantity'));
+        if ($quantities->isNotEmpty()) {
+            return $quantities->sum();
+        }
+        $links = $this->relationLoaded('supplierProducts')
+            ? $this->supplierProducts
+            : $this->supplierProducts()->with('supplier:id,is_active')->get();
+        $quantities = $links->filter(fn ($item) => $item->supplier?->is_active === true && $item->hasFreshPositiveStock())
+            ->groupBy('supplier_id')->map(fn ($items) => (float) $items->max('stock_quantity'));
+
+        return $quantities->isNotEmpty() ? $quantities->sum() : null;
     }
 
     public function canBeOrdered(): bool
