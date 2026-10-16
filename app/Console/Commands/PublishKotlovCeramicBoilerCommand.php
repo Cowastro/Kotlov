@@ -40,7 +40,7 @@ class PublishKotlovCeramicBoilerCommand extends Command
             return self::FAILURE;
         }
         $images = [
-            '/img/products/kotlov-xo-boiler-95/kit-visualization-v4.png',
+            '/img/products/kotlov-xo-boiler-95/kit-visualization-v5.png',
             '/img/products/kotlov-xo-boiler-95/ceramic-pro-100.jpg',
             '/img/promotions/kotlov-xo-ceramic-pro-real-firebox.jpg',
             '/img/promotions/kotlov-xo-ceramic-pro-real-controller.jpg',
