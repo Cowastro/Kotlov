@@ -128,7 +128,30 @@ class Product extends Model
 
     public function availabilityLabel(): string
     {
-        return self::availabilityStatusOptions()[$this->effectiveAvailabilityStatus()] ?? 'Уточняйте наличие';
+        $status = $this->effectiveAvailabilityStatus();
+        if ($status === self::AVAILABILITY_CHECK && ! $this->manual_stock_management && ! $this->requires_price_confirmation) {
+            $links = $this->relationLoaded('supplierProducts')
+                ? $this->supplierProducts
+                : $this->supplierProducts()->with('supplier:id,code,is_active')->get();
+            $labels = [];
+            foreach ($links as $link) {
+                $confirmedAt = $link->last_stock_synced_at ?? $link->last_synced_at;
+                if ($link->stock_quantity !== null || ! $link->in_stock || ! $confirmedAt || $confirmedAt->lt(now()->subHours(SupplierProduct::STALE_AFTER_HOURS))
+                    || ! in_array($link->stock_status, ['low_without_quantity', 'available_without_quantity'], true)
+                    || $link->supplier?->code !== 'omenergo' || ! $link->supplier->is_active) {
+                    continue;
+                }
+                $labels[] = $link->stock_status;
+            }
+            if (in_array('available_without_quantity', $labels, true)) {
+                return 'В наличии у поставщика';
+            }
+            if (in_array('low_without_quantity', $labels, true)) {
+                return 'Мало у поставщика';
+            }
+        }
+
+        return self::availabilityStatusOptions()[$status] ?? 'Уточняйте наличие';
     }
 
     public function canBeOrdered(): bool
@@ -226,7 +249,8 @@ class Product extends Model
     public function scopeWithSupplierChannels($query)
     {
         return $query->with([
-            'supplierProducts:id,product_id,in_stock,stock_quantity,last_stock_synced_at,last_synced_at,updated_at',
+            'supplierProducts:id,product_id,supplier_id,in_stock,stock_status,stock_quantity,last_stock_synced_at,last_synced_at,updated_at',
+            'supplierProducts.supplier:id,code,is_active',
             'integrationProducts:id,product_id,integration_source_id,stock_quantity,match_status,stock_confirmed_at',
             'integrationProducts.source:id,code,driver,is_active,settings',
             'integrationProducts.source.latestSuccessfulCatalogExchangeRun',

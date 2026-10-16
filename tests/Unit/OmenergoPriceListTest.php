@@ -16,7 +16,8 @@ class OmenergoPriceListTest extends TestCase
         foreach (['*', '**', '***', 'Под заказ'] as $marker) {
             $this->assertNull($p->stock($marker)['quantity']);
         }
-        $this->assertFalse($p->stock('*')['in_stock']);
+        $this->assertTrue($p->stock('*')['in_stock']);
+        $this->assertSame('low_without_quantity', $p->stock('*')['stock_status']);
         $this->assertTrue($p->stock('**')['in_stock']);
         $this->assertSame(0, $p->stock('Нет в наличии')['quantity']);
         $this->expectException(RuntimeException::class);

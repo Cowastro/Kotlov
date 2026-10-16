@@ -72,7 +72,7 @@ class OmenergoPriceList
     public function stock(string $value): array
     {
         return match (trim($value)) {
-            '*' => ['in_stock' => false, 'quantity' => null, 'stock_status' => 'check'],
+            '*' => ['in_stock' => true, 'quantity' => null, 'stock_status' => 'low_without_quantity'],
             '**', '***' => ['in_stock' => true, 'quantity' => null, 'stock_status' => 'available_without_quantity'],
             'Нет в наличии' => ['in_stock' => false, 'quantity' => 0, 'stock_status' => 'out_of_stock'],
             'Под заказ' => ['in_stock' => false, 'quantity' => null, 'stock_status' => 'on_order'],

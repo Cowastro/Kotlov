@@ -202,8 +202,9 @@
                                     $canBuy = $b2bOffer
                                         ? $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
                                         : $product->canBeOrdered();
-                                    $availabilityLabel = \App\Models\Product::availabilityStatusOptions()[$availabilityStatus]
-                                        ?? 'Уточняйте наличие';
+                                    $availabilityLabel = $b2bOffer
+                                        ? (\App\Models\Product::availabilityStatusOptions()[$availabilityStatus] ?? 'Уточняйте наличие')
+                                        : $product->availabilityLabel();
                                     $displayPrice = $b2bComparison['wholesale_price'] ?? (float) $product->price;
                                     $showPreviewPrice = request()->boolean('admin-preview')
                                         && auth()->user()?->isManager()
@@ -323,7 +324,7 @@
                                         </span>
                                     @elseif ($availabilityStatus === 'check')
                                         <span class="stock check-stock fw-medium" style="color:#b45309;">
-                                            <i class="icon icon-CheckCircle" style="color:#b45309;"></i> Доступен к заказу
+                                            <i class="icon icon-CheckCircle" style="color:#b45309;"></i> {{ $availabilityLabel === 'Уточняйте наличие' ? 'Доступен к заказу' : $availabilityLabel }}
                                         </span>
                                         <p class="text-caption-01 cl-text-2 mt-4 mb-0">Менеджер подтвердит наличие и срок поставки после оформления.</p>
                                     @else

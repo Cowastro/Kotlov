@@ -157,7 +157,7 @@
         @elseif (! $isB2bOffer && $availabilityStatus === 'check')
             <div class="product-card-availability" aria-label="Товар доступен к заказу, наличие подтвердит менеджер">
                 <span class="product-card-availability__dot" aria-hidden="true"></span>
-                <span>Доступен к заказу</span>
+                <span>{{ $availabilityLabel === 'Уточняйте наличие' ? 'Доступен к заказу' : $availabilityLabel }}</span>
             </div>
         @endif
 

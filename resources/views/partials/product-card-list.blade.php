@@ -160,7 +160,7 @@
                 </span>
             @elseif ($availabilityStatus === 'check')
                 <span class="text-caption-01 text-warning">
-                    <i class="icon icon-CheckCircle"></i> Доступен к заказу · наличие подтвердит менеджер
+                    <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel === 'Уточняйте наличие' ? 'Доступен к заказу' : $availabilityLabel }} · наличие и срок подтвердит менеджер
                 </span>
             @else
                 <span class="text-caption-01 text-danger">
