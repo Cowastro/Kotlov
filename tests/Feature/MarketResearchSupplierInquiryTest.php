@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\SupplierB2bInquiry;
 use App\Models\Category;
 use App\Models\CrmMailbox;
 use App\Models\MarketResearchReport;
@@ -11,6 +12,7 @@ use App\Models\User;
 use App\Services\Market\MarketResearchSupplierInquiry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class MarketResearchSupplierInquiryTest extends TestCase
@@ -116,5 +118,67 @@ class MarketResearchSupplierInquiryTest extends TestCase
         $this->assertSame('other@arbitrary.test', $manualThread->participant_email);
         $this->assertSame('Компания вне справочника', $manualThread->participant_name);
         $this->assertNull($manualThread->messages()->latest('id')->firstOrFail()->metadata['supplier_id']);
+    }
+
+    public function test_manager_can_create_a_standalone_b2b_supplier_inquiry_from_the_menu_page(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::query()->updateOrCreate(['email' => 'info@kotlov.by'], [
+            'name' => 'KOTLOV',
+            'username' => 'info@kotlov.by',
+            'password' => 'secret',
+            'imap_host' => 'imap.example.com',
+            'smtp_host' => 'smtp.example.com',
+            'is_enabled' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Насосы',
+            'slug' => 'standalone-b2b-inquiry',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Насос для отдельной заявки',
+            'slug' => 'standalone-b2b-inquiry-pump',
+            'sku' => 'B2B-001',
+            'price' => 100,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(SupplierB2bInquiry::class)
+            ->assertSee('Последние B2B-заявки')
+            ->assertActionExists('create_b2b_inquiry')
+            ->callAction('create_b2b_inquiry', [
+                'product_id' => $product->id,
+                'supplier_id' => null,
+                'mailbox_id' => $mailbox->id,
+                'recipient' => 'new-supplier@example.ru',
+                'participant_name' => 'Новый поставщик РФ',
+                'cc' => ['copy@example.ru'],
+                'attach_russian_representative' => false,
+                'subject' => 'Запрос цены и наличия — '.$product->name,
+                'body' => app(MarketResearchSupplierInquiry::class)->bodyForProduct($product),
+                'send_now' => false,
+            ])
+            ->assertHasNoActionErrors()
+            ->assertRedirect();
+
+        $draft = $mailbox->messages()->where('direction', 'draft')->firstOrFail();
+        $this->assertSame('supplier_b2b_inquiry', $draft->metadata['source']);
+        $this->assertSame($product->id, $draft->metadata['product_id']);
+        $this->assertSame('new-supplier@example.ru', $draft->thread->participant_email);
+        $this->assertStringContainsString($product->name, $draft->text_body);
+        $this->assertStringNotContainsString($product->sku, $draft->text_body);
+    }
+
+    public function test_client_cannot_open_the_supplier_b2b_inquiry_page(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'client', 'is_active' => true]));
+
+        $this->get('/admin/supplier-b2b-inquiries')->assertForbidden();
     }
 }

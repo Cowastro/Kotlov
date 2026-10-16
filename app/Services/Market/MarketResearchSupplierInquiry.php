@@ -5,6 +5,7 @@ namespace App\Services\Market;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\MarketResearchReport;
+use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
@@ -83,7 +84,17 @@ class MarketResearchSupplierInquiry
     public function body(MarketResearchReport $report): string
     {
         $report->loadMissing('product');
-        $product = $report->product;
+
+        return $this->bodyForProduct($report->product);
+    }
+
+    public function subjectForProduct(?Product $product): string
+    {
+        return 'Запрос цены и наличия — '.($product?->name ?? 'товар');
+    }
+
+    public function bodyForProduct(?Product $product): string
+    {
 
         return implode("\n", [
             'Здравствуйте!',
@@ -108,6 +119,60 @@ class MarketResearchSupplierInquiry
         string $body,
         bool $attachRussianRepresentative = false,
     ): CrmMailThread {
+        return $this->createProductDraft(
+            $report->product()->first(),
+            $supplier,
+            $mailbox,
+            $user,
+            $recipient,
+            $cc,
+            $participantName,
+            $subject,
+            $body,
+            $attachRussianRepresentative,
+            $report,
+        );
+    }
+
+    public function createStandaloneDraft(
+        Product $product,
+        ?Supplier $supplier,
+        CrmMailbox $mailbox,
+        User $user,
+        string $recipient,
+        array $cc,
+        ?string $participantName,
+        string $subject,
+        string $body,
+        bool $attachRussianRepresentative = false,
+    ): CrmMailThread {
+        return $this->createProductDraft(
+            $product,
+            $supplier,
+            $mailbox,
+            $user,
+            $recipient,
+            $cc,
+            $participantName,
+            $subject,
+            $body,
+            $attachRussianRepresentative,
+        );
+    }
+
+    private function createProductDraft(
+        ?Product $product,
+        ?Supplier $supplier,
+        CrmMailbox $mailbox,
+        User $user,
+        string $recipient,
+        array $cc,
+        ?string $participantName,
+        string $subject,
+        string $body,
+        bool $attachRussianRepresentative = false,
+        ?MarketResearchReport $report = null,
+    ): CrmMailThread {
         if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
             throw new RuntimeException('Укажите корректный email поставщика.');
         }
@@ -116,7 +181,7 @@ class MarketResearchSupplierInquiry
             ? trim((string) $participantName)
             : $supplier?->name;
 
-        return DB::transaction(function () use ($report, $supplier, $mailbox, $user, $recipient, $cc, $participantName, $subject, $body, $attachRussianRepresentative): CrmMailThread {
+        return DB::transaction(function () use ($product, $report, $supplier, $mailbox, $user, $recipient, $cc, $participantName, $subject, $body, $attachRussianRepresentative): CrmMailThread {
             [$attachments, $attachmentNames] = $this->russianRepresentativeAttachment($attachRussianRepresentative);
             if ($attachRussianRepresentative) {
                 $body = rtrim($body)."\n\nДля оформления поставки и выставления счёта в РФ используйте реквизиты нашего российского представительства ООО «МИНСКАЯ ПРОМЫШЛЕННАЯ ГРУППА» (ИНН 6732146305). Реквизиты приложены к письму.";
@@ -136,7 +201,9 @@ class MarketResearchSupplierInquiry
 
             $thread->forceFill([
                 'crm_counterparty_id' => $supplier?->crm_counterparty_id ?: $thread->crm_counterparty_id,
-                'manager_note' => 'Запрос партнёрской B2B-цены из анализа рынка №'.$report->id.'.',
+                'manager_note' => $report
+                    ? 'Запрос партнёрской B2B-цены из анализа рынка №'.$report->id.'.'
+                    : 'B2B-заявка поставщику по товару «'.($product?->name ?? 'Товар').'».',
             ])->save();
 
             $draft = $thread->messages()->where('direction', 'draft')->latest('id')->first();
@@ -144,10 +211,10 @@ class MarketResearchSupplierInquiry
                 $metadata = $draft->metadata ?? [];
                 $draft->forceFill(['metadata' => [
                     ...$metadata,
-                    'source' => 'market_research_b2b_inquiry',
-                    'market_research_report_id' => $report->id,
+                    'source' => $report ? 'market_research_b2b_inquiry' : 'supplier_b2b_inquiry',
+                    'market_research_report_id' => $report?->id,
                     'supplier_id' => $supplier?->id,
-                    'product_id' => $report->product_id,
+                    'product_id' => $product?->id,
                 ]])->save();
             }
 
