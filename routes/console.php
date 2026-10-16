@@ -71,6 +71,14 @@ Artisan::command('inspire', function () {
 
 $supplierSyncTimezone = 'Europe/Minsk';
 
+// Omenergo daily maintenance never creates products or rewrites content/media.
+Schedule::command('supplier:sync-omenergo --apply')
+    ->dailyAt('07:45')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/omenergo-sync.log'));
+
 // ── Русклимат: ежедневная синхронизация ──────────────────────────────────────
 // Сервер cron (один раз): * * * * * cd /var/www/h209767/data/www/new.kotlov.by && /opt/alt/php83/usr/bin/php artisan schedule:run >> /dev/null 2>&1
 //
