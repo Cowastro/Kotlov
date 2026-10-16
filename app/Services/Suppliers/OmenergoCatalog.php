@@ -363,6 +363,17 @@ class OmenergoCatalog
                 $specs[$key] = ['key' => $key, 'value' => $value];
             }
         }
+        // Some accessory pages publish real technical rows as "key: value"
+        // blocks instead of the regular char_name/char_value pairs.
+        foreach ($xpath->query('//*[contains(concat(" ",normalize-space(@class)," ")," features_list ")]//*[contains(concat(" ",normalize-space(@class)," ")," card-characteristic__item ")]') as $node) {
+            $parts = explode(':', $this->clean($node->textContent), 2);
+            if (count($parts) === 2) {
+                [$key, $value] = array_map('trim', $parts);
+                if ($key !== '' && $value !== '' && mb_strlen($key) <= 120 && mb_strlen($value) <= 350) {
+                    $specs[$key] = ['key' => $key, 'value' => $value];
+                }
+            }
+        }
         $documents = [];
         foreach ($xpath->query('//*[@itemprop="documents"]//a[@href]') as $a) {
             $url = $this->energyUrl($a->getAttribute('href'));

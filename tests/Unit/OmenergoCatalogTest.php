@@ -7,6 +7,19 @@ use PHPUnit\Framework\TestCase;
 
 class OmenergoCatalogTest extends TestCase
 {
+    public function test_accessory_features_blocks_preserve_network_and_compatibility_facts(): void
+    {
+        $html = '<h1>Модуль Энергия WiFi Smart.2</h1><div class="product_code">Артикул: Е0201-0601</div>'
+            .'<div class="features_list"><div class="card-characteristic__item">Параметры Wi-Fi: IEEE 802.11b/g/n (2,4 GHz)</div>'
+            .'<div class="card-characteristic__item">Шифрование: WPA / WPA2 / WPA3 (TKIP/AES)</div>'
+            .'<div class="card-characteristic__item">Совместимость: ИБП Smart.2 1500, ИБП Smart.2 2000</div></div>'
+            .'<div class="card-characteristic__item">Не характеристика: не переносить</div>';
+        $page = (new OmenergoCatalog)->parseEnergyPage($html);
+        $this->assertCount(3, $page['specs']);
+        $this->assertSame('Е0201-0601', $page['article']);
+        $this->assertSame('ИБП Smart.2 1500, ИБП Smart.2 2000', $page['specs'][2]['value']);
+    }
+
     public function test_pro_heading_without_battery_voltage_requires_exact_article_and_technical_values(): void
     {
         $c = new OmenergoCatalog;
