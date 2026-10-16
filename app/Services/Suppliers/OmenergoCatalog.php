@@ -125,6 +125,15 @@ class OmenergoCatalog
         $key = $this->key($row['name']);
         $matches = array_values(array_filter($index, fn ($entry) => $this->key($entry['name']) === $key));
 
+        // Old Garant sheet names repeat capacity and add battery voltage.
+        // Only use the supplier's own old-series page; validate both values
+        // against its technical table before accepting any media.
+        if ($matches === [] && preg_match('/^ИБП\s+Гарант-(\d+)\s+(12|24)\s*В\s+(\d+)\s*ВА$/iu', trim($row['name']), $garant)
+            && $garant[1] === $garant[3] && ($row['brand'] ?? '') === 'Энергия') {
+            $matches = array_values(array_filter($index, fn ($entry) => parse_url($entry['url'], PHP_URL_HOST) === 'omenergo.by'
+                && $this->key($entry['name']) === $this->key('Источник бесперебойного питания Энергия Гарант-'.$garant[1])));
+        }
+
         return count($matches) === 1 ? $matches[0] : null;
     }
 
@@ -249,6 +258,24 @@ class OmenergoCatalog
 
     public function identityMatches(array $row, array $page): bool
     {
+        if (! isset($page['article']) && preg_match('/^ИБП\s+Гарант-(\d+)\s+(12|24)\s*В\s+(\d+)\s*ВА$/iu', trim($row['name']), $garant)) {
+            if ($garant[1] !== $garant[3] || ($row['brand'] ?? '') !== 'Энергия' || ($page['brand'] ?? '') !== 'Энергия'
+                || $this->key($page['name']) !== $this->key('Источник бесперебойного питания Энергия Гарант-'.$garant[1])) {
+                return false;
+            }
+            $capacity = null;
+            $battery = null;
+            foreach ($page['specs'] ?? [] as $spec) {
+                if (preg_match('/^Пиковая\s*\/\s*номинальная мощность$/iu', $spec['key']) && preg_match('/^(\d+)\s*\//u', $spec['value'], $value)) {
+                    $capacity = (int) $value[1];
+                }
+                if (preg_match('/^Напряжение подключаемых батарей$/iu', $spec['key']) && preg_match('/^(\d+)\s*В$/iu', $spec['value'], $value)) {
+                    $battery = (int) $value[1];
+                }
+            }
+
+            return $capacity === (int) $garant[1] && $battery === (int) $garant[2];
+        }
         if (isset($page['article'])) {
             $parser = new OmenergoPriceList;
             if ($row['brand'] !== 'Энергия' || $parser->articleKey($page['article']) !== $parser->articleKey($row['article'])) {
@@ -332,13 +359,28 @@ class OmenergoCatalog
         $specs = [];
         foreach ($xpath->query('//*[contains(@class,"us-product-description-cont")]//tr') as $tr) {
             $cells = $xpath->query('./td', $tr);
-            if ($cells->length !== 2) {
+            if (! in_array($cells->length, [2, 3], true)) {
                 continue;
             }
             $key = $this->clean($cells->item(0)->textContent);
-            $value = $this->clean($cells->item(1)->textContent);
+            $value = $this->clean($cells->item($cells->length - 1)->textContent);
+            if ($cells->length === 3) {
+                $unit = $this->clean($cells->item(1)->textContent);
+                if ($unit === '±%') {
+                    $value = '±'.$value.'%';
+                } elseif (! in_array($unit, ['', '—', '-'], true)) {
+                    $value .= ' '.$unit;
+                }
+            }
             if ($key !== '' && $value !== '' && mb_strlen($key) <= 120 && mb_strlen($value) <= 350
                 && ! in_array($key, ['Дополнительные параметры', 'Наименование', 'Параметр'], true)) {
+                $specs[$key] = ['key' => $key, 'value' => $value];
+            }
+        }
+        foreach ($xpath->query('//*[@id="us-product-attributes"]//*[contains(concat(" ",normalize-space(@class)," ")," us-product-attr-item ")]') as $item) {
+            $key = $this->clean($xpath->evaluate('string(./span[1])', $item));
+            $value = $this->clean($xpath->evaluate('string(./span[2])', $item));
+            if ($key !== '' && $value !== '' && mb_strlen($key) <= 120 && mb_strlen($value) <= 350) {
                 $specs[$key] = ['key' => $key, 'value' => $value];
             }
         }

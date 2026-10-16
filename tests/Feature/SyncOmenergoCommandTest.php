@@ -30,6 +30,38 @@ class SyncOmenergoCommandTest extends TestCase
         return stream_get_contents($f);
     }
 
+    public function test_limited_identity_report_contains_only_two_authorized_rows_and_no_prices(): void
+    {
+        Storage::fake('local');
+        Http::fake([OmenergoPriceList::CSV_URL => Http::response($this->feed())]);
+        $brand = Brand::create(['name' => 'Энергия', 'slug' => 'energy-review']);
+        $category = Category::create(['name' => 'Тест', 'slug' => 'energy-review']);
+        foreach ([1, 2] as $i) {
+            Product::create(['category_id' => $category->id, 'brand_id' => $brand->id, 'name' => 'Энергия Voltron '.$i.' (HP) X', 'slug' => 'review-'.$i]);
+        }
+        $before = Product::count();
+        $path = storage_path('app/reports/omenergo/two-identities.csv');
+        try {
+            $this->artisan('supplier:sync-omenergo', ['--dry-run' => true, '--review-two' => true])->assertSuccessful();
+            $f = fopen($path, 'rb');
+            $rows = [];
+            while (($record = fgetcsv($f, escape: '')) !== false) {
+                $rows[] = $record;
+            }
+            fclose($f);
+            $this->assertCount(3, $rows);
+            $this->assertSame(['supplier_article', 'name', 'product_id', 'candidate'], $rows[0]);
+            $this->assertSame('Е0101-1', $rows[1][0]);
+            $this->assertStringNotContainsString('188', file_get_contents($path));
+            $this->assertSame($before, Product::count());
+            $this->artisan('supplier:sync-omenergo', ['--apply' => true, '--review-two' => true])->assertFailed();
+        } finally {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     public function test_onboarding_is_idempotent_and_daily_sync_does_not_create_cards(): void
     {
         Storage::fake('local');

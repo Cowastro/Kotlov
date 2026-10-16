@@ -33,6 +33,7 @@ class SyncOmenergoCommand extends Command
         {--confirm-pricing : Confirm D2 as BYN purchase incl VAT and MRC as retail}
         {--update-content : Populate verified sheet content, independent of daily price sync}
         {--csv-file= : Read a saved source CSV instead of downloading}
+        {--review-two : Export only the two explicitly authorized unresolved identity rows; dry-run only}
         {--report= : Write a complete review CSV to this path}';
 
     protected $description = 'Omenergo: dealer Google Sheet, exact catalog matching, CRM contacts and safe daily updates.';
@@ -47,6 +48,9 @@ class SyncOmenergoCommand extends Command
         }
         $sync = null;
         try {
+            if ($this->option('review-two') && (! $this->option('dry-run') || $this->option('apply'))) {
+                throw new RuntimeException('The limited identity report requires --dry-run without --apply.');
+            }
             $csv = $this->option('csv-file')
                 ? file_get_contents($this->option('csv-file'))
                 : Http::timeout(60)->retry(2, 1000)->get(OmenergoPriceList::CSV_URL)->throw()->body();
@@ -59,6 +63,25 @@ class SyncOmenergoCommand extends Command
                 throw new RuntimeException('Omenergo supplier is disabled.');
             }
             $classified = $this->classify($rows, $parser, $supplier);
+            if ($this->option('review-two')) {
+                $review = array_values(array_filter($classified, fn ($row) => $row['action'] === 'review_similar_model'));
+                if (count($review) !== 2) {
+                    throw new RuntimeException('The authorized report must contain exactly two unresolved rows.');
+                }
+                $path = storage_path('app/reports/omenergo/two-identities.csv');
+                if (! is_dir(dirname($path))) {
+                    mkdir(dirname($path), 0775, true);
+                }
+                $file = fopen($path, 'wb');
+                fputcsv($file, ['supplier_article', 'name', 'product_id', 'candidate'], ',', '"', '');
+                foreach ($review as $row) {
+                    fputcsv($file, [$row['article'], $row['name'], $row['product_id'], implode(' | ', $row['suggestions'])], ',', '"', '');
+                }
+                fclose($file);
+                $this->line('metric.omenergo.limited_review_rows=2');
+
+                return self::SUCCESS;
+            }
             $this->report($classified);
             $this->auditCurrentState($supplier);
             $apply = $this->option('apply') && ! $this->option('dry-run');

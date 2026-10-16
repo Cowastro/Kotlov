@@ -364,6 +364,39 @@ jobs:
             "TASK='$TASK' ARTISAN_ARGS='$ARTISAN_ARGS' LOG_FILE='$LOG_FILE' SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \
             <<< "$remote_script"
 
+      # User explicitly authorized these two identity rows only, not the full import report.
+      - name: Download limited Omenergo identities
+        if: inputs.task == 'artisan-dry-run' && inputs.artisan_args == 'supplier:sync-omenergo --dry-run --review-two'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          set -euo pipefail
+          port="${SERVER_PORT:-22}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          mkdir -p artifacts
+          scp -q -i ~/.ssh/server_key -P "$port" \
+            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/reports/omenergo/two-identities.csv" \
+            artifacts/omenergo-two-identities.csv
+          python3 - <<'PY'
+          import csv
+          with open('artifacts/omenergo-two-identities.csv', encoding='utf-8', newline='') as f:
+              rows = list(csv.reader(f))
+          assert len(rows) == 3 and rows[0] == ['supplier_article', 'name', 'product_id', 'candidate']
+          assert all(len(row) == 4 for row in rows)
+          PY
+
+      - name: Upload limited Omenergo identities
+        if: inputs.task == 'artisan-dry-run' && inputs.artisan_args == 'supplier:sync-omenergo --dry-run --review-two'
+        uses: actions/upload-artifact@v6
+        with:
+          name: omenergo-two-identities
+          path: artifacts/omenergo-two-identities.csv
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Download SVAH Group audit
         if: inputs.task == 'audit-svah-group'
         env:

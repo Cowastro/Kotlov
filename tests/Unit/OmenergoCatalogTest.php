@@ -7,6 +7,27 @@ use PHPUnit\Framework\TestCase;
 
 class OmenergoCatalogTest extends TestCase
 {
+    public function test_old_garant_requires_matching_capacity_and_battery_voltage(): void
+    {
+        $c = new OmenergoCatalog;
+        $row = ['name' => 'ИБП Гарант-500 12В 500ВА', 'brand' => 'Энергия'];
+        $entry = ['name' => 'Источник бесперебойного питания Энергия Гарант-500', 'url' => 'https://omenergo.by/old-garant/'];
+        $this->assertSame($entry, $c->find($row, [$entry]));
+        $this->assertNull($c->find($row, [$entry, array_merge($entry, ['url' => 'https://omenergo.by/duplicate/'])]));
+        $page = $entry + ['brand' => 'Энергия', 'specs' => [
+            ['key' => 'Пиковая/номинальная мощность', 'value' => '500/300 ВА'],
+            ['key' => 'Напряжение подключаемых батарей', 'value' => '12 В'],
+        ]];
+        $this->assertTrue($c->identityMatches($row, $page));
+        $page['specs'][1]['value'] = '24 В';
+        $this->assertFalse($c->identityMatches($row, $page));
+        $page['specs'][1]['value'] = '12 В';
+        $page['specs'][0]['value'] = '750/450 ВА';
+        $this->assertFalse($c->identityMatches($row, $page));
+        $page['specs'] = [];
+        $this->assertFalse($c->identityMatches($row, $page));
+    }
+
     public function test_only_documented_aliases_match_and_variants_remain_distinct(): void
     {
         $c = new OmenergoCatalog;
@@ -28,6 +49,20 @@ class OmenergoCatalogTest extends TestCase
         $this->assertSame('Энергия', $page['brand']);
         $this->assertSame(['https://omenergo.by/image/product-1000x1000.jpg'], $page['images']);
         $this->assertSame([['key' => 'Мощность', 'value' => '500 ВА']], $page['specs']);
+    }
+
+    public function test_supplier_three_column_units_and_model_attribute_blocks_are_preserved(): void
+    {
+        $html = '<div class="us-product-description-cont"><table>'
+            .'<tr><td>Точность стабилизации</td><td>±%</td><td>5,7</td></tr>'
+            .'<tr><td>Режим работы</td><td>—</td><td>Постоянный</td></tr>'
+            .'<tr><td>Other model</td><td>1</td><td>2</td><td>3</td></tr></table></div>'
+            .'<div id="us-product-attributes"><div class="us-product-attr-item d-flex"><span>Мощность</span><span>3,5кВа</span></div></div>';
+        $this->assertSame([
+            ['key' => 'Точность стабилизации', 'value' => '±5,7%'],
+            ['key' => 'Режим работы', 'value' => 'Постоянный'],
+            ['key' => 'Мощность', 'value' => '3,5кВа'],
+        ], (new OmenergoCatalog)->parsePage($html)['specs']);
     }
 
     public function test_article_conflict_and_accuracy_conflict_cannot_be_published(): void
