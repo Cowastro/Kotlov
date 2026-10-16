@@ -129,9 +129,21 @@ class OmenergoPriceList
         return $specs;
     }
 
-    public function content(array $row): string
+    public function content(array $row, ?array $verifiedSpecs = null): string
     {
-        $html = '<h2>'.e($this->productName($row)).'</h2><p>'.e($row['description']).'</p>';
+        $html = '<h2>'.e($this->productName($row)).'</h2>';
+        if ($verifiedSpecs === null) {
+            $html .= '<p>'.e($row['description']).'</p>';
+        } else {
+            $highlights = array_values(array_filter($verifiedSpecs, fn ($spec) => preg_match('/мощност|фаз|тип стабилизатор|точност|вход.*рабоч|диапазон.*вход|способ установки|выход.*напряжен/iu', $spec['key'])));
+            if ($highlights !== []) {
+                $html .= '<h3>Главное о модели</h3><ul>';
+                foreach (array_slice($highlights, 0, 6) as $spec) {
+                    $html .= '<li><strong>'.e($spec['key']).':</strong> '.e($spec['value']).'</li>';
+                }
+                $html .= '</ul>';
+            }
+        }
         $html .= '<h3>Комплект поставки</h3><p>'.e($row['kit']).'</p>';
         $html .= '<h3>Гарантия и происхождение</h3><p>Страна производства: '.e($row['country']).'. Гарантия: '.$row['warranty_months'].' мес.</p>';
         if (str_contains(mb_strtolower($row['category']), 'стабилизаторы напряжения')) {

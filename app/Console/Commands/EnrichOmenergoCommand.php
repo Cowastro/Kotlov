@@ -37,7 +37,7 @@ class EnrichOmenergoCommand extends Command
 
             return self::FAILURE;
         }
-        $stats = ['scanned' => 0, 'updated' => 0, 'published' => 0, 'no_source' => 0, 'identity_mismatch' => 0, 'technical_review' => 0, 'errors' => 0];
+        $stats = ['scanned' => 0, 'updated' => 0, 'published' => 0, 'images_saved' => 0, 'documents_saved' => 0, 'no_source' => 0, 'identity_mismatch' => 0, 'technical_review' => 0, 'errors' => 0];
         $review = [];
         try {
             $index = $catalog->index((bool) $this->option('refresh-index'));
@@ -88,25 +88,38 @@ class EnrichOmenergoCommand extends Command
                         }
                     }
                     $specs = collect($product->specs ?? [])->filter(fn ($v) => is_array($v) && isset($v['key']))->keyBy('key');
-                    foreach (array_merge($parser->specs($row), $page['specs']) as $spec) {
+                    $specs->forget('Технические особенности');
+                    $sheetSpecs = array_values(array_filter($parser->specs($row), fn ($spec) => $spec['key'] !== 'Технические особенности'));
+                    foreach (array_merge($sheetSpecs, $page['specs']) as $spec) {
                         $specs->put($spec['key'], $spec);
                     }
                     $product->specs = $specs->values()->all();
                     if ($images !== []) {
                         $product->images = array_values(array_unique(array_merge($images, $product->images ?? [])));
                     }
+                    $stats['images_saved'] += count($images);
                     $facts = '<h3>Параметры конкретной модели</h3><table><tbody>';
                     foreach ($page['specs'] as $spec) {
                         $facts .= '<tr><th>'.e($spec['key']).'</th><td>'.e($spec['value']).'</td></tr>';
                     }
                     $facts .= '</tbody></table>';
-                    $product->content = $parser->content($row).($page['specs'] !== [] ? $facts : '');
+                    $product->content = $parser->content($row, $page['specs']).($page['specs'] !== [] ? $facts : '');
+                    $product->short_description = mb_substr(implode('; ', array_map(fn ($spec) => $spec['key'].': '.$spec['value'], array_slice($page['specs'], 0, 4))), 0, 500);
                     $product->content_source_url = $entry['url'];
                     if ($page['documents'] !== []) {
-                        $product->documents = array_values(array_unique(array_merge($product->documents ?? [], $page['documents']), SORT_REGULAR));
+                        $documents = [];
+                        foreach ($page['documents'] as $document) {
+                            $path = $catalog->downloadDocument($document['url'], $row['article_key']);
+                            if ($path) {
+                                $documents[] = ['label' => $document['label'] ?? $document['name'] ?? 'Паспорт / руководство (PDF)', 'url' => $path, 'source_url' => $document['url']];
+                            }
+                        }
+                        $stats['documents_saved'] += count($documents);
+                        $existingDocuments = array_filter($product->documents ?? [], fn ($document) => ! in_array($document['url'] ?? null, array_column($page['documents'], 'url'), true));
+                        $product->documents = array_values(array_unique(array_merge($existingDocuments, $documents), SORT_REGULAR));
                     }
                     if ($this->option('publish-complete') && $verified['conflicts'] === [] && str_starts_with((string) $product->sku, 'OMENERGO-')
-                        && ! $product->is_archived && ! empty($product->images) && count($page['specs']) >= 3 && (float) $product->price > 0) {
+                        && ! $product->is_archived && $this->hasVerifiedLocalPhoto($product->images ?? []) && count($page['specs']) >= 3 && (float) $product->price > 0) {
                         if (! $product->is_active) {
                             $stats['published']++;
                         }
@@ -134,6 +147,10 @@ class EnrichOmenergoCommand extends Command
             foreach ($stats as $key => $value) {
                 $this->line("metric.omenergo.{$key}={$value}");
             }
+            if ($stats['updated'] > 0) {
+                Cache::forget('nav:brands');
+                Cache::forget('nav:categories:orderable:v1');
+            }
 
             return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
         } catch (\Throwable $e) {
@@ -143,5 +160,19 @@ class EnrichOmenergoCommand extends Command
         } finally {
             $lock->release();
         }
+    }
+
+    private function hasVerifiedLocalPhoto(array $images): bool
+    {
+        foreach ($images as $image) {
+            if (is_string($image) && str_starts_with($image, 'img/products/omenergo/') && is_file(public_path($image))) {
+                $size = @getimagesize(public_path($image));
+                if ($size && min($size[0], $size[1]) >= 200) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

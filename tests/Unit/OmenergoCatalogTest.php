@@ -40,4 +40,17 @@ class OmenergoCatalogTest extends TestCase
         $this->assertCount(1, $result['conflicts']);
         $this->assertSame([['key' => 'Мощность', 'value' => '3000 ВА']], $result['specs']);
     }
+
+    public function test_manufacturer_variant_parser_uses_selected_model_not_family_heading(): void
+    {
+        $html = '<h1>Стабилизаторы Энергия Константа</h1>'
+            .'<div class="card-characteristic__item"><span>Название модели</span><span>Стабилизатор напряжения Энергия Константа 8000</span></div>'
+            .'<div class="card-characteristic__item"><span>Артикул<div>Подсказка</div></span><span>Е0101-0225</span></div>'
+            .'<div class="card-characteristic__item"><span>Точность</span><span>3%</span></div>'
+            .'<div class="slider__for--img"><img data-old="https://xn--c1adkrq9eta.xn--p1ai/sites/default/files/styles/style_400x400/public/product-variants/e0101-0225-01.jpg"></div>';
+        $page = (new OmenergoCatalog)->parseFactoryPage($html);
+        $this->assertSame('Е0101-0225', $page['article']);
+        $this->assertStringContainsString('8000', $page['name']);
+        $this->assertSame(['https://xn--c1adkrq9eta.xn--p1ai/sites/default/files/product-variants/e0101-0225-01.jpg'], $page['images']);
+    }
 }
