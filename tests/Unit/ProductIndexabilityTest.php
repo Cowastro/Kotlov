@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
@@ -20,11 +21,7 @@ class ProductIndexabilityTest extends TestCase
             'availability_status' => Product::AVAILABILITY_IN_STOCK,
         ]);
         $product->setRelation('supplierProducts', new Collection([
-            new SupplierProduct([
-                'in_stock' => true,
-                'stock_quantity' => 1,
-                'last_stock_synced_at' => CarbonImmutable::now(),
-            ]),
+            $this->freshOffer(),
         ]));
 
         $this->assertTrue($product->canBeOrdered());
@@ -82,11 +79,7 @@ class ProductIndexabilityTest extends TestCase
             'availability_status' => Product::AVAILABILITY_IN_STOCK,
         ]);
         $product->setRelation('supplierProducts', new Collection([
-            new SupplierProduct([
-                'in_stock' => true,
-                'stock_quantity' => 1,
-                'last_stock_synced_at' => CarbonImmutable::now(),
-            ]),
+            $this->freshOffer(),
         ]));
 
         $this->assertTrue($product->canBePurchased());
@@ -103,11 +96,7 @@ class ProductIndexabilityTest extends TestCase
             'requires_price_confirmation' => true,
         ]);
         $product->setRelation('supplierProducts', new Collection([
-            new SupplierProduct([
-                'in_stock' => true,
-                'stock_quantity' => 1,
-                'last_stock_synced_at' => CarbonImmutable::now(),
-            ]),
+            $this->freshOffer(),
         ]));
 
         $this->assertSame(Product::AVAILABILITY_CHECK, $product->effectiveAvailabilityStatus());
@@ -130,5 +119,25 @@ class ProductIndexabilityTest extends TestCase
 
         $this->assertSame(Product::AVAILABILITY_CHECK, $product->effectiveAvailabilityStatus());
         $this->assertFalse($product->canBePurchased());
+    }
+
+    public function test_disabled_supplier_cannot_confirm_checkout_even_with_fresh_positive_quantity(): void
+    {
+        $product = new Product(['price' => 100, 'is_active' => true, 'is_archived' => false, 'in_stock' => true]);
+        $offer = $this->freshOffer();
+        $offer->setRelation('supplier', new Supplier(['is_active' => false]));
+        $product->setRelation('supplierProducts', new Collection([$offer]));
+        $product->setRelation('integrationProducts', new Collection);
+        $this->assertFalse($product->canBePurchased());
+        $this->assertTrue($product->requiresAvailabilityConfirmation());
+    }
+
+    private function freshOffer(): SupplierProduct
+    {
+        return (new SupplierProduct([
+            'in_stock' => true,
+            'stock_quantity' => 1,
+            'last_stock_synced_at' => CarbonImmutable::now(),
+        ]))->setRelation('supplier', new Supplier(['is_active' => true]));
     }
 }
