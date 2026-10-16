@@ -18,6 +18,7 @@ use App\Services\CommercialDocuments\CommercialDocumentRevisionComparison;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\Crm\BelarusTaxpayerRegistry;
+use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
 use App\Services\Market\MarketWebResearchService;
 use App\Services\Telephony\PhoneNumber;
 use BackedEnum;
@@ -121,9 +122,10 @@ class CommercialDocumentResource extends Resource
                         ->label('Контактное лицо CRM')
                         ->placeholder('Выберите получателя коммерческого предложения')
                         ->options(fn (Get $get): array => self::contactOptions($get('crm_counterparty_id')))
+                        ->getOptionLabelUsing(fn (mixed $value, Get $get): ?string => self::contactOptionLabel($value, $get('crm_counterparty_id')))
                         ->searchable()
                         ->live()
-                        ->afterStateUpdated(fn (mixed $state, Set $set) => self::fillClientFromContact($state, $set)),
+                        ->afterStateUpdated(fn (mixed $state, Get $get, Set $set) => self::fillClientFromContact($state, $set, $get('crm_counterparty_id'))),
                     TextInput::make('client_company')->label('Компания')->maxLength(255),
                     TextInput::make('client_legal_name')->label('Юридическое название')->maxLength(255)->columnSpanFull(),
                     TextInput::make('client_name')->label('Контактное лицо')->maxLength(255),
@@ -159,6 +161,7 @@ class CommercialDocumentResource extends Resource
                                     'found_address' => $lookup['address'] ?? $get('client_address'),
                                     'found_email' => $lookup['email'] ?? $get('client_email'),
                                     'found_phone' => $lookup['phone'] ?? $get('client_phone'),
+                                    'found_registered_at' => $lookup['registered_at'] ?? null,
                                 ];
                             })
                             ->schema([
@@ -171,11 +174,22 @@ class CommercialDocumentResource extends Resource
                                 Textarea::make('found_address')->label('Юридический адрес')->rows(2)->columnSpanFull(),
                                 TextInput::make('found_email')->label('Email')->email(),
                                 TextInput::make('found_phone')->label('Телефон'),
+                                Hidden::make('found_registered_at'),
                             ])
-                            ->action(function (array $data, Set $set): void {
-                                if ($data['found_counterparty_id'] ?? null) {
-                                    $set('crm_counterparty_id', $data['found_counterparty_id']);
-                                }
+                            ->action(function (array $data, Get $get, Set $set): void {
+                                $saved = app(CrmCounterpartyFromTaxpayerLookup::class)->upsert([
+                                    'unp' => $data['found_unp'],
+                                    'short_name' => $data['found_company'],
+                                    'legal_name' => $data['found_legal_name'],
+                                    'address' => $data['found_address'] ?? null,
+                                    'email' => $data['found_email'] ?? null,
+                                    'phone' => $data['found_phone'] ?? null,
+                                    'registered_at' => $data['found_registered_at'] ?? null,
+                                ], auth()->id(), (string) $get('client_name'));
+
+                                $set('crm_contact_id', null);
+                                $set('crm_counterparty_id', $saved['counterparty']->id);
+                                $set('crm_contact_id', $saved['contact']?->id);
                                 $set('client_unp', $data['found_unp']);
                                 $set('client_company', $data['found_company']);
                                 $set('client_legal_name', $data['found_legal_name']);
@@ -183,7 +197,11 @@ class CommercialDocumentResource extends Resource
                                 $set('client_email', $data['found_email'] ?? null);
                                 $set('client_phone', $data['found_phone'] ?? null);
 
-                                Notification::make()->success()->title('Реквизиты применены')->send();
+                                Notification::make()
+                                    ->success()
+                                    ->title($saved['created'] ? 'Контрагент создан в CRM' : 'Контрагент обновлён в CRM')
+                                    ->body('Реквизиты применены и будут доступны в следующих КП.')
+                                    ->send();
                             }),
                     ])->columnSpanFull(),
                 ]),
@@ -915,10 +933,33 @@ class CommercialDocumentResource extends Resource
             ->all();
     }
 
-    private static function fillClientFromContact(mixed $value, Set $set): void
+    private static function contactOptionLabel(mixed $value, mixed $counterpartyId): ?string
     {
-        $contact = $value
-            ? CrmContact::query()->with('contactPoints')->find($value)
+        if (! $value || ! $counterpartyId) {
+            return null;
+        }
+
+        $contact = CrmContact::query()
+            ->where('counterparty_id', $counterpartyId)
+            ->with('contactPoints')
+            ->find($value);
+        if (! $contact) {
+            return null;
+        }
+
+        $details = $contact->contactPoints
+            ->where('is_active', true)
+            ->pluck('value')
+            ->take(2)
+            ->implode(' · ');
+
+        return $contact->full_name.($details ? ' · '.$details : '');
+    }
+
+    private static function fillClientFromContact(mixed $value, Set $set, mixed $counterpartyId): void
+    {
+        $contact = ($value && $counterpartyId)
+            ? CrmContact::query()->where('counterparty_id', $counterpartyId)->with('contactPoints')->find($value)
             : null;
         if (! $contact) {
             return;

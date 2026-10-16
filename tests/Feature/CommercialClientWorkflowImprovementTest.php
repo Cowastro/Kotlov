@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
+use App\Filament\Resources\CommercialDocuments\Pages\CreateCommercialDocument;
 use App\Filament\Resources\CrmCounterparties\Pages\ViewCrmCounterparty;
 use App\Models\Category;
 use App\Models\CommercialDocument;
@@ -14,6 +15,7 @@ use App\Models\User;
 use App\Services\CommercialDocuments\CommercialDocumentReadiness;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\Crm\BelarusTaxpayerRegistry;
+use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -110,6 +112,88 @@ class CommercialClientWorkflowImprovementTest extends TestCase
         $this->assertSame('CRM / 1С', $result['source']);
         $this->assertSame($counterparty->id, $result['crm_counterparty_id']);
         $this->assertSame('г. Минск, ул. Локальная, 5', $result['address']);
+    }
+
+    public function test_applying_taxpayer_lookup_creates_and_then_updates_one_crm_counterparty(): void
+    {
+        $manager = User::factory()->create();
+        $service = app(CrmCounterpartyFromTaxpayerLookup::class);
+
+        $created = $service->upsert([
+            'unp' => '300012734',
+            'short_name' => 'Браслав-коммунальник КУП ЖКХ',
+            'legal_name' => 'Коммунальное унитарное предприятие «Браслав-коммунальник»',
+            'address' => 'г. Браслав, ул. Дзержинского, 77',
+            'email' => 'BRASMTS@MAIL.RU',
+            'phone' => '8 02153 68518',
+            'registered_at' => '2001-02-03',
+        ], $manager->id, 'Браслав ЖКХ');
+
+        $this->assertTrue($created['created']);
+        $this->assertSame('tax_registry', $created['counterparty']->source);
+        $this->assertSame($manager->id, $created['counterparty']->responsible_user_id);
+        $this->assertDatabaseHas('crm_contact_points', [
+            'counterparty_id' => $created['counterparty']->id,
+            'normalized_value' => 'brasmts@mail.ru',
+        ]);
+
+        $updated = $service->upsert([
+            'unp' => '300012734',
+            'short_name' => 'Браслав-коммунальник',
+            'legal_name' => 'КУП «Браслав-коммунальник»',
+            'address' => 'новый юридический адрес',
+            'email' => 'brasmts@mail.ru',
+            'phone' => '8 02153 68518',
+        ], $manager->id, 'Браслав ЖКХ');
+
+        $this->assertFalse($updated['created']);
+        $this->assertSame($created['counterparty']->id, $updated['counterparty']->id);
+        $this->assertSame('новый юридический адрес', $updated['counterparty']->legal_address);
+        $this->assertSame(1, CrmCounterparty::query()->where('unp', '300012734')->count());
+        $this->assertSame(1, CrmContactPoint::query()->where('counterparty_id', $created['counterparty']->id)->where('type', 'email')->count());
+    }
+
+    public function test_selected_crm_contact_remains_valid_after_counterparty_refresh(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $counterparty = CrmCounterparty::query()->create([
+            'type' => 'organization',
+            'classification' => 'b2b_prospect',
+            'business_unit' => 'wholesale',
+            'status' => 'lead',
+            'name' => 'Браслав-коммунальник',
+            'unp' => '300012734',
+            'source' => 'tax_registry',
+        ]);
+        $contact = CrmContact::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'full_name' => 'Браслав ЖКХ',
+            'is_primary' => true,
+            'is_active' => true,
+        ]);
+        CrmContactPoint::query()->create([
+            'counterparty_id' => $counterparty->id,
+            'contact_id' => $contact->id,
+            'type' => 'email',
+            'value' => 'brasmts@mail.ru',
+            'is_primary' => true,
+            'is_active' => true,
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(CreateCommercialDocument::class)
+            ->fillForm([
+                'crm_counterparty_id' => $counterparty->id,
+                'crm_contact_id' => $contact->id,
+                'client_company' => $counterparty->name,
+                'client_name' => $contact->full_name,
+                'client_email' => 'brasmts@mail.ru',
+                'client_unp' => $counterparty->unp,
+                'payment_terms' => '100% предоплата',
+                'delivery_terms' => '3 рабочих дня',
+            ])
+            ->call('create')
+            ->assertHasNoErrors(['data.crm_contact_id']);
     }
 
     public function test_readiness_reports_missing_requisites_and_accepts_a_complete_document(): void

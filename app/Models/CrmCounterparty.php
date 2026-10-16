@@ -41,6 +41,7 @@ class CrmCounterparty extends Model
         'telephony' => 'Телефония',
         '1c_trade' => '1С Управление торговлей',
         '1c_accounting' => '1С Бухгалтерия',
+        'tax_registry' => 'Реестр МНС',
     ];
 
     protected $fillable = [
