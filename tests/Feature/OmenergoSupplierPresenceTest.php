@@ -65,4 +65,14 @@ class OmenergoSupplierPresenceTest extends TestCase
         $this->assertSame('check', $product->fresh()->effectiveAvailabilityStatus());
         $this->assertFalse($product->fresh()->canBePurchased());
     }
+
+    public function test_archived_card_does_not_publish_old_price_as_a_search_offer(): void
+    {
+        [$product] = $this->card();
+        $active = $this->get('/supplier-presence/omen-presence')->assertOk();
+        $this->assertArrayHasKey('offers', json_decode($active->viewData('schemaJson'), true, flags: JSON_THROW_ON_ERROR));
+        $product->update(['is_archived' => true]);
+        $archived = $this->get('/supplier-presence/omen-presence')->assertOk();
+        $this->assertArrayNotHasKey('offers', json_decode($archived->viewData('schemaJson'), true, flags: JSON_THROW_ON_ERROR));
+    }
 }
