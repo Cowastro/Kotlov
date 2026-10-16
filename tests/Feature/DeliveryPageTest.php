@@ -13,6 +13,7 @@ class DeliveryPageTest extends TestCase
     {
         $this->get('/dostavka')
             ->assertOk()
+            ->assertSee('class="col-lg-12"', false)
             ->assertSee('BYN<sup>*</sup>', false)
             ->assertSeeText('Для крупногабаритных товаров и товаров весом свыше 80 кг стоимость и условия доставки согласовываются с продавцом.');
     }

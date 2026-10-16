@@ -25,7 +25,7 @@
     <section class="flat-spacing">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-lg-10">
+                <div class="col-lg-12">
 
                     {{-- ===== ДОСТАВКА ===== --}}
                     <div class="tf-rte mb-40">
