@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <style>
-        .ts-wrap{display:grid;gap:20px;max-width:1250px}.ts-card{padding:22px;border:1px solid #d1d5db;border-radius:12px;background:#fff}.dark .ts-card{background:#18181b;border-color:#3f3f46}.ts-card h2{font-size:18px;font-weight:700;margin-bottom:12px}.ts-muted{color:#64748b;font-size:13px}.dark .ts-muted{color:#a1a1aa}.ts-prompt{display:block;width:100%;min-height:145px;padding:14px;margin:10px 0;border:1px solid #9ca3af;border-radius:8px;background:transparent;color:inherit;font-size:15px}.ts-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:16px}.ts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.ts-list{padding-left:20px;list-style:disc;margin:8px 0}.ts-line{white-space:pre-line;overflow-wrap:anywhere}.ts-table{width:100%;border-collapse:collapse;font-size:13px}.ts-table td,.ts-table th{text-align:left;padding:9px;border-bottom:1px solid #71717a44;vertical-align:top}.ts-scroll{overflow:auto}.ts-warning{color:#b45309}.dark .ts-warning{color:#fbbf24}@media(max-width:800px){.ts-grid{grid-template-columns:1fr}.ts-card{padding:16px}}
+        .ts-wrap{display:grid;gap:20px;max-width:1250px}.ts-card{padding:22px;border:1px solid #d1d5db;border-radius:12px;background:#fff}.dark .ts-card{background:#18181b;border-color:#3f3f46}.ts-card h2{font-size:18px;font-weight:700;margin-bottom:12px}.ts-muted{color:#64748b;font-size:13px}.dark .ts-muted{color:#a1a1aa}.ts-prompt{display:block;width:100%;min-height:145px;padding:14px;margin:10px 0;border:1px solid #9ca3af;border-radius:8px;background:transparent;color:inherit;font-size:15px}.ts-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:16px}.ts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.ts-list{padding-left:20px;list-style:disc;margin:8px 0}.ts-line{white-space:pre-line;overflow-wrap:anywhere}.ts-table{width:100%;border-collapse:collapse;font-size:13px}.ts-table td,.ts-table th{text-align:left;padding:9px;border-bottom:1px solid #71717a44;vertical-align:top}.ts-scroll{overflow:auto}.ts-warning{color:#b45309}.dark .ts-warning{color:#fbbf24}.ts-history{display:grid;gap:10px}.ts-history-row{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid #71717a44}.ts-history-row:last-child{border-bottom:0}.ts-history-main{min-width:0}.ts-history-main strong,.ts-history-main span{display:block}.ts-history-main span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(max-width:800px){.ts-grid{grid-template-columns:1fr}.ts-card{padding:16px}.ts-history-row{align-items:flex-start;flex-direction:column}}
     </style>
     <div class="ts-wrap">
         <form wire:submit="search" class="ts-card">
@@ -11,9 +11,27 @@
             @error('prompt') <p role="alert" class="ts-warning">{{ $message }}</p> @enderror
             <div class="ts-actions">
                 <x-filament::button type="submit" icon="heroicon-o-sparkles" wire:loading.attr="disabled" wire:target="search,searchOutside">Подобрать по задаче</x-filament::button>
+                @if($result)<x-filament::button type="button" color="gray" wire:click="startNew">Новый подбор</x-filament::button>@endif
                 <span wire:loading wire:target="search" class="ts-muted" role="status">Разбираем требования и сравниваем товары…</span>
             </div>
         </form>
+        <section class="ts-card">
+            <h2>История AI-подборов</h2>
+            <p class="ts-muted">Сохраняются исходная задача, все кандидаты и результат внешнего поиска.</p>
+            <div class="ts-history" style="margin-top:10px">
+                @forelse($this->history as $run)
+                    <div class="ts-history-row" wire:key="selection-history-{{ $run->id }}">
+                        <div class="ts-history-main">
+                            <strong>{{ $run->task ?: 'Без названия' }}</strong>
+                            <span class="ts-muted">{{ $run->created_at->format('d.m.Y H:i') }} · {{ $run->user?->name ?: 'Сотрудник' }} · {{ \Illuminate\Support\Str::limit($run->prompt, 140) }}</span>
+                        </div>
+                        <x-filament::button size="sm" color="gray" wire:click="openHistory({{ $run->id }})">Открыть</x-filament::button>
+                    </div>
+                @empty
+                    <p class="ts-muted">История пока пуста. Первый успешный подбор появится здесь автоматически.</p>
+                @endforelse
+            </div>
+        </section>
         @if ($result)
             <section class="ts-card">
                 <h2>{{ $result['task'] }}</h2>

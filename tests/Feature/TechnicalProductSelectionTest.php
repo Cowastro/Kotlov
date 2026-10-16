@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
+use App\Models\TechnicalSelectionRun;
 use App\Models\User;
 use App\Services\AiContentEnricher;
 use App\Services\Market\MarketWebResearchService;
@@ -103,6 +104,36 @@ class TechnicalProductSelectionTest extends TestCase
             ->assertRedirect();
         $this->assertSame([$product->id], session('commercial_document_product_ids'));
         $this->assertSame([$product->id => 1], session('commercial_document_product_quantities'));
+        $this->assertDatabaseHas('technical_selection_runs', [
+            'user_id' => auth()->id(),
+            'prompt' => 'Нужна станция',
+            'task' => 'Станция',
+        ]);
+    }
+
+    public function test_manager_can_reopen_a_saved_selection(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'manager']));
+        $run = TechnicalSelectionRun::query()->create([
+            'user_id' => auth()->id(),
+            'prompt' => 'Нужен насос для скважины',
+            'task' => 'Подбор скважинного насоса',
+            'result' => [
+                'request' => 'Нужен насос для скважины',
+                'task' => 'Подбор скважинного насоса',
+                'summary' => 'Исторический результат подбора',
+                'requirements' => [], 'questions' => [], 'queries' => ['скважинный насос'],
+                'procurement_request' => 'Запрос', 'candidate_count' => 0,
+                'searched_at' => '16.10.2026 10:00', 'matches' => [],
+            ],
+            'external_result' => ['status' => 'ready', 'offers' => [], 'sources' => []],
+        ]);
+
+        Livewire::test(TechnicalSelection::class)
+            ->assertSee('История AI-подборов')
+            ->call('openHistory', $run->id)
+            ->assertSet('prompt', 'Нужен насос для скважины')
+            ->assertSee('Исторический результат подбора');
     }
 
     public function test_client_cannot_access_selection(): void

@@ -4,12 +4,14 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Models\Product;
+use App\Models\TechnicalSelectionRun;
 use App\Services\Market\MarketWebResearchService;
 use App\Services\TechnicalProductSelection;
 use BackedEnum;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\RateLimiter;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
 use Throwable;
 
@@ -33,6 +35,9 @@ class TechnicalSelection extends Page
     #[Locked]
     public array $externalResult = [];
 
+    #[Locked]
+    public ?int $currentRunId = null;
+
     public array $selected = [];
 
     public static function canAccess(): bool
@@ -55,6 +60,13 @@ class TechnicalSelection extends Page
         $this->result = $this->externalResult = $this->selected = [];
         try {
             $this->result = app(TechnicalProductSelection::class)->search($this->prompt);
+            $run = TechnicalSelectionRun::query()->create([
+                'user_id' => auth()->id(),
+                'prompt' => $this->prompt,
+                'task' => $this->result['task'] ?? null,
+                'result' => $this->result,
+            ]);
+            $this->currentRunId = $run->id;
         } catch (Throwable $e) {
             report($e);
             Notification::make()->warning()->title('Подбор не выполнен')
@@ -71,6 +83,11 @@ class TechnicalSelection extends Page
         $this->externalResult = [];
         try {
             $this->externalResult = app(MarketWebResearchService::class)->researchQuery($this->result['request']);
+            if ($this->currentRunId) {
+                TechnicalSelectionRun::query()->whereKey($this->currentRunId)->update([
+                    'external_result' => $this->externalResult,
+                ]);
+            }
         } catch (Throwable $e) {
             report($e);
             Notification::make()->warning()->title('Поиск временно недоступен')->send();
@@ -93,6 +110,38 @@ class TechnicalSelection extends Page
         session()->forget(['commercial_document_prefill', 'commercial_document_create_mail_draft']);
 
         return redirect(CommercialDocumentResource::getUrl('create'));
+    }
+
+    public function openHistory(int $runId): void
+    {
+        abort_unless(static::canAccess(), 403);
+        $run = TechnicalSelectionRun::query()->findOrFail($runId);
+
+        $this->currentRunId = $run->id;
+        $this->prompt = $run->prompt;
+        $this->result = $run->result ?? [];
+        $this->externalResult = $run->external_result ?? [];
+        $this->selected = [];
+    }
+
+    public function startNew(): void
+    {
+        abort_unless(static::canAccess(), 403);
+        $this->currentRunId = null;
+        $this->prompt = '';
+        $this->result = [];
+        $this->externalResult = [];
+        $this->selected = [];
+    }
+
+    #[Computed]
+    public function history()
+    {
+        return TechnicalSelectionRun::query()
+            ->with('user:id,name')
+            ->latest()
+            ->limit(30)
+            ->get();
     }
 
     private function allowRequest(): bool

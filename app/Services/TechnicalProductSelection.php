@@ -104,10 +104,15 @@ PROMPT, 3000);
                 ->with(['brand', 'category', 'supplierProducts.supplier', 'integrationProducts.source.supplier'])
                 ->where(function (Builder $query) use ($tokens): void {
                     foreach (array_slice($tokens, 0, 6) as $token) {
-                        $needle = '%'.str_replace(['%', '_'], '', $token).'%';
-                        $query->where(fn (Builder $q) => $q->where('name', 'like', $needle)
-                            ->orWhere('sku', 'like', $needle)->orWhere('specs', 'like', $needle)
-                            ->orWhereHas('category', fn (Builder $c) => $c->where('name', 'like', $needle)));
+                        $needles = $this->searchNeedles($token);
+                        $query->where(function (Builder $q) use ($needles): void {
+                            foreach ($needles as $needle) {
+                                $q->orWhere('name', 'like', $needle)
+                                    ->orWhere('sku', 'like', $needle)
+                                    ->orWhere('specs', 'like', $needle)
+                                    ->orWhereHas('category', fn (Builder $c) => $c->where('name', 'like', $needle));
+                            }
+                        });
                     }
                 })
                 ->orderByDesc('in_stock')->orderByDesc('updated_at')->limit(12)->get();
@@ -137,8 +142,13 @@ PROMPT, 3000);
             $offers = SupplierProduct::query()->whereNull('product_id')->with('supplier')
                 ->where(function (Builder $q) use ($tokens): void {
                     foreach (array_slice($tokens, 0, 6) as $token) {
-                        $needle = '%'.str_replace(['%', '_'], '', $token).'%';
-                        $q->where(fn (Builder $q) => $q->where('supplier_name', 'like', $needle)->orWhere('supplier_article', 'like', $needle));
+                        $needles = $this->searchNeedles($token);
+                        $q->where(function (Builder $q) use ($needles): void {
+                            foreach ($needles as $needle) {
+                                $q->orWhere('supplier_name', 'like', $needle)
+                                    ->orWhere('supplier_article', 'like', $needle);
+                            }
+                        });
                     }
                 })->orderByDesc('last_synced_at')->limit(5)->get();
             foreach ($offers as $offer) {
@@ -153,6 +163,19 @@ PROMPT, 3000);
         }
 
         return $rows;
+    }
+
+    /** @return list<string> */
+    private function searchNeedles(string $token): array
+    {
+        $token = str_replace(['%', '_'], '', $token);
+
+        return collect([$token, Str::ucfirst($token), mb_strtoupper($token), mb_strtolower($token)])
+            ->filter()
+            ->unique()
+            ->map(fn (string $variant): string => '%'.$variant.'%')
+            ->values()
+            ->all();
     }
 
     private function supplierOffer(SupplierProduct $offer): array
