@@ -71,6 +71,11 @@ class ListCrmMailThreads extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', ['new', 'waiting_manager']))
                 ->badge(CrmMailThread::query()->whereIn('status', ['new', 'waiting_manager'])->count() ?: null)
                 ->badgeColor('danger'),
+            'my_work' => Tab::make('Мои в работе')
+                ->icon('heroicon-o-briefcase')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->assignedWork((int) auth()->id()))
+                ->badge(CrmMailThread::query()->assignedWork((int) auth()->id())->count() ?: null)
+                ->badgeColor('info'),
             'unread' => Tab::make('Непрочитанные')
                 ->icon('heroicon-o-envelope')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query

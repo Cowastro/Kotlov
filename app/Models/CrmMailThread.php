@@ -157,6 +157,12 @@ class CrmMailThread extends Model
             ->where('next_follow_up_at', '<=', now());
     }
 
+    public function scopeAssignedWork(Builder $query, int $userId): Builder
+    {
+        return $query->where('assigned_user_id', $userId)
+            ->whereNotIn('status', ['draft', 'closed', 'spam']);
+    }
+
     public function scopeLatestMessageDirection(Builder $query, string $direction): Builder
     {
         return $query->whereHas(

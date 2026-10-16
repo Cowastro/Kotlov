@@ -197,12 +197,13 @@ class QuickCommercialOfferService
     public function catalogSearchProducts(string $search): array
     {
         $search = trim($search);
-        preg_match_all('/[\p{L}\p{N}][\p{L}\p{N}.\/_-]{1,}/u', Str::lower($search), $matches);
+        preg_match_all('/[\p{L}\p{N}][\p{L}\p{N}.\/_-]*/u', str_replace('ё', 'е', Str::lower($search)), $matches);
         $tokens = collect($matches[0] ?? [])
             ->map(fn (string $token): string => trim($token, ".,;:()[]{}<>\"'"))
-            ->filter(fn (string $token): bool => mb_strlen($token) >= 2)
+            ->filter(fn (string $token): bool => mb_strlen($token) >= 2 || is_numeric($token))
             ->reject(fn (string $token): bool => in_array($token, [
                 'нужен', 'нужна', 'нужно', 'найти', 'подобрать', 'покажи', 'клиенту', 'товар', 'товары',
+                'для', 'на', 'по', 'со', 'из', 'базы', 'базе', 'квт', 'мм', 'byn', 'руб',
             ], true))
             ->unique()
             ->values();
@@ -211,28 +212,33 @@ class QuickCommercialOfferService
             return [];
         }
 
-        return Product::query()
-            ->with(['brand', 'category', 'supplierProducts.supplier'])
-            ->where('is_active', true)
-            ->where('is_archived', false)
-            ->where(function (Builder $query) use ($search, $tokens): void {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('h1', 'like', "%{$search}%");
-
-                foreach ($tokens->take(10) as $token) {
-                    $query->orWhere('name', 'like', "%{$token}%")
-                        ->orWhere('sku', 'like', "%{$token}%")
-                        ->orWhere('h1', 'like', "%{$token}%")
-                        ->orWhereHas('brand', fn (Builder $brand): Builder => $brand->where('name', 'like', "%{$token}%"))
-                        ->orWhereHas('category', fn (Builder $category): Builder => $category->where('name', 'like', "%{$token}%"))
-                        ->orWhereHas('supplierProducts', fn (Builder $offer): Builder => $offer
-                            ->where('supplier_name', 'like', "%{$token}%")
-                            ->orWhere('supplier_article', 'like', "%{$token}%")
-                            ->orWhereHas('supplier', fn (Builder $supplier): Builder => $supplier->where('name', 'like', "%{$token}%")));
+        $query = Product::query()->with(['brand', 'category', 'supplierProducts.supplier'])
+            ->where('is_active', true)->where('is_archived', false);
+        $ranking = [];
+        $bindings = [];
+        // Require every meaningful term: PRO alone must not return Ariston for KOTLOV 95.
+        foreach ($tokens->take(10) as $token) {
+            $query->where(function (Builder $row) use ($token): void {
+                $this->catalogTokenMatch($row, ['name', 'h1', 'sku', 'short_description', 'specs'], $token);
+                $row->orWhereHas('brand', fn (Builder $brand) => $brand->where(fn (Builder $q) => $this->catalogTokenMatch($q, ['name'], $token)))
+                    ->orWhereHas('category', fn (Builder $category) => $category->where(fn (Builder $q) => $this->catalogTokenMatch($q, ['name'], $token)))
+                    ->orWhereHas('supplierProducts', fn (Builder $offers) => $offers->where(function (Builder $offer) use ($token): void {
+                        $this->catalogTokenMatch($offer, ['supplier_name', 'supplier_article'], $token);
+                        $offer->orWhereHas('supplier', fn (Builder $supplier) => $supplier->where(fn (Builder $q) => $this->catalogTokenMatch($q, ['name'], $token)));
+                    }));
+            });
+            $parts = [];
+            foreach (array_unique([$token, Str::ucfirst($token), mb_strtoupper($token)]) as $variant) {
+                foreach (['name', 'h1', 'sku'] as $field) {
+                    $parts[] = "REPLACE(REPLACE({$field}, 'ё', 'е'), 'Ё', 'Е') LIKE ? ESCAPE '!'";
+                    $bindings[] = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $variant).'%';
                 }
-            })
-            ->limit(250)
+            }
+            $ranking[] = '(CASE WHEN '.implode(' OR ', $parts).' THEN '.(is_numeric($token) ? 120 : 40).' ELSE 0 END)';
+        }
+
+        return $query->orderByRaw(implode(' + ', $ranking).' DESC', $bindings)
+            ->orderByDesc('in_stock')->orderByDesc('views_count')->orderBy('id')->limit(250)
             ->get()
             ->map(function (Product $product) use ($search, $tokens): array {
                 $haystack = Str::lower(implode(' ', array_filter([
@@ -244,14 +250,22 @@ class QuickCommercialOfferService
                     $product->supplierProducts->pluck('supplier_name')->implode(' '),
                     $product->supplierProducts->pluck('supplier_article')->implode(' '),
                     $product->supplierProducts->pluck('supplier.name')->implode(' '),
+                    $product->short_description,
+                    json_encode($product->specs, JSON_UNESCAPED_UNICODE),
                 ])));
-                $score = Str::contains($haystack, Str::lower($search)) ? 200 : 0;
+                $haystack = str_replace('ё', 'е', $haystack);
+                $score = Str::contains($haystack, str_replace('ё', 'е', Str::lower($search))) ? 200 : 0;
                 $score += $tokens->sum(function (string $token) use ($product, $haystack): int {
                     if (Str::lower((string) $product->sku) === $token) {
                         return 300;
                     }
 
-                    return Str::contains($haystack, $token) ? 40 : 0;
+                    $identity = str_replace('ё', 'е', Str::lower($product->name.' '.$product->h1.' '.$product->sku));
+                    if (is_numeric($token) && preg_match('/(?<![\p{L}\p{N}])'.preg_quote($token, '/').'(?![\p{L}\p{N}])/u', $identity)) {
+                        return 200;
+                    }
+
+                    return Str::contains($identity, $token) ? 80 : (Str::contains($haystack, $token) ? 20 : 0);
                 });
 
                 return ['product' => $product, 'score' => $score];
@@ -267,6 +281,32 @@ class QuickCommercialOfferService
                 $item['product']->id => $this->productLabel($item['product']),
             ])
             ->all();
+    }
+
+    private function catalogTokenMatch(Builder $query, array $fields, string $token): void
+    {
+        foreach (array_unique([$token, Str::ucfirst($token), mb_strtoupper($token)]) as $variant) {
+            foreach ($fields as $field) {
+                $needles = [$variant];
+                if ($field === 'specs') {
+                    // Eloquent's array cast may persist Cyrillic as JSON \uXXXX sequences.
+                    $needles[] = trim(json_encode($variant, JSON_THROW_ON_ERROR), '"');
+                }
+                foreach (array_unique($needles) as $needle) {
+                    $query->orWhereRaw("REPLACE(REPLACE({$field}, 'ё', 'е'), 'Ё', 'Е') LIKE ? ESCAPE '!'", ['%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $needle).'%']);
+                }
+            }
+        }
+    }
+
+    /** Search existing catalogue records without asking for engineering requirements. */
+    public function catalogSelection(string $query): array
+    {
+        return [
+            'ready' => true,
+            'message' => 'Поиск по нашей базе: модель, артикул, название и характеристики. Показываем не больше '.self::MANUAL_SUGGESTION_LIMIT.' подходящих товаров.',
+            'suggestions' => array_slice($this->catalogSearchProducts($query), 0, self::MANUAL_SUGGESTION_LIMIT, true),
+        ];
     }
 
     /** @return array{ready: bool, message: string, suggestions: array<int, string>} */

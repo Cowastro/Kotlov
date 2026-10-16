@@ -327,7 +327,7 @@ class CrmMailThreadResource extends Resource
                                         return $service->productLabels((array) $get('manual_suggestion_ids'))
                                             + $service->prepare($record)['suggestions'];
                                     })
-                                    ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->searchProducts($search))
+                                    ->getSearchResultsUsing(fn (string $search): array => app(QuickCommercialOfferService::class)->catalogSearchProducts($search))
                                     ->getOptionLabelsUsing(fn (array $values): array => app(QuickCommercialOfferService::class)->productLabels($values))
                                     ->helperText('Найденные варианты показаны выше. Можно найти любой товар каталога.'),
                             ]),
@@ -852,7 +852,7 @@ class CrmMailThreadResource extends Resource
 
                             return;
                         }
-                        $result = app(QuickCommercialOfferService::class)->manualSelection($query);
+                        $result = app(QuickCommercialOfferService::class)->catalogSelection($query);
                         $previousSuggestionIds = array_map('intval', (array) $get('manual_suggestion_ids'));
                         $suggestionIds = array_map('intval', array_keys($result['suggestions']));
                         $recommendedId = $suggestionIds[0] ?? null;
