@@ -68,7 +68,7 @@
             <h2>Условия</h2>
             <div class="terms">
                 <div><strong>Оплата</strong>{{ $document->payment_terms ?: 'Условия согласовываются с менеджером.' }}</div>
-                <div><strong>Поставка</strong>@if($document->delivery_to_client)До клиента. @endif{{ $document->delivery_terms ?: 'Срок и способ согласовываются с менеджером.' }}</div>
+                <div><strong>Поставка</strong>@include('commercial-documents.delivery-terms')</div>
             </div>
             @if($document->notes)<p>{{ $document->notes }}</p>@endif
         </section>
@@ -78,7 +78,6 @@
         <div class="card summary">
             <div class="sum-row"><span>Товары</span><strong>{{ number_format((float)$document->subtotal, 2, ',', ' ') }}</strong></div>
             @if((float)$document->discount_total > 0)<div class="sum-row"><span>Скидка</span><strong>− {{ number_format((float)$document->discount_total, 2, ',', ' ') }}</strong></div>@endif
-            @if($document->delivery_to_client || (float)$document->delivery_price > 0)<div class="sum-row"><span>{{ $document->delivery_to_client ? 'Доставка до клиента' : 'Доставка' }}</span><strong>{{ (float)$document->delivery_price > 0 ? number_format((float)$document->delivery_price, 2, ',', ' ') : 'по согласованию' }}</strong></div>@endif
             <div class="sum-row total"><span>Итого</span><span>{{ number_format((float)$document->total, 2, ',', ' ') }} {{ $document->currency }}</span></div>
             <a class="button secondary" href="{{ $preview ? route('admin.commercial-documents.pdf', $document) : route('commercial-portal.pdf', $link->public_id) }}" target="_blank">Открыть PDF</a>
 

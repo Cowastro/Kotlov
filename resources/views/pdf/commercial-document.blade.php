@@ -115,7 +115,6 @@
 <table class="summary">
     <tr><td>Товары:</td><td>{{ number_format((float)$document->subtotal, 2, ',', ' ') }} BYN</td></tr>
     @if((float)$document->discount_total > 0)<tr><td>Дополнительная скидка:</td><td>- {{ number_format((float)$document->discount_total, 2, ',', ' ') }} BYN</td></tr>@endif
-    @if($document->delivery_to_client || (float)$document->delivery_price > 0)<tr><td>{{ $document->delivery_to_client ? 'Доставка до клиента:' : 'Доставка:' }}</td><td>{{ (float)$document->delivery_price > 0 ? number_format((float)$document->delivery_price, 2, ',', ' ').' BYN' : 'по согласованию' }}</td></tr>@endif
     <tr><td>В том числе НДС {{ number_format((float)$document->vat_rate, 0) }}%:</td><td>{{ number_format((float)$document->total * ((float)$document->vat_rate / (100 + (float)$document->vat_rate)), 2, ',', ' ') }} BYN</td></tr>
     <tr class="total"><td>Итого:</td><td>{{ number_format((float)$document->total, 2, ',', ' ') }} BYN</td></tr>
 </table>
@@ -125,7 +124,7 @@
 <table class="terms">
     <tr>
         <td><strong>Условия оплаты</strong>{{ $document->payment_terms ?: 'Безналичный расчёт по выставленному счёту.' }}</td>
-        <td><strong>Срок и способ поставки</strong>@if($document->delivery_to_client)Доставка до клиента. @endif{{ $document->delivery_terms ?: 'Срок и способ поставки согласовываются с менеджером.' }}</td>
+        <td><strong>Срок и способ поставки</strong>@include('commercial-documents.delivery-terms')</td>
     </tr>
 </table>
 @if($document->notes)<div class="note"><strong>Примечание</strong><br>{{ $document->notes }}</div>@endif

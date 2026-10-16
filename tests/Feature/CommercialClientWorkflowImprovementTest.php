@@ -376,6 +376,6 @@ class CommercialClientWorkflowImprovementTest extends TestCase
 
         $this->assertStringContainsString('$document->client_legal_name', $template);
         $this->assertStringContainsString('$document->client_address', $template);
-        $this->assertStringContainsString('$document->delivery_to_client', $template);
+        $this->assertStringContainsString("@include('commercial-documents.delivery-terms')", $template);
     }
 }

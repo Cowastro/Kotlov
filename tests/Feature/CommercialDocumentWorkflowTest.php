@@ -14,12 +14,47 @@ use App\Services\CommercialDocuments\CommercialDocumentPdf;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\ViewErrorBag;
 use Livewire\Livewire;
 use Tests\TestCase;
 
 class CommercialDocumentWorkflowTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_delivery_is_printed_only_in_terms_without_an_invented_pending_charge(): void
+    {
+        $document = CommercialDocument::query()->create([
+            'type' => 'quote', 'client_name' => 'Проверка поставки', 'currency' => 'BYN',
+            'delivery_to_client' => true, 'delivery_terms' => 'Доставка до склада покупателя.',
+            'delivery_price' => 0, 'subtotal' => 25650, 'total' => 25650,
+        ]);
+
+        foreach ([0, 150] as $charge) {
+            $document->fill(['delivery_price' => $charge, 'total' => 25650 + $charge]);
+            $pdf = view('pdf.commercial-document', [
+                'document' => $document, 'seller' => config('legal.commercial_documents'),
+                'logo' => null, 'amountWords' => 'Тестовая сумма', 'portalUrl' => null,
+            ])->render();
+            $portal = view('commercial-portal.show', [
+                'document' => $document, 'preview' => true, 'errors' => new ViewErrorBag,
+            ])->render();
+            foreach ([$pdf, $portal] as $html) {
+                $this->assertSame(1, substr_count($html, 'Доставка до склада покупателя.'));
+                $this->assertStringNotContainsString('Доставка до клиента.', $html);
+                $this->assertStringNotContainsString('по согласованию', $html);
+                $this->assertSame($charge > 0 ? 1 : 0, substr_count($html, '150,00 BYN (включена в итог)'));
+            }
+            preg_match('/<table class="summary">(.*?)<\/table>/s', $pdf, $summary);
+            $this->assertStringNotContainsString('Доставка', $summary[1]);
+        }
+
+        $document->fill(['delivery_terms' => '5 рабочих дней', 'delivery_price' => 0]);
+        $terms = view('commercial-documents.delivery-terms', ['document' => $document])->render();
+        $this->assertStringContainsString('Доставка до клиента. 5 рабочих дней', $terms);
+        $document->delivery_to_client = false;
+        $this->assertStringNotContainsString('Доставка до клиента.', view('commercial-documents.delivery-terms', ['document' => $document])->render());
+    }
 
     public function test_quote_keeps_product_snapshot_and_converts_to_separate_invoice(): void
     {
