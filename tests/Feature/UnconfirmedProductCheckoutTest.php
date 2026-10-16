@@ -7,14 +7,17 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
+use App\Models\User;
+use Filament\Notifications\DatabaseNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class UnconfirmedProductCheckoutTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_product_without_confirmed_supplier_stock_cannot_enter_the_cart(): void
+    public function test_product_without_confirmed_supplier_stock_can_enter_the_cart_for_manager_confirmation(): void
     {
         $product = $this->unconfirmedProduct();
 
@@ -22,14 +25,15 @@ class UnconfirmedProductCheckoutTest extends TestCase
             'product_id' => $product->id,
             'quantity' => 1,
         ])
-            ->assertUnprocessable()
-            ->assertJsonPath('message', 'Товар сейчас недоступен для оформления заказа.');
+            ->assertOk();
 
-        $this->assertEmpty(session('cart', []));
+        $this->assertTrue(session('cart')[$product->id]['requires_availability_confirmation']);
     }
 
-    public function test_stale_cart_cannot_create_an_order_after_stock_becomes_unconfirmed(): void
+    public function test_unconfirmed_stock_creates_a_real_order_for_manager_processing(): void
     {
+        Notification::fake();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $product = $this->unconfirmedProduct();
         $cart = [
             $product->id => [
@@ -40,6 +44,7 @@ class UnconfirmedProductCheckoutTest extends TestCase
                 'price' => 33.0,
                 'quantity' => 1,
                 'pricing_type' => 'retail',
+                'requires_availability_confirmation' => true,
             ],
         ];
         $orderCount = Order::query()->count();
@@ -53,17 +58,25 @@ class UnconfirmedProductCheckoutTest extends TestCase
                 'delivery_type' => 'pickup',
                 'payment_type' => 'cash',
             ])
-            ->assertRedirect(route('cart'))
-            ->assertSessionHas(
-                'error',
-                'Заказ не создан: товары без подтверждённого наличия удалены из корзины. Закажите консультацию.'
-            );
+            ->assertRedirect();
 
         $this->assertEmpty(session('cart', []));
-        $this->assertDatabaseCount((new Order)->getTable(), $orderCount);
+        $this->assertDatabaseCount((new Order)->getTable(), $orderCount + 1);
+        $this->assertDatabaseHas('order_items', [
+            'product_id' => $product->id,
+            'supply_is_available' => null,
+        ]);
+        Notification::assertSentTo(
+            $manager,
+            DatabaseNotification::class,
+            fn (DatabaseNotification $notification): bool => str_contains(
+                (string) $notification->data['title'],
+                'подтвердить наличие',
+            ),
+        );
     }
 
-    public function test_cart_api_removes_an_item_that_requires_availability_confirmation(): void
+    public function test_cart_api_keeps_an_item_that_requires_availability_confirmation(): void
     {
         $product = $this->unconfirmedProduct();
 
@@ -79,29 +92,27 @@ class UnconfirmedProductCheckoutTest extends TestCase
             ],
         ])->getJson('/cart/data')
             ->assertOk()
-            ->assertJsonPath('count', 0)
-            ->assertJsonPath('items', []);
+            ->assertJsonPath('count', 1)
+            ->assertJsonPath('items.0.requires_availability_confirmation', true);
 
-        $this->assertEmpty(session('cart', []));
+        $this->assertArrayHasKey($product->id, session('cart', []));
     }
 
-    public function test_catalog_cards_offer_consultation_instead_of_cart_for_unconfirmed_product(): void
+    public function test_catalog_cards_offer_ordering_with_a_clear_manager_confirmation_marker(): void
     {
         $product = $this->unconfirmedProduct()->load('category');
 
         $this->view('partials.product-card', ['product' => $product])
-            ->assertSee('card-product--consultation', false)
-            ->assertSee('btn-product-consultation', false)
-            ->assertSee('icon-Question', false)
-            ->assertSee('product-consultation-label', false);
+            ->assertDontSee('card-product--consultation', false)
+            ->assertSee('btn-add-to-cart', false)
+            ->assertSeeText('Доступен к заказу');
 
         foreach (['partials.product-card', 'partials.product-card-list'] as $view) {
             $this->view($view, ['product' => $product])
                 ->assertSee('33.00 BYN')
-                ->assertSee('Заказать консультацию')
-                ->assertSee('data-can-buy="0"', false)
-                ->assertDontSee('product-card-availability', false)
-                ->assertDontSee('btn-add-to-cart', false);
+                ->assertSee('Заказать')
+                ->assertSee('data-can-buy="1"', false)
+                ->assertSee('btn-add-to-cart', false);
         }
     }
 
@@ -138,15 +149,16 @@ class UnconfirmedProductCheckoutTest extends TestCase
         }
     }
 
-    public function test_product_page_keeps_the_retail_price_visible_while_stock_requires_confirmation(): void
+    public function test_product_page_keeps_price_and_order_button_while_stock_requires_confirmation(): void
     {
         $product = $this->unconfirmedProduct();
 
         $this->get('/'.$product->category->slug.'/'.$product->slug)
             ->assertOk()
             ->assertSee('33.00 BYN')
-            ->assertSee('Уточняйте наличие')
-            ->assertSee('Заказать консультацию');
+            ->assertSee('Доступен к заказу')
+            ->assertSee('Менеджер подтвердит наличие и срок поставки после оформления.')
+            ->assertSee('btn-add-to-cart', false);
     }
 
     public function test_checkout_stops_and_refreshes_a_stale_retail_price(): void

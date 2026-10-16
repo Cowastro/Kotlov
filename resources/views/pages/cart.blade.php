@@ -69,6 +69,11 @@
                                                             Арт: {{ $item['sku'] }}
                                                         </p>
                                                     @endif
+                                                    @if ($item['requires_availability_confirmation'] ?? false)
+                                                        <p class="text-caption-01 mb-4" style="color:#b45309;">
+                                                            Наличие и срок поставки подтвердит менеджер
+                                                        </p>
+                                                    @endif
                                                     <form action="{{ route('cart.remove') }}" method="POST"
                                                         class="d-inline">
                                                         @csrf

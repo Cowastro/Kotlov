@@ -14,30 +14,32 @@ class SendNewOrderToTelegram implements ShouldQueue
     use InteractsWithQueue;
 
     public int $tries = 3;
+
     public int $backoff = 30;
 
     public function handle(NewOrderCreated $event): void
     {
         $chatId = config('services.telegram.orders_chat_id');
 
-        if (!config('services.telegram.bot_token') || !$chatId) {
+        if (! config('services.telegram.bot_token') || ! $chatId) {
             return;
         }
 
         $order = $event->order;
+        $requiresStockConfirmation = $order->items
+            ->contains(fn ($item): bool => $item->supply_is_available !== true);
 
         $deliveryNames = collect(config('shop.delivery_methods', []))
-            ->mapWithKeys(fn($m, $k) => [$k => $m['name'] ?? $k])
+            ->mapWithKeys(fn ($m, $k) => [$k => $m['name'] ?? $k])
             ->toArray();
 
         $paymentNames = collect(config('shop.payment_methods', []))
-            ->mapWithKeys(fn($m, $k) => [$k => $m['name'] ?? $k])
+            ->mapWithKeys(fn ($m, $k) => [$k => $m['name'] ?? $k])
             ->toArray();
 
-        $items = $order->items->map(fn($item) =>
-            "  • {$item->product_name}" .
-            ($item->product_sku ? " [{$item->product_sku}]" : '') .
-            " × {$item->quantity} шт. = " . number_format($item->total, 2, '.', ' ') . ' BYN'
+        $items = $order->items->map(fn ($item) => "  • {$item->product_name}".
+            ($item->product_sku ? " [{$item->product_sku}]" : '').
+            " × {$item->quantity} шт. = ".number_format($item->total, 2, '.', ' ').' BYN'
         )->join("\n");
 
         $delivery = Order::DELIVERY_TYPES[$order->delivery_type]
@@ -54,38 +56,39 @@ class SendNewOrderToTelegram implements ShouldQueue
             $order->delivery_address,
         ]));
 
-        $viewUrl = url('/admin/orders/' . $order->id);
+        $viewUrl = url('/admin/orders/'.$order->id);
 
-        $escape = fn(?string $s) => $s ? str_replace(['_', '*', '`', '['], ['\_', '\*', '\`', '\['], $s) : '';
+        $escape = fn (?string $s) => $s ? str_replace(['_', '*', '`', '['], ['\_', '\*', '\`', '\['], $s) : '';
 
         $lines = [
             "🛒 *Новый заказ {$order->number}*",
-            "",
-            "👤 *Клиент:* " . $escape($order->customer_name),
+            $requiresStockConfirmation ? '⚠️ *Сначала подтвердить наличие и срок поставки*' : null,
+            '',
+            '👤 *Клиент:* '.$escape($order->customer_name),
             "📞 *Телефон:* {$order->customer_phone}",
             $order->customer_email ? "📧 *Email:* {$order->customer_email}" : null,
-            "",
-            "📦 *Доставка:* " . $escape($delivery),
-            $address ? "📍 *Адрес:* " . $escape($address) : null,
-            "💳 *Оплата:* " . $escape($payment),
-            "",
-            "🧾 *Товары:*",
+            '',
+            '📦 *Доставка:* '.$escape($delivery),
+            $address ? '📍 *Адрес:* '.$escape($address) : null,
+            '💳 *Оплата:* '.$escape($payment),
+            '',
+            '🧾 *Товары:*',
             $items,
-            "",
-            "💰 *Итого: " . number_format($order->total, 2, '.', ' ') . " BYN*",
-            $order->comment ? "💬 *Комментарий клиента:* " . $escape($order->comment) : null,
-            "",
+            '',
+            '💰 *Итого: '.number_format($order->total, 2, '.', ' ').' BYN*',
+            $order->comment ? '💬 *Комментарий клиента:* '.$escape($order->comment) : null,
+            '',
             "🔗 [Открыть в админке]({$viewUrl})",
         ];
 
-        $text = implode("\n", array_filter($lines, fn($l) => $l !== null));
+        $text = implode("\n", array_filter($lines, fn ($l) => $l !== null));
 
         try {
-            $tg = new TelegramApi();
+            $tg = new TelegramApi;
             $result = $tg->sendMessage($chatId, $text, [
                 'reply_markup' => json_encode([
                     'inline_keyboard' => [[
-                        ['text' => '✋ Взять заказ', 'callback_data' => 'take_order:' . $order->id],
+                        ['text' => '✋ Взять заказ', 'callback_data' => 'take_order:'.$order->id],
                     ]],
                 ]),
             ]);
@@ -95,7 +98,7 @@ class SendNewOrderToTelegram implements ShouldQueue
                 $order->updateQuietly(['telegram_message_id' => $messageId]);
             }
         } catch (\Throwable $e) {
-            Log::error('Telegram notification failed: ' . $e->getMessage());
+            Log::error('Telegram notification failed: '.$e->getMessage());
             throw $e; // пробрасываем для retry
         }
     }

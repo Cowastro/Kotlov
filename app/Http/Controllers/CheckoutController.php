@@ -31,7 +31,7 @@ class CheckoutController extends Controller
 
             return redirect()->route('cart')->with(
                 'error',
-                'Товары без подтверждённого наличия удалены из корзины. Для них доступна консультация.'
+                'Недоступные или снятые с продажи товары удалены из корзины.'
             );
         }
         if ($availability['price_changed_ids'] !== []) {
@@ -75,7 +75,7 @@ class CheckoutController extends Controller
 
             return redirect()->route('cart')->with(
                 'error',
-                'Заказ не создан: товары без подтверждённого наличия удалены из корзины. Закажите консультацию.'
+                'Заказ не создан: недоступные или снятые с продажи товары удалены из корзины.'
             );
         }
         if ($availability['price_changed_ids'] !== []) {

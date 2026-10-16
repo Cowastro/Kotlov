@@ -409,6 +409,11 @@
                                                     Партнёрская цена
                                                 </div>
                                             @endif
+                                            @if ($item['requires_availability_confirmation'] ?? false)
+                                                <div class="text-caption-01" style="color:#b45309;">
+                                                    Наличие подтвердит менеджер после оформления
+                                                </div>
+                                            @endif
                                         </div>
                                         <div class="quantity-price text-primary fw-semibold">
                                             {{ number_format($item['price'] * $item['quantity'], 2, '.', ' ') }} BYN

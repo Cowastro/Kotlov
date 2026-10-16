@@ -386,6 +386,6 @@ class OrderItemSupplyContextResolver
 
     private function legacyOfferAvailable(SupplierProduct $offer): bool
     {
-        return $offer->in_stock === true || (int) $offer->stock_quantity > 0;
+        return $offer->hasFreshPositiveStock();
     }
 }

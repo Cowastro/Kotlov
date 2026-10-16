@@ -7,8 +7,9 @@ use App\Models\Product;
 class CartAvailabilityGuard
 {
     /**
-     * Remove retail items that no longer have a confirmed positive supplier
-     * balance. B2B items are validated separately against their exact 1C offer.
+     * Keep active retail products orderable even while their balance is being
+     * confirmed. The order carries an explicit manager-attention marker. B2B
+     * items are validated separately against their exact 1C offer.
      *
      * @return array{cart: array, removed_ids: array<int, int>, price_changed_ids: array<int, int>}
      */
@@ -40,12 +41,14 @@ class CartAvailabilityGuard
             $productId = (int) ($item['id'] ?? $key);
             $product = $products->get($productId);
 
-            if (! $product || ! $product->canBePurchased()) {
+            if (! $product || ! $product->canBeOrdered()) {
                 unset($cart[$key]);
                 $removedIds[] = $productId;
 
                 continue;
             }
+
+            $cart[$key]['requires_availability_confirmation'] = $product->requiresAvailabilityConfirmation();
 
             $currentPrice = round((float) $product->price, 2);
             if (abs((float) ($item['price'] ?? 0) - $currentPrice) >= 0.01) {

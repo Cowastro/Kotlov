@@ -13,24 +13,35 @@ class NotifyAdminOnNewOrder implements ShouldQueue
     use InteractsWithQueue;
 
     public int $tries = 3;
+
     public function handle(NewOrderCreated $event): void
     {
         $order = $event->order;
 
-        $admins = User::where('role', 'admin')->get();
+        $recipients = User::query()
+            ->whereIn('role', ['admin', 'manager', 'sales_manager'])
+            ->where('is_active', true)
+            ->get();
 
-        if ($admins->isEmpty()) {
+        if ($recipients->isEmpty()) {
             return;
         }
 
-        $title = "Новый заказ {$order->number}";
-        $body  = "{$order->customer_name} · {$order->customer_phone} · {$order->total} BYN";
+        $requiresStockConfirmation = $order->items
+            ->contains(fn ($item): bool => $item->supply_is_available !== true);
+        $title = $requiresStockConfirmation
+            ? "Новый заказ {$order->number} — подтвердить наличие"
+            : "Новый заказ {$order->number}";
+        $body = "{$order->customer_name} · {$order->customer_phone} · {$order->total} BYN";
+        if ($requiresStockConfirmation) {
+            $body .= ' · До подтверждения клиенту проверьте остаток и срок поставки.';
+        }
 
         Notification::make()
             ->title($title)
             ->body($body)
             ->icon('heroicon-o-shopping-bag')
             ->iconColor('warning')
-            ->sendToDatabase($admins);
+            ->sendToDatabase($recipients);
     }
 }

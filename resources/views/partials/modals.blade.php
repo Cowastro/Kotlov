@@ -408,6 +408,9 @@
                             </div>
                             <a href="#shoppingCart" data-bs-toggle="offcanvas" class="btn-action-price tf-btn type-xl animate-btn w-100">В корзину</a>
                         </div>
+                        <p class="text-caption-01 mt-8 mb-0 d-none" id="quickView-confirmation-note" style="color:#b45309;">
+                            Наличие и срок поставки подтвердит менеджер после оформления.
+                        </p>
                     </div>
                 </div>
                 <div id="quickView-consultation-actions">

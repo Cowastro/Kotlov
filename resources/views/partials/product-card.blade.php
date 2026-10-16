@@ -12,7 +12,7 @@
     $isProcurementOffer = $isB2bOffer && $b2bOffer->source?->isProcurementMode();
     $canBuy = $isB2bOffer
         ? $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
-        : (method_exists($product, 'canBePurchased') ? $product->canBePurchased() : ($product->in_stock && $product->price > 0));
+        : (method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->is_active && $product->price > 0));
     $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
 
     $price = $isB2bOffer
@@ -84,6 +84,7 @@
                     data-images='@json($quickViewImages)'
                     data-url="{{ $productUrl }}"
                     data-can-buy="{{ $canBuy ? '1' : '0' }}"
+                    data-needs-confirmation="{{ $availabilityStatus === 'check' && ! $isB2bOffer ? '1' : '0' }}"
                     class="hover-tooltip tooltip-left box-icon">
                     <span class="icon icon-Eye"></span>
                     <span class="tooltip">Быстрый просмотр</span>
@@ -111,7 +112,7 @@
                 data-product-id="{{ $product->id }}"
                 aria-label="Добавить {{ $product->name }} в корзину">
                 <i class="icon icon-Handbag"></i>
-                <span class="add-to-cart-label">В корзину</span>
+                <span class="add-to-cart-label">{{ $availabilityStatus === 'check' && ! $isB2bOffer ? 'Заказать' : 'В корзину' }}</span>
             </a>
             @else
             <a href="#ask" data-bs-toggle="modal" class="tf-btn btn-white small w-100 btn-product-consultation"
@@ -152,6 +153,11 @@
             <div class="product-card-availability" aria-label="Товар в наличии на складе">
                 <span class="product-card-availability__dot" aria-hidden="true"></span>
                 <span>В наличии</span>
+            </div>
+        @elseif (! $isB2bOffer && $availabilityStatus === 'check')
+            <div class="product-card-availability" aria-label="Товар доступен к заказу, наличие подтвердит менеджер">
+                <span class="product-card-availability__dot" aria-hidden="true"></span>
+                <span>Доступен к заказу</span>
             </div>
         @endif
 

@@ -59,7 +59,7 @@ class CartController extends Controller
 
         $canBeOrdered = $b2bOffer
             ? $product->is_active && ! $product->is_archived && $offerResolver->canOrder($b2bOffer)
-            : $product->canBePurchased();
+            : $product->canBeOrdered();
 
         if (! $canBeOrdered) {
             if ($request->expectsJson()) {
@@ -98,6 +98,7 @@ class CartController extends Controller
             'price_tax_mode' => null,
             'integration_product_id' => null,
             'source_name' => null,
+            'requires_availability_confirmation' => $product->requiresAvailabilityConfirmation(),
         ];
 
         if (isset($cart[$id])) {
@@ -153,7 +154,7 @@ class CartController extends Controller
         session([self::KEY => $cart]);
 
         if (in_array($id, $availability['removed_ids'], true)) {
-            $message = 'Товар требует подтверждения наличия и удалён из корзины. Закажите консультацию.';
+            $message = 'Товар снят с продажи или больше недоступен для заказа и удалён из корзины.';
 
             return $request->expectsJson()
                 ? response()->json(['message' => $message], 422)

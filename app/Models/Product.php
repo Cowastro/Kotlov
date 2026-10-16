@@ -148,6 +148,12 @@ class Product extends Model
             && $this->effectiveAvailabilityStatus() === self::AVAILABILITY_IN_STOCK;
     }
 
+    public function requiresAvailabilityConfirmation(): bool
+    {
+        return $this->canBeOrdered()
+            && $this->effectiveAvailabilityStatus() === self::AVAILABILITY_CHECK;
+    }
+
     public function hasLinkedSupplierChannel(): bool
     {
         $hasLegacyLink = $this->relationLoaded('supplierProducts')

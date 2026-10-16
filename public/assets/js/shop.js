@@ -14,6 +14,7 @@
             var image = button.dataset.image || "/img/products/product-placeholder.jpg";
             var url = button.dataset.url || "#";
             var canBuy = button.dataset.canBuy === "1";
+            var needsConfirmation = button.dataset.needsConfirmation === "1";
             var images = [];
 
             try {
@@ -77,9 +78,14 @@
             consultationActions.toggleClass("d-none", canBuy);
 
             if (canBuy) {
-                addToCart.addClass("btn-add-to-cart").attr("data-product-id", productId);
+                addToCart
+                    .addClass("btn-add-to-cart")
+                    .attr("data-product-id", productId)
+                    .text(needsConfirmation ? "Заказать" : "В корзину");
+                $("#quickView-confirmation-note").toggleClass("d-none", !needsConfirmation);
             } else {
                 addToCart.removeClass("btn-add-to-cart").removeAttr("data-product-id");
+                $("#quickView-confirmation-note").addClass("d-none");
             }
         });
     };

@@ -14,7 +14,7 @@
     $isProcurementOffer = $isB2bOffer && $b2bOffer->source?->isProcurementMode();
     $canBuy = $isB2bOffer
         ? $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
-        : (method_exists($product, 'canBePurchased') ? $product->canBePurchased() : ($product->in_stock && $product->price > 0));
+        : (method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->is_active && $product->price > 0));
     $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
 
     $price = $isB2bOffer
@@ -160,7 +160,7 @@
                 </span>
             @elseif ($availabilityStatus === 'check')
                 <span class="text-caption-01 text-warning">
-                    <i class="icon icon-CheckCircle"></i> {{ $availabilityLabel }}
+                    <i class="icon icon-CheckCircle"></i> Доступен к заказу · наличие подтвердит менеджер
                 </span>
             @else
                 <span class="text-caption-01 text-danger">
@@ -177,7 +177,7 @@
                     class="hover-tooltip box-icon btn-add-to-cart"
                     data-product-id="{{ $product->id }}">
                     <span class="icon icon-Handbag"></span>
-                    <span class="tooltip">В корзину</span>
+                    <span class="tooltip">{{ $availabilityStatus === 'check' && ! $isB2bOffer ? 'Заказать' : 'В корзину' }}</span>
                 </a>
             </li>
             @else
@@ -214,6 +214,7 @@
                     data-images='@json($quickViewImages)'
                     data-url="{{ $productUrl }}"
                     data-can-buy="{{ $canBuy ? '1' : '0' }}"
+                    data-needs-confirmation="{{ $availabilityStatus === 'check' && ! $isB2bOffer ? '1' : '0' }}"
                     class="hover-tooltip box-icon">
                     <span class="icon icon-Eye"></span>
                     <span class="tooltip">Быстрый просмотр</span>

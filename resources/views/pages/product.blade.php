@@ -201,7 +201,7 @@
                                     }
                                     $canBuy = $b2bOffer
                                         ? $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
-                                        : $product->canBePurchased();
+                                        : $product->canBeOrdered();
                                     $availabilityLabel = \App\Models\Product::availabilityStatusOptions()[$availabilityStatus]
                                         ?? 'Уточняйте наличие';
                                     $displayPrice = $b2bComparison['wholesale_price'] ?? (float) $product->price;
@@ -323,8 +323,9 @@
                                         </span>
                                     @elseif ($availabilityStatus === 'check')
                                         <span class="stock check-stock fw-medium" style="color:#b45309;">
-                                            <i class="icon icon-CheckCircle" style="color:#b45309;"></i> {{ $availabilityLabel }}
+                                            <i class="icon icon-CheckCircle" style="color:#b45309;"></i> Доступен к заказу
                                         </span>
+                                        <p class="text-caption-01 cl-text-2 mt-4 mb-0">Менеджер подтвердит наличие и срок поставки после оформления.</p>
                                     @else
                                         <span class="stock out-stock fw-medium text-danger">
                                             <i class="icon icon-XCircle"></i> Нет в наличии
@@ -366,7 +367,7 @@
                                                 class="tf-btn type-xl animate-btn w-100 btn-add-to-cart"
                                                 data-product-id="{{ $product->id }}"
                                                 data-qty-input=".product-main-qty">
-                                                В корзину
+                                                {{ $availabilityStatus === 'check' && ! $b2bOffer ? 'Заказать' : 'В корзину' }}
                                                 @if ($displayPrice > 0)
                                                     <span class="d-none d-sm-block d-md-none d-lg-block">&nbsp;—&nbsp;</span>
                                                     <span class="d-none d-sm-block d-md-none d-lg-block">
