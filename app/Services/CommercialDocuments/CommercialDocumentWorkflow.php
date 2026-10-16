@@ -68,7 +68,7 @@ class CommercialDocumentWorkflow
                 'company_unp' => $locked->client_unp,
                 'company_address' => $locked->client_address,
                 'company_email' => $locked->client_email,
-                'delivery_type' => (float) $locked->delivery_price > 0 ? 'transport' : 'pickup',
+                'delivery_type' => $locked->delivery_to_client || (float) $locked->delivery_price > 0 ? 'transport' : 'pickup',
                 'delivery_price' => $locked->delivery_price,
                 'payment_type' => 'invoice',
                 'payment_status' => $isPaid ? 'paid' : 'pending',

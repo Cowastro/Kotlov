@@ -11,7 +11,20 @@ class CommercialDocumentReadiness
     /** @return list<string> */
     public function issues(CommercialDocument $document): array
     {
+        return $this->assessment($document)['issues'];
+    }
+
+    /** @return list<string> */
+    public function warnings(CommercialDocument $document): array
+    {
+        return $this->assessment($document)['warnings'];
+    }
+
+    /** @return array{issues: list<string>, warnings: list<string>} */
+    public function assessment(CommercialDocument $document): array
+    {
         $issues = [];
+        $warnings = [];
         $isOrganization = filled($document->client_company)
             || filled($document->client_legal_name)
             || filled($document->client_unp);
@@ -42,11 +55,19 @@ class CommercialDocumentReadiness
         $document->loadMissing('items.product');
         foreach ($document->items as $item) {
             if (! $item->product) {
+                if ($document->allow_unconfirmed_purchase_price) {
+                    $warnings[] = 'нет подтверждённой входной цены: '.$item->name;
+                }
+
                 continue;
             }
 
             if ($item->product->requires_price_confirmation) {
-                $issues[] = 'нужно подтвердить актуальность цены: '.$item->name;
+                if ($document->allow_unconfirmed_purchase_price) {
+                    $warnings[] = 'нет подтверждённой входной цены: '.$item->name;
+                } else {
+                    $issues[] = 'нужно подтвердить актуальность цены: '.$item->name;
+                }
 
                 continue;
             }
@@ -55,7 +76,11 @@ class CommercialDocumentReadiness
             $netUnitPrice = round((float) $item->line_total / $quantity, 2);
             $pricing = $this->pricing->pricing((int) $item->product_id, $netUnitPrice);
             if ($pricing['purchase_price'] === null) {
-                $issues[] = 'не удалось проверить закупочную цену и маржу: '.$item->name;
+                if ($document->allow_unconfirmed_purchase_price) {
+                    $warnings[] = 'нет подтверждённой входной цены: '.$item->name;
+                } else {
+                    $issues[] = 'не удалось проверить закупочную цену и маржу: '.$item->name;
+                }
 
                 continue;
             }
@@ -74,8 +99,14 @@ class CommercialDocumentReadiness
         if ($document->valid_until?->isPast()) {
             $issues[] = 'срок действия документа уже истёк';
         }
+        if ($document->allow_unconfirmed_purchase_price && $warnings === []) {
+            $warnings[] = 'КП создано без обязательного подтверждения входной цены';
+        }
 
-        return array_values(array_unique($issues));
+        return [
+            'issues' => array_values(array_unique($issues)),
+            'warnings' => array_values(array_unique($warnings)),
+        ];
     }
 
     public function summary(CommercialDocument $document): string

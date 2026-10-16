@@ -41,9 +41,9 @@ class CommercialDocument extends Model
         'source_document_id', 'revision_of_id', 'revision_number', 'created_by', 'manager_id', 'crm_mail_thread_id',
         'crm_counterparty_id', 'crm_contact_id',
         'client_name', 'client_company', 'client_legal_name', 'client_email', 'client_phone', 'client_unp', 'client_address',
-        'issued_at', 'valid_until', 'currency', 'subtotal', 'discount_total', 'delivery_price', 'total',
+        'issued_at', 'valid_until', 'currency', 'subtotal', 'discount_total', 'delivery_price', 'delivery_to_client', 'total',
         'vat_rate', 'payment_terms', 'delivery_terms', 'notes', 'seller_snapshot', 'sent_at', 'accepted_at', 'closed_at',
-        'last_control_notified_at',
+        'last_control_notified_at', 'allow_unconfirmed_purchase_price',
     ];
 
     protected $casts = [
@@ -54,6 +54,8 @@ class CommercialDocument extends Model
         'closed_at' => 'datetime',
         'last_control_notified_at' => 'datetime',
         'ai_assisted' => 'boolean',
+        'delivery_to_client' => 'boolean',
+        'allow_unconfirmed_purchase_price' => 'boolean',
         'seller_snapshot' => 'array',
         'subtotal' => 'decimal:2',
         'discount_total' => 'decimal:2',

@@ -4,8 +4,8 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\Pages\ViewCrmCounterparty;
-use App\Models\CommercialDocument;
 use App\Models\Category;
+use App\Models\CommercialDocument;
 use App\Models\CrmContact;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
@@ -251,11 +251,47 @@ class CommercialClientWorkflowImprovementTest extends TestCase
         $this->assertContains('маржа ниже допустимой: '.$lowMarginProduct->name.' (5,6%)', $issues);
     }
 
+    public function test_manager_can_allow_quote_without_confirmed_purchase_price_and_keeps_a_warning(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Товары без входной цены',
+            'slug' => 'commercial-unconfirmed-purchase-price',
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Котёл без подтверждённой цены',
+            'slug' => 'commercial-unconfirmed-price-product',
+            'price' => 1000,
+            'requires_price_confirmation' => true,
+        ]);
+        $document = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'client_name' => 'Розничный клиент',
+            'client_email' => 'client@example.com',
+            'payment_terms' => '100% предоплата',
+            'delivery_terms' => '3 рабочих дня',
+            'allow_unconfirmed_purchase_price' => true,
+        ]);
+        $document->items()->create([
+            'product_id' => $product->id,
+            'name' => $product->name,
+            'quantity' => 1,
+            'unit_price' => 1000,
+        ]);
+
+        $assessment = app(CommercialDocumentReadiness::class)->assessment($document->fresh());
+
+        $this->assertNotContains('нужно подтвердить актуальность цены: '.$product->name, $assessment['issues']);
+        $this->assertContains('нет подтверждённой входной цены: '.$product->name, $assessment['warnings']);
+    }
+
     public function test_pdf_template_prints_legal_name_and_address_of_buyer(): void
     {
         $template = file_get_contents(resource_path('views/pdf/commercial-document.blade.php'));
 
         $this->assertStringContainsString('$document->client_legal_name', $template);
         $this->assertStringContainsString('$document->client_address', $template);
+        $this->assertStringContainsString('$document->delivery_to_client', $template);
     }
 }

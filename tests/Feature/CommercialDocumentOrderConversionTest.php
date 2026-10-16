@@ -61,6 +61,7 @@ class CommercialDocumentOrderConversionTest extends TestCase
             'client_address' => 'г. Минск, ул. Тестовая, 1',
             'discount_total' => 100,
             'delivery_price' => 50,
+            'delivery_to_client' => true,
             'payment_terms' => '100% предоплата',
             'delivery_terms' => '5 рабочих дней',
             'notes' => 'Позвонить перед отгрузкой',
@@ -97,6 +98,31 @@ class CommercialDocumentOrderConversionTest extends TestCase
         $this->assertSame('b2b', $order->items->first()->pricing_type);
         $this->assertDatabaseHas('order_economic_snapshots', ['order_id' => $order->id, 'kind' => 'placed']);
         Event::assertDispatchedTimes(NewOrderCreated::class, 1);
+    }
+
+    public function test_delivery_to_client_creates_transport_order_even_when_delivery_is_free(): void
+    {
+        Event::fake([NewOrderCreated::class]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $quote = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'accepted',
+            'client_name' => 'Иван Петров',
+            'client_email' => 'buyer@example.com',
+            'client_phone' => '+375 29 111-22-33',
+            'delivery_to_client' => true,
+            'delivery_price' => 0,
+        ]);
+        $quote->items()->create([
+            'name' => 'Насос',
+            'quantity' => 1,
+            'unit_price' => 100,
+        ]);
+
+        $order = app(CommercialDocumentWorkflow::class)->convertToOrder($quote->fresh(), $manager);
+
+        $this->assertSame('transport', $order->delivery_type);
+        $this->assertSame('0.00', $order->delivery_price);
     }
 
     public function test_draft_quote_cannot_become_an_order(): void

@@ -31,6 +31,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
 use Filament\Notifications\Notification;
@@ -411,8 +412,19 @@ class CommercialDocumentResource extends Resource
                 ->columnSpanFull()
                 ->schema([
                     TextInput::make('discount_total')->label('Дополнительная скидка')->numeric()->minValue(0)->default(0)->prefix('BYN'),
-                    TextInput::make('delivery_price')->label('Доставка')->numeric()->minValue(0)->default(0)->prefix('BYN'),
+                    TextInput::make('delivery_price')->label('Стоимость доставки')->numeric()->minValue(0)->default(0)->prefix('BYN'),
                     Select::make('currency')->label('Валюта')->options(['BYN' => 'BYN'])->default('BYN')->required(),
+                    Toggle::make('delivery_to_client')
+                        ->label('Доставка до клиента')
+                        ->helperText('В КП будет явно указано, что товар доставляется клиенту.')
+                        ->default(false)
+                        ->inline(false),
+                    Toggle::make('allow_unconfirmed_purchase_price')
+                        ->label('Разрешить КП без подтверждённой входной цены')
+                        ->helperText('Отправка не будет заблокирована, но в карточке КП останется заметное предупреждение.')
+                        ->default(false)
+                        ->inline(false)
+                        ->columnSpan(2),
                     Select::make('payment_terms_preset')
                         ->label('Типовая оплата')
                         ->placeholder('Выберите готовый вариант')
@@ -484,9 +496,7 @@ class CommercialDocumentResource extends Resource
                     ->schema([
                         ViewEntry::make('readiness_overview')
                             ->hiddenLabel()
-                            ->view('filament.commercial-documents.readiness-overview', fn (CommercialDocument $record): array => [
-                                'issues' => app(CommercialDocumentReadiness::class)->issues($record),
-                            ])
+                            ->view('filament.commercial-documents.readiness-overview', fn (CommercialDocument $record): array => app(CommercialDocumentReadiness::class)->assessment($record))
                             ->columnSpanFull(),
                     ]),
                 Section::make('Основания закупочной цены')
@@ -502,7 +512,7 @@ class CommercialDocumentResource extends Resource
                                     'sources' => $record->items
                                         ->pluck('product.purchasePriceSources')
                                         ->flatten()
-                                    ->filter()
+                                        ->filter()
                                         ->sortByDesc('confirmed_at')
                                         ->values(),
                                 ];
@@ -621,8 +631,16 @@ class CommercialDocumentResource extends Resource
                     ->schema([
                         TextEntry::make('subtotal')->label('Товары')->money('BYN'),
                         TextEntry::make('discount_total')->label('Скидка')->money('BYN'),
-                        TextEntry::make('delivery_price')->label('Доставка')->money('BYN'),
+                        TextEntry::make('delivery_price')->label('Стоимость доставки')->money('BYN'),
                         TextEntry::make('total')->label('К оплате')->money('BYN')->weight(FontWeight::Bold)->color('warning'),
+                        TextEntry::make('delivery_to_client')
+                            ->label('Способ получения')
+                            ->badge()
+                            ->formatStateUsing(fn (bool $state, CommercialDocument $record): string => $state
+                                ? 'Доставка до клиента'
+                                : ((float) $record->delivery_price > 0 ? 'Доставка' : 'Самовывоз / не указано'))
+                            ->color(fn (bool $state): string => $state ? 'info' : 'gray')
+                            ->columnSpanFull(),
                         TextEntry::make('payment_terms')->label('Оплата')->columnSpanFull(),
                         TextEntry::make('delivery_terms')->label('Срок поставки')->columnSpanFull(),
                         TextEntry::make('notes')->label('Примечание')->columnSpanFull()
@@ -670,7 +688,8 @@ class CommercialDocumentResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('number')->label('Номер')->searchable()->sortable()->weight('bold')
-                    ->description(fn (CommercialDocument $record): string => 'Редакция №'.($record->revision_number ?: 1)),
+                    ->description(fn (CommercialDocument $record): string => 'Редакция №'.($record->revision_number ?: 1)
+                        .($record->allow_unconfirmed_purchase_price ? ' · ⚠ Нет подтверждённой входной цены' : '')),
                 TextColumn::make('type')->label('Тип')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::TYPES[$state] ?? $state)
                     ->color(fn (string $state): string => $state === 'invoice' ? 'success' : 'info'),
                 TextColumn::make('issued_at')->label('Дата')->date('d.m.Y')->sortable(),
