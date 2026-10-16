@@ -145,7 +145,10 @@ class OmenergoCatalog
             preg_match_all('/\d+(?:[.,]\d+)?/u', $row['name'], $rowNumbers);
             preg_match_all('/\d+(?:[.,]\d+)?/u', $page['name'], $pageNumbers);
 
-            return ($rowNumbers[0][0] ?? null) === ($pageNumbers[0][0] ?? null);
+            $wanted = array_map(fn ($n) => (float) str_replace(',', '.', $n), $rowNumbers[0]);
+            $actual = array_map(fn ($n) => (float) str_replace(',', '.', $n), $pageNumbers[0]);
+
+            return $wanted !== [] && $wanted === array_slice($actual, 0, count($wanted));
         }
 
         return $this->key($page['name']) === $this->key($row['name']) && mb_strtolower($page['brand']) === mb_strtolower($row['brand']);

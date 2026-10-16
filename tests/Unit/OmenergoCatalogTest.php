@@ -34,6 +34,8 @@ class OmenergoCatalogTest extends TestCase
     {
         $c = new OmenergoCatalog;
         $this->assertFalse($c->identityMatches(['article' => 'Е0101-0242', 'brand' => 'Энергия', 'name' => 'Энергия Expert 800'], ['article' => 'Е0101-0242', 'name' => 'Энергия Expert 350 (220В)']));
+        $this->assertFalse($c->identityMatches(['article' => 'Е0102-0105', 'brand' => 'Энергия', 'name' => 'ЛАТР ЭНЕРГИЯ Black Series 1Ф TDGC2-15кВА 45А (0-300V)'], ['article' => 'Е0102-0105', 'name' => 'ЛАТР ЭНЕРГИЯ Black Series 1Ф TDGC2-0.5кВА 2А (0-250V)']));
+        $this->assertTrue($c->identityMatches(['article' => 'Е0101-0240', 'brand' => 'Энергия', 'name' => 'Энергия Expert 350'], ['article' => 'Е0101-0240', 'name' => 'Инверторный стабилизатор напряжения Энергия Expert 350 (230В)']));
         $result = $c->verifiedSpecs(['description' => 'Релейный стабилизатор, 5% точность.'], ['specs' => [['key' => 'Номинальное выходное напряжение', 'value' => '220±10%'], ['key' => 'Мощность', 'value' => '3000 ВА']]]);
         $this->assertCount(1, $result['conflicts']);
         $this->assertSame([['key' => 'Мощность', 'value' => '3000 ВА']], $result['specs']);
