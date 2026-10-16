@@ -43,7 +43,7 @@
         : null;
 @endphp
 
-<div class="card-product product-style_stroke">
+<div class="card-product product-style_stroke{{ ! $canBuy ? ' card-product--consultation' : '' }}">
     <div class="card-product_wrapper square">
 
         <a href="{{ $productUrl }}" class="product-img">

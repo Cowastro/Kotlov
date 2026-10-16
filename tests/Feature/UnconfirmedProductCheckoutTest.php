@@ -89,6 +89,9 @@ class UnconfirmedProductCheckoutTest extends TestCase
     {
         $product = $this->unconfirmedProduct()->load('category');
 
+        $this->view('partials.product-card', ['product' => $product])
+            ->assertSee('card-product--consultation', false);
+
         foreach (['partials.product-card', 'partials.product-card-list'] as $view) {
             $this->view($view, ['product' => $product])
                 ->assertSee('33.00 BYN')
@@ -104,6 +107,7 @@ class UnconfirmedProductCheckoutTest extends TestCase
         $product = $this->confirmedProduct(120)->load('category');
 
         $this->view('partials.product-card', ['product' => $product])
+            ->assertDontSee('card-product--consultation', false)
             ->assertSee('product-card-availability', false)
             ->assertSeeText('В наличии')
             ->assertSee('Товар в наличии на складе');
