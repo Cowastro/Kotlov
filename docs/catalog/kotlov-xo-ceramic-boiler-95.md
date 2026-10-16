@@ -10,6 +10,8 @@ Sources:
 
 Rated boiler power remains 95 kW, not 100 kW. Burner setup must respect boiler capacity. No unverified package efficiency, heating area, overall dimensions, agricultural-pellet compatibility, automated ash removal or certification is advertised.
 
+User additionally requested prominent controller features: internet/Wi-Fi included by default without a separate module; online temperature/status/graphs and on/off control; fuel/air tuning; unified ignition/feed/cleaning/pump control; sensor/protection capabilities conditional on the installed configuration. A working Wi-Fi network with internet access is required. These capabilities are already described on the linked KOTLOV promotion page; no additional cloud service or mobile-app claims are made.
+
 The package has no confirmed warehouse balance: initial stock is zero with a consultation/order status. Reruns preserve subsequent stock changes. The command does not modify the standalone burner, integrations, sources or supplier costs.
 
 ## Images
