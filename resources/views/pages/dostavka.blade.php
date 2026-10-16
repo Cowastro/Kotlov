@@ -61,7 +61,7 @@
                                 <div>
                                     <h6 class="fw-semibold mb-8">
                                         Доставка курьером по г. Минску
-                                        — {{ number_format($delivery['courier']['price'] ?? 10, 2, '.', ' ') }} BYN
+                                        — {{ number_format($delivery['courier']['price'] ?? 10, 2, '.', ' ') }} BYN<sup>*</sup>
                                     </h6>
                                     <p class="cl-text-2 mb-4">
                                         Заказ на сумму свыше
@@ -81,7 +81,7 @@
                                 <div>
                                     <h6 class="fw-semibold mb-8">
                                         Транспортная компания по Беларуси
-                                        — {{ number_format($delivery['transport']['price'] ?? 60, 2, '.', ' ') }} BYN
+                                        — {{ number_format($delivery['transport']['price'] ?? 60, 2, '.', ' ') }} BYN<sup>*</sup>
                                     </h6>
                                     <p class="cl-text-2 mb-4">
                                         Заказ на сумму свыше
@@ -92,6 +92,10 @@
                                 </div>
                             </div>
                         </div>
+
+                        <p class="text-caption-01 cl-text-3 mb-20">
+                            <strong>*</strong> Для крупногабаритных товаров и товаров весом свыше 80 кг стоимость и условия доставки согласовываются с продавцом.
+                        </p>
 
                         {{-- Важное предупреждение --}}
                         <div class="notice-box mb-20">
