@@ -31,7 +31,9 @@ class PublishKotlovCeramicBoilerCommandTest extends TestCase
         $this->assertSame('25600.00', $boiler->price);
         $this->assertFalse($boiler->in_stock);
         $this->assertFalse($boiler->requires_price_confirmation);
-        $this->assertCount(6, $boiler->images);
+        $this->assertCount(9, $boiler->images);
+        $this->assertStringContainsString('installation-current-wide-original.jpg', $boiler->images[0]);
+        $this->assertStringContainsString('Горелка и автоматика на этих снимках отличаются', $boiler->content);
         $this->assertStringContainsString('1,5 м³', $boiler->content);
         $this->assertStringContainsString('не нужно покупать отдельный интернет-модуль', $boiler->content);
         $this->assertStringContainsString('95 кВт', $boiler->name);
@@ -67,5 +69,30 @@ class PublishKotlovCeramicBoilerCommandTest extends TestCase
         $before = $other->fresh()->getAttributes();
         $this->artisan('catalog:publish-kotlov-ceramic-boiler', ['--apply' => true])->assertFailed();
         $this->assertSame($before, $other->fresh()->getAttributes());
+    }
+
+    public function test_photo_migration_preserves_prices_stock_and_custom_gallery_entries(): void
+    {
+        $category = Category::query()->firstOrCreate(['slug' => 'kotly-na-pelletah'], ['name' => 'Пеллетные котлы', 'parent_id' => 0]);
+        $product = Product::query()->create([
+            'category_id' => $category->id, 'sku' => PublishKotlovCeramicBoilerCommand::SKU,
+            'slug' => PublishKotlovCeramicBoilerCommand::SLUG, 'name' => 'KOTLOV 95',
+            'content' => '<p>Manager technical text</p>', 'price' => 25600,
+            'stock_qty' => 2, 'in_stock' => true,
+            'images' => ['/img/products/kotlov-xo-boiler-95/kit-visualization-v5.png', '/custom-photo.jpg'],
+        ]);
+        $before = $product->getAttributes();
+        $migration = require database_path('migrations/2026_10_16_160000_update_kotlov_95_manufacturer_photos.php');
+        $migration->up();
+        $migration->up();
+        $after = $product->fresh();
+        $this->assertSame(1, substr_count($after->content, 'data-kotlov-95-photos='));
+        $this->assertStringContainsString('Manager technical text', $after->content);
+        $this->assertContains('/custom-photo.jpg', $after->images);
+        $this->assertNotContains('/img/products/kotlov-xo-boiler-95/kit-visualization-v5.png', $after->images);
+        $this->assertSame(PublishKotlovCeramicBoilerCommand::packageImages()[0], $after->images[0]);
+        foreach (array_diff(array_keys($before), ['content', 'images', 'updated_at']) as $key) {
+            $this->assertEquals($before[$key], $after->getAttributes()[$key], $key);
+        }
     }
 }

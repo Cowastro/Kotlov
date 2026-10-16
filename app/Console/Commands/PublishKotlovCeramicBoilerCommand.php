@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\Product;
+use App\Support\Catalog\Kotlov95SeoContent;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -17,6 +18,23 @@ class PublishKotlovCeramicBoilerCommand extends Command
     public const SLUG = 'pelletnyy-kotel-kotlov-xo-ceramic-pro-95-kvt-bunker-1500';
 
     public const SKU = 'KOTLOV-XO-95-CP-1500';
+
+    public const PHOTO_NOTE = '<p data-kotlov-95-photos="2026-10-16"><small>В галерее — реальные фотографии базового котла с нижним зольником и актуальным красным бункером производителя. Горелка и автоматика на этих снимках отличаются от предлагаемого комплекта: поставка KOTLOV включает горелку XO Ceramic PRO и контроллер XO с Wi-Fi, показанные на отдельных фотографиях. Конструкцию на исходных снимках не дорисовывали. Окончательное исполнение и расположение узлов согласуются при заказе.</small></p>';
+
+    public static function packageImages(): array
+    {
+        return [
+            '/img/products/kotlov-xo-boiler-95/installation-current-wide-original.jpg',
+            '/img/products/kotlov-xo-boiler-95/installation-current-side-original.jpg',
+            '/img/products/kotlov-xo-boiler-95/installation-current-opposite-original.jpg',
+            '/img/products/kotlov-xo-boiler-95/installation-current-front-original.jpg',
+            '/img/products/kotlov-xo-boiler-95/installation-current-detail-original.jpg',
+            '/img/products/kotlov-xo-boiler-95/ceramic-pro-100.jpg',
+            '/img/promotions/kotlov-xo-ceramic-pro-real-firebox.jpg',
+            '/img/promotions/kotlov-xo-ceramic-pro-real-controller.jpg',
+            '/img/products/kotlov-xo-boiler-95/base-boiler-cutaway.png',
+        ];
+    }
 
     public function handle(): int
     {
@@ -39,14 +57,7 @@ class PublishKotlovCeramicBoilerCommand extends Command
 
             return self::FAILURE;
         }
-        $images = [
-            '/img/products/kotlov-xo-boiler-95/kit-visualization-v5.png',
-            '/img/products/kotlov-xo-boiler-95/installation-retouched-v1.png',
-            '/img/products/kotlov-xo-boiler-95/ceramic-pro-100.jpg',
-            '/img/promotions/kotlov-xo-ceramic-pro-real-firebox.jpg',
-            '/img/promotions/kotlov-xo-ceramic-pro-real-controller.jpg',
-            '/img/products/kotlov-xo-boiler-95/base-boiler-cutaway.png',
-        ];
+        $images = self::packageImages();
         foreach ($images as $image) {
             if (! is_file(public_path(ltrim($image, '/')))) {
                 $this->error('Missing package image: '.$image);
@@ -91,7 +102,7 @@ class PublishKotlovCeramicBoilerCommand extends Command
 
     private function content(): string
     {
-        return <<<'HTML'
+        return self::PHOTO_NOTE."\n".<<<'HTML'
 <h2>Пеллетный котёл KOTLOV 95 кВт с горелкой XO Ceramic PRO</h2>
 <p><strong>KOTLOV XO Ceramic PRO 95 кВт</strong> — комплект для водяного отопления коммерческих, производственных и складских помещений: стальной котёл, пеллетная горелка <a href="/pelletnye-gorelki/pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt">KOTLOV XO Ceramic PRO 100</a>, система подачи топлива и вместительный бункер <strong>1,5 м³ (1500 л)</strong>. Цена всего комплекта — <strong>25 600 BYN с НДС</strong>.</p>
 <h3>Что входит в комплект</h3>
@@ -127,9 +138,8 @@ class PublishKotlovCeramicBoilerCommand extends Command
 <h3>Подбор и поставка</h3>
 <p>Поставка под заказ. Срок изготовления и доставки уточняется при оформлении. Перед заказом проверяем тепловую нагрузку, дымоход, тягу, размеры котельной и место для бункера со шнеком. Монтаж, дымоход, обвязка и пусконаладка рассчитываются отдельно и в указанную стоимость оборудования не включены.</p>
 <p>Гарантия на котёл — 30 месяцев; на горелку KOTLOV XO Ceramic PRO — 24 месяца при соблюдении условий эксплуатации и гарантийного обслуживания.</p>
-<p><small>Главное изображение — визуализация компоновки комплекта, не фотография готовой установки. Реальное фото установки в галерее показывает пример компоновки базового котла и бункера; горелка и автоматика на этом фото отличаются от комплектации KOTLOV. Отдельные фотографии горелки, топки и контроллера показывают оборудование серии Ceramic PRO / XO. Исполнение и размещение узлов согласуются при заказе.</small></p>
 <p><a href="/docs/kotlov-xo-controller-1-2os-ru.pdf" target="_blank" rel="noopener">Скачать инструкцию контроллера XO 1.0S/2.0S (PDF)</a>. <a href="/akcii/kotlov-xo-ceramic-pro">Подробнее о горелке KOTLOV XO Ceramic PRO</a>.</p>
-HTML;
+HTML."\n".Kotlov95SeoContent::productBlock();
     }
 
     private function specs(): array
