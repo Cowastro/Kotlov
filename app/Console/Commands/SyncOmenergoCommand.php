@@ -35,6 +35,7 @@ class SyncOmenergoCommand extends Command
         {--csv-file= : Read a saved source CSV instead of downloading}
         {--review-two : Export only the two explicitly authorized unresolved identity rows; dry-run only}
         {--archive-replaced : Preview or archive unlinked old cards only when a unique verified active replacement exists}
+        {--archive-unreplaced-five : Archive exactly five explicitly approved old unlinked cards without a unique replacement}
         {--report= : Write a complete review CSV to this path}';
 
     protected $description = 'Omenergo: dealer Google Sheet, exact catalog matching, CRM contacts and safe daily updates.';
@@ -63,7 +64,7 @@ class SyncOmenergoCommand extends Command
             if ($supplier && ! $supplier->is_active) {
                 throw new RuntimeException('Omenergo supplier is disabled.');
             }
-            if ($this->option('archive-replaced')) {
+            if ($this->option('archive-replaced') || $this->option('archive-unreplaced-five')) {
                 return $this->archiveReplaced($supplier);
             }
             $classified = $this->classify($rows, $parser, $supplier);
@@ -276,7 +277,8 @@ class SyncOmenergoCommand extends Command
             ->groupBy(fn ($p) => $p->brand_id.'|'.$p->category_id.'|'.$catalog->key($p->name));
         $stats = ['archive_candidates' => 0, 'archive_protected' => 0, 'archive_no_unique_replacement' => 0, 'archived' => 0];
         $apply = $this->option('apply') && ! $this->option('dry-run');
-        DB::transaction(function () use ($linked, $replacements, $catalog, &$stats, $apply): void {
+        $unreplacedFive = (bool) $this->option('archive-unreplaced-five');
+        DB::transaction(function () use ($linked, $replacements, $catalog, &$stats, $apply, $unreplacedFive): void {
             $oldCards = Product::whereNotIn('id', $linked->pluck('id'))->where('is_archived', false)
                 ->whereIn('brand_id', $linked->pluck('brand_id')->filter()->unique())
                 ->whereIn('category_id', $linked->pluck('category_id')->filter()->unique())
@@ -290,6 +292,15 @@ class SyncOmenergoCommand extends Command
                     continue;
                 }
                 $matches = $replacements->get($old->brand_id.'|'.$old->category_id.'|'.$catalog->key($old->name), collect());
+                if ($unreplacedFive) {
+                    if ($matches->count() === 1 || str_starts_with((string) $old->sku, 'OMENERGO-')) {
+                        continue;
+                    }
+                    $stats['archive_candidates']++;
+                    $plan[] = ['before' => $old->getAttributes(), 'replacement_id' => null];
+
+                    continue;
+                }
                 if ($matches->count() !== 1) {
                     $stats['archive_no_unique_replacement']++;
 
@@ -298,9 +309,18 @@ class SyncOmenergoCommand extends Command
                 $stats['archive_candidates']++;
                 $plan[] = ['before' => $old->getAttributes(), 'replacement_id' => $matches->first()->id];
             }
+            if ($apply && $unreplacedFive && count($plan) !== 5) {
+                throw new RuntimeException('The approved archive operation requires exactly five eligible old cards; nothing was archived.');
+            }
             Storage::disk('local')->put('omenergo/archive-review/'.now()->format('Ymd_His_u').'.json', json_encode(['apply' => $apply, 'cards' => $plan], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
             if ($apply) {
                 foreach ($plan as $entry) {
+                    if ($unreplacedFive) {
+                        Product::whereKey($entry['before']['id'])->update(['is_archived' => true]);
+                        $stats['archived']++;
+
+                        continue;
+                    }
                     $replacement = Product::whereKey($entry['replacement_id'])->lockForUpdate()->first();
                     if (! $replacement || ! $this->eligibleReplacement($replacement)
                         || $replacement->brand_id !== $entry['before']['brand_id'] || $replacement->category_id !== $entry['before']['category_id']

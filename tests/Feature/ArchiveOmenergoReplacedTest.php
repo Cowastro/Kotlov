@@ -75,6 +75,24 @@ class ArchiveOmenergoReplacedTest extends TestCase
         foreach ([$replacement, $protected, $different, $stock] as $untouched) {
             $this->assertFalse($untouched->fresh()->is_archived);
         }
+        // Explicit approval for exactly five unlinked old cards is separate
+        // from archival of cards with a verified replacement.
+        $this->artisan('supplier:sync-omenergo', ['--archive-unreplaced-five' => true, '--apply' => true])->assertFailed();
+        $this->assertFalse($different->fresh()->is_archived);
+        $legacy = collect();
+        for ($i = 1; $i <= 4; $i++) {
+            $legacy->push(Product::create($base + ['name' => 'Старая модель '.$i, 'slug' => 'archive-unreplaced-'.$i]));
+        }
+        $this->artisan('supplier:sync-omenergo', ['--archive-unreplaced-five' => true, '--dry-run' => true])->assertSuccessful();
+        $this->assertFalse($different->fresh()->is_archived);
+        $this->artisan('supplier:sync-omenergo', ['--archive-unreplaced-five' => true, '--apply' => true])->assertSuccessful();
+        $this->assertTrue($different->fresh()->is_archived);
+        foreach ($legacy as $card) {
+            $this->assertTrue($card->fresh()->is_archived);
+        }
+        foreach ([$replacement, $protected, $stock] as $untouched) {
+            $this->assertFalse($untouched->fresh()->is_archived);
+        }
         $this->assertNotEmpty(Storage::disk('local')->allFiles('omenergo/archive-review'));
     }
 }
