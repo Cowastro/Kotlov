@@ -423,12 +423,12 @@
                             </ul>
 
                             {{-- Промокод --}}
-                            @if (session('cart_coupon'))
+                            @if ($coupon['valid'])
                                 <div class="mt-16 mb-8">
                                     <p class="text-caption-01 cl-text-2">
                                         Промокод:
-                                        <strong class="text-primary">{{ session('cart_coupon') }}</strong>
-                                        — применён
+                                        <strong class="text-primary">{{ $coupon['code'] }}</strong>
+                                        — скидка {{ number_format($coupon['discount'], 2, '.', ' ') }} BYN
                                     </p>
                                 </div>
                             @endif
@@ -438,13 +438,19 @@
                                 use App\Http\Controllers\CheckoutController;
                                 $selectedDelivery = old('delivery_type', 'courier');
                                 $deliveryCost     = CheckoutController::calcDelivery($selectedDelivery, $subtotal);
-                                $total            = $subtotal + ($deliveryCost ?? 0);
+                                $total            = $coupon['total'] + ($deliveryCost ?? 0);
                             @endphp
                             <ul class="list-total mt-20">
                                 <li class="total-item lh-24 fw-medium">
                                     <span>Товаров ({{ array_sum(array_column($cart, 'quantity')) }} шт.):</span>
                                     <span>{{ number_format($subtotal, 2, '.', ' ') }} BYN</span>
                                 </li>
+                                @if ($coupon['valid'])
+                                    <li class="total-item lh-24 fw-medium">
+                                        <span>Скидка {{ $coupon['code'] }}:</span>
+                                        <span>−{{ number_format($coupon['discount'], 2, '.', ' ') }} BYN</span>
+                                    </li>
+                                @endif
                                 <li class="total-item lh-24 fw-medium">
                                     <span>Доставка:</span>
                                     <span id="checkout-delivery-cost">
@@ -485,6 +491,7 @@
     // ── Конфиг доставки из PHP (price: null = уточняется, 0 = бесплатно) ──
     var deliveryMethods = @json(collect(config('shop.checkout_delivery_methods', []))->mapWithKeys(fn($k) => [$k => config("shop.delivery_methods.$k")])->filter());
     var subtotal = {{ (float) $subtotal }};
+    var discount = {{ (float) $coupon['discount'] }};
 
     // ── Показ/скрытие полей адреса при самовывозе ──
     var deliverySelect   = document.getElementById('delivery-type');
@@ -525,7 +532,7 @@
         if (!deliveryCostEl || !totalEl || !deliverySelect) return;
 
         var cost  = calcDelivery(deliverySelect.value);
-        var total = subtotal + (cost !== null ? cost : 0);
+        var total = subtotal - discount + (cost !== null ? cost : 0);
 
         if (cost === null) {
             deliveryCostEl.innerHTML = '<span class="cl-text-2">уточняется</span>';

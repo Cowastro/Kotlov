@@ -506,6 +506,10 @@
                     </div>
                     <div class="tf-mini-cart-bottom-wrap">
                         <div class="tf-mini-cart-total">
+                            <p class="d-flex justify-content-between mb-8" id="mini-cart-discount-row" style="display:none!important;">
+                                <span>Скидка <strong id="mini-cart-coupon-code"></strong></span>
+                                <strong id="mini-cart-discount"></strong>
+                            </p>
                             <h5 class="text-total d-flex align-content-center justify-content-between">
                                 <span class="subtotal">Итого</span>
                                 <span class="total-price tf-totals-total-value">0.00 BYN</span>
@@ -605,6 +609,9 @@
                                     placeholder="Введите промокод">
                             </fieldset>
                         </div>
+                        <button type="button" class="tf-btn btn-stroke w-100 mb-12" data-apply-online3>
+                            Применить ONLINE3 — скидка 3%
+                        </button>
                         <div class="tf-cart-tool-btns">
                             <button class="subscribe-button tf-btn animate-btn" type="submit">
                                 Применить

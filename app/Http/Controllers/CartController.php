@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coupon;
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\CartAvailabilityGuard;
+use App\Services\CartCouponService;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
     // ключ в сессии
     private const KEY = 'cart';
+
+    public function __construct(private readonly CartCouponService $couponService) {}
 
     // ─────────────────────────────────────────
     // Страница корзины
@@ -19,8 +23,9 @@ class CartController extends Controller
     {
         $items = $this->getAvailableItems($availabilityGuard);
         $subtotal = $this->calcSubtotal($items);
+        $coupon = $this->couponQuote($subtotal);
 
-        return view('pages.cart', compact('items', 'subtotal'));
+        return view('pages.cart', compact('items', 'subtotal', 'coupon'));
     }
 
     // ─────────────────────────────────────────
@@ -123,10 +128,15 @@ class CartController extends Controller
         session([self::KEY => $cart]);
 
         if ($request->expectsJson()) {
+            $subtotal = $this->calcSubtotal($cart);
+            $coupon = $this->couponQuote($subtotal);
+
             return response()->json([
                 'message' => 'added',
                 'count' => $this->totalQty($cart),
-                'subtotal' => $this->calcSubtotal($cart),
+                'subtotal' => $subtotal,
+                'discount' => $coupon['discount'],
+                'total' => $coupon['total'],
             ]);
         }
 
@@ -185,11 +195,14 @@ class CartController extends Controller
         }
 
         if ($request->expectsJson()) {
-            $items = $this->getItems();
+            $subtotal = $this->calcSubtotal($cart);
+            $coupon = $this->couponQuote($subtotal);
 
             return response()->json([
                 'count' => $this->totalQty($cart),
-                'subtotal' => $this->calcSubtotal($cart),
+                'subtotal' => $subtotal,
+                'discount' => $coupon['discount'],
+                'total' => $coupon['total'],
                 'item_total' => isset($cart[$id])
                     ? round($cart[$id]['price'] * $cart[$id]['quantity'], 2)
                     : 0,
@@ -216,10 +229,15 @@ class CartController extends Controller
         }
 
         if ($request->expectsJson()) {
+            $subtotal = $this->calcSubtotal($cart);
+            $coupon = $this->couponQuote($subtotal);
+
             return response()->json([
                 'message' => 'removed',
                 'count' => $this->totalQty($cart),
-                'subtotal' => $this->calcSubtotal($cart),
+                'subtotal' => $subtotal,
+                'discount' => $coupon['discount'],
+                'total' => $coupon['total'],
             ]);
         }
 
@@ -248,6 +266,7 @@ class CartController extends Controller
     {
         $items = $this->getAvailableItems($availabilityGuard);
         $subtotal = $this->calcSubtotal($items);
+        $coupon = $this->couponQuote($subtotal);
         $threshold = (float) config('shop.free_delivery_threshold', 400);
         $remaining = max(0, $threshold - $subtotal);
         $progress = $threshold > 0 ? min(100, round($subtotal / $threshold * 100)) : 100;
@@ -256,11 +275,13 @@ class CartController extends Controller
             'items' => array_values($items),
             'count' => $this->totalQty($items),
             'subtotal' => $subtotal,
+            'discount' => $coupon['discount'],
+            'total' => $coupon['total'],
             'threshold' => $threshold,
             'remaining' => $remaining,
             'progress' => $progress,
             'note' => session('cart_note', ''),
-            'coupon' => session('cart_coupon', ''),
+            'coupon' => $coupon['code'] ?? '',
         ]);
     }
 
@@ -306,17 +327,40 @@ class CartController extends Controller
     public function saveCoupon(Request $request)
     {
         $request->validate(['coupon' => ['nullable', 'string', 'max:50']]);
-        $code = strtoupper(trim($request->input('coupon', '')));
-        session(['cart_coupon' => $code]);
+        $code = $this->couponService->normalize($request->input('coupon'));
+
+        if ($code === null) {
+            session()->forget('cart_coupon');
+
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Промокод удалён.', 'coupon' => null])
+                : back()->with('success', 'Промокод удалён.');
+        }
+
+        $subtotal = $this->calcSubtotal($this->getItems());
+        $coupon = $this->couponService->quote($code, $subtotal);
+
+        if (! $coupon['valid']) {
+            session()->forget('cart_coupon');
+            $message = 'Промокод не найден, недействителен или не подходит к сумме заказа.';
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 422)
+                : back()->with('error', $message);
+        }
+
+        session(['cart_coupon' => $coupon['code']]);
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'saved',
-                'coupon' => $code,
+                'message' => 'Промокод применён. Скидка '.number_format($coupon['discount'], 2, '.', ' ').' BYN.',
+                'coupon' => $coupon['code'],
+                'discount' => $coupon['discount'],
+                'total' => $coupon['total'],
             ]);
         }
 
-        return back();
+        return back()->with('success', 'Промокод применён.');
     }
 
     // ─────────────────────────────────────────
@@ -361,5 +405,18 @@ class CartController extends Controller
     private function totalQty(array $items): int
     {
         return (int) array_sum(array_column($items, 'quantity'));
+    }
+
+    /** @return array{code: ?string, coupon: ?Coupon, discount: float, total: float, valid: bool} */
+    private function couponQuote(float $subtotal): array
+    {
+        $code = session('cart_coupon');
+        $quote = $this->couponService->quote($code, $subtotal);
+
+        if ($code && ! $quote['valid']) {
+            session()->forget('cart_coupon');
+        }
+
+        return $quote;
     }
 }

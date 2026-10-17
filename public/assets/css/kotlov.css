@@ -2355,3 +2355,22 @@ body.ai-selector-is-open #umnico-widget-wrapper { display: none !important; }
     .ai-selector__results { grid-template-columns: 1fr; }
     .ai-selector__human-help { align-items: stretch; flex-direction: column; }
 }
+/* Online self-service order promotion */
+.online-order-promo { background:#151515; color:#fff; }
+.online-order-promo__inner { min-height:52px; display:flex; align-items:center; justify-content:center; gap:28px; padding-top:9px; padding-bottom:9px; }
+.online-order-promo__text { display:flex; align-items:baseline; gap:10px; line-height:1.35; }
+.online-order-promo__text strong { color:#fff; font-size:15px; }
+.online-order-promo__text span { color:#d6d6d6; font-size:14px; }
+.online-order-promo__code { border:1px dashed rgba(255,255,255,.55); border-radius:999px; background:transparent; color:#fff; padding:7px 14px; white-space:nowrap; cursor:pointer; }
+.online-order-promo__code span { color:#bbb; font-size:12px; margin-right:5px; }
+.online-order-promo__code strong { letter-spacing:.08em; }
+.online-order-promo__code.is-copied { border-color:#fff; background:#fff; color:#151515; }
+
+@media (max-width:767px) {
+    .online-order-promo__inner { justify-content:space-between; gap:10px; min-height:58px; }
+    .online-order-promo__text { display:block; }
+    .online-order-promo__text strong { display:block; font-size:13px; }
+    .online-order-promo__text span { display:block; font-size:11px; }
+    .online-order-promo__code { padding:6px 10px; font-size:12px; }
+    .online-order-promo__code span { display:none; }
+}

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Events\NewOrderCreated;
+use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\CartAvailabilityGuard;
+use App\Services\CartCouponService;
 use App\Services\Orders\OrderEconomicSnapshotRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +22,7 @@ class CheckoutController extends Controller
     // ─────────────────────────────────────────
     // Страница оформления заказа  GET /checkout
     // ─────────────────────────────────────────
-    public function index(CartAvailabilityGuard $availabilityGuard)
+    public function index(CartAvailabilityGuard $availabilityGuard, CartCouponService $couponService)
     {
         $cart = session(self::CART_KEY, []);
 
@@ -48,10 +50,14 @@ class CheckoutController extends Controller
         }
 
         $subtotal = $this->calcSubtotal($cart);
+        $coupon = $couponService->quote(session('cart_coupon'), $subtotal);
+        if (session('cart_coupon') && ! $coupon['valid']) {
+            session()->forget('cart_coupon');
+        }
         $user = Auth::user();
         $threshold = (float) config('shop.free_delivery_threshold', 400);
 
-        return view('pages.checkout', compact('cart', 'subtotal', 'user', 'threshold'));
+        return view('pages.checkout', compact('cart', 'subtotal', 'coupon', 'user', 'threshold'));
     }
 
     // ─────────────────────────────────────────
@@ -61,6 +67,7 @@ class CheckoutController extends Controller
         Request $request,
         B2bCatalogOfferResolver $offerResolver,
         CartAvailabilityGuard $availabilityGuard,
+        CartCouponService $couponService,
     ) {
         $cart = session(self::CART_KEY, []);
 
@@ -191,10 +198,35 @@ class CheckoutController extends Controller
         ]);
 
         $subtotal = $this->calcSubtotal($cart);
-        $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
-        $total = $subtotal + $deliveryPrice;
+        $coupon = $couponService->quote(session('cart_coupon'), $subtotal);
+        if (session('cart_coupon') && ! $coupon['valid']) {
+            session()->forget('cart_coupon');
 
-        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $total) {
+            return redirect()->route('cart')->with(
+                'error',
+                'Промокод больше не действует. Проверьте сумму заказа и оформите его повторно.'
+            );
+        }
+        $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
+
+        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon) {
+
+            $lockedCoupon = null;
+            if ($coupon['code']) {
+                $lockedCoupon = Coupon::query()
+                    ->where('code', $coupon['code'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $lockedCoupon || ! $lockedCoupon->isValid($subtotal)) {
+                    return null;
+                }
+            }
+
+            $discount = $lockedCoupon
+                ? min($subtotal, round($lockedCoupon->calculateDiscount($subtotal), 2))
+                : 0.0;
+            $total = round($subtotal - $discount + $deliveryPrice, 2);
 
             $order = Order::create([
                 'user_id' => Auth::id(),
@@ -221,7 +253,8 @@ class CheckoutController extends Controller
                 'company_email' => $request->payment_type === 'invoice' ? $request->company_email : null,
 
                 'subtotal' => $subtotal,
-                'discount' => 0,
+                'coupon_code' => $coupon['code'],
+                'discount' => $discount,
                 'total' => $total,
 
                 // comment: что пользователь написал в форме; если поле пустое — null
@@ -245,8 +278,21 @@ class CheckoutController extends Controller
 
             app(OrderEconomicSnapshotRecorder::class)->capturePlaced($order->load('items'));
 
+            if ($lockedCoupon) {
+                $lockedCoupon->increment('uses_count');
+            }
+
             return $order;
         });
+
+        if (! $order) {
+            session()->forget('cart_coupon');
+
+            return redirect()->route('cart')->with(
+                'error',
+                'Промокод перестал действовать во время оформления. Итог заказа не изменён.'
+            );
+        }
 
         NewOrderCreated::dispatch($order->load('items'));
 

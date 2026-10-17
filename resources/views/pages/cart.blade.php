@@ -26,6 +26,9 @@
             @if (session('success'))
                 <div class="alert alert-success mb-20">{{ session('success') }}</div>
             @endif
+            @if (session('error'))
+                <div class="alert alert-danger mb-20">{{ session('error') }}</div>
+            @endif
 
             @if (count($items) > 0)
                 <div class="row">
@@ -159,6 +162,26 @@
                                     </span>
                                 </div>
 
+                                <div id="cart-coupon-summary" @if (! $coupon['valid']) style="display:none" @endif>
+                                    <div class="d-flex justify-content-between align-items-center mb-12">
+                                        <p class="fw-medium lh-24 mb-0">Скидка <span id="cart-coupon-code">{{ $coupon['code'] }}</span>:</p>
+                                        <span class="fw-semibold" id="cart-discount">−{{ number_format($coupon['discount'], 2, '.', ' ') }} BYN</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mb-20">
+                                        <p class="fw-semibold lh-24 mb-0">Итого со скидкой:</p>
+                                        <span class="fw-semibold text-primary" id="cart-total">{{ number_format($coupon['total'], 2, '.', ' ') }} BYN</span>
+                                    </div>
+                                </div>
+
+                                <form action="{{ route('cart.coupon') }}" method="POST" class="mb-20" id="online3-cart-form">
+                                    @csrf
+                                    <input type="hidden" name="coupon" value="ONLINE3">
+                                    <button type="submit" class="tf-btn btn-stroke w-100">
+                                        {{ $coupon['code'] === 'ONLINE3' ? 'ONLINE3 применён — скидка 3%' : 'Применить ONLINE3 и получить −3%' }}
+                                    </button>
+                                    <p class="text-caption-01 cl-text-2 mt-8 mb-0">За самостоятельное оформление заказа на сайте.</p>
+                                </form>
+
                                 <div class="br-line mb-16"></div>
 
                                 @php
@@ -262,6 +285,12 @@
         .then(function (data) {
             document.getElementById('cart-subtotal').textContent  = formatBYN(data.subtotal);
             document.getElementById('cart-items-count').textContent = data.count + ' шт.';
+            var couponSummary = document.getElementById('cart-coupon-summary');
+            if (couponSummary) couponSummary.style.display = parseFloat(data.discount) > 0 ? '' : 'none';
+            var discount = document.getElementById('cart-discount');
+            if (discount) discount.textContent = '−' + formatBYN(data.discount);
+            var total = document.getElementById('cart-total');
+            if (total) total.textContent = formatBYN(data.total);
             updateHeaderCount(data.count);
         });
     }

@@ -139,6 +139,7 @@
 
     @include('partials.yandex-metrika-noscript')
     @include('partials.amerce-header')
+    @include('partials.online-order-promo')
 
     @yield('content')
 
@@ -263,7 +264,13 @@
 
             // Обновляем итог в футере
             var totalEl = document.querySelector('.tf-totals-total-value');
-            if (totalEl) totalEl.textContent = parseFloat(data.subtotal).toFixed(2) + ' BYN';
+            if (totalEl) totalEl.textContent = parseFloat(data.total).toFixed(2) + ' BYN';
+            var discountRow = document.getElementById('mini-cart-discount-row');
+            var discountEl = document.getElementById('mini-cart-discount');
+            var couponCodeEl = document.getElementById('mini-cart-coupon-code');
+            if (discountRow) discountRow.style.setProperty('display', parseFloat(data.discount) > 0 ? 'flex' : 'none', 'important');
+            if (discountEl) discountEl.textContent = '−' + parseFloat(data.discount).toFixed(2) + ' BYN';
+            if (couponCodeEl) couponCodeEl.textContent = data.coupon || '';
         }
 
         // Загрузить данные корзины и отрисовать
@@ -296,12 +303,18 @@
                 headers: { 'Accept': 'application/json' },
                 body: body,
             })
-            .then(function (r) { return r.json(); })
-            .then(function () {
+            .then(function (r) {
+                return r.json().then(function (data) {
+                    if (!r.ok) throw new Error(data.message || 'Ошибка. Попробуйте снова.');
+                    return data;
+                });
+            })
+            .then(function (data) {
                 // Показываем подтверждение и закрываем панель через секунду
                 if (msg) {
                     msg.style.display = '';
-                    msg.textContent   = '✓ Сохранено';
+                    msg.textContent   = '✓ ' + (data.message || 'Сохранено');
+                    loadMiniCart();
                     setTimeout(function () {
                         msg.style.display = 'none';
                         // Закрываем тул-панель
@@ -310,12 +323,22 @@
                     }, 900);
                 }
             })
-            .catch(function () {
+            .catch(function (error) {
                 if (msg) {
                     msg.style.display = '';
-                    msg.textContent   = 'Ошибка. Попробуйте снова.';
+                    msg.textContent   = error.message || 'Ошибка. Попробуйте снова.';
                 }
             });
+        });
+
+        document.addEventListener('click', function (e) {
+            var button = e.target.closest('[data-apply-online3]');
+            if (!button) return;
+            var form = button.closest('form');
+            var input = form ? form.querySelector('[name="coupon"]') : null;
+            if (!form || !input) return;
+            input.value = 'ONLINE3';
+            form.requestSubmit();
         });
 
         // Клик «В корзину» — перехватываем, добавляем через AJAX, потом открываем корзину
