@@ -56,6 +56,7 @@ class ContactRequestNotifier
         $sourceLabels = [
             'product_page' => 'Карточка товара',
             'consultation_form' => 'Форма консультации',
+            'quick_callback' => 'Быстрый звонок за 5 минут',
             'ai_selection' => 'AI-подбор',
         ];
         $source = $contactRequest->source

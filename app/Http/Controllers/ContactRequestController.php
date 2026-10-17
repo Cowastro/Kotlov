@@ -43,7 +43,9 @@ class ContactRequestController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Спасибо! Вопрос отправлен консультанту.',
+                'message' => ($validated['source'] ?? null) === 'quick_callback'
+                    ? 'Спасибо! Номер принят — скоро перезвоним.'
+                    : 'Спасибо! Вопрос отправлен консультанту.',
                 'request_id' => $contactRequest->id,
             ]);
         }

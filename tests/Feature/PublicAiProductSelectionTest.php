@@ -436,6 +436,9 @@ class PublicAiProductSelectionTest extends TestCase
 
         $this->assertStringContainsString('AI-помощник', $html);
         $this->assertStringContainsString('Нужна помощь с выбором?', $html);
+        $this->assertStringContainsString('Перезвоним за 5 минут', $html);
+        $this->assertStringContainsString('data-bs-target="#quickCallback"', $html);
+        $this->assertStringContainsString('data-quick-callback-icon', $html);
         $this->assertStringContainsString('Умный подбор', $html);
         $this->assertStringContainsString('Написать консультанту', $html);
         $this->assertStringContainsString('icon-Question', $html);
@@ -461,7 +464,12 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('showLauncher(!introSeen', $script);
         $this->assertStringContainsString("launcher.classList.add('is-explaining')", $script);
         $this->assertStringNotContainsString('umnico-widget-wrapper', $script);
-        $this->assertStringContainsString('data-consultant-form', view('partials.modals')->render());
+        $modals = view('partials.modals')->render();
+        $this->assertStringContainsString('data-consultant-form', $modals);
+        $this->assertStringContainsString('id="quickCallback"', $modals);
+        $this->assertStringContainsString('name="source" value="quick_callback"', $modals);
+        $this->assertStringContainsString('Обычно отвечаем в течение 5 минут в рабочее время.', $modals);
+        $this->assertStringContainsString("all('[data-consultant-form]')", $script);
         $this->assertStringContainsString("'request_id'", file_get_contents(app_path('Http/Controllers/ContactRequestController.php')));
         $this->assertStringContainsString('sevenDays', $script);
         $this->assertStringContainsString('cart|checkout|account|wishlist', $script);

@@ -228,6 +228,43 @@
 </div>
 <!-- /Share -->
 
+<!-- Quick callback -->
+<div class="modal modalCentered fade modal-log modal-ask" id="quickCallback" tabindex="-1" aria-labelledby="quickCallbackTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <button type="button" class="icon-close-popup" data-bs-dismiss="modal" aria-label="Закрыть"><i class="icon-X2"></i></button>
+            <div class="modal-heading text-center">
+                <div class="ai-selector-modal__eyebrow mb-8">Быстрый ответ</div>
+                <h3 class="title-pop mb-8" id="quickCallbackTitle">Перезвоним за 5 минут</h3>
+                <p class="desc-pop cl-text-2">Оставьте номер — специалист быстро уточнит задачу и поможет с выбором.</p>
+            </div>
+            <div class="modal-main">
+                <form class="form-log" action="{{ route('ask.store') }}" method="POST" data-consultant-form>
+                    @csrf
+                    <x-form-protection />
+                    <input type="hidden" name="name" value="Быстрый обратный звонок">
+                    <input type="hidden" name="message" value="Клиент просит быстро перезвонить и помочь с выбором.">
+                    <input type="hidden" name="source" value="quick_callback">
+                    <input type="hidden" name="product_url" value="{{ url()->current() }}">
+                    <div class="form-content">
+                        <fieldset class="tf-field">
+                            <label for="phone-quick-callback" class="tf-lable fw-medium">Номер телефона <span class="text-primary">*</span></label>
+                            <input type="tel" name="phone" id="phone-quick-callback" placeholder="+375 (XX) XXX-XX-XX" autocomplete="tel" inputmode="tel" required>
+                        </fieldset>
+                    </div>
+                    <div class="group-action">
+                        <button type="submit" class="tf-btn animate-btn w-100">Жду звонка</button>
+                    </div>
+                    <p class="text-center cl-text-3 mt-12 mb-0">Обычно отвечаем в течение 5 минут в рабочее время.</p>
+                    <div class="alert alert-danger mt-12" data-consultant-form-error role="alert" hidden></div>
+                    <div class="alert alert-success mt-12" data-consultant-form-success role="status" hidden></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Quick callback -->
+
 <!-- Ask -->
 <div class="modal modalCentered fade modal-log modal-ask" id="ask">
     <div class="modal-dialog modal-dialog-centered">

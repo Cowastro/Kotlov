@@ -2912,7 +2912,14 @@ a.category-v05.subcat-tile:hover .cate-icon {
 .ai-selector__assistance-option strong { font-size: 14px; line-height: 1.25; }
 .ai-selector__assistance-option small { margin-top: 3px; color: #777; font-size: 11px; line-height: 1.35; }
 .ai-selector__assistance-icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 50%; color: #d8232a; background: #fff0f1; font-size: 20px; }
+.ai-selector__assistance-icon svg { width: 20px; height: 20px; }
 .ai-selector__assistance-option > .icon { color: #999; font-size: 13px; }
+.ai-selector__assistance-option--callback { color: #fff; background: #171717; }
+.ai-selector__assistance-option--callback:hover, .ai-selector__assistance-option--callback:focus-visible { color: #fff; background: #d8232a; }
+.ai-selector__assistance-option--callback small { color: rgba(255, 255, 255, .7); }
+.ai-selector__assistance-option--callback .ai-selector__assistance-icon { color: #fff; background: #d8232a; }
+.ai-selector__assistance-option--callback:hover .ai-selector__assistance-icon { color: #d8232a; background: #fff; }
+.ai-selector__assistance-option--callback > .icon { color: rgba(255, 255, 255, .65); }
 .ai-selector-modal .modal-content { border: 0; border-radius: 24px; overflow: hidden; }
 .ai-selector-modal .modal-header { padding: 24px 28px 18px; align-items: flex-start; }
 .ai-selector-modal .modal-body { min-height: 360px; padding: 22px 28px 28px; }
