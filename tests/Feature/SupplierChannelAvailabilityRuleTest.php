@@ -147,6 +147,36 @@ class SupplierChannelAvailabilityRuleTest extends TestCase
         $this->assertSame(Product::AVAILABILITY_CHECK, $ordered->get(2)->effectiveAvailabilityStatus());
     }
 
+    public function test_homepage_rating_keeps_confirmed_stock_above_higher_rated_unconfirmed_products(): void
+    {
+        $unconfirmed = $this->product('HOME-UNCONFIRMED', true);
+        $unconfirmed->forceFill(['rating' => 5, 'reviews_count' => 100])->save();
+        $confirmed = $this->product('HOME-CONFIRMED', true);
+        $confirmed->forceFill(['rating' => 4, 'reviews_count' => 10])->save();
+
+        $supplier = Supplier::query()->create([
+            'code' => 'homepage-rating-stock',
+            'name' => 'Поставщик рейтинга главной',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $confirmed->id,
+            'supplier_article' => 'HOME-CONFIRMED',
+            'in_stock' => true,
+            'stock_quantity' => 2,
+            'last_stock_synced_at' => now(),
+        ]);
+
+        $ordered = Product::query()
+            ->whereKey([$unconfirmed->id, $confirmed->id])
+            ->homepageRatingOrder()
+            ->get();
+
+        $this->assertSame([$confirmed->id, $unconfirmed->id], $ordered->pluck('id')->all());
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $ordered->first()->effectiveAvailabilityStatus());
+        $this->assertSame(Product::AVAILABILITY_CHECK, $ordered->last()->effectiveAvailabilityStatus());
+    }
+
     public function test_one_c_stock_remains_valid_for_a_day_and_then_requires_consultation(): void
     {
         $product = $this->product('STALE-ONE-C', true);

@@ -638,6 +638,22 @@ class Product extends Model
             ->orderByDesc('id');
     }
 
+    public function scopeHomepageRatingOrder($query, bool $prioritizeFeatured = false)
+    {
+        $query->prioritizeConfirmedStock();
+
+        if ($prioritizeFeatured) {
+            $query->orderByDesc('is_featured');
+        }
+
+        return $query
+            ->orderByDesc('rating')
+            ->orderByDesc('reviews_count')
+            ->orderByDesc('popularity_score')
+            ->orderByDesc('views_count')
+            ->orderByDesc('id');
+    }
+
     public function scopePelletBoilerCatalogOrder($query)
     {
         return $query

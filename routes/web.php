@@ -157,7 +157,7 @@ Route::get('/robots.txt', function (Request $request) {
 Route::get('/', function () {
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
-    $data = Cache::remember('home:data', 600, function () {
+    $data = Cache::remember('home:data:v2', 600, function () {
         $categoryBranchIds = function ($categoryId) {
             $categories = Category::where('is_active', true)
                 ->get(['id', 'parent_id'])
@@ -209,28 +209,28 @@ Route::get('/', function () {
             ->withSupplierChannels()
             ->whereIn('category_id', $kotlyIds)
             ->with(['category', 'brand'])
-            ->orderByDesc('is_featured')->orderByDesc('rating')
+            ->homepageRatingOrder(true)
             ->limit(8)->get();
 
         $productsNasosy = $sellableProducts()
             ->withSupplierChannels()
             ->whereIn('category_id', $nasosIds)
             ->with(['category', 'brand'])
-            ->orderByDesc('is_featured')->orderByDesc('rating')
+            ->homepageRatingOrder(true)
             ->limit(8)->get();
 
         $productsKaminy = $sellableProducts()
             ->withSupplierChannels()
             ->whereIn('category_id', $kaminIds)
             ->with(['category', 'brand'])
-            ->orderByDesc('is_featured')->orderByDesc('rating')
+            ->homepageRatingOrder(true)
             ->limit(8)->get();
 
         $productsAkcii = $sellableProducts()
             ->withSupplierChannels()
             ->where('is_sale', true)
             ->with(['category', 'brand'])
-            ->orderByDesc('rating')
+            ->homepageRatingOrder()
             ->limit(8)->get();
 
         $bannersHero = Banner::active()->byPosition('hero')->get();
