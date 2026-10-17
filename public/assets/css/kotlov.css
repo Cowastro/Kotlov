@@ -2267,3 +2267,91 @@ a.category-v05.subcat-tile:hover .cate-icon {
         padding-left: 30px;
     }
 }
+/* Public AI product selector */
+.ai-selector__launcher {
+    position: fixed;
+    right: 22px;
+    bottom: 24px;
+    z-index: 1035;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 13px 18px;
+    border: 0;
+    border-radius: 999px;
+    color: #fff;
+    background: #111;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
+    font-weight: 700;
+}
+.ai-selector__launcher:hover { background: #d8232a; }
+.ai-selector__spark { color: #ff4a50; font-size: 19px; }
+.ai-selector__launcher:hover .ai-selector__spark { color: #fff; }
+.ai-selector__teaser {
+    position: fixed;
+    right: 22px;
+    bottom: 84px;
+    z-index: 1034;
+    width: min(330px, calc(100vw - 32px));
+    padding: 19px;
+    border: 1px solid #ececec;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, .16);
+}
+.ai-selector__teaser[hidden] { display: none !important; }
+.ai-selector__teaser strong, .ai-selector__teaser span { display: block; }
+.ai-selector__teaser strong { margin-right: 20px; font-size: 17px; }
+.ai-selector__teaser span { margin-top: 4px; color: #6c7077; font-size: 14px; }
+.ai-selector__teaser-close { position: absolute; top: 8px; right: 10px; border: 0; background: transparent; font-size: 24px; }
+.ai-selector__teaser-action { margin-top: 13px; padding: 0; border: 0; color: #d8232a; background: transparent; font-weight: 700; }
+.ai-selector-modal .modal-content { border: 0; border-radius: 24px; overflow: hidden; }
+.ai-selector-modal .modal-header { padding: 24px 28px 18px; align-items: flex-start; }
+.ai-selector-modal .modal-body { min-height: 360px; padding: 22px 28px 28px; }
+.ai-selector-modal .modal-title { margin-top: 2px; font-size: clamp(23px, 3vw, 32px); line-height: 1.15; }
+.ai-selector-modal__eyebrow { color: #d8232a; font-size: 12px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.ai-selector-modal__lead { margin-bottom: 20px; color: #6c7077; line-height: 1.55; }
+.ai-selector-modal__notice { justify-content: flex-start; padding: 14px 28px; color: #777; background: #f7f7f7; font-size: 12px; }
+.ai-selector__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.ai-selector__chips button { padding: 8px 13px; border: 1px solid #ddd; border-radius: 999px; background: #fff; font-size: 13px; }
+.ai-selector__chips button:hover, .ai-selector__chips button.is-active { border-color: #111; color: #fff; background: #111; }
+.ai-selector__label { display: block; margin-bottom: 7px; color: #252525; font-size: 14px; font-weight: 700; }
+.ai-selector__textarea, .ai-selector__input { width: 100%; border: 1px solid #dcdcdc; border-radius: 12px; background: #fff; outline: 0; }
+.ai-selector__textarea { min-height: 110px; padding: 14px; resize: vertical; }
+.ai-selector__input { min-height: 48px; padding: 10px 13px; }
+.ai-selector__textarea:focus, .ai-selector__input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0, 0, 0, .07); }
+.ai-selector__field { margin-bottom: 17px; }
+.ai-selector__primary { width: 100%; margin-top: 18px; }
+.ai-selector__back { margin-bottom: 15px; padding: 0; border: 0; color: #6c7077; background: transparent; font-size: 14px; }
+.ai-selector__error { margin-top: 12px; padding: 10px 12px; border-radius: 9px; color: #b4232a; background: #fff0f1; font-size: 13px; }
+.ai-selector__error[hidden], .ai-selector__loading[hidden] { display: none !important; }
+.ai-selector__loading { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 80px; color: #555; }
+.ai-selector__results { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+.ai-selector-product { position: relative; display: flex; flex-direction: column; padding: 15px; border: 1px solid #e6e6e6; border-radius: 16px; background: #fff; }
+.ai-selector-product__role { align-self: flex-start; margin-bottom: 12px; padding: 4px 9px; border-radius: 99px; color: #fff; background: #111; font-size: 11px; font-weight: 700; }
+.ai-selector-product__top { display: flex; gap: 11px; align-items: flex-start; }
+.ai-selector-product__top img { width: 72px; height: 82px; border-radius: 10px; object-fit: contain; background: #f7f7f7; }
+.ai-selector-product h4 { margin: 0 0 6px; font-size: 14px; line-height: 1.35; }
+.ai-selector-product__stock { color: #258446; font-size: 11px; }
+.ai-selector-product__price { margin-top: 4px; color: #d8232a; font-size: 15px; font-weight: 800; }
+.ai-selector-product__reason { margin: 12px 0; color: #51555b; font-size: 12px; line-height: 1.45; }
+.ai-selector-product__confirmed, .ai-selector-product__verify { margin-top: 8px; font-size: 11px; }
+.ai-selector-product__confirmed strong { color: #258446; }
+.ai-selector-product__verify strong { color: #b26a00; }
+.ai-selector-product ul { margin: 5px 0 0; padding-left: 17px; }
+.ai-selector-product__link { width: 100%; margin-top: auto; padding: 9px 10px; }
+.ai-selector__human-help { display: flex; align-items: center; gap: 12px; margin-top: 18px; padding: 16px; border-radius: 14px; background: #f6f6f6; }
+.ai-selector__human-help span { flex: 1; color: #666; font-size: 12px; }
+.ai-selector__human-help .tf-btn { white-space: nowrap; }
+.ai-selector__empty { padding: 25px; border-radius: 14px; background: #f7f7f7; text-align: center; }
+body.ai-selector-is-open #umnico-widget-wrapper { display: none !important; }
+@media (max-width: 767px) {
+    .ai-selector__launcher { right: 12px; bottom: 86px; width: 48px; height: 48px; justify-content: center; overflow: hidden; padding: 0; }
+    .ai-selector__launcher span:last-child { display: none; }
+    .ai-selector__teaser { right: 12px; bottom: 140px; }
+    .ai-selector-modal .modal-dialog { min-height: 100%; margin: 0; align-items: flex-end; }
+    .ai-selector-modal .modal-content { max-height: 92vh; border-radius: 22px 22px 0 0; }
+    .ai-selector-modal .modal-header, .ai-selector-modal .modal-body { padding-left: 18px; padding-right: 18px; }
+    .ai-selector__results { grid-template-columns: 1fr; }
+    .ai-selector__human-help { align-items: stretch; flex-direction: column; }
+}

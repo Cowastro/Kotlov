@@ -144,6 +144,7 @@
 
     @include('partials.footer')
     @include('partials.modals')
+    @include('partials.ai-product-selector')
 
     <script src="{{ asset('assets/js/plugin/jquery.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/bootstrap.min.js') }}"></script>
@@ -157,6 +158,7 @@
     <script src="{{ asset('assets/js/plugin/drift.min.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}?v={{ filemtime(public_path('assets/js/main.js')) }}"></script>
     <script src="{{ asset('assets/js/shop.js') }}?v={{ filemtime(public_path('assets/js/shop.js')) }}"></script>
+    <script src="{{ asset('assets/js/ai-product-selector.js') }}?v={{ filemtime(public_path('assets/js/ai-product-selector.js')) }}"></script>
     <script src="{{ asset('assets/js/plugin/photoswipe-lightbox.umd.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/photoswipe.umd.min.js') }}"></script>
 
