@@ -12,7 +12,7 @@
     var categoryResults = one('[data-ai-category-results]', modalElement);
     var categorySelected = one('[data-ai-category-selected]', modalElement);
     var categoryClear = one('[data-ai-category-clear]', modalElement);
-    var state = { intent: '', category: null, catalogCategoryId: null, catalogCategoryPath: '', known: {}, questions: [] };
+    var state = { intent: '', category: null, catalogCategoryId: null, catalogCategoryPath: '', known: {}, questions: [], runId: null, runToken: null, currentStep: 'intent', previousStep: 'questions', leadCaptured: false, productOpened: false };
     var catalogCategories = [];
     var categoriesLoading = false;
     var roleLabels = { optimal: 'Оптимальный', economy: 'Экономичный', reserve: 'Альтернатива' };
@@ -22,6 +22,7 @@
     function setHidden(element, hidden) { if (element) element.hidden = hidden; }
 
     function showStep(name) {
+        state.currentStep = name;
         all('[data-ai-selector-step]', modalElement).forEach(function (step) {
             step.hidden = step.getAttribute('data-ai-selector-step') !== name;
         });
@@ -63,6 +64,30 @@
             }
             return response.json();
         });
+    }
+
+    function trackEvent(eventName, extra) {
+        if (!state.runId || !root.dataset.eventUrl) return Promise.resolve();
+        return fetch(root.dataset.eventUrl, {
+            method: 'POST',
+            credentials: 'same-origin',
+            keepalive: true,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf ? csrf.content : ''
+            },
+            body: JSON.stringify(Object.assign({ run_id: state.runId, run_token: state.runToken, event: eventName, step: state.currentStep }, extra || {}))
+        }).catch(function () {});
+    }
+
+    function resetLeadForm() {
+        var form = one('[data-ai-selector-step="lead"]', modalElement);
+        if (!form) return;
+        form.reset();
+        showError('', form);
+        setHidden(one('[data-ai-lead-success]', form), true);
+        all('.ai-selector__field, [data-ai-lead-submit], .ai-selector__privacy', form).forEach(function (item) { item.hidden = false; });
     }
 
     function normalized(value) {
@@ -158,6 +183,8 @@
     }
 
     function renderQuestions(data) {
+        state.runId = data.run_id || state.runId;
+        state.runToken = data.run_token || state.runToken;
         state.category = data.category;
         state.catalogCategoryId = data.catalog_category_id || state.catalogCategoryId;
         state.catalogCategoryPath = data.catalog_category_path || state.catalogCategoryPath;
@@ -210,11 +237,15 @@
     }
 
     function renderResults(data) {
+        state.runId = data.run_id || state.runId;
+        state.runToken = data.run_token || state.runToken;
         one('[data-ai-selector-result-summary]', modalElement).textContent = data.summary || '';
         var host = one('[data-ai-selector-results]', modalElement);
         host.replaceChildren();
         if (!Array.isArray(data.products) || !data.products.length) {
             host.appendChild(make('div', 'ai-selector__empty', 'Готовых вариантов не найдено. Передайте задачу специалисту — он проверит каталог и поставщиков вручную.'));
+            var help = one('[data-ai-selector-step="results"] .ai-selector__human-help', modalElement);
+            if (help) help.classList.add('is-urgent');
             showStep('results');
             return;
         }
@@ -239,6 +270,10 @@
             addList(card, 'Нужно проверить', product.verify, 'ai-selector-product__verify');
             var link = make('a', 'tf-btn btn-outline-dark ai-selector-product__link', 'Открыть товар');
             link.href = product.url;
+            link.addEventListener('click', function () {
+                state.productOpened = true;
+                trackEvent('product_opened', { product_id: product.id });
+            });
             card.appendChild(link);
             host.appendChild(card);
         });
@@ -256,7 +291,7 @@
         }
         state.intent = intent;
         loading(true);
-        post(root.dataset.startUrl, { intent: intent, category: state.category, catalog_category_id: state.catalogCategoryId }).then(renderQuestions).catch(function (error) {
+        post(root.dataset.startUrl, { intent: intent, category: state.category, catalog_category_id: state.catalogCategoryId, page_url: window.location.href }).then(renderQuestions).catch(function (error) {
             showError(error.message, step);
         }).finally(function () { loading(false); });
     }
@@ -312,18 +347,51 @@
         var answers = Object.assign({}, state.known);
         new FormData(form).forEach(function (value, key) { if (String(value).trim()) answers[key] = String(value).trim(); });
         loading(true);
-        post(root.dataset.recommendUrl, { intent: state.intent, category: state.category, catalog_category_id: state.catalogCategoryId, answers: answers }).then(renderResults).catch(function (error) {
+        post(root.dataset.recommendUrl, { intent: state.intent, category: state.category, catalog_category_id: state.catalogCategoryId, run_id: state.runId, run_token: state.runToken, page_url: window.location.href, answers: answers }).then(renderResults).catch(function (error) {
             showError(error.message, form);
         }).finally(function () { loading(false); });
     });
 
     one('[data-ai-selector-back]', modalElement).addEventListener('click', function () { showStep('intent'); });
     one('[data-ai-selector-restart]', modalElement).addEventListener('click', function () {
-        state = { intent: '', category: null, catalogCategoryId: null, catalogCategoryPath: '', known: {}, questions: [] };
+        if (state.runId && !state.leadCaptured) trackEvent('abandoned');
+        state = { intent: '', category: null, catalogCategoryId: null, catalogCategoryPath: '', known: {}, questions: [], runId: null, runToken: null, currentStep: 'intent', previousStep: 'questions', leadCaptured: false, productOpened: false };
         intentInput.value = '';
+        resetLeadForm();
         clearCatalogCategory();
         all('[data-ai-category]', modalElement).forEach(function (item) { item.classList.remove('is-active'); });
         showStep('intent');
+    });
+
+    all('[data-ai-lead-open]', modalElement).forEach(function (button) {
+        button.addEventListener('click', function () {
+            resetLeadForm();
+            state.previousStep = button.dataset.aiLeadSource === 'results' ? 'results' : 'questions';
+            var noResults = state.previousStep === 'results' && !one('[data-ai-selector-results] .ai-selector-product', modalElement);
+            one('[data-ai-lead-title]', modalElement).textContent = noResults ? 'Не нашли подходящий вариант?' : 'Поможем разобраться';
+            showStep('lead');
+            trackEvent('lead_prompted');
+            window.setTimeout(function () { one('#aiLeadName', modalElement).focus(); }, 100);
+        });
+    });
+    one('[data-ai-lead-back]', modalElement).addEventListener('click', function () { showStep(state.previousStep || 'questions'); });
+    one('[data-ai-selector-step="lead"]', modalElement).addEventListener('submit', function (event) {
+        event.preventDefault();
+        var form = event.currentTarget;
+        showError('', form);
+        var payload = Object.fromEntries(new FormData(form).entries());
+        payload.run_id = state.runId;
+        payload.run_token = state.runToken;
+        loading(true);
+        post(root.dataset.contactUrl, payload).then(function (data) {
+            state.leadCaptured = true;
+            var success = one('[data-ai-lead-success]', form);
+            success.textContent = data.message || 'Спасибо! Менеджер скоро перезвонит.';
+            success.hidden = false;
+            all('.ai-selector__field, [data-ai-lead-submit], .ai-selector__privacy', form).forEach(function (item) { item.hidden = true; });
+        }).catch(function (error) {
+            showError(error.message, form);
+        }).finally(function () { loading(false); });
     });
 
     var teaser = one('[data-ai-selector-teaser]');
@@ -346,5 +414,10 @@
         if (teaser) teaser.hidden = true;
         loadCategories();
     });
-    modalElement.addEventListener('hidden.bs.modal', function () { document.body.classList.remove('ai-selector-is-open'); });
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        document.body.classList.remove('ai-selector-is-open');
+        if (state.runId && !state.leadCaptured && !state.productOpened && ['questions', 'results', 'lead'].indexOf(state.currentStep) !== -1) {
+            trackEvent('abandoned');
+        }
+    });
 })();

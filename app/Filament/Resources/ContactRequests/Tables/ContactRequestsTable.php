@@ -58,16 +58,17 @@ class ContactRequestsTable
                     ->formatStateUsing(fn (?string $state) => match ($state) {
                         'product_page' => 'Карточка товара',
                         'consultation_form' => 'Форма консультации',
+                        'ai_selection' => 'AI-подбор',
                         default => $state ?: '—',
                     })
-                    ->color('gray')
+                    ->color(fn (?string $state) => $state === 'ai_selection' ? 'warning' : 'gray')
                     ->toggleable(),
 
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
                     ->color(fn ($state) => match ($state) {
-                        'new'  => 'info',
+                        'new' => 'info',
                         'read' => 'warning',
                         'done' => 'success',
                         default => 'gray',

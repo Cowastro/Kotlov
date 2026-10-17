@@ -2,7 +2,9 @@
      id="ai-product-selector"
      data-start-url="{{ route('ai-selection.start') }}"
      data-categories-url="{{ route('ai-selection.categories') }}"
-     data-recommend-url="{{ route('ai-selection.recommend') }}">
+     data-recommend-url="{{ route('ai-selection.recommend') }}"
+     data-event-url="{{ route('ai-selection.event') }}"
+     data-contact-url="{{ route('ai-selection.contact') }}">
     <button class="ai-selector__launcher" type="button" data-ai-selector-open aria-haspopup="dialog" aria-controls="aiSelectorModal">
         <span class="ai-selector__spark" aria-hidden="true">✦</span>
         <span>Умный подбор</span>
@@ -58,6 +60,10 @@
                     <h3 data-ai-selector-category></h3>
                     <p class="ai-selector-modal__lead" data-ai-selector-summary></p>
                     <div data-ai-selector-questions></div>
+                    <div class="ai-selector__lost-help">
+                        <div><strong>Не знаете параметры?</strong><span>Оставьте номер — менеджер увидит весь запрос и поможет с выбором.</span></div>
+                        <button type="button" class="tf-btn btn-outline-dark" data-ai-lead-open data-ai-lead-source="questions">Нужна помощь</button>
+                    </div>
                     <div class="ai-selector__error" data-ai-selector-error role="alert" hidden></div>
                     <button type="submit" class="tf-btn btn-primary animate-btn ai-selector__primary">Показать варианты</button>
                 </form>
@@ -69,10 +75,29 @@
                     <div class="ai-selector__results" data-ai-selector-results></div>
                     <div class="ai-selector__human-help">
                         <strong>Нужна проверка специалиста?</strong>
-                        <span>Передайте результаты менеджеру — он проверит совместимость и комплектацию.</span>
-                        <a href="#ask" data-bs-toggle="modal" data-bs-dismiss="modal" class="tf-btn btn-outline-dark">Связаться со специалистом</a>
+                        <span>Оставьте номер — менеджер получит запрос, ответы и найденные варианты.</span>
+                        <button type="button" class="tf-btn btn-outline-dark" data-ai-lead-open data-ai-lead-source="results">Перезвоните мне</button>
                     </div>
                 </div>
+
+                <form data-ai-selector-step="lead" hidden>
+                    <button type="button" class="ai-selector__back" data-ai-lead-back>← Вернуться к подбору</button>
+                    <div class="ai-selector__lead-icon" aria-hidden="true">☎</div>
+                    <h3 data-ai-lead-title>Поможем разобраться</h3>
+                    <p class="ai-selector-modal__lead">Менеджер увидит, что вы искали и какие параметры указали. Не придётся объяснять всё заново.</p>
+                    <div class="ai-selector__field">
+                        <label class="ai-selector__label" for="aiLeadName">Как к вам обращаться?</label>
+                        <input id="aiLeadName" name="name" class="ai-selector__input" maxlength="255" autocomplete="name" required placeholder="Ваше имя">
+                    </div>
+                    <div class="ai-selector__field">
+                        <label class="ai-selector__label" for="aiLeadPhone">Телефон для звонка</label>
+                        <input id="aiLeadPhone" name="phone" class="ai-selector__input" maxlength="50" autocomplete="tel" inputmode="tel" required placeholder="+375 (__) ___-__-__">
+                    </div>
+                    <div class="ai-selector__error" data-ai-selector-error role="alert" hidden></div>
+                    <div class="ai-selector__lead-success" data-ai-lead-success hidden></div>
+                    <button type="submit" class="tf-btn btn-primary animate-btn ai-selector__primary" data-ai-lead-submit>Заказать обратный звонок</button>
+                    <small class="ai-selector__privacy">Нажимая кнопку, вы соглашаетесь на обработку данных для обратной связи.</small>
+                </form>
 
                 <div class="ai-selector__loading" data-ai-selector-loading hidden aria-live="polite">
                     <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>

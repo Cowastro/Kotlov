@@ -21,6 +21,7 @@ class ContactRequestInfolist
                 ->formatStateUsing(fn (?string $state) => match ($state) {
                     'product_page' => 'Карточка товара',
                     'consultation_form' => 'Форма консультации',
+                    'ai_selection' => 'AI-подбор',
                     default => $state ?: '-',
                 }),
             TextEntry::make('city')->label('Город')->placeholder('-'),
@@ -34,7 +35,7 @@ class ContactRequestInfolist
                 ->label('Статус')
                 ->badge()
                 ->color(fn ($state) => match ($state) {
-                    'new'  => 'info',
+                    'new' => 'info',
                     'read' => 'warning',
                     'done' => 'success',
                     default => 'gray',

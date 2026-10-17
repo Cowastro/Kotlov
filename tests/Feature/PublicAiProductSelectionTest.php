@@ -3,9 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\ContactRequest;
 use App\Models\Product;
 use App\Models\PublicAiSelectionRun;
 use App\Services\AiContentEnricher;
+use App\Services\ContactRequestNotifier;
 use App\Services\PublicAiProductSelection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -292,6 +294,113 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertNotSame(session()->getId(), $run->session_hash);
     }
 
+    public function test_full_selection_funnel_updates_one_analytics_run_and_records_product_open(): void
+    {
+        $category = $this->category('analytics-pumps', 'Насосы для аналитики');
+        $product = $this->product($category, 'Насос аналитический', 'analytics-pump', 800);
+        $service = $this->mock(PublicAiProductSelection::class);
+        $service->shouldReceive('start')->once()->andReturn([
+            'category' => 'pump',
+            'catalog_category_id' => $category->id,
+            'catalog_category_path' => $category->name,
+            'known' => ['area' => '120'],
+            'questions' => [],
+        ]);
+        $service->shouldReceive('recommend')->once()->andReturn([
+            'category' => 'pump',
+            'summary' => 'Подобран насос',
+            'products' => [['id' => $product->id, 'name' => $product->name]],
+            'ai_used' => true,
+        ]);
+
+        $start = $this->postJson(route('ai-selection.start'), [
+            'intent' => 'Нужен насос для дома 120 м²',
+            'catalog_category_id' => $category->id,
+            'page_url' => 'https://kotlov.by/catalog/nasosy',
+        ])->assertOk();
+
+        $runId = $start->json('run_id');
+        $runToken = $start->json('run_token');
+        $this->assertNotNull($runId);
+        $this->assertNotNull($runToken);
+
+        $this->postJson(route('ai-selection.recommend'), [
+            'run_id' => $runId,
+            'run_token' => $runToken,
+            'intent' => 'Нужен насос для дома 120 м²',
+            'category' => 'pump',
+            'catalog_category_id' => $category->id,
+            'answers' => ['area' => '120', 'budget' => '1000'],
+            'page_url' => 'https://kotlov.by/catalog/nasosy',
+        ])->assertOk()->assertJsonPath('run_id', $runId);
+
+        $this->postJson(route('ai-selection.event'), [
+            'run_id' => $runId,
+            'run_token' => $runToken,
+            'event' => 'product_opened',
+            'product_id' => $product->id,
+            'step' => 'results',
+        ])->assertOk();
+
+        $this->assertSame(1, PublicAiSelectionRun::count());
+        $run = PublicAiSelectionRun::findOrFail($runId);
+        $this->assertSame('product_opened', $run->status);
+        $this->assertSame($product->id, $run->selected_product_id);
+        $this->assertSame(1, $run->result_count);
+        $this->assertSame(['area' => '120', 'budget' => '1000'], $run->answers);
+        $this->assertNotNull($run->recommended_at);
+        $this->assertNotNull($run->product_opened_at);
+
+        $this->postJson(route('ai-selection.event'), [
+            'run_id' => $runId,
+            'run_token' => $runToken,
+            'event' => 'abandoned',
+            'step' => 'results',
+        ])->assertOk();
+        $this->assertNull($run->fresh()->abandoned_at);
+    }
+
+    public function test_lost_visitor_can_leave_phone_and_manager_receives_full_search_context(): void
+    {
+        $runToken = 'test-run-token-that-is-long-and-random-enough';
+        $run = PublicAiSelectionRun::query()->create([
+            'session_hash' => hash('sha256', $runToken),
+            'intent' => 'Нужен редкий электрокотёл на 30 кВт',
+            'category' => 'boiler',
+            'answers' => ['fuel' => 'Электричество', 'power' => '30'],
+            'result_product_ids' => [],
+            'result_count' => 0,
+            'status' => 'no_results',
+            'current_step' => 'results',
+            'page_url' => 'https://kotlov.by/catalog/kotly',
+        ]);
+        $notifier = $this->mock(ContactRequestNotifier::class);
+        $notifier->shouldReceive('notify')->once()->withArgs(fn (ContactRequest $request): bool => $request->source === 'ai_selection' && str_contains($request->message, 'редкий электрокотёл')
+        );
+
+        $this->postJson(route('ai-selection.event'), [
+            'run_id' => $run->id,
+            'run_token' => $runToken,
+            'event' => 'lead_prompted',
+            'step' => 'results',
+        ])->assertOk();
+
+        $this->postJson(route('ai-selection.contact'), [
+            'run_id' => $run->id,
+            'run_token' => $runToken,
+            'name' => 'Иван',
+            'phone' => '+375 29 123-45-67',
+        ])->assertOk()->assertJsonPath('success', true);
+
+        $run->refresh();
+        $this->assertSame('lead_captured', $run->status);
+        $this->assertNotNull($run->lead_prompted_at);
+        $this->assertNotNull($run->contact_submitted_at);
+        $this->assertSame('+375 29 123-45-67', $run->contactRequest->phone);
+        $this->assertStringContainsString('fuel: Электричество', $run->contactRequest->message);
+        $this->assertStringContainsString('power: 30', $run->contactRequest->message);
+    }
+
     public function test_storefront_layout_contains_global_ai_selector_and_delayed_teaser_script(): void
     {
         $html = view('partials.ai-product-selector')->render();
@@ -302,6 +411,10 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('data-ai-selector-open', $html);
         $this->assertStringContainsString('data-categories-url', $html);
         $this->assertStringContainsString('data-ai-category-search', $html);
+        $this->assertStringContainsString('data-ai-lead-open', $html);
+        $this->assertStringContainsString('data-contact-url', $html);
+        $this->assertStringContainsString('product_opened', $script);
+        $this->assertStringContainsString('lead_prompted', $script);
         $this->assertStringContainsString('catalog_category_id', $script);
         $this->assertStringContainsString('40000', $script);
         $this->assertStringContainsString('sevenDays', $script);

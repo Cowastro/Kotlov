@@ -28,8 +28,8 @@ use App\Http\Controllers\OneCExchangeController;
 use App\Http\Controllers\PartnerApplicationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductPurchasePriceSourceAttachmentController;
-use App\Http\Controllers\PublicAiSelectionController;
 use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\PublicAiSelectionController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TelegramWebhookController;
@@ -64,6 +64,12 @@ Route::get('/ai-selection/categories', [PublicAiSelectionController::class, 'cat
 Route::post('/ai-selection/recommend', [PublicAiSelectionController::class, 'recommend'])
     ->middleware('throttle:5,1')
     ->name('ai-selection.recommend');
+Route::post('/ai-selection/event', [PublicAiSelectionController::class, 'event'])
+    ->middleware('throttle:20,1')
+    ->name('ai-selection.event');
+Route::post('/ai-selection/contact', [PublicAiSelectionController::class, 'contact'])
+    ->middleware('throttle:4,1')
+    ->name('ai-selection.contact');
 
 Route::match(['get', 'post'], '/1c/exchange/{source}', OneCExchangeController::class)
     ->where('source', '[a-z0-9][a-z0-9_-]{1,99}')

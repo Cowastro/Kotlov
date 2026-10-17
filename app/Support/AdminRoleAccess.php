@@ -33,6 +33,7 @@ use App\Models\MarketResearchReport;
 use App\Models\Order;
 use App\Models\Page;
 use App\Models\Product;
+use App\Models\PublicAiSelectionRun;
 use App\Models\Redirect;
 use App\Models\Review;
 use App\Models\Supplier;
@@ -67,6 +68,7 @@ final class AdminRoleAccess
         MarketPriceCollectionRun::class => ['viewAny', 'view'],
         MarketResearchReport::class => ['viewAny', 'view'],
         Product::class => ['viewAny', 'view'],
+        PublicAiSelectionRun::class => ['viewAny', 'view'],
         Supplier::class => ['viewAny', 'view'],
         SupplierSyncRun::class => ['viewAny', 'view'],
         TelephonyCall::class => ['viewAny', 'view', 'update'],
@@ -106,6 +108,7 @@ final class AdminRoleAccess
         Order::class,
         Page::class,
         Product::class,
+        PublicAiSelectionRun::class,
         Redirect::class,
         Review::class,
         Supplier::class,

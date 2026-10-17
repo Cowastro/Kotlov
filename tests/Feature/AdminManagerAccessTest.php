@@ -11,12 +11,14 @@ use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Products\Pages\ViewProduct;
 use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Resources\PublicAiSelectionRuns\PublicAiSelectionRunResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Resources\SupplierSyncRuns\SupplierSyncRunResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\PublicAiSelectionRun;
 use App\Models\Supplier;
 use App\Models\SupplierSync;
 use App\Models\SupplierSyncRun;
@@ -50,6 +52,7 @@ class AdminManagerAccessTest extends TestCase
 
         $this->assertFalse(UserResource::canViewAny());
         $this->assertTrue(ProductResource::canViewAny());
+        $this->assertTrue(PublicAiSelectionRunResource::canViewAny());
         $this->assertTrue(ProductResource::canView(new Product));
         $this->assertFalse(ProductResource::canCreate());
         $this->assertFalse(ProductResource::canEdit(new Product));
@@ -87,6 +90,25 @@ class AdminManagerAccessTest extends TestCase
             ->get(ProductResource::getUrl('index', panel: 'admin'))
             ->assertOk()
             ->assertSeeText($product->name);
+
+        $search = PublicAiSelectionRun::query()->create([
+            'session_hash' => hash('sha256', 'manager-ai-search'),
+            'intent' => 'Нужен котёл для дома 160 м²',
+            'category' => 'boiler',
+            'answers' => ['area' => '160'],
+            'result_product_ids' => [],
+            'result_count' => 0,
+            'status' => 'no_results',
+            'current_step' => 'results',
+        ]);
+        $this->actingAs($manager)
+            ->get(PublicAiSelectionRunResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText($search->intent);
+        $this->actingAs($manager)
+            ->get(PublicAiSelectionRunResource::getUrl('view', ['record' => $search], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText($search->intent);
 
         $this->actingAs($manager)
             ->get(ProductResource::getUrl('view', ['record' => $product], panel: 'admin'))
