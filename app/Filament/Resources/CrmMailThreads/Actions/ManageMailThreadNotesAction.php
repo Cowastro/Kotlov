@@ -19,6 +19,7 @@ final class ManageMailThreadNotesAction
         return Action::make('manage_notes')
             ->label('Заметка и напоминание')
             ->icon('heroicon-o-bell-alert')
+            ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--notes'])
             ->tooltip(fn (CrmMailThread $record): string => self::tooltip($record))
             ->color(fn (CrmMailThread $record): string => match (true) {
                 $record->next_follow_up_at?->isPast() => 'danger',

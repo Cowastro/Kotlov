@@ -19,6 +19,52 @@ class CrmMailReplyActionTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_thread_actions_expose_mobile_layout_hooks(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::create([
+            'name' => 'KOTLOV',
+            'email' => 'mobile-actions@kotlov.by',
+            'username' => 'mobile-actions@kotlov.by',
+            'is_enabled' => true,
+        ]);
+        $thread = CrmMailThread::create([
+            'mailbox_id' => $mailbox->id,
+            'thread_key' => hash('sha256', 'mobile-actions@example.com|request'),
+            'participant_name' => 'Мобильный клиент',
+            'participant_email' => 'mobile-actions@example.com',
+            'subject' => 'Проверка мобильных действий',
+            'status' => 'new',
+        ]);
+
+        $component = Livewire::actingAs($manager)
+            ->test(ViewCrmMailThread::class, ['record' => $thread->getRouteKey()]);
+
+        foreach ([
+            'manage_notes' => 'crm-thread-action--notes',
+            'take' => 'crm-thread-action--take',
+            'reply' => 'crm-thread-action--reply',
+            'forward' => 'crm-thread-action--forward',
+            'create_quote' => 'crm-thread-action--quote',
+            'edit' => 'crm-thread-action--lead',
+            'mark_spam' => 'crm-thread-action--spam',
+            'trash' => 'crm-thread-action--trash',
+        ] as $actionName => $cssClass) {
+            $component->assertActionExists(
+                $actionName,
+                fn ($action): bool => str_contains(
+                    (string) ($action->getExtraAttributes()['class'] ?? ''),
+                    $cssClass,
+                ),
+            );
+        }
+
+        $component->assertActionExists(
+            'edit',
+            fn ($action): bool => $action->getIcon() === 'heroicon-o-identification',
+        );
+    }
+
     public function test_reply_opens_as_a_single_compose_form_without_a_second_confirmation(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);

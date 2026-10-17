@@ -52,10 +52,6 @@
         </div>
     </section>
 
-    @if ($installerRecruitment)
-        @include('partials.installer-recruitment-note', $installerRecruitment)
-    @endif
-
     @if ($category->slug === 'pelletnye-gorelki')
         @include('partials.pellet-burner-category-intro')
     @endif
@@ -572,6 +568,11 @@
 
     @if ($category->slug === 'schetchiki-gaza' && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort']))
         @include('partials.gas-meter-category-content', ['faq' => $gasMeterFaq ?? collect()])
+    @endif
+
+    {{-- Secondary partner CTA belongs after products and useful category content. --}}
+    @if ($installerRecruitment)
+        @include('partials.installer-recruitment-note', $installerRecruitment)
     @endif
 
 </main>

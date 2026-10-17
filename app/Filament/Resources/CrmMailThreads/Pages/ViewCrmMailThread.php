@@ -83,12 +83,14 @@ class ViewCrmMailThread extends ViewRecord
             ManageMailThreadNotesAction::make(),
             Action::make('take')
                 ->label('Взять в работу')->icon('heroicon-o-hand-raised')->color('warning')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--take'])
                 ->visible(fn (): bool => $this->canTakeThread())
                 ->action(function (): void {
                     $this->takeThread();
                 }),
             Action::make('reply')
                 ->label('Ответить')->icon('heroicon-o-paper-airplane')->color('primary')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--reply'])
                 ->visible(fn (): bool => $this->record->status !== 'draft')
                 ->schema([
                     CrmMailThreadResource::addressBookSelect('address_book_cc', 'Адресная книга — копия'),
@@ -136,6 +138,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('Переслать')
                 ->icon('heroicon-o-arrow-right')
                 ->color('gray')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--forward'])
                 ->visible(fn (): bool => $this->record->status !== 'draft')
                 ->fillForm(fn (): array => $this->forwardFormData())
                 ->schema([
@@ -215,6 +218,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('Быстрое КП')
                 ->icon('heroicon-o-document-currency-dollar')
                 ->color('success')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--quote'])
                 ->visible(fn (): bool => $this->record->status !== 'draft')
                 ->modalHeading('Быстрое коммерческое предложение')
                 ->modalDescription('Для разбора используются тема, текст письма и PDF-вложения. Товары ищутся напрямую в нашей базе. Проверьте данные — после сохранения система подготовит PDF и черновик ответа.')
@@ -307,6 +311,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('Редактировать')
                 ->icon('heroicon-o-pencil-square')
                 ->color('warning')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--edit-draft'])
                 ->visible(fn (): bool => $this->record->status === 'draft')
                 ->fillForm(fn (): array => CrmMailThreadResource::draftData($this->record))
                 ->schema(CrmMailThreadResource::draftFields(false))
@@ -329,6 +334,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('Добавить email в карточку')
                 ->icon('heroicon-o-at-symbol')
                 ->color('danger')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--supplier-email'])
                 ->visible(fn (): bool => $this->record->status === 'draft'
                     && $this->record->supplier_order_request_id !== null
                     && ! $this->record->hasValidRecipient()
@@ -339,6 +345,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('Проверить email')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--refresh-email'])
                 ->visible(fn (): bool => $this->record->status === 'draft'
                     && $this->record->supplier_order_request_id !== null
                     && ! $this->record->hasValidRecipient())
@@ -362,6 +369,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('Отправить')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--send-draft'])
                 ->visible(fn (): bool => $this->record->status === 'draft')
                 ->disabled(fn (): bool => ! $this->record->hasValidRecipient())
                 ->tooltip(fn (): ?string => $this->record->hasValidRecipient()
@@ -394,11 +402,17 @@ class ViewCrmMailThread extends ViewRecord
                         Notification::make()->danger()->title('Письмо не отправлено')->body($exception->getMessage())->send();
                     }
                 }),
-            EditAction::make()->label('Карточка лида')->visible(fn (): bool => $this->record->status !== 'draft'),
+            EditAction::make()
+                ->label('Карточка лида')
+                ->icon('heroicon-o-identification')
+                ->color('gray')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--lead'])
+                ->visible(fn (): bool => $this->record->status !== 'draft'),
             Action::make('mark_spam')
                 ->label('В спам')
                 ->icon('heroicon-o-no-symbol')
                 ->color('danger')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--spam'])
                 ->visible(fn (): bool => ! in_array($this->record->status, ['draft', 'spam'], true))
                 ->requiresConfirmation()
                 ->modalHeading('Пометить переписку как спам?')
@@ -411,6 +425,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('Вернуть из спама')
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('success')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--restore'])
                 ->visible(fn (): bool => $this->record->status === 'spam')
                 ->action(function (): void {
                     $this->record->restoreFromSpam();
@@ -420,6 +435,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->label('В корзину')
                 ->icon('heroicon-o-trash')
                 ->color('danger')
+                ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--trash'])
                 ->requiresConfirmation()
                 ->modalHeading('Переместить переписку в корзину?')
                 ->modalDescription('Переписку можно восстановить из вкладки «Корзина». Новое входящее письмо вернёт её в работу автоматически.')
