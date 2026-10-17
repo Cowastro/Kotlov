@@ -127,16 +127,5 @@
 
     @include('partials.analytics-events')
 
-    {{-- Umnico widget --}}
-    <script type="text/javascript">
-        document.umnicoWidgetHash = 'd23f029234c8a1ab66264142802cc4e7';
-        var x = document.createElement('script');
-        x.src = 'https://umnico.com/assets/widget-loader.js';
-        x.type = 'text/javascript';
-        x.charset = 'UTF-8';
-        x.async = true;
-        document.body.appendChild(x);
-    </script>
-
 </body>
 </html>

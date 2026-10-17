@@ -8,10 +8,12 @@ class MobileChatWidgetOffsetTest extends TestCase
 {
     public function test_external_chat_widget_is_not_loaded_beside_unified_help_control(): void
     {
-        $layout = file_get_contents(resource_path('views/layouts/amerce.blade.php'));
+        $layouts = collect(glob(resource_path('views/layouts/*.blade.php')))
+            ->map(fn (string $path): string => file_get_contents($path))
+            ->implode("\n");
 
-        $this->assertStringNotContainsString('umnicoWidgetHash', $layout);
-        $this->assertStringNotContainsString('widget-loader.js', $layout);
+        $this->assertStringNotContainsString('umnico', strtolower($layouts));
+        $this->assertStringNotContainsString('widget-loader.js', $layouts);
     }
 
     public function test_mobile_catalog_menu_hides_floating_assistants_until_it_closes(): void
