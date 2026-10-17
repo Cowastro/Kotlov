@@ -85,16 +85,13 @@
                                 </p>
                             </div>
                             <div class="wd-full d-grid gap-8">
-                                <h6>Режим работы:</h6>
+                                <h6>Приём обращений:</h6>
                                 <ul class="open-text">
                                     <li class="d-flex gap-4 mb-4">
-                                        <span class="cl-text-2">Пн–Пт:</span> 9:00 – 18:00
-                                    </li>
-                                    <li class="d-flex gap-4 mb-4">
-                                        <span class="cl-text-2">Сб:</span> 10:00 – 14:00
+                                        <span class="cl-text-2">Заказы онлайн:</span> круглосуточно, 24/7
                                     </li>
                                     <li class="d-flex gap-4">
-                                        <span class="cl-text-2">Вс:</span> выходной
+                                        <span class="cl-text-2">Консультант:</span> ежедневно до 20:00
                                     </li>
                                 </ul>
                             </div>

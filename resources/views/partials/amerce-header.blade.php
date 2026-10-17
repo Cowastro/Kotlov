@@ -20,7 +20,7 @@
             </div>
 
             <div class="d-none d-md-block">
-                Пн–Пт: {{ $time1 ?? '9:00–18:00' }}
+                Заказы онлайн 24/7 · Консультант ежедневно до 20:00
             </div>
 
             <div class="d-flex align-items-center gap-3">

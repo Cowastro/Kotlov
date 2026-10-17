@@ -46,7 +46,7 @@
                                         {{ $delivery['pickup']['address'] ?? 'г. Минск, ул. Селицкого, 39Б, каб. 23' }}
                                     </p>
                                     <p class="text-caption-01 cl-text-3">
-                                        Время работы: {{ $delivery['pickup']['work_time'] ?? 'пн–пт с 9:00 до 18:00' }}
+                                        Самовывоз: {{ $delivery['pickup']['work_time'] ?? 'по предварительному согласованию с консультантом' }}
                                     </p>
                                 </div>
                             </div>
