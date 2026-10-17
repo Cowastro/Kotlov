@@ -7,7 +7,9 @@
      data-contact-url="{{ route('ai-selection.contact') }}">
     <button class="ai-selector__launcher" type="button" data-ai-selector-launcher data-ai-selector-open
         aria-haspopup="dialog" aria-controls="aiSelectorModal" aria-label="Открыть AI-помощника по подбору оборудования" hidden>
-        <span class="ai-selector__spark" aria-hidden="true">✦</span>
+        <span class="ai-selector__help-icon" aria-hidden="true">
+            <i class="icon icon-Question"></i>
+        </span>
         <span>AI-помощник</span>
     </button>
 
