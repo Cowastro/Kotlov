@@ -10,7 +10,6 @@
             <a href="#search" data-bs-toggle="modal" class="mobile-catalog-search__button" aria-label="Открыть поиск по каталогу">
                 <i class="icon icon-MagnifyingGlass" aria-hidden="true"></i>
                 <span>Поиск в каталоге KOTLOV</span>
-                <i class="icon icon-Package mobile-catalog-search__end" aria-hidden="true"></i>
             </a>
         </div>
 
@@ -29,12 +28,19 @@
             <h1 id="mobile-catalog-title" class="visually-hidden">Каталог товаров</h1>
             @foreach ($rootCategories as $category)
                 @php
-                    $iconClass = config('navigation.icon_classes.' . $category->slug, 'icon-Package');
+                    $iconFile = config('navigation.icons.' . $category->slug);
                     $children = $category->catalogChildren;
                 @endphp
                 <details class="mobile-catalog-category">
                     <summary>
-                        <span class="mobile-catalog-category__icon"><i class="icon {{ $iconClass }}"></i></span>
+                        <span class="mobile-catalog-category__icon">
+                            @if ($iconFile)
+                                <img src="{{ route('catalog.icon', ['file' => pathinfo($iconFile, PATHINFO_FILENAME)]) }}"
+                                    alt="" width="28" height="28" loading="lazy">
+                            @else
+                                <i class="icon icon-SquaresFour" aria-hidden="true"></i>
+                            @endif
+                        </span>
                         <span class="mobile-catalog-category__name">{{ $category->name }}</span>
                         <span class="mobile-catalog-category__caret"><i class="icon icon-CaretDown"></i></span>
                     </summary>

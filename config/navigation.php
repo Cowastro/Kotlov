@@ -26,7 +26,8 @@ return [
     // Маппинг slug категории → иконка
     'icons' => [
         'kotly'                              => 'heater.svg',
-        'teplovyie-nasosyi'                  => 'hvac.svg',
+        'kotly-otopleniya'                   => 'heater.svg',
+        'teplovyie-nasosyi'                  => 'fan.svg',
         'pelletnye-gorelki'                 => 'fire_p.svg',
         'vodonagrevateli'                    => 'temperature--water.svg',
         'pechki'                             => 'campfire.svg',

@@ -3059,7 +3059,7 @@ body.ai-selector-is-open #umnico-widget-wrapper { display: none !important; }
 
     .mobile-catalog-search__button {
         display: grid;
-        grid-template-columns: 30px minmax(0, 1fr) 30px;
+        grid-template-columns: 30px minmax(0, 1fr);
         align-items: center;
         min-height: 58px;
         padding: 0 16px;
@@ -3082,12 +3082,6 @@ body.ai-selector-is-open #umnico-widget-wrapper { display: none !important; }
         font-size: 16px;
         text-overflow: ellipsis;
         white-space: nowrap;
-    }
-
-    .mobile-catalog-search__end {
-        color: #777;
-        font-size: 21px;
-        text-align: right;
     }
 
     .mobile-catalog-popular {
@@ -3167,6 +3161,13 @@ body.ai-selector-is-open #umnico-widget-wrapper { display: none !important; }
         place-items: center;
         color: #252525;
         font-size: 23px;
+    }
+
+    .mobile-catalog-category__icon img {
+        display: block;
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
     }
 
     .mobile-catalog-category__name {

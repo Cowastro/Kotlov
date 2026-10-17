@@ -16,7 +16,7 @@ class MobileCatalogNavigationTest extends TestCase
         $root = Category::query()->create([
             'parent_id' => 0,
             'name' => 'Отопление',
-            'slug' => 'mobile-heating',
+            'slug' => 'kotly',
             'sort_order' => 10,
             'is_active' => true,
         ]);
@@ -44,6 +44,7 @@ class MobileCatalogNavigationTest extends TestCase
             ->assertSee('class="catalog-index-page"', false)
             ->assertSee('class="mobile-catalog-index d-md-none"', false)
             ->assertSee('Поиск в каталоге KOTLOV')
+            ->assertSee('/catalog-icons/heater', false)
             ->assertSeeInOrder(['Альфа раздел', 'Бета раздел']);
     }
 
