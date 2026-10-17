@@ -288,12 +288,12 @@
 
                     {{-- Подкатегории (category-v05) — только без активного фильтра --}}
                     @if ($subcategories->count() > 0 && !request('subcategory'))
-                        <div class="row g-12 mb-32">
+                        <div class="row g-0 g-md-12 mb-32 subcat-list">
                             @foreach ($subcategories as $i => $sub)
                                 @php
                                     $icon = \App\Support\CategoryIconResolver::resolve($sub->slug, $sub->name);
                                 @endphp
-                                <div class="col-6 col-md-4 col-xl-3">
+                                <div class="col-12 col-md-4 col-xl-3">
                                     <a href="/{{ $sub->slug }}{{ request('brand') ? '?brand=' . (int) request('brand') : '' }}"
                                        class="category-v05 subcat-tile h-100 text-decoration-none">
                                         <span class="cate-icon">
@@ -302,6 +302,9 @@
                                         <span class="subcat-tile__text">
                                             <span class="cate_name h6 fw-medium d-block">{{ $sub->name }}</span>
                                             <span class="cate_quantity text-caption-01">{{ $sub->products_count }} товаров</span>
+                                        </span>
+                                        <span class="subcat-tile__arrow d-md-none" aria-hidden="true">
+                                            <i class="icon icon-CaretRight"></i>
                                         </span>
                                     </a>
                                 </div>
