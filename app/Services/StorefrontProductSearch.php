@@ -96,10 +96,10 @@ class StorefrontProductSearch
         $variants[] = $this->visualLatinToCyrillic($value);
         $variants[] = $this->visualCyrillicToLatin($value);
 
-        if (preg_match('/гидравлическ\S*\s+разделител\S*/u', $value)) {
+        if (preg_match('/^гидравлическ\S*\s+разделител\S*$/u', $value)) {
             $variants[] = 'гидрострелка';
         }
-        if (str_starts_with($value, 'гидрострел')) {
+        if (preg_match('/^гидрострел\S*$/u', $value)) {
             $variants[] = 'гидравлический разделитель';
         }
 
