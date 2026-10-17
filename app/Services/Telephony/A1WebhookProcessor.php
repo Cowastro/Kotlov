@@ -109,10 +109,14 @@ class A1WebhookProcessor
             return;
         }
 
-        $call->status = match (strtoupper((string) ($payload['crmCallFinishedStatus'] ?? ''))) {
+        $finishedStatus = strtoupper((string) ($payload['crmCallFinishedStatus'] ?? ''));
+        $call->status = match ($finishedStatus) {
             'ANSWERED' => 'answered',
             'NOT_ANSWERED' => 'missed',
-            'CANCELLED' => 'cancelled',
+            // For an inbound call A1 uses CANCELLED when the caller stops
+            // waiting before an employee answers. For the sales team this is
+            // a missed call that requires a callback, not a cancelled deal.
+            'CANCELLED' => $call->direction === 'inbound' ? 'missed' : 'cancelled',
             'BUSY' => 'busy',
             'DENIED' => 'denied',
             default => 'failed',

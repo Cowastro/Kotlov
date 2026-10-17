@@ -17,6 +17,10 @@ class MissedCallTelegramNotifier
             return true;
         }
 
+        if (! $this->isCanonicalCallAttempt($call)) {
+            return true;
+        }
+
         $chatId = config('services.telegram.telephony_chat_id');
         if (! config('services.telegram.bot_token') || ! $chatId) {
             Log::warning('Telegram missed call notification skipped: credentials are not configured.', [
@@ -110,7 +114,7 @@ class MissedCallTelegramNotifier
             ->copy()
             ->timezone(config('app.display_timezone', 'Europe/Minsk'));
         $phone = $this->displayPhone($call->customer_phone);
-        $status = TelephonyCall::STATUSES[$call->status] ?? $call->status;
+        $status = 'Пропущен';
         $manager = $call->assignedUser?->name;
 
         $lines = [
@@ -135,6 +139,37 @@ class MissedCallTelegramNotifier
         $digits = preg_replace('/\D+/', '', (string) $phone) ?: '';
 
         return $digits !== '' ? '+'.$digits : 'Номер не определён';
+    }
+
+    private function isCanonicalCallAttempt(TelephonyCall $call): bool
+    {
+        if (! $call->customer_phone || ! $call->started_at) {
+            return true;
+        }
+
+        $cluster = TelephonyCall::query()
+            ->where('provider', $call->provider)
+            ->where('direction', 'inbound')
+            ->where('customer_phone', $call->customer_phone)
+            ->where('handling_status', 'callback_required')
+            ->whereNotNull('finished_at')
+            ->whereBetween('started_at', [
+                $call->started_at->copy()->subSeconds(30),
+                $call->started_at->copy()->addSeconds(30),
+            ]);
+
+        // A notification already sent for another A1 leg wins. This also
+        // protects against a late duplicate arriving after the delay window.
+        if ((clone $cluster)->whereNotNull('telegram_message_id')->exists()) {
+            return false;
+        }
+
+        $canonicalId = (clone $cluster)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->value('id');
+
+        return (int) $canonicalId === (int) $call->id;
     }
 
     private function formatDuration(int $seconds): string

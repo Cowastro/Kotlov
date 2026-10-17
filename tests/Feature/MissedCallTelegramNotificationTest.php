@@ -73,7 +73,8 @@ class MissedCallTelegramNotificationTest extends TestCase
                     && str_contains($message, '+375255436224')
                     && str_contains($message, '17.10.2026 11:01:00')
                     && str_contains($message, '00:26')
-                    && str_contains($message, 'Отменён клиентом')
+                    && str_contains($message, 'Пропущен')
+                    && ! str_contains($message, 'Отменён клиентом')
                     && str_contains($message, 'Анна Менеджер')
                     && str_contains($message, 'Нужно перезвонить')
                     && ($extra['parse_mode'] ?? null) === 'HTML'
@@ -88,6 +89,45 @@ class MissedCallTelegramNotificationTest extends TestCase
         $this->assertSame(321, $call->fresh()->telegram_message_id);
         $this->assertNotNull($call->fresh()->telegram_notified_at);
         $this->assertNull($call->fresh()->telegram_notification_claimed_at);
+    }
+
+    public function test_two_a1_legs_for_one_call_send_only_one_final_missed_notification(): void
+    {
+        $first = TelephonyCall::query()->create([
+            'provider' => 'a1',
+            'external_uuid' => 'duplicate-leg-cancelled',
+            'direction' => 'inbound',
+            'customer_phone' => '375255436224',
+            'status' => 'missed',
+            'handling_status' => 'callback_required',
+            'started_at' => '2026-10-17 10:04:17',
+            'finished_at' => '2026-10-17 10:04:17',
+            'duration' => 0,
+        ]);
+        $final = TelephonyCall::query()->create([
+            'provider' => 'a1',
+            'external_uuid' => 'duplicate-leg-not-answered',
+            'direction' => 'inbound',
+            'customer_phone' => '375255436224',
+            'status' => 'missed',
+            'handling_status' => 'callback_required',
+            'started_at' => '2026-10-17 10:04:26',
+            'finished_at' => '2026-10-17 10:04:26',
+            'duration' => 0,
+        ]);
+
+        $telegram = Mockery::mock(TelegramApi::class);
+        $telegram->shouldReceive('sendMessage')->once()
+            ->withArgs(fn ($chatId, string $message): bool => $chatId === '-100123456789'
+                && str_contains($message, 'Пропущен')
+                && ! str_contains($message, 'Отменён клиентом'))
+            ->andReturn(['ok' => true, 'result' => ['message_id' => 987]]);
+        $notifier = new MissedCallTelegramNotifier($telegram);
+
+        $this->assertTrue($notifier->send($first));
+        $this->assertNull($first->fresh()->telegram_message_id);
+        $this->assertTrue($notifier->send($final));
+        $this->assertSame(987, $final->fresh()->telegram_message_id);
     }
 
     public function test_failed_send_releases_claim_so_queue_retry_can_send_again(): void

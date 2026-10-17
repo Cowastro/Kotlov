@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Filament\Resources\TelephonyCalls\TelephonyCallResource;
 use App\Filament\Resources\TelephonyCalls\Pages\ListTelephonyCalls;
+use App\Filament\Resources\TelephonyCalls\TelephonyCallResource;
 use App\Filament\Resources\TelephonyConnections\TelephonyConnectionResource;
 use App\Models\CrmContact;
 use App\Models\CrmContactPoint;
@@ -89,6 +89,22 @@ class A1TelephonyIntegrationTest extends TestCase
         $this->assertSame('callback_required', $call->handling_status);
         $this->assertSame(18, $call->duration);
         $this->assertCount(2, $call->events);
+    }
+
+    public function test_inbound_cancelled_by_a1_is_treated_as_missed_call(): void
+    {
+        $this->postJson(route('telephony.a1.webhook', $this->secret), $this->startPayload())->assertOk();
+        $this->postJson(route('telephony.a1.webhook', $this->secret), [
+            ...$this->startPayload(),
+            'notificationType' => 'FINISH',
+            'duration' => 0,
+            'crmCallFinishedStatus' => 'CANCELLED',
+            'isCallFinished' => true,
+        ])->assertOk();
+
+        $call = TelephonyCall::firstOrFail();
+        $this->assertSame('missed', $call->status);
+        $this->assertSame('callback_required', $call->handling_status);
     }
 
     public function test_webhook_links_manager_and_latest_order_by_phone(): void

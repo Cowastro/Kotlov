@@ -48,7 +48,10 @@ class A1TelephonyWebhookController extends Controller
         if ($call->direction === 'inbound'
             && $call->handling_status === 'callback_required'
             && $call->finished_at !== null) {
-            SendMissedCallToTelegram::dispatch($call->id);
+            // A1 can emit two call legs for one inbound attempt (CANCELLED and
+            // NOT_ANSWERED with different UUIDs). Give the final leg time to
+            // arrive so the notifier can collapse them into one alert.
+            SendMissedCallToTelegram::dispatch($call->id)->delay(now()->addSeconds(30));
         }
 
         return response()->json(['accepted' => true, 'uuid' => $call->external_uuid]);
