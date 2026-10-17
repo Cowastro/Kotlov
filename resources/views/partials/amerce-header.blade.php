@@ -123,8 +123,9 @@
                         </li>
 
                         <li class="d-none d-sm-block">
-                            <a href="/wishlist" class="nav-icon-item link">
+                            <a href="/wishlist" class="nav-icon-item link wishlist-link">
                                 <i class="icon icon-HeartStraight"></i>
+                                <span class="count wishlist-count">{{ $wishlistCount ?? 0 }}</span>
                             </a>
                         </li>
 
@@ -404,8 +405,9 @@
                     </li>
 
                     <li class="d-none d-sm-block">
-                        <a href="/wishlist" class="nav-icon-item link">
+                        <a href="/wishlist" class="nav-icon-item link wishlist-link">
                             <i class="icon icon-HeartStraight"></i>
+                            <span class="count wishlist-count">{{ $wishlistCount ?? 0 }}</span>
                         </a>
                     </li>
 

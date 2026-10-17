@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\WishlistItem;
 use App\Services\SupplierSyncJournalRecorder;
 use App\Services\B2bCatalogOfferResolver;
 use App\Support\AdminRoleAccess;
@@ -37,6 +38,32 @@ class AppServiceProvider extends ServiceProvider
                 $syncJournal->finish($event->command, $event->exitCode);
             });
         }
+
+        View::composer(['partials.amerce-header', 'partials.modals'], function ($view): void {
+            if (! Schema::hasTable('wishlist_items')) {
+                $view->with('wishlistCount', 0);
+
+                return;
+            }
+
+            $request = request();
+            $count = $request->attributes->get('wishlist_count');
+
+            if ($count === null) {
+                $query = WishlistItem::query();
+
+                if (auth()->check()) {
+                    $query->where('user_id', auth()->id());
+                } else {
+                    $query->where('session_id', session()->getId());
+                }
+
+                $count = $query->count();
+                $request->attributes->set('wishlist_count', $count);
+            }
+
+            $view->with('wishlistCount', (int) $count);
+        });
 
         // During a fresh test database boot the provider runs before
         // RefreshDatabase has created the catalogue tables.

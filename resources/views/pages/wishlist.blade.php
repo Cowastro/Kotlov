@@ -28,18 +28,15 @@
             @if ($products->count() > 0)
 
                 <div class="d-flex justify-content-between align-items-center mb-20">
-                    <p class="cl-text-2">{{ $products->count() }} {{ trans_choice('товар|товара|товаров', $products->count()) }}</p>
+                    <p class="cl-text-2" id="wishlist-page-count">{{ $products->count() }} {{ trans_choice('товар|товара|товаров', $products->count()) }}</p>
                 </div>
 
                 <div class="tf-grid-layout tf-col-2 md-col-3 xl-col-4 wrapper-wishlist">
                     @foreach ($products as $product)
                         @php
-                            $images = is_array($product->images) ? $product->images : [];
-                            $img  = $images[0] ?? null;
-                            $img2 = $images[1] ?? null;
                             $placeholder = asset('img/products/product-placeholder.jpg');
-                            $imageUrl  = $img  ? 'https://kotlov.by/images/product/' . $img  : $placeholder;
-                            $imageUrl2 = $img2 ? 'https://kotlov.by/images/product/' . $img2 : $imageUrl;
+                            $imageUrl  = $product->image_url;
+                            $imageUrl2 = $product->imageUrl(1);
                             $price    = $product->price > 0
                                 ? number_format($product->price, 2, '.', ' ') . ' BYN'
                                 : 'Цена по запросу';
@@ -76,7 +73,8 @@
                                     <li class="wishlist">
                                         {{-- Кнопка удалить из избранного --}}
                                         <a href="#" class="hover-tooltip tooltip-left box-icon addwishlist"
-                                            onclick="removeWishlist({{ $product->id }}, this); return false;">
+                                            data-product-id="{{ $product->id }}"
+                                            data-wishlist-remove>
                                             <span class="icon icon-trash"></span>
                                             <span class="tooltip">Удалить</span>
                                         </a>
@@ -179,6 +177,16 @@
 
 @push('scripts')
 <script>
+function wishlistWord(count) {
+    var mod100 = count % 100;
+    var mod10 = count % 10;
+
+    if (mod100 >= 11 && mod100 <= 14) return 'товаров';
+    if (mod10 === 1) return 'товар';
+    if (mod10 >= 2 && mod10 <= 4) return 'товара';
+    return 'товаров';
+}
+
 function removeWishlist(productId, el) {
     $.ajax({
         url: '/wishlist/remove',
@@ -187,16 +195,25 @@ function removeWishlist(productId, el) {
         headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
         xhrFields: { withCredentials: true },
         data: JSON.stringify({ product_id: productId }),
-        success: function () {
+        success: function (data) {
             var $card = $(el).closest('.card-product');
             $card.fadeOut(300, function () {
                 $card.remove();
                 var count = $('.wrapper-wishlist .card-product').length;
                 if (count === 0) location.reload();
+                $('#wishlist-page-count').text(count + ' ' + wishlistWord(count));
             });
+            if (window.updateWishlistCount) {
+                window.updateWishlistCount(Number(data.count) || 0);
+            }
         }
     });
 }
+
+$(document).on('click', '[data-wishlist-remove]', function (e) {
+    e.preventDefault();
+    removeWishlist(parseInt($(this).data('product-id'), 10), this);
+});
 
 // Кнопки wishlist на карточках — toggle через AJAX
 $(document).on('click', '.card-product .wishlist a:not(.addwishlist)', function (e) {

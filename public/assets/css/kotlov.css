@@ -98,6 +98,26 @@ li {
     color: #111 !important;
 }
 
+.nav-icon-list .wishlist-link {
+    position: relative;
+}
+
+.nav-icon-list .wishlist-link .wishlist-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    display: flex;
+    width: 16px;
+    height: 16px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--white);
+    font-size: 11px;
+    line-height: 10px;
+}
+
 .nav-icon-item.has-text span {
     font-size: 14px !important;
     font-weight: 400 !important;

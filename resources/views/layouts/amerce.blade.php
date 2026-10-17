@@ -168,7 +168,7 @@
 
         // Обновить счётчик в хедере и тулбаре
         function updateCartCount(count) {
-            document.querySelectorAll('.shop-cart .count, .toolbar-count').forEach(function (el) {
+            document.querySelectorAll('.shop-cart .count, .cart-count').forEach(function (el) {
                 el.textContent = count;
             });
         }
@@ -525,8 +525,14 @@
     // Wishlist + Compare AJAX — подключается после main.js
     $(document).ready(function () {
 
+        window.updateWishlistCount = function (count) {
+            document.querySelectorAll('.wishlist-count').forEach(function (el) {
+                el.textContent = count;
+            });
+        };
+
         // WISHLIST: карточки каталога и кнопка на детальной странице товара.
-        $(document).on('click', '.card-product .wishlist a, .wishlist-toggle[data-product-id]', function (e) {
+        $(document).on('click', '.card-product .wishlist a:not([data-wishlist-remove]), .wishlist-toggle[data-product-id]', function (e) {
             e.preventDefault();
 
             var link = $(this);
@@ -547,6 +553,7 @@
                 },
                 success: function (data) {
                     var isAdded = data && data.message === 'added';
+                    window.updateWishlistCount(data && Number.isFinite(Number(data.count)) ? Number(data.count) : 0);
                     var catalogLinks = $('.card-product .wishlist a[data-product-id="' + productId + '"]');
                     var detailButtons = $('.wishlist-toggle[data-product-id="' + productId + '"]');
 

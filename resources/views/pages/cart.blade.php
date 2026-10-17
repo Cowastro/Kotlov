@@ -228,7 +228,7 @@
     }
 
     function updateHeaderCount(count) {
-        document.querySelectorAll('.shop-cart .count, .toolbar-count').forEach(function (el) {
+        document.querySelectorAll('.shop-cart .count, .cart-count').forEach(function (el) {
             el.textContent = count;
         });
     }

@@ -110,7 +110,10 @@
     </div>
     <div class="toolbar-item">
         <a href="/wishlist">
-            <span class="toolbar-icon"><i class="icon icon-HeartStraight"></i></span>
+            <span class="toolbar-icon">
+                <i class="icon icon-HeartStraight"></i>
+                <span class="toolbar-count wishlist-count">{{ $wishlistCount ?? 0 }}</span>
+            </span>
             <span class="toolbar-label">Избранное</span>
         </a>
     </div>
@@ -118,7 +121,7 @@
         <a href="/cart">
             <span class="toolbar-icon">
                 <i class="icon icon-Handbag"></i>
-                <span class="toolbar-count">0</span>
+                <span class="toolbar-count cart-count">0</span>
             </span>
             <span class="toolbar-label">Корзина</span>
         </a>
