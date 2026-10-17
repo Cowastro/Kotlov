@@ -3037,8 +3037,8 @@ body.mobile-catalog-menu-is-open .ai-selector__assistance-menu { display: none !
     .ai-selector-modal .modal-dialog { min-height: 100%; margin: 0; align-items: flex-end; }
     .ai-selector-modal .modal-content { max-height: 92vh; border-radius: 22px 22px 0 0; }
     .ai-selector-modal .modal-header, .ai-selector-modal .modal-body { padding-left: 18px; padding-right: 18px; }
-    .support-chat-modal .modal-dialog { width: 100%; min-height: 100%; margin: 0; align-items: flex-end; }
-    .support-chat-modal .modal-content { width: 100%; height: min(720px, calc(100dvh - 18px)); border-radius: 22px 22px 0 0; }
+    .support-chat-modal .modal-dialog { width: 100%; height: calc(100% - max(12px, env(safe-area-inset-top))); min-height: 0; margin: max(12px, env(safe-area-inset-top)) 0 0; align-items: flex-end; }
+    .support-chat-modal .modal-content { width: 100%; height: min(720px, 100%); max-height: 100%; border-radius: 22px 22px 0 0; }
     .support-chat__header { padding-top: 15px; }
     .support-chat__intro { padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
     .support-chat__composer { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
