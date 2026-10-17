@@ -183,6 +183,7 @@ class SupportChatTest extends TestCase
             'role' => 'manager',
             'is_active' => true,
         ]);
+        SupportChatSetting::query()->create(['key' => 'legacy-row', 'ai_enabled' => false]);
 
         Livewire::actingAs($manager)
             ->test(ListSupportConversations::class)

@@ -14,6 +14,7 @@ return new class extends Migration
 
         Schema::create('support_chat_settings', function (Blueprint $table) {
             $table->id();
+            $table->string('key')->default('default')->unique();
             $table->boolean('ai_enabled')->default(false);
             $table->foreignId('enabled_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('enabled_at')->nullable();

@@ -28,7 +28,8 @@ class SupportChatAutoResponderTest extends TestCase
 
     public function test_enabled_ai_sends_restricted_context_and_saves_assistant_reply(): void
     {
-        SupportChatSetting::query()->create(['id' => 1, 'ai_enabled' => true]);
+        SupportChatSetting::query()->create(['key' => 'legacy-row', 'ai_enabled' => false]);
+        SupportChatSetting::query()->create(['key' => 'default', 'ai_enabled' => true]);
         [$conversation, $visitorMessage] = $this->conversationWithVisitorMessage();
         Http::fake([
             'api.deepseek.test/*' => Http::response([
@@ -56,7 +57,7 @@ class SupportChatAutoResponderTest extends TestCase
 
     public function test_disabled_ai_does_not_call_deepseek(): void
     {
-        SupportChatSetting::query()->create(['id' => 1, 'ai_enabled' => false]);
+        SupportChatSetting::query()->create(['key' => 'default', 'ai_enabled' => false]);
         [$conversation, $visitorMessage] = $this->conversationWithVisitorMessage();
 
         (new SupportChatAutoResponder)->reply($conversation->id, $visitorMessage->id);
@@ -67,7 +68,7 @@ class SupportChatAutoResponderTest extends TestCase
 
     public function test_ai_stops_when_a_manager_has_joined_the_conversation(): void
     {
-        SupportChatSetting::query()->create(['id' => 1, 'ai_enabled' => true]);
+        SupportChatSetting::query()->create(['key' => 'default', 'ai_enabled' => true]);
         [$conversation, $visitorMessage] = $this->conversationWithVisitorMessage();
         $conversation->update(['last_manager_message_at' => now(), 'status' => 'answered']);
 
@@ -79,7 +80,7 @@ class SupportChatAutoResponderTest extends TestCase
 
     public function test_third_ai_reply_is_a_deterministic_handoff_without_an_api_call(): void
     {
-        SupportChatSetting::query()->create(['id' => 1, 'ai_enabled' => true]);
+        SupportChatSetting::query()->create(['key' => 'default', 'ai_enabled' => true]);
         [$conversation] = $this->conversationWithVisitorMessage();
         $conversation->messages()->createMany([
             ['sender_type' => 'assistant', 'body' => 'Первое уточнение'],

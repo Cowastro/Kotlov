@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SupportChatSetting extends Model
 {
     protected $fillable = [
+        'key',
         'ai_enabled',
         'enabled_by',
         'enabled_at',
@@ -20,12 +21,12 @@ class SupportChatSetting extends Model
 
     public static function current(): self
     {
-        return self::query()->firstOrCreate(['id' => 1], ['ai_enabled' => false]);
+        return self::query()->firstOrCreate(['key' => 'default'], ['ai_enabled' => false]);
     }
 
     public static function aiEnabled(): bool
     {
-        return (bool) self::query()->whereKey(1)->value('ai_enabled');
+        return (bool) self::query()->where('key', 'default')->value('ai_enabled');
     }
 
     public function enabledBy(): BelongsTo
