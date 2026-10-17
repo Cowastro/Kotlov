@@ -145,12 +145,16 @@ class PublicAiProductSelectionTest extends TestCase
     {
         $html = view('partials.ai-product-selector')->render();
         $script = file_get_contents(public_path('assets/js/ai-product-selector.js'));
+        $styles = file_get_contents(public_path('assets/css/kotlov.css'));
 
         $this->assertStringContainsString('Умный подбор', $html);
         $this->assertStringContainsString('data-ai-selector-open', $html);
         $this->assertStringContainsString('40000', $script);
         $this->assertStringContainsString('sevenDays', $script);
         $this->assertStringContainsString('cart|checkout|account|wishlist', $script);
+        $this->assertMatchesRegularExpression('/\.ai-selector__launcher\s*\{[^}]*right:\s*96px;/s', $styles);
+        $this->assertMatchesRegularExpression('/\.ai-selector__teaser\s*\{[^}]*right:\s*96px;/s', $styles);
+        $this->assertMatchesRegularExpression('/@media \(max-width: 767px\)[^{]*\{.*?\.ai-selector__launcher\s*\{[^}]*right:\s*12px;/s', $styles);
     }
 
     private function category(string $slug, string $name): Category

@@ -2270,7 +2270,7 @@ a.category-v05.subcat-tile:hover .cate-icon {
 /* Public AI product selector */
 .ai-selector__launcher {
     position: fixed;
-    right: 22px;
+    right: 96px;
     bottom: 24px;
     z-index: 1035;
     display: inline-flex;
@@ -2289,7 +2289,7 @@ a.category-v05.subcat-tile:hover .cate-icon {
 .ai-selector__launcher:hover .ai-selector__spark { color: #fff; }
 .ai-selector__teaser {
     position: fixed;
-    right: 22px;
+    right: 96px;
     bottom: 84px;
     z-index: 1034;
     width: min(330px, calc(100vw - 32px));
