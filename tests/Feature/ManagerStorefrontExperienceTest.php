@@ -15,6 +15,43 @@ class ManagerStorefrontExperienceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_belomo_correction_separates_supplier_from_receiving_warehouse_without_changing_prices_or_stock(): void
+    {
+        [$product, $offer] = $this->makeProductWithSupplierOffer();
+        $db = \Illuminate\Support\Facades\DB::class;
+        $syncId = $db::table('supplier_syncs')->insertGetId([
+            'key' => 'belomo_static_pricelist', 'name' => 'СанБизнесГруп',
+            'code' => 'sanbusinessgroup', 'title' => 'Прайс БелОМО',
+            'command' => 'supplier:sync-belomo-pricelist',
+        ]);
+        $offer->update(['supplier_sync_id' => $syncId]);
+        $before = $offer->fresh();
+        $db::table('integration_sources')->insert([
+            'code' => 'belomo_wholesale', 'name' => 'СанБизнесГруп',
+            'supplier_id' => $offer->supplier_id,
+            'settings' => json_encode(['procurement_mode' => true, 'vat_rate' => 20]),
+        ]);
+
+        $migration = require database_path('migrations/2026_10_17_220000_correct_belomo_supplier_and_receiving_warehouse.php');
+        $migration->up();
+        $migration->up();
+
+        $offer->refresh();
+        $this->assertSame('belomo', $offer->supplier->code);
+        $this->assertSame('СанБизнесГруп · ожидается поступление', $offer->warehouse_name);
+        foreach (['price', 'price_byn', 'stock_quantity', 'in_stock', 'last_stock_synced_at', 'last_synced_at'] as $field) {
+            $this->assertEquals($before->$field, $offer->$field);
+        }
+        $this->assertSame(10.0, (float) $product->fresh()->price);
+        $source = $db::table('integration_sources')->where('code', 'belomo_wholesale')->first();
+        $this->assertEquals($offer->supplier_id, $source->supplier_id);
+        $this->assertTrue(json_decode($source->settings, true)['procurement_mode']);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $context = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager)->first();
+        $this->assertSame('БелОМО', $context['supplier']);
+        $this->assertSame('СанБизнесГруп · ожидается поступление', $context['warehouse']);
+    }
+
     public function test_internal_supplier_context_is_only_available_to_active_managers(): void
     {
         [$product] = $this->makeProductWithSupplierOffer();

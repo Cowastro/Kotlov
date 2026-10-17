@@ -40,7 +40,7 @@ class AuditGasMeterDemandCommand extends Command
             ->get(['id', 'sku', 'name', 'price', 'rating', 'reviews_count', 'views_count', 'stock_qty', 'in_stock', 'is_active', 'is_archived'])
             ->keyBy('id');
         $productIds = $products->keys()->all();
-        $supplierId = (int) (DB::table('suppliers')->where('code', 'sanbusinessgroup')->value('id') ?? 0);
+        $supplierId = (int) (DB::table('suppliers')->where('code', 'belomo')->value('id') ?? 0);
         $supplierProducts = DB::table('supplier_products')
             ->where('supplier_id', $supplierId)
             ->whereNotNull('product_id')

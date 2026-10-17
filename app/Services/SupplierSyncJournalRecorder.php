@@ -13,7 +13,7 @@ class SupplierSyncJournalRecorder
         'supplier:sync-rusklimat' => 'rusklimat',
         'supplier:sync-rusklimat-pricelist' => 'rusklimat',
         'supplier:sync-svah-group' => 'svah_group',
-        'supplier:sync-belomo-pricelist' => 'sanbusinessgroup',
+        'supplier:sync-belomo-pricelist' => 'belomo',
     ];
 
     /** @var array<int, array{command:string, run_id:int, started_at:float, source_candidates:array<int, string>}> */
