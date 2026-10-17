@@ -58,3 +58,24 @@ Thumbs.db
 .chrome-diagnostic/
 .tmp-prod-*.html
 catalog-diagnostic.png
+
+# Local generated reports, previews and conversion workspaces
+/tmp/
+/output/
+/outputs/
+/public/exports/
+
+# Runtime product enrichment downloads are maintained outside Git
+/public/img/products/source-enrichment/
+
+# Original installer PNG files already have tracked optimized WebP versions
+/public/img/installers/ns-trade/*.png
+!/public/img/installers/ns-trade/logo.png
+
+# One-off local diagnostics and import helpers
+/banya_db.txt
+/specs_output.txt
+/check_*.php
+/get_categories.php
+/import_fireway_new.php
+/tools/kratki_100k_match.php
