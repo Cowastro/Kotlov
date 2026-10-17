@@ -221,6 +221,46 @@ class A1TelephonyIntegrationTest extends TestCase
         $this->assertSame('375295554433', $phone->normalized_value);
     }
 
+    public function test_manager_can_close_a_call_as_an_order_and_link_the_order(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $order = Order::query()->create([
+            'number' => 'ORD-FROM-CALL',
+            'status' => 'new',
+            'customer_name' => 'Клиент из звонка',
+            'customer_phone' => '+375 29 111-22-33',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 100,
+            'total' => 100,
+        ]);
+        $call = TelephonyCall::query()->create([
+            'provider' => 'a1',
+            'external_uuid' => 'call-order-created',
+            'direction' => 'inbound',
+            'customer_phone' => '375291112233',
+            'status' => 'missed',
+            'handling_status' => 'callback_required',
+        ]);
+
+        $this->actingAs($manager);
+        Livewire::test(ListTelephonyCalls::class)
+            ->callTableAction('manager_feedback', $call, [
+                'manager_outcome' => 'order_created',
+                'manager_note' => 'Оформлен заказ после обратного звонка.',
+                'order_id' => $order->id,
+                'convert_to_client' => false,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $call->refresh();
+        $this->assertSame('order_created', $call->manager_outcome);
+        $this->assertSame('handled', $call->handling_status);
+        $this->assertSame($order->id, $call->order_id);
+        $this->assertFalse(TelephonyCall::query()->needsAttention()->whereKey($call)->exists());
+    }
+
     /** @return array<string, mixed> */
     private function startPayload(): array
     {

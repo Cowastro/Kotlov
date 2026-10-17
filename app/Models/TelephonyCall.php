@@ -31,6 +31,7 @@ class TelephonyCall extends Model
         'interested' => 'Заинтересован',
         'consultation_needed' => 'Нужна консультация',
         'offer_sent' => 'Предложение отправлено',
+        'order_created' => 'Оформлен заказ',
         'callback_later' => 'Перезвонить позже',
         'converted' => 'Конвертирован в клиента',
         'not_interested' => 'Не заинтересован',

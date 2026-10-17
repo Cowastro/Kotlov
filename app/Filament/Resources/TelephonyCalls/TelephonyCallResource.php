@@ -172,7 +172,7 @@ class TelephonyCallResource extends Resource
                 TextColumn::make('manager_outcome')->label('Обратная связь')->badge()->sortable()
                     ->formatStateUsing(fn (?string $state): string => TelephonyCall::MANAGER_OUTCOMES[$state] ?? ($state ?: 'Не заполнена'))
                     ->color(fn (?string $state): string => match ($state) {
-                        'interested', 'converted' => 'success',
+                        'interested', 'converted', 'order_created' => 'success',
                         'consultation_needed', 'offer_sent', 'callback_later' => 'info',
                         'no_answer' => 'warning',
                         'not_interested', 'wrong_number' => 'gray',
@@ -211,6 +211,7 @@ class TelephonyCallResource extends Resource
                         'manager_outcome' => $record->manager_outcome,
                         'manager_note' => $record->manager_note,
                         'next_follow_up_at' => $record->next_follow_up_at,
+                        'order_id' => $record->order_id,
                         'convert_to_client' => false,
                         'full_name' => $record->crmContact?->full_name,
                         'company_name' => $record->crmCounterparty?->type === 'organization' ? $record->crmCounterparty->name : null,
@@ -228,6 +229,12 @@ class TelephonyCallResource extends Resource
                             ->seconds(false)->native(false)
                             ->required(fn (Get $get): bool => in_array($get('manager_outcome'), ['callback_later', 'no_answer'], true))
                             ->visible(fn (Get $get): bool => in_array($get('manager_outcome'), ['callback_later', 'no_answer'], true)),
+                        Select::make('order_id')->label('Связанный заказ')
+                            ->relationship('order', 'number')
+                            ->searchable()->preload()
+                            ->required(fn (Get $get): bool => $get('manager_outcome') === 'order_created')
+                            ->visible(fn (Get $get): bool => $get('manager_outcome') === 'order_created')
+                            ->helperText('Заказ сохранится в связи со звонком, а звонок будет закрыт как обработанный.'),
                         Toggle::make('convert_to_client')->label('Конвертировать номер в клиента CRM')
                             ->helperText('Создаст карточку клиента и свяжет её с этим звонком.')
                             ->live()->visible(fn (TelephonyCall $record): bool => ! $record->crm_contact_id),
@@ -261,6 +268,7 @@ class TelephonyCallResource extends Resource
                                 'handling_status' => self::handlingStatusForOutcome($outcome),
                                 'manager_outcome' => $outcome,
                                 'manager_note' => trim((string) $data['manager_note']),
+                                'order_id' => $data['order_id'] ?? $record->order_id,
                                 'next_follow_up_at' => in_array($outcome, ['callback_later', 'no_answer'], true)
                                     ? ($data['next_follow_up_at'] ?? null)
                                     : null,
