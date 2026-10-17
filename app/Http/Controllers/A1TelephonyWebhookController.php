@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendMissedCallToTelegram;
 use App\Models\TelephonyConnection;
 use App\Services\Telephony\A1WebhookProcessor;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +43,12 @@ class A1TelephonyWebhookController extends Controller
             $call = $processor->process($payload);
         } catch (InvalidArgumentException $exception) {
             return response()->json(['accepted' => false, 'message' => $exception->getMessage()], 422);
+        }
+
+        if ($call->direction === 'inbound'
+            && $call->handling_status === 'callback_required'
+            && $call->finished_at !== null) {
+            SendMissedCallToTelegram::dispatch($call->id);
         }
 
         return response()->json(['accepted' => true, 'uuid' => $call->external_uuid]);

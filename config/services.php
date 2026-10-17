@@ -48,6 +48,7 @@ return [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'allow_in_tests' => (bool) env('TELEGRAM_ALLOW_IN_TESTS', false),
         'orders_chat_id' => env('TELEGRAM_ORDERS_CHAT_ID'),
+        'telephony_chat_id' => env('TELEGRAM_TELEPHONY_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
         'mail_chat_id' => env('TELEGRAM_MAIL_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
         'installer_applications_chat_id' => env('TELEGRAM_INSTALLER_APPLICATIONS_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
     ],

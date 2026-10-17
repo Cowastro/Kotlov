@@ -34,6 +34,7 @@ class TelephonyCall extends Model
         'handling_status', 'started_at', 'answered_at', 'finished_at', 'duration',
         'conversation_duration', 'record_name', 'recording_url', 'failure_reason',
         'callback_status', 'handled_at', 'handled_by', 'manager_note', 'metadata',
+        'telegram_message_id', 'telegram_notified_at', 'telegram_notification_claimed_at',
     ];
 
     protected $casts = [
@@ -41,6 +42,8 @@ class TelephonyCall extends Model
         'answered_at' => 'datetime',
         'finished_at' => 'datetime',
         'handled_at' => 'datetime',
+        'telegram_notified_at' => 'datetime',
+        'telegram_notification_claimed_at' => 'datetime',
         'metadata' => 'array',
     ];
 
