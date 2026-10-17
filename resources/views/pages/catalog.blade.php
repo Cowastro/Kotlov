@@ -288,72 +288,10 @@
 
                     {{-- Подкатегории (category-v05) — только без активного фильтра --}}
                     @if ($subcategories->count() > 0 && !request('subcategory'))
-                        @php
-                        $subIconMap = [
-                            'gazovye'                              => 'icon-Lightning',
-                            'tverdotoplivnye'                      => 'icon-Leaf',
-                            'elektricheskie'                       => 'icon-Lightning-1',
-                            'vodonagrevateli'                      => 'icon-Wind',
-                            'topki'                                => 'icon-Armchair',
-                            'elektrokamini'                        => 'icon-Lightning',
-                            'oblicovki'                            => 'icon-Layout',
-                            'pechi-kaminy'                         => 'icon-Armchair',
-                            'pechi'                                => 'icon-HouseLine',
-                            'burzhuiki-pechi'                      => 'icon-Wind',
-                            'dlya-dachi'                           => 'icon-Leaf',
-                            'pechnoe-i-kaminnoe-lite'              => 'icon-GearSix',
-                            'dymohody-mono'                        => 'icon-Wind',
-                            'dymohody-sendvich'                    => 'icon-Wind',
-                            'shibery-dymohod'                      => 'icon-GearSix',
-                            'kondensatootvody'                     => 'icon-Wind',
-                            'krepleniya-dymohod'                   => 'icon-PuzzlePiece',
-                            'zonty-deflektory'                     => 'icon-Wind',
-                            'teplosyomniki'                        => 'icon-Lightning',
-                            'perehody-adaptery-dymohod'            => 'icon-ArrowsLeftRight',
-                            'zaglushki-dymohod'                    => 'icon-GearSix',
-                            'koaxial-dymoxod'                      => 'icon-Wind',
-                            'truby-mono'                           => 'icon-ListDashes',
-                            'troyniki-mono'                        => 'icon-GearSix',
-                            'kolena-mono'                          => 'icon-ArrowsLeftRight',
-                            'truby-sendvich'                       => 'icon-ListDashes',
-                            'troyniki-sendvich'                    => 'icon-GearSix',
-                            'kolena-sendvich'                      => 'icon-ArrowsLeftRight',
-                            'regulyatory'                          => 'icon-GearSix',
-                            'stabilizatory-napryazheniya'          => 'icon-Lightning',
-                            'nasosyi'                              => 'icon-Wind',
-                            'datchiki'                             => 'icon-Devices',
-                            'radiatory'                            => 'icon-Layout',
-                            'membrannye-baki'                      => 'icon-Package',
-                            'bufernye-emkosti'                     => 'icon-Package',
-                            'grebenki'                             => 'icon-GearSix',
-                            'solnechnye-kollektory'                => 'icon-Sparkle',
-                            'schetchiki-gaza'                      => 'icon-GearSix',
-                            'akkumuliruyushhie-baki'               => 'icon-Package',
-                            'signalizatory-zagazovannosti'         => 'icon-ShieldCheck',
-                            'teplyj-pol'                           => 'icon-Wind',
-                            'truby-i-fitingi'                      => 'icon-ListDashes',
-                            'komplektuyushhie-dlya-otopleniya'     => 'icon-PuzzlePiece',
-                            'gruppy-bystrogo-montazha-kotelnyx'    => 'icon-GearSix',
-                            'istochniki-besperebojnogo-pitaniya'   => 'icon-Lightning-1',
-                            'filtry'                               => 'icon-ShieldCheck',
-                            'regulyatoryi-davleniya-gaza'          => 'icon-GearSix',
-                            'elektricheskie-konvektoryi'           => 'icon-Lightning',
-                            'teplonositeli'                        => 'icon-Wind',
-                            'pelletnyie-gorelki'                   => 'icon-Leaf',
-                            'elektricheskie-teny-dlya-otopleniya'  => 'icon-Lightning-1',
-                            'gidravlicheskie-razdeliteli-i-kollektory' => 'icon-GearSix',
-                            'pechi-dlya-bani'                      => 'icon-Sparkle',
-                            'drovyanye-pechi-dlya-bani'            => 'icon-Leaf',
-                            'elektrokamenki'                       => 'icon-Lightning',
-                            'aksessuary-dlya-bani'                 => 'icon-Tag',
-                            'nasosy'                               => 'icon-Wind',
-                            'nasosy-pogruzhnye-skvazhinnye'        => 'icon-Wind',
-                        ];
-                        @endphp
                         <div class="row g-12 mb-32">
                             @foreach ($subcategories as $i => $sub)
                                 @php
-                                    $icon = $subIconMap[$sub->slug] ?? 'icon-Package';
+                                    $icon = \App\Support\CategoryIconResolver::resolve($sub->slug, $sub->name);
                                 @endphp
                                 <div class="col-6 col-md-4 col-xl-3">
                                     <a href="/{{ $sub->slug }}{{ request('brand') ? '?brand=' . (int) request('brand') : '' }}"
