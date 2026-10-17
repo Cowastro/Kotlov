@@ -18,6 +18,7 @@
     var roleLabels = { optimal: 'Оптимальный', economy: 'Экономичный', reserve: 'Альтернатива' };
     var launcher = one('[data-ai-selector-launcher]');
     var teaser = one('[data-ai-selector-teaser]');
+    var assistanceMenu = one('[data-assistance-menu]');
     var teaserAutoHideTimer = null;
 
     function all(selector) { return Array.prototype.slice.call(document.querySelectorAll(selector)); }
@@ -32,15 +33,34 @@
         try { window.localStorage.setItem(key, value); } catch (error) {}
     }
 
+    function closeAssistanceMenu() {
+        if (assistanceMenu) assistanceMenu.hidden = true;
+        if (launcher) launcher.setAttribute('aria-expanded', 'false');
+    }
+
+    function toggleAssistanceMenu() {
+        if (!assistanceMenu) return;
+        var willOpen = assistanceMenu.hidden;
+        assistanceMenu.hidden = !willOpen;
+        if (launcher) launcher.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        if (teaser) teaser.hidden = true;
+        if (launcher) launcher.classList.remove('is-explaining');
+        writeStorage('kotlov_ai_selector_intro_seen', String(Date.now()));
+    }
+
     function showLauncher(showExplanation) {
         if (!launcher) return;
         launcher.hidden = false;
         window.requestAnimationFrame(function () { launcher.classList.add('is-visible'); });
         if (!showExplanation || !teaser || modalElement.classList.contains('show')) return;
+        launcher.classList.add('is-explaining');
         teaser.hidden = false;
         writeStorage('kotlov_ai_selector_intro_seen', String(Date.now()));
         window.clearTimeout(teaserAutoHideTimer);
-        teaserAutoHideTimer = window.setTimeout(function () { teaser.hidden = true; }, 10000);
+        teaserAutoHideTimer = window.setTimeout(function () {
+            teaser.hidden = true;
+            launcher.classList.remove('is-explaining');
+        }, 10000);
     }
 
     function showStep(name) {
@@ -320,11 +340,40 @@
 
     all('[data-ai-selector-open]').forEach(function (button) {
         button.addEventListener('click', function () {
+            closeAssistanceMenu();
             if (teaser) teaser.hidden = true;
+            if (launcher) launcher.classList.remove('is-explaining');
             writeStorage('kotlov_ai_selector_intro_seen', String(Date.now()));
             modal.show();
             window.setTimeout(function () { intentInput.focus(); }, 300);
         });
+    });
+
+    all('[data-assistance-toggle]').forEach(function (button) {
+        button.addEventListener('click', function (event) {
+            event.stopPropagation();
+            toggleAssistanceMenu();
+        });
+    });
+
+    all('[data-consultant-open]').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+            closeAssistanceMenu();
+            var host = document.getElementById('umnico-widget-wrapper');
+            var shadow = host && host.shadowRoot;
+            var widgetLauncher = shadow && shadow.querySelector('.widget__preview-block button, .widget__preview-block');
+            if (!widgetLauncher) return;
+            event.preventDefault();
+            widgetLauncher.click();
+        });
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!assistanceMenu || assistanceMenu.hidden || root.contains(event.target)) return;
+        closeAssistanceMenu();
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') closeAssistanceMenu();
     });
 
     all('[data-ai-category]', modalElement).forEach(function (button) {
@@ -428,6 +477,7 @@
     var dismiss = one('[data-ai-selector-dismiss]');
     if (dismiss) dismiss.addEventListener('click', function () {
         teaser.hidden = true;
+        if (launcher) launcher.classList.remove('is-explaining');
         window.clearTimeout(teaserAutoHideTimer);
         writeStorage('kotlov_ai_selector_dismissed_at', String(Date.now()));
         writeStorage('kotlov_ai_selector_intro_seen', String(Date.now()));

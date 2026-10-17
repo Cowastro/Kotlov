@@ -713,23 +713,19 @@
         x.async = true;
         document.body.appendChild(x);
 
-        // На телефонах поднимаем чат над фиксированной нижней навигацией.
-        // На карточке товара учитываем ещё и панель цены / покупки над навигацией.
-        // Виджет использует Shadow DOM, поэтому стиль добавляется внутрь него после загрузки.
-        (function keepUmnicoClearOfMobileNavigation() {
+        // Внешнюю плавающую кнопку скрываем: оба способа связи доступны
+        // через единую кнопку «Помощь». Сам чат Umnico остаётся рабочим.
+        (function moveUmnicoIntoUnifiedHelp() {
             var tries = 0;
             var timer = window.setInterval(function () {
                 tries++;
                 var host = document.getElementById('umnico-widget-wrapper');
                 var root = host && host.shadowRoot;
 
-                if (root && !root.getElementById('kotlov-umnico-mobile-offset')) {
+                if (root && !root.getElementById('kotlov-umnico-unified-help')) {
                     var style = document.createElement('style');
-                    var hasProductPurchaseBar = Boolean(document.querySelector('.product-detail-page .tf-sticky-btn-atc'));
-                    var previewBottom = hasProductPurchaseBar ? '158px' : '88px';
-                    var chatPreviewBottom = hasProductPurchaseBar ? '148px' : '78px';
-                    style.id = 'kotlov-umnico-mobile-offset';
-                    style.textContent = '@media (max-width: 767px){.widget__preview-block{bottom:calc(' + previewBottom + ' + env(safe-area-inset-bottom, 0px))!important;left:12px!important;margin:0!important;transform:scale(.9);transform-origin:left bottom}.widget__chat-preview{bottom:calc(' + chatPreviewBottom + ' + env(safe-area-inset-bottom, 0px))!important}}';
+                    style.id = 'kotlov-umnico-unified-help';
+                    style.textContent = '.widget__preview-block,.widget__chat-preview{display:none!important}';
                     root.appendChild(style);
                     window.clearInterval(timer);
                 } else if (tries >= 40) {

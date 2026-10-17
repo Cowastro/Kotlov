@@ -4,20 +4,35 @@
      data-categories-url="{{ route('ai-selection.categories') }}"
      data-recommend-url="{{ route('ai-selection.recommend') }}"
      data-event-url="{{ route('ai-selection.event') }}"
-     data-contact-url="{{ route('ai-selection.contact') }}">
-    <button class="ai-selector__launcher" type="button" data-ai-selector-launcher data-ai-selector-open
-        aria-haspopup="dialog" aria-controls="aiSelectorModal" aria-label="Открыть AI-помощника по подбору оборудования" hidden>
+     data-contact-url="{{ route('ai-selection.contact') }}"
+     data-consultant-fallback="https://t.me/kotlovby">
+    <button class="ai-selector__launcher" type="button" data-ai-selector-launcher data-assistance-toggle
+        aria-haspopup="menu" aria-controls="assistanceMenu" aria-expanded="false" aria-label="Открыть помощь" hidden>
         <span class="ai-selector__help-icon" aria-hidden="true">
             <i class="icon icon-Question"></i>
         </span>
-        <span>AI-помощник</span>
+        <span class="ai-selector__launcher-label">Помощь</span>
     </button>
 
     <div class="ai-selector__teaser" data-ai-selector-teaser hidden role="status" aria-live="polite">
         <button type="button" class="ai-selector__teaser-close" data-ai-selector-dismiss aria-label="Закрыть">×</button>
-        <strong>Это AI-помощник KOTLOV</strong>
-        <span>Опишите задачу — он подберёт 3 товара из каталога. Бесплатно и без регистрации.</span>
-        <button type="button" class="ai-selector__teaser-action" data-ai-selector-open>Попробовать подбор</button>
+        <strong>Нужна помощь с выбором?</strong>
+        <span>Используйте умный подбор или напишите консультанту.</span>
+        <button type="button" class="ai-selector__teaser-action" data-assistance-toggle>Выбрать способ помощи</button>
+    </div>
+
+    <div class="ai-selector__assistance-menu" id="assistanceMenu" data-assistance-menu role="menu" hidden>
+        <div class="ai-selector__assistance-title">Как вам помочь?</div>
+        <button type="button" class="ai-selector__assistance-option" data-ai-selector-open role="menuitem">
+            <span class="ai-selector__assistance-icon" aria-hidden="true"><i class="icon icon-Question"></i></span>
+            <span><strong>Умный подбор</strong><small>Подберём 3 товара под вашу задачу</small></span>
+            <i class="icon icon-CaretRightThin" aria-hidden="true"></i>
+        </button>
+        <a href="https://t.me/kotlovby" target="_blank" rel="noopener" class="ai-selector__assistance-option" data-consultant-open role="menuitem">
+            <span class="ai-selector__assistance-icon" aria-hidden="true"><i class="icon icon-Headset"></i></span>
+            <span><strong>Написать консультанту</strong><small>Задайте вопрос живому специалисту</small></span>
+            <i class="icon icon-CaretRightThin" aria-hidden="true"></i>
+        </a>
     </div>
 </div>
 

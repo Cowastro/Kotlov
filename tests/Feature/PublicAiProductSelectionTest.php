@@ -408,10 +408,15 @@ class PublicAiProductSelectionTest extends TestCase
         $styles = file_get_contents(public_path('assets/css/kotlov.css'));
 
         $this->assertStringContainsString('AI-помощник', $html);
-        $this->assertStringContainsString('Это AI-помощник KOTLOV', $html);
+        $this->assertStringContainsString('Нужна помощь с выбором?', $html);
+        $this->assertStringContainsString('Умный подбор', $html);
+        $this->assertStringContainsString('Написать консультанту', $html);
         $this->assertStringContainsString('icon-Question', $html);
         $this->assertStringContainsString('data-ai-selector-launcher', $html);
         $this->assertMatchesRegularExpression('/data-ai-selector-launcher[^>]*hidden/', $html);
+        $this->assertStringContainsString('data-assistance-toggle', $html);
+        $this->assertStringContainsString('data-assistance-menu', $html);
+        $this->assertStringContainsString('data-consultant-open', $html);
         $this->assertStringContainsString('data-ai-selector-open', $html);
         $this->assertStringContainsString('data-categories-url', $html);
         $this->assertStringContainsString('data-ai-category-search', $html);
@@ -423,10 +428,12 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('kotlov_ai_selector_intro_seen', $script);
         $this->assertStringContainsString('introSeen ? 10000 : 5000', $script);
         $this->assertStringContainsString('showLauncher(!introSeen', $script);
+        $this->assertStringContainsString("launcher.classList.add('is-explaining')", $script);
+        $this->assertStringContainsString("shadow.querySelector('.widget__preview-block button, .widget__preview-block')", $script);
         $this->assertStringContainsString('sevenDays', $script);
         $this->assertStringContainsString('cart|checkout|account|wishlist', $script);
-        $this->assertMatchesRegularExpression('/\.ai-selector__launcher\s*\{[^}]*right:\s*96px;/s', $styles);
-        $this->assertMatchesRegularExpression('/\.ai-selector__teaser\s*\{[^}]*right:\s*96px;/s', $styles);
+        $this->assertMatchesRegularExpression('/\.ai-selector__launcher\s*\{[^}]*right:\s*24px;/s', $styles);
+        $this->assertMatchesRegularExpression('/\.ai-selector__teaser,\s*\.ai-selector__assistance-menu\s*\{[^}]*right:\s*24px;/s', $styles);
         $this->assertMatchesRegularExpression('/@media \(max-width: 767px\)[^{]*\{.*?\.ai-selector__launcher\s*\{[^}]*right:\s*12px;/s', $styles);
     }
 
