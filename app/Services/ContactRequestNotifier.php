@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Log;
 
 class ContactRequestNotifier
 {
+    public function __construct(private readonly TelegramApi $telegram) {}
+
     public function notify(ContactRequest $contactRequest): void
     {
         $this->sendAdminNotification($contactRequest);
@@ -37,7 +39,7 @@ class ContactRequestNotifier
 
     private function sendTelegramNotification(ContactRequest $contactRequest): void
     {
-        $chatId = config('services.telegram.orders_chat_id');
+        $chatId = config('services.telegram.contact_requests_chat_id');
         if (! config('services.telegram.bot_token') || ! $chatId) {
             Log::warning('Telegram consultation notification skipped: credentials are not configured.', [
                 'contact_request_id' => $contactRequest->id,
@@ -76,7 +78,7 @@ class ContactRequestNotifier
         ];
 
         try {
-            $result = (new TelegramApi)->sendMessage(
+            $result = $this->telegram->sendMessage(
                 $chatId,
                 implode("\n", array_filter($lines, fn ($line) => $line !== null))
             );
