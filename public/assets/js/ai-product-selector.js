@@ -19,6 +19,10 @@
     var launcher = one('[data-ai-selector-launcher]');
     var teaser = one('[data-ai-selector-teaser]');
     var assistanceMenu = one('[data-assistance-menu]');
+    var supportChatElement = document.getElementById('supportChat');
+    var supportChatModal = supportChatElement ? window.bootstrap.Modal.getOrCreateInstance(supportChatElement) : null;
+    var supportChatConversation = null;
+    var supportChatLastMessageId = 0;
     var teaserAutoHideTimer = null;
 
     function all(selector) { return Array.prototype.slice.call(document.querySelectorAll(selector)); }
@@ -70,6 +74,99 @@
                 ? 'Обычно отвечаем в течение 5 минут в рабочее время.'
                 : 'Заявка сразу попадёт в очередь — консультант перезвонит утром.';
         });
+    }
+
+    function supportChatError(message, thread) {
+        if (!supportChatElement) return;
+        var target = one(thread ? '[data-support-chat-thread-error]' : '[data-support-chat-error]', supportChatElement);
+        if (!target) return;
+        target.textContent = message || '';
+        target.hidden = !message;
+    }
+
+    function supportChatRequest(url, options) {
+        return fetch(url, Object.assign({
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        }, options || {})).then(function (response) {
+            return response.json().catch(function () { return {}; }).then(function (data) {
+                if (!response.ok) {
+                    var firstError = data.errors && Object.values(data.errors)[0];
+                    throw new Error(Array.isArray(firstError) ? firstError[0] : (data.message || 'Не удалось связаться с чатом. Попробуйте ещё раз.'));
+                }
+                return data;
+            });
+        });
+    }
+
+    function supportChatTime(value) {
+        if (!value) return '';
+        try {
+            return new Intl.DateTimeFormat('ru-RU', {
+                timeZone: 'Europe/Minsk',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(new Date(value));
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function renderSupportChat(data) {
+        if (!supportChatElement) return;
+        var intro = one('[data-support-chat-intro]', supportChatElement);
+        var conversationHost = one('[data-support-chat-conversation]', supportChatElement);
+        supportChatConversation = data.conversation || null;
+        if (!supportChatConversation) {
+            setHidden(intro, false);
+            setHidden(conversationHost, true);
+            supportChatLastMessageId = 0;
+            return;
+        }
+
+        setHidden(intro, true);
+        setHidden(conversationHost, false);
+        var contact = one('[data-support-chat-contact]', supportChatElement);
+        if (contact) contact.textContent = supportChatConversation.name + ' · ' + supportChatConversation.phone;
+
+        var messagesHost = one('[data-support-chat-messages]', supportChatElement);
+        var messages = Array.isArray(data.messages) ? data.messages : [];
+        var newestId = messages.length ? Number(messages[messages.length - 1].id) : 0;
+        var shouldScroll = newestId > supportChatLastMessageId;
+        messagesHost.replaceChildren();
+        messages.forEach(function (message) {
+            var row = document.createElement('div');
+            row.className = 'support-chat__message support-chat__message--' + (message.sender === 'manager' ? 'manager' : 'visitor');
+            var bubble = document.createElement('div');
+            bubble.className = 'support-chat__bubble';
+            var name = document.createElement('div');
+            name.className = 'support-chat__bubble-name';
+            name.textContent = message.sender_name;
+            var body = document.createElement('div');
+            body.className = 'support-chat__bubble-body';
+            body.textContent = message.body;
+            var time = document.createElement('div');
+            time.className = 'support-chat__bubble-time';
+            time.textContent = supportChatTime(message.created_at);
+            bubble.appendChild(name);
+            bubble.appendChild(body);
+            bubble.appendChild(time);
+            row.appendChild(bubble);
+            messagesHost.appendChild(row);
+        });
+        supportChatLastMessageId = newestId;
+        if (shouldScroll) messagesHost.scrollTop = messagesHost.scrollHeight;
+
+        var closed = supportChatConversation.status === 'closed';
+        setHidden(one('[data-support-chat-closed]', supportChatElement), !closed);
+        setHidden(one('[data-support-chat-message-form]', supportChatElement), closed);
+    }
+
+    function loadSupportChat() {
+        if (!supportChatElement) return Promise.resolve();
+        return supportChatRequest(supportChatElement.dataset.supportChatShowUrl)
+            .then(renderSupportChat)
+            .catch(function (error) { supportChatError(error.message, true); });
     }
 
     function closeAssistanceMenu() {
@@ -400,6 +497,79 @@
             closeAssistanceMenu();
         });
     });
+
+    all('[data-support-chat-open]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            closeAssistanceMenu();
+            if (supportChatModal) supportChatModal.show();
+        });
+    });
+
+    if (supportChatElement) {
+        var supportStartForm = one('[data-support-chat-start-form]', supportChatElement);
+        var supportMessageForm = one('[data-support-chat-message-form]', supportChatElement);
+        supportChatElement.addEventListener('shown.bs.modal', loadSupportChat);
+        supportStartForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            supportChatError('', false);
+            var submit = one('button[type="submit"]', supportStartForm);
+            submit.disabled = true;
+            supportChatRequest(supportChatElement.dataset.supportChatStartUrl, {
+                method: 'POST',
+                body: new FormData(supportStartForm)
+            }).then(renderSupportChat).catch(function (error) {
+                supportChatError(error.message, false);
+            }).finally(function () {
+                submit.disabled = false;
+            });
+        });
+        supportMessageForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            supportChatError('', true);
+            var input = one('textarea[name="message"]', supportMessageForm);
+            var submit = one('button[type="submit"]', supportMessageForm);
+            var message = input.value.trim();
+            if (!message) return;
+            submit.disabled = true;
+            supportChatRequest(supportChatElement.dataset.supportChatSendUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf ? csrf.content : '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ message: message })
+            }).then(function (data) {
+                input.value = '';
+                renderSupportChat(data);
+            }).catch(function (error) {
+                supportChatError(error.message, true);
+            }).finally(function () {
+                submit.disabled = false;
+                input.focus();
+            });
+        });
+        one('textarea[name="message"]', supportMessageForm).addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                supportMessageForm.requestSubmit();
+            }
+        });
+        one('[data-support-chat-restart]', supportChatElement).addEventListener('click', function () {
+            var name = one('input[name="name"]', supportStartForm);
+            var phone = one('input[name="phone"]', supportStartForm);
+            name.value = supportChatConversation ? supportChatConversation.name : '';
+            phone.value = supportChatConversation ? supportChatConversation.phone : '';
+            one('textarea[name="message"]', supportStartForm).value = '';
+            supportChatConversation = null;
+            setHidden(one('[data-support-chat-conversation]', supportChatElement), true);
+            setHidden(one('[data-support-chat-intro]', supportChatElement), false);
+        });
+        window.setInterval(function () {
+            if (supportChatConversation && supportChatElement.classList.contains('show')) loadSupportChat();
+        }, 5000);
+    }
 
     all('[data-consultant-form]').forEach(function (consultantForm) {
         consultantForm.addEventListener('submit', function (event) {

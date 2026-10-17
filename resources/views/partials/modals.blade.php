@@ -269,6 +269,73 @@
 </div>
 <!-- /Quick callback -->
 
+<!-- Online support chat -->
+<div class="modal fade support-chat-modal" id="supportChat" tabindex="-1" aria-labelledby="supportChatTitle" aria-hidden="true"
+    data-support-chat-show-url="{{ route('support-chat.show') }}"
+    data-support-chat-start-url="{{ route('support-chat.start') }}"
+    data-support-chat-send-url="{{ route('support-chat.send') }}">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="support-chat__header">
+                <div>
+                    <div class="support-chat__title" id="supportChatTitle">Онлайн-чат KOTLOV</div>
+                    <div class="support-chat__availability is-online" data-consultant-status>
+                        <span class="quick-callback-status__dot" aria-hidden="true"></span>
+                        <span data-consultant-status-text>Консультант онлайн до 20:00</span>
+                    </div>
+                </div>
+                <button type="button" class="support-chat__close" data-bs-dismiss="modal" aria-label="Закрыть">×</button>
+            </div>
+
+            <div class="support-chat__intro" data-support-chat-intro>
+                <p>Представьтесь и задайте вопрос. Контакт нужен, чтобы мы не потеряли вас, если чат закроется.</p>
+                <form data-support-chat-start-form>
+                    @csrf
+                    <x-form-protection />
+                    <input type="hidden" name="page_url" value="{{ url()->current() }}">
+                    <label class="support-chat__field">
+                        <span>Ваше имя</span>
+                        <input type="text" name="name" autocomplete="name" maxlength="100" placeholder="Как к вам обращаться?" required>
+                    </label>
+                    <label class="support-chat__field">
+                        <span>Телефон</span>
+                        <input type="tel" name="phone" autocomplete="tel" inputmode="tel" maxlength="50" placeholder="+375 (XX) XXX-XX-XX" required>
+                    </label>
+                    <label class="support-chat__field">
+                        <span>Ваш вопрос</span>
+                        <textarea name="message" rows="3" maxlength="2000" placeholder="Например: помогите подобрать котёл для дома 150 м²" required></textarea>
+                    </label>
+                    <label class="support-chat__consent">
+                        <input type="checkbox" required>
+                        <span>Согласен с <a href="/privacy" target="_blank">политикой обработки данных</a></span>
+                    </label>
+                    <button type="submit" class="tf-btn animate-btn w-100">Начать чат</button>
+                    <div class="support-chat__error" data-support-chat-error hidden></div>
+                </form>
+            </div>
+
+            <div class="support-chat__conversation" data-support-chat-conversation hidden>
+                <div class="support-chat__contact" data-support-chat-contact></div>
+                <div class="support-chat__messages" data-support-chat-messages role="log" aria-live="polite"></div>
+                <div class="support-chat__closed" data-support-chat-closed hidden>
+                    <span>Этот диалог завершён.</span>
+                    <button type="button" data-support-chat-restart>Начать новый чат</button>
+                </div>
+                <form class="support-chat__composer" data-support-chat-message-form>
+                    <textarea name="message" rows="1" maxlength="2000" placeholder="Напишите сообщение…" aria-label="Сообщение" required></textarea>
+                    <button type="submit" aria-label="Отправить сообщение">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" />
+                        </svg>
+                    </button>
+                </form>
+                <div class="support-chat__error" data-support-chat-thread-error hidden></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Online support chat -->
+
 <!-- Ask -->
 <div class="modal modalCentered fade modal-log modal-ask" id="ask">
     <div class="modal-dialog modal-dialog-centered">

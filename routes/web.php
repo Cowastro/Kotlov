@@ -14,6 +14,7 @@ use App\Http\Controllers\CommercialDocumentPdfController;
 use App\Http\Controllers\CommercialDocumentPortalController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ContactRequestController;
+use App\Http\Controllers\SupportChatController;
 use App\Http\Controllers\CrmMailAttachmentController;
 use App\Http\Controllers\CrmMailAttachmentPreviewController;
 use App\Http\Controllers\CrmMailPdfTextController;
@@ -426,6 +427,12 @@ Route::get('/catalog-icons/{file}', function (string $file) {
 Route::post('/ask', [ContactRequestController::class, 'store'])
     ->middleware('public.form.protect:ask')
     ->name('ask.store');
+
+Route::prefix('support-chat')->name('support-chat.')->group(function (): void {
+    Route::get('/', [SupportChatController::class, 'show'])->name('show');
+    Route::post('/start', [SupportChatController::class, 'start'])->middleware('throttle:6,1')->name('start');
+    Route::post('/messages', [SupportChatController::class, 'send'])->middleware('throttle:30,1')->name('send');
+});
 
 // ===== Подписка на рассылку =====
 Route::post('/subscribe', function (Request $request) {

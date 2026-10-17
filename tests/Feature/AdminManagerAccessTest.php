@@ -14,6 +14,7 @@ use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\PublicAiSelectionRuns\PublicAiSelectionRunResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Resources\SupplierSyncRuns\SupplierSyncRunResource;
+use App\Filament\Resources\SupportConversations\SupportConversationResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\Category;
 use App\Models\Order;
@@ -53,6 +54,7 @@ class AdminManagerAccessTest extends TestCase
         $this->assertFalse(UserResource::canViewAny());
         $this->assertTrue(ProductResource::canViewAny());
         $this->assertTrue(PublicAiSelectionRunResource::canViewAny());
+        $this->assertTrue(SupportConversationResource::canViewAny());
         $this->assertTrue(ProductResource::canView(new Product));
         $this->assertFalse(ProductResource::canCreate());
         $this->assertFalse(ProductResource::canEdit(new Product));

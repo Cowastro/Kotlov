@@ -443,6 +443,8 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('Консультант онлайн до 20:00', $html);
         $this->assertStringContainsString('Умный подбор', $html);
         $this->assertStringContainsString('Написать консультанту', $html);
+        $this->assertStringContainsString('Онлайн-чат', $html);
+        $this->assertStringContainsString('data-support-chat-open', $html);
         $this->assertStringContainsString('icon-Question', $html);
         $this->assertStringContainsString('ai-selector__help-icon', $html);
         $this->assertMatchesRegularExpression('/ai-selector__help-icon[^>]*>\s*<i class="icon icon-Headset"/', $html);
@@ -475,6 +477,11 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('name="source" value="quick_callback"', $modals);
         $this->assertStringContainsString('data-quick-callback-submit', $modals);
         $this->assertStringContainsString('data-quick-callback-note', $modals);
+        $this->assertStringContainsString('id="supportChat"', $modals);
+        $this->assertStringContainsString('data-support-chat-start-form', $modals);
+        $this->assertStringContainsString('data-support-chat-message-form', $modals);
+        $this->assertStringContainsString('SupportChatController::class', file_get_contents(base_path('routes/web.php')));
+        $this->assertStringContainsString('setInterval(function ()', $script);
         $this->assertStringContainsString('Обычно отвечаем в течение 5 минут в рабочее время.', $modals);
         $this->assertStringContainsString("all('[data-consultant-form]')", $script);
         $this->assertStringContainsString("'request_id'", file_get_contents(app_path('Http/Controllers/ContactRequestController.php')));

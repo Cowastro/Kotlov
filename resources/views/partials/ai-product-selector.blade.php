@@ -37,6 +37,16 @@
             </span>
             <i class="icon icon-CaretRightThin" aria-hidden="true"></i>
         </button>
+        <button type="button" class="ai-selector__assistance-option" data-support-chat-open role="menuitem">
+            <span class="ai-selector__assistance-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+                    <path d="M8 9h8M8 13h5" />
+                </svg>
+            </span>
+            <span><strong>Онлайн-чат</strong><small>Напишите вопрос — ответим здесь</small></span>
+            <i class="icon icon-CaretRightThin" aria-hidden="true"></i>
+        </button>
         <button type="button" class="ai-selector__assistance-option" data-ai-selector-open role="menuitem">
             <span class="ai-selector__assistance-icon" aria-hidden="true"><i class="icon icon-Question"></i></span>
             <span><strong>Умный подбор</strong><small>Подберём 3 товара под вашу задачу</small></span>
