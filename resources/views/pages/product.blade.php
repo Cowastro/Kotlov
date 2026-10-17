@@ -417,6 +417,14 @@
 
                             {{-- Доп. ссылки --}}
                             <div class="tf-product-extra-link">
+                                <a href="#" data-product-id="{{ $product->id }}"
+                                    class="product-extra-icon link wishlist-toggle"
+                                    aria-label="Добавить {{ $product->name }} в избранное"
+                                    aria-pressed="false"
+                                    title="В избранное">
+                                    <i class="icon icon-heart" aria-hidden="true"></i>
+                                    <span class="wishlist-label">В избранное</span>
+                                </a>
                                 <a href="#compare" data-product-id="{{ $product->id }}" class="product-extra-icon link">
                                     <i class="icon icon-ArrowsLeftRight"></i>
                                     Сравнить

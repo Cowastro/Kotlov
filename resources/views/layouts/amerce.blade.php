@@ -525,13 +525,47 @@
     // Wishlist + Compare AJAX — подключается после main.js
     $(document).ready(function () {
 
-        // WISHLIST: перехватываем после того как main.js уже отработал
-        $(document).on('click', '.card-product .wishlist a', function () {
-            var productId = $(this).data('product-id');
-            if (!productId) return;
-            $.post('/wishlist/toggle',
-                { _token: $('meta[name="csrf-token"]').attr('content'), product_id: productId }
-            );
+        // WISHLIST: карточки каталога и кнопка на детальной странице товара.
+        $(document).on('click', '.card-product .wishlist a, .wishlist-toggle[data-product-id]', function (e) {
+            e.preventDefault();
+
+            var link = $(this);
+            var productId = parseInt(link.data('product-id'));
+            if (!productId || link.data('loading')) return;
+
+            var isProductPageButton = link.hasClass('wishlist-toggle');
+            var stateTarget = isProductPageButton ? link : link.closest('.wishlist');
+
+            link.data('loading', true).attr('aria-busy', 'true');
+
+            $.ajax({
+                url: '/wishlist/toggle',
+                method: 'POST',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    product_id: productId
+                },
+                complete: function () {
+                    link.data('loading', false).removeAttr('aria-busy');
+                },
+                success: function (data) {
+                    var isAdded = data && data.message === 'added';
+                    var icon = stateTarget.find('.icon').first();
+
+                    if (isProductPageButton) {
+                        stateTarget.toggleClass('is-active', isAdded)
+                            .attr('aria-pressed', isAdded ? 'true' : 'false')
+                            .attr('aria-label', isAdded ? 'Удалить товар из избранного' : 'Добавить товар в избранное')
+                            .attr('title', isAdded ? 'В избранном' : 'В избранное');
+                        icon.toggleClass('icon-heart', !isAdded).toggleClass('icon-Heart', isAdded);
+                        stateTarget.find('.wishlist-label').text(isAdded ? 'В избранном' : 'В избранное');
+                    } else {
+                        stateTarget.toggleClass('addwishlist', isAdded);
+                        icon.toggleClass('icon-heart', !isAdded).toggleClass('icon-trash', isAdded);
+                        stateTarget.find('.tooltip').text(isAdded ? 'Удалить из избранного' : 'В избранное');
+                    }
+                }
+            });
         });
 
         // COMPARE: запоминаем product_id перед открытием offcanvas
