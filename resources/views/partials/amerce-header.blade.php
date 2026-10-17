@@ -197,6 +197,16 @@
                                 $children = $rootCat->children->where('is_active', true);
                                 $hasChildren = $children->count() > 0 || count($editorial) > 0;
                                 $cols = config('navigation.columns.' . $rootCat->slug, 2);
+                                $maxChildColumns = count($editorial) > 0 ? 1 : max(1, min(3, $cols));
+                                $childColumnCount = min(
+                                    $maxChildColumns,
+                                    max(1, (int) ceil(min($children->count(), 30) / 8))
+                                );
+                                $visibleChildren = $children->take($childColumnCount * 10);
+                                $childGroups = $visibleChildren->isEmpty()
+                                    ? collect()
+                                    : $visibleChildren->chunk((int) ceil($visibleChildren->count() / $childColumnCount));
+                                $renderedCols = max(1, min($cols, $childGroups->count() + count($editorial)));
                             @endphp
 
                             <li class="{{ $hasChildren ? 'has-sub-nav-category' : '' }}">
@@ -223,22 +233,24 @@
 
                                             {{-- Левая/центральная зона: подкатегории + editorial --}}
                                             <div class="mega-links">
-                                                <div class="tf-grid-layout xl-col-{{ $cols }}">
-                                                    @if ($children->count() > 0)
-                                                        <div class="sub-nav-category_list">
-                                                            <div class="sub-nav__title fw-semibold">{{ $rootCat->name }}</div>
-                                                            @foreach ($children->take(10) as $child)
+                                                <div class="tf-grid-layout xl-col-{{ $renderedCols }}">
+                                                    @foreach ($childGroups as $groupIndex => $childGroup)
+                                                        <div class="sub-nav-category_list {{ $childGroups->count() > 1 ? 'sub-nav-category_list--grouped' : '' }}">
+                                                            <div class="sub-nav__title fw-semibold">
+                                                                {{ $groupIndex === 0 ? $rootCat->name : 'Ещё разделы' }}
+                                                            </div>
+                                                            @foreach ($childGroup as $child)
                                                                 <a href="/{{ $child->slug }}" class="sub-nav__link tf-btn-line">
                                                                     {{ $child->name }}
                                                                 </a>
                                                             @endforeach
-                                                            @if ($children->count() > 10)
+                                                            @if ($loop->last && $children->count() > $visibleChildren->count())
                                                                 <a href="/{{ $rootCat->slug }}" class="sub-nav__link tf-btn-line cl-text-2">
                                                                     Все разделы →
                                                                 </a>
                                                             @endif
                                                         </div>
-                                                    @endif
+                                                    @endforeach
 
                                                     @foreach ($editorial as $block)
                                                         <div class="sub-nav-category_list">

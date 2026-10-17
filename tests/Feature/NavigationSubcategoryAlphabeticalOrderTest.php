@@ -14,6 +14,35 @@ class NavigationSubcategoryAlphabeticalOrderTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_dense_desktop_navigation_is_split_into_balanced_columns(): void
+    {
+        $parent = new Category([
+            'name' => 'Комплектующие тестового меню',
+            'slug' => 'desktop-mega-menu-test',
+            'is_active' => true,
+        ]);
+        $children = collect(range(1, 12))->map(fn (int $index): Category => new Category([
+            'name' => sprintf('Раздел %02d', $index),
+            'slug' => sprintf('desktop-mega-menu-child-%02d', $index),
+            'is_active' => true,
+        ]));
+        $parent->setRelation('children', $children);
+
+        $html = view('partials.amerce-header', [
+            'navCategories' => collect([$parent]),
+            'navCategoryUrls' => $children
+                ->mapWithKeys(fn (Category $child): array => ['/'.$child->slug => true])
+                ->all(),
+            'navBrands' => collect(),
+        ])->render();
+
+        $this->assertSame(2, substr_count($html, 'sub-nav-category_list sub-nav-category_list--grouped'));
+        $this->assertStringContainsString('Комплектующие тестового меню', $html);
+        $this->assertStringContainsString('Ещё разделы', $html);
+        $this->assertStringContainsString('Раздел 01', $html);
+        $this->assertStringContainsString('Раздел 12', $html);
+    }
+
     public function test_navigation_children_are_alphabetical_despite_manual_sort_order(): void
     {
         $parent = Category::query()->create([
