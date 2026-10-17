@@ -272,17 +272,6 @@
                         <button type="submit" class="tf-btn animate-btn w-100">Отправить вопрос</button>
                     </div>
                 </form>
-                <ul class="tf-social-icon-2 hv-dark justify-content-center">
-                    <li><a href="https://www.instagram.com/kotlov.by/" target="_blank"><i class="icon icon-InstagramLogo"></i></a></li>
-                    <li><a href="https://www.facebook.com/kotlov.by/" target="_blank"><i class="icon icon-FacebookLogo"></i></a></li>
-                    <li>
-                        <a href="https://t.me/kotlovby" target="_blank">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.48 13.9l-2.95-.924c-.642-.204-.657-.642.136-.953l11.527-4.445c.535-.194 1.003.131.37.67z"/>
-                            </svg>
-                        </a>
-                    </li>
-                </ul>
             </div>
         </div>
     </div>

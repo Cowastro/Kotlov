@@ -703,39 +703,5 @@
     }
     </script>
 
-    {{-- Umnico widget --}}
-    <script type="text/javascript">
-        document.umnicoWidgetHash = 'd23f029234c8a1ab66264142802cc4e7';
-        var x = document.createElement('script');
-        x.src = 'https://umnico.com/assets/widget-loader.js';
-        x.type = 'text/javascript';
-        x.charset = 'UTF-8';
-        x.async = true;
-        document.body.appendChild(x);
-
-        // Внешнюю плавающую кнопку скрываем: оба способа связи доступны
-        // через единую кнопку «Помощь». Сам чат Umnico остаётся рабочим.
-        (function moveUmnicoIntoUnifiedHelp() {
-            var tries = 0;
-            var timer = window.setInterval(function () {
-                tries++;
-                var host = document.getElementById('umnico-widget-wrapper');
-                var root = host && host.shadowRoot;
-
-                if (root && !root.getElementById('kotlov-umnico-unified-help')) {
-                    var style = document.createElement('style');
-                    var hasProductPurchaseBar = Boolean(document.querySelector('.product-detail-page .tf-sticky-btn-atc'));
-                    var chatBottom = hasProductPurchaseBar ? '148px' : '78px';
-                    style.id = 'kotlov-umnico-unified-help';
-                    style.textContent = '.widget__preview-block{display:none!important}@media(max-width:767px){.widget__chat-preview{right:12px!important;bottom:calc(' + chatBottom + ' + env(safe-area-inset-bottom, 0px))!important}}';
-                    root.appendChild(style);
-                    window.clearInterval(timer);
-                } else if (tries >= 40) {
-                    window.clearInterval(timer);
-                }
-            }, 250);
-        })();
-    </script>
-
 </body>
 </html>

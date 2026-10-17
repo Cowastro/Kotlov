@@ -27,9 +27,9 @@
             <span><strong>Умный подбор</strong><small>Подберём 3 товара под вашу задачу</small></span>
             <i class="icon icon-CaretRightThin" aria-hidden="true"></i>
         </button>
-        <button type="button" class="ai-selector__assistance-option" data-consultant-open role="menuitem">
+        <button type="button" class="ai-selector__assistance-option" data-consultant-open data-bs-toggle="modal" data-bs-target="#ask" role="menuitem">
             <span class="ai-selector__assistance-icon" aria-hidden="true"><i class="icon icon-Headset"></i></span>
-            <span><strong>Написать консультанту</strong><small data-consultant-status>Задайте вопрос живому специалисту</small></span>
+            <span><strong>Написать консультанту</strong><small>Отправьте вопрос прямо в KOTLOV</small></span>
             <i class="icon icon-CaretRightThin" aria-hidden="true"></i>
         </button>
     </div>
