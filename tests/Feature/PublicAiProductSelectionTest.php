@@ -115,6 +115,88 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertSame($close->id, $result['products'][1]['id']);
     }
 
+    public function test_selected_boiler_fuel_is_a_hard_catalog_constraint(): void
+    {
+        $boilers = $this->category('kotly', 'Котлы');
+        $gas = Category::query()->create(['parent_id' => $boilers->id, 'slug' => 'gazovye', 'name' => 'Газовые котлы', 'is_active' => true]);
+        $electric = Category::query()->create(['parent_id' => $boilers->id, 'slug' => 'elektricheskie', 'name' => 'Электрические котлы', 'is_active' => true]);
+        $gasBoiler = $this->product($gas, 'Газовый котёл Atem 12', 'atem-gas-12', 1752);
+        $electricBoiler = $this->product($electric, 'Электрический котёл Kospel 12', 'kospel-electric-12', 2100);
+
+        $ai = $this->mock(AiContentEnricher::class);
+        $ai->shouldReceive('isAvailable')->once()->andReturn(true);
+        $ai->shouldReceive('complete')->once()->withArgs(function (string $prompt, int $tokens) use ($gasBoiler, $electricBoiler): bool {
+            $this->assertStringNotContainsString('"id":'.$gasBoiler->id, $prompt);
+            $this->assertStringContainsString('"id":'.$electricBoiler->id, $prompt);
+
+            return $tokens === 1400;
+        })->andReturn(json_encode(['matches' => [
+            ['product_id' => $gasBoiler->id, 'role' => 'optimal', 'reason' => 'Неверный тип топлива'],
+            ['product_id' => $electricBoiler->id, 'role' => 'optimal', 'reason' => 'Электрический'],
+        ]], JSON_UNESCAPED_UNICODE));
+
+        $result = app(PublicAiProductSelection::class)->recommend(
+            'Нужен котёл для дома 120 м²',
+            'boiler',
+            ['fuel' => 'Электричество']
+        );
+
+        $this->assertSame([$electricBoiler->id], array_column($result['products'], 'id'));
+    }
+
+    public function test_explicit_electric_boiler_intent_cannot_be_overridden_by_ai_category(): void
+    {
+        $ai = $this->mock(AiContentEnricher::class);
+        $ai->shouldReceive('isAvailable')->once()->andReturn(true);
+        $ai->shouldReceive('complete')->once()->andReturn(json_encode([
+            'category' => 'gas_boiler',
+            'summary' => 'Ошибочно определен газовый котёл',
+            'known' => [],
+        ], JSON_UNESCAPED_UNICODE));
+
+        $result = app(PublicAiProductSelection::class)->start('Нужен электрокотёл 12 кВт');
+
+        $this->assertSame('boiler', $result['category']);
+        $this->assertSame('Электричество', $result['known']['fuel']);
+        $this->assertNotContains('fuel', array_column($result['questions'], 'key'));
+        $this->assertStringNotContainsString('газов', mb_strtolower($result['summary']));
+    }
+
+    public function test_every_boiler_fuel_choice_stays_inside_its_catalog_branch(): void
+    {
+        $boilers = $this->category('kotly', 'Котлы');
+        $gas = Category::query()->updateOrCreate(['slug' => 'gazovye'], ['parent_id' => $boilers->id, 'name' => 'Газовые', 'is_active' => true]);
+        $electric = Category::query()->updateOrCreate(['slug' => 'elektricheskie'], ['parent_id' => $boilers->id, 'name' => 'Электрические', 'is_active' => true]);
+        $solid = Category::query()->updateOrCreate(['slug' => 'tverdotoplivnye'], ['parent_id' => $boilers->id, 'name' => 'Твердотопливные', 'is_active' => true]);
+        $pellet = Category::query()->updateOrCreate(['slug' => 'kotly-na-pelletah'], ['parent_id' => $boilers->id, 'name' => 'Пеллетные', 'is_active' => true]);
+
+        $expected = [
+            'Газ' => $this->product($gas, 'Газовый котёл', 'gas-boiler', 1000)->id,
+            'Электричество' => $this->product($electric, 'Электрический котёл', 'electric-boiler', 1100)->id,
+            'Дрова / уголь' => $this->product($solid, 'Дровяной котёл', 'wood-boiler', 1200)->id,
+            'Пеллеты' => $this->product($pellet, 'Пеллетный котёл', 'pellet-boiler', 1300)->id,
+        ];
+
+        $ai = $this->mock(AiContentEnricher::class);
+        $ai->shouldReceive('isAvailable')->times(4)->andReturn(false);
+
+        foreach ($expected as $fuel => $productId) {
+            $result = app(PublicAiProductSelection::class)->recommend(
+                'Нужен котёл для дома',
+                'boiler',
+                ['fuel' => $fuel]
+            );
+
+            $resultIds = array_column($result['products'], 'id');
+            $this->assertContains($productId, $resultIds, $fuel);
+            foreach ($expected as $otherFuel => $otherProductId) {
+                if ($otherFuel !== $fuel) {
+                    $this->assertNotContains($otherProductId, $resultIds, $fuel.' не должен смешиваться с '.$otherFuel);
+                }
+            }
+        }
+    }
+
     public function test_public_endpoints_validate_input_and_store_anonymous_result_without_raw_session_id(): void
     {
         $this->postJson(route('ai-selection.start'), ['intent' => 'x'])->assertUnprocessable();

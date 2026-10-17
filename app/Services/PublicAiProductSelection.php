@@ -33,10 +33,20 @@ class PublicAiProductSelection
     {
         $intent = trim($intent);
         $analysis = $this->analyseIntent($intent, $categoryHint);
-        $category = $this->validCategory($analysis['category'] ?? null)
+        $forcedCategory = $this->forcedCategory($intent);
+        $analysedCategory = $this->validCategory($analysis['category'] ?? null);
+        $category = $forcedCategory
+            ?? $analysedCategory
             ?? $this->validCategory($categoryHint)
             ?? $this->inferCategory($intent);
+        if ($forcedCategory && $analysedCategory && $forcedCategory !== $analysedCategory) {
+            $analysis['summary'] = 'Уточним параметры и подберём подходящие варианты.';
+            $analysis['known'] = [];
+        }
         $known = $this->sanitizeKnown($category, $analysis['known'] ?? []);
+        if ($category === 'boiler' && ($forcedFuel = $this->forcedFuel($intent))) {
+            $known['fuel'] = $forcedFuel;
+        }
 
         return [
             'category' => $category,
@@ -56,8 +66,13 @@ class PublicAiProductSelection
      */
     public function recommend(string $intent, string $category, array $answers): array
     {
-        $category = $this->validCategory($category) ?? $this->inferCategory($intent);
+        $category = $this->forcedCategory($intent)
+            ?? $this->validCategory($category)
+            ?? $this->inferCategory($intent);
         $answers = $this->sanitizeAnswers($category, $answers);
+        if ($category === 'boiler' && ($forcedFuel = $this->forcedFuel($intent))) {
+            $answers['fuel'] = $forcedFuel;
+        }
         $candidates = $this->candidates($category, $intent, $answers);
 
         if ($candidates->isEmpty()) {
@@ -217,7 +232,14 @@ PROMPT;
      */
     private function candidates(string $category, string $intent, array $answers): Collection
     {
-        $categoryIds = $this->categoryIds($category);
+        $categoryIds = $this->categoryIds($category, $answers);
+        $strictFuelSlugs = $category === 'boiler'
+            ? $this->fuelCategoryScope($answers['fuel'] ?? null)[0]
+            : [];
+        if ($strictFuelSlugs !== [] && $categoryIds === []) {
+            return collect();
+        }
+
         $query = Product::query()
             ->active()
             ->notArchived()
@@ -345,9 +367,31 @@ PROMPT;
     }
 
     /** @return array<int, int> */
-    private function categoryIds(string $category): array
+    private function categoryIds(string $category, array $answers = []): array
     {
         $slugs = self::CATEGORY_HINTS[$category] ?? [];
+        $excludedSlugs = [];
+
+        if ($category === 'boiler') {
+            [$fuelSlugs, $excludedSlugs] = $this->fuelCategoryScope($answers['fuel'] ?? null);
+            if ($fuelSlugs !== []) {
+                $slugs = $fuelSlugs;
+            }
+        }
+
+        $ids = $this->categoryIdsForSlugs($slugs);
+        if ($excludedSlugs !== []) {
+            $ids = array_values(array_diff($ids, $this->categoryIdsForSlugs($excludedSlugs)));
+        }
+
+        return $ids;
+    }
+
+    /** @param array<int, string> $slugs
+     * @return array<int, int>
+     */
+    private function categoryIdsForSlugs(array $slugs): array
+    {
         if ($slugs === []) {
             return [];
         }
@@ -366,6 +410,20 @@ PROMPT;
         }
 
         return $ids;
+    }
+
+    /** @return array{0: array<int, string>, 1: array<int, string>} */
+    private function fuelCategoryScope(?string $fuel): array
+    {
+        $fuel = Str::lower(str_replace('ё', 'е', trim((string) $fuel)));
+
+        return match ($fuel) {
+            'газ' => [['gazovye', 'gazovye-kotly'], []],
+            'электричество' => [['elektricheskie'], []],
+            'дрова / уголь', 'дрова/уголь' => [['tverdotoplivnye'], ['kotly-na-pelletah']],
+            'пеллеты' => [['kotly-na-pelletah'], []],
+            default => [[], []],
+        };
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -444,6 +502,35 @@ PROMPT;
             str_contains($text, 'котел') || str_contains($text, 'котёл') => 'boiler',
             str_contains($text, 'насос') || str_contains($text, 'станци') || str_contains($text, 'гидрофор') => 'pump',
             default => 'general',
+        };
+    }
+
+    private function forcedCategory(string $intent): ?string
+    {
+        $text = Str::lower(str_replace('ё', 'е', $intent));
+        $isBoiler = str_contains($text, 'котел');
+
+        return match (true) {
+            str_contains($text, 'счетчик') && str_contains($text, 'газ') => 'gas_meter',
+            str_contains($text, 'теплов') && str_contains($text, 'насос') => 'heat_pump',
+            str_contains($text, 'электрокот') || (str_contains($text, 'электр') && $isBoiler) => 'boiler',
+            str_contains($text, 'газ') && $isBoiler => 'gas_boiler',
+            default => null,
+        };
+    }
+
+    private function forcedFuel(string $intent): ?string
+    {
+        $text = Str::lower(str_replace('ё', 'е', $intent));
+        if (! str_contains($text, 'котел')) {
+            return null;
+        }
+
+        return match (true) {
+            str_contains($text, 'электрокот') || str_contains($text, 'электр') => 'Электричество',
+            str_contains($text, 'пеллет') => 'Пеллеты',
+            str_contains($text, 'дров') || str_contains($text, 'угол') => 'Дрова / уголь',
+            default => null,
         };
     }
 
