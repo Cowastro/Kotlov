@@ -1,6 +1,7 @@
 <div class="ai-selector"
      id="ai-product-selector"
      data-start-url="{{ route('ai-selection.start') }}"
+     data-categories-url="{{ route('ai-selection.categories') }}"
      data-recommend-url="{{ route('ai-selection.recommend') }}">
     <button class="ai-selector__launcher" type="button" data-ai-selector-open aria-haspopup="dialog" aria-controls="aiSelectorModal">
         <span class="ai-selector__spark" aria-hidden="true">✦</span>
@@ -27,8 +28,19 @@
             </div>
             <div class="modal-body">
                 <div data-ai-selector-step="intent">
-                    <p class="ai-selector-modal__lead">Опишите задачу своими словами. Помощник уточнит важные параметры и покажет только товары из действующего каталога.</p>
-                    <div class="ai-selector__chips" aria-label="Быстрый выбор категории">
+                    <p class="ai-selector-modal__lead">Выберите раздел большого каталога или опишите задачу своими словами. Помощник уточнит важные параметры и будет искать только в выбранной категории.</p>
+                    <div class="ai-selector__catalog-picker">
+                        <label class="ai-selector__label" for="aiSelectorCategorySearch">Категория каталога</label>
+                        <div class="ai-selector__category-search-wrap">
+                            <input id="aiSelectorCategorySearch" class="ai-selector__input" type="search" autocomplete="off" placeholder="Например: радиаторы, дымоходы, стабилизаторы" data-ai-category-search>
+                            <button type="button" class="ai-selector__category-clear" data-ai-category-clear hidden aria-label="Сбросить категорию">×</button>
+                        </div>
+                        <div class="ai-selector__category-results" data-ai-category-results hidden></div>
+                        <div class="ai-selector__category-selected" data-ai-category-selected hidden></div>
+                        <small class="ai-selector__hint">Показываем только разделы, где есть активные товары.</small>
+                    </div>
+                    <div class="ai-selector__quick-title">Популярные задачи</div>
+                    <div class="ai-selector__chips" aria-label="Быстрый выбор задачи">
                         <button type="button" data-ai-category="gas_boiler">Газовый котёл</button>
                         <button type="button" data-ai-category="boiler">Котёл</button>
                         <button type="button" data-ai-category="heat_pump">Тепловой насос</button>

@@ -197,6 +197,75 @@ class PublicAiProductSelectionTest extends TestCase
         }
     }
 
+    public function test_category_endpoint_returns_the_real_non_empty_catalog_tree(): void
+    {
+        $root = $this->category('otoplenie-test', 'Отопление');
+        $radiators = Category::query()->create([
+            'parent_id' => $root->id,
+            'slug' => 'radiatory-test',
+            'name' => 'Радиаторы',
+            'is_active' => true,
+        ]);
+        $empty = $this->category('pustaya-kategoriya', 'Пустая категория');
+        $this->product($radiators, 'Радиатор тестовый', 'test-radiator', 500);
+
+        $response = $this->getJson(route('ai-selection.categories'));
+
+        $response->assertOk();
+        $items = collect($response->json('categories'));
+        $this->assertSame(1, $items->firstWhere('id', $root->id)['product_count']);
+        $this->assertSame('Отопление › Радиаторы', $items->firstWhere('id', $radiators->id)['path']);
+        $this->assertNull($items->firstWhere('id', $empty->id));
+    }
+
+    public function test_selected_catalog_category_is_a_hard_boundary_for_recommendations(): void
+    {
+        $radiators = $this->category('radiatory-selection-test', 'Радиаторы');
+        $boilers = $this->category('gazovye', 'Газовые котлы');
+        $radiator = $this->product($radiators, 'Радиатор стальной TEST', 'radiator-steel-test', 600);
+        $this->product($boilers, 'Газовый котёл TEST', 'gas-boiler-selection-test', 1700);
+
+        $ai = $this->mock(AiContentEnricher::class);
+        $ai->shouldReceive('isAvailable')->once()->andReturn(false);
+
+        $result = app(PublicAiProductSelection::class)->recommend(
+            'Нужен газовый котёл, но ищу в выбранном разделе',
+            'gas_boiler',
+            [],
+            $radiators->id
+        );
+
+        $this->assertSame('general', $result['category']);
+        $this->assertSame($radiators->id, $result['catalog_category_id']);
+        $this->assertSame([$radiator->id], array_column($result['products'], 'id'));
+    }
+
+    public function test_selected_electric_boiler_category_sets_fuel_and_skips_the_fuel_question(): void
+    {
+        $boilers = $this->category('kotly-selection-test', 'Котлы');
+        $electric = Category::query()->create([
+            'parent_id' => $boilers->id,
+            'slug' => 'elektricheskie',
+            'name' => 'Электрические котлы',
+            'is_active' => true,
+        ]);
+        $this->product($electric, 'Электрокотёл TEST', 'electric-selection-test', 1200);
+
+        $ai = $this->mock(AiContentEnricher::class);
+        $ai->shouldReceive('isAvailable')->once()->andReturn(false);
+
+        $result = app(PublicAiProductSelection::class)->start(
+            'Нужно подобрать отопление для дома',
+            null,
+            $electric->id
+        );
+
+        $this->assertSame('boiler', $result['category']);
+        $this->assertSame($electric->id, $result['catalog_category_id']);
+        $this->assertSame('Электричество', $result['known']['fuel']);
+        $this->assertNotContains('fuel', array_column($result['questions'], 'key'));
+    }
+
     public function test_public_endpoints_validate_input_and_store_anonymous_result_without_raw_session_id(): void
     {
         $this->postJson(route('ai-selection.start'), ['intent' => 'x'])->assertUnprocessable();
@@ -231,6 +300,9 @@ class PublicAiProductSelectionTest extends TestCase
 
         $this->assertStringContainsString('Умный подбор', $html);
         $this->assertStringContainsString('data-ai-selector-open', $html);
+        $this->assertStringContainsString('data-categories-url', $html);
+        $this->assertStringContainsString('data-ai-category-search', $html);
+        $this->assertStringContainsString('catalog_category_id', $script);
         $this->assertStringContainsString('40000', $script);
         $this->assertStringContainsString('sevenDays', $script);
         $this->assertStringContainsString('cart|checkout|account|wishlist', $script);

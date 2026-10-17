@@ -13,14 +13,24 @@ class PublicAiSelectionController extends Controller
 {
     private const CATEGORIES = ['gas_boiler', 'boiler', 'heat_pump', 'pump', 'gas_meter', 'general'];
 
+    public function categories(PublicAiProductSelection $selection): JsonResponse
+    {
+        return response()->json(['categories' => $selection->catalogCategories()]);
+    }
+
     public function start(Request $request, PublicAiProductSelection $selection): JsonResponse
     {
         $data = $request->validate([
             'intent' => ['required', 'string', 'min:5', 'max:1000'],
             'category' => ['nullable', 'string', Rule::in(self::CATEGORIES)],
+            'catalog_category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('is_active', true)],
         ]);
 
-        return response()->json($selection->start($data['intent'], $data['category'] ?? null));
+        return response()->json($selection->start(
+            $data['intent'],
+            $data['category'] ?? null,
+            isset($data['catalog_category_id']) ? (int) $data['catalog_category_id'] : null
+        ));
     }
 
     public function recommend(Request $request, PublicAiProductSelection $selection): JsonResponse
@@ -28,11 +38,17 @@ class PublicAiSelectionController extends Controller
         $data = $request->validate([
             'intent' => ['required', 'string', 'min:5', 'max:1000'],
             'category' => ['required', 'string', Rule::in(self::CATEGORIES)],
+            'catalog_category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('is_active', true)],
             'answers' => ['nullable', 'array', 'max:12'],
             'answers.*' => ['nullable', 'string', 'max:200'],
         ]);
 
-        $result = $selection->recommend($data['intent'], $data['category'], $data['answers'] ?? []);
+        $result = $selection->recommend(
+            $data['intent'],
+            $data['category'],
+            $data['answers'] ?? [],
+            isset($data['catalog_category_id']) ? (int) $data['catalog_category_id'] : null
+        );
         $this->record($request, $data, $result);
 
         return response()->json($result);

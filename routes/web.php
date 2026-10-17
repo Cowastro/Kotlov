@@ -58,6 +58,9 @@ Route::match(['get', 'post'], '/1c/exchange', OneCExchangeController::class)
 Route::post('/ai-selection/start', [PublicAiSelectionController::class, 'start'])
     ->middleware('throttle:8,1')
     ->name('ai-selection.start');
+Route::get('/ai-selection/categories', [PublicAiSelectionController::class, 'categories'])
+    ->middleware('throttle:30,1')
+    ->name('ai-selection.categories');
 Route::post('/ai-selection/recommend', [PublicAiSelectionController::class, 'recommend'])
     ->middleware('throttle:5,1')
     ->name('ai-selection.recommend');

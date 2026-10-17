@@ -29,13 +29,15 @@ class PublicAiProductSelection
     public function __construct(private AiContentEnricher $ai) {}
 
     /** @return array<string, mixed> */
-    public function start(string $intent, ?string $categoryHint = null): array
+    public function start(string $intent, ?string $categoryHint = null, ?int $catalogCategoryId = null): array
     {
         $intent = trim($intent);
         $analysis = $this->analyseIntent($intent, $categoryHint);
+        $catalogContext = $this->catalogCategoryContext($catalogCategoryId);
         $forcedCategory = $this->forcedCategory($intent);
         $analysedCategory = $this->validCategory($analysis['category'] ?? null);
-        $category = $forcedCategory
+        $category = $catalogContext['semantic_category']
+            ?? $forcedCategory
             ?? $analysedCategory
             ?? $this->validCategory($categoryHint)
             ?? $this->inferCategory($intent);
@@ -47,11 +49,18 @@ class PublicAiProductSelection
         if ($category === 'boiler' && ($forcedFuel = $this->forcedFuel($intent))) {
             $known['fuel'] = $forcedFuel;
         }
+        if ($catalogContext['fuel']) {
+            $known['fuel'] = $catalogContext['fuel'];
+        }
 
         return [
             'category' => $category,
-            'category_label' => self::LABELS[$category],
-            'summary' => Str::limit(trim((string) ($analysis['summary'] ?? '')), 180, ''),
+            'category_label' => $catalogContext['name'] ?? self::LABELS[$category],
+            'catalog_category_id' => $catalogContext['id'],
+            'catalog_category_path' => $catalogContext['path'],
+            'summary' => $catalogContext['name']
+                ? 'Подбираем товары только из раздела «'.$catalogContext['name'].'». Уточните известные параметры.'
+                : Str::limit(trim((string) ($analysis['summary'] ?? '')), 180, ''),
             'known' => $known,
             'questions' => array_values(array_filter(
                 $this->questions($category),
@@ -64,20 +73,26 @@ class PublicAiProductSelection
     /** @param array<string, mixed> $answers
      * @return array<string, mixed>
      */
-    public function recommend(string $intent, string $category, array $answers): array
+    public function recommend(string $intent, string $category, array $answers, ?int $catalogCategoryId = null): array
     {
-        $category = $this->forcedCategory($intent)
+        $catalogContext = $this->catalogCategoryContext($catalogCategoryId);
+        $category = $catalogContext['semantic_category']
+            ?? $this->forcedCategory($intent)
             ?? $this->validCategory($category)
             ?? $this->inferCategory($intent);
         $answers = $this->sanitizeAnswers($category, $answers);
         if ($category === 'boiler' && ($forcedFuel = $this->forcedFuel($intent))) {
             $answers['fuel'] = $forcedFuel;
         }
-        $candidates = $this->candidates($category, $intent, $answers);
+        if ($catalogContext['fuel']) {
+            $answers['fuel'] = $catalogContext['fuel'];
+        }
+        $candidates = $this->candidates($category, $intent, $answers, $catalogContext['id']);
 
         if ($candidates->isEmpty()) {
             return [
                 'category' => $category,
+                'catalog_category_id' => $catalogContext['id'],
                 'summary' => 'В каталоге пока не нашлось достаточно подходящих активных товаров. Оставьте запрос — специалист проверит задачу вручную.',
                 'products' => [],
                 'ai_used' => false,
@@ -130,12 +145,58 @@ class PublicAiProductSelection
 
         return [
             'category' => $category,
+            'catalog_category_id' => $catalogContext['id'],
             'summary' => $aiUsed
                 ? 'Подобрали варианты из действующего каталога. Перед заказом проверьте пункты, отмеченные в каждой карточке.'
                 : 'DeepSeek временно не ответил — показали лучшие доступные варианты из каталога. Финальные параметры проверьте со специалистом.',
             'products' => $products,
             'ai_used' => $aiUsed,
         ];
+    }
+
+    /** @return array<int, array{id:int,name:string,path:string,product_count:int}> */
+    public function catalogCategories(): array
+    {
+        $categories = Category::query()
+            ->active()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'parent_id', 'name', 'slug', 'sort_order']);
+        $byId = $categories->keyBy('id');
+        $directCounts = Product::query()
+            ->active()
+            ->notArchived()
+            ->where('price', '>', 0)
+            ->selectRaw('category_id, COUNT(*) as product_count')
+            ->groupBy('category_id')
+            ->pluck('product_count', 'category_id');
+        $totals = [];
+
+        foreach ($directCounts as $categoryId => $count) {
+            $currentId = (int) $categoryId;
+            $visited = [];
+            while ($currentId > 0 && $byId->has($currentId) && ! isset($visited[$currentId])) {
+                $visited[$currentId] = true;
+                $totals[$currentId] = ($totals[$currentId] ?? 0) + (int) $count;
+                $currentId = (int) $byId->get($currentId)->parent_id;
+            }
+        }
+
+        return $categories
+            ->filter(fn (Category $category): bool => ($totals[(int) $category->id] ?? 0) > 0)
+            ->map(fn (Category $category): array => [
+                'id' => (int) $category->id,
+                'name' => (string) $category->name,
+                'path' => $this->categoryPath($category, $byId),
+                'product_count' => $totals[(int) $category->id],
+            ])
+            ->sort(function (array $left, array $right): int {
+                $depth = substr_count($left['path'], ' › ') <=> substr_count($right['path'], ' › ');
+
+                return $depth !== 0 ? $depth : strnatcasecmp($left['path'], $right['path']);
+            })
+            ->values()
+            ->all();
     }
 
     /** @return array<string, mixed> */
@@ -230,12 +291,17 @@ PROMPT;
     /** @param array<string, string> $answers
      * @return Collection<int, Product>
      */
-    private function candidates(string $category, string $intent, array $answers): Collection
+    private function candidates(string $category, string $intent, array $answers, ?int $catalogCategoryId = null): Collection
     {
-        $categoryIds = $this->categoryIds($category, $answers);
+        $categoryIds = $catalogCategoryId
+            ? $this->categoryIdsForSelection($catalogCategoryId)
+            : $this->categoryIds($category, $answers);
         $strictFuelSlugs = $category === 'boiler'
             ? $this->fuelCategoryScope($answers['fuel'] ?? null)[0]
             : [];
+        if ($catalogCategoryId && $strictFuelSlugs !== []) {
+            $categoryIds = array_values(array_intersect($categoryIds, $this->categoryIdsForSlugs($strictFuelSlugs)));
+        }
         if ($strictFuelSlugs !== [] && $categoryIds === []) {
             return collect();
         }
@@ -410,6 +476,94 @@ PROMPT;
         }
 
         return $ids;
+    }
+
+    /** @return array<int, int> */
+    private function categoryIdsForSelection(int $categoryId): array
+    {
+        $all = Category::query()->active()->get(['id', 'parent_id']);
+        if (! $all->contains(fn (Category $category): bool => (int) $category->id === $categoryId)) {
+            return [];
+        }
+
+        $ids = [$categoryId];
+        $changed = true;
+        while ($changed) {
+            $changed = false;
+            foreach ($all as $item) {
+                if (in_array((int) $item->parent_id, $ids, true) && ! in_array((int) $item->id, $ids, true)) {
+                    $ids[] = (int) $item->id;
+                    $changed = true;
+                }
+            }
+        }
+
+        return $ids;
+    }
+
+    /** @return array{id:?int,name:?string,path:?string,semantic_category:?string,fuel:?string} */
+    private function catalogCategoryContext(?int $categoryId): array
+    {
+        $empty = ['id' => null, 'name' => null, 'path' => null, 'semantic_category' => null, 'fuel' => null];
+        if (! $categoryId) {
+            return $empty;
+        }
+
+        $all = Category::query()->active()->get(['id', 'parent_id', 'name', 'slug']);
+        /** @var Category|null $selected */
+        $selected = $all->firstWhere('id', $categoryId);
+        if (! $selected) {
+            return $empty;
+        }
+
+        $byId = $all->keyBy('id');
+        $slugs = [];
+        $current = $selected;
+        $visited = [];
+        while ($current && ! isset($visited[(int) $current->id])) {
+            $visited[(int) $current->id] = true;
+            $slugs[] = (string) $current->slug;
+            $current = $byId->get((int) $current->parent_id);
+        }
+        $slugText = implode(' ', $slugs);
+        $semantic = match (true) {
+            Str::contains($slugText, ['schetchiki-gaza', 'schetchiki-gazovye']) => 'gas_meter',
+            Str::contains($slugText, ['teplovyie-nasosyi', 'teplovye-nasosy']) => 'heat_pump',
+            Str::contains($slugText, ['gazovye', 'gazovye-kotly']) => 'gas_boiler',
+            Str::contains($slugText, ['kotly', 'kotly-otopleniya', 'tverdotoplivnye', 'elektricheskie', 'kotly-na-pelletah']) => 'boiler',
+            Str::contains($slugText, ['nasosy', 'nasosyi', 'nasosnoe-oborudovanie']) => 'pump',
+            default => 'general',
+        };
+        $fuel = match (true) {
+            Str::contains($slugText, 'elektricheskie') => 'Электричество',
+            Str::contains($slugText, ['gazovye', 'gazovye-kotly']) => 'Газ',
+            Str::contains($slugText, 'kotly-na-pelletah') => 'Пеллеты',
+            Str::contains($slugText, 'tverdotoplivnye') => 'Дрова / уголь',
+            default => null,
+        };
+
+        return [
+            'id' => (int) $selected->id,
+            'name' => (string) $selected->name,
+            'path' => $this->categoryPath($selected, $byId),
+            'semantic_category' => $semantic,
+            'fuel' => $fuel,
+        ];
+    }
+
+    /** @param Collection<int, Category> $byId */
+    private function categoryPath(Category $category, Collection $byId): string
+    {
+        $parts = [];
+        $current = $category;
+        $visited = [];
+        while ($current && ! isset($visited[(int) $current->id])) {
+            $visited[(int) $current->id] = true;
+            array_unshift($parts, (string) $current->name);
+            $current = $byId->get((int) $current->parent_id);
+        }
+
+        return implode(' › ', array_slice($parts, -4));
     }
 
     /** @return array{0: array<int, string>, 1: array<int, string>} */
