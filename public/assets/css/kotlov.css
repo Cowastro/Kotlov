@@ -98,6 +98,26 @@ li {
     color: #111 !important;
 }
 
+.account-quick-menu {
+    min-width: 168px;
+    padding: 4px;
+}
+
+.account-quick-menu .dropdown-item {
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.25;
+}
+
+.account-quick-menu .dropdown-item .icon {
+    font-size: 15px;
+}
+
+.account-quick-menu .dropdown-divider {
+    margin: 3px 4px;
+}
+
 .nav-icon-list .wishlist-link {
     position: relative;
 }
@@ -2399,7 +2419,7 @@ body.ai-selector-is-open #umnico-widget-wrapper { display: none !important; }
 }
 .manager-product-context {
     margin: 12px 0;
-    padding: 12px;
+    padding: 10px;
     border: 1px solid #c7d2fe;
     border-radius: 10px;
     background: #eef2ff;
@@ -2408,7 +2428,6 @@ body.ai-selector-is-open #umnico-widget-wrapper { display: none !important; }
     line-height: 1.4;
 }
 
-.manager-product-context__title,
 .manager-product-context__line,
 .manager-product-context__meta {
     display: flex;
@@ -2427,17 +2446,6 @@ body.ai-selector-is-open #umnico-widget-wrapper { display: none !important; }
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 2px;
-}
-
-.manager-product-context__title {
-    margin-bottom: 8px;
-    color: #3730a3;
-    font-weight: 700;
-}
-
-.manager-product-context__title small {
-    color: #64748b;
-    font-weight: 500;
 }
 
 .manager-product-context__offer + .manager-product-context__offer {
@@ -2471,7 +2479,7 @@ body.ai-selector-is-open #umnico-widget-wrapper { display: none !important; }
 }
 
 .manager-product-context--compact {
-    padding: 9px;
+    padding: 8px;
     font-size: 12px;
 }
 

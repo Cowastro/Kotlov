@@ -46,7 +46,6 @@ class ManagerStorefrontExperienceTest extends TestCase
         [$product] = $this->makeProductWithSupplierOffer();
 
         $this->view('partials.manager-product-context', ['product' => $product])
-            ->assertDontSee('Режим менеджера')
             ->assertDontSee('Закрытый поставщик')
             ->assertDontSee('SECRET-123');
 
@@ -54,7 +53,6 @@ class ManagerStorefrontExperienceTest extends TestCase
         $this->actingAs($manager);
 
         $this->view('partials.manager-product-context', ['product' => $product])
-            ->assertSee('Режим менеджера')
             ->assertSee('Закрытый поставщик')
             ->assertSee('SECRET-123')
             ->assertSee('Закупка: 4.00 BYN')

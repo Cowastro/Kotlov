@@ -373,13 +373,8 @@
                                         {{ Str::limit(Auth::user()->name, 12) }}
                                     </span>
                                 </a>
-                                <ul class="dropdown-menu dropdown-menu-end" style="min-width:180px;">
+                                <ul class="dropdown-menu dropdown-menu-end account-quick-menu">
                                     @if (Auth::user()->is_active && Auth::user()->isManager())
-                                        <li>
-                                            <span class="dropdown-item-text text-success fw-semibold">
-                                                <i class="icon icon-CheckCircle me-2"></i> Режим менеджера
-                                            </span>
-                                        </li>
                                         <li>
                                             <a class="dropdown-item" href="/admin">
                                                 <i class="icon icon-Gear me-2"></i> Открыть админку

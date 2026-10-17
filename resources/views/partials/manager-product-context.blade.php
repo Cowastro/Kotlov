@@ -7,11 +7,6 @@
 
 @if ($managerContext->canView(auth()->user()))
     <aside class="manager-product-context{{ $compact ? ' manager-product-context--compact' : '' }}" aria-label="Внутренняя информация для менеджера">
-        <div class="manager-product-context__title">
-            <span>Режим менеджера</span>
-            <small>Внутренние данные</small>
-        </div>
-
         @forelse ($visibleOffers as $offer)
             <div class="manager-product-context__offer">
                 <div class="manager-product-context__line">
