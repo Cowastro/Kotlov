@@ -81,6 +81,19 @@ class PublicAiProductSelectionTest extends TestCase
     public function test_explicit_meter_size_direction_and_length_outrank_a_close_ai_alternative(): void
     {
         $category = $this->category('schetchiki-gaza', 'Счётчики газа');
+        Product::query()->insert(collect(range(1, 85))->map(fn (int $index): array => [
+            'category_id' => $category->id,
+            'name' => 'Счётчик газа общий '.$index,
+            'slug' => 'generic-meter-'.$index,
+            'sku' => 'GEN-'.$index,
+            'price' => 150,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ])->all());
         $exact = $this->product($category, 'Счётчик газа СГД G4 (левый) L=110', 'meter-g4-left-110', 200);
         $close = $this->product($category, 'Счётчик газа СГД G2.5 (левый) L=110', 'meter-g25-left-110', 180);
 

@@ -216,7 +216,9 @@
     var dismissedAt = Number(localStorage.getItem('kotlov_ai_selector_dismissed_at') || 0);
     var sevenDays = 7 * 24 * 60 * 60 * 1000;
     if (teaser && !blockedPath && Date.now() - dismissedAt > sevenDays) {
-        window.setTimeout(function () { teaser.hidden = false; }, 40000);
+        window.setTimeout(function () {
+            if (!modalElement.classList.contains('show')) teaser.hidden = false;
+        }, 40000);
     }
     var dismiss = one('[data-ai-selector-dismiss]');
     if (dismiss) dismiss.addEventListener('click', function () {
@@ -224,6 +226,9 @@
         localStorage.setItem('kotlov_ai_selector_dismissed_at', String(Date.now()));
     });
 
-    modalElement.addEventListener('show.bs.modal', function () { document.body.classList.add('ai-selector-is-open'); });
+    modalElement.addEventListener('show.bs.modal', function () {
+        document.body.classList.add('ai-selector-is-open');
+        if (teaser) teaser.hidden = true;
+    });
     modalElement.addEventListener('hidden.bs.modal', function () { document.body.classList.remove('ai-selector-is-open'); });
 })();

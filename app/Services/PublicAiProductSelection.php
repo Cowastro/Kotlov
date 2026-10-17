@@ -184,6 +184,7 @@ PROMPT;
         $prompt = <<<PROMPT
 Ты подбираешь оборудование только из переданного каталога KOTLOV.BY.
 Выбери до 3 разных товаров. Запрещено придумывать товары, характеристики и ID. Подтверждай только то, что есть в catalog.specs/name/price/availability. Не называй подбор инженерным проектом. Существенные неизвестные параметры вынеси в verify.
+Никогда не упоминай в тексте внутренние значения поля id и не сравнивай товары по этим номерам.
 Роли: optimal, economy, reserve. Ответ строго JSON без markdown:
 {"matches":[{"product_id":123,"role":"optimal","reason":"почему подходит","confirmed":["факт"],"verify":["что проверить"]}]}
 
@@ -234,6 +235,11 @@ PROMPT;
             });
         }
 
+        $explicitValues = $this->explicitAnswerValues($answers);
+        foreach ($explicitValues as $value) {
+            $query->orderByRaw('CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END', ['%'.$value.'%']);
+        }
+
         $products = $query
             ->orderByDesc('in_stock')
             ->orderByDesc('is_featured')
@@ -243,8 +249,6 @@ PROMPT;
 
         $budget = $this->numeric($answers['budget'] ?? null);
         $tokens = $this->intentTokens($intent);
-
-        $explicitValues = $this->explicitAnswerValues($answers);
 
         return $products
             ->sortByDesc(function (Product $product) use ($budget, $tokens, $explicitValues): float {
