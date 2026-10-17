@@ -238,7 +238,7 @@
                 <p class="desc-pop cl-text-2">Наш специалист ответит в течение рабочего дня.</p>
             </div>
             <div class="modal-main">
-                <form class="form-log mb-20" action="{{ route('ask.store') }}" method="POST">
+                <form class="form-log mb-20" action="{{ route('ask.store') }}" method="POST" data-consultant-form>
                     @csrf
                     <x-form-protection />
                     @isset($product)
@@ -271,6 +271,8 @@
                     <div class="group-action">
                         <button type="submit" class="tf-btn animate-btn w-100">Отправить вопрос</button>
                     </div>
+                    <div class="alert alert-danger mt-12" data-consultant-form-error role="alert" hidden></div>
+                    <div class="alert alert-success mt-12" data-consultant-form-success role="status" hidden></div>
                 </form>
             </div>
         </div>

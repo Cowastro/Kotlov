@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\ContactRequest;
 use App\Rules\PhoneNotSpam;
 use App\Services\ContactRequestNotifier;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ContactRequestController extends Controller
 {
-    public function store(Request $request, ContactRequestNotifier $notifier): RedirectResponse
+    public function store(Request $request, ContactRequestNotifier $notifier): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -38,6 +39,14 @@ class ContactRequestController extends Controller
         ]);
 
         $notifier->notify($contactRequest);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Спасибо! Вопрос отправлен консультанту.',
+                'request_id' => $contactRequest->id,
+            ]);
+        }
 
         return back()->with('success', 'Спасибо! Ваша заявка отправлена. Мы скоро свяжемся с вами.');
     }

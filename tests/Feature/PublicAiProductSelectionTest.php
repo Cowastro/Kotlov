@@ -401,6 +401,33 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('power: 30', $run->contactRequest->message);
     }
 
+    public function test_consultant_form_returns_created_request_confirmation_as_json(): void
+    {
+        $notifier = $this->mock(ContactRequestNotifier::class);
+        $notifier->shouldReceive('notify')->once()->withArgs(
+            fn (ContactRequest $request): bool => $request->source === 'consultation_form'
+                && $request->message === 'Нужна помощь с выбором котла'
+        );
+
+        $response = $this->withHeader('User-Agent', 'Mozilla/5.0 Mobile Safari')->postJson(route('ask.store'), [
+            'name' => 'Проверка формы',
+            'phone' => '+375 29 354-40-41',
+            'email' => 'info@kotlov.by',
+            'message' => 'Нужна помощь с выбором котла',
+            'source' => 'consultation_form',
+        ]);
+
+        $requestId = ContactRequest::query()->value('id');
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('request_id', $requestId);
+        $this->assertDatabaseHas('contact_requests', [
+            'id' => $requestId,
+            'source' => 'consultation_form',
+            'status' => 'new',
+        ]);
+    }
+
     public function test_storefront_layout_contains_global_ai_selector_and_delayed_teaser_script(): void
     {
         $html = view('partials.ai-product-selector')->render();
@@ -432,6 +459,8 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('showLauncher(!introSeen', $script);
         $this->assertStringContainsString("launcher.classList.add('is-explaining')", $script);
         $this->assertStringNotContainsString('umnico-widget-wrapper', $script);
+        $this->assertStringContainsString('data-consultant-form', view('partials.modals')->render());
+        $this->assertStringContainsString("'request_id'", file_get_contents(app_path('Http/Controllers/ContactRequestController.php')));
         $this->assertStringContainsString('sevenDays', $script);
         $this->assertStringContainsString('cart|checkout|account|wishlist', $script);
         $this->assertMatchesRegularExpression('/\.ai-selector__launcher\s*\{[^}]*right:\s*24px;/s', $styles);

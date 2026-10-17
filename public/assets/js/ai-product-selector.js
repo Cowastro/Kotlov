@@ -362,6 +362,47 @@
         });
     });
 
+    var consultantForm = one('[data-consultant-form]');
+    if (consultantForm) consultantForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var submit = one('button[type="submit"]', consultantForm);
+        var success = one('[data-consultant-form-success]', consultantForm);
+        var error = one('[data-consultant-form-error]', consultantForm);
+        var formData = new FormData(consultantForm);
+        if (submit) submit.disabled = true;
+        if (success) success.hidden = true;
+        if (error) error.hidden = true;
+        fetch(consultantForm.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+        }).then(function (response) {
+            return response.json().catch(function () { return {}; }).then(function (data) {
+                if (!response.ok) {
+                    var firstError = data.errors && Object.values(data.errors)[0];
+                    throw new Error(Array.isArray(firstError) ? firstError[0] : 'Не удалось отправить вопрос. Попробуйте ещё раз.');
+                }
+                return data;
+            });
+        }).then(function (data) {
+            if (success) {
+                success.textContent = (data.message || 'Вопрос отправлен консультанту.') + (data.request_id ? ' Номер заявки: ' + data.request_id + '.' : '');
+                success.hidden = false;
+            }
+            consultantForm.reset();
+            var startedAt = one('input[name="form_started_at"]', consultantForm);
+            if (startedAt) startedAt.value = String(Math.floor(Date.now() / 1000));
+        }).catch(function (exception) {
+            if (error) {
+                error.textContent = exception.message;
+                error.hidden = false;
+            }
+        }).finally(function () {
+            if (submit) submit.disabled = false;
+        });
+    });
+
     document.addEventListener('click', function (event) {
         if (!assistanceMenu || assistanceMenu.hidden || root.contains(event.target)) return;
         closeAssistanceMenu();
