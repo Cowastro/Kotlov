@@ -39,17 +39,26 @@ class AppServiceProvider extends ServiceProvider
             });
         }
 
-        View::composer(['partials.amerce-header', 'partials.modals'], function ($view): void {
+        View::composer([
+            'partials.amerce-header',
+            'partials.modals',
+            'partials.product-card',
+            'partials.product-card-list',
+            'pages.product',
+        ], function ($view): void {
             if (! Schema::hasTable('wishlist_items')) {
-                $view->with('wishlistCount', 0);
+                $view->with([
+                    'wishlistCount' => 0,
+                    'wishlistProductIds' => [],
+                ]);
 
                 return;
             }
 
             $request = request();
-            $count = $request->attributes->get('wishlist_count');
+            $state = $request->attributes->get('wishlist_state');
 
-            if ($count === null) {
+            if ($state === null) {
                 $query = WishlistItem::query();
 
                 if (auth()->check()) {
@@ -58,11 +67,22 @@ class AppServiceProvider extends ServiceProvider
                     $query->where('session_id', session()->getId());
                 }
 
-                $count = $query->count();
-                $request->attributes->set('wishlist_count', $count);
+                $productIds = $query->pluck('product_id')
+                    ->map(fn ($productId): int => (int) $productId)
+                    ->values()
+                    ->all();
+
+                $state = [
+                    'count' => count($productIds),
+                    'product_ids' => $productIds,
+                ];
+                $request->attributes->set('wishlist_state', $state);
             }
 
-            $view->with('wishlistCount', (int) $count);
+            $view->with([
+                'wishlistCount' => (int) $state['count'],
+                'wishlistProductIds' => $state['product_ids'],
+            ]);
         });
 
         // During a fresh test database boot the provider runs before

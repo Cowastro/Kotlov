@@ -55,6 +55,18 @@ class ProductWishlistButtonTest extends TestCase
             'user_id' => $user->id,
         ]);
 
+        $this->get('/'.$category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertSee('class="product-extra-icon link wishlist-toggle is-active"', false)
+            ->assertSee('aria-pressed="true"', false)
+            ->assertSee('class="icon icon-Heart"', false)
+            ->assertSeeText('В избранном');
+
+        $this->get('/'.$category->slug)
+            ->assertOk()
+            ->assertSee('class="wishlist addwishlist"', false)
+            ->assertSeeText('Удалить из избранного');
+
         $this->postJson('/wishlist/toggle', ['product_id' => $product->id])
             ->assertOk()
             ->assertJsonPath('message', 'removed')

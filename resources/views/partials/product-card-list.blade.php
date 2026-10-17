@@ -17,6 +17,7 @@
         ? $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
         : (method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->is_active && $product->price > 0));
     $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
+    $isWishlisted = in_array((int) $product->id, $wishlistProductIds ?? [], true);
 
     $price = $isB2bOffer
         ? number_format($b2bComparison['wholesale_price'], 2, '.', ' ') . ' BYN'
@@ -189,11 +190,11 @@
                 </a>
             </li>
             @endif
-            <li class="wishlist">
+            <li class="wishlist{{ $isWishlisted ? ' addwishlist' : '' }}">
                 <a href="#" class="hover-tooltip box-icon"
                     data-product-id="{{ $product->id }}">
-                    <span class="icon icon-heart"></span>
-                    <span class="tooltip">В избранное</span>
+                    <span class="icon {{ $isWishlisted ? 'icon-Heart' : 'icon-heart' }}"></span>
+                    <span class="tooltip">{{ $isWishlisted ? 'Удалить из избранного' : 'В избранное' }}</span>
                 </a>
             </li>
             <li class="compare">

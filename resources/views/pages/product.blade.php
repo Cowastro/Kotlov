@@ -417,13 +417,16 @@
 
                             {{-- Доп. ссылки --}}
                             <div class="tf-product-extra-link">
+                                @php
+                                    $isWishlisted = in_array((int) $product->id, $wishlistProductIds ?? [], true);
+                                @endphp
                                 <a href="#" data-product-id="{{ $product->id }}"
-                                    class="product-extra-icon link wishlist-toggle"
-                                    aria-label="Добавить {{ $product->name }} в избранное"
-                                    aria-pressed="false"
-                                    title="В избранное">
-                                    <i class="icon icon-heart" aria-hidden="true"></i>
-                                    <span class="wishlist-label">В избранное</span>
+                                    class="product-extra-icon link wishlist-toggle{{ $isWishlisted ? ' is-active' : '' }}"
+                                    aria-label="{{ $isWishlisted ? 'Удалить' : 'Добавить' }} {{ $product->name }} {{ $isWishlisted ? 'из избранного' : 'в избранное' }}"
+                                    aria-pressed="{{ $isWishlisted ? 'true' : 'false' }}"
+                                    title="{{ $isWishlisted ? 'В избранном' : 'В избранное' }}">
+                                    <i class="icon {{ $isWishlisted ? 'icon-Heart' : 'icon-heart' }}" aria-hidden="true"></i>
+                                    <span class="wishlist-label">{{ $isWishlisted ? 'В избранном' : 'В избранное' }}</span>
                                 </a>
                                 <a href="#compare" data-product-id="{{ $product->id }}" class="product-extra-icon link">
                                     <i class="icon icon-ArrowsLeftRight"></i>

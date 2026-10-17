@@ -726,6 +726,10 @@ body {
 }
 
 @media (max-width: 575px) {
+    .card-product .product-action_list .wishlist {
+        display: block !important;
+    }
+
     #gridLayout {
         gap: 16px 10px;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
