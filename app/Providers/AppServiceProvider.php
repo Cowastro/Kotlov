@@ -266,9 +266,10 @@ private function getNavBrands(): \Illuminate\Support\Collection
 
 private function getNavCategories()
 {
-    return Cache::remember('nav:categories:orderable:v1', 3600, function () {
+    return Cache::remember('nav:categories:orderable:v2', 3600, function () {
         $categories = Category::query()
             ->where('is_active', true)
+            ->orderBy('name')
             ->orderBy('sort_order')
             ->get();
 
@@ -300,7 +301,6 @@ private function getNavCategories()
 
             $children = $categoriesByParent
                 ->get($category->id, collect())
-                ->sortBy('sort_order')
                 ->values()
                 ->map(fn (Category $child) => $decorateTree($child))
                 ->filter(fn (Category $child) => $child->products_count > 0)

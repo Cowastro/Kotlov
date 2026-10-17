@@ -60,6 +60,7 @@ class CatalogController extends Controller
         // Подкатегории для фильтра
         $subcategories = Category::where('parent_id', $category->id)
             ->where('is_active', true)
+            ->orderBy('name')
             ->orderBy('sort_order')
             ->get()
             ->each(function ($subcategory) use ($selectedBrandId) {
