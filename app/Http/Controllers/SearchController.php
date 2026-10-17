@@ -19,11 +19,12 @@ class SearchController extends Controller
         $total = 0;
 
         if (mb_strlen($q) >= 1) {
+            $includeInternal = auth()->user()?->is_active === true && auth()->user()?->isManager();
             $query = Product::active()
                 ->notArchived()
                 ->withSupplierChannels()
                 ->with(['category', 'brand']);
-            app(StorefrontProductSearch::class)->apply($query, $q);
+            app(StorefrontProductSearch::class)->apply($query, $q, $includeInternal);
 
             if ($category) {
                 $cat = Category::where('slug', $category)->first();
@@ -69,9 +70,10 @@ class SearchController extends Controller
 
         // Товары
         $search = app(StorefrontProductSearch::class);
+        $includeInternal = auth()->user()?->is_active === true && auth()->user()?->isManager();
         $products = Product::active()
             ->notArchived();
-        $search->apply($products, $q);
+        $search->apply($products, $q, $includeInternal);
         $products = $products
             ->select('id', 'name', 'slug', 'price', 'category_id')
             ->with('category:id,slug')

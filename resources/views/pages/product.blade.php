@@ -265,6 +265,8 @@
                                     @endif
                                 </div>
 
+                                @include('partials.manager-product-context', ['product' => $product])
+
                                 @if (!empty($product->promo_flags))
                                     <div class="d-flex flex-wrap gap-2 mb-12">
                                         @foreach ($product->promo_flags as $flag)

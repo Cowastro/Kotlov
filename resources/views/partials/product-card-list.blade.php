@@ -144,6 +144,8 @@
             </div>
         @endif
 
+        @include('partials.manager-product-context', ['product' => $product, 'compact' => true, 'productUrl' => $productUrl])
+
         {{-- Наличие --}}
         <div class="mb-10">
             @if ($isB2bOffer)

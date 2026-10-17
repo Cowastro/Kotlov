@@ -8,7 +8,7 @@ class StorefrontProductSearch
 {
     private const MAX_TOKENS = 8;
 
-    public function apply(Builder $query, string $search): Builder
+    public function apply(Builder $query, string $search, bool $includeInternal = false): Builder
     {
         $tokens = array_slice($this->tokens($search), 0, self::MAX_TOKENS);
 
@@ -16,27 +16,22 @@ class StorefrontProductSearch
             return $query;
         }
 
-        return $query->where(function (Builder $matches) use ($search, $tokens): void {
+        return $query->where(function (Builder $matches) use ($search, $tokens, $includeInternal): void {
             foreach ($this->variants($search) as $variant) {
                 foreach ($this->caseVariants($variant) as $caseVariant) {
-                    $matches->orWhere('name', 'like', '%'.$caseVariant.'%')
-                        ->orWhere('sku', 'like', '%'.$caseVariant.'%')
-                        ->orWhereHas('brand', fn (Builder $brand) => $brand->where('name', 'like', '%'.$caseVariant.'%'));
+                    $this->addTermMatches($matches, $caseVariant, $includeInternal);
                 }
             }
 
-            $matches->orWhere(function (Builder $allTokens) use ($tokens): void {
+            $matches->orWhere(function (Builder $allTokens) use ($tokens, $includeInternal): void {
                 foreach ($tokens as $alternatives) {
-                    $allTokens->where(function (Builder $tokenMatch) use ($alternatives): void {
+                    $allTokens->where(function (Builder $tokenMatch) use ($alternatives, $includeInternal): void {
                         foreach ($alternatives as $alternative) {
-                            $tokenMatch->orWhere(function (Builder $phrase) use ($alternative): void {
+                            $tokenMatch->orWhere(function (Builder $phrase) use ($alternative, $includeInternal): void {
                                 foreach (explode(' ', $alternative) as $word) {
-                                    $phrase->where(function (Builder $fields) use ($word): void {
+                                    $phrase->where(function (Builder $fields) use ($word, $includeInternal): void {
                                         foreach ($this->caseVariants($word) as $caseVariant) {
-                                            $fields->orWhere('name', 'like', '%'.$caseVariant.'%')
-                                                ->orWhere('sku', 'like', '%'.$caseVariant.'%')
-                                                ->orWhereHas('brand', fn (Builder $brand) => $brand->where('name', 'like', '%'.$caseVariant.'%'))
-                                                ->orWhereHas('category', fn (Builder $category) => $category->where('name', 'like', '%'.$caseVariant.'%'));
+                                            $this->addTermMatches($fields, $caseVariant, $includeInternal, true);
                                         }
                                     });
                                 }
@@ -46,6 +41,35 @@ class StorefrontProductSearch
                 }
             });
         });
+    }
+
+    private function addTermMatches(Builder $query, string $term, bool $includeInternal, bool $includeCategory = false): void
+    {
+        $like = '%'.$term.'%';
+
+        $query->orWhere('name', 'like', $like)
+            ->orWhere('sku', 'like', $like)
+            ->orWhereHas('brand', fn (Builder $brand) => $brand->where('name', 'like', $like));
+
+        if ($includeCategory) {
+            $query->orWhereHas('category', fn (Builder $category) => $category->where('name', 'like', $like));
+        }
+
+        if (! $includeInternal) {
+            return;
+        }
+
+        $query
+            ->orWhereHas('supplierProducts', fn (Builder $offer) => $offer
+                ->where('supplier_article', 'like', $like)
+                ->orWhere('supplier_name', 'like', $like)
+                ->orWhereHas('supplier', fn (Builder $supplier) => $supplier->where('name', 'like', $like)))
+            ->orWhereHas('integrationProducts', fn (Builder $offer) => $offer
+                ->where('external_sku', 'like', $like)
+                ->orWhere('name', 'like', $like)
+                ->orWhereHas('source', fn (Builder $source) => $source
+                    ->where('name', 'like', $like)
+                    ->orWhereHas('supplier', fn (Builder $supplier) => $supplier->where('name', 'like', $like))));
     }
 
     /**

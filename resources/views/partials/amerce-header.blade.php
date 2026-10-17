@@ -350,7 +350,7 @@
                     <span class="br-line type-vertical"></span>
                     <fieldset class="fieldset-search" style="position:relative;flex:1;">
                         <input class="ipt" type="text" name="q" id="header-search-input"
-                            placeholder="Поиск по каталогу" autocomplete="off">
+                            placeholder="{{ auth()->user()?->is_active && auth()->user()?->isManager() ? 'Товар, артикул или поставщик' : 'Поиск по каталогу' }}" autocomplete="off">
                         <button type="submit" class="btn-action">
                             <i class="icon icon-MagnifyingGlass"></i>
                         </button>
@@ -374,6 +374,19 @@
                                     </span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" style="min-width:180px;">
+                                    @if (Auth::user()->is_active && Auth::user()->isManager())
+                                        <li>
+                                            <span class="dropdown-item-text text-success fw-semibold">
+                                                <i class="icon icon-CheckCircle me-2"></i> Режим менеджера
+                                            </span>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="/admin">
+                                                <i class="icon icon-Gear me-2"></i> Открыть админку
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    @endif
                                     <li>
                                         <a class="dropdown-item" href="/account">
                                             <i class="icon icon-User me-2"></i> Личный кабинет

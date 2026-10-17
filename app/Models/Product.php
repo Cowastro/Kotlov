@@ -293,10 +293,13 @@ class Product extends Model
     public function scopeWithSupplierChannels($query)
     {
         return $query->with([
-            'supplierProducts:id,product_id,supplier_id,in_stock,stock_status,stock_quantity,last_stock_synced_at,last_synced_at,updated_at',
-            'supplierProducts.supplier:id,code,is_active',
-            'integrationProducts:id,product_id,integration_source_id,stock_quantity,match_status,stock_confirmed_at',
-            'integrationProducts.source:id,code,driver,is_active,settings',
+            'supplierProducts:id,product_id,supplier_id,supplier_article,supplier_name,price_byn,in_stock,stock_status,stock_quantity,stock_text,warehouse_name,delivery_days,last_stock_synced_at,last_synced_at,updated_at',
+            'supplierProducts.supplier:id,crm_counterparty_id,code,name,contact,is_active',
+            'supplierProducts.supplier.crmCounterparty.contactPoints',
+            'integrationProducts:id,product_id,integration_source_id,external_sku,name,price,price_currency,price_currency_rate,price_tax_mode,price_vat_rate,price_byn,stock_quantity,match_status,last_seen_at,last_offer_seen_at,stock_confirmed_at',
+            'integrationProducts.source:id,supplier_id,code,name,driver,price_currency,price_currency_rate,is_active,settings',
+            'integrationProducts.source.supplier:id,crm_counterparty_id,code,name,contact,is_active',
+            'integrationProducts.source.supplier.crmCounterparty.contactPoints',
             'integrationProducts.source.latestSuccessfulCatalogExchangeRun',
         ]);
     }

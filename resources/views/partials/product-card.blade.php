@@ -198,5 +198,7 @@
             </p>
         @endif
 
+        @include('partials.manager-product-context', ['product' => $product, 'compact' => true, 'productUrl' => $productUrl])
+
     </div>
 </div>
