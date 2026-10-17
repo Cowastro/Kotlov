@@ -241,6 +241,11 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                 'images' => ['product/008/008168/61c1d022a721e.jpg'],
                 'source_url' => 'https://gazby.by/shop/',
                 'replace_attributes' => true,
+                'service_info' => [
+                    'Производитель' => 'ООО «ЗОРД Электротеплоприбор», г. Минск, ул. Олешева, 14, каб. 320',
+                    'Страна происхождения' => 'Беларусь',
+                    'Гарантия' => '24 месяца',
+                ],
                 'display_specs' => [
                     ['key' => 'Контролируемые газы', 'value' => 'Природный и сжиженный газ'],
                     ['key' => 'Питание', 'value' => '230 В, 50 Гц'],
@@ -284,6 +289,11 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                 'images' => ['product/0011/011094/61c43eaab7cbc.jpg'],
                 'source_url' => 'https://gazby.by/shop/',
                 'replace_attributes' => true,
+                'service_info' => [
+                    'Производитель' => 'ООО «ЗОРД Электротеплоприбор», г. Минск, ул. Олешева, 14, каб. 320',
+                    'Страна происхождения' => 'Беларусь',
+                    'Гарантия' => '24 месяца',
+                ],
                 'display_specs' => [
                     ['key' => 'Контролируемые газы', 'value' => 'Угарный газ CO и горючие газы'],
                     ['key' => 'Питание', 'value' => '230 В, 50 Гц'],
@@ -605,6 +615,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
             'content' => $refresh['content'] ?? $product->content,
             'images' => $refresh['images'],
             'specs' => $refresh['specs'] ?? $product->specs,
+            'service_info' => $refresh['service_info'] ?? $product->service_info,
             'content_source_url' => $refresh['source_url'] ?? $product->content_source_url,
             'meta_title' => Str::limit($name.' — купить в Беларуси | KOTLOV', 255, ''),
             'meta_description' => Str::limit('Купить '.$name.' в KOTLOV. Характеристики, актуальная цена и наличие, доставка по Беларуси.', 255, ''),

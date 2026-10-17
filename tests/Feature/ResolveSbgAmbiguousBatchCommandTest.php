@@ -849,6 +849,8 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $this->assertStringContainsString('gazby.by', $zord->content_source_url);
         $this->assertSame('Беларусь', collect($zord->specs)->firstWhere('key', 'Страна производства')['value']);
         $this->assertSame('ООО «ЗОРД Электротеплоприбор»', collect($zord->specs)->firstWhere('key', 'Производитель')['value']);
+        $this->assertSame('Беларусь', $zord->service_info['Страна происхождения']);
+        $this->assertArrayNotHasKey('Импортер', $zord->service_info);
 
         $importerAttributeId = DB::table('attributes')->insertGetId([
             'category_id' => $category->id,
@@ -959,6 +961,8 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('розничная цена', mb_strtolower($zord->content));
         $this->assertSame('Беларусь', collect($zord->specs)->firstWhere('key', 'Страна производства')['value']);
         $this->assertSame('ООО «ЗОРД Электротеплоприбор»', collect($zord->specs)->firstWhere('key', 'Производитель')['value']);
+        $this->assertSame('Беларусь', $zord->service_info['Страна происхождения']);
+        $this->assertArrayNotHasKey('Импортер', $zord->service_info);
 
         $importerAttributeId = DB::table('attributes')->insertGetId([
             'category_id' => $category->id,

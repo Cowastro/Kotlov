@@ -26,6 +26,10 @@ class RefreshZordGasDetectorCatalogMigrationTest extends TestCase
             'name' => 'Старая карточка УГС-03',
             'slug' => 'old-zord-ugs-03',
             'price' => 42,
+            'service_info' => [
+                'Производитель' => 'ZHEJIANG TTN ELECTRIC CO., LTD',
+                'Импортер' => 'ООО "ГазТеплоТорг"',
+            ],
         ]);
         $ugs02 = Product::query()->create([
             'category_id' => $category->id,
@@ -33,6 +37,10 @@ class RefreshZordGasDetectorCatalogMigrationTest extends TestCase
             'name' => 'Старая карточка УГС-02',
             'slug' => 'old-zord-ugs-02',
             'price' => 130,
+            'service_info' => [
+                'Производитель' => 'ZHEJIANG TTN ELECTRIC CO., LTD',
+                'Импортер' => 'ООО "ГазТеплоТорг"',
+            ],
         ]);
 
         $importerAttributeId = DB::table('attributes')->insertGetId([
@@ -61,6 +69,8 @@ class RefreshZordGasDetectorCatalogMigrationTest extends TestCase
 
         $migration = require database_path('migrations/2026_10_17_120000_refresh_zord_gas_detector_catalog.php');
         $migration->up();
+        $serviceMigration = require database_path('migrations/2026_10_17_124500_correct_zord_detector_service_info.php');
+        $serviceMigration->up();
 
         $ugs03->refresh();
         $ugs02->refresh();
@@ -69,6 +79,10 @@ class RefreshZordGasDetectorCatalogMigrationTest extends TestCase
         $this->assertSame('105.00', $ugs02->price);
         $this->assertSame('ООО «ЗОРД Электротеплоприбор»', collect($ugs03->specs)->firstWhere('key', 'Производитель')['value']);
         $this->assertSame('ООО «ЗОРД Электротеплоприбор»', collect($ugs02->specs)->firstWhere('key', 'Производитель')['value']);
+        $this->assertSame('Беларусь', $ugs03->service_info['Страна происхождения']);
+        $this->assertSame('Беларусь', $ugs02->service_info['Страна происхождения']);
+        $this->assertArrayNotHasKey('Импортер', $ugs03->service_info);
+        $this->assertArrayNotHasKey('Импортер', $ugs02->service_info);
         $this->assertDatabaseMissing('product_attribute_values', ['value' => 'ООО "ГазТеплоТорг"']);
         $this->assertDatabaseHas('product_attribute_values', [
             'product_id' => $ugs03->id,
