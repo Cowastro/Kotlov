@@ -58,6 +58,11 @@ class ManagerStorefrontExperienceTest extends TestCase
             ->assertSee('Закупка: 4.00 BYN')
             ->assertSee('Позвонить: +375 29 111-22-33')
             ->assertSee('tel:+375291112233', false);
+
+        $this->view('partials.manager-product-context', ['product' => $product, 'compact' => true])
+            ->assertSee('<details', false)
+            ->assertSee('Закрытый поставщик')
+            ->assertSee('SECRET-123');
     }
 
     public function test_only_manager_search_can_find_products_by_supplier_article_or_name(): void

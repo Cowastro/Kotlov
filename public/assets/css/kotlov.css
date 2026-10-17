@@ -2479,11 +2479,54 @@ body.ai-selector-is-open #umnico-widget-wrapper { display: none !important; }
 }
 
 .manager-product-context--compact {
-    padding: 8px;
+    padding: 6px 7px;
     font-size: 12px;
+}
+
+.manager-product-context--compact summary {
+    position: relative;
+    padding-right: 14px;
+    list-style: none;
+    cursor: pointer;
+}
+
+.manager-product-context--compact summary::-webkit-details-marker {
+    display: none;
+}
+
+.manager-product-context--compact summary::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    color: #3730a3;
+    content: '+';
+    font-weight: 700;
+}
+
+.manager-product-context--compact details[open] summary::after {
+    content: '−';
 }
 
 .manager-product-context--compact .manager-product-context__meta {
     display: grid;
     gap: 1px;
+    padding-top: 5px;
+}
+
+@media (max-width: 767px) {
+    .manager-product-context--compact {
+        margin: 7px 0 0;
+        border-radius: 7px;
+        font-size: 11px;
+        line-height: 1.25;
+    }
+
+    .manager-product-context--compact .manager-product-context__line {
+        display: grid;
+        gap: 1px;
+    }
+
+    .manager-product-context--compact .manager-product-context__meta {
+        font-size: 11px;
+    }
 }
