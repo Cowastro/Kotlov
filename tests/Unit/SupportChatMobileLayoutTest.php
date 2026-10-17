@@ -23,4 +23,30 @@ class SupportChatMobileLayoutTest extends TestCase
             $css
         );
     }
+
+    public function test_closing_mobile_chat_restores_page_position_after_keyboard_and_modal_cleanup(): void
+    {
+        $javascript = file_get_contents(__DIR__.'/../../public/assets/js/ai-product-selector.js');
+
+        $this->assertStringContainsString(
+            "supportChatElement.addEventListener('show.bs.modal', rememberSupportChatPagePosition)",
+            $javascript
+        );
+        $this->assertStringContainsString(
+            "supportChatElement.addEventListener('hide.bs.modal'",
+            $javascript
+        );
+        $this->assertStringContainsString(
+            'document.activeElement.blur()',
+            $javascript
+        );
+        $this->assertStringContainsString(
+            "supportChatElement.addEventListener('hidden.bs.modal', restoreSupportChatPagePosition)",
+            $javascript
+        );
+        $this->assertStringContainsString(
+            'window.scrollTo(position.x, position.y)',
+            $javascript
+        );
+    }
 }

@@ -23,6 +23,7 @@
     var supportChatModal = supportChatElement ? window.bootstrap.Modal.getOrCreateInstance(supportChatElement) : null;
     var supportChatConversation = null;
     var supportChatLastMessageId = 0;
+    var supportChatPagePosition = null;
     var teaserAutoHideTimer = null;
 
     function all(selector) { return Array.prototype.slice.call(document.querySelectorAll(selector)); }
@@ -110,6 +111,25 @@
         } catch (error) {
             return '';
         }
+    }
+
+    function rememberSupportChatPagePosition() {
+        supportChatPagePosition = {
+            x: window.pageXOffset || document.documentElement.scrollLeft || 0,
+            y: window.pageYOffset || document.documentElement.scrollTop || 0
+        };
+    }
+
+    function restoreSupportChatPagePosition() {
+        if (!supportChatPagePosition) return;
+        var position = supportChatPagePosition;
+        var restore = function () { window.scrollTo(position.x, position.y); };
+        restore();
+        window.requestAnimationFrame(function () {
+            restore();
+            window.requestAnimationFrame(restore);
+        });
+        window.setTimeout(restore, 120);
     }
 
     function renderSupportChat(data) {
@@ -509,7 +529,14 @@
     if (supportChatElement) {
         var supportStartForm = one('[data-support-chat-start-form]', supportChatElement);
         var supportMessageForm = one('[data-support-chat-message-form]', supportChatElement);
+        supportChatElement.addEventListener('show.bs.modal', rememberSupportChatPagePosition);
         supportChatElement.addEventListener('shown.bs.modal', loadSupportChat);
+        supportChatElement.addEventListener('hide.bs.modal', function () {
+            if (document.activeElement && supportChatElement.contains(document.activeElement)) {
+                document.activeElement.blur();
+            }
+        });
+        supportChatElement.addEventListener('hidden.bs.modal', restoreSupportChatPagePosition);
         supportStartForm.addEventListener('submit', function (event) {
             event.preventDefault();
             supportChatError('', false);
