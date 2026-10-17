@@ -848,6 +848,43 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('УГС-02', $zord->h1);
         $this->assertStringContainsString('gazby.by', $zord->content_source_url);
         $this->assertSame('Беларусь', collect($zord->specs)->firstWhere('key', 'Страна производства')['value']);
+        $this->assertSame('ООО «ЗОРД Электротеплоприбор»', collect($zord->specs)->firstWhere('key', 'Производитель')['value']);
+
+        $importerAttributeId = DB::table('attributes')->insertGetId([
+            'category_id' => $category->id,
+            'group_id' => 0,
+            'sort_order' => 999,
+            'type' => 'value',
+            'name' => 'Импортер',
+            'in_filter' => false,
+            'in_sort' => false,
+            'in_product' => true,
+            'in_brief' => false,
+            'is_comparable' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('product_attribute_values')->insert([
+            'product_id' => $zord->id,
+            'attribute_id' => $importerAttributeId,
+            'value' => 'ООО "ГазТеплоТорг", 220140, г. Минск, ул. Матусевича, д. 64, оф.151',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $zord->forceFill(['price' => 42])->save();
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261013-n',
+            '--code' => ['УТ-00004265'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $zord->refresh();
+        $this->assertSame('85.00', $zord->price);
+        $this->assertDatabaseMissing('product_attribute_values', [
+            'product_id' => $zord->id,
+            'value' => 'ООО "ГазТеплоТорг", 220140, г. Минск, ул. Матусевича, д. 64, оф.151',
+        ]);
         $this->assertDatabaseHas('supplier_product_mappings', [
             'supplier_article' => 'УТ-00004265',
             'product_id' => $zord->id,
@@ -921,6 +958,43 @@ class ResolveSbgAmbiguousBatchCommandTest extends TestCase
         $this->assertStringNotContainsString('кандидат', mb_strtolower($zord->content));
         $this->assertStringNotContainsString('розничная цена', mb_strtolower($zord->content));
         $this->assertSame('Беларусь', collect($zord->specs)->firstWhere('key', 'Страна производства')['value']);
+        $this->assertSame('ООО «ЗОРД Электротеплоприбор»', collect($zord->specs)->firstWhere('key', 'Производитель')['value']);
+
+        $importerAttributeId = DB::table('attributes')->insertGetId([
+            'category_id' => $category->id,
+            'group_id' => 0,
+            'sort_order' => 999,
+            'type' => 'value',
+            'name' => 'Импортер',
+            'in_filter' => false,
+            'in_sort' => false,
+            'in_product' => true,
+            'in_brief' => false,
+            'is_comparable' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('product_attribute_values')->insert([
+            'product_id' => $zord->id,
+            'attribute_id' => $importerAttributeId,
+            'value' => 'ООО "ГазТеплоТорг", 220140, г. Минск, ул. Матусевича, д. 64, оф.151',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $zord->forceFill(['price' => 85])->save();
+
+        $this->artisan('integration:resolve-sbg-ambiguous', [
+            '--batch' => 'exact-20261013-o',
+            '--code' => ['УТ-00006897'],
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $zord->refresh();
+        $this->assertSame('105.00', $zord->price);
+        $this->assertDatabaseMissing('product_attribute_values', [
+            'product_id' => $zord->id,
+            'value' => 'ООО "ГазТеплоТорг", 220140, г. Минск, ул. Матусевича, д. 64, оф.151',
+        ]);
         $this->assertDatabaseHas('supplier_product_mappings', [
             'supplier_article' => 'УТ-00006897',
             'product_id' => $zord->id,

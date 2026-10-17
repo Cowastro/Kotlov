@@ -240,6 +240,15 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                 'retail' => 85.00,
                 'images' => ['product/008/008168/61c1d022a721e.jpg'],
                 'source_url' => 'https://gazby.by/shop/',
+                'replace_attributes' => true,
+                'display_specs' => [
+                    ['key' => 'Контролируемые газы', 'value' => 'Природный и сжиженный газ'],
+                    ['key' => 'Питание', 'value' => '230 В, 50 Гц'],
+                    ['key' => 'Габариты', 'value' => '100×100×30 мм'],
+                    ['key' => 'Гарантия производителя', 'value' => '24 месяца'],
+                    ['key' => 'Производитель', 'value' => 'ООО «ЗОРД Электротеплоприбор»'],
+                    ['key' => 'Страна производства', 'value' => 'Беларусь'],
+                ],
                 'short' => 'Сетевой сигнализатор ЗОРД УГС-03 для круглосуточного контроля утечек природного и сжиженного газа со световой и звуковой тревогой.',
                 'content' => '<p><strong>ЗОРД УГС-03</strong> — бытовой сигнализатор загазованности для непрерывного контроля природного и сжиженного газа в кухнях, котельных и других помещениях без взрывоопасных зон.</p><p>При обнаружении опасной концентрации прибор включает световую и звуковую сигнализацию. После перебоя электропитания сигнализатор автоматически возвращается в дежурный режим.</p>',
                 'specs' => [
@@ -255,6 +264,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                     ['key' => 'Масса', 'value' => '0,3 кг'],
                     ['key' => 'Длина кабеля питания', 'value' => '1,4 м'],
                     ['key' => 'Гарантия производителя', 'value' => '24 месяца'],
+                    ['key' => 'Производитель', 'value' => 'ООО «ЗОРД Электротеплоприбор»'],
                     ['key' => 'Страна производства', 'value' => 'Беларусь'],
                 ],
             ],
@@ -266,13 +276,22 @@ class ResolveSbgAmbiguousBatchCommand extends Command
         'УТ-00006897' => [
             'sku' => 'PS-011.094',
             'item' => ['Сигнализатор загазованости', 'ЗОРД-УГС-02', 'CO+CH'],
-            'product' => ['Сигнализатор загазованности', 'ЗОРД УГС-02', 'СО+СH', 'комбинированный'],
+            'product' => ['Сигнализатор загазованности', 'ЗОРД УГС-02', 'комбинированный'],
             'search' => true,
             'refresh' => [
                 'name' => 'Сигнализатор загазованности ЗОРД УГС-02 (CO+CH) комбинированный',
                 'retail' => 105.00,
                 'images' => ['product/0011/011094/61c43eaab7cbc.jpg'],
                 'source_url' => 'https://gazby.by/shop/',
+                'replace_attributes' => true,
+                'display_specs' => [
+                    ['key' => 'Контролируемые газы', 'value' => 'Угарный газ CO и горючие газы'],
+                    ['key' => 'Питание', 'value' => '230 В, 50 Гц'],
+                    ['key' => 'Габариты', 'value' => '110×70×40 мм'],
+                    ['key' => 'Гарантия производителя', 'value' => '24 месяца'],
+                    ['key' => 'Производитель', 'value' => 'ООО «ЗОРД Электротеплоприбор»'],
+                    ['key' => 'Страна производства', 'value' => 'Беларусь'],
+                ],
                 'short' => 'Комбинированный сетевой сигнализатор ЗОРД УГС-02 для круглосуточного контроля угарного и горючих газов со световой и звуковой тревогой.',
                 'content' => '<p><strong>ЗОРД УГС-02</strong> — комбинированный бытовой сигнализатор для одновременного контроля угарного газа CO и горючих газов в кухнях, котельных и других помещениях без взрывоопасных зон.</p><p>При обнаружении опасной концентрации прибор включает световую и звуковую сигнализацию. После перебоя электропитания сигнализатор автоматически возвращается в дежурный режим. Прибор рассчитан на круглосуточную непрерывную работу от сети 230 В.</p>',
                 'specs' => [
@@ -286,6 +305,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                     ['key' => 'Масса', 'value' => '0,3 кг'],
                     ['key' => 'Длина кабеля питания', 'value' => '1,4 м'],
                     ['key' => 'Гарантия производителя', 'value' => '24 месяца'],
+                    ['key' => 'Производитель', 'value' => 'ООО «ЗОРД Электротеплоприбор»'],
                     ['key' => 'Страна производства', 'value' => 'Беларусь'],
                 ],
             ],
@@ -513,9 +533,9 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                 if ((int) $item->product_id === (int) $product->id && $item->match_status === 'matched') {
                     $stats['already']++;
                     if ($apply && $refresh !== null && ($refresh['replace_attributes'] ?? false) === true) {
-                        $this->replaceAttributes($product, $enricher, $refresh);
+                        $this->refreshProduct($product, $enricher, $refresh);
                         $stats['refreshed']++;
-                        $details[] = [$code, $rule['sku'], 'attributes refreshed', Str::limit($product->name, 64)];
+                        $details[] = [$code, $rule['sku'], 'card refreshed', Str::limit($product->name, 64)];
                     } else {
                         $details[] = [$code, $rule['sku'], 'already', Str::limit($product->name, 64)];
                     }
@@ -555,22 +575,7 @@ class ResolveSbgAmbiguousBatchCommand extends Command
                     continue;
                 }
                 if ($refresh !== null) {
-                    $name = (string) ($refresh['name'] ?? $product->name);
-                    $product->forceFill([
-                        'name' => $name,
-                        'h1' => $name,
-                        'price' => (float) $refresh['retail'],
-                        'short_description' => $refresh['short'] ?? $product->short_description,
-                        'content' => $refresh['content'] ?? $product->content,
-                        'images' => $refresh['images'],
-                        'specs' => $refresh['specs'] ?? $product->specs,
-                        'content_source_url' => $refresh['source_url'] ?? $product->content_source_url,
-                        'meta_title' => Str::limit($name.' — купить в Беларуси | KOTLOV', 255, ''),
-                        'meta_description' => Str::limit('Купить '.$name.' в KOTLOV. Характеристики, актуальная цена и наличие, доставка по Беларуси.', 255, ''),
-                    ])->save();
-                    if (($refresh['replace_attributes'] ?? false) === true) {
-                        $this->replaceAttributes($product, $enricher, $refresh);
-                    }
+                    $this->refreshProduct($product, $enricher, $refresh);
                     $stats['refreshed']++;
                 }
                 $stats['applied']++;
@@ -586,6 +591,28 @@ class ResolveSbgAmbiguousBatchCommand extends Command
             + $stats['unsafe_name'] + $stats['unsafe_refresh'] + $stats['not_candidate'] + $stats['conflict'];
 
         return $blocked === 0 ? self::SUCCESS : self::FAILURE;
+    }
+
+    /** @param array<string, mixed> $refresh */
+    private function refreshProduct(Product $product, ProductSourceEnricher $enricher, array $refresh): void
+    {
+        $name = (string) ($refresh['name'] ?? $product->name);
+        $product->forceFill([
+            'name' => $name,
+            'h1' => $name,
+            'price' => (float) $refresh['retail'],
+            'short_description' => $refresh['short'] ?? $product->short_description,
+            'content' => $refresh['content'] ?? $product->content,
+            'images' => $refresh['images'],
+            'specs' => $refresh['specs'] ?? $product->specs,
+            'content_source_url' => $refresh['source_url'] ?? $product->content_source_url,
+            'meta_title' => Str::limit($name.' — купить в Беларуси | KOTLOV', 255, ''),
+            'meta_description' => Str::limit('Купить '.$name.' в KOTLOV. Характеристики, актуальная цена и наличие, доставка по Беларуси.', 255, ''),
+        ])->save();
+
+        if (($refresh['replace_attributes'] ?? false) === true) {
+            $this->replaceAttributes($product, $enricher, $refresh);
+        }
     }
 
     /** @param list<string> $fragments */
