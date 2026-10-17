@@ -1,10 +1,84 @@
 @extends('layouts.amerce')
 
+@section('body-class', 'catalog-index-page')
+
 @section('content')
 <main id="wrapper">
 
+    <section class="mobile-catalog-index d-md-none" aria-labelledby="mobile-catalog-title">
+        <div class="mobile-catalog-search">
+            <a href="#search" data-bs-toggle="modal" class="mobile-catalog-search__button" aria-label="Открыть поиск по каталогу">
+                <i class="icon icon-MagnifyingGlass" aria-hidden="true"></i>
+                <span>Поиск в каталоге KOTLOV</span>
+                <i class="icon icon-Package mobile-catalog-search__end" aria-hidden="true"></i>
+            </a>
+        </div>
+
+        @if ($popularCategories->isNotEmpty())
+            <div class="mobile-catalog-popular">
+                <p>Популярные категории</p>
+                <div class="mobile-catalog-popular__chips">
+                    @foreach ($popularCategories as $popularCategory)
+                        <a href="/{{ $popularCategory->slug }}">{{ $popularCategory->name }}</a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        <div class="mobile-catalog-list">
+            <h1 id="mobile-catalog-title" class="visually-hidden">Каталог товаров</h1>
+            @foreach ($rootCategories as $category)
+                @php
+                    $iconClass = config('navigation.icon_classes.' . $category->slug, 'icon-Package');
+                    $children = $category->catalogChildren;
+                @endphp
+                <details class="mobile-catalog-category">
+                    <summary>
+                        <span class="mobile-catalog-category__icon"><i class="icon {{ $iconClass }}"></i></span>
+                        <span class="mobile-catalog-category__name">{{ $category->name }}</span>
+                        <span class="mobile-catalog-category__caret"><i class="icon icon-CaretDown"></i></span>
+                    </summary>
+                    <div class="mobile-catalog-category__children">
+                        <a href="/{{ $category->slug }}" class="mobile-catalog-all-link">
+                            Все товары раздела
+                            <span>{{ $category->products_count }}</span>
+                        </a>
+
+                        @foreach ($children as $child)
+                            @if ($child->catalogChildren->isNotEmpty())
+                                <details class="mobile-catalog-subcategory">
+                                    <summary>
+                                        <span>{{ $child->name }}</span>
+                                        <i class="icon icon-CaretDown"></i>
+                                    </summary>
+                                    <div class="mobile-catalog-subcategory__children">
+                                        <a href="/{{ $child->slug }}" class="mobile-catalog-all-link mobile-catalog-all-link--nested">
+                                            Все товары
+                                            <span>{{ $child->products_count }}</span>
+                                        </a>
+                                        @foreach ($child->catalogChildren as $grandchild)
+                                            <a href="/{{ $grandchild->slug }}" class="mobile-catalog-leaf-link">
+                                                <span>{{ $grandchild->name }}</span>
+                                                <small>{{ $grandchild->products_count }}</small>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </details>
+                            @else
+                                <a href="/{{ $child->slug }}" class="mobile-catalog-leaf-link">
+                                    <span>{{ $child->name }}</span>
+                                    <small>{{ $child->products_count }}</small>
+                                </a>
+                            @endif
+                        @endforeach
+                    </div>
+                </details>
+            @endforeach
+        </div>
+    </section>
+
     {{-- Заголовок --}}
-    <section class="section-page-title text-center flat-spacing-2 pb-0">
+    <section class="section-page-title text-center flat-spacing-2 pb-0 d-none d-md-block">
         <div class="container">
             <div class="main-page-title">
                 <div class="breadcrumbs">
@@ -22,7 +96,7 @@
     </section>
 
     {{-- Сетка категорий --}}
-    <div class="flat-spacing">
+    <div class="flat-spacing d-none d-md-block">
         <div class="container">
             @if ($rootCategories->count() > 0)
                 <div class="tf-grid-layout ssm-col-2 xl-col-4 gap-lg-30">

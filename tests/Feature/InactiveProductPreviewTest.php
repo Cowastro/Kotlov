@@ -37,6 +37,9 @@ class InactiveProductPreviewTest extends TestCase
             ->assertSee($product->name)
             ->assertSee('133.00 BYN')
             ->assertSee('Нет в наличии')
+            ->assertSee('class="product-detail-page"', false)
+            ->assertSee('class="mobile-product-topbar d-md-none"', false)
+            ->assertSee('class="mobile-product-media-actions d-md-none"', false)
             ->assertDontSee('class="tf-btn type-xl animate-btn w-100 btn-add-to-cart"', false);
     }
 

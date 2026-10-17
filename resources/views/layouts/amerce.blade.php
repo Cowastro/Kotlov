@@ -135,7 +135,7 @@
     </style>
 </head>
 
-<body>
+<body class="@yield('body-class')">
 
     @include('partials.yandex-metrika-noscript')
     @include('partials.amerce-header')

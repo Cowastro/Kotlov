@@ -90,25 +90,19 @@
 
 <!-- Toolbar -->
 <div class="tf-toolbar-bottom">
-    <div class="toolbar-item">
+    <div class="toolbar-item{{ request()->is('/') ? ' is-active' : '' }}">
+        <a href="/">
+            <span class="toolbar-icon"><i class="icon icon-HouseLine"></i></span>
+            <span class="toolbar-label">Главная</span>
+        </a>
+    </div>
+    <div class="toolbar-item{{ request()->is('catalog') || request()->is('catalog/*') ? ' is-active' : '' }}">
         <a href="/catalog">
             <span class="toolbar-icon"><i class="icon icon-storefront"></i></span>
             <span class="toolbar-label">Каталог</span>
         </a>
     </div>
-    <div class="toolbar-item">
-        <a href="#search" data-bs-toggle="modal">
-            <span class="toolbar-icon"><i class="icon icon-MagnifyingGlass"></i></span>
-            <span class="toolbar-label">Поиск</span>
-        </a>
-    </div>
-    <div class="toolbar-item">
-        <a href="/account">
-            <span class="toolbar-icon"><i class="icon icon-User"></i></span>
-            <span class="toolbar-label">Кабинет</span>
-        </a>
-    </div>
-    <div class="toolbar-item">
+    <div class="toolbar-item{{ request()->is('wishlist') ? ' is-active' : '' }}">
         <a href="/wishlist">
             <span class="toolbar-icon">
                 <i class="icon icon-HeartStraight"></i>
@@ -117,13 +111,19 @@
             <span class="toolbar-label">Избранное</span>
         </a>
     </div>
-    <div class="toolbar-item">
+    <div class="toolbar-item{{ request()->is('cart') ? ' is-active' : '' }}">
         <a href="/cart">
             <span class="toolbar-icon">
                 <i class="icon icon-Handbag"></i>
                 <span class="toolbar-count cart-count">0</span>
             </span>
             <span class="toolbar-label">Корзина</span>
+        </a>
+    </div>
+    <div class="toolbar-item{{ request()->is('account') || request()->is('account/*') ? ' is-active' : '' }}">
+        <a href="/account">
+            <span class="toolbar-icon"><i class="icon icon-User"></i></span>
+            <span class="toolbar-label">Кабинет</span>
         </a>
     </div>
 </div>

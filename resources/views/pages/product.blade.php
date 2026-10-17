@@ -1,11 +1,24 @@
 @extends('layouts.amerce')
 
+@section('body-class', 'product-detail-page')
+
 @if($product->is_archived)
 @section('robots', 'noindex, follow')
 @endif
 
 @section('content')
-<main id="wrapper">
+<main id="wrapper" class="product-page-shell">
+
+    <div class="mobile-product-topbar d-md-none">
+        <a href="{{ $product->category ? '/' . $product->category->slug : '/catalog' }}"
+            class="mobile-product-topbar__action" aria-label="Вернуться в категорию">
+            <i class="icon icon-CaretLeft"></i>
+        </a>
+        <p class="mobile-product-topbar__title">{{ Str::limit($product->h1 ?: $product->name, 38) }}</p>
+        <a href="#search" data-bs-toggle="modal" class="mobile-product-topbar__action" aria-label="Поиск">
+            <i class="icon icon-MagnifyingGlass"></i>
+        </a>
+    </div>
 
     @if (session('success'))
     <div class="container mt-16">
@@ -67,6 +80,9 @@
                 {{-- Галерея --}}
                 <div class="col-md-6">
                     <div class="tf-product-media-wrap sticky-top">
+                        @php
+                            $isWishlisted = in_array((int) $product->id, $wishlistProductIds ?? [], true);
+                        @endphp
                         <div class="product-thumbs-slider style-row row_left">
                             <div class="flat-wrap-media-product">
                                 <div dir="ltr" class="swiper tf-product-media-main" id="gallery-swiper-started"
@@ -122,6 +138,17 @@
                                     </div>
                                 </div>
                             @endif
+                        </div>
+                        <div class="mobile-product-media-actions d-md-none" aria-label="Действия с товаром">
+                            <a href="#share" data-bs-toggle="modal" class="mobile-product-media-action" aria-label="Поделиться товаром">
+                                <i class="icon icon-ShareNetwork"></i>
+                            </a>
+                            <a href="#" data-product-id="{{ $product->id }}"
+                                class="mobile-product-media-action wishlist-toggle{{ $isWishlisted ? ' is-active' : '' }}"
+                                aria-label="{{ $isWishlisted ? 'Удалить товар из избранного' : 'Добавить товар в избранное' }}"
+                                aria-pressed="{{ $isWishlisted ? 'true' : 'false' }}">
+                                <i class="icon {{ $isWishlisted ? 'icon-Heart' : 'icon-heart' }}" aria-hidden="true"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -419,9 +446,6 @@
 
                             {{-- Доп. ссылки --}}
                             <div class="tf-product-extra-link">
-                                @php
-                                    $isWishlisted = in_array((int) $product->id, $wishlistProductIds ?? [], true);
-                                @endphp
                                 <a href="#" data-product-id="{{ $product->id }}"
                                     class="product-extra-icon link wishlist-toggle{{ $isWishlisted ? ' is-active' : '' }}"
                                     aria-label="{{ $isWishlisted ? 'Удалить' : 'Добавить' }} {{ $product->name }} {{ $isWishlisted ? 'из избранного' : 'в избранное' }}"
@@ -537,6 +561,11 @@
                     </div>
                 </div>
                 <div class="tf-sticky-atc-infos">
+                    @if ($displayPrice > 0)
+                        <p class="mobile-sticky-price d-md-none">
+                            {{ number_format($displayPrice, 2, '.', ' ') }} <span>BYN</span>
+                        </p>
+                    @endif
                     <div class="tf-product-info-quantity">
                         <p class="title">Количество:</p>
                         <div class="wg-quantity style-2">
@@ -552,10 +581,13 @@
                     <a href="#shoppingCart"
                         class="tf-btn animate-btn btn-add-to-cart"
                         data-product-id="{{ $product->id }}">
-                        В корзину
-                        @if ($displayPrice > 0)
-                            — {{ number_format($displayPrice, 2, '.', ' ') }} BYN
-                        @endif
+                        <span class="d-md-none">В корзину</span>
+                        <span class="d-none d-md-inline">
+                            В корзину
+                            @if ($displayPrice > 0)
+                                — {{ number_format($displayPrice, 2, '.', ' ') }} BYN
+                            @endif
+                        </span>
                     </a>
                 </div>
             </div>

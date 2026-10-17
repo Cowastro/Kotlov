@@ -44,11 +44,34 @@ class CatalogIndexController extends Controller
             ->filter(fn (Category $category) => $category->products_count > 0)
             ->values();
 
+        $attachCatalogChildren = function (Category $category) use (&$attachCatalogChildren, $categoriesByParent, $countBranchProducts): Category {
+            $children = $categoriesByParent
+                ->get((int) $category->id, collect())
+                ->each(fn (Category $child) => $child->products_count = $countBranchProducts((int) $child->id))
+                ->filter(fn (Category $child) => $child->products_count > 0)
+                ->sortBy(fn (Category $child) => mb_strtolower($child->name))
+                ->values()
+                ->map(fn (Category $child) => $attachCatalogChildren($child));
+
+            $category->setRelation('catalogChildren', $children);
+
+            return $category;
+        };
+
+        $rootCategories = $rootCategories
+            ->map(fn (Category $category) => $attachCatalogChildren($category))
+            ->values();
+
+        $popularCategories = $rootCategories
+            ->sortByDesc('products_count')
+            ->take(3)
+            ->values();
+
         $title       = 'Каталог товаров — котлы, печи, камины, дымоходы и отопление в Беларуси';
         $description = 'Более 7 000 товаров для отопления: котлы, печи, камины, дымоходы, тепловые насосы, водонагреватели. Доставка по Беларуси. Маркетплейс KOTLOV.';
         $keywords    = 'каталог котлов, купить печь, камины беларусь, дымоходы, отопление, тепловые насосы, водонагреватели';
         $ogImage     = asset('img/popular/boiler_img.jpg');
 
-        return view('pages.catalog-index', compact('rootCategories', 'title', 'description', 'keywords', 'ogImage'));
+        return view('pages.catalog-index', compact('rootCategories', 'popularCategories', 'title', 'description', 'keywords', 'ogImage'));
     }
 }
