@@ -65,6 +65,7 @@
                 Учитывайте теплопотери здания, доступный вид топлива, объём загрузочной камеры и требуемую автономность. Мощность котла подбирают расчётом, а не только по площади дома — это помогает избежать перерасхода топлива и работы в неэффективном режиме.
             </p>
             @if ($solidFuelQuickLinks->isNotEmpty())
+                @include('partials.catalog-quick-filter-swipe-hint')
                 <nav class="catalog-quick-filter__items" aria-label="Быстрый подбор твердотопливного котла">
                     <span class="catalog-quick-filter__label">Быстрый выбор:</span>
                     @foreach ($solidFuelQuickLinks as $link)

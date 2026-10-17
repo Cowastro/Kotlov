@@ -58,6 +58,7 @@
                     <strong id="electric-sauna-quick-filter-title">Подберите электрокаменку по объёму парной</strong>
                     <span>мощность и остальные параметры доступны в фильтрах</span>
                 </div>
+                @include('partials.catalog-quick-filter-swipe-hint')
                 <nav class="catalog-quick-filter__items" aria-label="Быстрый подбор электрокаменки">
                     <span class="catalog-quick-filter__label">Объём парной:</span>
                     @foreach ($electricSaunaQuickLinks as $link)

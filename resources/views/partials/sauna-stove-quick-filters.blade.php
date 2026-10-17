@@ -62,6 +62,7 @@
                     <strong id="sauna-quick-filter-title">Подберите печь для своей парной</strong>
                     <span>по объёму и конструкции</span>
                 </div>
+                @include('partials.catalog-quick-filter-swipe-hint')
                 <nav class="catalog-quick-filter__items" aria-label="Быстрый подбор банной печи">
                     <span class="catalog-quick-filter__label">Быстрый выбор:</span>
                     @foreach ($saunaQuickLinks as $link)

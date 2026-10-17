@@ -65,6 +65,7 @@
                 Одноконтурная модель работает на отопление, двухконтурная дополнительно готовит горячую воду. При выборе также учитывайте теплопотери дома, тип камеры сгорания, дымоудаление и доступность сервисного обслуживания.
             </p>
             @if ($gasBoilerQuickLinks->isNotEmpty())
+                @include('partials.catalog-quick-filter-swipe-hint')
                 <nav class="catalog-quick-filter__items" aria-label="Быстрый подбор газового котла">
                     <span class="catalog-quick-filter__label">Быстрый выбор:</span>
                     @foreach ($gasBoilerQuickLinks as $link)

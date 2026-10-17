@@ -160,6 +160,7 @@
                 </div>
                 <p class="catalog-seo-guide__text">{{ $stoveGuide['text'] }}</p>
                 @if ($stoveQuickLinks->isNotEmpty())
+                    @include('partials.catalog-quick-filter-swipe-hint')
                     <nav class="catalog-quick-filter__items" aria-label="{{ $stoveQuickFilterConfig['aria'] }}">
                         <span class="catalog-quick-filter__label">Быстрый выбор:</span>
                         @foreach ($stoveQuickLinks as $link)

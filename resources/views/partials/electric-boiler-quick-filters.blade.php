@@ -57,6 +57,7 @@
                 Мощность электрокотла определяют по теплопотерям здания и доступной электрической нагрузке. До покупки проверьте выделенную мощность, число фаз, ступени нагрева и совместимость с автоматикой системы отопления.
             </p>
             @if ($electricBoilerQuickLinks->isNotEmpty())
+                @include('partials.catalog-quick-filter-swipe-hint')
                 <nav class="catalog-quick-filter__items" aria-label="Быстрый подбор электрического котла">
                     <span class="catalog-quick-filter__label">Площадь дома:</span>
                     @foreach ($electricBoilerQuickLinks as $link)

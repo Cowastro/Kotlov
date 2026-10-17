@@ -28,6 +28,8 @@ class GasAndElectricBoilerQuickFiltersTest extends TestCase
         $this->assertStringContainsString('двухконтурные', $html);
         $this->assertStringContainsString('attr%5B53%5D%5B0%5D=53', $html);
         $this->assertStringContainsString('закрытая камера', $html);
+        $this->assertStringContainsString('catalog-quick-filter__swipe-hint', $html);
+        $this->assertStringContainsString('Листайте варианты вбок', $html);
         $this->assertStringContainsString('/elektricheskie', $html);
         $this->assertStringContainsString('/tverdotoplivnye', $html);
     }
