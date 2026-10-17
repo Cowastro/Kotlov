@@ -45,6 +45,7 @@ class MobileCatalogNavigationTest extends TestCase
             ->assertSee('class="mobile-catalog-index d-md-none"', false)
             ->assertSee('Поиск в каталоге KOTLOV')
             ->assertSee('/catalog-icons/heater', false)
+            ->assertSee('class="mb-cat-icon"', false)
             ->assertSeeInOrder(['Альфа раздел', 'Бета раздел']);
     }
 

@@ -423,6 +423,16 @@
             if (e.target && e.target.id === 'shoppingCart') {
                 loadMiniCart();
             }
+
+            if (e.target && e.target.id === 'mobileMenu') {
+                document.body.classList.add('mobile-catalog-menu-is-open');
+            }
+        });
+
+        document.addEventListener('hidden.bs.offcanvas', function (e) {
+            if (e.target && e.target.id === 'mobileMenu') {
+                document.body.classList.remove('mobile-catalog-menu-is-open');
+            }
         });
 
         // ── Чекбокс согласия в mini-cart ──────────────────

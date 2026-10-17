@@ -28,11 +28,25 @@
             </div>
             <ul class="mb-cat-list">
                 @foreach ($navCategories as $rootCat)
-                    @php $children = $rootCat->children->where('is_active', true); @endphp
+                    @php
+                        $children = $rootCat->children->where('is_active', true);
+                        $iconFile = config('navigation.icons.' . $rootCat->slug);
+                        $iconClass = config('navigation.icon_classes.' . $rootCat->slug, 'icon-SquaresFour');
+                    @endphp
                     @if ($children->count() > 0)
                         <li class="mb-cat-item has-children">
                             <div class="mb-cat-row">
-                                <a href="/{{ $rootCat->slug }}" class="mb-cat-link">{{ $rootCat->name }}</a>
+                                <a href="/{{ $rootCat->slug }}" class="mb-cat-link">
+                                    <span class="mb-cat-icon" aria-hidden="true">
+                                        @if ($iconFile)
+                                            <img src="{{ route('catalog.icon', ['file' => pathinfo($iconFile, PATHINFO_FILENAME)]) }}"
+                                                alt="" width="26" height="26" loading="lazy">
+                                        @else
+                                            <i class="icon {{ $iconClass }}"></i>
+                                        @endif
+                                    </span>
+                                    <span>{{ $rootCat->name }}</span>
+                                </a>
                                 <button class="mb-cat-toggle" type="button">
                                     <i class="icon icon-CaretDown"></i>
                                 </button>
@@ -49,14 +63,27 @@
                     @else
                         <li class="mb-cat-item">
                             <div class="mb-cat-row">
-                                <a href="/{{ $rootCat->slug }}" class="mb-cat-link">{{ $rootCat->name }}</a>
+                                <a href="/{{ $rootCat->slug }}" class="mb-cat-link">
+                                    <span class="mb-cat-icon" aria-hidden="true">
+                                        @if ($iconFile)
+                                            <img src="{{ route('catalog.icon', ['file' => pathinfo($iconFile, PATHINFO_FILENAME)]) }}"
+                                                alt="" width="26" height="26" loading="lazy">
+                                        @else
+                                            <i class="icon {{ $iconClass }}"></i>
+                                        @endif
+                                    </span>
+                                    <span>{{ $rootCat->name }}</span>
+                                </a>
                             </div>
                         </li>
                     @endif
                 @endforeach
                 <li class="mb-cat-item">
                     <div class="mb-cat-row">
-                        <a href="/catalog" class="mb-cat-link cl-text-2">Весь каталог →</a>
+                        <a href="/catalog" class="mb-cat-link cl-text-2">
+                            <span class="mb-cat-icon" aria-hidden="true"><i class="icon icon-SquaresFour"></i></span>
+                            <span>Весь каталог →</span>
+                        </a>
                     </div>
                 </li>
             </ul>
