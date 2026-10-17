@@ -19,12 +19,14 @@ class SupportConversation extends Model
         'last_message_at',
         'last_visitor_message_at',
         'last_manager_message_at',
+        'ai_handoff_at',
     ];
 
     protected $casts = [
         'last_message_at' => 'datetime',
         'last_visitor_message_at' => 'datetime',
         'last_manager_message_at' => 'datetime',
+        'ai_handoff_at' => 'datetime',
     ];
 
     public const STATUSES = [

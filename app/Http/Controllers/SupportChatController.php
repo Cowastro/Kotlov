@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateSupportChatAiReply;
+use App\Models\SupportChatSetting;
 use App\Models\SupportConversation;
 use App\Rules\PhoneNotSpam;
 use App\Services\SupportChatNotifier;
@@ -21,7 +23,7 @@ class SupportChatController extends Controller
         }
 
         $conversation->messages()
-            ->where('sender_type', 'manager')
+            ->whereIn('sender_type', ['manager', 'assistant'])
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 
@@ -67,7 +69,7 @@ class SupportChatController extends Controller
         });
 
         $isFirstMessage = ! $conversation->messages()->exists();
-        $conversation->messages()->create([
+        $message = $conversation->messages()->create([
             'sender_type' => 'visitor',
             'body' => $validated['message'],
         ]);
@@ -80,6 +82,7 @@ class SupportChatController extends Controller
         if ($isFirstMessage) {
             $notifier->notifyNewConversation($conversation);
         }
+        $this->dispatchAiReply($conversation, $message->id);
 
         return $this->conversationResponse($conversation->fresh(), 201);
     }
@@ -94,7 +97,7 @@ class SupportChatController extends Controller
             'message' => ['required', 'string', 'min:1', 'max:2000'],
         ]);
 
-        $conversation->messages()->create([
+        $message = $conversation->messages()->create([
             'sender_type' => 'visitor',
             'body' => $validated['message'],
         ]);
@@ -104,6 +107,7 @@ class SupportChatController extends Controller
             'last_visitor_message_at' => now(),
         ]);
         $notifier->notifyNewMessage($conversation);
+        $this->dispatchAiReply($conversation, $message->id);
 
         return $this->conversationResponse($conversation->fresh(), 201);
     }
@@ -129,12 +133,21 @@ class SupportChatController extends Controller
             'messages' => $conversation->messages->map(fn ($message): array => [
                 'id' => $message->id,
                 'sender' => $message->sender_type,
-                'sender_name' => $message->sender_type === 'manager'
-                    ? ($message->sender?->name ?: 'Консультант KOTLOV')
-                    : $conversation->name,
+                'sender_name' => match ($message->sender_type) {
+                    'manager' => $message->sender?->name ?: 'Консультант KOTLOV',
+                    'assistant' => 'AI-помощник KOTLOV',
+                    default => $conversation->name,
+                },
                 'body' => $message->body,
                 'created_at' => $message->created_at?->toIso8601String(),
             ])->values(),
         ], $status);
+    }
+
+    private function dispatchAiReply(SupportConversation $conversation, int $messageId): void
+    {
+        if (SupportChatSetting::aiEnabled()) {
+            GenerateSupportChatAiReply::dispatchAfterResponse($conversation->id, $messageId);
+        }
     }
 }

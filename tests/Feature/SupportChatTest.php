@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\SupportConversations\Pages\ListSupportConversations;
 use App\Filament\Resources\SupportConversations\Pages\ViewSupportConversation;
+use App\Models\SupportChatSetting;
 use App\Models\SupportConversation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -107,6 +109,28 @@ class SupportChatTest extends TestCase
         $this->assertNotNull($message->fresh()->read_at);
     }
 
+    public function test_ai_assistant_reply_is_returned_as_a_team_message_and_marked_read(): void
+    {
+        $this->postJson(route('support-chat.start'), [
+            'name' => 'Ирина',
+            'phone' => '+375 29 444-55-66',
+            'message' => 'Нужен котёл',
+        ])->assertCreated();
+
+        $conversation = SupportConversation::query()->sole();
+        $assistantMessage = $conversation->messages()->create([
+            'sender_type' => 'assistant',
+            'body' => 'Я AI-помощник KOTLOV. Какая площадь дома?',
+        ]);
+
+        $this->getJson(route('support-chat.show'))
+            ->assertOk()
+            ->assertJsonPath('messages.1.sender', 'assistant')
+            ->assertJsonPath('messages.1.sender_name', 'AI-помощник KOTLOV');
+
+        $this->assertNotNull($assistantMessage->fresh()->read_at);
+    }
+
     public function test_manager_can_read_and_reply_from_admin_chat(): void
     {
         $manager = User::factory()->create([
@@ -147,5 +171,32 @@ class SupportChatTest extends TestCase
             'status' => 'answered',
             'assigned_user_id' => $manager->id,
         ]);
+    }
+
+    public function test_manager_can_enable_and_disable_safe_ai_replies_from_chat_list(): void
+    {
+        config([
+            'services.ai.api_key' => 'deepseek-test-key',
+            'services.ai.api_url' => 'https://api.deepseek.test/chat/completions',
+        ]);
+        $manager = User::factory()->create([
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(ListSupportConversations::class)
+            ->assertActionVisible('toggleAiReplies')
+            ->callAction('toggleAiReplies')
+            ->assertHasNoActionErrors();
+
+        $this->assertTrue(SupportChatSetting::current()->fresh()->ai_enabled);
+
+        Livewire::actingAs($manager)
+            ->test(ListSupportConversations::class)
+            ->callAction('toggleAiReplies')
+            ->assertHasNoActionErrors();
+
+        $this->assertFalse(SupportChatSetting::current()->fresh()->ai_enabled);
     }
 }

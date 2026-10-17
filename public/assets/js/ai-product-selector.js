@@ -136,7 +136,8 @@
         messagesHost.replaceChildren();
         messages.forEach(function (message) {
             var row = document.createElement('div');
-            row.className = 'support-chat__message support-chat__message--' + (message.sender === 'manager' ? 'manager' : 'visitor');
+            var isTeam = message.sender === 'manager' || message.sender === 'assistant';
+            row.className = 'support-chat__message support-chat__message--' + (isTeam ? 'manager' : 'visitor');
             var bubble = document.createElement('div');
             bubble.className = 'support-chat__bubble';
             var name = document.createElement('div');
