@@ -11,7 +11,7 @@ class SearchController extends Controller
 {
     public function index(Request $request)
     {
-        $q = trim($request->get('q', ''));
+        $q = mb_substr(trim($request->get('q', '')), 0, 100);
         $category = $request->get('category', '');
         $sort = $request->get('sort', '');
 
@@ -61,16 +61,17 @@ class SearchController extends Controller
      */
     public function suggest(Request $request)
     {
-        $q = trim($request->get('q', ''));
+        $q = mb_substr(trim($request->get('q', '')), 0, 100);
 
         if (mb_strlen($q) < 2) {
             return response()->json([]);
         }
 
         // Товары
+        $search = app(StorefrontProductSearch::class);
         $products = Product::active()
             ->notArchived();
-        app(StorefrontProductSearch::class)->apply($products, $q);
+        $search->apply($products, $q);
         $products = $products
             ->select('id', 'name', 'slug', 'price', 'category_id')
             ->with('category:id,slug')
@@ -88,7 +89,13 @@ class SearchController extends Controller
 
         // Категории
         $categories = Category::where('is_active', true)
-            ->where('name', 'like', "%{$q}%")
+            ->where(function ($query) use ($search, $q): void {
+                foreach ($search->variants($q) as $variant) {
+                    foreach ($search->caseVariants($variant) as $caseVariant) {
+                        $query->orWhere('name', 'like', '%'.$caseVariant.'%');
+                    }
+                }
+            })
             ->whereHas('products', fn ($products) => $products->active()->notArchived())
             ->select('id', 'name', 'slug')
             ->limit(3)

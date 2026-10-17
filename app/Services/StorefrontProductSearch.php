@@ -6,38 +6,183 @@ use Illuminate\Database\Eloquent\Builder;
 
 class StorefrontProductSearch
 {
+    private const MAX_TOKENS = 8;
+
     public function apply(Builder $query, string $search): Builder
     {
-        $normalized = mb_strtolower(trim($search));
-        $normalized = preg_replace('/гидравлическ\S*\s+разделител\S*/u', 'гидрострелка', $normalized);
-        $tokens = preg_split('/[\s\-–—]+/u', $normalized, -1, PREG_SPLIT_NO_EMPTY);
+        $tokens = array_slice($this->tokens($search), 0, self::MAX_TOKENS);
+
+        if ($tokens === []) {
+            return $query;
+        }
 
         return $query->where(function (Builder $matches) use ($search, $tokens): void {
-            $matches->where('name', 'like', '%'.$search.'%')
-                ->orWhere('sku', 'like', '%'.$search.'%')
-                ->orWhere(function (Builder $words) use ($tokens): void {
-                    foreach ($tokens as $token) {
-                        $alternatives = str_starts_with($token, 'гидрострел')
-                            ? ['гидрострел', 'гидравлическ разделител']
-                            : [$token];
+            foreach ($this->variants($search) as $variant) {
+                foreach ($this->caseVariants($variant) as $caseVariant) {
+                    $matches->orWhere('name', 'like', '%'.$caseVariant.'%')
+                        ->orWhere('sku', 'like', '%'.$caseVariant.'%')
+                        ->orWhereHas('brand', fn (Builder $brand) => $brand->where('name', 'like', '%'.$caseVariant.'%'));
+                }
+            }
 
-                        $words->where(function (Builder $synonyms) use ($alternatives): void {
-                            foreach ($alternatives as $alternative) {
-                                $synonyms->orWhere(function (Builder $phrase) use ($alternative): void {
-                                    foreach (explode(' ', $alternative) as $word) {
-                                        $phrase->where(function (Builder $fields) use ($word): void {
-                                            foreach (array_unique([$word, mb_convert_case($word, MB_CASE_TITLE), mb_strtoupper($word)]) as $variant) {
-                                                $fields->orWhere('name', 'like', '%'.$variant.'%')
-                                                    ->orWhere('sku', 'like', '%'.$variant.'%')
-                                                    ->orWhereHas('brand', fn (Builder $brand) => $brand->where('name', 'like', '%'.$variant.'%'));
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
+            $matches->orWhere(function (Builder $allTokens) use ($tokens): void {
+                foreach ($tokens as $alternatives) {
+                    $allTokens->where(function (Builder $tokenMatch) use ($alternatives): void {
+                        foreach ($alternatives as $alternative) {
+                            $tokenMatch->orWhere(function (Builder $phrase) use ($alternative): void {
+                                foreach (explode(' ', $alternative) as $word) {
+                                    $phrase->where(function (Builder $fields) use ($word): void {
+                                        foreach ($this->caseVariants($word) as $caseVariant) {
+                                            $fields->orWhere('name', 'like', '%'.$caseVariant.'%')
+                                                ->orWhere('sku', 'like', '%'.$caseVariant.'%')
+                                                ->orWhereHas('brand', fn (Builder $brand) => $brand->where('name', 'like', '%'.$caseVariant.'%'))
+                                                ->orWhereHas('category', fn (Builder $category) => $category->where('name', 'like', '%'.$caseVariant.'%'));
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            });
         });
+    }
+
+    /**
+     * Search variants cover transliteration, a wrong keyboard layout and
+     * visually identical Latin/Cyrillic model codes without an external API.
+     *
+     * @return list<string>
+     */
+    public function variants(string $value): array
+    {
+        $value = $this->normalize($value);
+
+        if ($value === '') {
+            return [];
+        }
+
+        $variants = [$value];
+        $variants[] = $this->swapKeyboardLayout($value);
+        $variants[] = $this->latinToCyrillic($value);
+
+        $latin = $this->cyrillicToLatin($value);
+        $variants[] = $latin;
+        $variants[] = $latin ? str_replace('ks', 'x', $latin) : null;
+        $variants[] = $this->visualLatinToCyrillic($value);
+        $variants[] = $this->visualCyrillicToLatin($value);
+
+        if (preg_match('/гидравлическ\S*\s+разделител\S*/u', $value)) {
+            $variants[] = 'гидрострелка';
+        }
+        if (str_starts_with($value, 'гидрострел')) {
+            $variants[] = 'гидравлический разделитель';
+        }
+
+        return array_values(array_unique(array_filter($variants, fn (?string $variant): bool => filled($variant))));
+    }
+
+    /** @return list<string> */
+    public function caseVariants(string $value): array
+    {
+        return array_values(array_unique([$value, mb_convert_case($value, MB_CASE_TITLE), mb_strtoupper($value)]));
+    }
+
+    /** @return list<list<string>> */
+    private function tokens(string $search): array
+    {
+        $normalized = $this->normalize($search);
+        $normalized = preg_replace('/гидравлическ\S*\s+разделител\S*/u', 'гидрострелка', $normalized) ?? $normalized;
+        $tokens = preg_split('/[^\pL\pN]+/u', $normalized, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return array_map(fn (string $token): array => $this->variants($token), $tokens);
+    }
+
+    private function normalize(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+
+        return preg_replace('/\s+/u', ' ', $value) ?? $value;
+    }
+
+    private function latinToCyrillic(string $value): ?string
+    {
+        if (! preg_match('/[a-z]/', $value)) {
+            return null;
+        }
+
+        return strtr($value, [
+            'shch' => 'щ', 'sch' => 'щ', 'yo' => 'ё', 'zh' => 'ж', 'kh' => 'х',
+            'ts' => 'ц', 'ch' => 'ч', 'sh' => 'ш', 'yu' => 'ю', 'ya' => 'я', 'ye' => 'е',
+            'a' => 'а', 'b' => 'б', 'c' => 'к', 'd' => 'д', 'e' => 'е', 'f' => 'ф',
+            'g' => 'г', 'h' => 'х', 'i' => 'и', 'j' => 'дж', 'k' => 'к', 'l' => 'л',
+            'm' => 'м', 'n' => 'н', 'o' => 'о', 'p' => 'п', 'q' => 'к', 'r' => 'р',
+            's' => 'с', 't' => 'т', 'u' => 'у', 'v' => 'в', 'w' => 'в', 'x' => 'кс',
+            'y' => 'ы', 'z' => 'з',
+        ]);
+    }
+
+    private function cyrillicToLatin(string $value): ?string
+    {
+        if (! preg_match('/[а-яё]/u', $value)) {
+            return null;
+        }
+
+        return strtr($value, [
+            'щ' => 'shch', 'ш' => 'sh', 'ч' => 'ch', 'ц' => 'ts', 'ю' => 'yu', 'я' => 'ya',
+            'ё' => 'yo', 'ж' => 'zh', 'х' => 'kh', 'а' => 'a', 'б' => 'b', 'в' => 'v',
+            'г' => 'g', 'д' => 'd', 'е' => 'e', 'з' => 'z', 'и' => 'i', 'й' => 'y',
+            'к' => 'k', 'л' => 'l', 'м' => 'm', 'н' => 'n', 'о' => 'o', 'п' => 'p',
+            'р' => 'r', 'с' => 's', 'т' => 't', 'у' => 'u', 'ф' => 'f', 'ъ' => '',
+            'ы' => 'y', 'ь' => '', 'э' => 'e',
+        ]);
+    }
+
+    private function swapKeyboardLayout(string $value): ?string
+    {
+        $latin = "`qwertyuiop[]asdfghjkl;'zxcvbnm,.";
+        $cyrillic = 'ёйцукенгшщзхъфывапролджэячсмитьбю';
+
+        if (preg_match('/[a-z]/', $value)) {
+            return strtr($value, array_combine(mb_str_split($latin), mb_str_split($cyrillic)));
+        }
+
+        if (preg_match('/[а-яё]/u', $value)) {
+            return strtr($value, array_combine(mb_str_split($cyrillic), mb_str_split($latin)));
+        }
+
+        return null;
+    }
+
+    private function visualLatinToCyrillic(string $value): ?string
+    {
+        return $this->visualVariant($value, [
+            'a' => 'а', 'b' => 'в', 'c' => 'с', 'e' => 'е', 'h' => 'н', 'k' => 'к',
+            'm' => 'м', 'o' => 'о', 'p' => 'р', 't' => 'т', 'x' => 'х', 'y' => 'у',
+        ], '/[a-z]/');
+    }
+
+    private function visualCyrillicToLatin(string $value): ?string
+    {
+        return $this->visualVariant($value, [
+            'а' => 'a', 'в' => 'b', 'с' => 'c', 'е' => 'e', 'н' => 'h', 'к' => 'k',
+            'м' => 'm', 'о' => 'o', 'р' => 'p', 'т' => 't', 'х' => 'x', 'у' => 'y',
+        ], '/[а-яё]/u');
+    }
+
+    /** @param array<string, string> $map */
+    private function visualVariant(string $value, array $map, string $letterPattern): ?string
+    {
+        if (! preg_match($letterPattern, $value)) {
+            return null;
+        }
+
+        foreach (mb_str_split($value) as $character) {
+            if (preg_match($letterPattern, $character) && ! isset($map[$character])) {
+                return null;
+            }
+        }
+
+        return strtr($value, $map);
     }
 }

@@ -40,6 +40,9 @@
                             <i class="icon icon-MagnifyingGlass"></i>
                         </button>
                     </form>
+                    <p class="text-caption-01 cl-text-3 mb-10">
+                        Можно вводить бренды русскими или латиницей, например Fenix или Феникс.
+                    </p>
 
                     {{-- Быстрые ссылки --}}
                     @if ($quickLinks->count() > 0)
@@ -141,7 +144,7 @@
                         <i class="icon icon-MagnifyingGlass fs-48 cl-text-3 mb-16"></i>
                         <p class="h5 cl-text-2 mb-8">По запросу «{{ $q }}» ничего не найдено</p>
                         <p class="text-body-1 cl-text-3 mb-24">
-                            Попробуйте другой запрос или выберите категорию из каталога
+                            Проверьте артикул или введите бренд русскими либо латиницей
                         </p>
                         <a href="/catalog" class="tf-btn btn-primary">Перейти в каталог</a>
                     </div>
