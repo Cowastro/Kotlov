@@ -235,7 +235,11 @@
             <button type="button" class="icon-close-popup" data-bs-dismiss="modal" aria-label="Закрыть"><i class="icon-X2"></i></button>
             <div class="modal-heading text-center">
                 <div class="ai-selector-modal__eyebrow mb-8">Быстрый ответ</div>
-                <h3 class="title-pop mb-8" id="quickCallbackTitle">Перезвоним за 5 минут</h3>
+                <div class="quick-callback-status is-online mb-8" data-consultant-status>
+                    <span class="quick-callback-status__dot" aria-hidden="true"></span>
+                    <span data-consultant-status-text>Консультант онлайн до 20:00</span>
+                </div>
+                <h3 class="title-pop mb-8" id="quickCallbackTitle" data-quick-callback-label>Перезвоним за 5 минут</h3>
                 <p class="desc-pop cl-text-2">Оставьте номер — специалист быстро уточнит задачу и поможет с выбором.</p>
             </div>
             <div class="modal-main">
@@ -253,9 +257,9 @@
                         </fieldset>
                     </div>
                     <div class="group-action">
-                        <button type="submit" class="tf-btn animate-btn w-100">Жду звонка</button>
+                        <button type="submit" class="tf-btn animate-btn w-100" data-quick-callback-submit>Жду звонка</button>
                     </div>
-                    <p class="text-center cl-text-3 mt-12 mb-0">Обычно отвечаем в течение 5 минут в рабочее время.</p>
+                    <p class="text-center cl-text-3 mt-12 mb-0" data-quick-callback-note>Обычно отвечаем в течение 5 минут в рабочее время.</p>
                     <div class="alert alert-danger mt-12" data-consultant-form-error role="alert" hidden></div>
                     <div class="alert alert-success mt-12" data-consultant-form-success role="status" hidden></div>
                 </form>

@@ -439,6 +439,8 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('Перезвоним за 5 минут', $html);
         $this->assertStringContainsString('data-bs-target="#quickCallback"', $html);
         $this->assertStringContainsString('data-quick-callback-icon', $html);
+        $this->assertStringContainsString('data-consultant-status', $html);
+        $this->assertStringContainsString('Консультант онлайн до 20:00', $html);
         $this->assertStringContainsString('Умный подбор', $html);
         $this->assertStringContainsString('Написать консультанту', $html);
         $this->assertStringContainsString('icon-Question', $html);
@@ -460,6 +462,9 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('lead_prompted', $script);
         $this->assertStringContainsString('catalog_category_id', $script);
         $this->assertStringContainsString('kotlov_ai_selector_intro_seen', $script);
+        $this->assertStringContainsString("timeZone: 'Europe/Minsk'", $script);
+        $this->assertStringContainsString('updateConsultantAvailability', $script);
+        $this->assertStringContainsString('Сейчас не в сети — ответим утром', $script);
         $this->assertStringContainsString('introSeen ? 10000 : 5000', $script);
         $this->assertStringContainsString('showLauncher(!introSeen', $script);
         $this->assertStringContainsString("launcher.classList.add('is-explaining')", $script);
@@ -468,6 +473,8 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('data-consultant-form', $modals);
         $this->assertStringContainsString('id="quickCallback"', $modals);
         $this->assertStringContainsString('name="source" value="quick_callback"', $modals);
+        $this->assertStringContainsString('data-quick-callback-submit', $modals);
+        $this->assertStringContainsString('data-quick-callback-note', $modals);
         $this->assertStringContainsString('Обычно отвечаем в течение 5 минут в рабочее время.', $modals);
         $this->assertStringContainsString("all('[data-consultant-form]')", $script);
         $this->assertStringContainsString("'request_id'", file_get_contents(app_path('Http/Controllers/ContactRequestController.php')));

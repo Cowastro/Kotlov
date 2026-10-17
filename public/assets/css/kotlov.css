@@ -2920,6 +2920,11 @@ a.category-v05.subcat-tile:hover .cate-icon {
 .ai-selector__assistance-option--callback .ai-selector__assistance-icon { color: #fff; background: #d8232a; }
 .ai-selector__assistance-option--callback:hover .ai-selector__assistance-icon { color: #d8232a; background: #fff; }
 .ai-selector__assistance-option--callback > .icon { color: rgba(255, 255, 255, .65); }
+.ai-selector__assistance-option--callback .ai-selector__consultant-status { display: flex; align-items: center; gap: 6px; color: rgba(255, 255, 255, .78); }
+.ai-selector__consultant-dot, .quick-callback-status__dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: #36c977; box-shadow: 0 0 0 3px rgba(54, 201, 119, .18); }
+.ai-selector__consultant-status.is-offline .ai-selector__consultant-dot, .quick-callback-status.is-offline .quick-callback-status__dot { background: #a3a3a3; box-shadow: none; }
+.quick-callback-status { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 999px; color: #16733b; background: #edf8f1; font-size: 12px; font-weight: 700; line-height: 1.2; }
+.quick-callback-status.is-offline { color: #666; background: #f1f1f1; }
 .ai-selector-modal .modal-content { border: 0; border-radius: 24px; overflow: hidden; }
 .ai-selector-modal .modal-header { padding: 24px 28px 18px; align-items: flex-start; }
 .ai-selector-modal .modal-body { min-height: 360px; padding: 22px 28px 28px; }

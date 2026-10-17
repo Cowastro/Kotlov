@@ -33,6 +33,45 @@
         try { window.localStorage.setItem(key, value); } catch (error) {}
     }
 
+    function minskMinutesNow() {
+        try {
+            var parts = new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Europe/Minsk',
+                hour: '2-digit',
+                minute: '2-digit',
+                hourCycle: 'h23'
+            }).formatToParts(new Date());
+            var hour = Number(parts.find(function (part) { return part.type === 'hour'; }).value);
+            var minute = Number(parts.find(function (part) { return part.type === 'minute'; }).value);
+            return hour * 60 + minute;
+        } catch (error) {
+            var now = new Date();
+            return now.getHours() * 60 + now.getMinutes();
+        }
+    }
+
+    function updateConsultantAvailability() {
+        var minutes = minskMinutesNow();
+        var online = minutes >= 9 * 60 && minutes < 20 * 60;
+        all('[data-consultant-status]').forEach(function (status) {
+            status.classList.toggle('is-online', online);
+            status.classList.toggle('is-offline', !online);
+            var text = one('[data-consultant-status-text]', status);
+            if (text) text.textContent = online ? 'Консультант онлайн до 20:00' : 'Сейчас не в сети — ответим утром';
+        });
+        all('[data-quick-callback-label]').forEach(function (label) {
+            label.textContent = online ? 'Перезвоним за 5 минут' : 'Заказать звонок на утро';
+        });
+        all('[data-quick-callback-submit]').forEach(function (button) {
+            button.textContent = online ? 'Жду звонка' : 'Заказать звонок';
+        });
+        all('[data-quick-callback-note]').forEach(function (note) {
+            note.textContent = online
+                ? 'Обычно отвечаем в течение 5 минут в рабочее время.'
+                : 'Заявка сразу попадёт в очередь — консультант перезвонит утром.';
+        });
+    }
+
     function closeAssistanceMenu() {
         if (assistanceMenu) assistanceMenu.hidden = true;
         if (launcher) launcher.setAttribute('aria-expanded', 'false');
@@ -510,6 +549,8 @@
             showLauncher(!introSeen && Date.now() - dismissedAt > sevenDays);
         }, introSeen ? 10000 : 5000);
     }
+    updateConsultantAvailability();
+    window.setInterval(updateConsultantAvailability, 60000);
     var dismiss = one('[data-ai-selector-dismiss]');
     if (dismiss) dismiss.addEventListener('click', function () {
         teaser.hidden = true;
