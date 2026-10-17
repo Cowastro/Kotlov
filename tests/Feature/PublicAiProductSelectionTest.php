@@ -407,7 +407,10 @@ class PublicAiProductSelectionTest extends TestCase
         $script = file_get_contents(public_path('assets/js/ai-product-selector.js'));
         $styles = file_get_contents(public_path('assets/css/kotlov.css'));
 
-        $this->assertStringContainsString('Умный подбор', $html);
+        $this->assertStringContainsString('AI-помощник', $html);
+        $this->assertStringContainsString('Это AI-помощник KOTLOV', $html);
+        $this->assertStringContainsString('data-ai-selector-launcher', $html);
+        $this->assertMatchesRegularExpression('/data-ai-selector-launcher[^>]*hidden/', $html);
         $this->assertStringContainsString('data-ai-selector-open', $html);
         $this->assertStringContainsString('data-categories-url', $html);
         $this->assertStringContainsString('data-ai-category-search', $html);
@@ -416,7 +419,9 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('product_opened', $script);
         $this->assertStringContainsString('lead_prompted', $script);
         $this->assertStringContainsString('catalog_category_id', $script);
-        $this->assertStringContainsString('40000', $script);
+        $this->assertStringContainsString('kotlov_ai_selector_intro_seen', $script);
+        $this->assertStringContainsString('introSeen ? 10000 : 5000', $script);
+        $this->assertStringContainsString('showLauncher(!introSeen', $script);
         $this->assertStringContainsString('sevenDays', $script);
         $this->assertStringContainsString('cart|checkout|account|wishlist', $script);
         $this->assertMatchesRegularExpression('/\.ai-selector__launcher\s*\{[^}]*right:\s*96px;/s', $styles);

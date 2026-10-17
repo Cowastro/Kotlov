@@ -16,10 +16,32 @@
     var catalogCategories = [];
     var categoriesLoading = false;
     var roleLabels = { optimal: 'Оптимальный', economy: 'Экономичный', reserve: 'Альтернатива' };
+    var launcher = one('[data-ai-selector-launcher]');
+    var teaser = one('[data-ai-selector-teaser]');
+    var teaserAutoHideTimer = null;
 
     function all(selector) { return Array.prototype.slice.call(document.querySelectorAll(selector)); }
     function one(selector, context) { return (context || document).querySelector(selector); }
     function setHidden(element, hidden) { if (element) element.hidden = hidden; }
+
+    function readStorage(key) {
+        try { return window.localStorage.getItem(key); } catch (error) { return null; }
+    }
+
+    function writeStorage(key, value) {
+        try { window.localStorage.setItem(key, value); } catch (error) {}
+    }
+
+    function showLauncher(showExplanation) {
+        if (!launcher) return;
+        launcher.hidden = false;
+        window.requestAnimationFrame(function () { launcher.classList.add('is-visible'); });
+        if (!showExplanation || !teaser || modalElement.classList.contains('show')) return;
+        teaser.hidden = false;
+        writeStorage('kotlov_ai_selector_intro_seen', String(Date.now()));
+        window.clearTimeout(teaserAutoHideTimer);
+        teaserAutoHideTimer = window.setTimeout(function () { teaser.hidden = true; }, 10000);
+    }
 
     function showStep(name) {
         state.currentStep = name;
@@ -298,8 +320,8 @@
 
     all('[data-ai-selector-open]').forEach(function (button) {
         button.addEventListener('click', function () {
-            var teaser = one('[data-ai-selector-teaser]');
             if (teaser) teaser.hidden = true;
+            writeStorage('kotlov_ai_selector_intro_seen', String(Date.now()));
             modal.show();
             window.setTimeout(function () { intentInput.focus(); }, 300);
         });
@@ -394,19 +416,21 @@
         }).finally(function () { loading(false); });
     });
 
-    var teaser = one('[data-ai-selector-teaser]');
     var blockedPath = /^\/(cart|checkout|account|wishlist)(\/|$)/.test(window.location.pathname);
-    var dismissedAt = Number(localStorage.getItem('kotlov_ai_selector_dismissed_at') || 0);
+    var dismissedAt = Number(readStorage('kotlov_ai_selector_dismissed_at') || 0);
+    var introSeen = Boolean(readStorage('kotlov_ai_selector_intro_seen'));
     var sevenDays = 7 * 24 * 60 * 60 * 1000;
-    if (teaser && !blockedPath && Date.now() - dismissedAt > sevenDays) {
+    if (launcher && !blockedPath) {
         window.setTimeout(function () {
-            if (!modalElement.classList.contains('show')) teaser.hidden = false;
-        }, 40000);
+            showLauncher(!introSeen && Date.now() - dismissedAt > sevenDays);
+        }, introSeen ? 10000 : 5000);
     }
     var dismiss = one('[data-ai-selector-dismiss]');
     if (dismiss) dismiss.addEventListener('click', function () {
         teaser.hidden = true;
-        localStorage.setItem('kotlov_ai_selector_dismissed_at', String(Date.now()));
+        window.clearTimeout(teaserAutoHideTimer);
+        writeStorage('kotlov_ai_selector_dismissed_at', String(Date.now()));
+        writeStorage('kotlov_ai_selector_intro_seen', String(Date.now()));
     });
 
     modalElement.addEventListener('show.bs.modal', function () {

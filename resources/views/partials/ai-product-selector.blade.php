@@ -5,16 +5,17 @@
      data-recommend-url="{{ route('ai-selection.recommend') }}"
      data-event-url="{{ route('ai-selection.event') }}"
      data-contact-url="{{ route('ai-selection.contact') }}">
-    <button class="ai-selector__launcher" type="button" data-ai-selector-open aria-haspopup="dialog" aria-controls="aiSelectorModal">
+    <button class="ai-selector__launcher" type="button" data-ai-selector-launcher data-ai-selector-open
+        aria-haspopup="dialog" aria-controls="aiSelectorModal" aria-label="Открыть AI-помощника по подбору оборудования" hidden>
         <span class="ai-selector__spark" aria-hidden="true">✦</span>
-        <span>Умный подбор</span>
+        <span>AI-помощник</span>
     </button>
 
-    <div class="ai-selector__teaser" data-ai-selector-teaser hidden role="status">
+    <div class="ai-selector__teaser" data-ai-selector-teaser hidden role="status" aria-live="polite">
         <button type="button" class="ai-selector__teaser-close" data-ai-selector-dismiss aria-label="Закрыть">×</button>
-        <strong>Не уверены, что выбрать?</strong>
-        <span>Подберём 3 варианта за несколько вопросов.</span>
-        <button type="button" class="ai-selector__teaser-action" data-ai-selector-open>Помочь с выбором</button>
+        <strong>Это AI-помощник KOTLOV</strong>
+        <span>Опишите задачу — он подберёт 3 товара из каталога. Бесплатно и без регистрации.</span>
+        <button type="button" class="ai-selector__teaser-action" data-ai-selector-open>Попробовать подбор</button>
     </div>
 </div>
 
