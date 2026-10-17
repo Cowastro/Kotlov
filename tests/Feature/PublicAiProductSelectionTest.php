@@ -439,6 +439,8 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('Умный подбор', $html);
         $this->assertStringContainsString('Написать консультанту', $html);
         $this->assertStringContainsString('icon-Question', $html);
+        $this->assertStringContainsString('ai-selector__help-icon', $html);
+        $this->assertMatchesRegularExpression('/ai-selector__help-icon[^>]*>\s*<i class="icon icon-Headset"/', $html);
         $this->assertStringContainsString('data-ai-selector-launcher', $html);
         $this->assertMatchesRegularExpression('/data-ai-selector-launcher[^>]*hidden/', $html);
         $this->assertStringContainsString('data-assistance-toggle', $html);

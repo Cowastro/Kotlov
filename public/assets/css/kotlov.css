@@ -2880,8 +2880,9 @@ a.category-v05.subcat-tile:hover .cate-icon {
 .ai-selector__launcher[hidden] { display: none !important; }
 .ai-selector__launcher.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
 .ai-selector__launcher:hover { background: #d8232a; }
-.ai-selector__help-icon { display: grid; width: 22px; height: 22px; place-items: center; color: #ff4a50; font-size: 21px; line-height: 1; }
-.ai-selector__launcher:hover .ai-selector__help-icon { color: #fff; }
+.ai-selector__help-icon { position: relative; display: grid; width: 23px; height: 23px; place-items: center; color: #fff; font-size: 22px; line-height: 1; }
+.ai-selector__help-icon::after { position: absolute; top: -2px; right: -3px; width: 7px; height: 7px; border: 2px solid #111; border-radius: 50%; background: #ff4a50; content: ''; transition: border-color .2s ease; }
+.ai-selector__launcher:hover .ai-selector__help-icon::after { border-color: #d8232a; }
 .ai-selector__teaser,
 .ai-selector__assistance-menu {
     position: fixed;

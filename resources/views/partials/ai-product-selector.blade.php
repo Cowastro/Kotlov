@@ -8,7 +8,7 @@
     <button class="ai-selector__launcher" type="button" data-ai-selector-launcher data-assistance-toggle
         aria-haspopup="menu" aria-controls="assistanceMenu" aria-expanded="false" aria-label="Открыть помощь" hidden>
         <span class="ai-selector__help-icon" aria-hidden="true">
-            <i class="icon icon-Question"></i>
+            <i class="icon icon-Headset"></i>
         </span>
         <span class="ai-selector__launcher-label">Помощь</span>
     </button>
