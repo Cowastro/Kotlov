@@ -27,13 +27,24 @@ class TelephonyCall extends Model
         'irrelevant' => 'Неактуален',
     ];
 
+    public const MANAGER_OUTCOMES = [
+        'interested' => 'Заинтересован',
+        'consultation_needed' => 'Нужна консультация',
+        'offer_sent' => 'Предложение отправлено',
+        'callback_later' => 'Перезвонить позже',
+        'converted' => 'Конвертирован в клиента',
+        'not_interested' => 'Не заинтересован',
+        'no_answer' => 'Не дозвонились',
+        'wrong_number' => 'Ошибочный номер',
+    ];
+
     protected $fillable = [
         'provider', 'external_uuid', 'company_id', 'direction', 'dial_type',
         'customer_phone', 'employee_phone', 'line_number', 'assigned_user_id',
         'matched_user_id', 'crm_counterparty_id', 'crm_contact_id', 'order_id', 'contact_request_id', 'status',
         'handling_status', 'started_at', 'answered_at', 'finished_at', 'duration',
         'conversation_duration', 'record_name', 'recording_url', 'failure_reason',
-        'callback_status', 'handled_at', 'handled_by', 'manager_note', 'metadata',
+        'callback_status', 'manager_outcome', 'next_follow_up_at', 'handled_at', 'handled_by', 'manager_note', 'metadata',
         'telegram_message_id', 'telegram_notified_at', 'telegram_notification_claimed_at',
     ];
 
@@ -42,6 +53,7 @@ class TelephonyCall extends Model
         'answered_at' => 'datetime',
         'finished_at' => 'datetime',
         'handled_at' => 'datetime',
+        'next_follow_up_at' => 'datetime',
         'telegram_notified_at' => 'datetime',
         'telegram_notification_claimed_at' => 'datetime',
         'metadata' => 'array',

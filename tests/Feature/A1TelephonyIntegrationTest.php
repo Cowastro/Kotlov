@@ -3,13 +3,18 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\TelephonyCalls\TelephonyCallResource;
+use App\Filament\Resources\TelephonyCalls\Pages\ListTelephonyCalls;
 use App\Filament\Resources\TelephonyConnections\TelephonyConnectionResource;
+use App\Models\CrmContact;
+use App\Models\CrmContactPoint;
+use App\Models\CrmCounterparty;
 use App\Models\Order;
 use App\Models\TelephonyCall;
 use App\Models\TelephonyConnection;
 use App\Models\TelephonyEmployee;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class A1TelephonyIntegrationTest extends TestCase
@@ -142,6 +147,78 @@ class A1TelephonyIntegrationTest extends TestCase
         $this->actingAs($manager)
             ->get(TelephonyConnectionResource::getUrl('index', panel: 'admin'))
             ->assertForbidden();
+    }
+
+    public function test_manager_can_record_callback_feedback_visible_to_the_team(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $call = TelephonyCall::query()->create([
+            'provider' => 'a1',
+            'external_uuid' => 'call-manager-feedback',
+            'direction' => 'inbound',
+            'customer_phone' => '375291112233',
+            'status' => 'missed',
+            'handling_status' => 'callback_required',
+        ]);
+
+        $this->actingAs($manager);
+        Livewire::test(ListTelephonyCalls::class)
+            ->callTableAction('manager_feedback', $call, [
+                'manager_outcome' => 'callback_later',
+                'manager_note' => 'Интересует электрический котёл 12 кВт, перезвонить после 18:00.',
+                'next_follow_up_at' => '2026-10-18 18:30:00',
+                'convert_to_client' => false,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $call->refresh();
+        $this->assertSame('callback_later', $call->manager_outcome);
+        $this->assertSame('callback_required', $call->handling_status);
+        $this->assertSame($manager->id, $call->assigned_user_id);
+        $this->assertSame($manager->id, $call->handled_by);
+        $this->assertSame('2026-10-18 18:30:00', $call->next_follow_up_at->format('Y-m-d H:i:s'));
+        $this->assertStringContainsString('электрический котёл', $call->manager_note);
+    }
+
+    public function test_manager_feedback_can_convert_unknown_number_into_an_active_crm_client(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $call = TelephonyCall::query()->create([
+            'provider' => 'a1',
+            'external_uuid' => 'call-convert-client',
+            'direction' => 'inbound',
+            'customer_phone' => '375295554433',
+            'status' => 'answered',
+            'handling_status' => 'callback_required',
+        ]);
+
+        $this->actingAs($manager);
+        Livewire::test(ListTelephonyCalls::class)
+            ->callTableAction('manager_feedback', $call, [
+                'manager_outcome' => 'interested',
+                'manager_note' => 'Нужен расчёт котельной и коммерческое предложение.',
+                'convert_to_client' => true,
+                'full_name' => 'Иван Петров',
+                'company_name' => 'ООО Тёплый дом',
+                'classification' => 'b2b_prospect',
+                'business_unit' => 'wholesale',
+                'position' => 'Директор',
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $call->refresh();
+        $counterparty = CrmCounterparty::query()->findOrFail($call->crm_counterparty_id);
+        $contact = CrmContact::query()->findOrFail($call->crm_contact_id);
+        $phone = CrmContactPoint::query()->where('contact_id', $contact->id)->firstOrFail();
+
+        $this->assertSame('converted', $call->manager_outcome);
+        $this->assertSame('handled', $call->handling_status);
+        $this->assertSame('active', $counterparty->status);
+        $this->assertSame('ООО Тёплый дом', $counterparty->name);
+        $this->assertStringContainsString('коммерческое предложение', $counterparty->notes);
+        $this->assertSame('Иван Петров', $contact->full_name);
+        $this->assertSame($counterparty->id, $phone->counterparty_id);
+        $this->assertSame('375295554433', $phone->normalized_value);
     }
 
     /** @return array<string, mixed> */
