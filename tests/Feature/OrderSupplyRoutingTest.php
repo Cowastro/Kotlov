@@ -288,6 +288,47 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Поставщик доставляет клиенту напрямую.');
     }
 
+    public function test_order_view_actions_expose_a_normalized_mobile_layout(): void
+    {
+        $fixture = $this->fixture();
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        $component = Livewire::actingAs($manager)
+            ->test(ViewOrder::class, ['record' => $fixture['order']->id]);
+
+        $this->assertSame(
+            'order-view-page',
+            $component->instance()->getExtraBodyAttributes()['class'] ?? null,
+        );
+
+        foreach ([
+            'acceptOrder' => 'order-view-action--primary',
+            'confirmFulfillment' => 'order-view-action--primary',
+            'confirmSettlement' => 'order-view-action--primary',
+            'changeWorkflowStatus' => 'order-view-action--manual',
+            'closeAsIrrelevant' => 'order-view-action--danger',
+            'edit' => 'order-view-action--edit',
+        ] as $actionName => $cssClass) {
+            $component->assertActionExists(
+                $actionName,
+                fn ($action): bool => str_contains(
+                    (string) ($action->getExtraAttributes()['class'] ?? ''),
+                    $cssClass,
+                ),
+            );
+        }
+
+        $styles = file_get_contents(resource_path('views/filament/admin/layout-fixes.blade.php'));
+        $this->assertStringContainsString(
+            '.order-view-page .fi-header-actions-ctn > .fi-ac',
+            $styles,
+        );
+        $this->assertStringContainsString(
+            'grid-template-columns: repeat(2, minmax(0, 1fr))',
+            $styles,
+        );
+    }
+
     public function test_first_fulfillment_confirmation_accepts_order_assigns_manager_and_disables_repeat(): void
     {
         $fixture = $this->fixture();

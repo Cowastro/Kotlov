@@ -47,6 +47,49 @@
         white-space: nowrap;
     }
     @media (max-width: 700px) {
+        /* Order actions follow one predictable mobile hierarchy: operational
+           steps use full rows, while the two secondary closing actions share
+           the final row. */
+        .order-view-page .fi-header-actions-ctn {
+            width: 100%;
+            align-items: stretch;
+        }
+
+        .order-view-page .fi-header-actions-ctn > .fi-ac {
+            display: grid;
+            width: 100%;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .order-view-page .fi-header-actions-ctn .order-view-action {
+            width: 100%;
+            min-width: 0;
+            min-height: 48px;
+            justify-content: center;
+            padding: 10px 13px;
+            border-radius: 12px;
+            line-height: 1.2;
+            text-align: center;
+            white-space: normal;
+            box-shadow: 0 1px 2px rgb(15 23 42 / 0.08);
+        }
+
+        .order-view-page .fi-header-actions-ctn .order-view-action--primary {
+            grid-column: 1 / -1;
+        }
+
+        .order-view-page .fi-header-actions-ctn .order-view-action > .fi-icon {
+            width: 20px;
+            height: 20px;
+            flex: 0 0 auto;
+        }
+
+        .order-view-page .fi-header-actions-ctn .order-view-action--manual {
+            background: transparent;
+            box-shadow: inset 0 0 0 1px rgb(148 163 184 / 0.45);
+        }
+
         /* The message has its own card: avoid two extra padded cards on phones. */
         .crm-mail-thread-page .fi-main { padding-inline: 8px; }
 
@@ -133,6 +176,14 @@
     }
 
     @media (max-width: 360px) {
+        .order-view-page .fi-header-actions-ctn > .fi-ac {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .order-view-page .fi-header-actions-ctn .order-view-action {
+            grid-column: 1;
+        }
+
         .crm-mail-thread-page .fi-header-actions-ctn > .fi-ac {
             grid-template-columns: minmax(0, 1fr);
         }

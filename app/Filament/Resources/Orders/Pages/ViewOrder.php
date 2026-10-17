@@ -26,6 +26,8 @@ class ViewOrder extends ViewRecord
 {
     protected static string $resource = OrderResource::class;
 
+    protected array $extraBodyAttributes = ['class' => 'order-view-page'];
+
     protected function resolveRecord(int|string $key): Order
     {
         return Order::with([
@@ -65,6 +67,7 @@ class ViewOrder extends ViewRecord
                 ->label('Принять заказ')
                 ->icon('heroicon-o-hand-raised')
                 ->color('success')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->visible(fn (): bool => $this->record->status === 'new')
                 ->requiresConfirmation()
                 ->modalHeading('Принять заказ в работу?')
@@ -74,6 +77,7 @@ class ViewOrder extends ViewRecord
                 ->label('Передать в обработку')
                 ->icon('heroicon-o-arrow-path')
                 ->color('primary')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->visible(fn (): bool => $this->record->status === 'confirmed')
                 ->disabled(fn (): bool => $this->record->items->contains(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at)))
                 ->tooltip(fn (): ?string => $this->record->items->contains(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at))
@@ -88,6 +92,7 @@ class ViewOrder extends ViewRecord
                 ->label('Передать в доставку')
                 ->icon('heroicon-o-truck')
                 ->color('primary')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->visible(fn (): bool => $this->record->status === 'processing')
                 ->requiresConfirmation()
                 ->action(fn () => $this->transitionOrder('shipped', 'Заказ передан в доставку.')),
@@ -95,6 +100,7 @@ class ViewOrder extends ViewRecord
                 ->label('Отметить доставленным')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->visible(fn (): bool => $this->record->status === 'shipped')
                 ->requiresConfirmation()
                 ->action(fn () => $this->transitionOrder('delivered', 'Клиент получил заказ.')),
@@ -102,6 +108,7 @@ class ViewOrder extends ViewRecord
                 ->label('Подтвердить исполнение')
                 ->icon('heroicon-o-check-badge')
                 ->color('warning')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->disabled(fn (): bool => $this->record->items->isNotEmpty()
                     && $this->record->items->every(fn (OrderItem $item): bool => filled($item->fulfillment_confirmed_at)))
                 ->tooltip(fn (): ?string => $this->record->items->isNotEmpty()
@@ -174,6 +181,7 @@ class ViewOrder extends ViewRecord
                 ->label('Сформировать заявки')
                 ->icon('heroicon-o-document-duplicate')
                 ->color('primary')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->visible(fn (): bool => $this->record->items->contains(
                     fn (OrderItem $item): bool => in_array($item->fulfillment_route, ['supplier_purchase', 'direct_supplier'], true)
                         && $item->fulfillment_supplier_id !== null,
@@ -198,6 +206,7 @@ class ViewOrder extends ViewRecord
                 ->label('Зафиксировать взаиморасчёт')
                 ->icon('heroicon-o-banknotes')
                 ->color('success')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->modalHeading('Подтверждение экономики и взаиморасчётов')
                 ->modalDescription('Будет создана неизменяемая версия расчёта. Если маршрут, поставщик, цена или комиссия изменятся, текущая версия останется в истории и потребуется новая.')
                 ->schema([
@@ -256,6 +265,7 @@ class ViewOrder extends ViewRecord
                 ->label('Передать поставщику')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->visible(fn (): bool => $this->record->supplierOrderRequests->contains('status', 'draft'))
                 ->modalHeading('Передать заявку в кабинет поставщика?')
                 ->modalDescription('После подтверждения заявка станет видна только пользователям выбранного поставщика. Внешнее письмо или сообщение автоматически не отправляется.')
@@ -302,6 +312,7 @@ class ViewOrder extends ViewRecord
                 ->label('Изменить этап вручную')
                 ->icon('heroicon-o-arrows-right-left')
                 ->color('gray')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary order-view-action--manual'])
                 ->visible(fn (): bool => $this->record->archived_at === null)
                 ->modalHeading('Изменить этап заказа вручную')
                 ->modalDescription('Используйте этот режим, если действие уже выполнено вне сайта, например заказ создан вручную в 1С. Автор, время и комментарий сохранятся в истории.')
@@ -333,6 +344,7 @@ class ViewOrder extends ViewRecord
                 ->label('Отказ / неактуален')
                 ->icon('heroicon-o-no-symbol')
                 ->color('danger')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--danger'])
                 ->visible(fn (): bool => $this->record->canBeClosedAsIrrelevant())
                 ->modalHeading('Закрыть заказ без удаления?')
                 ->modalDescription('Заказ получит статус «Отменён» и попадёт в архив. Причина, автор и время сохранятся в истории.')
@@ -360,7 +372,9 @@ class ViewOrder extends ViewRecord
                         ->title('Заказ закрыт и перемещён в архив')
                         ->send();
                 }),
-            EditAction::make(),
+            EditAction::make()
+                ->icon('heroicon-o-pencil-square')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--edit']),
         ];
     }
 
