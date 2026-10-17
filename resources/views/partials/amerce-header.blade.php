@@ -117,9 +117,20 @@
                         </li>
 
                         <li>
-                            <a href="#sign" data-bs-toggle="modal" class="nav-icon-item link">
-                                <i class="icon icon-User"></i>
-                            </a>
+                            @auth
+                                <form action="{{ route('logout') }}" method="POST" class="m-0 d-flex">
+                                    @csrf
+                                    <button type="submit" class="nav-icon-item link border-0 bg-transparent p-0"
+                                        aria-label="Выйти из аккаунта" title="Выйти">
+                                        <i class="icon icon-SignOut"></i>
+                                    </button>
+                                </form>
+                            @else
+                                <a href="#sign" data-bs-toggle="modal" class="nav-icon-item link"
+                                    aria-label="Войти в аккаунт" title="Войти">
+                                    <i class="icon icon-User"></i>
+                                </a>
+                            @endauth
                         </li>
 
                         <li class="d-none d-sm-block">

@@ -156,6 +156,7 @@
 </div>
 <!-- /Toolbar -->
 
+@guest
 <!-- Forgot Pass -->
 <div class="modal modalCentered fade modal-log modal-log_forgot" id="modalForgot">
     <div class="modal-dialog modal-dialog-centered">
@@ -187,6 +188,7 @@
     </div>
 </div>
 <!-- /Forgot Pass -->
+@endguest
 
 <!-- Share -->
 <div class="modal modalCentered fade modal-share" id="share">
@@ -683,6 +685,7 @@
 </div>
 <!-- /Search -->
 
+@guest
 <!-- Register -->
 <div class="modal modalCentered fade modal-log" id="register">
     <div class="modal-dialog modal-dialog-centered">
@@ -775,6 +778,7 @@
     </div>
 </div>
 <!-- /Sign In -->
+@endguest
 <script>
 document.querySelectorAll('.mb-cat-toggle').forEach(function(btn) {
     btn.addEventListener('click', function() {
