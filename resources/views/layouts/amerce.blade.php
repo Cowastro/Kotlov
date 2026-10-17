@@ -533,9 +533,6 @@
             var productId = parseInt(link.data('product-id'));
             if (!productId || link.data('loading')) return;
 
-            var isProductPageButton = link.hasClass('wishlist-toggle');
-            var stateTarget = isProductPageButton ? link : link.closest('.wishlist');
-
             link.data('loading', true).attr('aria-busy', 'true');
 
             $.ajax({
@@ -550,20 +547,29 @@
                 },
                 success: function (data) {
                     var isAdded = data && data.message === 'added';
-                    var icon = stateTarget.find('.icon').first();
+                    var catalogLinks = $('.card-product .wishlist a[data-product-id="' + productId + '"]');
+                    var detailButtons = $('.wishlist-toggle[data-product-id="' + productId + '"]');
 
-                    if (isProductPageButton) {
-                        stateTarget.toggleClass('is-active', isAdded)
+                    catalogLinks.each(function () {
+                        var catalogState = $(this).closest('.wishlist');
+                        catalogState.toggleClass('addwishlist', isAdded);
+                        catalogState.find('.icon').first()
+                            .toggleClass('icon-heart', !isAdded)
+                            .toggleClass('icon-trash', isAdded);
+                        catalogState.find('.tooltip').text(isAdded ? 'Удалить из избранного' : 'В избранное');
+                    });
+
+                    detailButtons.each(function () {
+                        var button = $(this);
+                        button.toggleClass('is-active', isAdded)
                             .attr('aria-pressed', isAdded ? 'true' : 'false')
                             .attr('aria-label', isAdded ? 'Удалить товар из избранного' : 'Добавить товар в избранное')
                             .attr('title', isAdded ? 'В избранном' : 'В избранное');
-                        icon.toggleClass('icon-heart', !isAdded).toggleClass('icon-Heart', isAdded);
-                        stateTarget.find('.wishlist-label').text(isAdded ? 'В избранном' : 'В избранное');
-                    } else {
-                        stateTarget.toggleClass('addwishlist', isAdded);
-                        icon.toggleClass('icon-heart', !isAdded).toggleClass('icon-trash', isAdded);
-                        stateTarget.find('.tooltip').text(isAdded ? 'Удалить из избранного' : 'В избранное');
-                    }
+                        button.find('.icon').first()
+                            .toggleClass('icon-heart', !isAdded)
+                            .toggleClass('icon-Heart', isAdded);
+                        button.find('.wishlist-label').text(isAdded ? 'В избранном' : 'В избранное');
+                    });
                 }
             });
         });

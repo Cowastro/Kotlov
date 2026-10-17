@@ -600,9 +600,20 @@ class SyncOmenergoCommand extends Command
             str_contains($type, 'дополнительные') => ['komplektuyushchie-stabilizatorov', 'Комплектующие для стабилизаторов'],
             default => throw new RuntimeException('Unknown Omenergo category.'),
         };
+        $parent = in_array($slug, ['avtotransformatory-latr', 'komplektuyushchie-stabilizatorov'], true)
+            ? Category::where('slug', 'komplektuyushhie-dlya-otopleniya')->first()
+            : null;
         $category = Category::where('slug', $slug)->first() ?: Category::where('name', $categoryName)->first();
         if (! $category) {
-            $category = Category::create(['name' => $categoryName, 'slug' => $slug, 'h1' => $categoryName, 'is_active' => true]);
+            $category = Category::create([
+                'parent_id' => $parent?->id ?? 0,
+                'name' => $categoryName,
+                'slug' => $slug,
+                'h1' => $categoryName,
+                'is_active' => true,
+            ]);
+        } elseif ($parent && (int) $category->parent_id !== (int) $parent->id) {
+            $category->update(['parent_id' => $parent->id]);
         }
         $brand = Brand::firstOrCreate(['name' => $row['brand']], ['slug' => Str::slug($row['brand']), 'is_active' => true]);
         $name = $parser->productName($row);

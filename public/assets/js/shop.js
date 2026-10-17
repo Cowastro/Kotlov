@@ -73,6 +73,21 @@
             var addToCart = $("#quickView .btn-action-price");
             var buyActions = $("#quickView-buy-actions");
             var consultationActions = $("#quickView-consultation-actions");
+            var quickViewWishlist = $("#quickView-wishlist");
+            var cardWishlist = card ? card.querySelector(".wishlist") : null;
+            var isWishlisted = cardWishlist ? cardWishlist.classList.contains("addwishlist") : false;
+
+            quickViewWishlist
+                .attr("data-product-id", productId)
+                .data("product-id", parseInt(productId, 10))
+                .toggleClass("is-active", isWishlisted)
+                .attr("aria-pressed", isWishlisted ? "true" : "false")
+                .attr("aria-label", isWishlisted ? "Удалить товар из избранного" : "Добавить товар в избранное")
+                .attr("title", isWishlisted ? "В избранном" : "В избранное");
+            quickViewWishlist.find(".icon")
+                .toggleClass("icon-heart", !isWishlisted)
+                .toggleClass("icon-Heart", isWishlisted);
+            quickViewWishlist.find(".wishlist-label").text(isWishlisted ? "В избранном" : "В избранное");
 
             buyActions.toggleClass("d-none", !canBuy);
             consultationActions.toggleClass("d-none", canBuy);

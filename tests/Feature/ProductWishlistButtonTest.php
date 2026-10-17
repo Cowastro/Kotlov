@@ -39,6 +39,8 @@ class ProductWishlistButtonTest extends TestCase
         $this->get('/'.$category->slug.'/'.$product->slug)
             ->assertOk()
             ->assertSee('class="product-extra-icon link wishlist-toggle"', false)
+            ->assertSee('id="quickView-wishlist"', false)
+            ->assertSee('class="quick-view-wishlist wishlist-toggle"', false)
             ->assertSee('data-product-id="'.$product->id.'"', false)
             ->assertSee('class="icon icon-heart"', false)
             ->assertSeeText('В избранное');

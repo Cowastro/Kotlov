@@ -731,7 +731,7 @@ body {
     }
 
     #gridLayout .product-action_list .wishlist {
-        display: none;
+        display: block !important;
     }
 
     #gridLayout .product-action_list .compare {
@@ -741,6 +741,10 @@ body {
 
     #gridLayout .product-action_list > li:last-child {
         order: 1;
+    }
+
+    #gridLayout .product-action_list .wishlist {
+        order: 0;
     }
 
     #gridLayout .product-action_list .box-icon {
@@ -837,6 +841,35 @@ body {
         flex-basis: 5px;
         box-shadow: 0 0 0 2px rgba(75, 155, 92, .1);
     }
+}
+
+.quick-view-wishlist {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+    transition: border-color .2s ease, color .2s ease, background-color .2s ease;
+}
+
+.quick-view-wishlist:hover,
+.quick-view-wishlist.is-active {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 7%, white);
+}
+
+.quick-view-wishlist[aria-busy="true"] {
+    pointer-events: none;
+    opacity: .65;
 }
 
 /* ── Тепловые насосы: ключевые параметры в карточке ────── */

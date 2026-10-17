@@ -418,6 +418,16 @@
                         Заказать консультацию
                     </a>
                 </div>
+                <button type="button"
+                    id="quickView-wishlist"
+                    class="quick-view-wishlist wishlist-toggle"
+                    data-product-id=""
+                    aria-pressed="false"
+                    aria-label="Добавить товар в избранное"
+                    title="В избранное">
+                    <i class="icon icon-heart" aria-hidden="true"></i>
+                    <span class="wishlist-label">В избранное</span>
+                </button>
                 <div class="box-action">
                     <a href="#" class="tf-btn-line-2 style-primary fw-semibold" id="quickView-detail-link">Подробнее о товаре</a>
                 </div>
