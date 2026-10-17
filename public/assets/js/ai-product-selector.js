@@ -357,14 +357,30 @@
     });
 
     all('[data-consultant-open]').forEach(function (link) {
-        link.addEventListener('click', function (event) {
+        link.addEventListener('click', function () {
             closeAssistanceMenu();
-            var host = document.getElementById('umnico-widget-wrapper');
-            var shadow = host && host.shadowRoot;
-            var widgetLauncher = shadow && shadow.querySelector('.widget__preview-block button, .widget__preview-block');
-            if (!widgetLauncher) return;
-            event.preventDefault();
-            widgetLauncher.click();
+            var attempts = 0;
+            var status = one('[data-consultant-status]', link);
+            function openWidget() {
+                attempts++;
+                var host = document.getElementById('umnico-widget-wrapper');
+                var shadow = host && host.shadowRoot;
+                var widgetLauncher = shadow && shadow.querySelector('.widget__preview-main');
+                if (widgetLauncher) {
+                    widgetLauncher.click();
+                    if (status) status.textContent = 'Задайте вопрос живому специалисту';
+                    return;
+                }
+                if (attempts < 20) {
+                    if (status) status.textContent = 'Подключаем чат…';
+                    window.setTimeout(openWidget, 250);
+                    return;
+                }
+                if (status) status.textContent = 'Чат не загрузился. Попробуйте ещё раз';
+                assistanceMenu.hidden = false;
+                if (launcher) launcher.setAttribute('aria-expanded', 'true');
+            }
+            openWidget();
         });
     });
 

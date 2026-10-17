@@ -724,8 +724,10 @@
 
                 if (root && !root.getElementById('kotlov-umnico-unified-help')) {
                     var style = document.createElement('style');
+                    var hasProductPurchaseBar = Boolean(document.querySelector('.product-detail-page .tf-sticky-btn-atc'));
+                    var chatBottom = hasProductPurchaseBar ? '148px' : '78px';
                     style.id = 'kotlov-umnico-unified-help';
-                    style.textContent = '.widget__preview-block,.widget__chat-preview{display:none!important}';
+                    style.textContent = '.widget__preview-block{display:none!important}@media(max-width:767px){.widget__chat-preview{right:12px!important;bottom:calc(' + chatBottom + ' + env(safe-area-inset-bottom, 0px))!important}}';
                     root.appendChild(style);
                     window.clearInterval(timer);
                 } else if (tries >= 40) {

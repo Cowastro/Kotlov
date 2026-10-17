@@ -12,9 +12,11 @@ class MobileChatWidgetOffsetTest extends TestCase
 
         $this->assertStringContainsString('kotlov-umnico-unified-help', $layout);
         $this->assertStringContainsString(
-            '.widget__preview-block,.widget__chat-preview{display:none!important}',
+            '.widget__preview-block{display:none!important}',
             $layout,
         );
+        $this->assertStringNotContainsString('.widget__chat-preview{display:none!important}', $layout);
+        $this->assertStringContainsString("hasProductPurchaseBar ? '148px' : '78px'", $layout);
     }
 
     public function test_mobile_catalog_menu_hides_floating_assistants_until_it_closes(): void

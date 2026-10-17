@@ -4,8 +4,7 @@
      data-categories-url="{{ route('ai-selection.categories') }}"
      data-recommend-url="{{ route('ai-selection.recommend') }}"
      data-event-url="{{ route('ai-selection.event') }}"
-     data-contact-url="{{ route('ai-selection.contact') }}"
-     data-consultant-fallback="https://t.me/kotlovby">
+     data-contact-url="{{ route('ai-selection.contact') }}">
     <button class="ai-selector__launcher" type="button" data-ai-selector-launcher data-assistance-toggle
         aria-haspopup="menu" aria-controls="assistanceMenu" aria-expanded="false" aria-label="Открыть помощь" hidden>
         <span class="ai-selector__help-icon" aria-hidden="true">
@@ -28,11 +27,11 @@
             <span><strong>Умный подбор</strong><small>Подберём 3 товара под вашу задачу</small></span>
             <i class="icon icon-CaretRightThin" aria-hidden="true"></i>
         </button>
-        <a href="https://t.me/kotlovby" target="_blank" rel="noopener" class="ai-selector__assistance-option" data-consultant-open role="menuitem">
+        <button type="button" class="ai-selector__assistance-option" data-consultant-open role="menuitem">
             <span class="ai-selector__assistance-icon" aria-hidden="true"><i class="icon icon-Headset"></i></span>
-            <span><strong>Написать консультанту</strong><small>Задайте вопрос живому специалисту</small></span>
+            <span><strong>Написать консультанту</strong><small data-consultant-status>Задайте вопрос живому специалисту</small></span>
             <i class="icon icon-CaretRightThin" aria-hidden="true"></i>
-        </a>
+        </button>
     </div>
 </div>
 
