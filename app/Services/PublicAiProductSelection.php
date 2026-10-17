@@ -80,6 +80,7 @@ class PublicAiProductSelection
                 $this->fallbackRanking($candidates->reject(fn (Product $product): bool => in_array((int) $product->id, $selectedIds, true)))
             );
         }
+        $ranked = $this->prioritizeExplicitMatch($ranked, $candidates, $answers);
 
         $byId = $candidates->keyBy('id');
         $products = collect($ranked)
@@ -243,12 +244,17 @@ PROMPT;
         $budget = $this->numeric($answers['budget'] ?? null);
         $tokens = $this->intentTokens($intent);
 
+        $explicitValues = $this->explicitAnswerValues($answers);
+
         return $products
-            ->sortByDesc(function (Product $product) use ($budget, $tokens): float {
+            ->sortByDesc(function (Product $product) use ($budget, $tokens, $explicitValues): float {
                 $haystack = Str::lower($product->name.' '.json_encode($product->specs, JSON_UNESCAPED_UNICODE));
                 $score = ($product->in_stock ? 30 : 0) + ($product->is_featured ? 10 : 0) + (float) $product->rating;
                 foreach ($tokens as $token) {
                     $score += str_contains($haystack, $token) ? 5 : 0;
+                }
+                foreach ($explicitValues as $value) {
+                    $score += str_contains($haystack, $value) ? 25 : -5;
                 }
                 if ($budget > 0) {
                     $score += (float) $product->price <= $budget ? 20 : max(-20, 10 - abs((float) $product->price - $budget) / max($budget, 1) * 20);
@@ -258,6 +264,80 @@ PROMPT;
             })
             ->take(18)
             ->values();
+    }
+
+    /**
+     * Explicit technical values are hard constraints. DeepSeek may explain and
+     * rank close alternatives, but it cannot put G2.5 above an available exact
+     * G4 match when the customer explicitly requested G4.
+     *
+     * @param  array<int, array<string, mixed>>  $ranked
+     * @param  Collection<int, Product>  $candidates
+     * @param  array<string, string>  $answers
+     * @return array<int, array<string, mixed>>
+     */
+    private function prioritizeExplicitMatch(array $ranked, Collection $candidates, array $answers): array
+    {
+        $values = $this->explicitAnswerValues($answers);
+        if ($values === []) {
+            return $ranked;
+        }
+
+        /** @var Product|null $exact */
+        $exact = $candidates->first(function (Product $product) use ($values): bool {
+            $haystack = Str::lower(str_replace('ё', 'е', $product->name.' '.json_encode($product->specs, JSON_UNESCAPED_UNICODE)));
+
+            return collect($values)->every(fn (string $value): bool => str_contains($haystack, $value));
+        });
+        if (! $exact) {
+            return $ranked;
+        }
+
+        $exactId = (int) $exact->id;
+        $existing = collect($ranked)->first(fn (array $match): bool => (int) ($match['product_id'] ?? 0) === $exactId);
+        $ranked = collect($ranked)
+            ->reject(fn (array $match): bool => (int) ($match['product_id'] ?? 0) === $exactId)
+            ->values()
+            ->all();
+        array_unshift($ranked, $existing ?: [
+            'product_id' => $exactId,
+            'reason' => 'Совпадает со всеми явно указанными техническими параметрами.',
+            'confirmed' => array_values($this->explicitAnswerLabels($answers)),
+            'verify' => ['Совместимость присоединения и требования газоснабжающей организации'],
+        ]);
+
+        $roles = ['optimal', 'economy', 'reserve'];
+
+        return collect($ranked)->take(3)->values()->map(function (array $match, int $index) use ($roles): array {
+            $match['role'] = $roles[$index];
+
+            return $match;
+        })->all();
+    }
+
+    /** @param array<string, string> $answers
+     * @return array<int, string>
+     */
+    private function explicitAnswerValues(array $answers): array
+    {
+        return collect($answers)
+            ->only(['flow', 'direction', 'length', 'head'])
+            ->map(fn (string $value): string => Str::lower(str_replace('ё', 'е', trim($value))))
+            ->filter(fn (string $value): bool => mb_strlen($value) >= 2 && ! in_array($value, ['не знаю', 'пока не знаю'], true))
+            ->values()
+            ->all();
+    }
+
+    /** @param array<string, string> $answers
+     * @return array<string, string>
+     */
+    private function explicitAnswerLabels(array $answers): array
+    {
+        $labels = ['flow' => 'Типоразмер / расход', 'direction' => 'Направление', 'length' => 'Монтажная длина', 'head' => 'Напор'];
+
+        return collect($answers)->only(array_keys($labels))->mapWithKeys(
+            fn (string $value, string $key): array => [$key => $labels[$key].': '.$value]
+        )->all();
     }
 
     /** @return array<int, int> */

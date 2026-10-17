@@ -78,6 +78,30 @@ class PublicAiProductSelectionTest extends TestCase
         $this->assertStringContainsString('DeepSeek временно не ответил', $result['summary']);
     }
 
+    public function test_explicit_meter_size_direction_and_length_outrank_a_close_ai_alternative(): void
+    {
+        $category = $this->category('schetchiki-gaza', 'Счётчики газа');
+        $exact = $this->product($category, 'Счётчик газа СГД G4 (левый) L=110', 'meter-g4-left-110', 200);
+        $close = $this->product($category, 'Счётчик газа СГД G2.5 (левый) L=110', 'meter-g25-left-110', 180);
+
+        $ai = $this->mock(AiContentEnricher::class);
+        $ai->shouldReceive('isAvailable')->once()->andReturn(true);
+        $ai->shouldReceive('complete')->once()->andReturn(json_encode(['matches' => [
+            ['product_id' => $close->id, 'role' => 'optimal', 'reason' => 'Дешевле'],
+            ['product_id' => $exact->id, 'role' => 'reserve', 'reason' => 'Точный типоразмер'],
+        ]], JSON_UNESCAPED_UNICODE));
+
+        $result = app(PublicAiProductSelection::class)->recommend(
+            'Нужен счётчик газа G4 левый 110 мм',
+            'gas_meter',
+            ['flow' => 'G4', 'direction' => 'Левый', 'length' => '110']
+        );
+
+        $this->assertSame($exact->id, $result['products'][0]['id']);
+        $this->assertSame('optimal', $result['products'][0]['role']);
+        $this->assertSame($close->id, $result['products'][1]['id']);
+    }
+
     public function test_public_endpoints_validate_input_and_store_anonymous_result_without_raw_session_id(): void
     {
         $this->postJson(route('ai-selection.start'), ['intent' => 'x'])->assertUnprocessable();
