@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CrmCounterparty extends Model
 {
+    use SoftDeletes;
+
     public const TYPES = [
         'organization' => 'Организация',
         'person' => 'Физическое лицо',

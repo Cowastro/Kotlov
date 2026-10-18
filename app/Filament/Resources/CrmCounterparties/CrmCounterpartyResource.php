@@ -13,6 +13,9 @@ use App\Models\CrmCounterparty;
 use App\Models\Order;
 use App\Models\User;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Repeater;
@@ -22,14 +25,18 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Collection;
 
 class CrmCounterpartyResource extends Resource
 {
@@ -50,6 +57,13 @@ class CrmCounterpartyResource extends Resource
     public static function getNavigationGroup(): ?string
     {
         return 'CRM';
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
     }
 
     public static function form(Schema $schema): Schema
@@ -230,7 +244,63 @@ class CrmCounterpartyResource extends Resource
             SelectFilter::make('status')->label('Статус')->options(CrmCounterparty::STATUSES),
             SelectFilter::make('source')->label('Источник')->options(CrmCounterparty::SOURCES),
             SelectFilter::make('responsible_user_id')->label('Ответственный')->relationship('responsibleUser', 'name')->searchable()->preload(),
-        ])->recordActions([ViewAction::make(), EditAction::make()])->defaultSort('updated_at', 'desc');
+            TrashedFilter::make()->label('Корзина'),
+        ])->recordActions([
+            ViewAction::make(),
+            EditAction::make()->visible(fn (CrmCounterparty $record): bool => ! $record->trashed()),
+            Action::make('deleteSpam')
+                ->label('Удалить как спам')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->visible(fn (CrmCounterparty $record): bool => $record->status === 'lead')
+                ->requiresConfirmation()
+                ->modalHeading('Удалить спам-лид?')
+                ->modalDescription('Карточка исчезнет из общего списка, но её можно будет восстановить через фильтр «Корзина».')
+                ->action(function (CrmCounterparty $record): void {
+                    $record->delete();
+                    Notification::make()->success()->title('Лид перемещён в корзину')->send();
+                }),
+            Action::make('restore')
+                ->label('Восстановить')
+                ->icon('heroicon-o-arrow-uturn-left')
+                ->color('success')
+                ->visible(fn (CrmCounterparty $record): bool => $record->trashed())
+                ->requiresConfirmation()
+                ->action(function (CrmCounterparty $record): void {
+                    $record->restore();
+                    Notification::make()->success()->title('Контрагент восстановлен')->send();
+                }),
+        ])->toolbarActions([
+            BulkActionGroup::make([
+                BulkAction::make('deleteSpam')
+                    ->label('Удалить лиды как спам')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription('В корзину попадут только выбранные записи со статусом «Новый лид». Активные контрагенты затронуты не будут.')
+                    ->action(function (Collection $records): void {
+                        $leads = $records->filter(fn (CrmCounterparty $record): bool => $record->status === 'lead');
+                        $leads->each->delete();
+
+                        Notification::make()
+                            ->success()
+                            ->title('Лиды перемещены в корзину')
+                            ->body("Удалено: {$leads->count()}. Пропущено активных: ".($records->count() - $leads->count()).'.')
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                BulkAction::make('restoreSelected')
+                    ->label('Восстановить выбранные')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(function (Collection $records): void {
+                        $records->each(fn (CrmCounterparty $record) => $record->restore());
+                        Notification::make()->success()->title('Выбранные карточки восстановлены')->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
+            ]),
+        ])->defaultSort('updated_at', 'desc');
     }
 
     public static function getPages(): array

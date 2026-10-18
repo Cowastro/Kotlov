@@ -19,6 +19,7 @@ class ViewCrmCounterparty extends ViewRecord
                 ->label('Создать КП')
                 ->icon('heroicon-o-document-plus')
                 ->color('success')
+                ->visible(fn (): bool => ! $this->record->trashed())
                 ->action(function (): void {
                     $counterparty = $this->record->load(['contacts.contactPoints', 'contactPoints']);
                     $contact = $counterparty->contacts->firstWhere('is_primary', true) ?? $counterparty->contacts->first();
@@ -43,7 +44,24 @@ class ViewCrmCounterparty extends ViewRecord
 
                     $this->redirect(CommercialDocumentResource::getUrl('create'));
                 }),
-            EditAction::make(),
+            EditAction::make()->visible(fn (): bool => ! $this->record->trashed()),
+            Action::make('deleteSpam')
+                ->label('Удалить как спам')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->visible(fn (): bool => $this->record->status === 'lead' && ! $this->record->trashed())
+                ->action(function (): void {
+                    $this->record->delete();
+                    $this->redirect(CrmCounterpartyResource::getUrl('index'));
+                }),
+            Action::make('restore')
+                ->label('Восстановить')
+                ->icon('heroicon-o-arrow-uturn-left')
+                ->color('success')
+                ->requiresConfirmation()
+                ->visible(fn (): bool => $this->record->trashed())
+                ->action(fn () => $this->record->restore()),
         ];
     }
 }
