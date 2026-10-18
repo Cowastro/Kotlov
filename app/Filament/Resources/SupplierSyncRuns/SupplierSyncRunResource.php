@@ -33,7 +33,7 @@ class SupplierSyncRunResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Каталог';
+        return 'Интеграции';
     }
 
     public static function form(Schema $schema): Schema
