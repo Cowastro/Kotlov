@@ -72,9 +72,9 @@
             <div class="crm-today__filter">
                 <label for="crm-status">Состояние</label>
                 <select id="crm-status" wire:model.live="status">
+                    <option value="all">Все поступления</option>
                     <option value="open">Только незакрытые</option>
                     <option value="closed">Только закрытые</option>
-                    <option value="all">Все</option>
                 </select>
             </div>
             <div class="crm-today__filter">
@@ -183,7 +183,13 @@
                 <header class="crm-today__panel-head">
                     <div>
                         <h3 class="crm-today__panel-title">Поступления</h3>
-                        <span class="crm-today__panel-label">{{ $rangeLabel }}</span>
+                        <span class="crm-today__panel-label">
+                            {{ $rangeLabel }} · {{ match ($status) {
+                                'open' => 'только незакрытые',
+                                'closed' => 'только закрытые',
+                                default => 'все поступления',
+                            } }}
+                        </span>
                     </div>
                     <span class="crm-today__count">{{ $activityCount }}</span>
                 </header>

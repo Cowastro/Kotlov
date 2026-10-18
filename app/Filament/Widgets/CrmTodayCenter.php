@@ -14,7 +14,7 @@ class CrmTodayCenter extends Widget
 {
     public string $period = 'week';
 
-    public string $status = 'open';
+    public string $status = 'all';
 
     public string $sortOrder = 'desc';
 

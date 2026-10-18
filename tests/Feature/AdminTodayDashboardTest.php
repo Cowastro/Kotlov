@@ -46,6 +46,7 @@ class AdminTodayDashboardTest extends TestCase
             ->assertSee('Не пропустить')
             ->assertSee('Поступления')
             ->assertSee('Управление')
+            ->assertSee('Все поступления')
             ->assertSee('Только незакрытые')
             ->assertSee('Напоминания')
             ->assertSee('+ Добавить')
@@ -54,6 +55,32 @@ class AdminTodayDashboardTest extends TestCase
             ->assertSee('Эта неделя')
             ->assertSee('Этот месяц')
             ->assertDontSee('Состояние обменов');
+    }
+
+    public function test_processed_call_remains_visible_in_the_default_arrivals_feed(): void
+    {
+        Carbon::setTestNow('2026-10-18 15:45:00');
+
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        TelephonyCall::query()->create([
+            'external_uuid' => 'processed-dashboard-call',
+            'direction' => 'inbound',
+            'customer_phone' => '375297064324',
+            'status' => 'missed',
+            'handling_status' => 'handled',
+            'assigned_user_id' => $manager->id,
+            'started_at' => now()->subHours(4),
+            'handled_at' => now()->subMinutes(10),
+        ]);
+
+        $this->actingAs($manager);
+
+        Livewire::test(CrmTodayCenter::class)
+            ->assertSet('status', 'all')
+            ->set('period', 'today')
+            ->assertSee('375297064324')
+            ->assertSee('Обработан');
     }
 
     public function test_it_collects_today_arrivals_and_due_actions_in_one_place(): void
