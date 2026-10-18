@@ -22,12 +22,17 @@ class AdminTodayDashboard
     private const TIMEZONE = 'Europe/Minsk';
 
     /** @return array<string, mixed> */
-    public function data(): array
+    public function data(string $period = '7d', string $status = 'open', string $sort = 'desc'): array
     {
+        $period = in_array($period, ['today', 'yesterday', '7d', '30d', 'all'], true) ? $period : '7d';
+        $status = in_array($status, ['open', 'closed', 'all'], true) ? $status : 'open';
+        $sort = $sort === 'asc' ? 'asc' : 'desc';
+
         $now = now();
         $localNow = $now->copy()->timezone(self::TIMEZONE);
         $dayStart = $localNow->copy()->startOfDay()->utc();
         $dayEnd = $localNow->copy()->endOfDay()->utc();
+        [$rangeStart, $rangeEnd, $rangeLabel] = $this->activityRange($localNow, $period);
 
         $todayCounts = [
             'calls' => TelephonyCall::query()
@@ -61,6 +66,8 @@ class AdminTodayDashboard
             ->whereNotIn('status', ['closed', 'spam'])
             ->whereNotNull('next_follow_up_at');
 
+        $activity = $this->activityItems($rangeStart, $rangeEnd, $status, $sort);
+
         return [
             'dateLabel' => $localNow->translatedFormat('j F, l'),
             'updatedAt' => $localNow->format('H:i'),
@@ -74,7 +81,9 @@ class AdminTodayDashboard
             ],
             'todayCounts' => $todayCounts,
             'attentionItems' => $this->attentionItems($now, $dayEnd),
-            'todayItems' => $this->todayItems($dayStart, $dayEnd),
+            'activityItems' => $activity,
+            'activityCount' => $activity->count(),
+            'rangeLabel' => $rangeLabel,
             'links' => [
                 ['label' => 'Звонки', 'url' => TelephonyCallResource::getUrl('index')],
                 ['label' => 'Заказы', 'url' => OrderResource::getUrl('index')],
@@ -237,93 +246,149 @@ class AdminTodayDashboard
         return $items
             ->unique('key')
             ->sortBy(fn (array $item): string => sprintf('%02d-%s', $item['priority'], $item['timeSort']))
-            ->take(14)
+            ->take(60)
             ->values();
     }
 
     /** @return Collection<int, array<string, mixed>> */
-    private function todayItems(CarbonInterface $dayStart, CarbonInterface $dayEnd): Collection
-    {
+    private function activityItems(
+        CarbonInterface $rangeStart,
+        CarbonInterface $rangeEnd,
+        string $status,
+        string $sort,
+    ): Collection {
         $items = collect();
 
-        TelephonyCall::query()
+        $calls = TelephonyCall::query()
             ->where('direction', 'inbound')
-            ->whereBetween('started_at', [$dayStart, $dayEnd])
-            ->latest('started_at')
-            ->limit(24)
+            ->whereBetween('started_at', [$rangeStart, $rangeEnd]);
+        $this->applyStatus($calls, $status, 'handling_status', ['handled', 'irrelevant']);
+        $calls->latest('started_at')->limit(80)
             ->get()
             ->each(fn (TelephonyCall $call) => $items->push($this->item(
-                key: 'today-call:'.$call->id,
+                key: 'activity-call:'.$call->id,
                 kind: $call->status === 'missed' ? 'Пропущенный звонок' : 'Входящий звонок',
                 title: $call->contact_name,
                 subtitle: $call->customer_phone,
                 time: $call->started_at,
                 url: TelephonyCallResource::getUrl('view', ['record' => $call]),
                 tone: $call->status === 'missed' ? 'danger' : 'info',
+                closed: in_array($call->handling_status, ['handled', 'irrelevant'], true),
+                statusLabel: TelephonyCall::HANDLING_STATUSES[$call->handling_status] ?? $call->handling_status,
             )));
 
-        ContactRequest::query()->whereBetween('created_at', [$dayStart, $dayEnd])->latest()->limit(24)->get()
+        $requests = ContactRequest::query()->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $this->applyStatus($requests, $status, 'status', ['done']);
+        $requests->latest()->limit(80)->get()
             ->each(fn (ContactRequest $request) => $items->push($this->item(
-                key: 'today-request:'.$request->id,
+                key: 'activity-request:'.$request->id,
                 kind: 'Заявка с сайта',
                 title: $request->name,
                 subtitle: $this->compact([$request->phone, $request->product_name]),
                 time: $request->created_at,
                 url: ContactRequestResource::getUrl('view', ['record' => $request]),
                 tone: $request->status === 'done' ? 'success' : 'info',
+                closed: $request->status === 'done',
+                statusLabel: ContactRequest::$statuses[$request->status] ?? $request->status,
             )));
 
-        InstallRequest::query()->whereBetween('created_at', [$dayStart, $dayEnd])->latest()->limit(24)->get()
+        $installations = InstallRequest::query()->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $this->applyStatus($installations, $status, 'status', ['done', 'cancelled']);
+        $installations->latest()->limit(80)->get()
             ->each(fn (InstallRequest $request) => $items->push($this->item(
-                key: 'today-install:'.$request->id,
+                key: 'activity-install:'.$request->id,
                 kind: 'Монтаж',
                 title: $request->customer_name,
                 subtitle: $this->compact([$request->customer_phone, $request->city]),
                 time: $request->created_at,
                 url: InstallRequestResource::getUrl('view', ['record' => $request]),
-                tone: 'info',
+                tone: in_array($request->status, ['done', 'cancelled'], true) ? 'success' : 'info',
+                closed: in_array($request->status, ['done', 'cancelled'], true),
+                statusLabel: InstallRequest::STATUSES[$request->status] ?? $request->status,
             )));
 
-        Order::query()->whereBetween('created_at', [$dayStart, $dayEnd])->latest()->limit(24)->get()
+        $orders = Order::query()->whereNull('archived_at')->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $this->applyStatus($orders, $status, 'status', ['delivered', 'completed', 'cancelled']);
+        $orders->latest()->limit(80)->get()
             ->each(fn (Order $order) => $items->push($this->item(
-                key: 'today-order:'.$order->id,
+                key: 'activity-order:'.$order->id,
                 kind: 'Заказ',
                 title: $order->number.' · '.$order->customer_name,
                 subtitle: number_format((float) $order->total, 2, ',', ' ').' BYN',
                 time: $order->created_at,
                 url: OrderResource::getUrl('view', ['record' => $order]),
                 tone: $order->status === 'new' ? 'warning' : 'success',
+                closed: in_array($order->status, ['delivered', 'completed', 'cancelled'], true),
+                statusLabel: Order::STATUSES[$order->status] ?? $order->status,
             )));
 
-        CrmMailThread::query()
+        $mail = CrmMailThread::query()
             ->whereHas('messages', fn ($query) => $query
                 ->where('direction', 'incoming')
-                ->whereBetween('received_at', [$dayStart, $dayEnd]))
-            ->latest('last_message_at')
-            ->limit(24)
+                ->whereBetween('received_at', [$rangeStart, $rangeEnd]));
+        $this->applyStatus($mail, $status, 'status', ['closed', 'spam']);
+        $mail->latest('last_message_at')->limit(80)
             ->get()
             ->each(fn (CrmMailThread $thread) => $items->push($this->item(
-                key: 'today-mail:'.$thread->id,
+                key: 'activity-mail:'.$thread->id,
                 kind: 'Письмо',
                 title: $thread->subject ?: 'Письмо без темы',
                 subtitle: $thread->participant_name ?: $thread->participant_email,
                 time: $thread->last_message_at ?: $thread->created_at,
                 url: CrmMailThreadResource::getUrl('view', ['record' => $thread]),
                 tone: in_array($thread->status, ['new', 'waiting_manager'], true) ? 'warning' : 'info',
+                closed: in_array($thread->status, ['closed', 'spam'], true),
+                statusLabel: CrmMailThread::STATUSES[$thread->status] ?? $thread->status,
             )));
 
-        SupportConversation::query()->whereBetween('created_at', [$dayStart, $dayEnd])->latest()->limit(24)->get()
+        $chats = SupportConversation::query()->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $this->applyStatus($chats, $status, 'status', ['closed']);
+        $chats->latest()->limit(80)->get()
             ->each(fn (SupportConversation $chat) => $items->push($this->item(
-                key: 'today-chat:'.$chat->id,
+                key: 'activity-chat:'.$chat->id,
                 kind: 'Онлайн-чат',
                 title: $chat->name,
                 subtitle: $chat->phone,
                 time: $chat->last_message_at ?: $chat->created_at,
                 url: SupportConversationResource::getUrl('view', ['record' => $chat]),
                 tone: $chat->status === 'new' ? 'warning' : 'success',
+                closed: $chat->status === 'closed',
+                statusLabel: SupportConversation::STATUSES[$chat->status] ?? $chat->status,
             )));
 
-        return $items->sortByDesc('timeSort')->take(16)->values();
+        return ($sort === 'asc' ? $items->sortBy('timeSort') : $items->sortByDesc('timeSort'))
+            ->take(100)
+            ->values();
+    }
+
+    /** @return array{CarbonInterface, CarbonInterface, string} */
+    private function activityRange(CarbonInterface $localNow, string $period): array
+    {
+        $end = $localNow->copy()->endOfDay();
+
+        [$start, $label] = match ($period) {
+            'today' => [$localNow->copy()->startOfDay(), 'Сегодня'],
+            'yesterday' => [$localNow->copy()->subDay()->startOfDay(), 'Вчера'],
+            '30d' => [$localNow->copy()->subDays(29)->startOfDay(), 'Последние 30 дней'],
+            'all' => [$localNow->copy()->subYears(20)->startOfDay(), 'За всё время'],
+            default => [$localNow->copy()->subDays(6)->startOfDay(), 'Последние 7 дней'],
+        };
+
+        if ($period === 'yesterday') {
+            $end = $localNow->copy()->subDay()->endOfDay();
+        }
+
+        return [$start->utc(), $end->utc(), $label];
+    }
+
+    /** @param \Illuminate\Database\Eloquent\Builder<*> $query */
+    private function applyStatus($query, string $status, string $column, array $closedStatuses): void
+    {
+        if ($status === 'open') {
+            $query->whereNotIn($column, $closedStatuses);
+        } elseif ($status === 'closed') {
+            $query->whereIn($column, $closedStatuses);
+        }
     }
 
     /** @return array<string, mixed> */
@@ -337,6 +402,8 @@ class AdminTodayDashboard
         string $tone,
         ?string $responsible = null,
         int $priority = 9,
+        bool $closed = false,
+        ?string $statusLabel = null,
     ): array {
         $time = $time ?: now();
         $localTime = $time->copy()->timezone(self::TIMEZONE);
@@ -352,6 +419,8 @@ class AdminTodayDashboard
             'tone' => $tone,
             'responsible' => $responsible,
             'priority' => $priority,
+            'closed' => $closed,
+            'statusLabel' => $statusLabel,
         ];
     }
 

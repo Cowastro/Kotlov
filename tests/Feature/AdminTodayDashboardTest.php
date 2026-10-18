@@ -42,7 +42,9 @@ class AdminTodayDashboardTest extends TestCase
             ->assertOk()
             ->assertSee('CRM сегодня')
             ->assertSee('Не пропустить')
-            ->assertSee('Последние поступления')
+            ->assertSee('Поступления')
+            ->assertSee('Управление')
+            ->assertSee('Только незакрытые')
             ->assertDontSee('Состояние обменов');
     }
 
@@ -110,7 +112,7 @@ class AdminTodayDashboardTest extends TestCase
             'received_at' => now()->subMinutes(15),
         ]);
 
-        $data = app(AdminTodayDashboard::class)->data();
+        $data = app(AdminTodayDashboard::class)->data(period: 'today', status: 'all');
 
         $this->assertSame(6, $data['summary']['today']);
         $this->assertSame(6, $data['summary']['attention']);
@@ -125,8 +127,38 @@ class AdminTodayDashboardTest extends TestCase
             'chats' => 1,
         ], $data['todayCounts']);
         $this->assertCount(6, $data['attentionItems']);
-        $this->assertCount(6, $data['todayItems']);
+        $this->assertCount(6, $data['activityItems']);
         $this->assertSame('Перезвонить', $data['attentionItems']->first()['kind']);
         $this->assertStringContainsString('/admin/telephony-calls/', $data['attentionItems']->first()['url']);
+    }
+
+    public function test_open_items_from_yesterday_remain_visible_after_the_weekend(): void
+    {
+        Carbon::setTestNow('2026-10-19 08:00:00');
+
+        $open = Order::query()->create([
+            'number' => 'ORD-YESTERDAY-OPEN',
+            'status' => 'new',
+            'customer_name' => 'Открытый заказ',
+            'customer_phone' => '+375290000001',
+            'total' => 100,
+        ]);
+        $open->forceFill(['created_at' => now()->subDay()])->saveQuietly();
+
+        $closed = Order::query()->create([
+            'number' => 'ORD-YESTERDAY-CLOSED',
+            'status' => 'delivered',
+            'customer_name' => 'Закрытый заказ',
+            'customer_phone' => '+375290000002',
+            'total' => 100,
+        ]);
+        $closed->forceFill(['created_at' => now()->subDay()])->saveQuietly();
+
+        $openData = app(AdminTodayDashboard::class)->data(period: 'yesterday', status: 'open');
+        $closedData = app(AdminTodayDashboard::class)->data(period: 'yesterday', status: 'closed');
+
+        $this->assertTrue($openData['attentionItems']->contains('title', $open->number.' · '.$open->customer_name));
+        $this->assertSame(['ORD-YESTERDAY-OPEN · Открытый заказ'], $openData['activityItems']->pluck('title')->all());
+        $this->assertSame(['ORD-YESTERDAY-CLOSED · Закрытый заказ'], $closedData['activityItems']->pluck('title')->all());
     }
 }

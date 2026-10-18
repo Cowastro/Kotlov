@@ -7,6 +7,12 @@ use Filament\Widgets\Widget;
 
 class CrmTodayCenter extends Widget
 {
+    public string $period = '7d';
+
+    public string $status = 'open';
+
+    public string $sortOrder = 'desc';
+
     protected static bool $isLazy = false;
 
     protected string $view = 'filament.widgets.crm-today-center';
@@ -18,6 +24,10 @@ class CrmTodayCenter extends Widget
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
-        return app(AdminTodayDashboard::class)->data();
+        return app(AdminTodayDashboard::class)->data(
+            period: $this->period,
+            status: $this->status,
+            sort: $this->sortOrder,
+        );
     }
 }
