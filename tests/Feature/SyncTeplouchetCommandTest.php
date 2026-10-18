@@ -58,12 +58,33 @@ class SyncTeplouchetCommandTest extends TestCase
             'is_active' => true,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+        $referenceOnlyDab = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Циркуляционный насос DAB VA 25/130',
+            'slug' => 'dab-va-25-130-reference-test',
+            'sku' => '505100962',
+            'price' => 500,
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $referenceOnlyWilo = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $wiloBrand->id,
+            'name' => 'Циркуляционный насос Wilo Star-RS 25/4-130',
+            'slug' => 'wilo-star-rs-25-4-130-reference-test',
+            'sku' => 'WILO-STAR-RS-25-4-130',
+            'price' => 500,
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
 
         $this->artisan('supplier:sync-teplouchet', ['--dry-run' => true, '--match-existing' => true])
-            ->expectsOutput('metric.teplouchet.rows=181')
-            ->expectsOutput('metric.teplouchet.duplicate_rows=10')
-            ->expectsOutput('metric.teplouchet.safe_unique_offers=171')
+            ->expectsOutput('metric.teplouchet.rows=186')
+            ->expectsOutput('metric.teplouchet.duplicate_rows=14')
+            ->expectsOutput('metric.teplouchet.safe_unique_offers=172')
             ->expectsOutput('metric.teplouchet.retail_below_purchase=0')
+            ->expectsOutput('metric.teplouchet.reference_rows=382')
             ->assertSuccessful();
         $this->assertDatabaseMissing('suppliers', ['code' => 'teplouchet']);
 
@@ -75,7 +96,7 @@ class SyncTeplouchetCommandTest extends TestCase
 
         $supplier = Supplier::where('code', 'teplouchet')->firstOrFail();
         $this->assertSame('ООО «ТЕПЛОУЧЁТ»', $supplier->name);
-        $this->assertSame(171, $supplier->supplierProducts()->count());
+        $this->assertSame(172, $supplier->supplierProducts()->count());
         $this->assertSame(2, CrmContactPoint::where('counterparty_id', $supplier->crm_counterparty_id)->count());
 
         $link = $supplier->supplierProducts()->where('supplier_article_normalized', '505803001')->firstOrFail();
@@ -94,6 +115,12 @@ class SyncTeplouchetCommandTest extends TestCase
         $this->assertDatabaseHas('product_analogs', [
             'product_id' => $product->id,
             'analog_product_id' => $wiloAnalog->id,
+            'source' => 'teplouchet',
+            'match_method' => 'exact_model',
+        ]);
+        $this->assertDatabaseHas('product_analogs', [
+            'product_id' => $referenceOnlyDab->id,
+            'analog_product_id' => $referenceOnlyWilo->id,
             'source' => 'teplouchet',
             'match_method' => 'exact_model',
         ]);

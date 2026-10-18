@@ -56,17 +56,19 @@ class SyncTeplouchetCommand extends Command
 
             $supplier = Supplier::where('code', 'teplouchet')->first();
             $classified = $this->classify($payload['rows'], $parser, $supplier);
-            $this->metrics($payload, $classified);
+            $references = $this->classify($payload['references'] ?? [], $parser, $supplier);
+            $this->metrics($payload, $classified, $references);
             $this->writeReport($classified);
 
             if (! $this->option('apply') || $this->option('dry-run')) {
                 return self::SUCCESS;
             }
 
-            $stats = DB::transaction(function () use ($classified, $payload, &$supplier): array {
+            $stats = DB::transaction(function () use ($classified, $references, $payload, &$supplier): array {
                 [$supplier, $source, $sync] = $this->ensureSupplier($payload['supplier']);
-                $stats = ['offers' => 0, 'linked' => 0, 'unlinked' => 0, 'duplicate_rows_skipped' => 0, 'retail_updated' => 0, 'retail_review' => 0, 'analog_specs_updated' => 0, 'analog_product_links' => 0, 'analog_product_ambiguous' => 0, 'analog_product_unmatched' => 0];
+                $stats = ['offers' => 0, 'linked' => 0, 'unlinked' => 0, 'duplicate_rows_skipped' => 0, 'retail_updated' => 0, 'retail_review' => 0, 'analog_specs_updated' => 0, 'analog_product_links' => 0, 'analog_product_ambiguous' => 0, 'analog_product_unmatched' => 0, 'reference_rows' => count($references), 'reference_matched' => 0];
                 $touched = [];
+                $offerArticles = collect($classified)->pluck('article_key')->flip();
                 $stockObservedAt = CarbonImmutable::parse($payload['source_date'], 'Europe/Minsk')->endOfDay();
                 $analogCatalog = $this->analogCatalog();
 
@@ -140,7 +142,24 @@ class SyncTeplouchetCommand extends Command
                     }
                 }
 
-                app(SupplierProductAvailabilityService::class)->refreshMany($touched);
+                foreach ($references as $row) {
+                    if ($row['duplicate_article'] || ! $row['product_id'] || $offerArticles->has($row['article_key'])) {
+                        continue;
+                    }
+                    $product = Product::find($row['product_id']);
+                    if (! $product) {
+                        continue;
+                    }
+                    $stats['reference_matched']++;
+                    if ($this->mergeAnalogSpecs($product, $row)) {
+                        $stats['analog_specs_updated']++;
+                    }
+                    $this->syncAnalogProducts($product, $row, $analogCatalog, $stats);
+                    $product->save();
+                    $touched[] = $product->id;
+                }
+
+                app(SupplierProductAvailabilityService::class)->refreshMany(array_values(array_unique($touched)));
                 $source->forceFill(['last_run_at' => now()])->save();
                 $sync->forceFill(['last_run_at' => now(), 'last_status' => 'updated', 'last_exit_code' => 0])->save();
 
@@ -391,6 +410,7 @@ class SyncTeplouchetCommand extends Command
                 }
                 if (count($candidates) !== 1) {
                     $stats[count($candidates) > 1 ? 'analog_product_ambiguous' : 'analog_product_unmatched']++;
+
                     continue;
                 }
                 $links[$candidates[0]] = ['source_model' => (string) $sourceModel, 'match_method' => $method];
@@ -431,7 +451,7 @@ class SyncTeplouchetCommand extends Command
         return ['full' => $full, 'base' => $base];
     }
 
-    private function metrics(array $payload, array $rows): void
+    private function metrics(array $payload, array $rows, array $references = []): void
     {
         $metrics = [
             'source_date' => $payload['source_date'],
@@ -444,6 +464,9 @@ class SyncTeplouchetCommand extends Command
             'duplicate_rows' => collect($rows)->where('duplicate_article', true)->count(),
             'safe_unique_offers' => collect($rows)->where('duplicate_article', false)->count(),
             'retail_below_purchase' => collect($rows)->filter(fn ($row) => $row['retail'] <= $row['wholesale'])->count(),
+            'reference_rows' => count($references),
+            'reference_matched' => collect($references)->whereNotNull('product_id')->count(),
+            'reference_unmatched' => collect($references)->whereNull('product_id')->count(),
         ];
         foreach ($metrics as $key => $value) {
             $this->line("metric.teplouchet.{$key}={$value}");

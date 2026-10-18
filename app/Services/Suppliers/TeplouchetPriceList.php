@@ -3,14 +3,14 @@
 namespace App\Services\Suppliers;
 
 use App\Models\SupplierProduct;
-use PhpOffice\PhpSpreadsheet\Reader\Xls;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use RuntimeException;
 
 class TeplouchetPriceList
 {
     public const SOURCE_DATE = '2026-10-12';
 
-    /** @return array{source_date:string, supplier:array<string,string>, rows:array<int,array<string,mixed>>} */
+    /** @return array{source_date:string, supplier:array<string,string>, rows:array<int,array<string,mixed>>, references:array<int,array<string,mixed>>} */
     public function load(string $path): array
     {
         if (! is_file($path)) {
@@ -25,7 +25,7 @@ class TeplouchetPriceList
             return $payload;
         }
 
-        $reader = new Xls;
+        $reader = IOFactory::createReaderForFile($path);
         $reader->setReadDataOnly(true);
         $book = $reader->load($path);
         $main = $book->getSheetByName('склад Минск');
@@ -49,7 +49,24 @@ class TeplouchetPriceList
         }
 
         $analogs = $this->crossReference($cross);
+        $references = [];
+        foreach ($analogs as $article => $selection) {
+            $references[] = [
+                'article' => $article,
+                'article_key' => $article,
+                'name' => $selection['technical']['model'] ?? '',
+                'model' => $selection['technical']['model'] ?? '',
+                'source_url' => null,
+                'source_row' => $selection['source_row'],
+                'analogs' => [
+                    'grundfos' => array_values(array_unique($selection['grundfos'])),
+                    'wilo' => array_values(array_unique($selection['wilo'])),
+                ],
+                'technical' => $selection['technical'],
+            ];
+        }
         $rows = [];
+        $currentBrand = '';
         for ($row = 3; $row <= $main->getHighestRow(); $row++) {
             $brand = $this->cell($main, 'A', $row);
             $article = $this->article($this->cell($main, 'B', $row));
@@ -57,7 +74,12 @@ class TeplouchetPriceList
             $wholesale = $this->number($main->getCell("E{$row}")->getCalculatedValue());
             $retail = $this->number($main->getCell("F{$row}")->getCalculatedValue());
 
-            if (! str_contains(mb_strtolower($brand), 'dab') || $article === '' || $name === '' || $wholesale <= 0 || $retail <= 0) {
+            if ($brand !== '' && ! preg_match('/^(?:новинка|акция)$/ui', $brand)) {
+                $currentBrand = $brand;
+            }
+            $effectiveBrand = preg_match('/^(?:новинка|акция)$/ui', $brand) || $brand === '' ? $currentBrand : $brand;
+
+            if (! str_contains(mb_strtolower($effectiveBrand), 'dab') || $article === '' || $name === '' || $wholesale <= 0 || $retail <= 0) {
                 continue;
             }
 
@@ -81,7 +103,7 @@ class TeplouchetPriceList
                 'warehouse_name' => $stockRow ? 'Склад DAB' : 'Минск',
                 'delivery_days' => $stockRow ? 10 : 0,
                 'unit' => $stockRow['unit'] ?? null,
-                'source_url' => $this->cell($main, 'H', $row) ?: 'https://teplouchet.by/',
+                'source_url' => $this->firstUrl($main, $row) ?: 'https://teplouchet.by/',
                 'source_row' => $row,
                 'analog_note' => $this->cell($main, 'D', $row) ?: null,
                 'analogs' => [
@@ -102,6 +124,7 @@ class TeplouchetPriceList
                 'website' => 'https://teplouchet.by/',
             ],
             'rows' => $rows,
+            'references' => $references,
         ];
         $this->validate($payload);
 
@@ -148,7 +171,7 @@ class TeplouchetPriceList
         return $host.$path;
     }
 
-    /** @return array<string,array{grundfos:array<int,string>,wilo:array<int,string>,technical:array<string,string>}> */
+    /** @return array<string,array{grundfos:array<int,string>,wilo:array<int,string>,technical:array<string,string>,source_row:int}> */
     private function crossReference($sheet): array
     {
         $result = [];
@@ -160,6 +183,7 @@ class TeplouchetPriceList
                 $result[$current] = [
                     'grundfos' => [],
                     'wilo' => [],
+                    'source_row' => $row,
                     'technical' => array_filter([
                         'model' => $this->cell($sheet, 'B', $row),
                         'voltage' => $this->cell($sheet, 'C', $row),
@@ -182,6 +206,18 @@ class TeplouchetPriceList
         }
 
         return $result;
+    }
+
+    private function firstUrl($sheet, int $row): string
+    {
+        foreach (['G', 'H', 'I', 'J'] as $column) {
+            $value = $this->cell($sheet, $column, $row);
+            if (filter_var($value, FILTER_VALIDATE_URL)) {
+                return $value;
+            }
+        }
+
+        return '';
     }
 
     /** @return array{grundfos:array<int,string>,wilo:array<int,string>} */
