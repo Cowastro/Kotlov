@@ -14,6 +14,7 @@ use App\Models\Category;
 use App\Models\MarketResearchReport;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\Market\MarketPriceIndicator;
@@ -246,7 +247,7 @@ class ProductsTable
                     ->state(fn (Product $record): string => match (true) {
                         $record->is_archived => 'Архив',
                         ! $record->is_active => 'Отключён',
-                        default => Product::availabilityStatusOptions()[self::availabilityStatus($record)],
+                        default => self::availabilityLabel($record),
                     })
                     ->description(fn (Product $record): string => self::availabilityDescription($record))
                     ->badge()
@@ -255,6 +256,7 @@ class ProductsTable
                         ! $record->is_active => 'warning',
                         self::availabilityStatus($record) === Product::AVAILABILITY_IN_STOCK => 'success',
                         self::availabilityStatus($record) === Product::AVAILABILITY_OUT_OF_STOCK => 'danger',
+                        self::isSupplierOrderOnly($record) => 'warning',
                         default => 'info',
                     }),
 
@@ -982,6 +984,34 @@ class ProductsTable
         return $record->effectiveAvailabilityStatus();
     }
 
+    private static function availabilityLabel(Product $record): string
+    {
+        if (self::isSupplierOrderOnly($record)) {
+            return 'Под заказ';
+        }
+
+        return Product::availabilityStatusOptions()[self::availabilityStatus($record)];
+    }
+
+    private static function isSupplierOrderOnly(Product $record): bool
+    {
+        if (self::activeIntegrationItems($record)->isNotEmpty()) {
+            return false;
+        }
+
+        $freshSupplierItems = $record->supplierProducts->filter(function ($item): bool {
+            $confirmedAt = $item->last_stock_synced_at
+                ?? $item->last_synced_at
+                ?? $item->updated_at;
+
+            return $item->supplier?->is_active === true
+                && $confirmedAt?->gte(now()->subHours(SupplierProduct::STALE_AFTER_HOURS));
+        });
+
+        return $freshSupplierItems->isNotEmpty()
+            && $freshSupplierItems->every(fn ($item): bool => $item->stock_status === 'on_order');
+    }
+
     private static function wherePubliclyInStock(Builder $query): Builder
     {
         return self::whereEffectivelyInStock($query)
@@ -1078,12 +1108,20 @@ class ProductsTable
 
     private static function availabilityDescription(Product $record): string
     {
+        if (self::isSupplierOrderOnly($record)) {
+            return 'По актуальному прайсу поставщика';
+        }
+
         $supplierStock = self::supplierStock($record);
         $stock = $record->stock_qty === null
             ? $supplierStock
             : (float) $record->stock_qty;
 
         if ($stock === null) {
+            if (self::availabilityStatus($record) === Product::AVAILABILITY_IN_STOCK) {
+                return 'Наличие подтверждено прайсом';
+            }
+
             return 'Количество не указано';
         }
 

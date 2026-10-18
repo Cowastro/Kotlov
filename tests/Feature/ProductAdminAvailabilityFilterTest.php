@@ -114,6 +114,60 @@ class ProductAdminAvailabilityFilterTest extends TestCase
 
     }
 
+    public function test_admin_table_distinguishes_confirmed_presence_and_supplier_order_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Стабилизаторы для проверки наличия',
+            'slug' => 'admin-presence-status-stabilizers',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'admin-presence-status-supplier',
+            'name' => 'Поставщик актуального прайса',
+            'is_active' => true,
+        ]);
+
+        $available = $this->product($category, 'CONFIRMED-WITHOUT-QUANTITY', [
+            'is_active' => true,
+            'price' => 100,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+        ]);
+        $onOrder = $this->product($category, 'SUPPLIER-ORDER', [
+            'is_active' => true,
+            'price' => 100,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $available->id,
+            'supplier_article' => 'AVAILABLE-FROM-PRICE',
+            'in_stock' => true,
+            'stock_quantity' => null,
+            'stock_status' => 'low_without_quantity',
+            'last_stock_synced_at' => now(),
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $onOrder->id,
+            'supplier_article' => 'ORDER-FROM-PRICE',
+            'in_stock' => false,
+            'stock_quantity' => null,
+            'stock_status' => 'on_order',
+            'last_stock_synced_at' => now(),
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ListProducts::class)
+            ->assertSeeText('Наличие подтверждено прайсом')
+            ->assertSeeText('Под заказ')
+            ->assertSeeText('По актуальному прайсу поставщика');
+    }
+
     private function product(Category $category, string $sku, array $attributes): Product
     {
         return Product::query()->create(array_merge([
