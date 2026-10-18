@@ -1212,6 +1212,18 @@ body {
 
 /* Наличие в каталоге: тихий сигнал рядом с основной информацией,
    без конкуренции с акциями и новинками на фотографии. */
+/* Model dimensions and variants often occur at the end of a product name.
+   Keep the complete name readable instead of hiding it after two lines. */
+.card-product_info .name-product {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    -webkit-line-clamp: unset;
+}
+
 .product-card-availability {
     display: inline-flex;
     width: fit-content;
@@ -1341,10 +1353,9 @@ body {
 
     #gridLayout .card-product_info .name-product {
         min-width: 0;
-        display: -webkit-box;
-        overflow: hidden;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
+        display: block;
+        overflow: visible;
+        -webkit-line-clamp: unset;
         font-size: 13px;
         line-height: 1.35;
     }
