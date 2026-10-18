@@ -1,0 +1,49 @@
+{
+  "code": "2026-10-18-reviewed-price-corrections",
+  "observed_at": "2026-10-18T16:30:00+02:00",
+  "sources": [
+    {"code": "bania-by", "name": "Bania.by", "base_url": "https://bania.by", "region": "Беларусь"},
+    {"code": "prosept-official-ru", "name": "PROSEPT — официальный магазин", "kind": "manufacturer", "base_url": "https://prosept.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "yandex-market-ru", "name": "Яндекс Маркет", "base_url": "https://market.yandex.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "vseinstrumenti-ru", "name": "ВсеИнструменты.ру", "base_url": "https://www.vseinstrumenti.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "woodson-ru", "name": "Woodson", "base_url": "https://novgorod.woodson.ru", "currency": "RUB", "region": "Россия"},
+    {"code": "epool-ru", "name": "Epool", "base_url": "https://spb.epool.ru", "currency": "RUB", "region": "Россия"}
+  ],
+  "products": [
+    {
+      "sku": "KOTLOV-004404",
+      "approved_retail_price": 35.00,
+      "review_reason": "Исправление десятичного масштаба: точный PROSEPT SAUNA 004-1, 1 л; цена подтверждена производителем и двумя независимыми магазинами.",
+      "observations": [
+        {"source": "prosept-official-ru", "url": "https://prosept.ru/catalog/sredstva-dlya-bani-i-sauny/", "external_name": "PROSEPT SAUNA 1 л", "external_sku": "004-1", "model": "PROSEPT SAUNA 1 л", "observed_price": 888.00, "currency": "RUB", "exchange_rate_to_byn": 0.036038, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "yandex-market-ru", "url": "https://m.integration.vs.market.yandex.net/card/antiseptik-prosept-sauna-004-1-kontsentrat-dlya-vnutrennikh-rabot-1l/5880512014", "external_name": "Антисептик PROSEPT SAUNA 004-1, концентрат, 1 л", "external_sku": "004-1", "model": "PROSEPT SAUNA 1 л", "observed_price": 847.00, "currency": "RUB", "exchange_rate_to_byn": 0.036038, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "vseinstrumenti-ru", "url": "https://www.vseinstrumenti.ru/product/antiseptik-dlya-ban-i-saun-prosept-sauna-kontsentrat-1-l-004-1-854803/", "external_name": "Антисептик для бань и саун PROSEPT SAUNA концентрат 1:10, 1 л", "external_sku": "004-1", "model": "PROSEPT SAUNA 1 л", "observed_price": 885.00, "currency": "RUB", "exchange_rate_to_byn": 0.036038, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004490",
+      "approved_retail_price": 72.00,
+      "review_reason": "Исправление завышенной цены: точное ведро Банные штучки, артикул 32814; применена актуальная белорусская розница.",
+      "observations": [
+        {"source": "bania-by", "url": "https://bania.by/bannye-shtuchki", "external_name": "Ведро 9 л, система регулировки обручей, липа Банные штучки", "external_sku": "32814", "model": "32814", "observed_price": 72.00, "currency": "BYN", "exchange_rate_to_byn": 1, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004558",
+      "approved_retail_price": 7.50,
+      "review_reason": "Исправление десятичного масштаба: точная плитка Везувий 200х300 В8/БКД, артикул 4610094704072.",
+      "observations": [
+        {"source": "woodson-ru", "url": "https://novgorod.woodson.ru/catalog/komplektuyushchie_1/dlya_pechey_kaminov/", "external_name": "Плитка для камина 200х300 бежевая В8, БКД угловая", "external_sku": "4610094704072", "model": "200х300 В8/БКД угловая", "observed_price": 200.00, "currency": "RUB", "exchange_rate_to_byn": 0.036038, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []},
+        {"source": "epool-ru", "url": "https://spb.epool.ru/good/372032", "external_name": "Облицовочная плитка для камина Везувий 200х300 мм, бежевая В8", "model": "200х300 В8", "observed_price": 205.00, "currency": "RUB", "exchange_rate_to_byn": 0.036038, "availability_status": "out_of_stock", "match_method": "exact_model", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": ["offer_out_of_stock"]}
+      ]
+    },
+    {
+      "sku": "KOTLOV-004406",
+      "approved_retail_price": 5.50,
+      "review_reason": "Исправление десятичного масштаба: точная плитка Везувий 400х200 слоновая кость, артикул 4680019126371.",
+      "observations": [
+        {"source": "woodson-ru", "url": "https://novgorod.woodson.ru/catalog/komplektuyushchie_1/dlya_pechey_kaminov/", "external_name": "Плитка для камина 400х200 слоновая кость В5,5С, В9,9С, В10, В11, ПК-01,02,03,04", "external_sku": "4680019126371", "model": "400х200 слоновая кость", "observed_price": 140.00, "currency": "RUB", "exchange_rate_to_byn": 0.036038, "availability_status": "in_stock", "match_method": "exact_sku", "match_confidence": 1, "is_confirmed": true, "is_comparable": true, "validation_flags": []}
+      ]
+    }
+  ]
+}

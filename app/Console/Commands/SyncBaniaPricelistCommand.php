@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\SupplierReviewDecision;
 use App\Models\Product;
+use App\Models\SupplierReviewDecision;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -29,13 +29,21 @@ class SyncBaniaPricelistCommand extends Command
     protected $description = 'Sync BANIA supplier cost/stock and optionally catalogue RRP from the named Drive workbooks.';
 
     private const SUPPLIER_CODE = 'bania';
+
     private const DEFAULT_FOLDER_URL = 'https://drive.google.com/drive/folders/108zmF6VlM-AWiRgXaMK9BFFqgz2iAdNG';
+
     private const STOCK_WORKBOOK_NAME = 'Наличие товара (без фото).xlsx';
+
     private const RETAIL_WORKBOOK_NAME = 'Рекомендуемые розничные цены.xlsx';
+
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1R2qoKV_NKlOAwaBb5dC58CjRawHXJGGX/edit?gid=1105454588#gid=1105454588';
+
     private const DEFAULT_RETAIL_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1tdKCGzoMoeYQngx2ggeI9DifxHKSDMPc/edit?gid=1529722532#gid=1529722532';
+
     private const CACHE_PATH = 'supplier-cache/bania-pricelist.xlsx';
+
     private const RETAIL_CACHE_PATH = 'supplier-cache/bania-retail-pricelist.xlsx';
+
     private const PRODUCTION_BRANDS = [
         'Везувий',
         'Теплодар',
@@ -55,6 +63,7 @@ class SyncBaniaPricelistCommand extends Command
         'Рубцовский литейный комплекс ЛДВ',
         'Банька',
     ];
+
     private const ALLOWED_CATEGORY_SLUGS = [
         'pechki',
         'pechi',
@@ -73,6 +82,7 @@ class SyncBaniaPricelistCommand extends Command
         'kaminnye-nabory',
         'mangaly',
     ];
+
     private const ALLOWED_CATEGORY_NAMES = [
         'Отделка для парной',
         'Камни для печей',
@@ -91,11 +101,17 @@ class SyncBaniaPricelistCommand extends Command
     ];
 
     private array $reportRows = [];
+
     private array $manualRows = [];
+
     private array $appliedManualLinkIndex = [];
+
     private array $driveFolderWorkbookUrls = [];
+
     private int $duplicatePriceArticlesSkipped = 0;
+
     private int $duplicateRetailArticlesSkipped = 0;
+
     /** @var array<string, true> */
     private array $duplicatePriceArticles = [];
 
@@ -120,25 +136,29 @@ class SyncBaniaPricelistCommand extends Command
         $supplier = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first(['id', 'name']);
         if (! $supplier) {
             $this->error('BANIA supplier is not registered.');
+
             return self::FAILURE;
         }
 
         try {
             $priceFile = $this->resolvePriceFile();
         } catch (\Throwable $e) {
-            $this->error('Price file download failed: ' . $e->getMessage());
+            $this->error('Price file download failed: '.$e->getMessage());
+
             return self::FAILURE;
         }
 
         if (! $priceFile || ! file_exists($priceFile)) {
             $this->error('Price file not found.');
+
             return self::FAILURE;
         }
 
         try {
             $rows = $this->readPriceRows($priceFile);
         } catch (\Throwable $e) {
-            $this->error('Failed to read price list: ' . $e->getMessage());
+            $this->error('Failed to read price list: '.$e->getMessage());
+
             return self::FAILURE;
         }
 
@@ -148,10 +168,10 @@ class SyncBaniaPricelistCommand extends Command
             if ($retailFile && file_exists($retailFile)) {
                 $retailRows = $this->readRetailRows($retailFile);
                 $retailIndexes = $this->buildRetailIndexes($retailRows);
-                $this->info('BANIA retail price rows loaded: ' . count($retailRows));
+                $this->info('BANIA retail price rows loaded: '.count($retailRows));
             }
         } catch (\Throwable $e) {
-            $this->warn('Retail price list was not loaded: ' . $e->getMessage());
+            $this->warn('Retail price list was not loaded: '.$e->getMessage());
         }
 
         if ($limit !== null && $limit > 0) {
@@ -185,6 +205,7 @@ class SyncBaniaPricelistCommand extends Command
             'retail_price_suggested' => 0,
             'retail_price_missing' => 0,
             'retail_price_skipped_manual_review' => 0,
+            'retail_price_skipped_suspicious_jump' => 0,
             'supplier_article_repaired' => 0,
             'supplier_article_repair_skipped_conflict' => 0,
             'manual_review_resolved' => 0,
@@ -208,6 +229,7 @@ class SyncBaniaPricelistCommand extends Command
                 if (($match['action'] ?? '') === 'manual_review') {
                     if ($this->wasManualLinkApproved($row, $match)) {
                         $stats['manual_review_resolved']++;
+
                         continue;
                     }
 
@@ -222,6 +244,7 @@ class SyncBaniaPricelistCommand extends Command
 
                     $this->addManualRow($row, $match);
                     $this->addReportRow($row, $match, 'manual_review');
+
                     continue;
                 }
 
@@ -242,6 +265,7 @@ class SyncBaniaPricelistCommand extends Command
                     }
 
                     $stats['skipped_unrelated']++;
+
                     continue;
                 }
 
@@ -250,12 +274,14 @@ class SyncBaniaPricelistCommand extends Command
                     $stats['manual_review']++;
                     $this->addManualRow($row, $match + ['reason' => 'no confident supplier_product match']);
                     $this->addReportRow($row, $match, 'manual_review');
+
                     continue;
                 }
 
                 if (isset($matchedSupplierProductIds[(int) $supplierProduct->id])) {
                     if ($this->wasManualLinkApproved($row, $match)) {
                         $stats['manual_review_resolved']++;
+
                         continue;
                     }
 
@@ -269,6 +295,7 @@ class SyncBaniaPricelistCommand extends Command
                     }
                     $this->addManualRow($row, $duplicateMatch);
                     $this->addReportRow($row, $duplicateMatch, 'manual_review');
+
                     continue;
                 }
 
@@ -280,6 +307,7 @@ class SyncBaniaPricelistCommand extends Command
                 if ($row['price'] === null || $row['price'] <= 0) {
                     $stats['skipped_empty_price']++;
                     $this->addReportRow($row, $match, 'skipped_empty_price');
+
                     continue;
                 }
 
@@ -294,6 +322,7 @@ class SyncBaniaPricelistCommand extends Command
                     ]);
                     $this->addManualRow($row, $reviewMatch);
                     $this->addReportRow($row, $reviewMatch, 'cost_above_retail');
+
                     continue;
                 }
 
@@ -307,6 +336,11 @@ class SyncBaniaPricelistCommand extends Command
                 }
                 $changed = $this->hasSupplierProductChanges($supplierProduct, $row, $newInStock, $repairArticle);
                 $retailChanged = $this->hasRetailPriceChange($supplierProduct, $retailMatch);
+                $suspiciousRetailJump = $this->isSuspiciousRetailPriceJump($supplierProduct, $retailMatch);
+                if ($suspiciousRetailJump) {
+                    $retailChanged = false;
+                    $stats['retail_price_skipped_suspicious_jump']++;
+                }
                 if (! $changed) {
                     if (! $syncRetailPrices || ! $retailChanged) {
                         $stats['unchanged']++;
@@ -316,6 +350,7 @@ class SyncBaniaPricelistCommand extends Command
                             $stats['retail_price_missing']++;
                         }
                         $this->addReportRow($row, $match, 'unchanged');
+
                         continue;
                     }
                 }
@@ -348,7 +383,9 @@ class SyncBaniaPricelistCommand extends Command
                 } else {
                     $stats['retail_price_missing']++;
                 }
-                $this->addReportRow($row, $match, $syncRetailPrices && $retailChanged ? 'supplier_cost_stock_retail_updated' : 'supplier_cost_stock_updated');
+                $this->addReportRow($row, $match, $suspiciousRetailJump
+                    ? 'supplier_cost_stock_updated_retail_suspicious_jump'
+                    : ($syncRetailPrices && $retailChanged ? 'supplier_cost_stock_retail_updated' : 'supplier_cost_stock_updated'));
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->addReportRow($row, ['reason' => $e->getMessage()], 'error');
@@ -369,6 +406,12 @@ class SyncBaniaPricelistCommand extends Command
                         'norm_article' => $retailMatch['norm_article'] ?? '',
                     ]);
                 $retailChanged = $this->hasRetailPriceChange($supplierProduct, $retailMatch);
+
+                if ($this->isSuspiciousRetailPriceJump($supplierProduct, $retailMatch)) {
+                    $stats['retail_price_skipped_suspicious_jump']++;
+
+                    continue;
+                }
 
                 if (! $retailChanged && ! $repairArticle) {
                     continue;
@@ -443,7 +486,7 @@ class SyncBaniaPricelistCommand extends Command
             $stats
         ));
 
-        $this->info('Products with recalculated availability: ' . count($changedProductIds));
+        $this->info('Products with recalculated availability: '.count($changedProductIds));
         $this->info(sprintf('BANIA supplier_products in allowed sync scope: %d of %d', count($supplierProducts), $supplierProductsTotal));
         $this->warn($syncRetailPrices
             ? 'products.price may be updated only from the BANIA retail price list. The wholesale price-list column "OPT with VAT" remains supplier purchase cost.'
@@ -461,6 +504,7 @@ class SyncBaniaPricelistCommand extends Command
 
         $url = $this->folderWorkbookUrl(self::STOCK_WORKBOOK_NAME)
             ?: (string) ($this->option('sheet-url') ?: self::DEFAULT_SHEET_URL);
+
         return $this->downloadGoogleSheet($url, self::CACHE_PATH, 'Google wholesale price list');
     }
 
@@ -473,6 +517,7 @@ class SyncBaniaPricelistCommand extends Command
 
         $url = $this->folderWorkbookUrl(self::RETAIL_WORKBOOK_NAME)
             ?: (string) ($this->option('retail-sheet-url') ?: self::DEFAULT_RETAIL_SHEET_URL);
+
         return $this->downloadGoogleSheet($url, self::RETAIL_CACHE_PATH, 'Google retail price list');
     }
 
@@ -532,7 +577,7 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         preg_match_all(
-            '/\\["([a-zA-Z0-9_-]{20,})",\\["' . preg_quote($folderId, '/') . '"\\],"([^"]+\\.(?:xls|xlsx))","application\\/(?:vnd\\.ms-excel|vnd\\.openxmlformats-officedocument\\.spreadsheetml\\.sheet)"/u',
+            '/\\["([a-zA-Z0-9_-]{20,})",\\["'.preg_quote($folderId, '/').'"\\],"([^"]+\\.(?:xls|xlsx))","application\\/(?:vnd\\.ms-excel|vnd\\.openxmlformats-officedocument\\.spreadsheetml\\.sheet)"/u',
             $payload,
             $matches,
             PREG_SET_ORDER
@@ -550,7 +595,7 @@ class SyncBaniaPricelistCommand extends Command
     private function downloadGoogleSheet(string $url, string $cachePath, string $label): string
     {
         $exportUrl = $this->toExportUrl($url);
-        $path = storage_path('app/' . $cachePath);
+        $path = storage_path('app/'.$cachePath);
         if (! is_dir(dirname($path))) {
             mkdir(dirname($path), 0775, true);
         }
@@ -582,25 +627,25 @@ class SyncBaniaPricelistCommand extends Command
                 throw new \RuntimeException('Google Sheet export returned HTML instead of XLSX.');
             }
 
-            $tmpPath = $path . '.download.xlsx';
+            $tmpPath = $path.'.download.xlsx';
             file_put_contents($tmpPath, $content);
 
             try {
                 $this->assertReadableSpreadsheet($tmpPath);
             } catch (\Throwable $e) {
                 @unlink($tmpPath);
-                throw new \RuntimeException('Google Sheet export is not a readable XLSX: ' . $e->getMessage());
+                throw new \RuntimeException('Google Sheet export is not a readable XLSX: '.$e->getMessage());
             }
 
             rename($tmpPath, $path);
-            $this->line('Downloaded ' . $label . ': ' . $path);
+            $this->line('Downloaded '.$label.': '.$path);
 
             return $path;
         } catch (\Throwable $e) {
             if (file_exists($path)) {
                 try {
                     $this->assertReadableSpreadsheet($path);
-                    $this->warn($label . ' download failed; using previous cached file: ' . $path);
+                    $this->warn($label.' download failed; using previous cached file: '.$path);
 
                     return $path;
                 } catch (\Throwable) {
@@ -653,7 +698,7 @@ class SyncBaniaPricelistCommand extends Command
 
         $exportUrl = sprintf('https://docs.google.com/spreadsheets/d/%s/export?format=xlsx', $matches[1]);
         if ($gid) {
-            $exportUrl .= '&gid=' . urlencode((string) $gid);
+            $exportUrl .= '&gid='.urlencode((string) $gid);
         }
 
         return $exportUrl;
@@ -755,6 +800,7 @@ class SyncBaniaPricelistCommand extends Command
 
         return array_values(array_filter($rows, function (array $row) use ($duplicates): bool {
             $article = (string) ($row['norm_article'] ?? '');
+
             return $article === '' || ! isset($duplicates[$article]);
         }));
     }
@@ -1069,7 +1115,7 @@ class SyncBaniaPricelistCommand extends Command
             );
         }
 
-        $needle = $this->normalizeName(trim((string) ($supplierProduct->supplier_name ?? '') . ' ' . (string) ($supplierProduct->product_name ?? '')));
+        $needle = $this->normalizeName(trim((string) ($supplierProduct->supplier_name ?? '').' '.(string) ($supplierProduct->product_name ?? '')));
         $best = null;
         $bestScore = 0;
 
@@ -1172,7 +1218,23 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         $oldRetail = $supplierProduct->product_price !== null ? (float) $supplierProduct->product_price : null;
+
         return $oldRetail === null || abs($oldRetail - $newRetail) > 0.01;
+    }
+
+    private function isSuspiciousRetailPriceJump(object $supplierProduct, ?array $retailMatch): bool
+    {
+        if (! $retailMatch || ! $supplierProduct->product_id || empty($retailMatch['price'])) {
+            return false;
+        }
+
+        $current = $supplierProduct->product_price !== null ? (float) $supplierProduct->product_price : null;
+        $proposed = (float) $retailMatch['price'];
+        if ($current === null || $current <= 0 || $proposed <= 0) {
+            return false;
+        }
+
+        return $proposed >= $current * 4 || $current >= $proposed * 4;
     }
 
     private function updateProductRetailPrice(object $supplierProduct, array $retailMatch, $now): void
@@ -1473,32 +1535,38 @@ class SyncBaniaPricelistCommand extends Command
     private function createMissingProductFromPriceRow(array $row, array $retailIndexes, int $supplierId, bool $dryRun, $now): array
     {
         $this->addPriceListCreateRow($row, null, 'create_missing_skipped_auto_disabled', '', '', 'BANIA automatic product creation is disabled; review manually.');
+
         return ['stat' => 'create_missing_skipped_auto_disabled'];
 
         if ($row['price'] === null || (float) $row['price'] <= 0) {
             $this->addPriceListCreateRow($row, null, 'create_missing_skipped_empty_price', '', '', 'Wholesale price is empty.');
+
             return ['stat' => 'create_missing_skipped_empty_price'];
         }
 
         if (! $this->isAvailableStock($row['stock_status'])) {
             $this->addPriceListCreateRow($row, null, 'create_missing_skipped_out_of_stock', '', '', 'Wholesale price-list row is not available.');
+
             return ['stat' => 'create_missing_skipped_out_of_stock'];
         }
 
         $supplierArticle = $this->supplierArticleForPriceRow($row);
         if ($supplierArticle === '') {
             $this->addPriceListCreateRow($row, null, 'create_missing_skipped_duplicate_article', '', '', 'Cannot create supplier row without article.');
+
             return ['stat' => 'create_missing_skipped_duplicate_article'];
         }
 
         if (DB::table('supplier_products')->where('supplier_id', $supplierId)->where('supplier_article', $supplierArticle)->exists()) {
             $this->addPriceListCreateRow($row, null, 'create_missing_skipped_duplicate_article', '', '', 'BANIA supplier_product already exists for this article.');
+
             return ['stat' => 'create_missing_skipped_duplicate_article'];
         }
 
         $retailMatch = $this->matchRetailForPriceRow($row, $retailIndexes);
         if (! $retailMatch || empty($retailMatch['price'])) {
             $this->addPriceListCreateRow($row, null, 'create_missing_skipped_no_retail', '', '', 'Retail price was not found by article.');
+
             return ['stat' => 'create_missing_skipped_no_retail'];
         }
 
@@ -1509,6 +1577,7 @@ class SyncBaniaPricelistCommand extends Command
 
         if ($dryRun) {
             $this->addPriceListCreateRow($row, $retailMatch, 'create_missing_candidate', '', $productSku, 'Would create product from BANIA wholesale price-list row.');
+
             return ['stat' => 'create_missing_candidate'];
         }
 
@@ -1541,8 +1610,8 @@ class SyncBaniaPricelistCommand extends Command
             'is_new' => true,
             'is_sale' => false,
             'sort_order' => 0,
-            'meta_title' => $productName . ' купить в %city%',
-            'meta_keywords' => $productName . ', BANIA.by',
+            'meta_title' => $productName.' купить в %city%',
+            'meta_keywords' => $productName.', BANIA.by',
             'meta_description' => Str::limit(strip_tags($this->priceListShortDescription($productName)), 250, ''),
             'rating' => 0,
             'reviews_count' => 0,
@@ -1614,7 +1683,8 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         $rowNumber = (int) ($row['row'] ?? 0);
-        return $rowNumber > 0 ? 'BANIA-PRICE-ROW-' . $rowNumber : '';
+
+        return $rowNumber > 0 ? 'BANIA-PRICE-ROW-'.$rowNumber : '';
     }
 
     private function resolveBrandIdForPriceRow(array $row, $now): int
@@ -1696,7 +1766,7 @@ class SyncBaniaPricelistCommand extends Command
 
     private function priceListDescription(string $productName): string
     {
-        return '<p>' . e($productName) . ' доступен к заказу. Актуальная цена и наличие указаны на странице; дополнительные параметры можно уточнить у менеджера.</p>';
+        return '<p>'.e($productName).' доступен к заказу. Актуальная цена и наличие указаны на странице; дополнительные параметры можно уточнить у менеджера.</p>';
     }
 
     private function uniqueSlug(string $name): string
@@ -1705,7 +1775,7 @@ class SyncBaniaPricelistCommand extends Command
         $slug = $base;
         $i = 2;
         while (DB::table('products')->where('slug', $slug)->exists()) {
-            $slug = $base . '-' . $i++;
+            $slug = $base.'-'.$i++;
         }
 
         return $slug;
@@ -1891,6 +1961,7 @@ class SyncBaniaPricelistCommand extends Command
         }
 
         similar_text($left, $right, $percent);
+
         return (int) round($percent);
     }
 
@@ -2039,15 +2110,15 @@ class SyncBaniaPricelistCommand extends Command
 
         $stamp = now()->format('Ymd-His');
         if ($this->reportRows !== []) {
-            $path = $dir . '/price-list-sync-' . $stamp . '.csv';
+            $path = $dir.'/price-list-sync-'.$stamp.'.csv';
             $this->writeCsv($path, $this->reportRows);
-            $this->info('Price-list report written: ' . $path);
+            $this->info('Price-list report written: '.$path);
         }
 
         if ($this->manualRows !== []) {
-            $path = $dir . '/price-list-manual-review-' . $stamp . '.csv';
+            $path = $dir.'/price-list-manual-review-'.$stamp.'.csv';
             $this->writeCsv($path, $this->manualRows);
-            $this->warn('Manual review written: ' . $path);
+            $this->warn('Manual review written: '.$path);
         }
     }
 
@@ -2085,7 +2156,7 @@ class SyncBaniaPricelistCommand extends Command
                 continue;
             }
 
-            $index[$supplierProductId . '|' . $productId . '|' . $article] = true;
+            $index[$supplierProductId.'|'.$productId.'|'.$article] = true;
         }
 
         return $index;
@@ -2106,6 +2177,6 @@ class SyncBaniaPricelistCommand extends Command
             return false;
         }
 
-        return isset($this->appliedManualLinkIndex[$supplierProductId . '|' . $productId . '|' . $article]);
+        return isset($this->appliedManualLinkIndex[$supplierProductId.'|'.$productId.'|'.$article]);
     }
 }

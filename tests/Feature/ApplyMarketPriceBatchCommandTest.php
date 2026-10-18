@@ -156,6 +156,54 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_reviewed_price_corrections_apply_explicit_market_prices_and_release_holds(): void
+    {
+        User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Исправление проверенных цен',
+            'slug' => 'reviewed-price-corrections-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+
+        $expected = [
+            'KOTLOV-004404' => 35.00,
+            'KOTLOV-004490' => 72.00,
+            'KOTLOV-004558' => 7.50,
+            'KOTLOV-004406' => 5.50,
+        ];
+        foreach ($expected as $index => $price) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => 'Исправляемый товар '.$index,
+                'slug' => 'reviewed-price-correction-'.$index,
+                'sku' => $index,
+                'price' => 1005,
+                'price_old' => 1200,
+                'currency' => 'BYN',
+                'is_active' => true,
+                'is_archived' => false,
+                'requires_price_confirmation' => true,
+            ]);
+        }
+
+        $this->artisan('catalog:apply-market-price-batch', [
+            'batch' => '2026-10-18-reviewed-price-corrections',
+            '--apply' => true,
+        ])
+            ->expectsOutputToContain('metric.prices_applied=4')
+            ->expectsOutputToContain('metric.consultation_holds=0')
+            ->expectsOutputToContain('metric.old_prices_cleared=4')
+            ->assertSuccessful();
+
+        foreach ($expected as $sku => $price) {
+            $product = Product::query()->where('sku', $sku)->firstOrFail();
+            $this->assertSame(number_format($price, 2, '.', ''), $product->price);
+            $this->assertNull($product->price_old);
+            $this->assertFalse($product->requires_price_confirmation);
+        }
+    }
+
     public function test_vezuviy_doors_margin_batch_is_valid_and_matches_exact_active_server_skus(): void
     {
         $category = Category::query()->create([

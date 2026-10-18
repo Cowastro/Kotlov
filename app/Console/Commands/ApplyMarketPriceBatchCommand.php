@@ -114,33 +114,60 @@ class ApplyMarketPriceBatchCommand extends Command
                     $result['old_prices_cleared']++;
                 }
 
-                $forceHold = (bool) ($item['force_consultation_hold'] ?? false);
-                $recommendation = $forceHold
-                    ? [
-                        'status' => 'research_unconfirmed',
-                        'reason' => 'Текущий проверенный пакет содержит менее трёх независимых точных предложений.',
-                    ]
-                    : $recommendations->forProduct($product->fresh());
-                $hold = true;
+                $approvedPrice = isset($item['approved_retail_price'])
+                    ? round((float) $item['approved_retail_price'], 2)
+                    : null;
 
-                if (! $forceHold && $recommendation['status'] === 'ready') {
-                    $hold = false;
-                    if ($recommendation['can_apply']) {
-                        $recommendations->apply(
-                            $product,
-                            $actor,
-                            'Проверенный серверный пакет '.$batch['code'].': '.$item['review_reason'],
-                            userAgent: 'catalog:apply-market-price-batch',
-                        );
-                        $result['prices_applied']++;
-                    } else {
-                        $result['prices_unchanged']++;
+                if ($approvedPrice !== null) {
+                    $changed = abs((float) $product->price - $approvedPrice) >= 0.01;
+                    $oldComparisonPrice = $product->price_old;
+                    $product->forceFill([
+                        'price' => $approvedPrice,
+                        // A corrected scale error must never be presented as a discount
+                        // from the previous, known-invalid catalogue price.
+                        'price_old' => null,
+                        'requires_price_confirmation' => false,
+                    ])->save();
+                    if ($oldComparisonPrice !== null) {
+                        $result['old_prices_cleared']++;
                     }
+                    $result[$changed ? 'prices_applied' : 'prices_unchanged']++;
+                    $hold = false;
+                    $recommendation = [
+                        'status' => 'ready',
+                        'reason' => 'Цена явно подтверждена администратором в проверенном рыночном пакете.',
+                        'recommended_price' => $approvedPrice,
+                        'can_apply' => $changed,
+                    ];
                 } else {
-                    $result['consultation_holds']++;
-                }
+                    $forceHold = (bool) ($item['force_consultation_hold'] ?? false);
+                    $recommendation = $forceHold
+                        ? [
+                            'status' => 'research_unconfirmed',
+                            'reason' => 'Текущий проверенный пакет содержит менее трёх независимых точных предложений.',
+                        ]
+                        : $recommendations->forProduct($product->fresh());
+                    $hold = true;
 
-                $product->update(['requires_price_confirmation' => $hold]);
+                    if (! $forceHold && $recommendation['status'] === 'ready') {
+                        $hold = false;
+                        if ($recommendation['can_apply']) {
+                            $recommendations->apply(
+                                $product,
+                                $actor,
+                                'Проверенный серверный пакет '.$batch['code'].': '.$item['review_reason'],
+                                userAgent: 'catalog:apply-market-price-batch',
+                            );
+                            $result['prices_applied']++;
+                        } else {
+                            $result['prices_unchanged']++;
+                        }
+                    } else {
+                        $result['consultation_holds']++;
+                    }
+
+                    $product->update(['requires_price_confirmation' => $hold]);
+                }
 
                 $freshProduct = $product->fresh();
                 $decision = $hold
@@ -233,6 +260,31 @@ class ApplyMarketPriceBatchCommand extends Command
             foreach ($product['observations'] as $observation) {
                 if (! isset($sources[$observation['source'] ?? ''])) {
                     throw new \InvalidArgumentException('Observation refers to an unknown source.');
+                }
+            }
+
+            if (isset($product['approved_retail_price'])) {
+                $approvedPrice = round((float) $product['approved_retail_price'], 2);
+                if ($approvedPrice <= 0) {
+                    throw new \InvalidArgumentException('An approved retail price must be positive.');
+                }
+
+                $comparable = collect($product['observations'])
+                    ->filter(fn (array $observation): bool => (bool) ($observation['is_confirmed'] ?? false)
+                        && (bool) ($observation['is_comparable'] ?? false)
+                        && (float) ($observation['observed_price'] ?? 0) > 0)
+                    ->map(fn (array $observation): float => round(
+                        (float) $observation['observed_price'] * (float) ($observation['exchange_rate_to_byn'] ?? 1),
+                        2,
+                    ));
+                if ($comparable->isEmpty()) {
+                    throw new \InvalidArgumentException('An approved retail price requires confirmed comparable evidence.');
+                }
+
+                $minimum = (float) $comparable->min();
+                $maximum = (float) $comparable->max();
+                if ($approvedPrice < $minimum * 0.75 || $approvedPrice > $maximum * 1.25) {
+                    throw new \InvalidArgumentException('An approved retail price must stay within 25% of confirmed market evidence.');
                 }
             }
         }

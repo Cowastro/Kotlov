@@ -150,7 +150,7 @@ class SyncBaniaPricelistSafetyTest extends TestCase
 
     public function test_duplicate_stock_article_cannot_drive_unrelated_retail_price(): void
     {
-        $command = new SyncBaniaPricelistCommand();
+        $command = new SyncBaniaPricelistCommand;
         $property = new ReflectionProperty(SyncBaniaPricelistCommand::class, 'duplicatePriceArticles');
         $property->setAccessible(true);
         $property->setValue($command, ['40300' => true]);
@@ -202,11 +202,20 @@ class SyncBaniaPricelistSafetyTest extends TestCase
         self::assertSame('', $parsed['norm_article']);
     }
 
+    public function test_retail_price_jump_of_four_times_is_sent_to_review_instead_of_sync(): void
+    {
+        $product = (object) ['product_id' => 10, 'product_price' => 5.50];
+
+        self::assertTrue($this->invoke('isSuspiciousRetailPriceJump', $product, ['price' => 1005.00]));
+        self::assertTrue($this->invoke('isSuspiciousRetailPriceJump', $product, ['price' => 1.00]));
+        self::assertFalse($this->invoke('isSuspiciousRetailPriceJump', $product, ['price' => 6.00]));
+    }
+
     public function test_drive_folder_parser_finds_the_two_named_workbooks(): void
     {
         $folder = '108zmF6VlM-AWiRgXaMK9BFFqgz2iAdNG';
-        $html = '["1eDUENigmEbQjge6G1WFqvJdjZ_YBM32A",["' . $folder . '"],"Наличие товара (без фото).xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]'
-            . '["1tdKCGzoMoeYQngx2ggeI9DifxHKSDMPc",["' . $folder . '"],"Рекомендуемые розничные цены.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]';
+        $html = '["1eDUENigmEbQjge6G1WFqvJdjZ_YBM32A",["'.$folder.'"],"Наличие товара (без фото).xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]'
+            .'["1tdKCGzoMoeYQngx2ggeI9DifxHKSDMPc",["'.$folder.'"],"Рекомендуемые розничные цены.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]';
 
         $result = $this->invoke('parseDriveFolderWorkbookUrls', $html, $folder);
 
@@ -226,7 +235,7 @@ class SyncBaniaPricelistSafetyTest extends TestCase
 
     private function invoke(string $method, mixed ...$arguments): mixed
     {
-        return $this->invokeOn(new SyncBaniaPricelistCommand(), $method, ...$arguments);
+        return $this->invokeOn(new SyncBaniaPricelistCommand, $method, ...$arguments);
     }
 
     private function invokeOn(SyncBaniaPricelistCommand $command, string $method, mixed ...$arguments): mixed
