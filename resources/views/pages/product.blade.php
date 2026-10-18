@@ -213,6 +213,16 @@
                                     @endif
                                 </div>
 
+                                @if ($product->brand && mb_strtolower(trim($product->brand->name)) === 'dab')
+                                    <a href="https://dna.dabpumps.com/Region.aspx?ReturnUrl=%2fStartMain.aspx"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       class="link fw-medium d-inline-flex align-items-center gap-1 mt-8 mb-4">
+                                        Подбор насоса DAB
+                                        <i class="icon icon-ArrowUpRight"></i>
+                                    </a>
+                                @endif
+
                                 @php
                                     $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
                                     $b2bOffer = $b2bComparison['offer'] ?? null;

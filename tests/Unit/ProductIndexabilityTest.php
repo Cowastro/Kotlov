@@ -132,6 +132,30 @@ class ProductIndexabilityTest extends TestCase
         $this->assertTrue($product->requiresAvailabilityConfirmation());
     }
 
+    public function test_supplier_permanent_availability_does_not_expire_or_expose_fake_quantity(): void
+    {
+        $product = new Product([
+            'price' => 100,
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+        ]);
+        $offer = new SupplierProduct([
+            'in_stock' => true,
+            'stock_quantity' => null,
+            'stock_status' => SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE,
+            'last_stock_synced_at' => CarbonImmutable::now()->subMonth(),
+        ]);
+        $offer->setRelation('supplier', new Supplier(['is_active' => true]));
+        $product->setRelation('supplierProducts', new Collection([$offer]));
+        $product->setRelation('integrationProducts', new Collection);
+
+        $this->assertTrue($product->canBePurchased());
+        $this->assertSame('В наличии', $product->publicAvailabilityLabel());
+        $this->assertNull($product->confirmedStockQuantity());
+    }
+
     private function freshOffer(): SupplierProduct
     {
         return (new SupplierProduct([

@@ -50,58 +50,58 @@ class ManagerStorefrontProductContext
         $supplierOffers = $product->supplierProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->supplier?->name))
             ->map(function ($offer) use ($retailPrice): array {
-            $quantity = $offer->stock_quantity;
-            $inStock = (float) $quantity > 0 || $offer->in_stock === true;
-            $purchasePrice = (float) $offer->price_byn > 0 ? (float) $offer->price_byn : null;
+                $quantity = $offer->stock_quantity;
+                $inStock = (float) $quantity > 0 || $offer->in_stock === true;
+                $purchasePrice = (float) $offer->price_byn > 0 ? (float) $offer->price_byn : null;
 
-            return [
-                'supplier' => $offer->supplier?->name ?: ($offer->supplier?->code ?: 'Поставщик'),
-                'phones' => $offer->supplier?->contactPhoneNumbers() ?? [],
-                'emails' => $offer->supplier?->contactEmailAddresses() ?? [],
-                'contact' => $offer->supplier?->contact,
-                'article' => $offer->supplier_article,
-                'supplier_product_name' => $offer->supplier_name,
-                'purchase_price' => $purchasePrice,
-                'retail_price' => $retailPrice,
-                'margin' => $this->margin($retailPrice, $purchasePrice),
-                'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
-                'stock' => $quantity !== null
-                    ? $this->formatQuantity((float) $quantity)
-                    : ($inStock ? 'В наличии' : ($offer->stock_text ?: 'Нет в наличии')),
-                'warehouse' => $offer->warehouse_name,
-                'delivery_days' => $offer->delivery_days,
-                'in_stock' => $inStock,
-                'is_fresh' => $offer->hasFreshPositiveStock(),
-                'updated_at' => $offer->last_stock_synced_at ?? $offer->last_synced_at ?? $offer->updated_at,
-            ];
-        });
+                return [
+                    'supplier' => $offer->supplier?->name ?: ($offer->supplier?->code ?: 'Поставщик'),
+                    'phones' => $offer->supplier?->contactPhoneNumbers() ?? [],
+                    'emails' => $offer->supplier?->contactEmailAddresses() ?? [],
+                    'contact' => $offer->supplier?->contact,
+                    'article' => $offer->supplier_article,
+                    'supplier_product_name' => $offer->supplier_name,
+                    'purchase_price' => $purchasePrice,
+                    'retail_price' => $retailPrice,
+                    'margin' => $this->margin($retailPrice, $purchasePrice),
+                    'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
+                    'stock' => $quantity !== null
+                        ? $this->formatQuantity((float) $quantity)
+                        : ($inStock ? 'В наличии' : ($offer->stock_text ?: 'Нет в наличии')),
+                    'warehouse' => $offer->warehouse_name,
+                    'delivery_days' => $offer->delivery_days,
+                    'in_stock' => $inStock,
+                    'is_fresh' => $offer->confirmsAvailability(),
+                    'updated_at' => $offer->last_stock_synced_at ?? $offer->last_synced_at ?? $offer->updated_at,
+                ];
+            });
 
         $integrationOffers = $product->integrationProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->source?->supplier?->name))
             ->map(function ($offer) use ($retailPrice): array {
-            $quantity = (float) $offer->stock_quantity;
-            $source = $offer->source;
-            $purchasePrice = $offer->normalizedPriceByn();
+                $quantity = (float) $offer->stock_quantity;
+                $source = $offer->source;
+                $purchasePrice = $offer->normalizedPriceByn();
 
-            return [
-                'supplier' => $source?->supplier?->name ?: ($source?->name ?: 'Интеграция'),
-                'phones' => $source?->supplier?->contactPhoneNumbers() ?? [],
-                'emails' => $source?->supplier?->contactEmailAddresses() ?? [],
-                'contact' => $source?->supplier?->contact,
-                'article' => $offer->external_sku,
-                'supplier_product_name' => $offer->name,
-                'purchase_price' => $purchasePrice,
-                'retail_price' => $retailPrice,
-                'margin' => $this->margin($retailPrice, $purchasePrice),
-                'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
-                'stock' => $this->formatQuantity($quantity),
-                'warehouse' => data_get($source?->settings, 'warehouse_label'),
-                'delivery_days' => null,
-                'in_stock' => $quantity > 0,
-                'is_fresh' => $offer->hasFreshPositiveStock(),
-                'updated_at' => $offer->stock_confirmed_at ?? $offer->last_offer_seen_at ?? $offer->last_seen_at,
-            ];
-        });
+                return [
+                    'supplier' => $source?->supplier?->name ?: ($source?->name ?: 'Интеграция'),
+                    'phones' => $source?->supplier?->contactPhoneNumbers() ?? [],
+                    'emails' => $source?->supplier?->contactEmailAddresses() ?? [],
+                    'contact' => $source?->supplier?->contact,
+                    'article' => $offer->external_sku,
+                    'supplier_product_name' => $offer->name,
+                    'purchase_price' => $purchasePrice,
+                    'retail_price' => $retailPrice,
+                    'margin' => $this->margin($retailPrice, $purchasePrice),
+                    'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
+                    'stock' => $this->formatQuantity($quantity),
+                    'warehouse' => data_get($source?->settings, 'warehouse_label'),
+                    'delivery_days' => null,
+                    'in_stock' => $quantity > 0,
+                    'is_fresh' => $offer->hasFreshPositiveStock(),
+                    'updated_at' => $offer->stock_confirmed_at ?? $offer->last_offer_seen_at ?? $offer->last_seen_at,
+                ];
+            });
 
         return $supplierOffers
             ->concat($integrationOffers)

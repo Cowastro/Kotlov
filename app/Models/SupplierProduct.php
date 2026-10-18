@@ -11,6 +11,8 @@ class SupplierProduct extends Model
 {
     public const STALE_AFTER_HOURS = 24;
 
+    public const STOCK_STATUS_ALWAYS_AVAILABLE = 'always_available';
+
     protected $fillable = [
         'supplier_id',
         'supplier_sync_id',
@@ -112,5 +114,14 @@ class SupplierProduct extends Model
         return (float) $this->stock_quantity > 0
             && $confirmedAt !== null
             && $confirmedAt->gte(($now ?? now())->copy()->subHours(self::STALE_AFTER_HOURS));
+    }
+
+    public function confirmsAvailability(?CarbonInterface $now = null): bool
+    {
+        if ($this->in_stock && $this->stock_status === self::STOCK_STATUS_ALWAYS_AVAILABLE) {
+            return true;
+        }
+
+        return $this->hasFreshPositiveStock($now);
     }
 }

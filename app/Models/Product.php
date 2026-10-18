@@ -147,7 +147,26 @@ class Product extends Model
                 : 'В наличии';
         }
 
+        if ($status === self::AVAILABILITY_CHECK && ($days = $this->supplierDeliveryDays()) !== null) {
+            return 'Поставка до '.$days.' рабочих дней';
+        }
+
         return $status === self::AVAILABILITY_CHECK ? 'Доступно к заказу' : 'Нет в наличии';
+    }
+
+    private function supplierDeliveryDays(): ?int
+    {
+        $links = $this->relationLoaded('supplierProducts')
+            ? $this->supplierProducts
+            : $this->supplierProducts()->with('supplier:id,is_active')->get();
+
+        $days = $links
+            ->filter(fn (SupplierProduct $link): bool => $link->supplier?->is_active === true
+                && $link->stock_status === 'preorder'
+                && (int) $link->delivery_days > 0)
+            ->min('delivery_days');
+
+        return $days !== null ? (int) $days : null;
     }
 
     /** The same resolved state is used by public labels, the cart and checkout. */
@@ -166,8 +185,13 @@ class Product extends Model
             $confirmedAt = $link->last_stock_synced_at ?? $link->last_synced_at;
 
             return $link->stock_quantity === null && $link->in_stock
-                && $confirmedAt?->gte(now()->subHours(SupplierProduct::STALE_AFTER_HOURS))
-                && in_array($link->stock_status, ['low_without_quantity', 'available_without_quantity', 'available', 'in_stock'], true)
+                && (
+                    $link->stock_status === SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE
+                    || (
+                        $confirmedAt?->gte(now()->subHours(SupplierProduct::STALE_AFTER_HOURS))
+                        && in_array($link->stock_status, ['low_without_quantity', 'available_without_quantity', 'available', 'in_stock'], true)
+                    )
+                )
                 && $link->supplier?->is_active === true;
         });
     }
@@ -254,15 +278,22 @@ class Product extends Model
     {
         $legacyAvailable = $this->relationLoaded('supplierProducts')
             ? $this->supplierProducts->contains(
-                fn (SupplierProduct $item): bool => $item->supplier?->is_active === true && $item->hasFreshPositiveStock()
+                fn (SupplierProduct $item): bool => $item->supplier?->is_active === true && $item->confirmsAvailability()
             )
             : $this->supplierProducts()
                 ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true))
-                ->where('stock_quantity', '>', 0)
-                ->whereRaw(
-                    'COALESCE(last_stock_synced_at, last_synced_at, updated_at) >= ?',
-                    [now()->subHours(SupplierProduct::STALE_AFTER_HOURS)]
-                )
+                ->where(function ($query): void {
+                    $query->where(function ($query): void {
+                        $query->where('in_stock', true)
+                            ->where('stock_status', SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE);
+                    })->orWhere(function ($query): void {
+                        $query->where('stock_quantity', '>', 0)
+                            ->whereRaw(
+                                'COALESCE(last_stock_synced_at, last_synced_at, updated_at) >= ?',
+                                [now()->subHours(SupplierProduct::STALE_AFTER_HOURS)]
+                            );
+                    });
+                })
                 ->exists();
 
         if ($legacyAvailable) {

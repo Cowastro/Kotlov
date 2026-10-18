@@ -28,6 +28,16 @@ class SyncTeplouchetCommandTest extends TestCase
             'is_active' => true,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+        $minskProduct = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Насос DAB B 50/250.40 M',
+            'slug' => 'dab-b-50-250-40-m-test',
+            'sku' => '505812041',
+            'price' => 9000,
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
 
         $this->artisan('supplier:sync-teplouchet', ['--dry-run' => true, '--match-existing' => true])
             ->expectsOutput('metric.teplouchet.rows=181')
@@ -51,13 +61,22 @@ class SyncTeplouchetCommandTest extends TestCase
         $link = $supplier->supplierProducts()->where('supplier_article_normalized', '505803001')->firstOrFail();
         $this->assertSame($product->id, $link->product_id);
         $this->assertSame('1255.18', $link->price_byn);
-        $this->assertTrue($link->in_stock);
+        $this->assertFalse($link->in_stock);
         $this->assertNull($link->stock_quantity);
-        $this->assertSame('available_without_quantity', $link->stock_status);
+        $this->assertSame('preorder', $link->stock_status);
+        $this->assertSame(10, $link->delivery_days);
         $this->assertSame('2026-10-12', $link->last_stock_synced_at->toDateString());
         $this->assertSame('1443.46', $product->fresh()->price);
         $this->assertSame(Product::AVAILABILITY_CHECK, $product->fresh()->effectiveAvailabilityStatus());
+        $this->assertSame('Поставка до 10 рабочих дней', $product->fresh()->publicAvailabilityLabel());
         $this->assertStringContainsString('UPS 25-55-180', collect($product->fresh()->specs)->firstWhere('key', 'Аналоги Grundfos')['value']);
         $this->assertStringContainsString('TOP S 25/5', collect($product->fresh()->specs)->firstWhere('key', 'Аналоги Wilo')['value']);
+
+        $minskLink = $supplier->supplierProducts()->where('supplier_article_normalized', '505812041')->firstOrFail();
+        $this->assertTrue($minskLink->in_stock);
+        $this->assertSame('always_available', $minskLink->stock_status);
+        $this->assertSame('ТЕПЛОУЧЁТ · Минск', $minskLink->warehouse_name);
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $minskProduct->fresh()->effectiveAvailabilityStatus());
+        $this->assertSame('В наличии', $minskProduct->fresh()->publicAvailabilityLabel());
     }
 }

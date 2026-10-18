@@ -9,9 +9,11 @@ use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
 use App\Filament\Resources\Suppliers\Pages\ViewSupplier;
 use App\Filament\Resources\Suppliers\RelationManagers\PriceSourcesRelationManager;
 use App\Filament\Resources\Suppliers\RelationManagers\PriceSyncsRelationManager;
+use App\Filament\Resources\Suppliers\RelationManagers\SupplierProductsRelationManager;
 use App\Models\IntegrationSource;
 use App\Models\Supplier;
 use App\Models\SupplierSource;
+use App\Models\SupplierSync;
 use App\Services\Integrations\IntegrationFlowHealth;
 use App\Services\Integrations\IntegrationOperationsSummary;
 use App\Services\Orders\SupplierAutoTransferManager;
@@ -237,8 +239,8 @@ class SupplierResource extends Resource
                     RepeatableEntry::make('syncs')->label('Автоматические обновления')->schema([
                         TextEntry::make('title')->label('Сценарий')->weight('bold'),
                         TextEntry::make('last_status')->label('Статус')->badge()
-                            ->state(fn (\App\Models\SupplierSync $record): string => $record->statusLabel())
-                            ->color(fn (\App\Models\SupplierSync $record): string => $record->statusColor()),
+                            ->state(fn (SupplierSync $record): string => $record->statusLabel())
+                            ->color(fn (SupplierSync $record): string => $record->statusColor()),
                         TextEntry::make('last_run_at')->label('Последний запуск')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Нет запусков'),
                     ])->columns(3),
                 ]),
@@ -374,6 +376,7 @@ class SupplierResource extends Resource
     public static function getRelations(): array
     {
         return [
+            SupplierProductsRelationManager::class,
             PriceSourcesRelationManager::class,
             PriceSyncsRelationManager::class,
         ];
@@ -461,7 +464,7 @@ class SupplierResource extends Resource
         $url = 'https://api.nbrb.by/exrates/rates/'.$supplier->currency.'?parammode=2';
         $response = Http::timeout(10)->get($url);
 
-        if (!$response->ok() || !($rate = $response->json('Cur_OfficialRate'))) {
+        if (! $response->ok() || ! ($rate = $response->json('Cur_OfficialRate'))) {
             Notification::make()
                 ->title('Ошибка НБРБ')
                 ->body('Не удалось получить курс '.$supplier->currency)
@@ -510,7 +513,7 @@ class SupplierResource extends Resource
         $hasIntegration = $activeSources->isNotEmpty();
         $hasPriceChannel = self::hasActivePriceSource($supplier);
 
-        if ($hasIntegration && !$supplier->usesLegacyChannel() && !$hasPriceChannel) {
+        if ($hasIntegration && ! $supplier->usesLegacyChannel() && ! $hasPriceChannel) {
             return $activeSources->contains('driver', 'commerceml') ? '1С' : 'API / файл';
         }
 
@@ -578,10 +581,10 @@ class SupplierResource extends Resource
     private static function integrationHealthLabel(Supplier $supplier): string
     {
         $source = self::oneCSource($supplier);
-        if (!$source) {
+        if (! $source) {
             return 'Не подключена';
         }
-        if (!$source->is_active) {
+        if (! $source->is_active) {
             return 'Отключена';
         }
 
@@ -593,7 +596,7 @@ class SupplierResource extends Resource
     private static function integrationHealthColor(Supplier $supplier): string
     {
         $source = self::oneCSource($supplier);
-        if (!$source || !$source->is_active) {
+        if (! $source || ! $source->is_active) {
             return 'gray';
         }
 
@@ -644,8 +647,8 @@ class SupplierResource extends Resource
                 : 'heroicon-o-play-circle')
             ->color(fn (Supplier $record): string => $record->automatic_order_transfer_enabled ? 'danger' : 'success')
             ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
-            ->disabled(fn (Supplier $record): bool => !$record->automatic_order_transfer_enabled
-                && !self::autoTransferReadiness($record)['ready'])
+            ->disabled(fn (Supplier $record): bool => ! $record->automatic_order_transfer_enabled
+                && ! self::autoTransferReadiness($record)['ready'])
             ->tooltip(fn (Supplier $record): string => self::autoTransferReadinessDescription($record))
             ->requiresConfirmation()
             ->modalHeading(fn (Supplier $record): string => $record->automatic_order_transfer_enabled
@@ -661,7 +664,7 @@ class SupplierResource extends Resource
                     ->required(),
             ])
             ->action(function (Supplier $record, array $data): void {
-                $enabled = !$record->automatic_order_transfer_enabled;
+                $enabled = ! $record->automatic_order_transfer_enabled;
                 app(SupplierAutoTransferManager::class)->setEnabled(
                     $record,
                     $enabled,

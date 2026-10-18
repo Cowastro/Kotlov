@@ -2,6 +2,7 @@
 
 namespace App\Services\Suppliers;
 
+use App\Models\SupplierProduct;
 use PhpOffice\PhpSpreadsheet\Reader\Xls;
 use RuntimeException;
 
@@ -18,6 +19,7 @@ class TeplouchetPriceList
 
         if (strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'json') {
             $payload = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+            $payload['rows'] = array_map(fn (array $row): array => $this->normalizeAvailability($row), $payload['rows'] ?? []);
             $this->validate($payload);
 
             return $payload;
@@ -62,7 +64,7 @@ class TeplouchetPriceList
             $inline = $this->inlineAnalogs($this->cell($main, 'D', $row));
             $selection = $analogs[$article] ?? ['grundfos' => [], 'wilo' => [], 'technical' => []];
             $stockRow = $availability[$article] ?? null;
-            $rows[] = [
+            $rows[] = $this->normalizeAvailability([
                 'article' => $this->cell($main, 'B', $row),
                 'article_key' => $article,
                 'name' => $name,
@@ -70,10 +72,14 @@ class TeplouchetPriceList
                 'wholesale' => round($wholesale, 2),
                 'retail' => round($retail, 2),
                 'margin_percent' => round((($retail - $wholesale) / $retail) * 100, 2),
-                'in_stock' => $stockRow !== null && mb_strtolower($stockRow['text']) !== 'нет',
+                'in_stock' => $stockRow === null,
                 'stock_quantity' => null,
-                'stock_status' => $stockRow ? 'available_without_quantity' : 'unknown',
-                'stock_text' => $stockRow ? 'ТЕПЛОУЧЁТ: '.$stockRow['text'].'; заказ до 10 рабочих дней' : 'Склад Минск; количество не указано',
+                'stock_status' => $stockRow ? 'preorder' : SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE,
+                'stock_text' => $stockRow
+                    ? 'Поставка со склада DAB до 10 рабочих дней; наличие у поставщика: '.$stockRow['text']
+                    : 'В наличии: склад Минск',
+                'warehouse_name' => $stockRow ? 'Склад DAB' : 'Минск',
+                'delivery_days' => $stockRow ? 10 : 0,
                 'unit' => $stockRow['unit'] ?? null,
                 'source_url' => $this->cell($main, 'H', $row) ?: 'https://teplouchet.by/',
                 'source_row' => $row,
@@ -83,7 +89,7 @@ class TeplouchetPriceList
                     'wilo' => array_values(array_unique([...$inline['wilo'], ...$selection['wilo']])),
                 ],
                 'technical' => $selection['technical'],
-            ];
+            ]);
         }
 
         $payload = [
@@ -198,5 +204,32 @@ class TeplouchetPriceList
                 throw new RuntimeException('В прайсе ТЕПЛОУЧЁТ обнаружена некорректная пара опт/РРЦ.');
             }
         }
+    }
+
+    /** @param array<string,mixed> $row @return array<string,mixed> */
+    private function normalizeAvailability(array $row): array
+    {
+        $stockText = mb_strtolower(trim((string) ($row['stock_text'] ?? '')));
+        $isSupplierOrder = str_contains($stockText, 'заказ до 10')
+            || str_contains($stockText, 'до 10 рабочих дней')
+            || (int) ($row['delivery_days'] ?? 0) === 10;
+
+        if ($isSupplierOrder) {
+            $row['in_stock'] = false;
+            $row['stock_quantity'] = null;
+            $row['stock_status'] = 'preorder';
+            $row['stock_text'] = 'Поставка со склада DAB до 10 рабочих дней; наличие у поставщика: больше 2';
+            $row['warehouse_name'] = 'Склад DAB';
+            $row['delivery_days'] = 10;
+        } else {
+            $row['in_stock'] = true;
+            $row['stock_quantity'] = null;
+            $row['stock_status'] = SupplierProduct::STOCK_STATUS_ALWAYS_AVAILABLE;
+            $row['stock_text'] = 'В наличии: склад Минск';
+            $row['warehouse_name'] = 'Минск';
+            $row['delivery_days'] = 0;
+        }
+
+        return $row;
     }
 }
