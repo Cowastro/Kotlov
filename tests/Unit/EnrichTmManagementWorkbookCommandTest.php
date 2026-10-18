@@ -28,6 +28,20 @@ class EnrichTmManagementWorkbookCommandTest extends TestCase
         ], $this->invoke('sourceSpecs', ['Shinhoo', 'Описание', '5-39 Вт']));
     }
 
+    public function test_it_matches_an_exact_product_name_only_inside_the_same_brand(): void
+    {
+        $index = [
+            'article' => [],
+            'name' => [],
+            'brand_name' => [
+                'dedietrich|котелms24' => [415],
+            ],
+        ];
+
+        $this->assertSame(415, $this->invoke('matchedProductId', [$index, 'De Dietrich', 'unknown', 'Котел MS 24']));
+        $this->assertNull($this->invoke('matchedProductId', [$index, 'Other', 'unknown', 'Котел MS 24']));
+    }
+
     private function invoke(string $method, array $arguments): mixed
     {
         $command = new EnrichTmManagementWorkbookCommand();

@@ -62,7 +62,7 @@ class EnrichTmManagementWorkbookCommand extends Command
             ->where('supplier_id', $supplier->id)
             ->whereNotNull('product_id')
             ->get();
-        $index = $this->linkIndex($links);
+        $index = $this->linkIndex($links, $configs->keys()->all());
         $stats = ['rows' => 0, 'matched' => 0, 'skipped' => 0, 'ambiguous' => 0, 'images_saved' => 0, 'content_saved' => 0, 'specs_saved' => 0, 'attribute_sync_errors' => 0, 'errors_load' => 0, 'errors_specs' => 0, 'errors_content' => 0, 'errors_images' => 0, 'errors_save' => 0, 'errors' => 0];
 
         foreach ($configs as $brand => $config) {
@@ -82,7 +82,7 @@ class EnrichTmManagementWorkbookCommand extends Command
                 }
 
                 $stats['rows']++;
-                $productId = $this->matchedProductId($index, $article, $name);
+                $productId = $this->matchedProductId($index, $brand, $article, $name);
                 if ($productId === null) {
                     $stats['skipped']++;
                     continue;
@@ -187,10 +187,10 @@ class EnrichTmManagementWorkbookCommand extends Command
         return $path;
     }
 
-    /** @return array{article:array<string,array<int,int>>,name:array<string,array<int,int>>} */
-    private function linkIndex($links): array
+    /** @return array{article:array<string,array<int,int>>,name:array<string,array<int,int>>,brand_name:array<string,array<int,int>>} */
+    private function linkIndex($links, array $brands): array
     {
-        $index = ['article' => [], 'name' => []];
+        $index = ['article' => [], 'name' => [], 'brand_name' => []];
         foreach ($links as $link) {
             $article = $this->normalize((string) $link->supplier_article);
             $name = $this->normalize((string) $link->supplier_name);
@@ -201,13 +201,37 @@ class EnrichTmManagementWorkbookCommand extends Command
                 $index['name'][$name][] = (int) $link->product_id;
             }
         }
+
+        Product::query()
+            ->select(['id', 'brand_id', 'name', 'h1'])
+            ->with('brand:id,name')
+            ->where('is_archived', false)
+            ->whereHas('brand', fn ($query) => $query->whereIn('name', $brands))
+            ->get()
+            ->each(function (Product $product) use (&$index): void {
+                $brand = $this->normalize((string) $product->brand?->name);
+                foreach (array_unique([(string) $product->name, (string) $product->h1]) as $name) {
+                    $normalizedName = $this->normalize($name);
+                    if ($brand !== '' && $normalizedName !== '') {
+                        $index['brand_name'][$brand.'|'.$normalizedName][] = (int) $product->id;
+                    }
+                }
+            });
+
         return $index;
     }
 
-    private function matchedProductId(array $index, string $article, string $name): int|false|null
+    private function matchedProductId(array $index, string $brand, string $article, string $name): int|false|null
     {
-        foreach ([['article', $article], ['name', $name]] as [$group, $value]) {
-            $ids = array_values(array_unique($index[$group][$this->normalize($value)] ?? []));
+        foreach ([
+            ['article', $article],
+            ['name', $name],
+            ['brand_name', $brand.'|'.$name],
+        ] as [$group, $value]) {
+            $key = $group === 'brand_name'
+                ? $this->normalize($brand).'|'.$this->normalize($name)
+                : $this->normalize($value);
+            $ids = array_values(array_unique($index[$group][$key] ?? []));
             if (count($ids) === 1) {
                 return $ids[0];
             }
