@@ -45,7 +45,7 @@
                 <h1>{{ $category->h1 ?: $category->name }}</h1>
                 @if ($catalogIntro ?? $category->content)
                     <p class="text-body-1 cl-text-2">
-                        {{ $catalogIntro ?? Str::limit(strip_tags($category->content), 200) }}
+                        {{ $catalogIntro ?? Str::limit(strip_tags(html_entity_decode($category->content, ENT_QUOTES | ENT_HTML5, 'UTF-8')), 200) }}
                     </p>
                 @endif
             </div>
