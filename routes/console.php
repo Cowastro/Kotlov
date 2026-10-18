@@ -71,9 +71,11 @@ Artisan::command('inspire', function () {
 
 $supplierSyncTimezone = 'Europe/Minsk';
 
-// Omenergo daily maintenance never creates products or rewrites content/media.
+// Omenergo publishes a live Google Sheet. Refresh it every hour so the
+// qualitative stock markers cannot become stale between daily runs. This
+// maintenance never creates products or rewrites content/media.
 Schedule::command('supplier:sync-omenergo --apply')
-    ->dailyAt('07:45')
+    ->hourlyAt(5)
     ->timezone($supplierSyncTimezone)
     ->withoutOverlapping(30)
     ->runInBackground()

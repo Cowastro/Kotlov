@@ -540,7 +540,7 @@ class SyncOmenergoCommand extends Command
                 'command' => 'supplier:sync-omenergo',
             ]),
             'column_mappings' => ['article' => 'A', 'name' => 'C', 'brand' => 'E', 'stock' => 'K', 'retail' => 'L', 'purchase' => 'M'],
-            'schedule_cron' => 'Ежедневно 07:45 (Europe/Minsk); только связанные товары', 'is_active' => true,
+            'schedule_cron' => 'Ежечасно в :05 (Europe/Minsk); только связанные товары', 'is_active' => true,
         ])->save();
         $sync = SupplierSync::updateOrCreate(['key' => 'omenergo_price'], [
             'supplier_id' => $supplier->id, 'name' => 'ОмЭнерго', 'code' => 'omenergo', 'title' => 'ОмЭнерго: цены и наличие',

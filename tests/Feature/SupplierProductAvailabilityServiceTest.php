@@ -17,6 +17,53 @@ class SupplierProductAvailabilityServiceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_exact_supplier_out_of_stock_is_not_presented_as_unknown(): void
+    {
+        $supplier = Supplier::query()->create([
+            'code' => 'exact-stock-status-test',
+            'name' => 'Поставщик с точным статусом',
+            'is_active' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Категория точного статуса',
+            'slug' => 'exact-stock-status-category',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'EXACT-STOCK-1',
+            'name' => 'Товар с точным отсутствием',
+            'slug' => 'exact-stock-status-product',
+            'price' => 100,
+            'is_active' => true,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $link = SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'EXACT-STOCK-1',
+            'in_stock' => false,
+            'stock_quantity' => 0,
+            'stock_status' => 'out_of_stock',
+            'last_stock_synced_at' => now(),
+        ]);
+
+        app(SupplierProductAvailabilityService::class)->refresh($product->id);
+
+        $this->assertSame(Product::AVAILABILITY_OUT_OF_STOCK, $product->fresh()->availability_status);
+        $this->assertSame('Нет в наличии', $product->fresh()->availabilityLabel());
+
+        $link->update([
+            'stock_quantity' => null,
+            'stock_status' => 'on_order',
+        ]);
+        app(SupplierProductAvailabilityService::class)->refresh($product->id);
+
+        $this->assertSame(Product::AVAILABILITY_CHECK, $product->fresh()->availability_status);
+        $this->assertSame('Доступно к заказу', $product->fresh()->availabilityLabel());
+    }
+
     public function test_active_one_c_stock_overrides_the_legacy_channel(): void
     {
         $legacySupplier = Supplier::query()->create([

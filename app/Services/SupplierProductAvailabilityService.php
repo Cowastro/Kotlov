@@ -45,6 +45,8 @@ class SupplierProductAvailabilityService
                 ->selectRaw('MAX(CASE WHEN sp.in_stock = 1 THEN 1 ELSE 0 END) as confirmed_in_stock')
                 ->selectRaw('SUM(CASE WHEN sp.stock_quantity IS NOT NULL THEN 1 ELSE 0 END) as known_quantity_count')
                 ->selectRaw('SUM(CASE WHEN sp.stock_quantity IS NOT NULL THEN sp.stock_quantity ELSE 0 END) as total_quantity')
+                ->selectRaw("SUM(CASE WHEN sp.stock_status = 'out_of_stock' THEN 1 ELSE 0 END) as explicit_out_of_stock_count")
+                ->selectRaw('COUNT(*) as active_channel_count')
                 ->get()
                 ->keyBy('product_id')
             : collect();
@@ -92,9 +94,15 @@ class SupplierProductAvailabilityService
                     : null;
                 $confirmedInStock = $legacyStock !== null && (bool) $legacyStock->confirmed_in_stock;
             }
-            $availability = $confirmedInStock
-                ? Product::AVAILABILITY_IN_STOCK
-                : Product::AVAILABILITY_CHECK;
+            $allLegacyChannelsExplicitlyOut = $integrationStock === null
+                && $legacyStock !== null
+                && (int) $legacyStock->active_channel_count > 0
+                && (int) $legacyStock->explicit_out_of_stock_count === (int) $legacyStock->active_channel_count;
+            $availability = match (true) {
+                $confirmedInStock => Product::AVAILABILITY_IN_STOCK,
+                $allLegacyChannelsExplicitlyOut => Product::AVAILABILITY_OUT_OF_STOCK,
+                default => Product::AVAILABILITY_CHECK,
+            };
 
             $currentQty = $product->stock_qty === null ? null : (int) $product->stock_qty;
             if ((bool) $product->in_stock === $confirmedInStock
