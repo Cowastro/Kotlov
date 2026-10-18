@@ -123,6 +123,18 @@ class SyncThermostudioPricelistCommandTest extends TestCase
         $this->assertSame('supplier_article', $classified['match_confidence']);
     }
 
+    public function test_missing_feed_updates_require_an_unfiltered_live_feed(): void
+    {
+        $this->setInput(['--mark-missing' => true]);
+        $this->assertTrue($this->invoke('canMarkMissingFromFeed', []));
+
+        $this->setInput(['--mark-missing' => true, '--limit' => 10]);
+        $this->assertFalse($this->invoke('canMarkMissingFromFeed', []));
+
+        $this->setInput(['--mark-missing' => true, '--price-file' => 'partial.xlsx']);
+        $this->assertFalse($this->invoke('canMarkMissingFromFeed', []));
+    }
+
     public function test_it_keeps_coaxial_chimneys_in_their_own_category(): void
     {
         $this->setCategoryMap([

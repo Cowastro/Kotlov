@@ -21,6 +21,7 @@ class SyncThermostudioPricelistCommand extends Command
         {--brand=* : Process only selected brands, repeatable or comma-separated}
         {--available-only : Keep only rows that are in stock or expected soon}
         {--only-linked : Update only already linked Thermostudio supplier rows}
+        {--mark-missing : Mark confirmed supplier links absent from a complete current feed as unavailable}
         {--create-new : Create products that do not match existing catalog items}
         {--sync-retail-prices : Update products.price from retail BYN}
         {--prices-only : Do not change stock or availability while syncing prices}
@@ -748,7 +749,7 @@ class SyncThermostudioPricelistCommand extends Command
         $now = now();
         $supplierId = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
-        $stats = array_fill_keys(['matched', 'created', 'updated_retail', 'skipped', 'errors'], 0);
+        $stats = array_fill_keys(['matched', 'created', 'updated_retail', 'skipped', 'missing_from_feed', 'errors'], 0);
         $touchedProductIds = [];
 
         foreach ($rows as $row) {
@@ -786,6 +787,39 @@ class SyncThermostudioPricelistCommand extends Command
             }
         }
 
+        if ((bool) $this->option('mark-missing') && $stats['errors'] === 0 && $this->canMarkMissingFromFeed()) {
+            $linkedCount = DB::table('supplier_products')
+                ->where('supplier_id', $supplierId)
+                ->whereNotNull('product_id')
+                ->count();
+            $minimumSafeMatches = max(1, (int) ceil($linkedCount * 0.8));
+
+            if ($linkedCount > 0 && count(array_unique($touchedProductIds)) >= $minimumSafeMatches) {
+                $missingQuery = DB::table('supplier_products')
+                    ->where('supplier_id', $supplierId)
+                    ->whereNotNull('product_id')
+                    ->when($touchedProductIds !== [], fn ($query) => $query->whereNotIn('product_id', array_unique($touchedProductIds)));
+                $missingProductIds = $missingQuery->pluck('product_id')->map(fn ($id) => (int) $id)->all();
+
+                if ($missingProductIds !== []) {
+                    $missingQuery->update([
+                        'in_stock' => false,
+                        'stock_quantity' => null,
+                        'stock_status' => 'missing_from_feed',
+                        'stock_text' => 'Нет в актуальном прайсе поставщика',
+                        'delivery_days' => null,
+                        'last_stock_synced_at' => $now,
+                        'last_synced_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                    $stats['missing_from_feed'] = count($missingProductIds);
+                    $touchedProductIds = array_merge($touchedProductIds, $missingProductIds);
+                }
+            } else {
+                $this->warn('Missing-from-feed update skipped: the complete feed safety threshold was not met.');
+            }
+        }
+
         if (! (bool) $this->option('prices-only')) {
             app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
         }
@@ -793,6 +827,16 @@ class SyncThermostudioPricelistCommand extends Command
         $this->table(['metric', 'count'], array_map(fn ($key, $value) => [$key, $value], array_keys($stats), array_values($stats)));
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function canMarkMissingFromFeed(): bool
+    {
+        return $this->csvOption('brand') === []
+            && ! (bool) $this->option('available-only')
+            && $this->option('limit') === null
+            && (int) $this->option('offset') === 0
+            && blank($this->option('price-file'))
+            && blank($this->option('sheet-url'));
     }
 
     /**
@@ -1134,8 +1178,13 @@ class SyncThermostudioPricelistCommand extends Command
         }
 
         $matchedIds = array_fill_keys($productIds, true);
-        $linkedMissingFromFeed = $supplierRows
-            ->filter(fn ($row): bool => ! isset($matchedIds[(int) $row->product_id]))
+        $missingSupplierRows = $supplierRows
+            ->filter(fn ($row): bool => ! isset($matchedIds[(int) $row->product_id]));
+        $linkedMissingFromFeed = $missingSupplierRows->count();
+        $missingFeedStockChanges = $missingSupplierRows
+            ->filter(fn ($row): bool => (bool) $row->in_stock
+                || $row->stock_quantity !== null
+                || (string) $row->stock_status !== 'missing_from_feed')
             ->count();
         $statusCounts = array_count_values(array_column($rows, 'stock_status'));
         $sourceAgeMinutes = $this->sourceModifiedAt === null
@@ -1148,6 +1197,7 @@ class SyncThermostudioPricelistCommand extends Command
             'matched_rows' => count($matched),
             'linked_supplier_products' => $supplierRows->count(),
             'linked_missing_from_feed' => $linkedMissingFromFeed,
+            'missing_feed_stock_changes' => $missingFeedStockChanges,
             'retail_price_changes' => $retailChanges,
             'supplier_price_changes' => $supplierPriceChanges,
             'stock_changes' => $stockChanges,

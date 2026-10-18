@@ -126,7 +126,7 @@ Schedule::command('supplier:sync-maitek-group --apply --sync-retail-prices')
     ->appendOutputTo(storage_path('logs/maitek-group-price-stock-sync.log'));
 
 // Thermostudio: frequent safe price/stock refresh for already linked products only.
-Schedule::command('supplier:sync-thermostudio-pricelist --apply --only-linked --sync-retail-prices')
+Schedule::command('supplier:sync-thermostudio-pricelist --apply --only-linked --sync-retail-prices --mark-missing')
     ->hourlyAt(20)
     ->timezone($supplierSyncTimezone)
     ->withoutOverlapping()
