@@ -63,7 +63,7 @@ class EnrichTmManagementWorkbookCommand extends Command
             ->whereNotNull('product_id')
             ->get();
         $index = $this->linkIndex($links);
-        $stats = ['rows' => 0, 'matched' => 0, 'skipped' => 0, 'ambiguous' => 0, 'images_saved' => 0, 'content_saved' => 0, 'specs_saved' => 0, 'attribute_sync_errors' => 0, 'errors' => 0];
+        $stats = ['rows' => 0, 'matched' => 0, 'skipped' => 0, 'ambiguous' => 0, 'images_saved' => 0, 'content_saved' => 0, 'specs_saved' => 0, 'attribute_sync_errors' => 0, 'errors_load' => 0, 'errors_specs' => 0, 'errors_content' => 0, 'errors_images' => 0, 'errors_save' => 0, 'errors' => 0];
 
         foreach ($configs as $brand => $config) {
             $sheet = $workbook->getSheetByName($config['sheet']);
@@ -100,6 +100,7 @@ class EnrichTmManagementWorkbookCommand extends Command
                     continue;
                 }
 
+                $stage = 'load';
                 try {
                     $product = Product::query()->find($productId);
                     if (! $product || $product->is_archived) {
@@ -113,6 +114,7 @@ class EnrichTmManagementWorkbookCommand extends Command
                     $technical = $config['specs']
                         ? trim((string) $sheet->getCell([$config['specs'], $row])->getValue())
                         : '';
+                    $stage = 'specs';
                     $specs = $this->sourceSpecs($brand, $description, $technical);
 
                     if ($specs !== []) {
@@ -129,12 +131,14 @@ class EnrichTmManagementWorkbookCommand extends Command
                         $stats['specs_saved']++;
                     }
 
+                    $stage = 'content';
                     if ($description !== '' && $this->needsSourceContent($product)) {
                         $product->content = $this->content($product->name, $brand, $description, $specs);
                         $product->short_description = Str::limit($this->oneLine($description), 245, '');
                         $stats['content_saved']++;
                     }
 
+                    $stage = 'images';
                     $images = $imagesByRow[$row] ?? [];
                     if ($images !== [] && ((bool) $this->option('replace-images') || $this->imagesEmpty($product->images))) {
                         $saved = $this->saveImages($product, $brand, $images);
@@ -144,9 +148,11 @@ class EnrichTmManagementWorkbookCommand extends Command
                         }
                     }
 
+                    $stage = 'save';
                     $product->save();
                 } catch (\Throwable $e) {
                     $stats['errors']++;
+                    $stats['errors_'.$stage]++;
                     $this->warn('Product '.$productId.': '.$e->getMessage());
                 }
             }
