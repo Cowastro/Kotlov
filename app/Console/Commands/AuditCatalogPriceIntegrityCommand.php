@@ -74,6 +74,11 @@ class AuditCatalogPriceIntegrityCommand extends Command
                 ->joinSub($supplierCost, 'costs', 'costs.product_id', '=', 'p.id')
                 ->whereRaw('p.price < costs.minimum_cost * 1.0')
                 ->count(),
+            'retail_equals_supplier_cost' => (clone $active)
+                ->joinSub($supplierCost, 'costs', 'costs.product_id', '=', 'p.id')
+                ->where('p.price', '>', 0)
+                ->whereRaw('ABS(p.price - costs.minimum_cost) < 0.005')
+                ->count(),
             'retail_margin_below_minimum' => (clone $active)
                 ->joinSub($supplierCost, 'costs', 'costs.product_id', '=', 'p.id')
                 ->where('p.price', '>', 0)
@@ -182,6 +187,9 @@ class AuditCatalogPriceIntegrityCommand extends Command
                 if ($cost !== null && $price > 0 && $price < $cost) {
                     $issues[] = 'retail_below_supplier_cost';
                 }
+                if ($cost !== null && $price > 0 && abs($price - $cost) < 0.005) {
+                    $issues[] = 'retail_equals_supplier_cost';
+                }
                 if ($margin !== null && $margin < $minimumMargin) {
                     $issues[] = 'retail_margin_below_minimum';
                 }
@@ -244,6 +252,7 @@ class AuditCatalogPriceIntegrityCommand extends Command
 
         $priority = [
             'retail_below_supplier_cost' => 10,
+            'retail_equals_supplier_cost' => 15,
             'retail_margin_below_minimum' => 20,
             'retail_above_four_times_supplier_cost' => 30,
             'zero_or_missing_price' => 40,
@@ -285,6 +294,9 @@ class AuditCatalogPriceIntegrityCommand extends Command
 
                 if ($cost !== null && $price > 0 && $price < $cost) {
                     $issues[] = 'retail_below_supplier_cost';
+                }
+                if ($cost !== null && $price > 0 && abs($price - $cost) < 0.005) {
+                    $issues[] = 'retail_equals_supplier_cost';
                 }
                 if ($margin !== null && $margin < $minimumMargin) {
                     $issues[] = 'retail_margin_below_minimum';

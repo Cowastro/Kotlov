@@ -76,6 +76,7 @@ class SyncTmManagementCommand extends Command
 
         $this->info('Parsed products: ' . count($items));
         $this->printSummary($items);
+        $this->printPriceSafetyMetrics($items);
 
         if (! $apply) {
             $this->table(
@@ -192,8 +193,11 @@ class SyncTmManagementCommand extends Command
                     continue;
                 }
 
-                $retail = $this->number($cells[$header['retail'] ?? 0] ?? null);
                 $opt = $this->number($cells[$header['opt'] ?? 0] ?? null);
+                $retail = $this->safeRetailPrice(
+                    $this->number($cells[$header['retail'] ?? 0] ?? null),
+                    $opt,
+                );
 
                 if ($retail === null && $opt === null) {
                     continue;
@@ -207,7 +211,7 @@ class SyncTmManagementCommand extends Command
                     'name' => $this->cleanName($name),
                     'note' => $this->joinedNote($cells, $header),
                     'price_opt' => $opt,
-                    'price_retail' => $retail ?? $opt,
+                    'price_retail' => $retail,
                     'category_id' => null,
                     'category_name' => '',
                     'source_url' => 'google-sheet:' . $sheetName . '#row=' . ($row + 1),
@@ -455,7 +459,6 @@ class SyncTmManagementCommand extends Command
     private function upsertProduct(array $item, ?object $product, int $brandId, int $categoryId, ?AiContentEnricher $ai = null): int
     {
         $now = now();
-        $price = $item['price_retail'] ?? $item['price_opt'];
         $seo = $ai ? $this->aiSeo($item, $ai) : null;
         $payload = [
             'category_id' => $categoryId,
@@ -463,7 +466,6 @@ class SyncTmManagementCommand extends Command
             'supplier_id' => null,
             'name' => $item['name'],
             'h1' => $item['name'],
-            'price' => $price,
             'price_old' => null,
             'currency' => 'BYN',
             'content' => $seo['content'] ?? $this->content($item),
@@ -483,6 +485,14 @@ class SyncTmManagementCommand extends Command
             'meta_description' => $item['name'] . ' — цена, характеристики, консультация и поставка в %city%.',
             'updated_at' => $now,
         ];
+
+        $retailPrice = $this->safeRetailPrice($item['price_retail'] ?? null, $item['price_opt'] ?? null);
+        if ($retailPrice !== null) {
+            $payload['price'] = $retailPrice;
+        } elseif (! $product) {
+            $payload['price'] = 0;
+            $payload['requires_price_confirmation'] = true;
+        }
 
         if ($product) {
             $currentSku = (string) ($product->sku ?? '');
@@ -801,6 +811,19 @@ HTML;
         $text = str_replace(["\xc2\xa0", ' '], '', $text);
         $text = str_replace(',', '.', preg_replace('/[^0-9,.]/', '', $text) ?? '');
         return is_numeric($text) ? round((float) $text, 2) : null;
+    }
+
+    private function safeRetailPrice(?float $retail, ?float $wholesale): ?float
+    {
+        if ($retail === null || $retail <= 0) {
+            return null;
+        }
+
+        if ($wholesale !== null && $wholesale > 0 && $retail < $wholesale) {
+            return null;
+        }
+
+        return round($retail, 2);
     }
 
     private function normalizeArticle(string $article): string
@@ -1245,5 +1268,21 @@ HTML;
 
         $this->table(['brand', 'count'], array_map(fn ($brand, $count) => [$brand, $count], array_keys($byBrand), array_values($byBrand)));
         $this->table(['category', 'count'], array_map(fn ($category, $count) => [$category, $count], array_keys($byCategory), array_values($byCategory)));
+    }
+
+    /** @param array<int,array<string,mixed>> $items */
+    private function printPriceSafetyMetrics(array $items): void
+    {
+        $missingRetail = count(array_filter($items, fn (array $item): bool => ($item['price_retail'] ?? null) === null));
+        $equalToWholesale = count(array_filter($items, function (array $item): bool {
+            $retail = $item['price_retail'] ?? null;
+            $wholesale = $item['price_opt'] ?? null;
+
+            return $retail !== null && $wholesale !== null && abs((float) $retail - (float) $wholesale) < 0.005;
+        }));
+
+        $this->line('metric.tm_management.parsed_rows='.count($items));
+        $this->line('metric.tm_management.missing_retail_rows='.$missingRetail);
+        $this->line('metric.tm_management.retail_equals_wholesale_rows='.$equalToWholesale);
     }
 }

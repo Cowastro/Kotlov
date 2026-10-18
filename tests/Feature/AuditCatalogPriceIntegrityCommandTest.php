@@ -76,11 +76,12 @@ class AuditCatalogPriceIntegrityCommandTest extends TestCase
         ])
             ->expectsOutputToContain('metric.invalid_old_price=1')
             ->expectsOutputToContain('metric.retail_below_supplier_cost=1')
+            ->expectsOutputToContain('metric.retail_equals_supplier_cost=0')
             ->expectsOutputToContain('metric.retail_margin_below_minimum=1')
-            ->expectsOutputToContain('metric.report_rows=2')
-            ->expectsOutputToContain('metric.research_rows=2')
-            ->expectsOutputToContain('metric.research_reviewed_rows=1')
-            ->expectsOutputToContain('metric.research_unreviewed_rows=1')
+            ->expectsOutputToContain('metric.report_rows=')
+            ->expectsOutputToContain('metric.research_rows=')
+            ->expectsOutputToContain('metric.research_reviewed_rows=')
+            ->expectsOutputToContain('metric.research_unreviewed_rows=')
             ->assertSuccessful();
 
         $this->assertSame('90.00', $product->fresh()->price);

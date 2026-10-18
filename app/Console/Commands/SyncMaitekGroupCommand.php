@@ -263,6 +263,9 @@ class SyncMaitekGroupCommand extends Command
 
         $price = $this->money($cells[4] ?? '') ?? $this->money($cells[2] ?? '');
         $retail = $this->money($cells[5] ?? '') ?? $this->money($cells[3] ?? '');
+        if ($price !== null && $retail !== null && $retail < $price) {
+            $retail = null;
+        }
         $stockText = $this->clean($cells[6] ?? '');
         $stockQuantity = $this->stockQuantity($stockText);
         $article = $this->supplierArticle($brand, $name, $sourceUrl);

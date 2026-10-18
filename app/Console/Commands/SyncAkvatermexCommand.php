@@ -199,17 +199,7 @@ class SyncAkvatermexCommand extends Command
             $categoryHint = isset($layout['category']) ? $this->cell($sheet, $layout['category'], $rowIndex) : '';
             $description = $this->description($sheet, $layout, $rowIndex);
 
-            if ($price === null && $retail !== null) {
-                $price = $retail;
-            }
-
-            if ($retail === null && $price !== null) {
-                $retail = $price;
-            }
-
-            if ($retail !== null && $price !== null && $retail < $price) {
-                $retail = $price;
-            }
+            [$price, $retail] = $this->safePricePair($price, $retail);
 
             $supplierArticle = $this->bestArticle($article, $ean, $brand, $name);
 
@@ -1159,6 +1149,20 @@ class SyncAkvatermexCommand extends Command
         }
 
         return is_numeric($value) ? round((float) $value, 2) : null;
+    }
+
+    /** @return array{0:?float,1:?float} */
+    private function safePricePair(?float $wholesale, ?float $retail): array
+    {
+        if ($wholesale === null && $retail !== null) {
+            $wholesale = $retail;
+        }
+
+        if ($retail !== null && $wholesale !== null && $retail < $wholesale) {
+            $retail = null;
+        }
+
+        return [$wholesale, $retail];
     }
 
     private function isHeaderLike(string $value): bool

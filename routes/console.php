@@ -216,6 +216,17 @@ Schedule::command('supplier:sync-stank')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/stank-sync.log'));
 
+// После всех основных прайсов страховка блокирует оформление товара, если
+// розница оказалась ниже закупки, маржа упала ниже минимума или цена выглядит
+// кратно завышенной. Цена не переписывается автоматически: менеджер видит
+// карточку, но продажа ждёт подтверждения.
+Schedule::command('catalog:enforce-price-integrity-safety --apply')
+    ->hourlyAt(45)
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/catalog-price-safety.log'));
+
 // Сначала возвращаем проверенные факты производителей, затем приводим их к
 // единому фильтру площади. Объём переводится в ориентировочную площадь только
 // по утверждённой высоте потолка 2,5 м; мощность для этого не используется.

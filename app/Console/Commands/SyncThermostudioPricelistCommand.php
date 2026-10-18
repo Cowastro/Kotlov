@@ -402,7 +402,7 @@ class SyncThermostudioPricelistCommand extends Command
         }
 
         if ($price !== null && $retail !== null && $retail > 0 && $retail < $price) {
-            $retail = $price;
+            $retail = null;
         }
 
         return [
@@ -506,7 +506,7 @@ class SyncThermostudioPricelistCommand extends Command
         $retail = $this->money($cells[$retailIndex] ?? '');
         $description = $this->descriptionFromCells($cells, $priceIndex, $retailIndex, $stockIndex);
         if ($price !== null && $retail !== null && $retail > 0 && $retail < $price) {
-            $retail = $price;
+            $retail = null;
         }
 
         if ($price === null && $retail === null) {

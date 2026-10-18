@@ -46,6 +46,14 @@ class SyncAkvatermexCommandTest extends TestCase
         $this->assertSame(11450, $result[2]['matched_product_id']);
     }
 
+    public function test_it_never_promotes_wholesale_to_public_retail(): void
+    {
+        $this->assertSame([345.0, null], $this->invoke('safePricePair', [345.0, null]));
+        $this->assertSame([345.0, 430.0], $this->invoke('safePricePair', [345.0, 430.0]));
+        $this->assertSame([430.0, null], $this->invoke('safePricePair', [430.0, 345.0]));
+        $this->assertSame([430.0, 430.0], $this->invoke('safePricePair', [null, 430.0]));
+    }
+
     private SyncAkvatermexCommand $command;
 
     protected function setUp(): void
