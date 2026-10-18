@@ -24,6 +24,9 @@ class ChimneyDiameterQuickFilterTest extends TestCase
             'Проход ППУ 500х500 Ø 180-220' => null,
             'Труба моно Ø120' => null,
             'Труба термо 430, 0.8/430, 0.5' => null,
+            'Конвектор трубный КТр-Р L1000 AISI 430 0,8 мм Ø115/120' => null,
+            'Адаптер Ø115/150' => null,
+            'Конус Теплов и Сухов КТ-Р 430, 0.5/430, 0.5, Ø120/180' => '120/180',
         ] as $name => $pair) {
             $this->assertSame($pair, $filter->diameterPair($name), $name);
         }

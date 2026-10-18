@@ -13,6 +13,11 @@ class ChimneyDiameterQuickFilter
         if (preg_match('/моно/ui', $name) && ! preg_match('/термо|сэндвич|сендвич/ui', $name)) {
             return null;
         }
+        // Double diameters also occur on convectors and unrelated adapters.
+        // Require a sandwich designation or a known thermal-series element code.
+        if (! preg_match('/термо|сэндвич|сендвич|(?<!\pL)(?:ТТ|ОТ|КТ|[ТT][РP][ТT]|ПМТ)(?=[\s(\-])/ui', $name)) {
+            return null;
+        }
         if (! preg_match('/(?<![\d.,])(\d{2,3})\s*\/\s*(\d{2,4})(?![\d.,])/u', $name, $match)) {
             return null;
         }
