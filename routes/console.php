@@ -227,6 +227,13 @@ foreach ([
         ->appendOutputTo(storage_path('logs/tm-management-enrichment.log'));
 }
 
+Schedule::command('supplier:enrich-tm-workbook', ['--apply' => true])
+    ->weeklyOn(7, '02:40')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(240)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/tm-management-workbook.log'));
+
 // S-TANK: daily refresh after the NBRB rate and the main supplier chain.
 // Price-list values are maintained in EUR; the command recalculates the BYN retail price.
 Schedule::command('supplier:sync-stank')
