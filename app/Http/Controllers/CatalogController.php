@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
+use App\Services\ChimneyDiameterQuickFilter;
 use App\Services\SeoMetadataBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -90,7 +91,7 @@ class CatalogController extends Controller
         $brands = Brand::whereHas('products', fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds)
         )
             ->withCount(['products' => fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds),
-        ])
+            ])
             ->orderBy('name')
             ->get();
 
@@ -326,14 +327,19 @@ class CatalogController extends Controller
 
         $chimneyDiameterGroups = collect();
         $monoChimneyDiameterGroups = collect();
+        $chimneySteelGroups = collect();
         if ($category->slug === 'dymohody' || $category->parent?->slug === 'dymohody') {
-            $chimneyDiameterGroups = app(\App\Services\ChimneyDiameterQuickFilter::class)->groups($query);
-            $monoChimneyDiameterGroups = app(\App\Services\ChimneyDiameterQuickFilter::class)->groups($query, mono: true);
+            $chimneyDiameterGroups = app(ChimneyDiameterQuickFilter::class)->groups($query);
+            $monoChimneyDiameterGroups = app(ChimneyDiameterQuickFilter::class)->groups($query, mono: true);
             if (request()->filled('chimney_diameter')) {
                 $query->whereIn('products.id', $chimneyDiameterGroups->get((string) request('chimney_diameter'), collect()));
             }
             if (request()->filled('mono_diameter')) {
                 $query->whereIn('products.id', $monoChimneyDiameterGroups->get((string) request('mono_diameter'), collect()));
+            }
+            $chimneySteelGroups = app(ChimneyDiameterQuickFilter::class)->steelGroups($query);
+            if (request()->filled('chimney_steel')) {
+                $query->whereIn('products.id', $chimneySteelGroups->get(strtoupper((string) request('chimney_steel')), collect()));
             }
         }
 
@@ -820,6 +826,7 @@ class CatalogController extends Controller
             'filterAttributes',
             'chimneyDiameterGroups',
             'monoChimneyDiameterGroups',
+            'chimneySteelGroups',
             'products',
             'priceMin',
             'priceMax',

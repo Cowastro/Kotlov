@@ -7,6 +7,47 @@ use Illuminate\Support\Collection;
 
 class ChimneyDiameterQuickFilter
 {
+    public function steelGrade(string $name, array $specs = []): ?string
+    {
+        $inner = collect($specs)->filter(fn ($value, $key) => is_scalar($value)
+            && preg_match('/(?:сталь|стали|металл|материал).*внутр|внутр.*(?:сталь|стали|металл|материал)/ui', (string) $key));
+        foreach ($inner as $value) {
+            if (preg_match('/(?<!\d)(201|304L?|316L?|321|409|430|439|444)(?![\d\pL])/ui', (string) $value, $match)) {
+                return strtoupper($match[1]);
+            }
+        }
+        // First steel in a sandwich name belongs to the inner tube. Do not
+        // mistake a diameter such as Ø304 for a material designation.
+        if (preg_match('/AISI\s*[-:]?\s*(201|304L?|316L?|321|409|430|439|444)(?![\d\pL])|(?<![\pL\pN.,])(201|304L?|316L?|321|409|430|439|444)\s*[-,\/]\s*(?:0[.,]\d+|1[.,]0)/ui', $name, $match)) {
+            return strtoupper($match[1] ?: $match[2]);
+        }
+        foreach ($specs as $key => $value) {
+            if (is_scalar($value) && preg_match('/сталь|стали|металл|материал/ui', (string) $key)
+                && ! preg_match('/наруж|кожух/ui', (string) $key)
+                && preg_match('/(?<!\d)(201|304L?|316L?|321|409|430|439|444)(?![\d\pL])/ui', (string) $value, $match)) {
+                return strtoupper($match[1]);
+            }
+        }
+
+        return null;
+    }
+
+    public function steelGroups(Builder $query): Collection
+    {
+        $groups = collect();
+        foreach ((clone $query)->get(['products.id', 'products.name', 'products.specs']) as $product) {
+            $grade = $this->steelGrade($product->name, $product->specs ?? []);
+            if ($grade !== null) {
+                if (! $groups->has($grade)) {
+                    $groups->put($grade, collect());
+                }
+                $groups->get($grade)->push($product->id);
+            }
+        }
+
+        return $groups->sortKeys(SORT_NATURAL);
+    }
+
     public function diameterPair(string $name): ?string
     {
         // A mono reducer (150/200) is not a sandwich system (150/200).

@@ -96,6 +96,10 @@
         @include('partials.chimney-diameter-quick-filters', ['isMonoQuickFilter' => true, 'chimneyDiameterGroups' => $monoChimneyDiameterGroups])
     @endif
 
+    @if (($chimneySteelGroups ?? collect())->isNotEmpty())
+        @include('partials.chimney-steel-quick-filters')
+    @endif
+
     @if ($catalogSpotlight)
         <section class="catalog-brand-note" aria-labelledby="catalog-brand-title">
             <div class="container">

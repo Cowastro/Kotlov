@@ -13,6 +13,36 @@ class ChimneyDiameterQuickFilterTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_steel_is_inner_tube_material_not_outer_casing_or_diameter(): void
+    {
+        $filter = new ChimneyDiameterQuickFilter;
+        $this->assertSame('304', $filter->steelGrade('Труба термо 304-0.8/430-0.5 Ø120/180'));
+        $this->assertSame('430', $filter->steelGrade('Труба термо 430, 0.8/304, 0.5 Ø120/180'));
+        $this->assertSame('316L', $filter->steelGrade('Труба моно AISI 316L D120'));
+        $this->assertSame('316', $filter->steelGrade('Труба термо Ø120/180', ['Марка стали внутренней трубы' => 'AISI 316', 'Марка стали наружной трубы' => 'AISI 430']));
+        $this->assertNull($filter->steelGrade('Труба моно Ø304 L1000'));
+        $this->assertNull($filter->steelGrade('Труба Ø120', ['Материал наружного кожуха' => 'AISI 430']));
+    }
+
+    public function test_steel_and_diameter_work_together_without_using_outer_casing_grade(): void
+    {
+        $category = Category::updateOrCreate(['slug' => 'dymohody'], ['name' => 'Дымоходы', 'parent_id' => 0, 'is_active' => true]);
+        $brand = Brand::create(['name' => 'Тест стали', 'slug' => 'steel-test', 'is_active' => true]);
+        foreach (['Труба термо 304-0.8/430-0.5 Ø120/180', 'Труба термо 430-0.8/430-0.5 Ø120/180', 'Труба термо 304-0.8/430-0.5 Ø150/210'] as $index => $name) {
+            Product::create([
+                'name' => $name, 'slug' => 'steel-test-'.$index, 'sku' => 'STEEL-TEST-'.$index,
+                'category_id' => $category->id, 'brand_id' => $brand->id, 'price' => 100,
+                'is_active' => true, 'is_archived' => false,
+            ]);
+        }
+        $this->get('/dymohody?'.http_build_query(['brand' => $brand->id, 'chimney_diameter' => '120/180', 'chimney_steel' => '304']))
+            ->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->total() === 1 && $products->first()->name === 'Труба термо 304-0.8/430-0.5 Ø120/180')
+            ->assertViewHas('chimneySteelGroups', fn ($groups) => $groups->get('304')->count() === 1 && $groups->get('430')->count() === 1)
+            ->assertSee('AISI 304')->assertSee('AISI 430')
+            ->assertSee('chimney_diameter=120%2F180&amp;chimney_steel=430', false);
+    }
+
     public function test_mono_diameters_exclude_pairs_ranges_and_sandwich_elements(): void
     {
         $filter = new ChimneyDiameterQuickFilter;
