@@ -24,6 +24,12 @@ class AdminTodayDashboard
 {
     private const TIMEZONE = 'Europe/Minsk';
 
+    /** @var array<int, User|null> */
+    private array $managerCache = [];
+
+    /** @var Collection<string, string>|null */
+    private ?Collection $managerNamesByAlias = null;
+
     /** @return array<string, mixed> */
     public function data(
         string $period = 'week',
@@ -451,13 +457,82 @@ class AdminTodayDashboard
     {
         return Order::query()->when(
             $managerId,
-            fn (Builder $query, int $id): Builder => $query->where('manager_id', $id),
+            function (Builder $query, int $id): Builder {
+                $manager = $this->manager($id);
+
+                if (! $manager) {
+                    return $query->where('manager_id', $id);
+                }
+
+                $aliases = $this->managerAliases($manager);
+
+                return $query->where(fn (Builder $query): Builder => $query
+                    ->where('manager_id', $id)
+                    ->orWhereIn('assigned_to', $aliases));
+            },
         );
     }
 
     private function orderResponsible(Order $order): ?string
     {
-        return $order->manager?->name ?: (filled($order->assigned_to) ? $order->assigned_to : null);
+        if ($order->manager?->name) {
+            return $order->manager->name;
+        }
+
+        if (blank($order->assigned_to)) {
+            return null;
+        }
+
+        return $this->managerNamesByAlias()->get($this->normalizeManagerAlias($order->assigned_to))
+            ?: $order->assigned_to;
+    }
+
+    private function manager(int $id): ?User
+    {
+        if (! array_key_exists($id, $this->managerCache)) {
+            $this->managerCache[$id] = User::query()->find($id);
+        }
+
+        return $this->managerCache[$id];
+    }
+
+    /** @return array<int, string> */
+    private function managerAliases(User $manager): array
+    {
+        $telegram = ltrim(trim((string) $manager->telegram_username), '@');
+
+        return collect([
+            $manager->name,
+            $manager->first_name,
+            $telegram !== '' ? $telegram : null,
+            $telegram !== '' ? '@'.$telegram : null,
+        ])->filter(fn ($alias): bool => filled($alias))->unique()->values()->all();
+    }
+
+    /** @return Collection<string, string> */
+    private function managerNamesByAlias(): Collection
+    {
+        if ($this->managerNamesByAlias !== null) {
+            return $this->managerNamesByAlias;
+        }
+
+        $this->managerNamesByAlias = User::query()
+            ->whereIn('role', ['admin', 'manager', 'sales_manager'])
+            ->get()
+            ->flatMap(function (User $manager): array {
+                return collect($this->managerAliases($manager))
+                    ->mapWithKeys(fn (string $alias): array => [
+                        $this->normalizeManagerAlias($alias) => $manager->name,
+                    ])
+                    ->all();
+            });
+
+        return $this->managerNamesByAlias;
+    }
+
+    private function normalizeManagerAlias(string $alias): string
+    {
+        return mb_strtolower(ltrim(trim($alias), '@'));
     }
 
     /** @return Builder<ContactRequest> */

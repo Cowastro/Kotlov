@@ -244,6 +244,35 @@ class AdminTodayDashboardTest extends TestCase
         $this->assertSame('Денис Готто', $data['activityItems']->firstWhere('title', $title)['responsible']);
     }
 
+    public function test_order_telegram_alias_is_shown_as_manager_name_and_visible_to_that_manager(): void
+    {
+        Carbon::setTestNow('2026-10-18 10:00:00');
+
+        $manager = User::factory()->create([
+            'name' => 'Наталья',
+            'role' => 'manager',
+            'is_active' => true,
+            'telegram_username' => 'belkastrelkakoleso',
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORD-TELEGRAM-ASSIGNEE',
+            'status' => 'new',
+            'customer_name' => 'Заказ Натальи',
+            'customer_phone' => '+375290000000',
+            'manager_id' => null,
+            'assigned_to' => '@belkastrelkakoleso',
+            'total' => 100,
+        ]);
+
+        $adminData = app(AdminTodayDashboard::class)->data(period: 'today', status: 'all');
+        $managerData = app(AdminTodayDashboard::class)->data(period: 'today', status: 'all', viewer: $manager);
+        $title = $order->number.' · '.$order->customer_name;
+
+        $this->assertSame('Наталья', $adminData['activityItems']->firstWhere('title', $title)['responsible']);
+        $this->assertSame('Наталья', $managerData['activityItems']->firstWhere('title', $title)['responsible']);
+        $this->assertSame(1, $managerData['todayCounts']['orders']);
+    }
+
     public function test_directly_assigned_contact_request_is_visible_to_its_manager(): void
     {
         Carbon::setTestNow('2026-10-18 10:00:00');
