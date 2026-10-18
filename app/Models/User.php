@@ -73,6 +73,7 @@ class User extends Authenticatable implements FilamentUser
             if ($fullName !== '') {
                 $user->name = $fullName;
             }
+
         });
     }
 
@@ -183,6 +184,11 @@ class User extends Authenticatable implements FilamentUser
     public function installerProfile(): HasOne
     {
         return $this->hasOne(InstallerProfile::class);
+    }
+
+    public function b2bClient(): HasOne
+    {
+        return $this->hasOne(B2bClient::class);
     }
 
     public function products(): HasMany

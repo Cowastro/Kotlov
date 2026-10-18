@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\ClientType;
 use App\Models\InstallerProfile;
 use App\Models\User;
+use App\Services\B2bClientWorkflow;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
@@ -18,7 +19,7 @@ class EnsureInstallerAccountCommand extends Command
 
     protected $description = 'Проверить и восстановить связь профиля монтажника с активной учетной записью';
 
-    public function handle(): int
+    public function handle(B2bClientWorkflow $b2bClients): int
     {
         $profileKey = (string) $this->argument('profile');
         $profile = InstallerProfile::query()
@@ -78,6 +79,9 @@ class EnsureInstallerAccountCommand extends Command
 
             return self::FAILURE;
         }
+
+        $b2bClient = $b2bClients->registerApplication($user);
+        $b2bClients->approve($b2bClient);
 
         $this->table(['Профиль', 'Пользователь', 'Email', 'Роль', 'Активен'], [[
             "#{$profile->id} {$profile->slug}",

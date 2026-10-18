@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ClientType;
 use App\Mail\NewB2bAccessRequestMail;
+use App\Models\B2bClient;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -39,6 +40,13 @@ class B2bAccessRequestNotificationTest extends TestCase
 
         $this->assertSame(ClientType::Wholesale, $applicant->fresh()->client_type);
         $this->assertFalse($applicant->fresh()->b2b_approved);
+        $this->assertDatabaseHas('b2b_clients', [
+            'user_id' => $applicant->id,
+            'status' => 'pending',
+            'partner_type' => 'wholesale',
+            'company_name' => 'ООО Тестовый партнёр',
+            'unp' => '123456789',
+        ]);
         $this->assertSame(1, $manager->notifications()->count());
         $this->assertStringContainsString(
             'ООО Тестовый партнёр',
@@ -72,5 +80,6 @@ class B2bAccessRequestNotificationTest extends TestCase
 
         $this->assertSame('ООО Заявка сохранена', $applicant->fresh()->company_name);
         $this->assertSame(ClientType::Wholesale, $applicant->fresh()->client_type);
+        $this->assertSame('pending', B2bClient::query()->whereBelongsTo($applicant)->value('status'));
     }
 }

@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\ClientType;
 use App\Services\B2bAccessRequestNotifier;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bClientWorkflow;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules;
 
 class AccountController extends Controller
 {
@@ -40,7 +40,7 @@ class AccountController extends Controller
         $user = Auth::user();
 
         $request->validate([
-            'name'  => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
         ], [
             'name.required' => 'Введите имя.',
@@ -60,12 +60,12 @@ class AccountController extends Controller
     {
         $request->validate([
             'current_password' => ['required'],
-            'password'         => ['required', 'confirmed', 'min:8'],
+            'password' => ['required', 'confirmed', 'min:8'],
         ], [
             'current_password.required' => 'Введите текущий пароль.',
-            'password.required'         => 'Введите новый пароль.',
-            'password.confirmed'        => 'Пароли не совпадают.',
-            'password.min'              => 'Пароль должен содержать минимум 8 символов.',
+            'password.required' => 'Введите новый пароль.',
+            'password.confirmed' => 'Пароли не совпадают.',
+            'password.min' => 'Пароль должен содержать минимум 8 символов.',
         ]);
 
         $user = Auth::user();
@@ -85,8 +85,11 @@ class AccountController extends Controller
             ->with('open_tab', 'security');
     }
 
-    public function b2bRequest(Request $request, B2bAccessRequestNotifier $notifier)
-    {
+    public function b2bRequest(
+        Request $request,
+        B2bClientWorkflow $workflow,
+        B2bAccessRequestNotifier $notifier,
+    ) {
         $user = Auth::user();
 
         $request->validate([
@@ -98,22 +101,23 @@ class AccountController extends Controller
                 ]),
             ],
             'company_name' => ['required', 'string', 'max:255'],
-            'company_inn'  => ['nullable', 'string', 'max:50'],
-            'b2b_comment'   => ['nullable', 'string', 'max:1000'],
+            'company_inn' => ['nullable', 'string', 'max:50'],
+            'b2b_comment' => ['nullable', 'string', 'max:1000'],
         ], [
-            'client_type.required'  => 'Выберите тип B2B-аккаунта.',
-            'client_type.in'        => 'Некорректный тип B2B-аккаунта.',
+            'client_type.required' => 'Выберите тип B2B-аккаунта.',
+            'client_type.in' => 'Некорректный тип B2B-аккаунта.',
             'company_name.required' => 'Введите название компании.',
         ]);
 
         $user->update([
-            'client_type'  => ClientType::from($request->client_type),
+            'client_type' => ClientType::from($request->client_type),
             'b2b_approved' => false,
             'company_name' => $request->company_name,
-            'company_inn'  => $request->company_inn,
-            'b2b_comment'   => $request->b2b_comment,
+            'company_inn' => $request->company_inn,
+            'b2b_comment' => $request->b2b_comment,
         ]);
 
+        $workflow->registerApplication($user->fresh());
         $notifier->notify($user->fresh());
 
         return back()

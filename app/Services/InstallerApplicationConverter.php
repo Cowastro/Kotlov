@@ -24,6 +24,8 @@ class InstallerApplicationConverter
         'bani' => 'sauna',
     ];
 
+    public function __construct(private readonly B2bClientWorkflow $b2bClients) {}
+
     public function convert(InstallerApplication $application, bool $publish = true): InstallerProfile
     {
         return DB::transaction(function () use ($application, $publish) {
@@ -36,6 +38,8 @@ class InstallerApplicationConverter
             }
 
             $user = $this->resolveUser($application);
+            $b2bClient = $this->b2bClients->registerApplication($user);
+            $this->b2bClients->approve($b2bClient);
             $profile = $user->installerProfile;
 
             if (! $profile) {

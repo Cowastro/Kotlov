@@ -67,20 +67,6 @@ class UsersTable
                         default => $state,
                     }),
 
-                TextColumn::make('client_type')
-                    ->label('Клиент')
-                    ->badge()
-                    ->formatStateUsing(fn ($state): string => $state?->label() ?? 'Розничный клиент')
-                    ->color(fn ($state): string => match ($state?->value ?? $state) {
-                        'wholesale' => 'warning',
-                        'installer' => 'info',
-                        default => 'gray',
-                    }),
-
-                IconColumn::make('b2b_approved')
-                    ->label('B2B')
-                    ->boolean(),
-
                 IconColumn::make('is_active')
                     ->label('Активен')
                     ->boolean(),
@@ -110,17 +96,6 @@ class UsersTable
 
                 TernaryFilter::make('is_active')
                     ->label('Активность'),
-
-                SelectFilter::make('client_type')
-                    ->label('Тип клиента')
-                    ->options([
-                        'retail' => 'Розничный клиент',
-                        'wholesale' => 'Оптовый покупатель',
-                        'installer' => 'Монтажник',
-                    ]),
-
-                TernaryFilter::make('b2b_approved')
-                    ->label('B2B-доступ'),
 
                 TernaryFilter::make('email_verified_at')
                     ->label('Верификация email')
