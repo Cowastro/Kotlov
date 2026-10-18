@@ -17,6 +17,12 @@ class IntegrationSource extends Model
 
     public const PRICE_TAX_INCLUSIVE = 'inclusive';
 
+    public const B2B_PRICE_ROLE_SALE = 'sale';
+
+    public const B2B_PRICE_ROLE_PURCHASE = 'purchase';
+
+    public const B2B_PRICE_ROLE_UNKNOWN = 'unknown';
+
     protected $fillable = [
         'supplier_id', 'code', 'name', 'driver', 'price_currency', 'price_currency_rate',
         'username', 'password_hash', 'is_active', 'create_products',
@@ -49,6 +55,7 @@ class IntegrationSource extends Model
                 'warehouse_external_id' => null,
                 'b2b_enabled' => false,
                 'b2b_category_ids' => [],
+                'b2b_price_role' => self::B2B_PRICE_ROLE_UNKNOWN,
                 'order_interval_minutes' => 5,
                 'order_dispatch_delay_minutes' => 10,
                 'order_response_timeout_minutes' => 15,
@@ -78,6 +85,29 @@ class IntegrationSource extends Model
     public function isProcurementMode(): bool
     {
         return (bool) data_get($this->settings, 'procurement_mode', false);
+    }
+
+    public function b2bPriceRole(): string
+    {
+        $role = (string) data_get($this->settings, 'b2b_price_role', self::B2B_PRICE_ROLE_UNKNOWN);
+
+        return in_array($role, [self::B2B_PRICE_ROLE_SALE, self::B2B_PRICE_ROLE_PURCHASE], true)
+            ? $role
+            : self::B2B_PRICE_ROLE_UNKNOWN;
+    }
+
+    public function hasPublishableB2bPrice(): bool
+    {
+        return $this->b2bPriceRole() === self::B2B_PRICE_ROLE_SALE;
+    }
+
+    public function b2bPriceRoleLabel(): string
+    {
+        return match ($this->b2bPriceRole()) {
+            self::B2B_PRICE_ROLE_SALE => 'Готовая цена продажи B2B',
+            self::B2B_PRICE_ROLE_PURCHASE => 'Закупочная цена — нужна продажная цена',
+            default => 'Не классифицирована',
+        };
     }
 
     public function partnerName(): string

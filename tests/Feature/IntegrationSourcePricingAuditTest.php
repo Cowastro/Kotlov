@@ -28,6 +28,7 @@ class IntegrationSourcePricingAuditTest extends TestCase
                 'price_tax_mode' => 'exclusive',
                 'vat_rate' => 20,
                 'b2b_enabled' => false,
+                'b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_UNKNOWN,
                 'procurement_mode' => false,
             ],
         ]);
@@ -37,6 +38,7 @@ class IntegrationSourcePricingAuditTest extends TestCase
         $settings['price_tax_mode'] = 'inclusive';
         $settings['vat_rate'] = 10;
         $settings['b2b_enabled'] = true;
+        $settings['b2b_price_role'] = IntegrationSource::B2B_PRICE_ROLE_SALE;
         $settings['b2b_category_ids'] = [9, 4, 9];
         $settings['procurement_mode'] = true;
         $settings['partner_name'] = 'Партнёрский поставщик';
@@ -55,6 +57,7 @@ class IntegrationSourcePricingAuditTest extends TestCase
             'settings.price_tax_mode',
             'settings.vat_rate',
             'settings.b2b_enabled',
+            'settings.b2b_price_role',
             'settings.b2b_category_ids',
             'settings.procurement_mode',
             'settings.partner_name',
@@ -65,10 +68,12 @@ class IntegrationSourcePricingAuditTest extends TestCase
         $this->assertSame('inclusive', $change->after_values['settings.price_tax_mode']);
         $this->assertSame(20, $change->before_values['settings.vat_rate']);
         $this->assertSame(10, $change->after_values['settings.vat_rate']);
+        $this->assertSame(IntegrationSource::B2B_PRICE_ROLE_SALE, $change->after_values['settings.b2b_price_role']);
         $this->assertSame([], $change->before_values['settings.b2b_category_ids']);
         $this->assertSame([4, 9], $change->after_values['settings.b2b_category_ids']);
         $this->assertTrue($change->after_values['settings.procurement_mode']);
         $this->assertStringContainsString('Разрешённые категории B2B', $change->changeSummary());
+        $this->assertStringContainsString('Назначение входной B2B-цены', $change->changeSummary());
         $this->assertStringContainsString('B2B-заказы под заказ', $change->changeSummary());
         $this->assertStringContainsString('ID категорий: 4, 9', $change->valuesSummary('after_values'));
     }
@@ -153,6 +158,8 @@ class IntegrationSourcePricingAuditTest extends TestCase
             ->assertOk()
             ->assertSeeText('Валюта входной цены')
             ->assertSeeText('Курс к BYN')
+            ->assertSeeText('Что означает входная цена')
+            ->assertSeeText('Закупочная цена — нужна продажная цена')
             ->assertSeeText('Принимать B2B-заказы под заказ')
             ->assertSeeText('не переписывает историю молча');
 

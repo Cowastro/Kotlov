@@ -24,6 +24,7 @@ class SyncBelomoPriceListCommand extends Command
     protected $description = 'Import the BelOMO wholesale price list and calculate retail with VAT and a 20% markup.';
 
     private const SUPPLIER_CODE = 'belomo';
+
     private const SYNC_KEY = 'belomo_static_pricelist';
 
     public function handle(BelomoPriceList $priceList, SupplierProductAvailabilityService $availability): int
@@ -76,20 +77,20 @@ class SyncBelomoPriceListCommand extends Command
             $applied = 0;
 
             DB::transaction(function () use ($classified, $supplierId, $syncId, $sourceId, $brandId, $categoryId, $now, &$touched, &$created, &$applied): void {
-            foreach ($classified as $item) {
-                if ($item['status'] === 'ambiguous') {
-                    continue;
+                foreach ($classified as $item) {
+                    if ($item['status'] === 'ambiguous') {
+                        continue;
+                    }
+                    $product = $item['product'];
+                    if ($product === null) {
+                        $product = $this->createDraft($item['row'], $brandId, $categoryId, $now);
+                        $created++;
+                    }
+                    $this->upsertSupplierProduct($supplierId, $syncId, $product, $item['row'], $now);
+                    $this->upsertPartnerOffer($sourceId, $product, $item['row'], $now);
+                    $touched[] = (int) $product->id;
+                    $applied++;
                 }
-                $product = $item['product'];
-                if ($product === null) {
-                    $product = $this->createDraft($item['row'], $brandId, $categoryId, $now);
-                    $created++;
-                }
-                $this->upsertSupplierProduct($supplierId, $syncId, $product, $item['row'], $now);
-                $this->upsertPartnerOffer($sourceId, $product, $item['row'], $now);
-                $touched[] = (int) $product->id;
-                $applied++;
-            }
             });
 
             $availability->refreshMany($touched, $now);
@@ -158,7 +159,7 @@ class SyncBelomoPriceListCommand extends Command
         return array_map(function (array $row) use ($links, $priceList, $supplierId): array {
             $compact = $priceList->compactArticle($row['article']);
             $short = $priceList->shortArticle($row['article']);
-            $candidates = $links->filter(function (object $link) use ($compact, $short, $priceList, $supplierId): bool {
+            $candidates = $links->filter(function (object $link) use ($compact, $short, $priceList): bool {
                 $values = array_filter([
                     $link->supplier_article ?? null,
                     $link->supplier_article_normalized ?? null,
@@ -170,6 +171,7 @@ class SyncBelomoPriceListCommand extends Command
                         return true;
                     }
                 }
+
                 return false;
             })->unique('id');
 
@@ -233,6 +235,7 @@ class SyncBelomoPriceListCommand extends Command
             ], ';');
         }
         fclose($handle);
+
         return $path;
     }
 
@@ -264,6 +267,7 @@ class SyncBelomoPriceListCommand extends Command
             'schedule_cron' => 'Вручную при получении нового прайса', 'is_active' => true,
             'created_at' => $now, 'updated_at' => $now,
         ]);
+
         return $id;
     }
 
@@ -275,6 +279,7 @@ class SyncBelomoPriceListCommand extends Command
             'command' => 'supplier:sync-belomo-pricelist', 'is_active' => true,
             'created_at' => $now, 'updated_at' => $now,
         ]);
+
         return (int) DB::table('supplier_syncs')->where('key', self::SYNC_KEY)->value('id');
     }
 
@@ -287,12 +292,14 @@ class SyncBelomoPriceListCommand extends Command
             'create_products' => false, 'update_prices' => true, 'update_stock' => false,
             'settings' => json_encode([
                 'price_tax_mode' => 'exclusive', 'vat_rate' => 20, 'b2b_enabled' => true,
+                'b2b_price_role' => 'sale',
                 'b2b_category_ids' => [$categoryId], 'partner_name' => 'БелОМО',
                 'procurement_mode' => true, 'warehouse_label' => 'СанБизнесГруп · ожидается поступление',
                 'stock_validity_minutes' => 525600,
             ], JSON_UNESCAPED_UNICODE),
             'created_at' => $now, 'updated_at' => $now,
         ]);
+
         return (int) DB::table('integration_sources')->where('code', 'belomo_wholesale')->value('id');
     }
 
@@ -338,34 +345,49 @@ class SyncBelomoPriceListCommand extends Command
             'in_stock' => false, 'availability_status' => 'check', 'stock_qty' => null, 'is_new' => true,
             'meta_title' => $name, 'meta_description' => $name, 'created_at' => $now, 'updated_at' => $now,
         ]);
+
         return DB::table('products')->where('id', $id)->firstOrFail();
     }
 
     private function brandId(): int
     {
         $id = DB::table('brands')->where('slug', 'belomo')->value('id');
-        if (! $id) throw new \RuntimeException('Не найден бренд БелОМО.');
+        if (! $id) {
+            throw new \RuntimeException('Не найден бренд БелОМО.');
+        }
+
         return (int) $id;
     }
 
     private function categoryId(): int
     {
         $id = DB::table('categories')->where('slug', 'schetchiki-gaza')->value('id');
-        if (! $id) throw new \RuntimeException('Не найдена категория «Счетчики газа».');
+        if (! $id) {
+            throw new \RuntimeException('Не найдена категория «Счетчики газа».');
+        }
+
         return (int) $id;
     }
 
     private function nextSku(): string
     {
         $next = ((int) DB::table('products')->where('sku', 'like', 'KOTLOV-%')->pluck('sku')->map(fn ($sku) => preg_match('/^KOTLOV-(\d+)$/', (string) $sku, $m) ? (int) $m[1] : 0)->max()) + 1;
-        do { $sku = sprintf('KOTLOV-%06d', $next++); } while (DB::table('products')->where('sku', $sku)->exists());
+        do {
+            $sku = sprintf('KOTLOV-%06d', $next++);
+        } while (DB::table('products')->where('sku', $sku)->exists());
+
         return $sku;
     }
 
     private function uniqueSlug(string $name): string
     {
-        $base = Str::slug($name) ?: 'belomo-gas-meter'; $slug = $base; $i = 2;
-        while (DB::table('products')->where('slug', $slug)->exists()) $slug = $base.'-'.$i++;
+        $base = Str::slug($name) ?: 'belomo-gas-meter';
+        $slug = $base;
+        $i = 2;
+        while (DB::table('products')->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$i++;
+        }
+
         return $slug;
     }
 
@@ -563,11 +585,21 @@ class SyncBelomoPriceListCommand extends Command
             ];
             $plan[] = $row;
             $metrics['rows']++;
-            if ($row['activate']) $metrics['activate']++;
-            if ($row['price_changed']) $metrics['price_update']++;
-            if ($row['image_changed']) $metrics['image_copy']++;
-            if ($row['description_changed']) $metrics['description_update']++;
-            if (! $canActivate) $metrics['blocked_no_image']++;
+            if ($row['activate']) {
+                $metrics['activate']++;
+            }
+            if ($row['price_changed']) {
+                $metrics['price_update']++;
+            }
+            if ($row['image_changed']) {
+                $metrics['image_copy']++;
+            }
+            if ($row['description_changed']) {
+                $metrics['description_update']++;
+            }
+            if (! $canActivate) {
+                $metrics['blocked_no_image']++;
+            }
         }
 
         return ['rows' => $plan, 'metrics' => $metrics];
@@ -651,6 +683,7 @@ class SyncBelomoPriceListCommand extends Command
     private function modelTokens(string $name): array
     {
         $normalized = mb_strtolower(preg_replace('/[^\pL\pN]+/u', ' ', $name) ?? '');
+
         return array_values(array_unique(array_filter(preg_split('/\s+/u', trim($normalized)) ?: [], fn (string $token): bool => mb_strlen($token) > 1)));
     }
 
@@ -689,21 +722,39 @@ class SyncBelomoPriceListCommand extends Command
         $metrics = ['card_ready' => 0, 'inactive' => 0, 'retail_missing' => 0, 'images_missing' => 0, 'description_missing' => 0, 'margin_conflict' => 0];
         foreach ($classified as $item) {
             $product = $item['product'];
-            if ($this->cardIsReady($product)) $metrics['card_ready']++;
-            if (! $product || ! (bool) ($product->is_active ?? false)) $metrics['inactive']++;
-            if (! $product || (float) ($product->price ?? 0) <= 0) $metrics['retail_missing']++;
-            if (! $product || count($this->jsonArray($product->images ?? null)) === 0) $metrics['images_missing']++;
-            if (! $product || (! filled($product->short_description ?? null) && ! filled($product->content ?? null))) $metrics['description_missing']++;
-            if ($product && (float) ($product->price ?? 0) > 0 && (float) $product->price < $this->minimumRetailPrice((float) $item['row']['partner_price_byn'])) $metrics['margin_conflict']++;
+            if ($this->cardIsReady($product)) {
+                $metrics['card_ready']++;
+            }
+            if (! $product || ! (bool) ($product->is_active ?? false)) {
+                $metrics['inactive']++;
+            }
+            if (! $product || (float) ($product->price ?? 0) <= 0) {
+                $metrics['retail_missing']++;
+            }
+            if (! $product || count($this->jsonArray($product->images ?? null)) === 0) {
+                $metrics['images_missing']++;
+            }
+            if (! $product || (! filled($product->short_description ?? null) && ! filled($product->content ?? null))) {
+                $metrics['description_missing']++;
+            }
+            if ($product && (float) ($product->price ?? 0) > 0 && (float) $product->price < $this->minimumRetailPrice((float) $item['row']['partner_price_byn'])) {
+                $metrics['margin_conflict']++;
+            }
         }
+
         return $metrics;
     }
 
     private function jsonArray(mixed $value): array
     {
-        if (is_array($value)) return $value;
-        if (! is_string($value) || trim($value) === '') return [];
+        if (is_array($value)) {
+            return $value;
+        }
+        if (! is_string($value) || trim($value) === '') {
+            return [];
+        }
         $decoded = json_decode($value, true);
+
         return is_array($decoded) ? $decoded : [];
     }
 }

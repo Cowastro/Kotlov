@@ -17,6 +17,7 @@ class IntegrationSourcePricingAuditRecorder
         'settings.price_tax_mode',
         'settings.vat_rate',
         'settings.b2b_enabled',
+        'settings.b2b_price_role',
         'settings.b2b_category_ids',
         'settings.procurement_mode',
         'settings.partner_name',
@@ -73,6 +74,12 @@ class IntegrationSourcePricingAuditRecorder
                 : IntegrationSource::PRICE_TAX_EXCLUSIVE,
             'settings.vat_rate' => round(max(0, (float) data_get($settings, 'vat_rate', 20)), 4),
             'settings.b2b_enabled' => (bool) data_get($settings, 'b2b_enabled', false),
+            'settings.b2b_price_role' => in_array(data_get($settings, 'b2b_price_role'), [
+                IntegrationSource::B2B_PRICE_ROLE_SALE,
+                IntegrationSource::B2B_PRICE_ROLE_PURCHASE,
+            ], true)
+                ? data_get($settings, 'b2b_price_role')
+                : IntegrationSource::B2B_PRICE_ROLE_UNKNOWN,
             'settings.b2b_category_ids' => collect(data_get($settings, 'b2b_category_ids', []))
                 ->map(fn (mixed $id): int => (int) $id)
                 ->filter(fn (int $id): bool => $id > 0)

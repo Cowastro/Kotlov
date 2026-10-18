@@ -7,6 +7,20 @@ use PHPUnit\Framework\TestCase;
 
 class IntegrationSourcePricingTest extends TestCase
 {
+    public function test_only_classified_sale_price_can_be_published_to_b2b(): void
+    {
+        $sale = new IntegrationSource(['settings' => ['b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_SALE]]);
+        $purchase = new IntegrationSource(['settings' => ['b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_PURCHASE]]);
+        $unknown = new IntegrationSource(['settings' => []]);
+
+        $this->assertTrue($sale->hasPublishableB2bPrice());
+        $this->assertFalse($purchase->hasPublishableB2bPrice());
+        $this->assertFalse($unknown->hasPublishableB2bPrice());
+        $this->assertSame('Готовая цена продажи B2B', $sale->b2bPriceRoleLabel());
+        $this->assertSame('Закупочная цена — нужна продажная цена', $purchase->b2bPriceRoleLabel());
+        $this->assertSame('Не классифицирована', $unknown->b2bPriceRoleLabel());
+    }
+
     public function test_exclusive_price_is_converted_to_customer_price_with_tax(): void
     {
         $source = new IntegrationSource([

@@ -15,6 +15,7 @@ class IntegrationSourcePricingChange extends Model
         'settings.price_tax_mode' => 'Режим НДС',
         'settings.vat_rate' => 'Ставка НДС',
         'settings.b2b_enabled' => 'Партнёрские цены',
+        'settings.b2b_price_role' => 'Назначение входной B2B-цены',
         'settings.b2b_category_ids' => 'Разрешённые категории B2B',
         'settings.procurement_mode' => 'B2B-заказы под заказ',
         'settings.partner_name' => 'Название поставщика для партнёра',
@@ -81,6 +82,11 @@ class IntegrationSourcePricingChange extends Model
             'settings.price_tax_mode' => $value === IntegrationSource::PRICE_TAX_INCLUSIVE
                 ? 'цена с НДС'
                 : 'цена без НДС',
+            'settings.b2b_price_role' => match ($value) {
+                IntegrationSource::B2B_PRICE_ROLE_SALE => 'готовая цена продажи B2B',
+                IntegrationSource::B2B_PRICE_ROLE_PURCHASE => 'закупочная цена',
+                default => 'не классифицирована',
+            },
             'settings.vat_rate' => number_format((float) $value, 2, ',', ' ').'%',
             'price_currency_rate' => rtrim(rtrim(number_format((float) $value, 6, ',', ' '), '0'), ','),
             default => filled($value) ? (string) $value : 'не задано',

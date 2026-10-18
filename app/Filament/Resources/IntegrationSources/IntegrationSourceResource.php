@@ -200,8 +200,18 @@ class IntegrationSourceResource extends Resource
                 ->schema([
                     Toggle::make('settings.b2b_enabled')
                         ->label('Публиковать партнёрские цены')
-                        ->helperText('Только включённые источники участвуют в B2B-каталоге.')
+                        ->helperText('Источник участвует в B2B-каталоге только после классификации входной цены как готовой цены продажи.')
                         ->default(false),
+                    Select::make('settings.b2b_price_role')
+                        ->label('Что означает входная цена')
+                        ->options([
+                            IntegrationSource::B2B_PRICE_ROLE_SALE => 'Готовая цена продажи B2B',
+                            IntegrationSource::B2B_PRICE_ROLE_PURCHASE => 'Закупочная цена — нужна продажная цена',
+                            IntegrationSource::B2B_PRICE_ROLE_UNKNOWN => 'Не классифицирована',
+                        ])
+                        ->default(IntegrationSource::B2B_PRICE_ROLE_UNKNOWN)
+                        ->required()
+                        ->helperText('Закупочная и неклассифицированная цены никогда не показываются партнёру. Универсальная наценка автоматически не применяется.'),
                     TextInput::make('settings.partner_name')
                         ->label('Поставщик для партнёра')
                         ->placeholder('ООО «СанБизнесГруп»')
@@ -488,6 +498,14 @@ class IntegrationSourceResource extends Resource
                     ->counts(['products' => fn ($query) => $query->inStock()])->sortable(),
                 TextColumn::make('matched_products_count')->label('Привязано')
                     ->counts(['products' => fn ($query) => $query->inStock()->where('match_status', 'matched')]),
+                TextColumn::make('b2b_price_role')->label('Цена B2B')
+                    ->state(fn (IntegrationSource $record): string => $record->b2bPriceRoleLabel())
+                    ->badge()
+                    ->color(fn (IntegrationSource $record): string => match ($record->b2bPriceRole()) {
+                        IntegrationSource::B2B_PRICE_ROLE_SALE => 'success',
+                        IntegrationSource::B2B_PRICE_ROLE_PURCHASE => 'warning',
+                        default => 'danger',
+                    }),
                 IconColumn::make('update_prices')->label('Цены')->boolean(),
                 IconColumn::make('update_stock')->label('Остатки')->boolean(),
                 IconColumn::make('is_active')->label('Активен')->boolean(),

@@ -65,6 +65,28 @@ class B2bCatalogPricingTest extends TestCase
             ->assertJsonPath('message', 'Товар недоступен для B2B-заказа: требуется подтверждённая привязка, цена и свежий остаток 1С.');
     }
 
+    public function test_purchase_or_unclassified_source_price_is_never_published_to_partner(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        $source = IntegrationSource::query()->where('code', 'onec')->firstOrFail();
+
+        foreach ([IntegrationSource::B2B_PRICE_ROLE_PURCHASE, IntegrationSource::B2B_PRICE_ROLE_UNKNOWN] as $role) {
+            $settings = $source->settings;
+            $settings['b2b_price_role'] = $role;
+            $source->update(['settings' => $settings]);
+
+            $this->actingAs($user)
+                ->get('/'.$product->category->slug.'/'.$product->slug)
+                ->assertOk()
+                ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
+                ->assertSeeText('120.00 BYN');
+
+            $this->actingAs($user)
+                ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+                ->assertStatus(422);
+        }
+    }
+
     public function test_explicitly_allowed_offer_still_requires_source_category_and_stock_rules(): void
     {
         [$product, $user] = $this->catalogFixture(approved: true);
@@ -450,6 +472,32 @@ class B2bCatalogPricingTest extends TestCase
         $this->assertSame([999], $source->fresh()->b2bCategoryIds());
     }
 
+    public function test_price_role_migration_classifies_known_sources_without_overwriting_manual_decision(): void
+    {
+        $oneC = IntegrationSource::query()->updateOrCreate(
+            ['code' => 'onec'],
+            ['name' => '1С', 'settings' => ['b2b_enabled' => true]],
+        );
+        $belomo = IntegrationSource::query()->create([
+            'code' => 'belomo_wholesale',
+            'name' => 'БелОМО',
+            'settings' => ['b2b_enabled' => true, 'b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_PURCHASE],
+        ]);
+        $unrelated = IntegrationSource::query()->create([
+            'code' => 'other-price-source',
+            'name' => 'Другой источник',
+            'settings' => ['b2b_enabled' => true],
+        ]);
+
+        $migration = require database_path('migrations/2026_10_18_100000_classify_existing_b2b_source_prices.php');
+        $migration->up();
+        $migration->up();
+
+        $this->assertSame(IntegrationSource::B2B_PRICE_ROLE_SALE, $oneC->fresh()->b2bPriceRole());
+        $this->assertSame(IntegrationSource::B2B_PRICE_ROLE_PURCHASE, $belomo->fresh()->b2bPriceRole());
+        $this->assertSame(IntegrationSource::B2B_PRICE_ROLE_UNKNOWN, $unrelated->fresh()->b2bPriceRole());
+    }
+
     /** @return array{Product, User} */
     private function catalogFixture(bool $approved): array
     {
@@ -478,6 +526,7 @@ class B2bCatalogPricingTest extends TestCase
                     'vat_rate' => 20,
                     'warehouse_label' => 'Основной',
                     'b2b_enabled' => true,
+                    'b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_SALE,
                     'b2b_category_ids' => [$category->id],
                     'partner_name' => 'ООО «СанБизнесГруп»',
                 ],
