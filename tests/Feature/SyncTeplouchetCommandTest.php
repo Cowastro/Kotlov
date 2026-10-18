@@ -38,6 +38,15 @@ class SyncTeplouchetCommandTest extends TestCase
             'is_active' => true,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+        $misbrandedProduct = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Старая карточка без указанного бренда',
+            'slug' => 'dab-a-50-180-xm-without-brand-test',
+            'sku' => '505802041',
+            'price' => 1300,
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
 
         $this->artisan('supplier:sync-teplouchet', ['--dry-run' => true, '--match-existing' => true])
             ->expectsOutput('metric.teplouchet.rows=181')
@@ -80,5 +89,9 @@ class SyncTeplouchetCommandTest extends TestCase
         $this->assertSame('ТЕПЛОУЧЁТ · Минск', $minskLink->warehouse_name);
         $this->assertSame(Product::AVAILABILITY_IN_STOCK, $minskProduct->fresh()->effectiveAvailabilityStatus());
         $this->assertSame('В наличии', $minskProduct->fresh()->publicAvailabilityLabel());
+
+        $misbrandedLink = $supplier->supplierProducts()->where('supplier_article_normalized', '505802041')->firstOrFail();
+        $this->assertSame($misbrandedProduct->id, $misbrandedLink->product_id);
+        $this->assertSame('exact_sku', $misbrandedLink->match_confidence);
     }
 }

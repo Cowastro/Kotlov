@@ -164,7 +164,7 @@ class SyncTeplouchetCommand extends Command
     {
         $articleCounts = collect($rows)->countBy('article_key');
         $dabBrandIds = Brand::query()->whereRaw('LOWER(name) = ?', ['dab'])->pluck('id')->map(fn ($id) => (int) $id)->all();
-        $products = Product::with('brand')
+        $dabProducts = Product::with('brand')
             ->where(function ($query) use ($dabBrandIds): void {
                 $query->whereIn('brand_id', $dabBrandIds)
                     ->orWhereRaw('LOWER(name) LIKE ?', ['%dab%']);
@@ -172,23 +172,32 @@ class SyncTeplouchetCommand extends Command
             ->get()
             ->filter(fn (Product $product) => in_array((int) $product->brand_id, $dabBrandIds, true)
                 || preg_match('/\bdab\b/ui', $product->name));
+        $identityProducts = Product::query()
+            ->where(function ($query) use ($rows): void {
+                $query->whereIn('sku', collect($rows)->pluck('article')->filter()->unique())
+                    ->orWhereIn('content_source_url', collect($rows)->pluck('source_url')->filter()->unique());
+            })
+            ->get();
+        $exactIdentityProducts = $dabProducts->merge($identityProducts)->unique('id');
         $bySku = [];
         $byModel = [];
         $byCoreModel = [];
         $bySourceUrl = [];
         $bySpecArticle = [];
-        foreach ($products as $product) {
+        foreach ($exactIdentityProducts as $product) {
             if ($product->sku) {
                 $bySku[$parser->article($product->sku)][] = $product->id;
             }
+            if ($key = $parser->sourceUrlKey($product->content_source_url)) {
+                $bySourceUrl[$key][] = $product->id;
+            }
+        }
+        foreach ($dabProducts as $product) {
             if ($key = $parser->modelKey($product->name)) {
                 $byModel[$key][] = $product->id;
             }
             if ($key = $parser->coreModelKey($product->name)) {
                 $byCoreModel[$key][] = $product->id;
-            }
-            if ($key = $parser->sourceUrlKey($product->content_source_url)) {
-                $bySourceUrl[$key][] = $product->id;
             }
             foreach ($this->productArticleKeys($product, $parser) as $key) {
                 $bySpecArticle[$key][] = $product->id;
@@ -197,7 +206,7 @@ class SyncTeplouchetCommand extends Command
 
         $bySupplierArticle = SupplierProduct::query()
             ->whereNotNull('product_id')
-            ->whereIn('product_id', $products->pluck('id'))
+            ->whereIn('supplier_article_normalized', array_keys($articleCounts->all()))
             ->get()
             ->groupBy(fn ($link) => $parser->article($link->supplier_article))
             ->map(fn ($links) => $links->pluck('product_id')->unique()->values()->all())
