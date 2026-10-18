@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ClientType;
+use App\Services\B2bAccessRequestNotifier;
 use App\Services\B2bCatalogOfferResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -84,7 +85,7 @@ class AccountController extends Controller
             ->with('open_tab', 'security');
     }
 
-    public function b2bRequest(Request $request)
+    public function b2bRequest(Request $request, B2bAccessRequestNotifier $notifier)
     {
         $user = Auth::user();
 
@@ -112,6 +113,8 @@ class AccountController extends Controller
             'company_inn'  => $request->company_inn,
             'b2b_comment'   => $request->b2b_comment,
         ]);
+
+        $notifier->notify($user->fresh());
 
         return back()
             ->with('success', 'Заявка на B2B-доступ отправлена. После проверки администратор откроет специальные условия.')

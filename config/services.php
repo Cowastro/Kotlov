@@ -44,6 +44,10 @@ return [
         'secret' => env('TURNSTILE_SECRET_KEY', ''),
     ],
 
+    'b2b' => [
+        'notification_email' => env('B2B_NOTIFICATION_EMAIL', 'order@kotlov.by'),
+    ],
+
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'allow_in_tests' => (bool) env('TELEGRAM_ALLOW_IN_TESTS', false),
