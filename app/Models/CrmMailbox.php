@@ -2,11 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CrmMailbox extends Model
 {
+    public const SERVICE_MAILBOXES = [
+        'order@kotlov.by' => 'Системные заказы и заявки',
+        'no-reply@kotlov.by' => 'Автоматические письма доступа',
+    ];
+
     protected $fillable = [
         'name', 'email', 'username', 'password', 'imap_host', 'imap_port',
         'imap_encryption', 'imap_folder', 'smtp_host', 'smtp_port',
@@ -43,5 +49,20 @@ class CrmMailbox extends Model
         };
 
         return sprintf('{%s:%d%s}%s', $this->imap_host, $this->imap_port, $flags, $this->imap_folder);
+    }
+
+    public function isServiceMailbox(): bool
+    {
+        return array_key_exists(mb_strtolower(trim((string) $this->email)), self::SERVICE_MAILBOXES);
+    }
+
+    public function servicePurpose(): ?string
+    {
+        return self::SERVICE_MAILBOXES[mb_strtolower(trim((string) $this->email))] ?? null;
+    }
+
+    public function scopeManualSending(Builder $query): Builder
+    {
+        return $query->whereNotIn('email', array_keys(self::SERVICE_MAILBOXES));
     }
 }

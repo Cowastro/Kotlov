@@ -80,6 +80,9 @@ class CrmMailboxResource extends Resource
     {
         return $table->columns([
             TextColumn::make('name')->label('Ящик')->weight('bold')->description(fn (CrmMailbox $record): string => $record->email),
+            TextColumn::make('purpose')->label('Назначение')->badge()
+                ->state(fn (CrmMailbox $record): string => $record->servicePurpose() ?? 'Рабочая переписка')
+                ->color(fn (CrmMailbox $record): string => $record->isServiceMailbox() ? 'info' : 'success'),
             IconColumn::make('is_enabled')->label('Синхронизация')->boolean(),
             TextColumn::make('last_success_at')->label('Последняя загрузка')->dateTime('d.m.Y H:i:s', 'Europe/Minsk')->placeholder('Ещё не запускалась'),
             TextColumn::make('last_error')->label('Состояние')->limit(90)->placeholder('Ошибок нет')->color('danger')->wrap(),
@@ -100,6 +103,7 @@ class CrmMailboxResource extends Resource
                 ->label('Тест подписи')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('gray')
+                ->visible(fn (CrmMailbox $record): bool => ! $record->isServiceMailbox())
                 ->modalHeading('Отправить тестовое письмо')
                 ->modalDescription('Письмо уйдёт от общего ящика, но будет подписано именем, должностью и рабочим телефоном текущего сотрудника.')
                 ->modalSubmitActionLabel('Отправить тест')

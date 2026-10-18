@@ -349,7 +349,7 @@ class CommercialDocumentWorkflow
         $document->recalculate();
         $document->refresh();
 
-        $mailbox = CrmMailbox::query()->where('is_enabled', true)->first();
+        $mailbox = CrmMailbox::query()->manualSending()->where('is_enabled', true)->first();
         if (! $mailbox) {
             throw new RuntimeException('Нет активного почтового ящика. Проверьте раздел «Настройка почты».');
         }

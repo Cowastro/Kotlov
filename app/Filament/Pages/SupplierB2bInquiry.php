@@ -100,7 +100,7 @@ class SupplierB2bInquiry extends Page
                         }),
                     Select::make('mailbox_id')
                         ->label('Отправить из ящика')
-                        ->options(fn (): array => CrmMailbox::query()->where('is_enabled', true)->orderBy('name')->pluck('name', 'id')->all())
+                        ->options(fn (): array => CrmMailbox::query()->manualSending()->where('is_enabled', true)->orderBy('name')->pluck('name', 'id')->all())
                         ->required(),
                     TextInput::make('recipient')
                         ->label('Email поставщика')
@@ -174,7 +174,8 @@ class SupplierB2bInquiry extends Page
     /** @return array<string, mixed> */
     private function defaultFormData(): array
     {
-        $mailbox = CrmMailbox::query()->where('is_enabled', true)->first() ?? CrmMailbox::query()->first();
+        $mailbox = CrmMailbox::query()->manualSending()->where('is_enabled', true)->first()
+            ?? CrmMailbox::query()->manualSending()->first();
         $service = app(MarketResearchSupplierInquiry::class);
 
         return [

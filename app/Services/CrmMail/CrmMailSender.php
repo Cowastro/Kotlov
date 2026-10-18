@@ -41,6 +41,7 @@ class CrmMailSender
             ->first();
 
         $mailbox = $thread->mailbox;
+        $this->assertManualSendingAllowed($mailbox);
         $messageId = Str::uuid().'@'.parse_url(config('app.url'), PHP_URL_HOST);
         $body = trim((string) $draft->text_body);
         $htmlBody = $this->brandedHtml($body, $user);
@@ -149,6 +150,7 @@ class CrmMailSender
         ?CrmMailMessage $replyTo = null,
     ): CrmMailMessage {
         $mailbox = $thread->mailbox;
+        $this->assertManualSendingAllowed($mailbox);
 
         if (! $mailbox || ! $mailbox->is_enabled) {
             throw new RuntimeException('Почтовый ящик отключён или не найден.');
@@ -264,6 +266,7 @@ class CrmMailSender
         array $attachmentNames = [],
     ): CrmMailMessage {
         $mailbox = $thread->mailbox;
+        $this->assertManualSendingAllowed($mailbox);
 
         if ($source->thread_id !== $thread->id) {
             throw new RuntimeException('Исходное письмо не относится к этой переписке.');
@@ -415,6 +418,8 @@ class CrmMailSender
 
     public function sendTest(CrmMailbox $mailbox, string $recipient, User $user): void
     {
+        $this->assertManualSendingAllowed($mailbox);
+
         $body = 'Это тестовое письмо из модуля «Почта и лиды». Оно подтверждает, что общий почтовый ящик работает, а в подписи указан сотрудник, который отправил письмо.';
 
         $email = (new Email)
@@ -428,6 +433,13 @@ class CrmMailSender
         $this->embedBrandAssets($email);
 
         $this->mailer($mailbox)->send($email);
+    }
+
+    private function assertManualSendingAllowed(?CrmMailbox $mailbox): void
+    {
+        if ($mailbox?->isServiceMailbox()) {
+            throw new RuntimeException('Служебный ящик «'.$mailbox->email.'» используется только автоматикой. Ручная отправка запрещена.');
+        }
     }
 
     public function brandedHtml(string $body, User $user): string

@@ -150,8 +150,8 @@ class SupplierRequestMailDraftService
     public function sync(SupplierOrderRequest $request, ?User $user): CrmMailThread
     {
         $request->loadMissing(['order', 'items', 'supplier.crmCounterparty.contactPoints']);
-        $mailbox = CrmMailbox::query()->where('is_enabled', true)->first()
-            ?? CrmMailbox::query()->first();
+        $mailbox = CrmMailbox::query()->manualSending()->where('is_enabled', true)->first()
+            ?? CrmMailbox::query()->manualSending()->first();
 
         if (! $mailbox) {
             throw new RuntimeException('Сначала создайте общий почтовый ящик в разделе «Настройка почты».');

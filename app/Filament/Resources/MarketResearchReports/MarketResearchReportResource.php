@@ -149,7 +149,7 @@ class MarketResearchReportResource extends Resource
                             }),
                         Select::make('mailbox_id')
                             ->label('Отправить из ящика')
-                            ->options(fn (): array => CrmMailbox::query()->where('is_enabled', true)->pluck('name', 'id')->all())
+                            ->options(fn (): array => CrmMailbox::query()->manualSending()->where('is_enabled', true)->pluck('name', 'id')->all())
                             ->required(),
                         TextInput::make('recipient')
                             ->label('Email поставщика')
