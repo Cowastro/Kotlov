@@ -199,13 +199,18 @@ class EnrichTmManagementWorkbookCommand extends Command
     {
         $index = ['article' => [], 'name' => [], 'brand_name' => []];
         foreach ($links as $link) {
-            $article = $this->normalize((string) $link->supplier_article);
-            $name = $this->normalize((string) $link->supplier_name);
-            if ($article !== '') {
-                $index['article'][$article][] = (int) $link->product_id;
+            $raw = is_array($link->raw) ? $link->raw : [];
+            foreach (array_unique([(string) $link->supplier_article, (string) ($raw['article'] ?? '')]) as $articleValue) {
+                $article = $this->normalize($articleValue);
+                if ($article !== '') {
+                    $index['article'][$article][] = (int) $link->product_id;
+                }
             }
-            if ($name !== '') {
-                $index['name'][$name][] = (int) $link->product_id;
+            foreach (array_unique([(string) $link->supplier_name, (string) ($raw['name'] ?? '')]) as $nameValue) {
+                $name = $this->normalize($nameValue);
+                if ($name !== '') {
+                    $index['name'][$name][] = (int) $link->product_id;
+                }
             }
         }
 
