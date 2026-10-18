@@ -132,7 +132,13 @@ class BuildMarketPriceBatchCommandTest extends TestCase
 
     public function test_it_can_export_an_explicitly_selected_priced_product_for_market_review(): void
     {
+        $category = Category::query()->create([
+            'name' => 'Рыночная проверка оценённых товаров',
+            'slug' => 'priced-market-review-category',
+            'is_active' => true,
+        ]);
         $product = Product::query()->create([
+            'category_id' => $category->id,
             'name' => 'Товар с действующей розничной ценой',
             'slug' => 'priced-market-review-test',
             'sku' => 'PRICED-REVIEW-001',

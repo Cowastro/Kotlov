@@ -101,7 +101,13 @@ class AuditCatalogPriceIntegrityCommandTest extends TestCase
     public function test_research_report_keeps_a_raw_margin_just_below_the_threshold(): void
     {
         $researchReport = storage_path('app/testing/price-integrity-rounding-research.csv');
+        $category = Category::query()->create([
+            'name' => 'Пограничная маржа',
+            'slug' => 'raw-margin-boundary-category',
+            'is_active' => true,
+        ]);
         $product = Product::query()->create([
+            'category_id' => $category->id,
             'name' => 'Товар на границе маржи',
             'slug' => 'raw-margin-boundary-product',
             'sku' => 'PRICE-AUDIT-BOUNDARY',
