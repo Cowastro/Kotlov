@@ -1,0 +1,94 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\Supplier;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class SyncSantehskladPricelistCommandTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_it_links_exact_cards_updates_all_exact_duplicates_and_never_invents_stock(): void
+    {
+        $brand = Brand::create(['name' => 'Sakovich', 'slug' => 'sakovich-test', 'is_active' => true]);
+        $category = Category::create(['name' => 'Котлы', 'slug' => 'santehsklad-test']);
+        $detailed = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Твердотопливный котел Sakovich Standart 12',
+            'slug' => 'sakovich-standart-12-detailed-test',
+            'sku' => 'KOTLOV-SAKOVICH-12',
+            'price' => 1950,
+            'content' => str_repeat('Подробное описание ', 100),
+            'images' => ['image-1.jpg'],
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+            'requires_price_confirmation' => true,
+        ]);
+        $duplicate = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Твердотопливный котел Sakovich Standart 12 кВт (сталь 4 мм)',
+            'slug' => 'sakovich-standart-12-duplicate-test',
+            'sku' => 'PS-011.212',
+            'price' => 2050,
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $praktik = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Пеллетный котел Sakovich Pellet Standart 15 с горелкой Praktik и бункером',
+            'slug' => 'sakovich-pellet-standart-praktik-15-test',
+            'sku' => 'SAKOVICH-PRAKTIK-15',
+            'price' => 6600,
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $accessory = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Регулятор тяги ICMA',
+            'slug' => 'regulyator-tyagi-icma-test',
+            'sku' => 'ICMA-DRAFT-TEST',
+            'price' => 130,
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+
+        $this->artisan('supplier:sync-santehsklad-pricelist', ['--dry-run' => true])
+            ->expectsOutput('metric.santehsklad.rows=103')
+            ->expectsOutput('metric.santehsklad.matched=3')
+            ->expectsOutput('metric.santehsklad.unmatched=100')
+            ->expectsOutput('metric.santehsklad.duplicate_card_groups=1')
+            ->expectsOutput('metric.santehsklad.invalid_price_pairs=0')
+            ->assertSuccessful();
+        $this->assertDatabaseMissing('suppliers', ['code' => 'santehsklad']);
+
+        $this->artisan('supplier:sync-santehsklad-pricelist', [
+            '--apply' => true,
+            '--sync-retail-prices' => true,
+        ])->assertSuccessful();
+
+        $supplier = Supplier::where('code', 'santehsklad')->firstOrFail();
+        $this->assertSame(103, $supplier->supplierProducts()->count());
+        $offer = $supplier->supplierProducts()->where('supplier_article_normalized', 'STANDART-12')->firstOrFail();
+        $this->assertSame($detailed->id, $offer->product_id);
+        $this->assertSame('1732.50', $offer->price_byn);
+        $this->assertFalse($offer->in_stock);
+        $this->assertNull($offer->stock_quantity);
+        $this->assertSame('unknown', $offer->stock_status);
+        $this->assertNull($offer->last_stock_synced_at);
+
+        $this->assertSame('2250.00', $detailed->fresh()->price);
+        $this->assertSame('2250.00', $duplicate->fresh()->price);
+        $this->assertFalse($detailed->fresh()->requires_price_confirmation);
+        $this->assertSame(Product::AVAILABILITY_CHECK, $detailed->fresh()->effectiveAvailabilityStatus());
+        $this->assertSame('6800.00', $praktik->fresh()->price);
+        $this->assertSame('150.00', $accessory->fresh()->price);
+    }
+}

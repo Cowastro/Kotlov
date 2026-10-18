@@ -366,6 +366,11 @@ jobs:
             grep -E '^metric\.teplouchet\.[a-z_]+=[0-9-]+$' "$detail_log" || true
             echo "safe_teplouchet_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-santehsklad-pricelist" ]]; then
+            echo "safe_santehsklad_metrics_begin"
+            grep -E '^metric\.santehsklad\.[a-z_]+=[0-9-]+$' "$detail_log" || true
+            echo "safe_santehsklad_metrics_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:enforce-price-integrity-safety" ]]; then
             echo "safe_price_safety_metrics_begin"
             grep '^metric\.' "$detail_log" || true
