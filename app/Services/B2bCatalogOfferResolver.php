@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class B2bCatalogOfferResolver
@@ -66,6 +68,20 @@ class B2bCatalogOfferResolver
             ->values();
     }
 
+    /**
+     * Internal audit view of the exact offers that the storefront may publish.
+     * Customer authorization is intentionally not checked here; all source,
+     * price, category, product and availability safeguards still apply.
+     *
+     * @return Collection<int, IntegrationProduct>
+     */
+    public function publishableForSource(IntegrationSource $source): Collection
+    {
+        return $this->loadPublishableOffers(
+            IntegrationProduct::query()->whereBelongsTo($source, 'source')
+        );
+    }
+
     public function priceWithTax(IntegrationProduct $offer): float
     {
         $price = $offer->normalizedPriceByn();
@@ -124,7 +140,13 @@ class B2bCatalogOfferResolver
     /** @return Collection<int, IntegrationProduct> */
     private function offers(): Collection
     {
-        return $this->offers ??= IntegrationProduct::query()
+        return $this->offers ??= $this->loadPublishableOffers(IntegrationProduct::query());
+    }
+
+    /** @return Collection<int, IntegrationProduct> */
+    private function loadPublishableOffers(Builder $query): Collection
+    {
+        return $query
             ->with(['source', 'product.category'])
             ->whereNotNull('product_id')
             ->where('match_status', 'matched')

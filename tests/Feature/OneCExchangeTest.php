@@ -1428,6 +1428,12 @@ XML;
                     ['Positive price', 1],
                     ['Zero price', 1],
                     ['Missing price', 1],
+                    ['Matched products', 0],
+                    ['B2B explicitly allowed', 0],
+                    ['B2B explicitly blocked', 0],
+                    ['B2B inherited rule', 3],
+                    ['Publishable B2B offers', 0],
+                    ['Publishable B2B products', 0],
                 ],
             )
             ->assertExitCode(0);

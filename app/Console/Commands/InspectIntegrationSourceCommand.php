@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Services\B2bCatalogOfferResolver;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 use SimpleXMLElement;
@@ -26,6 +27,7 @@ class InspectIntegrationSourceCommand extends Command
         $query = IntegrationProduct::query()->whereBelongsTo($source, 'source');
         $total = (clone $query)->count();
         $distinctExternalIds = (clone $query)->distinct()->count('external_id');
+        $publishableOffers = app(B2bCatalogOfferResolver::class)->publishableForSource($source);
         $this->table(['Metric', 'Count'], [
             ['Supplier groups', $source->categories()->count()],
             ['Staged products', $total],
@@ -37,6 +39,12 @@ class InspectIntegrationSourceCommand extends Command
             ['Positive price', (clone $query)->where('price', '>', 0)->count()],
             ['Zero price', (clone $query)->where('price', 0)->count()],
             ['Missing price', (clone $query)->whereNull('price')->count()],
+            ['Matched products', (clone $query)->where('match_status', 'matched')->whereNotNull('product_id')->count()],
+            ['B2B explicitly allowed', (clone $query)->where('b2b_enabled', true)->count()],
+            ['B2B explicitly blocked', (clone $query)->where('b2b_enabled', false)->count()],
+            ['B2B inherited rule', (clone $query)->whereNull('b2b_enabled')->count()],
+            ['Publishable B2B offers', $publishableOffers->count()],
+            ['Publishable B2B products', $publishableOffers->pluck('product_id')->unique()->count()],
         ]);
 
         $disk = Storage::disk((string) config('onec.exchange.storage_disk'));
