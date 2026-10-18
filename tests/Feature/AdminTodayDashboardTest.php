@@ -395,7 +395,7 @@ class AdminTodayDashboardTest extends TestCase
         ] as [$number, $createdAt]) {
             $order = Order::query()->create([
                 'number' => $number,
-                'status' => 'completed',
+                'status' => 'delivered',
                 'customer_name' => $number,
                 'customer_phone' => '+375290000000',
                 'total' => 100,
