@@ -29,12 +29,27 @@ class ChimneyDiameterQuickFilter
             : null;
     }
 
-    /** @return Collection<string, Collection<int, int>> */
-    public function groups(Builder $query): Collection
+    public function monoDiameter(string $name): ?string
+    {
+        if (preg_match('/термо|сэндвич|сендвич/ui', $name)
+            || ! preg_match('/моно|(?<!\pL)(?:ТМ|ОМ|ЗМ|ШМ|ДМ|КМ|ТРМ|ЗРМ)(?=[\s(\-])/ui', $name)
+            || preg_match('/\d{2,3}\s*\/\s*\d{2,4}/u', $name)) {
+            return null;
+        }
+        if (! preg_match('/[Øø⌀ФфDdДд]\s*(\d{2,3})(?!\d)(\s*[\/хx×–—-]\s*\d)?/u', $name, $match)
+            || ! empty($match[2])) {
+            return null;
+        }
+
+        return (int) $match[1] >= 60 ? (string) (int) $match[1] : null;
+    }
+
+    /** @return Collection<string|int, Collection<int, int>> */
+    public function groups(Builder $query, bool $mono = false): Collection
     {
         $groups = collect();
         foreach ((clone $query)->get(['products.id', 'products.name']) as $product) {
-            $pair = $this->diameterPair($product->name);
+            $pair = $mono ? $this->monoDiameter($product->name) : $this->diameterPair($product->name);
             if ($pair !== null) {
                 if (! $groups->has($pair)) {
                     $groups->put($pair, collect());

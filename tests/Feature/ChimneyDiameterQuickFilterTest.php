@@ -13,6 +13,25 @@ class ChimneyDiameterQuickFilterTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_mono_diameters_exclude_pairs_ranges_and_sandwich_elements(): void
+    {
+        $filter = new ChimneyDiameterQuickFilter;
+        foreach ([
+            'Труба моно ТМ-Р 430, 0.8, Ø 120 L1000' => '120',
+            'Теплов и Сухов Конденсатоотвод моно КМ-Р 430-0.5 D80 М' => '80',
+            'Зонт ЗМ-Р 430, 0.5, Ø200' => '200',
+            'Труба моно Ф115' => '115',
+            'Труба моно D1200' => null,
+            'Адаптер Моно Ø120/180' => null,
+            'Переход Моно/Термо Ø120/180' => null,
+            'Труба термо Ø120/180' => null,
+            'Крепление моно Ø120-180' => null,
+            'Труба моно 430 0.8 L1000' => null,
+        ] as $name => $diameter) {
+            $this->assertSame($diameter, $filter->monoDiameter($name), $name);
+        }
+    }
+
     public function test_exact_diameter_pairs_do_not_confuse_grades_mono_reducers_or_ranges(): void
     {
         $filter = new ChimneyDiameterQuickFilter;
@@ -43,6 +62,10 @@ class ChimneyDiameterQuickFilterTest extends TestCase
             ['Адаптер Моно Ø120/180', $brand->id, false],
             ['Архив термо Ø120/180', $brand->id, true],
             ['Чужой термо Ø120/180', $other->id, false],
+            ['Труба моно Ø120 L1000', $brand->id, false],
+            ['Труба моно Ø150 L1000', $brand->id, false],
+            ['Чужой моно Ø120', $other->id, false],
+            ['Архив моно Ø120', $brand->id, true],
         ] as $index => [$name, $brandId, $archived]) {
             Product::create([
                 'name' => $name, 'slug' => 'chimney-quick-'.$index, 'sku' => 'CHIMNEY-QUICK-'.$index,
@@ -60,6 +83,26 @@ class ChimneyDiameterQuickFilterTest extends TestCase
 
         $this->get('/dymohody?'.http_build_query(['brand' => $brand->id, 'chimney_diameter' => '999/1000']))
             ->assertOk()->assertViewHas('products', fn ($products) => $products->total() === 0);
+
+        $this->get('/dymohody?'.http_build_query(['brand' => $brand->id, 'mono_diameter' => '120']))
+            ->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->total() === 1 && $products->first()->name === 'Труба моно Ø120 L1000')
+            ->assertSee('Моно: быстрый выбор диаметра')->assertSee('150 мм')
+            ->assertSee('mono_diameter=150', false);
+    }
+
+    public function test_switching_to_mono_removes_sandwich_size_and_keeps_brand_and_sort(): void
+    {
+        request()->merge(['brand' => 292, 'sort' => 'price_asc', 'page' => 3, 'chimney_diameter' => '120/180']);
+        $html = view('partials.chimney-diameter-quick-filters', [
+            'isMonoQuickFilter' => true,
+            'chimneyDiameterGroups' => collect([120 => collect([1]), 150 => collect([2])]),
+        ])->render();
+        $this->assertStringContainsString('mono_diameter=120', $html);
+        $this->assertStringContainsString('brand=292', $html);
+        $this->assertStringContainsString('sort=price_asc', $html);
+        $this->assertStringNotContainsString('chimney_diameter=', $html);
+        $this->assertStringNotContainsString('page=3', $html);
     }
 
     public function test_quick_links_keep_other_filters_and_reset_pagination(): void

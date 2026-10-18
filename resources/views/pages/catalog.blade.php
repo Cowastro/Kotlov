@@ -89,7 +89,11 @@
     @endif
 
     @if (($chimneyDiameterGroups ?? collect())->isNotEmpty())
-        @include('partials.chimney-diameter-quick-filters')
+        @include('partials.chimney-diameter-quick-filters', ['isMonoQuickFilter' => false])
+    @endif
+
+    @if (($monoChimneyDiameterGroups ?? collect())->isNotEmpty())
+        @include('partials.chimney-diameter-quick-filters', ['isMonoQuickFilter' => true, 'chimneyDiameterGroups' => $monoChimneyDiameterGroups])
     @endif
 
     @if ($catalogSpotlight)
