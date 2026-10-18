@@ -47,7 +47,8 @@ class AdminTodayDashboardTest extends TestCase
             ->assertSee('Поступления')
             ->assertSee('Управление')
             ->assertSee('Все поступления')
-            ->assertSee('Только незакрытые')
+            ->assertSee('Требуют реакции')
+            ->assertSee('Требуют реакции (не закрыты)')
             ->assertSee('Напоминания')
             ->assertSee('+ Добавить')
             ->assertSee('Сегодня')
@@ -74,13 +75,26 @@ class AdminTodayDashboardTest extends TestCase
             'handled_at' => now()->subMinutes(10),
         ]);
 
+        TelephonyCall::query()->create([
+            'external_uuid' => 'open-dashboard-call',
+            'direction' => 'inbound',
+            'customer_phone' => '375291112233',
+            'status' => 'missed',
+            'handling_status' => 'callback_required',
+            'assigned_user_id' => $manager->id,
+            'started_at' => now()->subHours(3),
+        ]);
+
         $this->actingAs($manager);
 
         Livewire::test(CrmTodayCenter::class)
             ->assertSet('status', 'all')
             ->set('period', 'today')
             ->assertSee('375297064324')
-            ->assertSee('Обработан');
+            ->assertSee('Обработан')
+            ->set('status', 'open')
+            ->assertDontSee('375297064324')
+            ->assertSee('375291112233');
     }
 
     public function test_it_collects_today_arrivals_and_due_actions_in_one_place(): void
