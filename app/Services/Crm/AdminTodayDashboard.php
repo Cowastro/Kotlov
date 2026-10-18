@@ -226,7 +226,7 @@ class AdminTodayDashboard
                 time: $order->created_at,
                 url: OrderResource::getUrl('view', ['record' => $order]),
                 tone: 'danger',
-                responsible: $order->manager?->name,
+                responsible: $this->orderResponsible($order),
                 priority: 2,
             )));
 
@@ -355,7 +355,7 @@ class AdminTodayDashboard
                 tone: $order->status === 'new' ? 'warning' : 'success',
                 closed: in_array($order->status, ['delivered', 'completed', 'cancelled'], true),
                 statusLabel: Order::STATUSES[$order->status] ?? $order->status,
-                responsible: $order->manager?->name,
+                responsible: $this->orderResponsible($order),
             )));
 
         $mail = $this->mail($managerId)
@@ -448,6 +448,11 @@ class AdminTodayDashboard
             $managerId,
             fn (Builder $query, int $id): Builder => $query->where('manager_id', $id),
         );
+    }
+
+    private function orderResponsible(Order $order): ?string
+    {
+        return $order->manager?->name ?: (filled($order->assigned_to) ? $order->assigned_to : null);
     }
 
     /** @return Builder<ContactRequest> */

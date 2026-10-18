@@ -223,6 +223,27 @@ class AdminTodayDashboardTest extends TestCase
         $this->assertCount(6, $adminData['activityItems']);
     }
 
+    public function test_order_assigned_to_is_shown_when_manager_relation_is_missing(): void
+    {
+        Carbon::setTestNow('2026-10-18 10:00:00');
+
+        Order::query()->create([
+            'number' => 'ORD-TEXT-ASSIGNEE',
+            'status' => 'new',
+            'customer_name' => 'Заказ с текстовым ответственным',
+            'customer_phone' => '+375290000000',
+            'manager_id' => null,
+            'assigned_to' => 'Денис Готто',
+            'total' => 100,
+        ]);
+
+        $data = app(AdminTodayDashboard::class)->data(period: 'today', status: 'all');
+        $title = 'ORD-TEXT-ASSIGNEE · Заказ с текстовым ответственным';
+
+        $this->assertSame('Денис Готто', $data['attentionItems']->firstWhere('title', $title)['responsible']);
+        $this->assertSame('Денис Готто', $data['activityItems']->firstWhere('title', $title)['responsible']);
+    }
+
     public function test_manager_can_create_and_complete_only_an_assigned_quick_reminder(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
