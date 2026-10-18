@@ -26,12 +26,12 @@ class AdminTodayDashboard
 
     /** @return array<string, mixed> */
     public function data(
-        string $period = '7d',
+        string $period = 'week',
         string $status = 'open',
         string $sort = 'desc',
         ?User $viewer = null,
     ): array {
-        $period = in_array($period, ['today', 'yesterday', '7d', '30d', 'all'], true) ? $period : '7d';
+        $period = in_array($period, ['today', 'yesterday', 'week', 'month', 'all'], true) ? $period : 'week';
         $status = in_array($status, ['open', 'closed', 'all'], true) ? $status : 'open';
         $sort = $sort === 'asc' ? 'asc' : 'desc';
 
@@ -410,9 +410,9 @@ class AdminTodayDashboard
         [$start, $label] = match ($period) {
             'today' => [$localNow->copy()->startOfDay(), 'Сегодня'],
             'yesterday' => [$localNow->copy()->subDay()->startOfDay(), 'Вчера'],
-            '30d' => [$localNow->copy()->subDays(29)->startOfDay(), 'Последние 30 дней'],
+            'month' => [$localNow->copy()->startOfMonth(), 'Этот месяц'],
             'all' => [$localNow->copy()->subYears(20)->startOfDay(), 'За всё время'],
-            default => [$localNow->copy()->subDays(6)->startOfDay(), 'Последние 7 дней'],
+            default => [$localNow->copy()->startOfWeek(CarbonInterface::MONDAY), 'Эта неделя'],
         };
 
         if ($period === 'yesterday') {

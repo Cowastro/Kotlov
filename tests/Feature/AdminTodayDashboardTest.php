@@ -49,6 +49,10 @@ class AdminTodayDashboardTest extends TestCase
             ->assertSee('Только незакрытые')
             ->assertSee('Напоминания')
             ->assertSee('+ Добавить')
+            ->assertSee('Сегодня')
+            ->assertSee('Вчера')
+            ->assertSee('Эта неделя')
+            ->assertSee('Этот месяц')
             ->assertDontSee('Состояние обменов');
     }
 
@@ -269,5 +273,36 @@ class AdminTodayDashboardTest extends TestCase
         ]);
         $this->assertCount(2, app(AdminTodayDashboard::class)->data(viewer: $admin)['reminders']);
         $this->assertCount(1, app(AdminTodayDashboard::class)->data(viewer: $manager)['reminders']);
+    }
+
+    public function test_calendar_week_and_month_periods_have_correct_boundaries(): void
+    {
+        Carbon::setTestNow('2026-10-18 10:00:00');
+
+        foreach ([
+            ['ORD-WEEK', '2026-10-12 08:00:00'],
+            ['ORD-MONTH', '2026-10-05 08:00:00'],
+            ['ORD-PREVIOUS', '2026-09-30 08:00:00'],
+        ] as [$number, $createdAt]) {
+            $order = Order::query()->create([
+                'number' => $number,
+                'status' => 'new',
+                'customer_name' => $number,
+                'customer_phone' => '+375290000000',
+                'total' => 100,
+            ]);
+            $order->forceFill(['created_at' => $createdAt])->saveQuietly();
+        }
+
+        $week = app(AdminTodayDashboard::class)->data(period: 'week');
+        $month = app(AdminTodayDashboard::class)->data(period: 'month');
+
+        $this->assertSame('Эта неделя', $week['rangeLabel']);
+        $this->assertSame(['ORD-WEEK · ORD-WEEK'], $week['activityItems']->pluck('title')->all());
+        $this->assertSame('Этот месяц', $month['rangeLabel']);
+        $this->assertEqualsCanonicalizing(
+            ['ORD-WEEK · ORD-WEEK', 'ORD-MONTH · ORD-MONTH'],
+            $month['activityItems']->pluck('title')->all(),
+        );
     }
 }

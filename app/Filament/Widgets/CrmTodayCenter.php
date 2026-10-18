@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 
 class CrmTodayCenter extends Widget
 {
-    public string $period = '7d';
+    public string $period = 'week';
 
     public string $status = 'open';
 
