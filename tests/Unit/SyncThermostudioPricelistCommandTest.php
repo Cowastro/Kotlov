@@ -123,6 +123,43 @@ class SyncThermostudioPricelistCommandTest extends TestCase
         $this->assertSame('supplier_article', $classified['match_confidence']);
     }
 
+    public function test_only_linked_mode_repairs_an_existing_link_by_exact_product_name(): void
+    {
+        $reflection = new ReflectionClass($this->command());
+        $reflection->getProperty('indexByProductName')->setValue($this->command(), [
+            'ariston pro1 r 50 v pl' => 779,
+        ]);
+        $reflection->getProperty('linkedProductIds')->setValue($this->command(), [779 => true]);
+        $this->setInput(['--only-linked' => true]);
+
+        $classified = $this->invoke('classify', [[
+            'brand' => 'Ariston',
+            'sheet' => 'Ariston ЭВН',
+            'section' => 'PRO1 R (РФ)',
+            'supplier_article' => '3700589',
+            'supplier_article_raw' => '3700589',
+            'name' => 'PRO1 R 50 V PL',
+            'description' => '',
+            'norm_article' => '3700589',
+            'ambiguous_variant' => false,
+        ]]);
+
+        $this->assertSame('matched', $classified['action']);
+        $this->assertSame(779, $classified['matched_product_id']);
+        $this->assertSame('exact_name', $classified['match_confidence']);
+    }
+
+    public function test_ariston_standard_row_keeps_wholesale_and_rrp_in_separate_columns(): void
+    {
+        $row = $this->invoke('normaliseRow', [[
+            '3700589', 'PRO1 R 50 V PL', '345.0', '430.0', 'есть',
+        ], 37, 'Ariston', 'PRO1 R (РФ)', 'Ariston ЭВН']);
+
+        $this->assertSame(345.0, $row['price_byn']);
+        $this->assertSame(430.0, $row['retail_byn']);
+        $this->assertSame('in_stock', $row['stock_status']);
+    }
+
     public function test_missing_feed_updates_require_an_unfiltered_live_feed(): void
     {
         $this->setInput(['--mark-missing' => true]);

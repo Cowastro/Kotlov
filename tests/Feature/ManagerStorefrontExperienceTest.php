@@ -116,6 +116,7 @@ class ManagerStorefrontExperienceTest extends TestCase
             ->assertSee('SECRET-123')
             ->assertSee('Закупка: 4.00 BYN')
             ->assertSee('Позвонить: +375 29 111-22-33')
+            ->assertDontSee('Контакт: Отдел продаж')
             ->assertSee('tel:+375291112233', false);
 
         $this->view('partials.manager-product-context', ['product' => $product, 'compact' => true])

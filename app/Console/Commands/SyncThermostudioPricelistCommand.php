@@ -36,6 +36,7 @@ class SyncThermostudioPricelistCommand extends Command
 
     private const SUPPLIER_CODE = 'thermostudio';
     private const SUPPLIER_NAME = 'Термостудия';
+    private const SUPPLIER_CONTACT = '+375 (29) 308-06-20 · +375 (17) 374-94-72 · +375 (17) 374-88-66';
     private const SYNC_KEY = 'thermostudio_pricelist';
     private const SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1cQEYeQIDjAyHG-_r-ZqL0v0zsSj9hZ5m9yDpyTBBqm0/edit';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1cQEYeQIDjAyHG-_r-ZqL0v0zsSj9hZ5m9yDpyTBBqm0/edit?gid=1298422136#gid=1298422136';
@@ -130,6 +131,9 @@ class SyncThermostudioPricelistCommand extends Command
 
     /** @var array<string,int> */
     private array $indexBySupplierArticle = [];
+
+    /** @var array<int,bool> */
+    private array $linkedProductIds = [];
 
     /** @var array<string,int> */
     private array $indexByProductName = [];
@@ -665,7 +669,10 @@ class SyncThermostudioPricelistCommand extends Command
         $brandId = $this->brandByKey[$this->brandKey($row['brand'])] ?? null;
         $match = $this->match($row, $brandId);
         if ((bool) $this->option('only-linked') && ($match['confidence'] ?? null) !== 'supplier_article') {
-            $match = null;
+            $matchedProductId = (int) ($match['product_id'] ?? 0);
+            if ($matchedProductId <= 0 || ! isset($this->linkedProductIds[$matchedProductId])) {
+                $match = null;
+            }
         }
         $categoryId = $this->categoryId($row);
 
@@ -1331,10 +1338,12 @@ class SyncThermostudioPricelistCommand extends Command
                 ->whereNotNull('product_id')
                 ->get(['supplier_article_normalized', 'supplier_article', 'product_id'])
                 ->each(function ($row) {
+                    $productId = (int) $row->product_id;
+                    $this->linkedProductIds[$productId] = true;
                     foreach ([$row->supplier_article_normalized, $row->supplier_article] as $article) {
                         $key = $this->normArticle((string) $article);
                         if ($key !== '') {
-                            $this->indexBySupplierArticle[$key] = (int) $row->product_id;
+                            $this->indexBySupplierArticle[$key] = $productId;
                         }
                     }
                 });
@@ -1462,7 +1471,7 @@ class SyncThermostudioPricelistCommand extends Command
                 'name' => self::SUPPLIER_NAME,
                 'currency' => 'BYN',
                 'currency_rate' => 1,
-                'contact' => self::SOURCE_URL,
+                'contact' => self::SUPPLIER_CONTACT,
                 'is_active' => true,
                 'updated_at' => $now,
             ]);
@@ -1474,7 +1483,7 @@ class SyncThermostudioPricelistCommand extends Command
             'name' => self::SUPPLIER_NAME,
             'currency' => 'BYN',
             'currency_rate' => 1,
-            'contact' => self::SOURCE_URL,
+            'contact' => self::SUPPLIER_CONTACT,
             'notes' => 'Prices and stock are synced from Thermostudio Google Sheets. Product content is enriched separately from source sites.',
             'is_active' => true,
             'created_at' => $now,
@@ -1775,35 +1784,44 @@ class SyncThermostudioPricelistCommand extends Command
      */
     private function priceColumnIndexes(array $cells, int $stockIndex): array
     {
-        if ($stockIndex >= 7 && $this->money($cells[3] ?? '') !== null && $this->money($cells[4] ?? '') !== null) {
+        if ($stockIndex >= 7 && $this->isMoneyCell($cells[3] ?? '') && $this->isMoneyCell($cells[4] ?? '')) {
             return [3, 4];
         }
 
         if (
-            $this->money($cells[$stockIndex + 1] ?? '') !== null
-            && $this->money($cells[$stockIndex + 2] ?? '') !== null
+            $this->isMoneyCell($cells[$stockIndex + 1] ?? '')
+            && $this->isMoneyCell($cells[$stockIndex + 2] ?? '')
         ) {
             return [$stockIndex + 1, $stockIndex + 2];
         }
 
         if (
             $stockIndex >= 3
-            && $this->money($cells[$stockIndex - 3] ?? '') !== null
-            && $this->money($cells[$stockIndex - 2] ?? '') !== null
-            && $this->money($cells[$stockIndex - 1] ?? '') !== null
+            && $this->isMoneyCell($cells[$stockIndex - 3] ?? '')
+            && $this->isMoneyCell($cells[$stockIndex - 2] ?? '')
+            && $this->isMoneyCell($cells[$stockIndex - 1] ?? '')
         ) {
             return [$stockIndex - 3, $stockIndex - 2];
         }
 
         if (
             $stockIndex >= 2
-            && $this->money($cells[$stockIndex - 2] ?? '') !== null
-            && $this->money($cells[$stockIndex - 1] ?? '') !== null
+            && $this->isMoneyCell($cells[$stockIndex - 2] ?? '')
+            && $this->isMoneyCell($cells[$stockIndex - 1] ?? '')
         ) {
             return [$stockIndex - 2, $stockIndex - 1];
         }
 
         return [3, 4];
+    }
+
+    private function isMoneyCell(string $value): bool
+    {
+        $value = mb_strtolower($this->clean($value));
+        $value = preg_replace('/(?:byn|br|бел\.?\s*руб\.?|руб(?:\.|ля|лей)?|р\.?|eur|€|\$)/iu', '', $value) ?? '';
+        $value = str_replace(["\xc2\xa0", ' '], '', $value);
+
+        return preg_match('/^-?\d[\d.,]*$/u', $value) === 1;
     }
 
     /**

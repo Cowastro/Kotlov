@@ -46,7 +46,7 @@
                     @if ($offer['delivery_days'])
                         <span>Поставка: {{ $offer['delivery_days'] }} дн.</span>
                     @endif
-                    @if (! $compact && $offer['contact'])
+                    @if (! $compact && $offer['contact'] && empty($offer['phones']) && empty($offer['emails']) && !filter_var($offer['contact'], FILTER_VALIDATE_URL))
                         <span class="manager-product-context__wide">Контакт: {{ $offer['contact'] }}</span>
                     @endif
                     @foreach (($compact ? collect($offer['phones'])->take(1) : collect($offer['phones'])) as $phone)
