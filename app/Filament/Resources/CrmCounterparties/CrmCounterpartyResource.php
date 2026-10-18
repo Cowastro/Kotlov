@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CrmCounterparties;
 
+use App\Filament\Resources\B2bClients\B2bClientResource;
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\Pages\CreateCrmCounterparty;
 use App\Filament\Resources\CrmCounterparties\Pages\EditCrmCounterparty;
@@ -12,6 +13,7 @@ use App\Models\CommercialDocument;
 use App\Models\CrmCounterparty;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\B2bCounterpartyConverter;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -64,7 +66,48 @@ class CrmCounterpartyResource extends Resource
     {
         return parent::getEloquentQuery()->withoutGlobalScopes([
             SoftDeletingScope::class,
-        ]);
+        ])->with('b2bClient');
+    }
+
+    public static function createB2bClientAction(): Action
+    {
+        return Action::make('createB2bClient')
+            ->label('Создать B2B-клиента')
+            ->icon('heroicon-o-building-storefront')
+            ->color('success')
+            ->visible(fn (CrmCounterparty $record): bool => ! $record->trashed() && ! $record->b2bClient()->exists())
+            ->modalHeading('Создать B2B-доступ из контрагента')
+            ->modalDescription('Будут созданы и связаны аккаунт сайта и B2B-карточка. Повторное создание дублей запрещено.')
+            ->fillForm(fn (CrmCounterparty $record): array => [
+                'email' => app(B2bCounterpartyConverter::class)->suggestedEmail($record),
+            ])
+            ->schema([
+                TextInput::make('email')
+                    ->label('Email для входа партнёра')
+                    ->email()
+                    ->required(),
+            ])
+            ->action(function (CrmCounterparty $record, array $data): void {
+                $profile = app(B2bCounterpartyConverter::class)->convert($record, $data['email']);
+
+                Notification::make()
+                    ->success()
+                    ->title('B2B-клиент создан и связан')
+                    ->body($profile->contact_email.' · статус «Новая заявка»')
+                    ->send();
+            });
+    }
+
+    public static function openB2bClientAction(): Action
+    {
+        return Action::make('openB2bClient')
+            ->label('Открыть B2B-клиента')
+            ->icon('heroicon-o-arrow-top-right-on-square')
+            ->color('info')
+            ->visible(fn (CrmCounterparty $record): bool => $record->b2bClient()->exists())
+            ->url(fn (CrmCounterparty $record): string => B2bClientResource::getUrl('edit', [
+                'record' => $record->b2bClient()->firstOrFail(),
+            ]));
     }
 
     public static function form(Schema $schema): Schema
@@ -253,6 +296,8 @@ class CrmCounterpartyResource extends Resource
             TrashedFilter::make()->label('Корзина'),
         ])->recordActions([
             ActionGroup::make([
+                static::createB2bClientAction(),
+                static::openB2bClientAction(),
                 ViewAction::make()
                     ->label('Открыть карточку')
                     ->icon('heroicon-o-eye'),

@@ -14,6 +14,8 @@ class EditCrmCounterparty extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            CrmCounterpartyResource::createB2bClientAction(),
+            CrmCounterpartyResource::openB2bClientAction(),
             ViewAction::make(),
             Action::make('deleteSpam')
                 ->label('Удалить как спам')

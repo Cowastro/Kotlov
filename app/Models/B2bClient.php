@@ -23,7 +23,7 @@ class B2bClient extends Model
     ];
 
     protected $fillable = [
-        'user_id', 'status', 'partner_type', 'company_name', 'unp',
+        'user_id', 'counterparty_id', 'status', 'partner_type', 'company_name', 'unp',
         'contact_name', 'contact_email', 'contact_phone',
         'responsible_user_id', 'reviewed_by', 'reviewed_at',
         'payment_terms', 'delivery_terms',
@@ -59,6 +59,11 @@ class B2bClient extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function counterparty(): BelongsTo
+    {
+        return $this->belongsTo(CrmCounterparty::class, 'counterparty_id');
     }
 
     public function responsibleUser(): BelongsTo

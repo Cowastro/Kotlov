@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CrmCounterparty extends Model
@@ -70,6 +71,11 @@ class CrmCounterparty extends Model
     public function contacts(): HasMany
     {
         return $this->hasMany(CrmContact::class, 'counterparty_id');
+    }
+
+    public function b2bClient(): HasOne
+    {
+        return $this->hasOne(B2bClient::class, 'counterparty_id');
     }
 
     public function contactPoints(): HasMany

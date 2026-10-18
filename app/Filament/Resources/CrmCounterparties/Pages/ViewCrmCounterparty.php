@@ -27,6 +27,7 @@ class ViewCrmCounterparty extends ViewRecord
 
         return $record->load([
             'responsibleUser',
+            'b2bClient.user',
             'contactPoints',
             'contacts.contactPoints',
             'commercialDocuments.manager',
@@ -45,6 +46,8 @@ class ViewCrmCounterparty extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            CrmCounterpartyResource::createB2bClientAction(),
+            CrmCounterpartyResource::openB2bClientAction(),
             Action::make('create_commercial_document')
                 ->label('Создать КП')
                 ->icon('heroicon-o-document-plus')

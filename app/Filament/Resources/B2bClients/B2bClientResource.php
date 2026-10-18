@@ -64,7 +64,7 @@ class B2bClientResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['user', 'responsibleUser', 'reviewedBy'])
+            ->with(['user', 'counterparty', 'responsibleUser', 'reviewedBy'])
             ->withB2bOrderMetrics();
     }
 
@@ -73,7 +73,10 @@ class B2bClientResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('company_name')->label('Компания')->searchable()->sortable()->weight('bold')
-                    ->description(fn (B2bClient $record): string => $record->unp ? 'УНП '.$record->unp : 'УНП не указан'),
+                    ->description(fn (B2bClient $record): string => implode(' · ', array_filter([
+                        $record->unp ? 'УНП '.$record->unp : 'УНП не указан',
+                        $record->counterparty_id ? 'связано с CRM' : null,
+                    ]))),
                 TextColumn::make('contact_name')->label('Контакт')->searchable()
                     ->description(fn (B2bClient $record): string => implode(' · ', array_filter([$record->contact_email, $record->contact_phone]))),
                 TextColumn::make('partner_type')->label('Тип')->badge()
