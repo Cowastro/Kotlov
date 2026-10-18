@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Schema;
 
 class OrderItem extends Model
 {
+    private bool $publicProductResolved = false;
+
+    private ?Product $publicProductCache = null;
+
     public const FULFILLMENT_ROUTES = [
         'own_stock' => 'Наш склад',
         'supplier_purchase' => 'Закупить у поставщика',
@@ -143,5 +147,33 @@ class OrderItem extends Model
         return filled($current)
             ? $current
             : ($this->fulfillment_supplier_contact ?: $this->supply_supplier_contact);
+    }
+
+    public function publicProductUrl(bool $adminPreview = true): ?string
+    {
+        if (! $this->publicProductResolved) {
+            $this->publicProductCache = $this->product;
+
+            if (! $this->publicProductCache && filled($this->product_sku)) {
+                $this->publicProductCache = Product::query()
+                    ->with('category')
+                    ->where('sku', $this->product_sku)
+                    ->first();
+            }
+
+            $this->publicProductResolved = true;
+        }
+
+        $product = $this->publicProductCache;
+
+        if (! $product?->category || blank($product->slug)) {
+            return null;
+        }
+
+        $url = url('/'.$product->category->slug.'/'.$product->slug);
+
+        return $adminPreview && (! $product->is_active || $product->is_archived)
+            ? $url.'?admin-preview=1'
+            : $url;
     }
 }

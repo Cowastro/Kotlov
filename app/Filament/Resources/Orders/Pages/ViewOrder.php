@@ -7,11 +7,11 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
+use App\Services\Integrations\OneCOrderQueue;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
-use App\Services\Integrations\OneCOrderQueue;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
@@ -63,6 +63,16 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('viewProductOnSite')
+                ->label('Посмотреть на сайте')
+                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->color('gray')
+                ->url(fn (): ?string => $this->record->items
+                    ->first(fn (OrderItem $item): bool => filled($item->publicProductUrl()))
+                    ?->publicProductUrl())
+                ->openUrlInNewTab()
+                ->visible(fn (): bool => $this->record->items
+                    ->contains(fn (OrderItem $item): bool => filled($item->publicProductUrl()))),
             Action::make('acceptOrder')
                 ->label('Принять заказ')
                 ->icon('heroicon-o-hand-raised')

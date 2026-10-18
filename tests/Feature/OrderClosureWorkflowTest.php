@@ -4,7 +4,10 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\Orders\Pages\EditOrder;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
+use App\Models\Category;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -60,6 +63,46 @@ class OrderClosureWorkflowTest extends TestCase
 
         $this->assertFalse($paid->canBeClosedAsIrrelevant());
         $this->assertFalse($shipped->canBeClosedAsIrrelevant());
+    }
+
+    public function test_order_with_catalog_product_has_visible_public_site_action(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $category = Category::query()->create([
+            'parent_id' => 0,
+            'name' => 'Двери',
+            'slug' => 'dveri-test',
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Тестовая дверь',
+            'slug' => 'testovaya-dver',
+            'sku' => 'DOOR-TEST',
+            'price' => 284,
+            'is_active' => true,
+        ]);
+        $order = $this->order('processing');
+
+        OrderItem::withoutEvents(fn () => OrderItem::query()->create([
+            'order_id' => $order->id,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'product_sku' => $product->sku,
+            'price' => 284,
+            'quantity' => 1,
+            'total' => 284,
+        ]));
+
+        Livewire::actingAs($manager)
+            ->test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionVisible('viewProductOnSite')
+            ->assertSee('Посмотреть на сайте')
+            ->assertSee('Посмотреть');
+
+        $item = $order->items()->firstOrFail();
+
+        $this->assertSame(url('/dveri-test/testovaya-dver'), $item->publicProductUrl());
     }
 
     private function order(string $status, string $paymentStatus = 'pending'): Order

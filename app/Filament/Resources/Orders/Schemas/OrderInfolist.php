@@ -534,10 +534,18 @@ class OrderInfolist
                             ->schema([
                                 TextEntry::make('product_name')
                                     ->label('Товар')
-                                    ->columnSpan(3)
-                                    ->url(fn ($state, $record) => $record->product?->category
-                                        ? url('/'.$record->product->category->slug.'/'.$record->product->slug)
-                                        : null)
+                                    ->columnSpan(2)
+                                    ->url(fn ($record): ?string => $record->publicProductUrl())
+                                    ->openUrlInNewTab(),
+
+                                TextEntry::make('public_product_page')
+                                    ->label('На сайте')
+                                    ->state(fn ($record): ?string => $record->publicProductUrl() ? 'Посмотреть' : null)
+                                    ->placeholder('Нет страницы')
+                                    ->badge()
+                                    ->color(fn ($record): string => $record->publicProductUrl() ? 'info' : 'gray')
+                                    ->icon('heroicon-o-arrow-top-right-on-square')
+                                    ->url(fn ($record): ?string => $record->publicProductUrl())
                                     ->openUrlInNewTab(),
 
                                 TextEntry::make('product_sku')
