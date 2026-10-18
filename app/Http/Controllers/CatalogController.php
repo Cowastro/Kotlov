@@ -324,6 +324,14 @@ class CatalogController extends Controller
             }
         }
 
+        $chimneyDiameterGroups = collect();
+        if ($category->slug === 'dymohody' || $category->parent?->slug === 'dymohody') {
+            $chimneyDiameterGroups = app(\App\Services\ChimneyDiameterQuickFilter::class)->groups($query);
+            if (request()->filled('chimney_diameter')) {
+                $query->whereIn('products.id', $chimneyDiameterGroups->get((string) request('chimney_diameter'), collect()));
+            }
+        }
+
         // Сортировка
         $isChimneyCatalog = $category->slug === 'dymohody'
             || $category->parent?->slug === 'dymohody';
@@ -805,6 +813,7 @@ class CatalogController extends Controller
             'subcategories',
             'brands',
             'filterAttributes',
+            'chimneyDiameterGroups',
             'products',
             'priceMin',
             'priceMax',

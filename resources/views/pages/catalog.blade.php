@@ -88,6 +88,10 @@
         @include('partials.stove-fireplace-quick-filters')
     @endif
 
+    @if (($chimneyDiameterGroups ?? collect())->isNotEmpty())
+        @include('partials.chimney-diameter-quick-filters')
+    @endif
+
     @if ($catalogSpotlight)
         <section class="catalog-brand-note" aria-labelledby="catalog-brand-title">
             <div class="container">
