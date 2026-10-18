@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Brand;
+use App\Models\Category;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
 use App\Models\Product;
@@ -18,6 +19,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class SyncTeplouchetCommand extends Command
@@ -27,6 +29,7 @@ class SyncTeplouchetCommand extends Command
         {--apply : Save supplier offers, links, purchase prices and availability}
         {--dry-run : Preview only}
         {--match-existing : Link only unique exact DAB identities}
+        {--create-missing-products : Create public DAB cards only for unique, fully priced, genuinely unmatched supplier rows}
         {--sync-retail-prices : Set verified RRP on exactly matched products}
         {--export-snapshot= : Normalize the XLS into a deployable JSON snapshot}
         {--report= : Write the complete classification CSV}';
@@ -64,13 +67,14 @@ class SyncTeplouchetCommand extends Command
                 return self::SUCCESS;
             }
 
-            $stats = DB::transaction(function () use ($classified, $references, $payload, &$supplier): array {
+            $stats = DB::transaction(function () use ($classified, $references, $payload, $parser, &$supplier): array {
                 [$supplier, $source, $sync] = $this->ensureSupplier($payload['supplier']);
-                $stats = ['offers' => 0, 'linked' => 0, 'unlinked' => 0, 'duplicate_rows_skipped' => 0, 'retail_updated' => 0, 'retail_review' => 0, 'analog_specs_updated' => 0, 'analog_product_links' => 0, 'analog_product_ambiguous' => 0, 'analog_product_unmatched' => 0, 'reference_rows' => count($references), 'reference_matched' => 0];
+                $stats = ['offers' => 0, 'linked' => 0, 'unlinked' => 0, 'created_products' => 0, 'creation_skipped' => 0, 'duplicate_rows_skipped' => 0, 'retail_updated' => 0, 'retail_review' => 0, 'analog_specs_updated' => 0, 'analog_product_links' => 0, 'analog_product_ambiguous' => 0, 'analog_product_unmatched' => 0, 'reference_rows' => count($references), 'reference_matched' => 0];
                 $touched = [];
                 $offerArticles = collect($classified)->pluck('article_key')->flip();
                 $stockObservedAt = CarbonImmutable::parse($payload['source_date'], 'Europe/Minsk')->endOfDay();
                 $analogCatalog = $this->analogCatalog();
+                $dabBrand = Brand::query()->whereRaw('LOWER(name) = ?', ['dab'])->first();
 
                 foreach ($classified as $row) {
                     if ($row['duplicate_article']) {
@@ -79,6 +83,15 @@ class SyncTeplouchetCommand extends Command
                         continue;
                     }
                     $product = $row['product_id'] ? Product::find($row['product_id']) : null;
+                    if (! $product && $this->option('create-missing-products')) {
+                        if ($dabBrand && $this->canCreateMissingProduct($row, $parser)) {
+                            $product = $this->createMissingProduct($row, $dabBrand);
+                            $row['match_reason'] = 'created_from_unique_supplier_article';
+                            $stats['created_products']++;
+                        } else {
+                            $stats['creation_skipped']++;
+                        }
+                    }
                     $existing = SupplierProduct::where('supplier_id', $supplier->id)
                         ->where('supplier_article_normalized', $row['article_key'])
                         ->first();
@@ -302,6 +315,154 @@ class SyncTeplouchetCommand extends Command
         return array_values(array_unique($keys));
     }
 
+    private function canCreateMissingProduct(array $row, TeplouchetPriceList $parser): bool
+    {
+        if (($row['match_reason'] ?? null) !== 'unmatched'
+            || ($row['duplicate_article'] ?? true)
+            || trim((string) ($row['article'] ?? '')) === ''
+            || trim((string) ($row['model'] ?? '')) === ''
+            || (float) ($row['wholesale'] ?? 0) <= 0
+            || (float) ($row['retail'] ?? 0) <= (float) ($row['wholesale'] ?? 0)) {
+            return false;
+        }
+
+        $articleKey = $parser->article((string) $row['article']);
+        if ($articleKey === '') {
+            return false;
+        }
+
+        // Archived and inactive cards are deliberately included in this guard:
+        // the import must never create a second public card merely because an
+        // older exact article is currently hidden.
+        if (Product::query()->where('sku', (string) $row['article'])->exists()) {
+            return false;
+        }
+
+        return ! SupplierProduct::query()
+            ->whereNotNull('product_id')
+            ->where('supplier_article_normalized', $articleKey)
+            ->exists();
+    }
+
+    private function createMissingProduct(array $row, Brand $brand): Product
+    {
+        $model = trim((string) $row['model']);
+        $prefix = $this->productTypePrefix($row);
+        if ($prefix === 'Аксессуар') {
+            $model = trim((string) preg_replace('/^аксессуар\s+(?:к|для)\s+насос[ау]\s*,?\s*/ui', '', $model));
+        }
+        $name = trim($prefix.' DAB '.$model);
+        $article = trim((string) $row['article']);
+        $slugBase = Str::slug($name) ?: 'dab-'.$article;
+        $slug = $slugBase.'-'.$article;
+        $suffix = 2;
+        while (Product::query()->where('slug', $slug)->exists()) {
+            $slug = $slugBase.'-'.$article.'-'.$suffix++;
+        }
+
+        $technicalLabels = [
+            'model' => ['Модель', null],
+            'voltage' => ['Количество фаз', null],
+            'dn' => ['Присоединительный размер', null],
+            'length_mm' => ['Монтажная длина', 'мм'],
+            'head_m' => ['Максимальный напор', 'м'],
+            'flow_m3_h' => ['Максимальная подача', 'м³/ч'],
+        ];
+        $specs = [
+            ['key' => 'Артикул производителя', 'value' => $article, 'unit' => null],
+            ['key' => 'Производитель', 'value' => 'DAB Pumps, Италия', 'unit' => null],
+        ];
+        foreach ($technicalLabels as $key => [$label, $unit]) {
+            $value = trim((string) ($row['technical'][$key] ?? ''));
+            if ($value !== '') {
+                $specs[] = ['key' => $label, 'value' => $value, 'unit' => $unit];
+            }
+        }
+
+        $sourceName = trim((string) ($row['name'] ?? $name));
+        $content = '<h2>'.e($name).'</h2>'
+            .'<p>'.e($sourceName).'</p>'
+            .'<p>Цена и срок поставки получены из прайса ООО «ТЕПЛОУЧЁТ». Перед отгрузкой менеджер проверит актуальное наличие и совместимость оборудования.</p>';
+
+        return Product::query()->create([
+            'category_id' => $this->categoryIdForRow($row),
+            'brand_id' => $brand->id,
+            'supplier_id' => null,
+            'name' => $name,
+            'slug' => $slug,
+            'h1' => $name,
+            // The manufacturer article is the strongest DAB identity and is
+            // intentionally kept as the catalogue SKU for future exact syncs.
+            'sku' => $article,
+            'price' => round((float) $row['retail'], 2),
+            'currency' => 'BYN',
+            'short_description' => $sourceName,
+            'content' => $content,
+            'content_source_url' => $row['source_url'] ?: 'https://teplouchet.by/',
+            'images' => [],
+            'specs' => $specs,
+            'unit' => $row['unit'] ?: 'шт',
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+            'is_featured' => false,
+            'is_new' => true,
+            'is_sale' => false,
+            'meta_title' => $name.' купить в %city% — цена | KOTLOV.BY',
+            'meta_description' => $name.': цена, характеристики, срок поставки и подбор аналога. Доставка по Беларуси.',
+        ]);
+    }
+
+    private function productTypePrefix(array $row): string
+    {
+        $haystack = mb_strtolower(implode(' ', [
+            (string) ($row['name'] ?? ''),
+            (string) ($row['source_url'] ?? ''),
+        ]));
+
+        return match (true) {
+            str_contains($haystack, 'аксессуар') => 'Аксессуар',
+            str_contains($haystack, 'насосная станц'), str_contains($haystack, 'nasosnaya-stanc') => 'Насосная станция',
+            str_contains($haystack, 'дренаж'), str_contains($haystack, 'drenazh') => 'Дренажный насос',
+            str_contains($haystack, 'скваж'), str_contains($haystack, 'skvazh') => 'Скважинный насос',
+            str_contains($haystack, 'колодез'), str_contains($haystack, 'kolodez') => 'Колодезный насос',
+            str_contains($haystack, 'самовсас'), str_contains($haystack, 'samovsasyv') => 'Самовсасывающий насос',
+            str_contains($haystack, 'циркуляц'), str_contains($haystack, 'cirkulyacion') => 'Циркуляционный насос',
+            str_contains($haystack, 'центробеж'), str_contains($haystack, 'centrobezh') => 'Центробежный насос',
+            default => 'Насос',
+        };
+    }
+
+    private function categoryIdForRow(array $row): int
+    {
+        $prefix = $this->productTypePrefix($row);
+        $slugs = match ($prefix) {
+            'Насосная станция' => ['nasosnyie-stantsii', 'nasosnye-stancii'],
+            'Дренажный насос' => ['drenajnyie', 'drenazhnye-nasosy'],
+            'Скважинный насос' => ['skvajinnye-nasosy', 'skvazhinnye-nasosy'],
+            'Колодезный насос' => ['nasosy-dlya-kolodtsa', 'kolodeznye-nasosy'],
+            'Самовсасывающий насос', 'Центробежный насос' => ['poverhnostnyie', 'poverhnostnye-nasosy'],
+            'Циркуляционный насос' => ['tsirkulyatsionnyie', 'cirkulyacionnye-nasosy'],
+            default => ['vodosnabzhenie', 'nasosy', 'nasosyi'],
+        };
+
+        $category = null;
+        foreach ($slugs as $slug) {
+            $category = Category::query()->where('slug', $slug)->first();
+            if ($category) {
+                break;
+            }
+        }
+        $category ??= Category::query()->whereIn('name', ['Насосы', 'Водоснабжение'])->orderByDesc('parent_id')->first();
+
+        if (! $category) {
+            throw new RuntimeException('Не найдена категория каталога для новой карточки DAB.');
+        }
+
+        return (int) $category->id;
+    }
+
     private function ensureSupplier(array $details): array
     {
         $company = CrmCounterparty::query()
@@ -473,6 +634,10 @@ class SyncTeplouchetCommand extends Command
             'reference_rows' => count($references),
             'reference_matched' => collect($references)->whereNotNull('product_id')->count(),
             'reference_unmatched' => collect($references)->whereNull('product_id')->count(),
+            'creation_candidates' => collect($rows)->filter(fn ($row) => ! $row['duplicate_article']
+                && $row['match_reason'] === 'unmatched'
+                && (float) $row['retail'] > (float) $row['wholesale']
+            )->count(),
         ];
         foreach ($metrics as $key => $value) {
             $this->line("metric.teplouchet.{$key}={$value}");

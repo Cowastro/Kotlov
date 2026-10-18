@@ -143,5 +143,35 @@ class SyncTeplouchetCommandTest extends TestCase
         $this->get('/'.$category->slug.'/'.$product->slug)
             ->assertOk()
             ->assertDontSee('Совместимые аналоги');
+
+        $this->artisan('supplier:sync-teplouchet', [
+            '--apply' => true,
+            '--match-existing' => true,
+            '--create-missing-products' => true,
+            '--sync-retail-prices' => true,
+        ])->assertSuccessful();
+
+        $created = Product::query()->where('sku', '60110426')->firstOrFail();
+        $this->assertSame($brand->id, $created->brand_id);
+        $this->assertNotNull($created->category_id);
+        $this->assertSame('Аксессуар DAB 1/2" F UNION KIT. (гайки ду 15мм DAB, Италия)', $created->name);
+        $this->assertSame('65.81', $created->price);
+        $this->assertSame('60110426', collect($created->specs)->firstWhere('key', 'Артикул производителя')['value']);
+        $this->assertDatabaseHas('supplier_products', [
+            'supplier_id' => $supplier->id,
+            'supplier_article_normalized' => '60110426',
+            'product_id' => $created->id,
+            'match_status' => 'matched',
+            'match_confidence' => 'created_from_unique_supplier_article',
+        ]);
+
+        $this->artisan('supplier:sync-teplouchet', [
+            '--apply' => true,
+            '--match-existing' => true,
+            '--create-missing-products' => true,
+        ])->assertSuccessful();
+        $duplicates = Product::query()->where('brand_id', $brand->id)->get()->groupBy('sku')->filter(fn ($items) => $items->count() > 1)->map->count()->all();
+        $this->assertSame([], $duplicates, json_encode($duplicates, JSON_UNESCAPED_UNICODE));
+        $this->assertSame(1, Product::query()->where('sku', '60110426')->count(), 'Повторная синхронизация не должна дублировать созданную карточку.');
     }
 }
