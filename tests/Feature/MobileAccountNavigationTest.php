@@ -50,4 +50,39 @@ class MobileAccountNavigationTest extends TestCase
         $this->assertStringNotContainsString('id="register"', $html);
         $this->assertStringNotContainsString('id="modalForgot"', $html);
     }
+
+    public function test_account_toolbar_opens_mobile_account_menu_instead_of_reloading_page(): void
+    {
+        $response = $this->actingAs(User::factory()->create())->get(route('account'));
+
+        $response->assertOk();
+        $response->assertSee('href="#mbSidebar"', false);
+        $response->assertSee('data-bs-toggle="offcanvas"', false);
+        $response->assertSee('aria-label="Открыть меню личного кабинета"', false);
+    }
+
+    public function test_active_manager_sees_admin_panel_link_in_account_navigation(): void
+    {
+        $manager = User::factory()->create([
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($manager)->get(route('account'));
+
+        $response->assertOk();
+        $response->assertSeeText('Админ-панель');
+        $response->assertSee('href="'.url('/admin').'"', false);
+    }
+
+    public function test_regular_customer_does_not_see_admin_panel_link(): void
+    {
+        $response = $this->actingAs(User::factory()->create([
+            'role' => 'client',
+            'is_active' => true,
+        ]))->get(route('account'));
+
+        $response->assertOk();
+        $response->assertDontSeeText('Админ-панель');
+    }
 }

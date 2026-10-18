@@ -148,7 +148,13 @@
         </a>
     </div>
     <div class="toolbar-item{{ request()->is('account') || request()->is('account/*') ? ' is-active' : '' }}">
-        <a href="/account">
+        <a href="{{ auth()->check() && request()->routeIs('account') ? '#mbSidebar' : route('account') }}"
+            @if (auth()->check() && request()->routeIs('account'))
+                data-bs-toggle="offcanvas"
+                role="button"
+                aria-controls="mbSidebar"
+                aria-label="Открыть меню личного кабинета"
+            @endif>
             <span class="toolbar-icon"><i class="icon icon-User"></i></span>
             <span class="toolbar-label">Кабинет</span>
         </a>
@@ -212,11 +218,15 @@
                             </svg>
                         </a>
                     </li>
+                    @foreach (config('social.instagram', []) as $instagram)
                     <li>
-                        <a href="https://www.instagram.com/kotlov.by/" target="_blank">
+                        <a href="{{ $instagram['url'] }}" target="_blank" rel="noopener noreferrer"
+                            title="Instagram — {{ $instagram['name'] }}"
+                            aria-label="Instagram — {{ $instagram['name'] }}">
                             <i class="icon icon-InstagramLogo"></i>
                         </a>
                     </li>
+                    @endforeach
                 </ul>
                 <div class="wrap-code btn-coppy-text">
                     <p class="coppyText cl-text-2" id="coppyText">{{ url()->current() }}</p>

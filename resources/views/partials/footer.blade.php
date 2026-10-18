@@ -166,13 +166,19 @@
                     ©2011–{{ date('Y') }} KOTLOV.BY — торговая марка, все права защищены
                 </p>
                 <ul class="tf-list">
+                    @foreach (config('social.instagram', []) as $instagram)
                     <li>
-                        <a href="https://www.instagram.com/kotlov.by/" target="_blank">
+                        <a href="{{ $instagram['url'] }}" target="_blank" rel="noopener noreferrer"
+                            title="Instagram — {{ $instagram['name'] }}"
+                            aria-label="Instagram — {{ $instagram['name'] }}">
                             <i class="icon icon-InstagramLogo fs-24 cl-text-3"></i>
                         </a>
                     </li>
+                    @endforeach
                     <li>
-                        <a href="https://www.facebook.com/kotlov.by/" target="_blank">
+                        <a href="{{ config('social.facebook.url') }}" target="_blank" rel="noopener noreferrer"
+                            title="Facebook — {{ config('social.facebook.name') }}"
+                            aria-label="Facebook — {{ config('social.facebook.name') }}">
                             <i class="icon icon-FacebookLogo fs-24 cl-text-3"></i>
                         </a>
                     </li>

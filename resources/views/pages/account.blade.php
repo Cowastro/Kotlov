@@ -70,6 +70,12 @@
                         <div class="br-line mb-8"></div>
 
                         <div class="my-account-nav">
+                            @if ($user->is_active && $user->isManager())
+                            <a href="{{ url('/admin') }}" class="link-account account-admin-link">
+                                <i class="icon icon-SquaresFour"></i>
+                                <span class="text h6 fw-medium">Админ-панель</span>
+                            </a>
+                            @endif
                             @if ($installerProfile)
                             <a href="{{ route('account.installer-profile') }}" class="link-account">
                                 <i class="icon icon-Wrench"></i>
@@ -466,6 +472,12 @@
         </div>
         <div class="canvas-body">
             <div class="my-account-nav">
+                @if ($user->is_active && $user->isManager())
+                <a href="{{ url('/admin') }}" class="link-account account-admin-link">
+                    <i class="icon icon-SquaresFour"></i>
+                    <span class="text h6 fw-medium">Админ-панель</span>
+                </a>
+                @endif
                 @if ($installerProfile)
                 <a href="{{ route('account.installer-profile') }}" class="link-account">
                     <i class="icon icon-Wrench"></i>
