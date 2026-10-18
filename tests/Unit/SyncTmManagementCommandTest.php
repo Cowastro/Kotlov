@@ -31,6 +31,40 @@ class SyncTmManagementCommandTest extends TestCase
         ], $this->invoke('availabilityFromText', ['']));
     }
 
+    public function test_price_refresh_preserves_rich_content_and_real_specs(): void
+    {
+        $product = (object) [
+            'content' => '<p>Подробное описание производителя</p>',
+            'short_description' => 'Полезное краткое описание',
+            'specs' => json_encode([['key' => 'Мощность', 'value' => '400', 'unit' => 'Вт']]),
+        ];
+        $item = [
+            'name' => 'Насос', 'brand' => 'SFA', 'category_name' => 'Насосы',
+            'article' => 'SFA-1', 'section' => 'Насосы', 'price_opt' => 100, 'price_retail' => 120,
+        ];
+
+        $this->assertSame([], $this->invoke('contentPayload', [$product, $item, null]));
+    }
+
+    public function test_price_refresh_fills_missing_content_and_meta_only_specs(): void
+    {
+        $product = (object) [
+            'content' => null,
+            'short_description' => null,
+            'specs' => json_encode(['Бренд' => 'SFA', 'Цена РРЦ, BYN' => 120]),
+        ];
+        $item = [
+            'name' => 'Насос', 'brand' => 'SFA', 'category_name' => 'Насосы',
+            'article' => 'SFA-1', 'section' => 'Насосы', 'price_opt' => 100, 'price_retail' => 120,
+        ];
+
+        $payload = $this->invoke('contentPayload', [$product, $item, null]);
+
+        $this->assertArrayHasKey('content', $payload);
+        $this->assertArrayHasKey('short_description', $payload);
+        $this->assertArrayHasKey('specs', $payload);
+    }
+
     private function invoke(string $method, array $arguments): mixed
     {
         $command = new SyncTmManagementCommand();

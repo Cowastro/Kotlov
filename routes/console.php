@@ -209,6 +209,24 @@ Schedule::command('supplier:sync-tm-management --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/tm-management-sync.log'));
 
+// Product pages from the supplier catalogue contain richer photos and
+// specifications than the compact price export. Refresh one brand per night
+// so the catalogue grows without one long network-heavy job.
+foreach ([
+    1 => 'De Dietrich',
+    2 => 'Shinhoo',
+    3 => 'SFA',
+    4 => 'Джилекс',
+    5 => 'Watrix',
+] as $weekday => $brand) {
+    Schedule::command('supplier:enrich-tm-tmarket', ['--apply' => true, '--brand' => $brand])
+        ->weeklyOn($weekday, '03:20')
+        ->timezone($supplierSyncTimezone)
+        ->withoutOverlapping(240)
+        ->runInBackground()
+        ->appendOutputTo(storage_path('logs/tm-management-enrichment.log'));
+}
+
 // S-TANK: daily refresh after the NBRB rate and the main supplier chain.
 // Price-list values are maintained in EUR; the command recalculates the BYN retail price.
 Schedule::command('supplier:sync-stank')

@@ -472,9 +472,6 @@ class SyncTmManagementCommand extends Command
             'h1' => $item['name'],
             'price_old' => null,
             'currency' => 'BYN',
-            'content' => $seo['content'] ?? $this->content($item),
-            'short_description' => $seo['short_description'] ?? $this->shortDescription($item),
-            'specs' => json_encode($this->specs($item), JSON_UNESCAPED_UNICODE),
             'unit' => 'шт',
             'is_active' => true,
             'is_archived' => false,
@@ -489,6 +486,7 @@ class SyncTmManagementCommand extends Command
             'meta_description' => $item['name'] . ' — цена, характеристики, консультация и поставка в %city%.',
             'updated_at' => $now,
         ];
+        $payload = array_merge($payload, $this->contentPayload($product, $item, $seo));
 
         $retailPrice = $this->safeRetailPrice($item['price_retail'] ?? null, $item['price_opt'] ?? null);
         if ($retailPrice !== null) {
@@ -516,6 +514,66 @@ class SyncTmManagementCommand extends Command
         $payload['created_at'] = $now;
 
         return (int) DB::table('products')->insertGetId($payload);
+    }
+
+    /**
+     * Price refreshes must not erase photos/specifications/content previously
+     * collected from a manufacturer or product page. Fill only genuinely empty
+     * fields; new products still receive the safe price-list fallback.
+     *
+     * @return array<string,mixed>
+     */
+    private function contentPayload(?object $product, array $item, ?array $seo = null): array
+    {
+        $payload = [];
+
+        if (! $product || blank($product->content ?? null)) {
+            $payload['content'] = $seo['content'] ?? $this->content($item);
+        }
+
+        if (! $product || blank($product->short_description ?? null)) {
+            $payload['short_description'] = $seo['short_description'] ?? $this->shortDescription($item);
+        }
+
+        $existingSpecs = $this->decodeSpecs($product->specs ?? null);
+        if (! $product || ! $this->hasRealSpecs($existingSpecs)) {
+            $payload['specs'] = json_encode($this->specs($item), JSON_UNESCAPED_UNICODE);
+        }
+
+        return $payload;
+    }
+
+    /** @return array<int,mixed> */
+    private function decodeSpecs(mixed $value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+
+        $decoded = json_decode((string) $value, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function hasRealSpecs(array $specs): bool
+    {
+        $metaKeys = [
+            'бренд', 'артикул поставщика', 'раздел прайса', 'поставщик',
+            'цена опт, byn', 'цена ррц, byn',
+        ];
+
+        foreach ($specs as $key => $spec) {
+            $name = is_array($spec)
+                ? (string) ($spec['key'] ?? $spec['name'] ?? '')
+                : (is_string($key) ? $key : '');
+            $name = mb_strtolower(trim($name));
+
+            if ($name !== '' && ! in_array($name, $metaKeys, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function upsertSupplierProduct(array $item, int $supplierId, int $syncId, int $productId): void

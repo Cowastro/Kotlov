@@ -183,6 +183,9 @@ class EnrichTmManagementTmarketCommand extends Command
             array_keys($stats),
             array_values($stats)
         ));
+        foreach ($stats as $key => $value) {
+            $this->line('metric.tm_enrichment.'.$key.'='.$value);
+        }
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
