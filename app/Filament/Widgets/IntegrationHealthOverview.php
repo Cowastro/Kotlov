@@ -15,9 +15,9 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class IntegrationHealthOverview extends StatsOverviewWidget
 {
-    protected ?string $heading = 'Сегодня требует внимания';
+    protected ?string $heading = 'Контроль обмена с 1С';
 
-    protected ?string $description = 'Живое состояние 1С, заказов и товарных привязок. Данные обновляются автоматически.';
+    protected ?string $description = 'Состояние подключений, заказов и товарных привязок. Данные обновляются автоматически.';
 
     protected ?string $pollingInterval = '30s';
 

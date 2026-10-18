@@ -17,6 +17,8 @@ class IntegrationExchangeRunResource extends Resource
 {
     protected static ?string $model = IntegrationExchangeRun::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPathRoundedSquare;
 
     protected static ?string $navigationLabel = 'Журнал обмена';

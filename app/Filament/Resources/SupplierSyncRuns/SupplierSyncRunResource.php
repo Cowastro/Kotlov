@@ -23,11 +23,11 @@ class SupplierSyncRunResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
-    protected static ?string $navigationLabel = 'Журнал синхронизаций';
+    protected static ?string $navigationLabel = 'Центр синхронизаций';
 
     protected static ?string $modelLabel = 'запуск синхронизации';
 
-    protected static ?string $pluralModelLabel = 'Журнал синхронизаций';
+    protected static ?string $pluralModelLabel = 'Центр синхронизаций';
 
     protected static ?int $navigationSort = 5;
 
@@ -49,6 +49,8 @@ class SupplierSyncRunResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->heading('Синхронизации поставщиков')
+            ->description('Запуски прайсов, исходные файлы и изменения цен и остатков.')
             ->columns([
                 TextColumn::make('started_at')
                     ->label('Дата и время')
@@ -139,6 +141,7 @@ class SupplierSyncRunResource extends Resource
                         ->all()),
             ])
             ->defaultSort('started_at', 'desc')
+            ->poll('30s')
             ->recordActions([
                 Action::make('downloadSource')
                     ->label(fn (SupplierSyncRun $record): string => 'Скачать '.strtoupper((string) $record->source_file_type))

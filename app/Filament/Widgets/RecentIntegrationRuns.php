@@ -17,8 +17,8 @@ class RecentIntegrationRuns extends TableWidget
     public function table(Table $table): Table
     {
         return $table
-            ->heading('Последние сеансы обмена')
-            ->description('Каталог, цены, остатки и заказы по всем подключениям.')
+            ->heading('Обмен с 1С: последние сеансы')
+            ->description('Каталог, цены, остатки, заказы и статусы по всем подключениям.')
             ->query(fn (): Builder => IntegrationExchangeRun::query()->with('source')->latest('started_at'))
             ->columns([
                 TextColumn::make('started_at')->label('Начало')
