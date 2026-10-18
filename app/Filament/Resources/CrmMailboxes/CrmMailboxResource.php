@@ -9,6 +9,7 @@ use App\Models\CrmMailbox;
 use App\Models\User;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\ImapMailboxSynchronizer;
+use App\Services\ServiceMailboxPreviewSender;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -133,6 +134,28 @@ class CrmMailboxResource extends Resource
                         $user = auth()->user();
                         app(CrmMailSender::class)->sendTest($record, $data['recipient'], $user);
                         Notification::make()->success()->title('Тестовое письмо отправлено')->body('Проверьте полученную подпись сотрудника.')->send();
+                    } catch (Throwable $exception) {
+                        Notification::make()->danger()->title('Не удалось отправить тест')->body($exception->getMessage())->send();
+                    }
+                }),
+            Action::make('sendServiceTest')
+                ->label('Проверить системное письмо')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('info')
+                ->visible(fn (CrmMailbox $record): bool => $record->isServiceMailbox())
+                ->modalHeading('Отправить системный предпросмотр')
+                ->modalDescription('Будет отправлен только фиксированный шаблон этого служебного ящика. Написать произвольное письмо или ответить клиенту отсюда нельзя.')
+                ->modalSubmitActionLabel('Отправить предпросмотр')
+                ->schema([
+                    TextInput::make('recipient')
+                        ->label('Кому')
+                        ->email()
+                        ->required(),
+                ])
+                ->action(function (CrmMailbox $record, array $data): void {
+                    try {
+                        app(ServiceMailboxPreviewSender::class)->sendFrom($record, $data['recipient']);
+                        Notification::make()->success()->title('Системное письмо отправлено')->body($record->email)->send();
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->title('Не удалось отправить тест')->body($exception->getMessage())->send();
                     }

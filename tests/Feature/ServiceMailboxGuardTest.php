@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\CrmMailboxes\Pages\ListCrmMailboxes;
 use App\Models\CrmMailbox;
 use App\Models\User;
 use App\Services\CrmMail\CrmMailSender;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -57,5 +59,29 @@ class ServiceMailboxGuardTest extends TestCase
         $this->expectExceptionMessage('Ручная отправка запрещена');
 
         app(CrmMailSender::class)->sendTest($mailbox, 'recipient@example.com', User::factory()->make());
+    }
+
+    public function test_service_mailbox_only_exposes_the_fixed_system_preview_action(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $mailbox = CrmMailbox::query()->create([
+            'name' => 'KOTLOV.BY',
+            'email' => 'order@kotlov.by',
+            'username' => 'order@kotlov.by',
+            'password' => 'secret',
+            'imap_host' => 'imap.hoster.by',
+            'imap_port' => 993,
+            'imap_encryption' => 'ssl',
+            'imap_folder' => 'INBOX',
+            'smtp_host' => 'smtp.hoster.by',
+            'smtp_port' => 465,
+            'smtp_encryption' => 'ssl',
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListCrmMailboxes::class)
+            ->assertTableActionHidden('sendTest', $mailbox)
+            ->assertTableActionVisible('sendServiceTest', $mailbox);
     }
 }

@@ -48,23 +48,30 @@ class ServiceMailboxPreviewSender
         }
 
         $sent = [];
-        foreach (self::PREVIEWS as $sender => $preview) {
-            $this->send($sender, $recipient, $preview);
+        foreach (array_keys(self::PREVIEWS) as $sender) {
+            $mailbox = CrmMailbox::query()->whereRaw('LOWER(email) = ?', [$sender])->first();
+            if (! $mailbox) {
+                throw new RuntimeException("Служебный ящик {$sender} не настроен.");
+            }
+
+            $this->sendFrom($mailbox, $recipient);
             $sent[] = $sender;
         }
 
         return $sent;
     }
 
-    /** @param array<string, mixed> $preview */
-    private function send(string $sender, string $recipient, array $preview): void
+    public function sendFrom(CrmMailbox $mailbox, string $recipient): void
     {
-        $mailbox = CrmMailbox::query()
-            ->whereRaw('LOWER(email) = ?', [$sender])
-            ->first();
+        $recipient = mb_strtolower(trim($recipient));
+        if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
+            throw new RuntimeException('Укажите корректный email получателя.');
+        }
 
-        if (! $mailbox || ! $mailbox->isServiceMailbox()) {
-            throw new RuntimeException("Служебный ящик {$sender} не настроен.");
+        $sender = mb_strtolower(trim((string) $mailbox->email));
+        $preview = self::PREVIEWS[$sender] ?? null;
+        if (! $mailbox->isServiceMailbox() || ! $preview) {
+            throw new RuntimeException("Ящик {$sender} не является служебным.");
         }
         if (blank($mailbox->password)) {
             throw new RuntimeException("Для {$sender} не сохранён пароль SMTP.");
