@@ -115,20 +115,27 @@ class EnrichTmManagementWorkbookCommand extends Command
                         ? trim((string) $sheet->getCell([$config['specs'], $row])->getValue())
                         : '';
                     $stage = 'specs';
-                    $specs = $this->sourceSpecs($brand, $description, $technical);
-
-                    if ($specs !== []) {
-                        $merged = $this->mergeSpecs($product->specs, $specs);
-                        $product->specs = $merged;
-                        try {
-                            $enricher->syncSpecsToAttributeValues($product, $merged);
-                        } catch (\Throwable $e) {
-                            // Keep the source facts on the product even when a legacy
-                            // attribute definition cannot accept one unusual value.
-                            $stats['attribute_sync_errors']++;
-                            report($e);
+                    $specs = [];
+                    try {
+                        $specs = $this->sourceSpecs($brand, $description, $technical);
+                        if ($specs !== []) {
+                            $merged = $this->mergeSpecs($product->specs, $specs);
+                            $product->specs = $merged;
+                            try {
+                                $enricher->syncSpecsToAttributeValues($product, $merged);
+                            } catch (\Throwable $e) {
+                                // Keep the source facts on the product even when a legacy
+                                // attribute definition cannot accept one unusual value.
+                                $stats['attribute_sync_errors']++;
+                                report($e);
+                            }
+                            $stats['specs_saved']++;
                         }
-                        $stats['specs_saved']++;
+                    } catch (\Throwable $e) {
+                        // One malformed legacy specs payload must not prevent the
+                        // description, gallery and remaining workbook rows from saving.
+                        $stats['errors_specs']++;
+                        report($e);
                     }
 
                     $stage = 'content';
