@@ -30,6 +30,43 @@
         word-break: normal;
     }
 
+    /* Desktop is the manager's dense workspace: keep all Filament components
+       on the same compact type scale instead of shrinking individual pages.
+       Touch targets and the original type scale stay unchanged on phones. */
+    @media (min-width: 1024px) {
+        .fi-body {
+            --text-xs: 0.6875rem;
+            --text-xs--line-height: 1rem;
+            --text-sm: 0.8125rem;
+            --text-sm--line-height: 1.125rem;
+            --text-base: 0.9375rem;
+            --text-base--line-height: 1.375rem;
+            --text-lg: 1.0625rem;
+            --text-lg--line-height: 1.5rem;
+            --text-xl: 1.125rem;
+            --text-xl--line-height: 1.625rem;
+            --text-2xl: 1.375rem;
+            --text-2xl--line-height: 1.75rem;
+            --text-3xl: 1.625rem;
+            --text-3xl--line-height: 2rem;
+        }
+
+        .fi-sidebar-nav,
+        .fi-sidebar-nav-groups {
+            row-gap: 1rem;
+        }
+
+        .fi-sidebar-nav {
+            padding-block: 1rem;
+        }
+
+        .fi-sidebar-item-btn,
+        .fi-sidebar-group-btn {
+            gap: 0.625rem;
+            padding-block: 0.375rem;
+        }
+    }
+
     /* The order queue is information-dense, so keep its rhythm compact without
        making controls or the rest of the admin panel smaller. */
     .orders-workspace .fi-ta-header-cell {
