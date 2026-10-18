@@ -14,7 +14,9 @@ use App\Models\InstallRequest;
 use App\Models\Order;
 use App\Models\SupportConversation;
 use App\Models\TelephonyCall;
+use App\Models\User;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class AdminTodayDashboard
@@ -22,8 +24,12 @@ class AdminTodayDashboard
     private const TIMEZONE = 'Europe/Minsk';
 
     /** @return array<string, mixed> */
-    public function data(string $period = '7d', string $status = 'open', string $sort = 'desc'): array
-    {
+    public function data(
+        string $period = '7d',
+        string $status = 'open',
+        string $sort = 'desc',
+        ?User $viewer = null,
+    ): array {
         $period = in_array($period, ['today', 'yesterday', '7d', '30d', 'all'], true) ? $period : '7d';
         $status = in_array($status, ['open', 'closed', 'all'], true) ? $status : 'open';
         $sort = $sort === 'asc' ? 'asc' : 'desc';
@@ -33,40 +39,41 @@ class AdminTodayDashboard
         $dayStart = $localNow->copy()->startOfDay()->utc();
         $dayEnd = $localNow->copy()->endOfDay()->utc();
         [$rangeStart, $rangeEnd, $rangeLabel] = $this->activityRange($localNow, $period);
+        $managerId = $viewer?->isOperationalManager() === true ? $viewer->id : null;
 
         $todayCounts = [
-            'calls' => TelephonyCall::query()
+            'calls' => $this->calls($managerId)
                 ->where('direction', 'inbound')
                 ->whereBetween('started_at', [$dayStart, $dayEnd])
                 ->count(),
-            'orders' => Order::query()->whereBetween('created_at', [$dayStart, $dayEnd])->count(),
-            'requests' => ContactRequest::query()->whereBetween('created_at', [$dayStart, $dayEnd])->count(),
-            'installations' => InstallRequest::query()->whereBetween('created_at', [$dayStart, $dayEnd])->count(),
-            'mail' => CrmMailThread::query()
+            'orders' => $this->orders($managerId)->whereBetween('created_at', [$dayStart, $dayEnd])->count(),
+            'requests' => $this->requests($managerId)->whereBetween('created_at', [$dayStart, $dayEnd])->count(),
+            'installations' => $this->installations($managerId)->whereBetween('created_at', [$dayStart, $dayEnd])->count(),
+            'mail' => $this->mail($managerId)
                 ->whereHas('messages', fn ($query) => $query
                     ->where('direction', 'incoming')
                     ->whereBetween('received_at', [$dayStart, $dayEnd]))
                 ->count(),
-            'chats' => SupportConversation::query()->whereBetween('created_at', [$dayStart, $dayEnd])->count(),
+            'chats' => $this->chats($managerId)->whereBetween('created_at', [$dayStart, $dayEnd])->count(),
         ];
 
         $attentionCounts = [
-            'calls' => TelephonyCall::query()->needsAttention()->count(),
-            'orders' => Order::query()->whereNull('archived_at')->where('status', 'new')->count(),
-            'requests' => ContactRequest::query()->whereIn('status', ['new', 'read'])->count(),
-            'installations' => InstallRequest::query()->where('status', 'new')->count(),
-            'mail' => CrmMailThread::query()->needsAttention()->count(),
-            'chats' => SupportConversation::query()->where('status', 'new')->count(),
+            'calls' => $this->calls($managerId)->needsAttention()->count(),
+            'orders' => $this->orders($managerId)->whereNull('archived_at')->where('status', 'new')->count(),
+            'requests' => $this->requests($managerId)->whereIn('status', ['new', 'read'])->count(),
+            'installations' => $this->installations($managerId)->where('status', 'new')->count(),
+            'mail' => $this->mail($managerId)->needsAttention()->count(),
+            'chats' => $this->chats($managerId)->where('status', 'new')->count(),
         ];
 
-        $dueCalls = TelephonyCall::query()
+        $dueCalls = $this->calls($managerId)
             ->whereIn('handling_status', ['unprocessed', 'callback_required', 'in_progress'])
             ->whereNotNull('next_follow_up_at');
-        $dueMail = CrmMailThread::query()
+        $dueMail = $this->mail($managerId)
             ->whereNotIn('status', ['closed', 'spam'])
             ->whereNotNull('next_follow_up_at');
 
-        $activity = $this->activityItems($rangeStart, $rangeEnd, $status, $sort);
+        $activity = $this->activityItems($rangeStart, $rangeEnd, $status, $sort, $managerId);
 
         return [
             'dateLabel' => $localNow->translatedFormat('j F, l'),
@@ -80,7 +87,7 @@ class AdminTodayDashboard
                     + (clone $dueMail)->where('next_follow_up_at', '<', $now)->count(),
             ],
             'todayCounts' => $todayCounts,
-            'attentionItems' => $this->attentionItems($now, $dayEnd),
+            'attentionItems' => $this->attentionItems($now, $dayEnd, $managerId),
             'activityItems' => $activity,
             'activityCount' => $activity->count(),
             'rangeLabel' => $rangeLabel,
@@ -96,11 +103,11 @@ class AdminTodayDashboard
     }
 
     /** @return Collection<int, array<string, mixed>> */
-    private function attentionItems(CarbonInterface $now, CarbonInterface $dayEnd): Collection
+    private function attentionItems(CarbonInterface $now, CarbonInterface $dayEnd, ?int $managerId): Collection
     {
         $items = collect();
 
-        TelephonyCall::query()
+        $this->calls($managerId)
             ->with('assignedUser')
             ->whereIn('handling_status', ['unprocessed', 'callback_required', 'in_progress'])
             ->whereNotNull('next_follow_up_at')
@@ -120,7 +127,7 @@ class AdminTodayDashboard
                 priority: $call->next_follow_up_at?->lt($now) ? 0 : 1,
             )));
 
-        CrmMailThread::query()
+        $this->mail($managerId)
             ->with('assignedUser')
             ->whereNotIn('status', ['closed', 'spam'])
             ->whereNotNull('next_follow_up_at')
@@ -140,7 +147,7 @@ class AdminTodayDashboard
                 priority: $thread->next_follow_up_at?->lt($now) ? 0 : 1,
             )));
 
-        TelephonyCall::query()
+        $this->calls($managerId)
             ->with('assignedUser')
             ->needsAttention()
             ->oldest('started_at')
@@ -158,7 +165,7 @@ class AdminTodayDashboard
                 priority: 2,
             )));
 
-        ContactRequest::query()
+        $this->requests($managerId)
             ->whereIn('status', ['new', 'read'])
             ->oldest()
             ->limit(20)
@@ -174,7 +181,7 @@ class AdminTodayDashboard
                 priority: 2,
             )));
 
-        InstallRequest::query()
+        $this->installations($managerId)
             ->where('status', 'new')
             ->oldest()
             ->limit(20)
@@ -190,7 +197,7 @@ class AdminTodayDashboard
                 priority: 2,
             )));
 
-        Order::query()
+        $this->orders($managerId)
             ->whereNull('archived_at')
             ->where('status', 'new')
             ->oldest()
@@ -207,7 +214,7 @@ class AdminTodayDashboard
                 priority: 2,
             )));
 
-        CrmMailThread::query()
+        $this->mail($managerId)
             ->with('assignedUser')
             ->needsAttention()
             ->oldest('last_message_at')
@@ -225,7 +232,7 @@ class AdminTodayDashboard
                 priority: 2,
             )));
 
-        SupportConversation::query()
+        $this->chats($managerId)
             ->with('assignedUser')
             ->where('status', 'new')
             ->oldest('last_message_at')
@@ -256,10 +263,11 @@ class AdminTodayDashboard
         CarbonInterface $rangeEnd,
         string $status,
         string $sort,
+        ?int $managerId,
     ): Collection {
         $items = collect();
 
-        $calls = TelephonyCall::query()
+        $calls = $this->calls($managerId)
             ->where('direction', 'inbound')
             ->whereBetween('started_at', [$rangeStart, $rangeEnd]);
         $this->applyStatus($calls, $status, 'handling_status', ['handled', 'irrelevant']);
@@ -277,7 +285,7 @@ class AdminTodayDashboard
                 statusLabel: TelephonyCall::HANDLING_STATUSES[$call->handling_status] ?? $call->handling_status,
             )));
 
-        $requests = ContactRequest::query()->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $requests = $this->requests($managerId)->whereBetween('created_at', [$rangeStart, $rangeEnd]);
         $this->applyStatus($requests, $status, 'status', ['done']);
         $requests->latest()->limit(80)->get()
             ->each(fn (ContactRequest $request) => $items->push($this->item(
@@ -292,7 +300,7 @@ class AdminTodayDashboard
                 statusLabel: ContactRequest::$statuses[$request->status] ?? $request->status,
             )));
 
-        $installations = InstallRequest::query()->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $installations = $this->installations($managerId)->whereBetween('created_at', [$rangeStart, $rangeEnd]);
         $this->applyStatus($installations, $status, 'status', ['done', 'cancelled']);
         $installations->latest()->limit(80)->get()
             ->each(fn (InstallRequest $request) => $items->push($this->item(
@@ -307,7 +315,7 @@ class AdminTodayDashboard
                 statusLabel: InstallRequest::STATUSES[$request->status] ?? $request->status,
             )));
 
-        $orders = Order::query()->whereNull('archived_at')->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $orders = $this->orders($managerId)->whereNull('archived_at')->whereBetween('created_at', [$rangeStart, $rangeEnd]);
         $this->applyStatus($orders, $status, 'status', ['delivered', 'completed', 'cancelled']);
         $orders->latest()->limit(80)->get()
             ->each(fn (Order $order) => $items->push($this->item(
@@ -322,7 +330,7 @@ class AdminTodayDashboard
                 statusLabel: Order::STATUSES[$order->status] ?? $order->status,
             )));
 
-        $mail = CrmMailThread::query()
+        $mail = $this->mail($managerId)
             ->whereHas('messages', fn ($query) => $query
                 ->where('direction', 'incoming')
                 ->whereBetween('received_at', [$rangeStart, $rangeEnd]));
@@ -341,7 +349,7 @@ class AdminTodayDashboard
                 statusLabel: CrmMailThread::STATUSES[$thread->status] ?? $thread->status,
             )));
 
-        $chats = SupportConversation::query()->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $chats = $this->chats($managerId)->whereBetween('created_at', [$rangeStart, $rangeEnd]);
         $this->applyStatus($chats, $status, 'status', ['closed']);
         $chats->latest()->limit(80)->get()
             ->each(fn (SupportConversation $chat) => $items->push($this->item(
@@ -389,6 +397,65 @@ class AdminTodayDashboard
         } elseif ($status === 'closed') {
             $query->whereIn($column, $closedStatuses);
         }
+    }
+
+    /** @return Builder<TelephonyCall> */
+    private function calls(?int $managerId): Builder
+    {
+        return TelephonyCall::query()->when(
+            $managerId,
+            fn (Builder $query, int $id): Builder => $query->where('assigned_user_id', $id),
+        );
+    }
+
+    /** @return Builder<Order> */
+    private function orders(?int $managerId): Builder
+    {
+        return Order::query()->when(
+            $managerId,
+            fn (Builder $query, int $id): Builder => $query->where('manager_id', $id),
+        );
+    }
+
+    /** @return Builder<ContactRequest> */
+    private function requests(?int $managerId): Builder
+    {
+        return ContactRequest::query()->when(
+            $managerId,
+            fn (Builder $query, int $id): Builder => $query->whereExists(
+                TelephonyCall::query()
+                    ->selectRaw('1')
+                    ->whereColumn('telephony_calls.contact_request_id', 'contact_requests.id')
+                    ->where('telephony_calls.assigned_user_id', $id),
+            ),
+        );
+    }
+
+    /** @return Builder<InstallRequest> */
+    private function installations(?int $managerId): Builder
+    {
+        return InstallRequest::query()->when(
+            $managerId,
+            fn (Builder $query): Builder => $query->whereRaw('1 = 0'),
+        );
+    }
+
+    /** @return Builder<CrmMailThread> */
+    private function mail(?int $managerId): Builder
+    {
+        return CrmMailThread::query()->when(
+            $managerId,
+            fn (Builder $query, int $id): Builder => $query->where('assigned_user_id', $id),
+        );
+    }
+
+    /** @return Builder<SupportConversation> */
+    private function chats(?int $managerId): Builder
+    {
+        return SupportConversation::query()->when(
+            $managerId,
+            fn (Builder $query, int $id): Builder => $query->where('assigned_user_id', $id),
+        );
     }
 
     /** @return array<string, mixed> */

@@ -161,4 +161,56 @@ class AdminTodayDashboardTest extends TestCase
         $this->assertSame(['ORD-YESTERDAY-OPEN · Открытый заказ'], $openData['activityItems']->pluck('title')->all());
         $this->assertSame(['ORD-YESTERDAY-CLOSED · Закрытый заказ'], $closedData['activityItems']->pluck('title')->all());
     }
+
+    public function test_manager_sees_only_assigned_records_while_admin_sees_everything(): void
+    {
+        Carbon::setTestNow('2026-10-18 10:00:00');
+
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $otherManager = User::factory()->create(['role' => 'sales_manager', 'is_active' => true]);
+
+        foreach ([
+            ['ORD-MINE', $manager->id],
+            ['ORD-OTHER', $otherManager->id],
+            ['ORD-UNASSIGNED', null],
+        ] as [$number, $managerId]) {
+            Order::query()->create([
+                'number' => $number,
+                'status' => 'new',
+                'customer_name' => $number,
+                'customer_phone' => '+375290000000',
+                'manager_id' => $managerId,
+                'total' => 100,
+            ]);
+        }
+
+        foreach ([
+            ['call-mine', $manager->id],
+            ['call-other', $otherManager->id],
+            ['call-unassigned', null],
+        ] as [$uuid, $assignedUserId]) {
+            TelephonyCall::query()->create([
+                'external_uuid' => $uuid,
+                'direction' => 'inbound',
+                'customer_phone' => '+375291111111',
+                'status' => 'answered',
+                'handling_status' => 'unprocessed',
+                'assigned_user_id' => $assignedUserId,
+                'started_at' => now(),
+            ]);
+        }
+
+        $managerData = app(AdminTodayDashboard::class)->data(period: 'today', status: 'all', viewer: $manager);
+        $adminData = app(AdminTodayDashboard::class)->data(period: 'today', status: 'all', viewer: $admin);
+
+        $this->assertSame(1, $managerData['todayCounts']['orders']);
+        $this->assertSame(1, $managerData['todayCounts']['calls']);
+        $this->assertCount(2, $managerData['activityItems']);
+        $this->assertTrue($managerData['activityItems']->contains('title', 'ORD-MINE · ORD-MINE'));
+        $this->assertFalse($managerData['activityItems']->contains('title', 'ORD-OTHER · ORD-OTHER'));
+        $this->assertSame(3, $adminData['todayCounts']['orders']);
+        $this->assertSame(3, $adminData['todayCounts']['calls']);
+        $this->assertCount(6, $adminData['activityItems']);
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\User;
 use App\Services\Crm\AdminTodayDashboard;
 use Filament\Widgets\Widget;
 
@@ -24,10 +25,13 @@ class CrmTodayCenter extends Widget
     /** @return array<string, mixed> */
     protected function getViewData(): array
     {
+        $viewer = auth()->user();
+
         return app(AdminTodayDashboard::class)->data(
             period: $this->period,
             status: $this->status,
             sort: $this->sortOrder,
+            viewer: $viewer instanceof User ? $viewer : null,
         );
     }
 }
