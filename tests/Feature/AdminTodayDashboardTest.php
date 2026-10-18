@@ -378,4 +378,50 @@ class AdminTodayDashboardTest extends TestCase
             $month['activityItems']->pluck('title')->all(),
         );
     }
+
+    public function test_period_buttons_refresh_the_dashboard_with_the_correct_date_range(): void
+    {
+        Carbon::setTestNow('2026-10-18 10:00:00');
+
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $this->actingAs($admin);
+
+        foreach ([
+            ['ORD-MOBILE-TODAY', '2026-10-18 08:00:00'],
+            ['ORD-MOBILE-YESTERDAY', '2026-10-17 08:00:00'],
+            ['ORD-MOBILE-WEEK', '2026-10-12 08:00:00'],
+            ['ORD-MOBILE-MONTH', '2026-10-05 08:00:00'],
+            ['ORD-MOBILE-OLD', '2026-09-20 08:00:00'],
+        ] as [$number, $createdAt]) {
+            $order = Order::query()->create([
+                'number' => $number,
+                'status' => 'completed',
+                'customer_name' => $number,
+                'customer_phone' => '+375290000000',
+                'total' => 100,
+            ]);
+            $order->forceFill(['created_at' => $createdAt])->saveQuietly();
+        }
+
+        $component = Livewire::test(CrmTodayCenter::class)
+            ->set('status', 'all')
+            ->set('period', 'today')
+            ->assertSee('ORD-MOBILE-TODAY')
+            ->assertDontSee('ORD-MOBILE-YESTERDAY')
+            ->set('period', 'yesterday')
+            ->assertSee('ORD-MOBILE-YESTERDAY')
+            ->assertDontSee('ORD-MOBILE-TODAY')
+            ->set('period', 'week')
+            ->assertSee('ORD-MOBILE-TODAY')
+            ->assertSee('ORD-MOBILE-YESTERDAY')
+            ->assertSee('ORD-MOBILE-WEEK')
+            ->assertDontSee('ORD-MOBILE-MONTH')
+            ->set('period', 'month')
+            ->assertSee('ORD-MOBILE-MONTH')
+            ->assertDontSee('ORD-MOBILE-OLD');
+
+        $component
+            ->set('period', 'all')
+            ->assertSee('ORD-MOBILE-OLD');
+    }
 }
