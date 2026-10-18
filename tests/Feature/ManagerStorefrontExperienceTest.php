@@ -15,6 +15,28 @@ class ManagerStorefrontExperienceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_teplov_manufacturer_is_not_shown_as_an_extra_sales_supplier(): void
+    {
+        [$product, $offer] = $this->makeProductWithSupplierOffer();
+        $offer->supplier->update(['name' => 'ООО «СанБизнесГруп»']);
+        $manufacturer = Supplier::create(['code' => 'teplov-manufacturer-test', 'name' => 'Теплов и Сухов', 'is_active' => true]);
+        $legacyOffer = $offer->replicate();
+        $legacyOffer->supplier_id = $manufacturer->id;
+        $legacyOffer->stock_quantity = 0;
+        $legacyOffer->in_stock = false;
+        $legacyOffer->save();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $this->actingAs($manager);
+
+        $offers = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager);
+        $this->assertCount(1, $offers);
+        $this->assertSame('ООО «СанБизнесГруп»', $offers->first()['supplier']);
+        $this->assertSame('7 шт.', $offers->first()['stock']);
+        $this->view('partials.manager-product-context', ['product' => $product->fresh(), 'compact' => true])
+            ->assertSee('ООО «СанБизнесГруп»')->assertDontSee('Теплов и Сухов');
+        $this->assertDatabaseHas('supplier_products', ['id' => $legacyOffer->id, 'supplier_id' => $manufacturer->id]);
+    }
+
     public function test_belomo_correction_separates_supplier_from_receiving_warehouse_without_changing_prices_or_stock(): void
     {
         [$product, $offer] = $this->makeProductWithSupplierOffer();

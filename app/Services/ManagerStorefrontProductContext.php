@@ -47,7 +47,9 @@ class ManagerStorefrontProductContext
 
         $retailPrice = (float) $product->price > 0 ? (float) $product->price : null;
 
-        $supplierOffers = $product->supplierProducts->map(function ($offer) use ($retailPrice): array {
+        $supplierOffers = $product->supplierProducts
+            ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->supplier?->name))
+            ->map(function ($offer) use ($retailPrice): array {
             $quantity = $offer->stock_quantity;
             $inStock = (float) $quantity > 0 || $offer->in_stock === true;
             $purchasePrice = (float) $offer->price_byn > 0 ? (float) $offer->price_byn : null;
@@ -74,7 +76,9 @@ class ManagerStorefrontProductContext
             ];
         });
 
-        $integrationOffers = $product->integrationProducts->map(function ($offer) use ($retailPrice): array {
+        $integrationOffers = $product->integrationProducts
+            ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->source?->supplier?->name))
+            ->map(function ($offer) use ($retailPrice): array {
             $quantity = (float) $offer->stock_quantity;
             $source = $offer->source;
             $purchasePrice = $offer->normalizedPriceByn();
@@ -107,6 +111,13 @@ class ManagerStorefrontProductContext
                 ['purchase_price', 'asc'],
             ])
             ->values();
+    }
+
+    private function isTeplovManufacturer(?string $name): bool
+    {
+        // These manufacturer catalogue links are not a separate sales supplier.
+        // Keep their source data intact; SBG's real offers carry price and stock.
+        return preg_replace('/[^\pL\pN]/u', '', mb_strtolower($name ?? '')) === 'тепловисухов';
     }
 
     private function formatQuantity(float $quantity): string
