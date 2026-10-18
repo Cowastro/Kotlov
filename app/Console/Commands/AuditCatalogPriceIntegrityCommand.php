@@ -170,9 +170,10 @@ class AuditCatalogPriceIntegrityCommand extends Command
                 $price = (float) $row->price;
                 $oldPrice = (float) $row->price_old;
                 $cost = $row->minimum_cost === null ? null : (float) $row->minimum_cost;
-                $margin = $price > 0 && $cost !== null
-                    ? round(($price - $cost) / $price * 100, 2)
+                $rawMargin = $price > 0 && $cost !== null
+                    ? ($price - $cost) / $price * 100
                     : null;
+                $margin = $rawMargin === null ? null : round($rawMargin, 2);
                 $issues = [];
 
                 if ($price <= 0) {
@@ -190,7 +191,7 @@ class AuditCatalogPriceIntegrityCommand extends Command
                 if ($cost !== null && $price > 0 && abs($price - $cost) < 0.005) {
                     $issues[] = 'retail_equals_supplier_cost';
                 }
-                if ($margin !== null && $margin < $minimumMargin) {
+                if ($rawMargin !== null && $rawMargin < $minimumMargin) {
                     $issues[] = 'retail_margin_below_minimum';
                 }
                 if ($cost !== null && $cost > 0 && $price > $cost * 4) {
@@ -287,8 +288,8 @@ class AuditCatalogPriceIntegrityCommand extends Command
                 $price = (float) $row->price;
                 $oldPrice = (float) $row->price_old;
                 $cost = $row->minimum_cost === null ? null : (float) $row->minimum_cost;
-                $margin = $price > 0 && $cost !== null
-                    ? round(($price - $cost) / $price * 100, 2)
+                $rawMargin = $price > 0 && $cost !== null
+                    ? ($price - $cost) / $price * 100
                     : null;
                 $issues = [];
 
@@ -298,7 +299,7 @@ class AuditCatalogPriceIntegrityCommand extends Command
                 if ($cost !== null && $price > 0 && abs($price - $cost) < 0.005) {
                     $issues[] = 'retail_equals_supplier_cost';
                 }
-                if ($margin !== null && $margin < $minimumMargin) {
+                if ($rawMargin !== null && $rawMargin < $minimumMargin) {
                     $issues[] = 'retail_margin_below_minimum';
                 }
                 if ($cost !== null && $cost > 0 && $price > $cost * 4) {

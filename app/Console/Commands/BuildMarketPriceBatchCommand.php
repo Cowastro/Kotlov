@@ -9,6 +9,7 @@ use App\Services\Market\MarketWebResearchService;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
@@ -18,6 +19,7 @@ class BuildMarketPriceBatchCommand extends Command
         {batch : Stable batch code for later review and application}
         {--brand= : Exact production brand name}
         {--sku=* : One or more exact production SKUs}
+        {--include-priced : Allow explicitly selected active products that already have a retail price}
         {--after-id=0 : Process products with a larger production ID}
         {--limit=10 : Maximum products to research}
         {--input-contexts= : Read previously exported production product contexts instead of querying a database}
@@ -25,7 +27,7 @@ class BuildMarketPriceBatchCommand extends Command
         {--export-contexts= : Export matching production product contexts without calling the research provider}
         {--output=storage/app/private/market-price-research/market-price-research-batch.json : Server-local JSON report path}';
 
-    protected $description = 'Build a review-only market-price batch from active unpriced production products using hosted web search.';
+    protected $description = 'Build a review-only market-price batch from active production products using hosted web search.';
 
     public function handle(MarketWebResearchService $research): int
     {
@@ -38,6 +40,7 @@ class BuildMarketPriceBatchCommand extends Command
 
         $limit = (int) $this->option('limit');
         $afterId = (int) $this->option('after-id');
+        $includePriced = (bool) $this->option('include-priced');
         if ($limit < 1 || $limit > 25 || $afterId < 0) {
             $this->error('Limit must be between 1 and 25 and after-id cannot be negative.');
 
@@ -65,7 +68,7 @@ class BuildMarketPriceBatchCommand extends Command
         $selection = [
             'production_only' => true,
             'active_only' => true,
-            'unpriced_only' => true,
+            'unpriced_only' => ! $includePriced,
             'brand' => $brand !== '' ? $brand : null,
             'skus' => $skus->all(),
             'after_id' => $afterId,
@@ -87,7 +90,8 @@ class BuildMarketPriceBatchCommand extends Command
                 ->with(['brand', 'category'])
                 ->where('is_active', true)
                 ->where('is_archived', false)
-                ->where(fn (Builder $query) => $query->whereNull('price')->orWhere('price', '<=', 0))
+                ->when(! $includePriced, fn (Builder $query) => $query
+                    ->where(fn (Builder $priceQuery) => $priceQuery->whereNull('price')->orWhere('price', '<=', 0)))
                 ->where('id', '>', $afterId)
                 ->when($skus->isNotEmpty(), fn (Builder $query) => $query->whereIn('sku', $skus->all()))
                 ->when($brand !== '', fn (Builder $query) => $query->whereHas('brand', fn (Builder $brandQuery) => $brandQuery->where('name', $brand)))
@@ -119,7 +123,7 @@ class BuildMarketPriceBatchCommand extends Command
         $forcedHolds = 0;
 
         foreach ($products as $product) {
-            $result = $research->research($product, 0);
+            $result = $research->research($product, (float) ($product->price ?? 0));
             if (($result['status'] ?? null) !== 'ready') {
                 $failedProducts[] = [
                     'product_id' => $product->id,
@@ -194,9 +198,10 @@ class BuildMarketPriceBatchCommand extends Command
         return $productRows === [] ? self::FAILURE : self::SUCCESS;
     }
 
-    /** @param array<string, mixed> $offer
-     *  @param array<string, array<string, mixed>> $sourceRows
-     *  @return array<string, mixed>|null
+    /**
+     * @param  array<string, mixed>  $offer
+     * @param  array<string, array<string, mixed>>  $sourceRows
+     * @return array<string, mixed>|null
      */
     private function observationFromOffer(array $offer, Product $product, array &$sourceRows): ?array
     {
@@ -260,7 +265,7 @@ class BuildMarketPriceBatchCommand extends Command
         ];
     }
 
-    /** @param array<string, mixed> $offer */
+    /** @param  array<string, mixed>  $offer */
     private function offerExclusionReason(array $offer): string
     {
         $url = trim((string) ($offer['url'] ?? ''));
@@ -309,7 +314,7 @@ class BuildMarketPriceBatchCommand extends Command
         return is_string($value) && trim($value) !== '' ? trim($value) : now()->toIso8601String();
     }
 
-    /** @return array{0: \Illuminate\Support\Collection<int, Product>, 1: array<string, mixed>} */
+    /** @return array{0: Collection<int, Product>, 1: array<string, mixed>} */
     private function readContexts(string $value): array
     {
         $path = $this->safeResearchPath($value);
@@ -335,6 +340,7 @@ class BuildMarketPriceBatchCommand extends Command
                 'id' => (int) $row['id'],
                 'sku' => (string) $row['sku'],
                 'name' => (string) $row['name'],
+                'price' => is_numeric($row['price'] ?? null) ? (float) $row['price'] : 0,
                 'specs' => is_array($row['specs'] ?? null) ? $row['specs'] : [],
             ]);
             $product->setRelation('brand', filled($row['brand'] ?? null)
@@ -350,9 +356,10 @@ class BuildMarketPriceBatchCommand extends Command
         return [$products, $payload['selection']];
     }
 
-    /** @param array<string, mixed> $selection
-     *  @param list<string> $skus
-     *  @return array{0: \Illuminate\Support\Collection<int, Product>, 1: array<string, mixed>}
+    /**
+     * @param  array<string, mixed>  $selection
+     * @param  list<string>  $skus
+     * @return array{0: Collection<int, Product>, 1: array<string, mixed>}
      */
     private function readQueue(
         string $value,
@@ -419,8 +426,9 @@ class BuildMarketPriceBatchCommand extends Command
         return [$products, $selection];
     }
 
-    /** @param array<string, mixed> $selection
-     *  @param \Illuminate\Support\Collection<int, Product> $products
+    /**
+     * @param  array<string, mixed>  $selection
+     * @param  Collection<int, Product>  $products
      */
     private function writeContexts(string $value, array $selection, $products): void
     {
@@ -432,6 +440,7 @@ class BuildMarketPriceBatchCommand extends Command
                 'id' => $product->id,
                 'sku' => $product->sku,
                 'name' => $product->name,
+                'price' => (float) ($product->price ?? 0),
                 'brand' => $product->brand?->name,
                 'category' => $product->category?->name,
                 'specs' => $product->specs ?: [],

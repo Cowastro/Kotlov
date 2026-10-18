@@ -97,4 +97,42 @@ class AuditCatalogPriceIntegrityCommandTest extends TestCase
         File::delete($report);
         File::delete($researchReport);
     }
+
+    public function test_research_report_keeps_a_raw_margin_just_below_the_threshold(): void
+    {
+        $researchReport = storage_path('app/testing/price-integrity-rounding-research.csv');
+        $product = Product::query()->create([
+            'name' => 'Товар на границе маржи',
+            'slug' => 'raw-margin-boundary-product',
+            'sku' => 'PRICE-AUDIT-BOUNDARY',
+            'price' => 100,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'price-audit-boundary-supplier',
+            'name' => 'Поставщик пограничной цены',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'PRICE-AUDIT-BOUNDARY',
+            'price_byn' => 90.004,
+            'stock_quantity' => 1,
+            'in_stock' => true,
+            'last_stock_synced_at' => now(),
+        ]);
+
+        $this->artisan('catalog:audit-price-integrity', [
+            '--research-output' => $researchReport,
+        ])
+            ->expectsOutputToContain('metric.retail_margin_below_minimum=1')
+            ->assertSuccessful();
+
+        $research = File::get($researchReport);
+        $this->assertStringContainsString('PRICE-AUDIT-BOUNDARY', $research);
+        $this->assertStringContainsString('retail_margin_below_minimum', $research);
+        File::delete($researchReport);
+    }
 }

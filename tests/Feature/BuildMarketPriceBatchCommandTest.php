@@ -130,6 +130,33 @@ class BuildMarketPriceBatchCommandTest extends TestCase
         $this->assertTrue($batch['products'][0]['force_consultation_hold']);
     }
 
+    public function test_it_can_export_an_explicitly_selected_priced_product_for_market_review(): void
+    {
+        $product = Product::query()->create([
+            'name' => 'Товар с действующей розничной ценой',
+            'slug' => 'priced-market-review-test',
+            'sku' => 'PRICED-REVIEW-001',
+            'price' => 321.45,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $this->artisan('catalog:build-market-price-batch', [
+            'batch' => '2026-10-18-priced-context-test',
+            '--sku' => [$product->sku],
+            '--include-priced' => true,
+            '--export-contexts' => $this->contexts,
+        ])
+            ->expectsOutputToContain('metric.status=contexts_exported')
+            ->expectsOutputToContain('metric.selected_products=1')
+            ->assertSuccessful();
+
+        $context = json_decode(File::get(base_path($this->contexts)), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame(321.45, $context['products'][0]['price']);
+        $this->assertFalse($context['selection']['unpriced_only']);
+    }
+
     public function test_it_builds_a_review_only_batch_and_forces_a_hold_without_three_exact_sources(): void
     {
         CarbonImmutable::setTestNow('2026-10-13 18:00:00');
@@ -210,9 +237,10 @@ class BuildMarketPriceBatchCommandTest extends TestCase
         $this->assertSame('Не совпадает комплектация.', $batch['products'][1]['research']['rejected_candidates'][0]['reason']);
     }
 
-    /** @param list<array<string, mixed>> $offers
-     *  @param list<array<string, mixed>> $rejected
-     *  @return array<string, mixed>
+    /**
+     * @param  list<array<string, mixed>>  $offers
+     * @param  list<array<string, mixed>>  $rejected
+     * @return array<string, mixed>
      */
     private function readyReport(array $offers, array $rejected = []): array
     {
