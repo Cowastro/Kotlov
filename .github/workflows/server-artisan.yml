@@ -638,6 +638,7 @@ jobs:
         env:
           ARTISAN_ARGS: ${{ inputs.artisan_args }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MARKET_RESEARCH_PROVIDER: openai
         run: |
           set -euo pipefail
           test -n "$OPENAI_API_KEY"
