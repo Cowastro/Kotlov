@@ -113,6 +113,11 @@
                                     <p class="fw-medium lh-24">
                                         {{ config("shop.payment_methods.{$order->payment_type}.name", $order->payment_type) }}
                                     </p>
+                                    @if ($order->payment_type === 'installment_6')
+                                        <p class="text-caption-01 cl-text-2 mt-4">
+                                            Заявка передана менеджеру. Он свяжется с вами для оформления рассрочки.
+                                        </p>
+                                    @endif
                                 </div>
                             </div>
 

@@ -206,7 +206,7 @@
                 Интернет-магазин {{ $resourceOwner['domain'] }} используется {{ $seller['short_name'] }} на основании дилерского договора с {{ $resourceOwner['name'] }}. Владелец интернет-ресурса: {{ $resourceOwner['name'] }}. Регистрация в БелГИЭ: ресурс N {{ $resourceOwner['belgie_number'] }}, дата {{ $resourceOwner['belgie_registration_date'] }}, статус: {{ $resourceOwner['belgie_status'] }}. Торговый реестр Республики Беларусь: {{ $tradeRegistry['shop'] }}, дата включения {{ $tradeRegistry['registration_date'] }}, регистрационный номер {{ $tradeRegistry['registration_number'] }}.
             </p>
             <p>
-                Способы оплаты: {{ $payments['cash']['name'] ?? 'наличными' }}, {{ $payments['card']['name'] ?? 'банковской картой' }}, {{ $payments['bank_transfer']['name'] ?? 'безналичный расчет' }}, {{ $payments['webpay']['name'] ?? 'WEBPAY' }}, рассрочка, кредит, оплата по счету для организаций.
+                Способы оплаты: {{ $payments['cash']['name'] ?? 'наличными' }}, {{ $payments['card']['name'] ?? 'банковской картой' }}, {{ $payments['bank_transfer']['name'] ?? 'безналичный расчет' }}, рассрочка по заявке через менеджера, кредит, оплата по счету для организаций.
                 Способы доставки: {{ $delivery['pickup']['name'] ?? 'самовывоз' }} по адресу {{ $delivery['pickup']['address'] ?? $seller['address'] }}, {{ $delivery['courier']['name'] ?? 'доставка курьером по г. Минску' }}, {{ $delivery['transport']['name'] ?? 'транспортная компания по Беларуси' }}, {{ $delivery['kit']['name'] ?? 'международная доставка ТК КИТ' }}.
             </p>
             <p>

@@ -178,7 +178,7 @@ class CheckoutController extends Controller
             'delivery_region' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
             'delivery_city' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
             'delivery_address' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:500'],
-            'payment_type' => ['required', 'in:'.implode(',', array_keys(config('shop.payment_methods', [])))],
+            'payment_type' => ['required', 'in:'.implode(',', config('shop.checkout_payment_methods', []))],
             'comment' => ['nullable', 'string', 'max:1000'],
             // Реквизиты для счёта
             'company_name' => ['required_if:payment_type,invoice', 'nullable', 'string', 'max:255'],
@@ -191,6 +191,7 @@ class CheckoutController extends Controller
             'customer_phone.regex' => 'Введите корректный номер телефона.',
             'delivery_type.required' => 'Выберите способ доставки.',
             'payment_type.required' => 'Выберите способ оплаты.',
+            'payment_type.in' => 'Выбранный способ оплаты сейчас недоступен.',
             'delivery_region.required_unless' => 'Выберите область / регион доставки.',
             'delivery_city.required_unless' => 'Укажите город доставки.',
             'delivery_address.required_unless' => 'Укажите адрес доставки.',

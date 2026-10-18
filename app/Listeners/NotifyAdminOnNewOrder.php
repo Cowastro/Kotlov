@@ -29,10 +29,18 @@ class NotifyAdminOnNewOrder implements ShouldQueue
 
         $requiresStockConfirmation = $order->items
             ->contains(fn ($item): bool => $item->supply_is_available !== true);
-        $title = $requiresStockConfirmation
-            ? "Новый заказ {$order->number} — подтвердить наличие"
-            : "Новый заказ {$order->number}";
+        $requiresInstallmentFollowUp = $order->payment_type === 'installment_6';
+        $title = "Новый заказ {$order->number}";
+        if ($requiresStockConfirmation) {
+            $title .= ' — подтвердить наличие';
+        }
+        if ($requiresInstallmentFollowUp) {
+            $title = "Заявка на рассрочку {$order->number}";
+        }
         $body = "{$order->customer_name} · {$order->customer_phone} · {$order->total} BYN";
+        if ($requiresInstallmentFollowUp) {
+            $body .= ' · Связаться с клиентом для оформления рассрочки.';
+        }
         if ($requiresStockConfirmation) {
             $body .= ' · До подтверждения клиенту проверьте остаток и срок поставки.';
         }
