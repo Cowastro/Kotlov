@@ -46,6 +46,40 @@ class B2bCatalogPricingTest extends TestCase
             ->assertSeeText('120.00 BYN');
     }
 
+    public function test_individually_blocked_offer_is_hidden_from_b2b_and_rejected_by_cart(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        IntegrationProduct::query()->where('product_id', $product->id)->update([
+            'b2b_enabled' => false,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
+            ->assertSeeText('120.00 BYN');
+
+        $this->actingAs($user)
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Товар недоступен для B2B-заказа: требуется подтверждённая привязка, цена и свежий остаток 1С.');
+    }
+
+    public function test_explicitly_allowed_offer_still_requires_source_category_and_stock_rules(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        IntegrationProduct::query()->where('product_id', $product->id)->update([
+            'b2b_enabled' => true,
+            'stock_quantity' => 0,
+            'stock_confirmed_at' => null,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»');
+    }
+
     public function test_approved_wholesale_user_can_order_a_procurement_offer_without_fake_stock(): void
     {
         [$product, $user] = $this->catalogFixture(approved: true);

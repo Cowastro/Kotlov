@@ -28,6 +28,7 @@ class IntegrationSourcePricingAuditTest extends TestCase
                 'price_tax_mode' => 'exclusive',
                 'vat_rate' => 20,
                 'b2b_enabled' => false,
+                'procurement_mode' => false,
             ],
         ]);
 
@@ -37,6 +38,7 @@ class IntegrationSourcePricingAuditTest extends TestCase
         $settings['vat_rate'] = 10;
         $settings['b2b_enabled'] = true;
         $settings['b2b_category_ids'] = [9, 4, 9];
+        $settings['procurement_mode'] = true;
         $settings['partner_name'] = 'Партнёрский поставщик';
         $source->update([
             'update_prices' => true,
@@ -54,6 +56,7 @@ class IntegrationSourcePricingAuditTest extends TestCase
             'settings.vat_rate',
             'settings.b2b_enabled',
             'settings.b2b_category_ids',
+            'settings.procurement_mode',
             'settings.partner_name',
         ], $change->changed_fields);
         $this->assertFalse($change->before_values['update_prices']);
@@ -64,7 +67,9 @@ class IntegrationSourcePricingAuditTest extends TestCase
         $this->assertSame(10, $change->after_values['settings.vat_rate']);
         $this->assertSame([], $change->before_values['settings.b2b_category_ids']);
         $this->assertSame([4, 9], $change->after_values['settings.b2b_category_ids']);
+        $this->assertTrue($change->after_values['settings.procurement_mode']);
         $this->assertStringContainsString('Разрешённые категории B2B', $change->changeSummary());
+        $this->assertStringContainsString('B2B-заказы под заказ', $change->changeSummary());
         $this->assertStringContainsString('ID категорий: 4, 9', $change->valuesSummary('after_values'));
     }
 
@@ -148,6 +153,7 @@ class IntegrationSourcePricingAuditTest extends TestCase
             ->assertOk()
             ->assertSeeText('Валюта входной цены')
             ->assertSeeText('Курс к BYN')
+            ->assertSeeText('Принимать B2B-заказы под заказ')
             ->assertSeeText('не переписывает историю молча');
 
         Livewire::actingAs($admin)

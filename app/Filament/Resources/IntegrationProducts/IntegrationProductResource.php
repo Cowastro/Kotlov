@@ -100,6 +100,19 @@ class IntegrationProductResource extends Resource
                     TextInput::make('match_method')->label('Метод')->disabled()->dehydrated(false),
                     TextInput::make('match_confidence')->label('Уверенность')->disabled()->dehydrated(false),
                 ])->columns(2),
+            Section::make('Публикация в B2B')
+                ->description('Индивидуальное решение дополняет, но не отменяет правила источника: источник и категория всё равно должны быть разрешены, цена и остаток — актуальны.')
+                ->schema([
+                    Select::make('b2b_enabled')
+                        ->label('Доступность партнёрам')
+                        ->options([
+                            '1' => 'Разрешить эту позицию',
+                            '0' => 'Не публиковать эту позицию',
+                        ])
+                        ->placeholder('По общему правилу источника и категории')
+                        ->nullable()
+                        ->helperText('Оставьте общее правило для существующего поведения. Запрет действует только на эту позицию и сохраняется после следующих обменов.'),
+                ]),
         ]);
     }
 
@@ -179,6 +192,17 @@ class IntegrationProductResource extends Resource
                         'ignored' => 'gray',
                         default => 'danger',
                     }),
+                TextColumn::make('b2b_publication')->label('B2B')->badge()
+                    ->state(fn (IntegrationProduct $record): string => match ($record->b2b_enabled) {
+                        true => 'Разрешён',
+                        false => 'Исключён',
+                        default => 'По источнику',
+                    })
+                    ->color(fn (IntegrationProduct $record): string => match ($record->b2b_enabled) {
+                        true => 'success',
+                        false => 'danger',
+                        default => 'gray',
+                    }),
                 TextColumn::make('match_confidence')->label('Совпадение')->formatStateUsing(
                     fn ($state): string => $state === null ? '—' : round((float) $state * 100).'%'
                 ),
@@ -243,6 +267,22 @@ class IntegrationProductResource extends Resource
                         'unmatched' => 'Не найден',
                         'ignored' => 'Не для сайта',
                     ]),
+                SelectFilter::make('b2b_publication')
+                    ->label('Публикация B2B')
+                    ->placeholder('Все решения')
+                    ->options([
+                        'inherit' => 'По правилу источника',
+                        'allowed' => 'Разрешено индивидуально',
+                        'blocked' => 'Исключено индивидуально',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value'] ?? null) {
+                            'inherit' => $query->whereNull('b2b_enabled'),
+                            'allowed' => $query->where('b2b_enabled', true),
+                            'blocked' => $query->where('b2b_enabled', false),
+                            default => $query,
+                        };
+                    }),
                 SelectFilter::make('site_category_id')
                     ->label('Категория сайта')
                     ->placeholder('Все категории сайта')
@@ -547,6 +587,28 @@ class IntegrationProductResource extends Resource
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('allowB2bPublication')
+                        ->label('Разрешить выбранные в B2B')
+                        ->icon(Heroicon::OutlinedCheckCircle)
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalDescription('Позиции появятся у партнёров только при включённом источнике, разрешённой категории, действующей цене и доступном остатке либо режиме «под заказ».')
+                        ->action(fn (Collection $records) => $records->each->update(['b2b_enabled' => true]))
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('blockB2bPublication')
+                        ->label('Исключить выбранные из B2B')
+                        ->icon(Heroicon::OutlinedNoSymbol)
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->action(fn (Collection $records) => $records->each->update(['b2b_enabled' => false]))
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('inheritB2bPublication')
+                        ->label('Вернуть общее правило B2B')
+                        ->icon(Heroicon::OutlinedArrowUturnLeft)
+                        ->color('gray')
+                        ->requiresConfirmation()
+                        ->action(fn (Collection $records) => $records->each->update(['b2b_enabled' => null]))
+                        ->deselectRecordsAfterCompletion(),
                     BulkAction::make('assignTargetCategory')
                         ->label('Назначить категорию сайта')
                         ->icon(Heroicon::OutlinedTag)

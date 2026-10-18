@@ -12,6 +12,7 @@ class IntegrationProduct extends Model
         'integration_source_id', 'integration_category_id', 'target_category_id', 'product_id', 'external_id', 'external_code', 'external_sku',
         'barcode', 'name', 'price', 'price_currency', 'price_currency_rate',
         'price_tax_mode', 'price_vat_rate', 'price_byn', 'stock_quantity', 'match_status',
+        'b2b_enabled',
         'match_method', 'match_confidence', 'candidates', 'payload',
         'matched_at', 'last_seen_at', 'last_offer_seen_at', 'stock_confirmed_at',
     ];
@@ -22,6 +23,7 @@ class IntegrationProduct extends Model
         'price_vat_rate' => 'float',
         'price_byn' => 'decimal:2',
         'stock_quantity' => 'decimal:3',
+        'b2b_enabled' => 'boolean',
         'match_confidence' => 'float',
         'candidates' => 'array',
         'payload' => 'array',
@@ -79,6 +81,15 @@ class IntegrationProduct extends Model
             : rtrim(rtrim(number_format($quantity, 3, '.', ' '), '0'), '.');
 
         return $formatted.' шт.';
+    }
+
+    /**
+     * A null value intentionally preserves the source/category publication rule.
+     * False is a per-offer safety stop; true records an explicit manager approval.
+     */
+    public function allowsB2bPublication(): bool
+    {
+        return $this->b2b_enabled !== false;
     }
 
     public function hasFreshPositiveStock(): bool

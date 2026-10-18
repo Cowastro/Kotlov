@@ -23,6 +23,41 @@ class IntegrationProductAdminClarityTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_exclude_one_offer_from_b2b_without_changing_source_rules(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'offer-publication-control',
+            'name' => 'Источник с выборочной публикацией',
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'offer-publication-item',
+            'name' => 'Позиция для выборочной публикации',
+            'stock_quantity' => 3,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(IntegrationProductResource::getUrl('edit', ['record' => $item], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Публикация в B2B')
+            ->assertSeeText('По общему правилу источника и категории')
+            ->assertSeeText('Не публиковать эту позицию');
+
+        Livewire::actingAs($admin)
+            ->test(EditIntegrationProduct::class, ['record' => $item->getRouteKey()])
+            ->fillForm(['b2b_enabled' => '0'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertFalse($item->fresh()->b2b_enabled);
+
+        $this->actingAs($admin)
+            ->get(IntegrationProductResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Исключён');
+    }
+
     public function test_individual_category_moves_the_linked_site_product(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);

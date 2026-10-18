@@ -18,6 +18,7 @@ class IntegrationSourcePricingAuditRecorder
         'settings.vat_rate',
         'settings.b2b_enabled',
         'settings.b2b_category_ids',
+        'settings.procurement_mode',
         'settings.partner_name',
     ];
 
@@ -79,6 +80,7 @@ class IntegrationSourcePricingAuditRecorder
                 ->sort()
                 ->values()
                 ->all(),
+            'settings.procurement_mode' => (bool) data_get($settings, 'procurement_mode', false),
             'settings.partner_name' => filled(data_get($settings, 'partner_name'))
                 ? trim((string) data_get($settings, 'partner_name'))
                 : null,

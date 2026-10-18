@@ -16,6 +16,7 @@ class IntegrationSourcePricingChange extends Model
         'settings.vat_rate' => 'Ставка НДС',
         'settings.b2b_enabled' => 'Партнёрские цены',
         'settings.b2b_category_ids' => 'Разрешённые категории B2B',
+        'settings.procurement_mode' => 'B2B-заказы под заказ',
         'settings.partner_name' => 'Название поставщика для партнёра',
     ];
 
@@ -76,7 +77,7 @@ class IntegrationSourcePricingChange extends Model
         }
 
         return match ($field) {
-            'update_prices', 'settings.b2b_enabled' => $value ? 'включено' : 'выключено',
+            'update_prices', 'settings.b2b_enabled', 'settings.procurement_mode' => $value ? 'включено' : 'выключено',
             'settings.price_tax_mode' => $value === IntegrationSource::PRICE_TAX_INCLUSIVE
                 ? 'цена с НДС'
                 : 'цена без НДС',

@@ -132,6 +132,7 @@ class B2bCatalogOfferResolver
             ->whereHas('source', fn ($query) => $query->where('is_active', true))
             ->get()
             ->filter(fn (IntegrationProduct $offer): bool => $offer->source?->isB2bEnabled() === true
+                && $offer->allowsB2bPublication()
                 && $offer->normalizedPriceByn() !== null
                 && ($this->isProcurementOffer($offer) || $this->hasFreshStock($offer))
                 && $this->sourceAllowsCategory($offer))
