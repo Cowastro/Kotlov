@@ -164,14 +164,35 @@ class SyncTeplouchetCommand extends Command
     {
         $articleCounts = collect($rows)->countBy('article_key');
         $dabBrandIds = Brand::query()->whereRaw('LOWER(name) = ?', ['dab'])->pluck('id')->map(fn ($id) => (int) $id)->all();
-        $products = Product::with('brand')->whereIn('brand_id', $dabBrandIds)->get();
+        $products = Product::with('brand')
+            ->where(function ($query) use ($dabBrandIds): void {
+                $query->whereIn('brand_id', $dabBrandIds)
+                    ->orWhereRaw('LOWER(name) LIKE ?', ['%dab%']);
+            })
+            ->get()
+            ->filter(fn (Product $product) => in_array((int) $product->brand_id, $dabBrandIds, true)
+                || preg_match('/\bdab\b/ui', $product->name));
         $bySku = [];
         $byModel = [];
+        $byCoreModel = [];
+        $bySourceUrl = [];
+        $bySpecArticle = [];
         foreach ($products as $product) {
             if ($product->sku) {
                 $bySku[$parser->article($product->sku)][] = $product->id;
             }
-            $byModel[$parser->modelKey($product->name)][] = $product->id;
+            if ($key = $parser->modelKey($product->name)) {
+                $byModel[$key][] = $product->id;
+            }
+            if ($key = $parser->coreModelKey($product->name)) {
+                $byCoreModel[$key][] = $product->id;
+            }
+            if ($key = $parser->sourceUrlKey($product->content_source_url)) {
+                $bySourceUrl[$key][] = $product->id;
+            }
+            foreach ($this->productArticleKeys($product, $parser) as $key) {
+                $bySpecArticle[$key][] = $product->id;
+            }
         }
 
         $bySupplierArticle = SupplierProduct::query()
@@ -201,7 +222,10 @@ class SyncTeplouchetCommand extends Command
                 foreach ([
                     'exact_supplier_article' => $bySupplierArticle[$row['article_key']] ?? [],
                     'exact_sku' => $bySku[$row['article_key']] ?? [],
+                    'exact_spec_article' => $bySpecArticle[$row['article_key']] ?? [],
+                    'exact_source_url' => $bySourceUrl[$parser->sourceUrlKey($row['source_url'])] ?? [],
                     'exact_dab_model' => $byModel[$parser->modelKey($row['model'])] ?? [],
+                    'exact_dab_core_model' => $byCoreModel[$parser->coreModelKey($row['model'])] ?? [],
                 ] as $candidateReason => $candidates) {
                     $candidates = array_values(array_unique(array_map('intval', $candidates)));
                     if (count($candidates) === 1) {
@@ -222,6 +246,26 @@ class SyncTeplouchetCommand extends Command
         unset($row);
 
         return $rows;
+    }
+
+    /** @return array<int,string> */
+    private function productArticleKeys(Product $product, TeplouchetPriceList $parser): array
+    {
+        $keys = [];
+        foreach ($product->specs ?? [] as $spec) {
+            if (! is_array($spec)) {
+                continue;
+            }
+            $name = mb_strtolower(trim((string) ($spec['key'] ?? $spec['name'] ?? '')));
+            if (! preg_match('/^(?:артикул(?: производителя)?|код(?: производителя| товара)?)$/u', $name)) {
+                continue;
+            }
+            if ($key = $parser->article((string) ($spec['value'] ?? ''))) {
+                $keys[] = $key;
+            }
+        }
+
+        return array_values(array_unique($keys));
     }
 
     private function ensureSupplier(array $details): array
@@ -306,6 +350,10 @@ class SyncTeplouchetCommand extends Command
         foreach ($metrics as $key => $value) {
             $this->line("metric.teplouchet.{$key}={$value}");
         }
+        collect($rows)
+            ->countBy('match_reason')
+            ->sortKeys()
+            ->each(fn ($count, $reason) => $this->line("metric.teplouchet.match_{$reason}={$count}"));
     }
 
     private function writeReport(array $rows): void

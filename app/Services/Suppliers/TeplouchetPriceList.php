@@ -122,6 +122,32 @@ class TeplouchetPriceList
         return (string) preg_replace('/[^\p{L}\p{N}]+/u', '', $value);
     }
 
+    public function coreModelKey(?string $value): string
+    {
+        $value = mb_strtolower((string) $value);
+        $value = preg_replace('/страна происхождения.*$/u', '', $value);
+        $value = preg_replace(
+            '/\b(?:циркуляционный|центробежный|дренажный|скважинный|поверхностный|погружной|фекальный|канализационный|канализационная|повысительный|повысительная|насосная|установка|станция|насос|для|воды|водоснабжения|dab|pumps|италия)\b/ui',
+            ' ',
+            $value,
+        );
+
+        return (string) preg_replace('/[^\p{L}\p{N}]+/u', '', $value);
+    }
+
+    public function sourceUrlKey(?string $value): string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return '';
+        }
+
+        $host = mb_strtolower((string) parse_url($value, PHP_URL_HOST));
+        $path = mb_strtolower(rtrim((string) parse_url($value, PHP_URL_PATH), '/'));
+
+        return $host.$path;
+    }
+
     /** @return array<string,array{grundfos:array<int,string>,wilo:array<int,string>,technical:array<string,string>}> */
     private function crossReference($sheet): array
     {

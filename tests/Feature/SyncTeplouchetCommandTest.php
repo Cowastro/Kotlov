@@ -31,9 +31,9 @@ class SyncTeplouchetCommandTest extends TestCase
         $minskProduct = Product::create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
-            'name' => 'Насос DAB B 50/250.40 M',
+            'name' => 'Поверхностный насос DAB B 50/250.40 M',
             'slug' => 'dab-b-50-250-40-m-test',
-            'sku' => '505812041',
+            'sku' => 'KOTLOV-DAB-B-50-250',
             'price' => 9000,
             'is_active' => true,
             'availability_status' => Product::AVAILABILITY_CHECK,
@@ -73,6 +73,8 @@ class SyncTeplouchetCommandTest extends TestCase
         $this->assertStringContainsString('TOP S 25/5', collect($product->fresh()->specs)->firstWhere('key', 'Аналоги Wilo')['value']);
 
         $minskLink = $supplier->supplierProducts()->where('supplier_article_normalized', '505812041')->firstOrFail();
+        $this->assertSame($minskProduct->id, $minskLink->product_id);
+        $this->assertSame('exact_dab_core_model', $minskLink->match_confidence);
         $this->assertTrue($minskLink->in_stock);
         $this->assertSame('always_available', $minskLink->stock_status);
         $this->assertSame('ТЕПЛОУЧЁТ · Минск', $minskLink->warehouse_name);
