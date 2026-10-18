@@ -212,7 +212,10 @@ class CrmCounterpartyResource extends Resource
 
         return $table->columns([
             TextColumn::make('name')->label('Контрагент')->searchable()->sortable()->weight('bold')
-                ->description(fn (CrmCounterparty $record): ?string => $record->legal_name),
+                ->description(fn (CrmCounterparty $record): ?string => $record->legal_name)
+                ->width('22rem')
+                ->grow(false)
+                ->wrap(),
             TextColumn::make('classification')->label('Категория')->badge()->sortable()
                 ->formatStateUsing(fn (string $state): string => CrmCounterparty::CLASSIFICATIONS[$state] ?? $state)
                 ->color(fn (string $state): string => match ($state) {
