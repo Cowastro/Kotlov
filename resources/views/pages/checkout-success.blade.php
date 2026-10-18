@@ -117,6 +117,10 @@
                                         <p class="text-caption-01 cl-text-2 mt-4">
                                             Заявка передана менеджеру. Он свяжется с вами для оформления рассрочки.
                                         </p>
+                                    @elseif ($order->payment_type === 'invoice')
+                                        <p class="text-caption-01 cl-text-2 mt-4">
+                                            Черновик счёта сформирован. Менеджер проверит наличие и срок поставки, после чего отправит счёт на {{ $order->company_email }}.
+                                        </p>
                                     @endif
                                 </div>
                             </div>

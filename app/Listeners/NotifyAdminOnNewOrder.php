@@ -28,7 +28,8 @@ class NotifyAdminOnNewOrder implements ShouldQueue
         }
 
         $requiresStockConfirmation = $order->items
-            ->contains(fn ($item): bool => $item->supply_is_available !== true);
+            ->contains(fn ($item): bool => $item->supply_is_available !== true)
+            || $order->payment_type === 'invoice';
         $requiresInstallmentFollowUp = $order->payment_type === 'installment_6';
         $title = "Новый заказ {$order->number}";
         if ($requiresStockConfirmation) {
@@ -37,12 +38,18 @@ class NotifyAdminOnNewOrder implements ShouldQueue
         if ($requiresInstallmentFollowUp) {
             $title = "Заявка на рассрочку {$order->number}";
         }
+        if ($order->payment_type === 'invoice') {
+            $title = "Запрос счёта {$order->number} — проверить наличие";
+        }
         $body = "{$order->customer_name} · {$order->customer_phone} · {$order->total} BYN";
         if ($requiresInstallmentFollowUp) {
             $body .= ' · Связаться с клиентом для оформления рассрочки.';
         }
         if ($requiresStockConfirmation) {
             $body .= ' · До подтверждения клиенту проверьте остаток и срок поставки.';
+        }
+        if ($order->payment_type === 'invoice' && $order->commercialDocument) {
+            $body .= ' · Черновик счёта '.$order->commercialDocument->number.' уже сформирован.';
         }
 
         Notification::make()

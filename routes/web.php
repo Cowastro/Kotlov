@@ -14,7 +14,6 @@ use App\Http\Controllers\CommercialDocumentPdfController;
 use App\Http\Controllers\CommercialDocumentPortalController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ContactRequestController;
-use App\Http\Controllers\SupportChatController;
 use App\Http\Controllers\CrmMailAttachmentController;
 use App\Http\Controllers\CrmMailAttachmentPreviewController;
 use App\Http\Controllers\CrmMailPdfTextController;
@@ -33,6 +32,8 @@ use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\PublicAiSelectionController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SupportChatController;
+use App\Http\Controllers\TaxpayerLookupController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Banner;
@@ -307,6 +308,9 @@ Route::post('/cart/coupon', [CartController::class, 'saveCoupon'])->name('cart.c
 // ===== Checkout =====
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store')->middleware('public.form.protect:checkout');
+Route::post('/checkout/company-lookup', TaxpayerLookupController::class)
+    ->middleware('throttle:20,1')
+    ->name('checkout.company-lookup');
 Route::get('/checkout/success/{number}', [CheckoutController::class, 'success'])->name('checkout.success');
 
 // ===== Блог =====

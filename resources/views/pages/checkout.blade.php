@@ -270,34 +270,57 @@
                             <div class="box-ip-checkout" id="invoice-fields" style="display:none;">
                                 <div class="h5 title">Реквизиты организации</div>
                                 <div class="form-content">
+                                    <fieldset class="tf-field">
+                                        <label class="tf-lable fw-medium">
+                                            УНП <span class="text-primary">*</span>
+                                        </label>
+                                        <div class="d-flex gap-8 align-items-stretch">
+                                            <input type="text" name="company_unp" id="company-unp"
+                                                value="{{ old('company_unp') }}"
+                                                inputmode="numeric" maxlength="9"
+                                                placeholder="100000000" style="flex:1;">
+                                            <button type="button" class="tf-btn btn-outline" id="company-lookup-button"
+                                                style="width:auto;min-width:150px;padding:0 18px;">
+                                                Найти по УНП
+                                            </button>
+                                        </div>
+                                        <div class="text-caption-01 cl-text-2 mt-4" id="company-lookup-status">
+                                            Заполним название и юридический адрес по данным реестра МНС.
+                                        </div>
+                                        @error('company_unp') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
+                                    </fieldset>
                                     <div class="tf-grid-layout sm-col-2">
                                         <fieldset class="tf-field">
                                             <label class="tf-lable fw-medium">
                                                 Организация / ИП <span class="text-primary">*</span>
                                             </label>
-                                            <input type="text" name="company_name"
+                                            <input type="text" name="company_name" id="company-name"
                                                 value="{{ old('company_name') }}"
                                                 placeholder="ООО Теплосервис">
+                                            @error('company_name') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                         </fieldset>
                                         <fieldset class="tf-field">
-                                            <label class="tf-lable fw-medium">УНП / ИНН</label>
-                                            <input type="text" name="company_unp"
-                                                value="{{ old('company_unp') }}"
-                                                placeholder="100000000">
+                                            <label class="tf-lable fw-medium">
+                                                Email для счёта <span class="text-primary">*</span>
+                                            </label>
+                                            <input type="email" name="company_email" id="company-email"
+                                                value="{{ old('company_email', old('customer_email', $user->email ?? '')) }}"
+                                                placeholder="buh@company.by">
+                                            @error('company_email') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                         </fieldset>
                                     </div>
                                     <fieldset class="tf-field">
-                                        <label class="tf-lable fw-medium">Юридический адрес</label>
-                                        <input type="text" name="company_address"
+                                        <label class="tf-lable fw-medium">
+                                            Юридический адрес <span class="text-primary">*</span>
+                                        </label>
+                                        <input type="text" name="company_address" id="company-address"
                                             value="{{ old('company_address') }}"
                                             placeholder="г. Минск, ул. Ленина, 1">
+                                        @error('company_address') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                     </fieldset>
-                                    <fieldset class="tf-field">
-                                        <label class="tf-lable fw-medium">Email для счёта</label>
-                                        <input type="email" name="company_email"
-                                            value="{{ old('company_email') }}"
-                                            placeholder="buh@company.by">
-                                    </fieldset>
+                                    <div class="p-12" style="border-radius:10px;background:#fff7e6;color:#8a5a00;">
+                                        Сначала менеджер проверит наличие и срок поставки всех позиций. После проверки он отправит готовый счёт на указанный email.
+                                    </div>
                                 </div>
                             </div>
 
@@ -500,10 +523,82 @@
     if (paymentRadios.length && invoiceFields) {
         function toggleInvoice() {
             var checked = document.querySelector('input[name="payment_type"]:checked');
-            invoiceFields.style.display = (checked && checked.value === 'invoice') ? '' : 'none';
+            var isInvoice = checked && checked.value === 'invoice';
+            invoiceFields.style.display = isInvoice ? '' : 'none';
+            ['company-unp', 'company-name', 'company-address', 'company-email'].forEach(function (id) {
+                var input = document.getElementById(id);
+                if (input) input.required = Boolean(isInvoice);
+            });
         }
         paymentRadios.forEach(function (r) { r.addEventListener('change', toggleInvoice); });
         toggleInvoice();
+    }
+
+    // ── Реквизиты организации из реестра МНС ──
+    var companyUnp = document.getElementById('company-unp');
+    var companyName = document.getElementById('company-name');
+    var companyAddress = document.getElementById('company-address');
+    var companyLookupButton = document.getElementById('company-lookup-button');
+    var companyLookupStatus = document.getElementById('company-lookup-status');
+    var companyLookupUrl = @json(route('checkout.company-lookup'));
+    var companyLookupInProgress = false;
+
+    async function lookupCompany() {
+        if (!companyUnp || !companyLookupButton || !companyLookupStatus || companyLookupInProgress) return;
+
+        var unp = companyUnp.value.replace(/\D/g, '');
+        companyUnp.value = unp;
+        if (!/^\d{9}$/.test(unp)) {
+            companyLookupStatus.textContent = 'Введите УНП из 9 цифр.';
+            companyLookupStatus.style.color = '#b42318';
+            return;
+        }
+
+        companyLookupInProgress = true;
+        companyLookupButton.disabled = true;
+        companyLookupButton.textContent = 'Ищем…';
+        companyLookupStatus.textContent = 'Проверяем данные в реестре МНС…';
+        companyLookupStatus.style.color = '';
+
+        try {
+            var response = await fetch(companyLookupUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ unp: unp })
+            });
+            var payload = await response.json();
+            if (!response.ok || !payload.data) {
+                throw new Error(payload.message || 'Не удалось получить реквизиты.');
+            }
+
+            if (companyName) companyName.value = payload.data.legal_name || payload.data.short_name || '';
+            if (companyAddress) companyAddress.value = payload.data.address || '';
+            companyLookupStatus.textContent = 'Реквизиты заполнены · '
+                + (payload.data.source || 'реестр МНС')
+                + (payload.data.status ? ' · ' + payload.data.status : '');
+            companyLookupStatus.style.color = '#16835f';
+        } catch (error) {
+            companyLookupStatus.textContent = error.message || 'Не удалось получить реквизиты. Заполните их вручную.';
+            companyLookupStatus.style.color = '#b42318';
+        } finally {
+            companyLookupInProgress = false;
+            companyLookupButton.disabled = false;
+            companyLookupButton.textContent = 'Найти по УНП';
+        }
+    }
+
+    if (companyLookupButton) companyLookupButton.addEventListener('click', lookupCompany);
+    if (companyUnp) {
+        companyUnp.addEventListener('input', function () {
+            companyUnp.value = companyUnp.value.replace(/\D/g, '').slice(0, 9);
+        });
+        companyUnp.addEventListener('blur', function () {
+            if (/^\d{9}$/.test(companyUnp.value)) lookupCompany();
+        });
     }
 })();
 </script>

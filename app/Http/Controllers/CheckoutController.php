@@ -10,6 +10,8 @@ use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
+use App\Services\CommercialDocuments\CheckoutInvoiceService;
+use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Orders\OrderEconomicSnapshotRecorder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -68,6 +70,8 @@ class CheckoutController extends Controller
         B2bCatalogOfferResolver $offerResolver,
         CartAvailabilityGuard $availabilityGuard,
         CartCouponService $couponService,
+        BelarusTaxpayerRegistry $taxpayerRegistry,
+        CheckoutInvoiceService $checkoutInvoices,
     ) {
         $cart = session(self::CART_KEY, []);
 
@@ -182,9 +186,9 @@ class CheckoutController extends Controller
             'comment' => ['nullable', 'string', 'max:1000'],
             // Реквизиты для счёта
             'company_name' => ['required_if:payment_type,invoice', 'nullable', 'string', 'max:255'],
-            'company_unp' => ['nullable', 'string', 'max:50'],
-            'company_address' => ['nullable', 'string', 'max:500'],
-            'company_email' => ['nullable', 'email', 'max:255'],
+            'company_unp' => ['required_if:payment_type,invoice', 'nullable', 'regex:/^\d{9}$/'],
+            'company_address' => ['required_if:payment_type,invoice', 'nullable', 'string', 'max:500'],
+            'company_email' => ['required_if:payment_type,invoice', 'nullable', 'email', 'max:255'],
         ], [
             'customer_name.required' => 'Введите имя.',
             'customer_phone.required' => 'Введите телефон.',
@@ -196,7 +200,25 @@ class CheckoutController extends Controller
             'delivery_city.required_unless' => 'Укажите город доставки.',
             'delivery_address.required_unless' => 'Укажите адрес доставки.',
             'company_name.required_if' => 'Введите название организации для оплаты по счёту.',
+            'company_unp.required_if' => 'Введите УНП организации.',
+            'company_unp.regex' => 'УНП должен состоять из 9 цифр.',
+            'company_address.required_if' => 'Укажите юридический адрес организации.',
+            'company_email.required_if' => 'Укажите email, на который менеджер отправит счёт.',
         ]);
+
+        $invoiceCompany = null;
+        if ($request->payment_type === 'invoice') {
+            $registryCompany = $taxpayerRegistry->lookup((string) $request->company_unp);
+            $invoiceCompany = [
+                'unp' => preg_replace('/\D+/', '', (string) $request->company_unp),
+                'legal_name' => $registryCompany['legal_name'] ?? $request->company_name,
+                'short_name' => $registryCompany['short_name'] ?? $request->company_name,
+                'address' => $registryCompany['address'] ?? $request->company_address,
+                'registered_at' => $registryCompany['registered_at'] ?? null,
+                'email' => $request->company_email,
+                'phone' => $request->customer_phone,
+            ];
+        }
 
         $subtotal = $this->calcSubtotal($cart);
         $coupon = $couponService->quote(session('cart_coupon'), $subtotal);
@@ -210,7 +232,7 @@ class CheckoutController extends Controller
         }
         $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
 
-        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon) {
+        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon, $invoiceCompany, $checkoutInvoices) {
 
             $lockedCoupon = null;
             if ($coupon['code']) {
@@ -278,6 +300,10 @@ class CheckoutController extends Controller
             }
 
             app(OrderEconomicSnapshotRecorder::class)->capturePlaced($order->load('items'));
+
+            if ($invoiceCompany) {
+                $checkoutInvoices->createDraft($order, $invoiceCompany);
+            }
 
             if ($lockedCoupon) {
                 $lockedCoupon->increment('uses_count');

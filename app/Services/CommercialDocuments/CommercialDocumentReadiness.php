@@ -47,6 +47,11 @@ class CommercialDocumentReadiness
         if ($document->items()->count() === 0) {
             $issues[] = 'в документе нет товаров или услуг';
         }
+        if ($document->type === 'invoice'
+            && $document->order
+            && $document->order->items()->whereNull('fulfillment_confirmed_at')->exists()) {
+            $issues[] = 'менеджер не подтвердил наличие и способ исполнения всех позиций заказа';
+        }
         if ($document->items()->where(fn ($query) => $query
             ->where('quantity', '<=', 0)
             ->orWhere('unit_price', '<=', 0))->exists()) {

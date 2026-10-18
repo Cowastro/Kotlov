@@ -8,8 +8,10 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
+use App\Services\CommercialDocuments\CommercialDocumentReadiness;
 use Filament\Notifications\DatabaseNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -72,6 +74,75 @@ class CheckoutPaymentAvailabilityTest extends TestCase
         );
     }
 
+    public function test_company_lookup_returns_official_tax_registry_requisites(): void
+    {
+        $this->fakeTaxpayerRegistry();
+
+        $this->postJson(route('checkout.company-lookup'), ['unp' => '193000777'])
+            ->assertOk()
+            ->assertJsonPath('data.unp', '193000777')
+            ->assertJsonPath('data.legal_name', 'Общество с ограниченной ответственностью «Тест Тепло»')
+            ->assertJsonPath('data.address', 'г. Минск, ул. Тестовая, 7')
+            ->assertJsonMissingPath('data.email')
+            ->assertJsonMissingPath('data.phone');
+    }
+
+    public function test_invoice_checkout_creates_a_draft_from_registry_and_requires_manager_stock_confirmation(): void
+    {
+        Notification::fake();
+        $this->fakeTaxpayerRegistry();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $product = $this->orderableProduct();
+
+        $payload = $this->checkoutData('invoice', 'invoice-request') + [
+            'company_unp' => '193000777',
+            'company_name' => 'Подменённое название',
+            'company_address' => 'Подменённый адрес',
+            'company_email' => 'buh@example.by',
+        ];
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0')
+            ->withSession(['cart' => $this->cartFor($product)])
+            ->post(route('checkout.store'), $payload)
+            ->assertRedirect();
+
+        $order = Order::query()->latest('id')->with('items', 'commercialDocument.items')->firstOrFail();
+        $invoice = $order->commercialDocument;
+
+        $this->assertNotNull($invoice);
+        $this->assertSame('invoice', $invoice->type);
+        $this->assertSame('draft', $invoice->status);
+        $this->assertSame('Общество с ограниченной ответственностью «Тест Тепло»', $invoice->client_legal_name);
+        $this->assertSame('г. Минск, ул. Тестовая, 7', $invoice->client_address);
+        $this->assertSame('buh@example.by', $invoice->client_email);
+        $this->assertSame($product->id, $invoice->items->first()->product_id);
+        $this->assertSame($invoice->crm_counterparty_id, $order->crm_counterparty_id);
+
+        $readiness = app(CommercialDocumentReadiness::class);
+        $this->assertContains(
+            'менеджер не подтвердил наличие и способ исполнения всех позиций заказа',
+            $readiness->issues($invoice),
+        );
+
+        $order->items()->update(['fulfillment_confirmed_at' => now()]);
+        $this->assertNotContains(
+            'менеджер не подтвердил наличие и способ исполнения всех позиций заказа',
+            $readiness->issues($invoice->fresh()),
+        );
+
+        Notification::assertSentTo(
+            $manager,
+            DatabaseNotification::class,
+            fn (DatabaseNotification $notification): bool => str_contains(
+                (string) $notification->data['title'],
+                'Запрос счёта',
+            ) && str_contains(
+                (string) $notification->data['body'],
+                'Черновик счёта',
+            ),
+        );
+    }
+
     /** @return array<int, array<string, mixed>> */
     private function cartFor(Product $product): array
     {
@@ -127,5 +198,21 @@ class CheckoutPaymentAvailabilityTest extends TestCase
         ]);
 
         return $product;
+    }
+
+    private function fakeTaxpayerRegistry(): void
+    {
+        Http::fake([
+            'grp.nalog.gov.by/*' => Http::response([
+                'row' => [
+                    'vunp' => '193000777',
+                    'vnaimp' => 'Общество с ограниченной ответственностью «Тест Тепло»',
+                    'vnaimk' => 'ООО «Тест Тепло»',
+                    'vpadres' => 'г. Минск, ул. Тестовая, 7',
+                    'vkods' => 'Действующий',
+                    'dreg' => '2020-01-01',
+                ],
+            ]),
+        ]);
     }
 }

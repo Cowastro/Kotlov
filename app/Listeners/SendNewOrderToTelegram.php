@@ -28,7 +28,8 @@ class SendNewOrderToTelegram implements ShouldQueue
         $order = $event->order;
         $requiresInstallmentFollowUp = $order->payment_type === 'installment_6';
         $requiresStockConfirmation = $order->items
-            ->contains(fn ($item): bool => $item->supply_is_available !== true);
+            ->contains(fn ($item): bool => $item->supply_is_available !== true)
+            || $order->payment_type === 'invoice';
 
         $deliveryNames = collect(config('shop.delivery_methods', []))
             ->mapWithKeys(fn ($m, $k) => [$k => $m['name'] ?? $k])
@@ -64,7 +65,9 @@ class SendNewOrderToTelegram implements ShouldQueue
         $lines = [
             $requiresInstallmentFollowUp
                 ? "📅 *Заявка на рассрочку {$order->number}*"
-                : "🛒 *Новый заказ {$order->number}*",
+                : ($order->payment_type === 'invoice'
+                    ? "🧾 *Запрос счёта {$order->number}*"
+                    : "🛒 *Новый заказ {$order->number}*"),
             $requiresStockConfirmation ? '⚠️ *Сначала подтвердить наличие и срок поставки*' : null,
             '',
             '👤 *Клиент:* '.$escape($order->customer_name),
@@ -75,6 +78,12 @@ class SendNewOrderToTelegram implements ShouldQueue
             $address ? '📍 *Адрес:* '.$escape($address) : null,
             '💳 *Оплата:* '.$escape($payment),
             $requiresInstallmentFollowUp ? '📞 *Менеджеру: связаться с клиентом и оформить рассрочку*' : null,
+            $order->payment_type === 'invoice' && $order->commercialDocument
+                ? '🧾 *Черновик счёта:* '.$escape($order->commercialDocument->number)
+                : null,
+            $order->payment_type === 'invoice'
+                ? '⚠️ *Не отправлять счёт до ручной проверки наличия и срока поставки*'
+                : null,
             '',
             '🧾 *Товары:*',
             $items,
