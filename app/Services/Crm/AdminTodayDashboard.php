@@ -61,7 +61,7 @@ class AdminTodayDashboard
         $attentionCounts = [
             'calls' => $this->calls($managerId)->needsAttention()->count(),
             'orders' => $this->orders($managerId)->whereNull('archived_at')->where('status', 'new')->count(),
-            'requests' => $this->requests($managerId)->whereIn('status', ['new', 'read'])->count(),
+            'requests' => $this->requests($managerId)->whereIn('status', ContactRequest::OPEN_STATUSES)->count(),
             'installations' => $this->installations($managerId)->where('status', 'new')->count(),
             'mail' => $this->mail($managerId)->needsAttention()->count(),
             'chats' => $this->chats($managerId)->where('status', 'new')->count(),
@@ -73,6 +73,9 @@ class AdminTodayDashboard
         $dueMail = $this->mail($managerId)
             ->whereNotIn('status', ['closed', 'spam'])
             ->whereNotNull('next_follow_up_at');
+        $dueRequests = $this->requests($managerId)
+            ->whereIn('status', ContactRequest::OPEN_STATUSES)
+            ->whereNotNull('next_follow_up_at');
 
         $activity = $this->activityItems($rangeStart, $rangeEnd, $status, $sort, $managerId);
 
@@ -83,9 +86,11 @@ class AdminTodayDashboard
                 'today' => array_sum($todayCounts),
                 'attention' => array_sum($attentionCounts),
                 'due' => (clone $dueCalls)->where('next_follow_up_at', '<=', $dayEnd)->count()
-                    + (clone $dueMail)->where('next_follow_up_at', '<=', $dayEnd)->count(),
+                    + (clone $dueMail)->where('next_follow_up_at', '<=', $dayEnd)->count()
+                    + (clone $dueRequests)->where('next_follow_up_at', '<=', $dayEnd)->count(),
                 'overdue' => (clone $dueCalls)->where('next_follow_up_at', '<', $now)->count()
-                    + (clone $dueMail)->where('next_follow_up_at', '<', $now)->count(),
+                    + (clone $dueMail)->where('next_follow_up_at', '<', $now)->count()
+                    + (clone $dueRequests)->where('next_follow_up_at', '<', $now)->count(),
             ],
             'todayCounts' => $todayCounts,
             'attentionItems' => $this->attentionItems($now, $dayEnd, $managerId),
@@ -176,21 +181,21 @@ class AdminTodayDashboard
             )));
 
         $this->requests($managerId)
-            ->with('telephonyCalls.assignedUser')
-            ->whereIn('status', ['new', 'read'])
+            ->with(['responsibleUser', 'telephonyCalls.assignedUser'])
+            ->whereIn('status', ContactRequest::OPEN_STATUSES)
             ->oldest()
             ->limit(20)
             ->get()
             ->each(fn (ContactRequest $request) => $items->push($this->item(
                 key: 'request:'.$request->id,
-                kind: 'Заявка с сайта',
+                kind: $request->next_follow_up_at ? 'Напомнить по заявке' : 'Заявка с сайта',
                 title: $request->name,
                 subtitle: $this->compact([$request->phone, $request->product_name, $request->message]),
-                time: $request->created_at,
+                time: $request->next_follow_up_at ?: $request->created_at,
                 url: ContactRequestResource::getUrl('view', ['record' => $request]),
-                tone: $request->status === 'new' ? 'danger' : 'warning',
-                responsible: $request->telephonyCalls->first()?->assignedUser?->name,
-                priority: 2,
+                tone: $request->status === 'new' || $request->next_follow_up_at?->lt($now) ? 'danger' : 'warning',
+                responsible: $request->responsibleUser?->name ?: $request->telephonyCalls->first()?->assignedUser?->name,
+                priority: $request->next_follow_up_at?->lt($now) ? 0 : 2,
             )));
 
         $this->installations($managerId)
@@ -304,9 +309,9 @@ class AdminTodayDashboard
             )));
 
         $requests = $this->requests($managerId)
-            ->with('telephonyCalls.assignedUser')
+            ->with(['responsibleUser', 'telephonyCalls.assignedUser'])
             ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
-        $this->applyStatus($requests, $status, 'status', ['done']);
+        $this->applyStatus($requests, $status, 'status', ['done', 'cancelled']);
         $requests->latest()->limit(80)->get()
             ->each(fn (ContactRequest $request) => $items->push($this->item(
                 key: 'activity-request:'.$request->id,
@@ -315,10 +320,10 @@ class AdminTodayDashboard
                 subtitle: $this->compact([$request->phone, $request->product_name]),
                 time: $request->created_at,
                 url: ContactRequestResource::getUrl('view', ['record' => $request]),
-                tone: $request->status === 'done' ? 'success' : 'info',
-                closed: $request->status === 'done',
+                tone: in_array($request->status, ['done', 'cancelled'], true) ? 'success' : 'info',
+                closed: in_array($request->status, ['done', 'cancelled'], true),
                 statusLabel: ContactRequest::$statuses[$request->status] ?? $request->status,
-                responsible: $request->telephonyCalls->first()?->assignedUser?->name,
+                responsible: $request->responsibleUser?->name ?: $request->telephonyCalls->first()?->assignedUser?->name,
             )));
 
         $installations = $this->installations($managerId)
@@ -460,12 +465,15 @@ class AdminTodayDashboard
     {
         return ContactRequest::query()->when(
             $managerId,
-            fn (Builder $query, int $id): Builder => $query->whereExists(
-                TelephonyCall::query()
-                    ->selectRaw('1')
-                    ->whereColumn('telephony_calls.contact_request_id', 'contact_requests.id')
-                    ->where('telephony_calls.assigned_user_id', $id),
-            ),
+            fn (Builder $query, int $id): Builder => $query->where(function (Builder $query) use ($id): void {
+                $query->where('responsible_user_id', $id)
+                    ->orWhereExists(
+                        TelephonyCall::query()
+                            ->selectRaw('1')
+                            ->whereColumn('telephony_calls.contact_request_id', 'contact_requests.id')
+                            ->where('telephony_calls.assigned_user_id', $id),
+                    );
+            }),
         );
     }
 

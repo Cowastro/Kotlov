@@ -69,18 +69,39 @@ class ContactRequestsTable
                     ->badge()
                     ->color(fn ($state) => match ($state) {
                         'new' => 'info',
-                        'read' => 'warning',
+                        'read' => 'gray',
+                        'in_progress' => 'warning',
+                        'waiting' => 'primary',
                         'done' => 'success',
+                        'cancelled' => 'danger',
                         default => 'gray',
                     })
                     ->icon(fn (?string $state) => match ($state) {
                         'new' => 'heroicon-o-sparkles',
                         'read' => 'heroicon-o-eye',
+                        'in_progress' => 'heroicon-o-arrow-path',
+                        'waiting' => 'heroicon-o-clock',
                         'done' => 'heroicon-o-check-circle',
+                        'cancelled' => 'heroicon-o-x-circle',
                         default => null,
                     })
                     ->formatStateUsing(fn ($state) => ContactRequest::$statuses[$state] ?? $state)
                     ->sortable(),
+
+                TextColumn::make('responsibleUser.name')
+                    ->label('Ответственный')
+                    ->icon('heroicon-o-user-circle')
+                    ->placeholder('Не назначен')
+                    ->sortable()
+                    ->searchable(),
+
+                TextColumn::make('next_follow_up_at')
+                    ->label('Следующий контакт')
+                    ->dateTime('d.m.Y H:i', 'Europe/Minsk')
+                    ->placeholder('—')
+                    ->color(fn (ContactRequest $record): string => $record->next_follow_up_at?->isPast() ? 'danger' : 'gray')
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('created_at')
                     ->label('Дата')
@@ -99,23 +120,35 @@ class ContactRequestsTable
                 SelectFilter::make('status')
                     ->label('Статус')
                     ->options(ContactRequest::$statuses),
+                SelectFilter::make('responsible_user_id')
+                    ->label('Ответственный')
+                    ->relationship('responsibleUser', 'name')
+                    ->searchable()
+                    ->preload(),
             ])
             ->recordActions([
                 ViewAction::make(),
                 ActionGroup::make([
                     Action::make('read')
-                        ->label('Прочитана')
-                        ->icon('heroicon-o-eye')
+                        ->label('Взять в работу')
+                        ->icon('heroicon-o-hand-raised')
                         ->color('warning')
-                        ->visible(fn ($record) => $record->status === 'new')
-                        ->action(fn ($record) => $record->update(['status' => 'read'])),
+                        ->visible(fn ($record) => in_array($record->status, ['new', 'read'], true))
+                        ->action(fn ($record) => $record->update([
+                            'status' => 'in_progress',
+                            'responsible_user_id' => $record->responsible_user_id ?: auth()->id(),
+                        ])),
 
                     Action::make('done')
                         ->label('Обработана')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->visible(fn ($record) => $record->status !== 'done')
-                        ->action(fn ($record) => $record->update(['status' => 'done'])),
+                        ->action(fn ($record) => $record->update([
+                            'status' => 'done',
+                            'responsible_user_id' => $record->responsible_user_id ?: auth()->id(),
+                            'next_follow_up_at' => null,
+                        ])),
 
                     EditAction::make(),
                 ]),

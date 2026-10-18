@@ -244,6 +244,29 @@ class AdminTodayDashboardTest extends TestCase
         $this->assertSame('Денис Готто', $data['activityItems']->firstWhere('title', $title)['responsible']);
     }
 
+    public function test_directly_assigned_contact_request_is_visible_to_its_manager(): void
+    {
+        Carbon::setTestNow('2026-10-18 10:00:00');
+
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $request = ContactRequest::query()->create([
+            'name' => 'Назначенная заявка',
+            'phone' => '+375290000003',
+            'message' => 'Нужна консультация',
+            'status' => 'in_progress',
+            'responsible_user_id' => $manager->id,
+            'next_follow_up_at' => now()->subMinute(),
+        ]);
+
+        $data = app(AdminTodayDashboard::class)->data(period: 'today', status: 'all', viewer: $manager);
+        $item = $data['activityItems']->firstWhere('title', $request->name);
+
+        $this->assertNotNull($item);
+        $this->assertSame($manager->name, $item['responsible']);
+        $this->assertSame(1, $data['summary']['due']);
+        $this->assertSame(1, $data['summary']['overdue']);
+    }
+
     public function test_manager_can_create_and_complete_only_an_assigned_quick_reminder(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
