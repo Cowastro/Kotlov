@@ -30,8 +30,8 @@ class ThermostudioCorrectionMigrationTest extends TestCase
             'is_active' => true,
             'is_archived' => false,
         ]);
-        $supplier = Supplier::query()->where('code', 'thermostudio')->firstOrFail();
-        $supplier->update([
+        $supplier = Supplier::query()->updateOrCreate(['code' => 'thermostudio'], [
+            'name' => 'ООО «Термостудия»',
             'contact' => 'https://docs.google.com/spreadsheets/d/example/edit',
             'is_active' => true,
         ]);
