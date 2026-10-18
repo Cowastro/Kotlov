@@ -65,9 +65,10 @@ class SyncTeplouchetCommand extends Command
 
             $stats = DB::transaction(function () use ($classified, $payload, &$supplier): array {
                 [$supplier, $source, $sync] = $this->ensureSupplier($payload['supplier']);
-                $stats = ['offers' => 0, 'linked' => 0, 'unlinked' => 0, 'duplicate_rows_skipped' => 0, 'retail_updated' => 0, 'retail_review' => 0, 'analog_specs_updated' => 0];
+                $stats = ['offers' => 0, 'linked' => 0, 'unlinked' => 0, 'duplicate_rows_skipped' => 0, 'retail_updated' => 0, 'retail_review' => 0, 'analog_specs_updated' => 0, 'analog_product_links' => 0, 'analog_product_ambiguous' => 0, 'analog_product_unmatched' => 0];
                 $touched = [];
                 $stockObservedAt = CarbonImmutable::parse($payload['source_date'], 'Europe/Minsk')->endOfDay();
+                $analogCatalog = $this->analogCatalog();
 
                 foreach ($classified as $row) {
                     if ($row['duplicate_article']) {
@@ -131,6 +132,7 @@ class SyncTeplouchetCommand extends Command
                     if ($this->mergeAnalogSpecs($product, $row)) {
                         $stats['analog_specs_updated']++;
                     }
+                    $this->syncAnalogProducts($product, $row, $analogCatalog, $stats);
                     $product->save();
                     $touched[] = $product->id;
                     if ($product->brand_id) {
@@ -340,6 +342,93 @@ class SyncTeplouchetCommand extends Command
         }
 
         return $changed;
+    }
+
+    /** @return array<string,array{full:array<string,array<int,int>>,base:array<string,array<int,int>>}> */
+    private function analogCatalog(): array
+    {
+        $catalog = [];
+        foreach (['wilo', 'grundfos'] as $brand) {
+            $brandIds = Brand::query()->whereRaw('LOWER(name) = ?', [$brand])->pluck('id');
+            $products = Product::query()
+                ->where(function ($query) use ($brand, $brandIds): void {
+                    $query->whereIn('brand_id', $brandIds)
+                        ->orWhereRaw('LOWER(name) LIKE ?', ['%'.$brand.'%']);
+                })
+                ->get(['id', 'brand_id', 'name']);
+
+            $catalog[$brand] = ['full' => [], 'base' => []];
+            foreach ($products as $product) {
+                $keys = $this->analogModelKeys($product->name, $brand);
+                foreach (['full', 'base'] as $type) {
+                    if ($keys[$type] !== '') {
+                        $catalog[$brand][$type][$keys[$type]][] = (int) $product->id;
+                    }
+                }
+            }
+        }
+
+        return $catalog;
+    }
+
+    /** @param array<string,mixed> $row @param array<string,mixed> $catalog @param array<string,int> $stats */
+    private function syncAnalogProducts(Product $product, array $row, array $catalog, array &$stats): void
+    {
+        DB::table('product_analogs')
+            ->where('product_id', $product->id)
+            ->where('source', 'teplouchet')
+            ->delete();
+
+        $links = [];
+        foreach (['wilo', 'grundfos'] as $brand) {
+            foreach ($row['analogs'][$brand] ?? [] as $sourceModel) {
+                $keys = $this->analogModelKeys((string) $sourceModel, $brand);
+                $candidates = array_values(array_unique(array_map('intval', $catalog[$brand]['full'][$keys['full']] ?? [])));
+                $method = 'exact_model';
+                if (count($candidates) !== 1) {
+                    $candidates = array_values(array_unique(array_map('intval', $catalog[$brand]['base'][$keys['base']] ?? [])));
+                    $method = 'unique_base_model';
+                }
+                if (count($candidates) !== 1) {
+                    $stats[count($candidates) > 1 ? 'analog_product_ambiguous' : 'analog_product_unmatched']++;
+                    continue;
+                }
+                $links[$candidates[0]] = ['source_model' => (string) $sourceModel, 'match_method' => $method];
+            }
+        }
+
+        foreach ($links as $analogProductId => $match) {
+            if ((int) $analogProductId === (int) $product->id) {
+                continue;
+            }
+            DB::table('product_analogs')->updateOrInsert([
+                'product_id' => $product->id,
+                'analog_product_id' => $analogProductId,
+            ], [
+                'source' => 'teplouchet',
+                'match_method' => $match['match_method'],
+                'source_model' => $match['source_model'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $stats['analog_product_links']++;
+        }
+    }
+
+    /** @return array{full:string,base:string} */
+    private function analogModelKeys(string $value, string $brand): array
+    {
+        $value = mb_strtoupper(trim($value));
+        $brandPattern = $brand === 'wilo' ? 'WILO(?:-NATIVE)?' : 'GRUNDFOS';
+        $value = (string) preg_replace('/^.*?\b'.$brandPattern.'\b\s*/ui', '', $value);
+        $value = (string) preg_replace('/\s+PN\s*\d.*$/ui', '', $value);
+        $value = (string) preg_replace('/\s*\(\s*\d{5,}\s*\)\s*$/u', '', $value);
+        $value = trim($value);
+        $full = (string) preg_replace('/[^\p{L}\p{N}]+/u', '', $value);
+        $baseValue = (string) preg_replace('/(?:\s|[-\/])+(?:EM|DM)\s*$/ui', '', $value);
+        $base = (string) preg_replace('/[^\p{L}\p{N}]+/u', '', $baseValue);
+
+        return ['full' => $full, 'base' => $base];
     }
 
     private function metrics(array $payload, array $rows): void

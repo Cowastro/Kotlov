@@ -89,6 +89,20 @@ class ProductController extends Controller
             ->limit(8)
             ->get();
 
+        $analogProducts = $product->analogProducts()
+            ->orderable()
+            ->withSupplierChannels()
+            ->with(['category', 'brand'])
+            ->get()
+            ->merge($product->analogOfProducts()
+                ->orderable()
+                ->withSupplierChannels()
+                ->with(['category', 'brand'])
+                ->get())
+            ->unique('id')
+            ->take(12)
+            ->values();
+
         app(ProductPopularityService::class)->recordView($product, request());
 
         $reviews = $product->reviews;
@@ -326,6 +340,7 @@ class ProductController extends Controller
             'product',
             'attributeValues',
             'relatedProducts',
+            'analogProducts',
             'reviews',
             'title',
             'description',

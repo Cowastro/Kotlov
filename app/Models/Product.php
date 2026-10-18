@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -795,6 +796,20 @@ class Product extends Model
     public function supplierMappings(): HasMany
     {
         return $this->hasMany(SupplierProductMapping::class);
+    }
+
+    public function analogProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'product_analogs', 'product_id', 'analog_product_id')
+            ->withPivot(['source', 'match_method', 'source_model'])
+            ->withTimestamps();
+    }
+
+    public function analogOfProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(self::class, 'product_analogs', 'analog_product_id', 'product_id')
+            ->withPivot(['source', 'match_method', 'source_model'])
+            ->withTimestamps();
     }
 
     public function supplierProducts(): HasMany

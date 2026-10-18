@@ -47,6 +47,17 @@ class SyncTeplouchetCommandTest extends TestCase
             'is_active' => true,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+        $wiloBrand = Brand::create(['name' => 'Wilo', 'slug' => 'wilo-test', 'is_active' => true]);
+        $wiloAnalog = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $wiloBrand->id,
+            'name' => 'Циркуляционный насос WILO TOP-S 25/5 EM PN6/10',
+            'slug' => 'wilo-top-s-25-5-em-test',
+            'sku' => 'WILO-TOP-S-25-5-EM',
+            'price' => 1500,
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
 
         $this->artisan('supplier:sync-teplouchet', ['--dry-run' => true, '--match-existing' => true])
             ->expectsOutput('metric.teplouchet.rows=181')
@@ -80,6 +91,14 @@ class SyncTeplouchetCommandTest extends TestCase
         $this->assertSame('Поставка до 10 рабочих дней', $product->fresh()->publicAvailabilityLabel());
         $this->assertStringContainsString('UPS 25-55-180', collect($product->fresh()->specs)->firstWhere('key', 'Аналоги Grundfos')['value']);
         $this->assertStringContainsString('TOP S 25/5', collect($product->fresh()->specs)->firstWhere('key', 'Аналоги Wilo')['value']);
+        $this->assertDatabaseHas('product_analogs', [
+            'product_id' => $product->id,
+            'analog_product_id' => $wiloAnalog->id,
+            'source' => 'teplouchet',
+            'match_method' => 'exact_model',
+        ]);
+        $this->assertSame($wiloAnalog->id, $product->fresh()->analogProducts()->firstOrFail()->id);
+        $this->assertSame($product->id, $wiloAnalog->fresh()->analogOfProducts()->firstOrFail()->id);
 
         $minskLink = $supplier->supplierProducts()->where('supplier_article_normalized', '505812041')->firstOrFail();
         $this->assertSame($minskProduct->id, $minskLink->product_id);
@@ -93,5 +112,10 @@ class SyncTeplouchetCommandTest extends TestCase
         $misbrandedLink = $supplier->supplierProducts()->where('supplier_article_normalized', '505802041')->firstOrFail();
         $this->assertSame($misbrandedProduct->id, $misbrandedLink->product_id);
         $this->assertSame('exact_sku', $misbrandedLink->match_confidence);
+
+        $this->get('/'.$category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertSee('Совместимые аналоги')
+            ->assertSee($wiloAnalog->name);
     }
 }
