@@ -1,0 +1,63 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\CrmContactPoint;
+use App\Models\Product;
+use App\Models\Supplier;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class SyncTeplouchetCommandTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_dry_run_is_read_only_and_apply_imports_prices_stock_contacts_and_analogs(): void
+    {
+        $brand = Brand::create(['name' => 'DAB', 'slug' => 'dab-test', 'is_active' => true]);
+        $category = Category::create(['name' => 'Насосы', 'slug' => 'dab-test']);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Циркуляционный насос DAB A 50/180 M',
+            'slug' => 'dab-a-50-180-m-test',
+            'sku' => '505803001',
+            'price' => 1300,
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+
+        $this->artisan('supplier:sync-teplouchet', ['--dry-run' => true, '--match-existing' => true])
+            ->expectsOutput('metric.teplouchet.rows=181')
+            ->expectsOutput('metric.teplouchet.duplicate_rows=10')
+            ->expectsOutput('metric.teplouchet.safe_unique_offers=171')
+            ->expectsOutput('metric.teplouchet.retail_below_purchase=0')
+            ->assertSuccessful();
+        $this->assertDatabaseMissing('suppliers', ['code' => 'teplouchet']);
+
+        $this->artisan('supplier:sync-teplouchet', [
+            '--apply' => true,
+            '--match-existing' => true,
+            '--sync-retail-prices' => true,
+        ])->assertSuccessful();
+
+        $supplier = Supplier::where('code', 'teplouchet')->firstOrFail();
+        $this->assertSame('ООО «ТЕПЛОУЧЁТ»', $supplier->name);
+        $this->assertSame(171, $supplier->supplierProducts()->count());
+        $this->assertSame(2, CrmContactPoint::where('counterparty_id', $supplier->crm_counterparty_id)->count());
+
+        $link = $supplier->supplierProducts()->where('supplier_article_normalized', '505803001')->firstOrFail();
+        $this->assertSame($product->id, $link->product_id);
+        $this->assertSame('1255.18', $link->price_byn);
+        $this->assertTrue($link->in_stock);
+        $this->assertNull($link->stock_quantity);
+        $this->assertSame('available_without_quantity', $link->stock_status);
+        $this->assertSame('2026-10-12', $link->last_stock_synced_at->toDateString());
+        $this->assertSame('1443.46', $product->fresh()->price);
+        $this->assertSame(Product::AVAILABILITY_CHECK, $product->fresh()->effectiveAvailabilityStatus());
+        $this->assertStringContainsString('UPS 25-55-180', collect($product->fresh()->specs)->firstWhere('key', 'Аналоги Grundfos')['value']);
+        $this->assertStringContainsString('TOP S 25/5', collect($product->fresh()->specs)->firstWhere('key', 'Аналоги Wilo')['value']);
+    }
+}
