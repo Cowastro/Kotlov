@@ -63,7 +63,7 @@ class EnrichTmManagementWorkbookCommand extends Command
             ->whereNotNull('product_id')
             ->get();
         $index = $this->linkIndex($links);
-        $stats = ['rows' => 0, 'matched' => 0, 'skipped' => 0, 'ambiguous' => 0, 'images_saved' => 0, 'content_saved' => 0, 'specs_saved' => 0, 'errors' => 0];
+        $stats = ['rows' => 0, 'matched' => 0, 'skipped' => 0, 'ambiguous' => 0, 'images_saved' => 0, 'content_saved' => 0, 'specs_saved' => 0, 'attribute_sync_errors' => 0, 'errors' => 0];
 
         foreach ($configs as $brand => $config) {
             $sheet = $workbook->getSheetByName($config['sheet']);
@@ -118,7 +118,14 @@ class EnrichTmManagementWorkbookCommand extends Command
                     if ($specs !== []) {
                         $merged = $this->mergeSpecs($product->specs, $specs);
                         $product->specs = $merged;
-                        $enricher->syncSpecsToAttributeValues($product, $merged);
+                        try {
+                            $enricher->syncSpecsToAttributeValues($product, $merged);
+                        } catch (\Throwable $e) {
+                            // Keep the source facts on the product even when a legacy
+                            // attribute definition cannot accept one unusual value.
+                            $stats['attribute_sync_errors']++;
+                            report($e);
+                        }
                         $stats['specs_saved']++;
                     }
 
