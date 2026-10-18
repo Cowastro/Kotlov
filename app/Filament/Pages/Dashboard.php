@@ -2,8 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Widgets\IntegrationHealthOverview;
-use App\Filament\Widgets\RecentIntegrationRuns;
+use App\Filament\Widgets\CrmTodayCenter;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Widgets\Widget;
 use Filament\Widgets\WidgetConfiguration;
@@ -14,18 +13,14 @@ class Dashboard extends BaseDashboard
 
     public function getColumns(): int|array
     {
-        return [
-            'md' => 1,
-            'xl' => 2,
-        ];
+        return 1;
     }
 
     /** @return array<class-string<Widget>|WidgetConfiguration> */
     public function getWidgets(): array
     {
         return [
-            IntegrationHealthOverview::class,
-            RecentIntegrationRuns::class,
+            CrmTodayCenter::class,
         ];
     }
 }
