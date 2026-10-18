@@ -341,6 +341,11 @@ jobs:
             grep -E '^metric\.omenergo\.[a-z_]+=[0-9]+$' "$detail_log" || true
             echo "safe_omenergo_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-thermostudio-pricelist" ]]; then
+            echo "safe_thermostudio_metrics_begin"
+            grep -E '^metric\.thermostudio\.[a-z_]+=-?[0-9]+$' "$detail_log" || true
+            echo "safe_thermostudio_metrics_end"
+          fi
           if [[ "$TASK" == "audit-svah-group" || "${ARTISAN_ARGV[0]:-}" == "supplier:sync-svah-group" ]]; then
             echo "safe_svah_group_metrics_begin"
             grep '^metric\.svah_group\.' "$detail_log" || true

@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Console\Commands\SyncThermostudioPricelistCommand;
 use PHPUnit\Framework\Attributes\DataProvider;
 use ReflectionClass;
+use Symfony\Component\Console\Input\ArrayInput;
 use Tests\TestCase;
 
 class SyncThermostudioPricelistCommandTest extends TestCase
@@ -54,6 +55,72 @@ class SyncThermostudioPricelistCommandTest extends TestCase
         $this->assertNull($result[1]['matched_product_id']);
         $this->assertSame('duplicate_product_match', $result[0]['action']);
         $this->assertSame(556, $result[2]['matched_product_id']);
+    }
+
+    #[DataProvider('stockProvider')]
+    public function test_it_normalises_stock_into_shared_availability_semantics(string $value, string $status, ?int $quantity): void
+    {
+        $this->assertSame(
+            ['status' => $status, 'quantity' => $quantity],
+            $this->invoke('stock', [$value]),
+        );
+    }
+
+    public static function stockProvider(): array
+    {
+        return [
+            ['есть', 'in_stock', null],
+            ['отсутствует', 'out_of_stock', 0],
+            ['нет в наличии', 'out_of_stock', 0],
+            ['под заказ', 'preorder', null],
+            ['', 'unknown', null],
+            ['5', 'in_stock', 5],
+        ];
+    }
+
+    public function test_only_linked_mode_rejects_name_only_catalog_matches(): void
+    {
+        $reflection = new ReflectionClass($this->command());
+        $reflection->getProperty('indexByProductName')->setValue($this->command(), ['test model' => 777]);
+        $this->setInput(['--only-linked' => true]);
+
+        $classified = $this->invoke('classify', [[
+            'brand' => 'Test',
+            'sheet' => 'Test',
+            'section' => '',
+            'supplier_article' => 'UNLINKED',
+            'supplier_article_raw' => 'UNLINKED',
+            'name' => 'Test Model',
+            'description' => '',
+            'norm_article' => 'UNLINKED',
+            'ambiguous_variant' => false,
+        ]]);
+
+        $this->assertSame('skip_unlinked', $classified['action']);
+        $this->assertNull($classified['matched_product_id']);
+    }
+
+    public function test_only_linked_mode_keeps_confirmed_supplier_article_matches(): void
+    {
+        $reflection = new ReflectionClass($this->command());
+        $reflection->getProperty('indexBySupplierArticle')->setValue($this->command(), ['CONFIRMED' => 778]);
+        $this->setInput(['--only-linked' => true]);
+
+        $classified = $this->invoke('classify', [[
+            'brand' => 'Test',
+            'sheet' => 'Test',
+            'section' => '',
+            'supplier_article' => 'CONFIRMED',
+            'supplier_article_raw' => 'CONFIRMED',
+            'name' => 'Confirmed Model',
+            'description' => '',
+            'norm_article' => 'CONFIRMED',
+            'ambiguous_variant' => false,
+        ]]);
+
+        $this->assertSame('matched', $classified['action']);
+        $this->assertSame(778, $classified['matched_product_id']);
+        $this->assertSame('supplier_article', $classified['match_confidence']);
     }
 
     public function test_it_keeps_coaxial_chimneys_in_their_own_category(): void
@@ -113,5 +180,12 @@ class SyncThermostudioPricelistCommandTest extends TestCase
     {
         $reflection = new ReflectionClass($this->command());
         $reflection->getProperty('categoryBySlug')->setValue($this->command(), $categories);
+    }
+
+    private function setInput(array $options): void
+    {
+        $input = new ArrayInput($options, $this->command()->getDefinition());
+        $input->bind($this->command()->getDefinition());
+        $this->command()->setInput($input);
     }
 }

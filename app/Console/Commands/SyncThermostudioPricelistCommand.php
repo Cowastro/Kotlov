@@ -147,6 +147,8 @@ class SyncThermostudioPricelistCommand extends Command
 
     private ?float $resolvedEurRate = null;
 
+    private ?int $sourceModifiedAt = null;
+
     public function handle(): int
     {
         $apply = (bool) $this->option('apply') && ! (bool) $this->option('dry-run');
@@ -246,6 +248,8 @@ class SyncThermostudioPricelistCommand extends Command
         }
 
         $spreadsheet = IOFactory::load($path);
+        $modifiedAt = (int) $spreadsheet->getProperties()->getModified();
+        $this->sourceModifiedAt = $modifiedAt > 0 ? $modifiedAt : null;
         $rows = [];
 
         foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
@@ -407,7 +411,7 @@ class SyncThermostudioPricelistCommand extends Command
             'retail_byn' => $retail,
             'stock_text' => '',
             'stock_quantity' => null,
-            'stock_status' => 'out_of_stock',
+            'stock_status' => 'unknown',
             'in_stock' => false,
             'supplier_article_raw' => $model,
             'supplier_article' => $model,
@@ -659,6 +663,9 @@ class SyncThermostudioPricelistCommand extends Command
 
         $brandId = $this->brandByKey[$this->brandKey($row['brand'])] ?? null;
         $match = $this->match($row, $brandId);
+        if ((bool) $this->option('only-linked') && ($match['confidence'] ?? null) !== 'supplier_article') {
+            $match = null;
+        }
         $categoryId = $this->categoryId($row);
 
         $action = match (true) {
@@ -1014,6 +1021,8 @@ class SyncThermostudioPricelistCommand extends Command
 
     private function report(array $rows): int
     {
+        $this->emitAuditMetrics($rows);
+
         $this->newLine();
         $this->table(['metric', 'count'], [
             ['parsed rows', count($rows)],
@@ -1084,6 +1093,73 @@ class SyncThermostudioPricelistCommand extends Command
         $this->line('Next: run with --apply to update confident matches. Add --create-new only after reviewing create_candidate rows.');
 
         return self::SUCCESS;
+    }
+
+    /** @param array<int,array<string,mixed>> $rows */
+    private function emitAuditMetrics(array $rows): void
+    {
+        $matched = array_values(array_filter($rows, fn (array $row): bool => (int) ($row['matched_product_id'] ?? 0) > 0));
+        $productIds = array_values(array_unique(array_map(fn (array $row): int => (int) $row['matched_product_id'], $matched)));
+        $currentRetail = $productIds === []
+            ? collect()
+            : DB::table('products')->whereIn('id', $productIds)->pluck('price', 'id');
+
+        $supplierId = $this->supplierId();
+        $supplierRows = $supplierId > 0
+            ? DB::table('supplier_products')->where('supplier_id', $supplierId)->whereNotNull('product_id')->get()->keyBy('product_id')
+            : collect();
+
+        $retailChanges = 0;
+        $supplierPriceChanges = 0;
+        $stockChanges = 0;
+        foreach ($matched as $row) {
+            $productId = (int) $row['matched_product_id'];
+            $retail = $row['retail_byn'];
+            if ($retail !== null && abs((float) ($currentRetail[$productId] ?? 0) - (float) $retail) >= 0.005) {
+                $retailChanges++;
+            }
+
+            $supplierRow = $supplierRows->get($productId);
+            if ($supplierRow === null || abs((float) ($supplierRow->price_byn ?? 0) - (float) $row['price_byn']) >= 0.005) {
+                $supplierPriceChanges++;
+            }
+
+            $currentQuantity = $supplierRow?->stock_quantity === null ? null : (int) $supplierRow->stock_quantity;
+            if ($supplierRow === null
+                || (bool) $supplierRow->in_stock !== (bool) $row['in_stock']
+                || $currentQuantity !== $row['stock_quantity']
+                || (string) $supplierRow->stock_status !== (string) $row['stock_status']) {
+                $stockChanges++;
+            }
+        }
+
+        $matchedIds = array_fill_keys($productIds, true);
+        $linkedMissingFromFeed = $supplierRows
+            ->filter(fn ($row): bool => ! isset($matchedIds[(int) $row->product_id]))
+            ->count();
+        $statusCounts = array_count_values(array_column($rows, 'stock_status'));
+        $sourceAgeMinutes = $this->sourceModifiedAt === null
+            ? -1
+            : max(0, intdiv(now()->timestamp - $this->sourceModifiedAt, 60));
+
+        foreach ([
+            'source_age_minutes' => $sourceAgeMinutes,
+            'parsed_rows' => count($rows),
+            'matched_rows' => count($matched),
+            'linked_supplier_products' => $supplierRows->count(),
+            'linked_missing_from_feed' => $linkedMissingFromFeed,
+            'retail_price_changes' => $retailChanges,
+            'supplier_price_changes' => $supplierPriceChanges,
+            'stock_changes' => $stockChanges,
+            'stock_in_stock' => $statusCounts['in_stock'] ?? 0,
+            'stock_preorder' => $statusCounts['preorder'] ?? 0,
+            'stock_out_of_stock' => $statusCounts['out_of_stock'] ?? 0,
+            'stock_unknown' => $statusCounts['unknown'] ?? 0,
+            'known_stock_quantity' => count(array_filter($rows, fn (array $row): bool => $row['stock_quantity'] !== null)),
+            'legacy_supplier_records' => DB::table('suppliers')->where('code', 'termostudia')->count(),
+        ] as $metric => $value) {
+            $this->line("metric.thermostudio.{$metric}=".(int) $value);
+        }
     }
 
     private function upsertSupplierProduct(array $row, int $productId, int $supplierId, ?int $syncId, $now): void
@@ -1597,6 +1673,14 @@ class SyncThermostudioPricelistCommand extends Command
             return ['status' => $quantity > 0 ? 'in_stock' : 'out_of_stock', 'quantity' => $quantity];
         }
 
+        if ($text === '' || $text === '#ref!') {
+            return ['status' => 'unknown', 'quantity' => null];
+        }
+
+        if (str_contains($text, 'отсутств') || str_contains($text, 'нет в налич')) {
+            return ['status' => 'out_of_stock', 'quantity' => 0];
+        }
+
         if (str_contains($text, 'ожида') || str_contains($text, 'под заказ') || str_contains($text, 'по запрос')) {
             return ['status' => 'preorder', 'quantity' => null];
         }
@@ -1605,7 +1689,7 @@ class SyncThermostudioPricelistCommand extends Command
             return ['status' => 'in_stock', 'quantity' => null];
         }
 
-        return ['status' => 'out_of_stock', 'quantity' => null];
+        return ['status' => 'unknown', 'quantity' => null];
     }
 
     /**
