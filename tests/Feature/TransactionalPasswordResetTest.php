@@ -51,5 +51,13 @@ class TransactionalPasswordResetTest extends TestCase
         $this->assertSame('Доступ к аккаунту KOTLOV.BY', $message->subject);
         $this->assertSame('no-reply@kotlov.by', config('mail.mailers.transactional.username'));
         $this->assertSame('smtps', config('mail.mailers.transactional.scheme'));
+        $this->assertSame('emails.password-reset', $message->view);
+        $this->assertCount(1, $message->callbacks);
+
+        $html = (string) $message->render();
+        $this->assertStringContainsString('cid:kotlov-logo', $html);
+        $this->assertStringContainsString('#DC4646', $html);
+        $this->assertStringContainsString('Задать новый пароль', $html);
+        $this->assertStringNotContainsString('#3490dc', mb_strtolower($html));
     }
 }

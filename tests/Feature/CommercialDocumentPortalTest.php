@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Events\NewOrderCreated;
+use App\Mail\CommercialDocumentAccessCodeMail;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\CommercialDocument;
@@ -58,6 +59,24 @@ class CommercialDocumentPortalTest extends TestCase
 
         $this->assertSame(1, CommercialDocumentPortalChallenge::query()->count());
         $this->assertDatabaseCount('commercial_document_portal_sessions', 1);
+        Mail::assertSent(
+            CommercialDocumentAccessCodeMail::class,
+            fn (CommercialDocumentAccessCodeMail $mail): bool => $mail->hasTo($quote->client_email)
+                && $mail->reference === $quote->reference()
+                && strlen($mail->code) === 6,
+        );
+    }
+
+    public function test_portal_access_code_email_uses_the_kotlov_brand(): void
+    {
+        $mail = new CommercialDocumentAccessCodeMail('KP-TEST', '123456');
+        $html = $mail->render();
+
+        $this->assertStringContainsString('cid:kotlov-logo', $html);
+        $this->assertStringContainsString('#DC4646', $html);
+        $this->assertStringContainsString('123456', $html);
+        $this->assertStringNotContainsString('#3490dc', mb_strtolower($html));
+        $this->assertCount(1, $mail->envelope()->using);
     }
 
     public function test_admin_preview_does_not_activate_client_link_or_change_view_statistics(): void

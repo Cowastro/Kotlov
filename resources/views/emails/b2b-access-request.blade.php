@@ -1,21 +1,26 @@
-<!doctype html>
-<html lang="ru">
-<head>
-    <meta charset="utf-8">
-    <title>Новая заявка на B2B-доступ</title>
-</head>
-<body style="font-family:Arial,sans-serif;color:#171717;line-height:1.5">
-    <h1 style="font-size:22px">Новая заявка на B2B-доступ</h1>
-    <p><strong>Компания:</strong> {{ $applicant->company_name ?: '—' }}</p>
-    <p><strong>Контакт:</strong> {{ $applicant->name ?: '—' }}</p>
-    <p><strong>Email:</strong> {{ $applicant->email }}</p>
-    <p><strong>Телефон:</strong> {{ $applicant->phone ?: '—' }}</p>
-    <p><strong>УНП:</strong> {{ $applicant->company_inn ?: '—' }}</p>
-    <p><strong>Комментарий:</strong><br>{{ $applicant->b2b_comment ?: '—' }}</p>
-    <p style="margin-top:24px">
-        <a href="{{ $adminUrl }}" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;text-decoration:none;border-radius:8px">
-            Проверить и одобрить партнёра
-        </a>
-    </p>
-</body>
-</html>
+<x-email.brand-shell
+    subject="Новая заявка на B2B-доступ — KOTLOV.BY"
+    eyebrow="НОВАЯ B2B-ЗАЯВКА"
+    title="Партнёр ожидает проверки"
+    logo-src="cid:kotlov-logo"
+    :button-url="$adminUrl"
+    button-label="Проверить и одобрить партнёра"
+    notice="Системное уведомление отдела B2B KOTLOV.BY."
+>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;background:#f7f7f8;border:1px solid #ececec;border-radius:12px">
+        @foreach ([
+            'Компания' => $applicant->company_name ?: '—',
+            'Контакт' => $applicant->name ?: '—',
+            'Email' => $applicant->email,
+            'Телефон' => $applicant->phone ?: '—',
+            'УНП' => $applicant->company_inn ?: '—',
+        ] as $label => $value)
+            <tr>
+                <td style="padding:12px 16px;border-bottom:1px solid #e5e5e5;font-size:14px;color:#777777">{{ $label }}</td>
+                <td align="right" style="padding:12px 16px;border-bottom:1px solid #e5e5e5;font-size:14px;font-weight:700;color:#101010">{{ $value }}</td>
+            </tr>
+        @endforeach
+    </table>
+    <p style="margin:20px 0 6px;font-size:13px;font-weight:700;color:#101010">Комментарий</p>
+    <p style="margin:0">{{ $applicant->b2b_comment ?: '—' }}</p>
+</x-email.brand-shell>

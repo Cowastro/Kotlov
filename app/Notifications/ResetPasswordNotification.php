@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\CrmMailbox;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
+use Symfony\Component\Mime\Email;
 
 class ResetPasswordNotification extends ResetPassword
 {
@@ -31,17 +32,24 @@ class ResetPasswordNotification extends ResetPassword
 
         $minutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
 
-        return (new MailMessage)
+        $message = (new MailMessage)
             ->mailer('transactional')
             ->from(
                 config('mail.transactional_from.address'),
                 config('mail.transactional_from.name'),
             )
             ->subject('Доступ к аккаунту KOTLOV.BY')
-            ->greeting('Здравствуйте!')
-            ->line('Для вашего аккаунта запрошено создание или восстановление пароля.')
-            ->action('Задать новый пароль', $this->resetUrl($notifiable))
-            ->line("Ссылка действует {$minutes} минут.")
-            ->line('Если вы не запрашивали доступ, просто проигнорируйте это письмо.');
+            ->view('emails.password-reset', [
+                'name' => $notifiable->name,
+                'resetUrl' => $this->resetUrl($notifiable),
+                'minutes' => $minutes,
+            ]);
+
+        return $message->withSymfonyMessage(function (Email $email): void {
+            $logo = public_path('img/logo-black.png');
+            if (is_file($logo)) {
+                $email->embedFromPath($logo, 'kotlov-logo', 'image/png');
+            }
+        });
     }
 }

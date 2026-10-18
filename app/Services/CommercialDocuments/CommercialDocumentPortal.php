@@ -2,6 +2,7 @@
 
 namespace App\Services\CommercialDocuments;
 
+use App\Mail\CommercialDocumentAccessCodeMail;
 use App\Models\CommercialDocument;
 use App\Models\CommercialDocumentItem;
 use App\Models\CommercialDocumentPortalChallenge;
@@ -102,11 +103,8 @@ class CommercialDocumentPortal
             'expires_at' => now()->addMinutes(10),
         ]);
 
-        Mail::raw(
-            "Код подтверждения для предложения {$link->document->reference()}: {$code}\n\nКод действует 10 минут. Если вы не запрашивали доступ, проигнорируйте письмо.",
-            fn ($message) => $message
-                ->to($link->document->client_email)
-                ->subject('Код доступа к предложению '.$link->document->reference())
+        Mail::to($link->document->client_email)->send(
+            new CommercialDocumentAccessCodeMail($link->document->reference(), $code)
         );
         $this->event($link, null, 'verification_code_sent', $request);
 

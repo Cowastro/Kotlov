@@ -45,6 +45,9 @@ class TestServiceMailboxesCommandTest extends TestCase
         $this->assertStringContainsString('KOTLOV.BY', $html);
         $this->assertStringContainsString('Спасибо за заказ', $html);
         $this->assertStringContainsString('order@kotlov.by', $html);
+        $this->assertStringContainsString('cid:kotlov-logo', $html);
+        $this->assertStringContainsString('#DC4646', $html);
+        $this->assertStringNotContainsString('#3490dc', mb_strtolower($html));
         $this->assertStringNotContainsString('имя сотрудника', $html);
     }
 }

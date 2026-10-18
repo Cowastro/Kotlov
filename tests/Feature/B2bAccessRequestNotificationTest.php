@@ -82,4 +82,21 @@ class B2bAccessRequestNotificationTest extends TestCase
         $this->assertSame(ClientType::Wholesale, $applicant->fresh()->client_type);
         $this->assertSame('pending', B2bClient::query()->whereBelongsTo($applicant)->value('status'));
     }
+
+    public function test_b2b_request_email_uses_the_kotlov_brand(): void
+    {
+        $applicant = User::factory()->make([
+            'company_name' => 'ООО Фирменный партнёр',
+            'email' => 'partner@example.com',
+        ]);
+
+        $mail = new NewB2bAccessRequestMail($applicant);
+        $html = $mail->render();
+
+        $this->assertStringContainsString('cid:kotlov-logo', $html);
+        $this->assertStringContainsString('#DC4646', $html);
+        $this->assertStringContainsString('ООО Фирменный партнёр', $html);
+        $this->assertStringNotContainsString('#3490dc', mb_strtolower($html));
+        $this->assertCount(1, $mail->envelope()->using);
+    }
 }
