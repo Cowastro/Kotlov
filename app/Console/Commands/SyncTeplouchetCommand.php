@@ -186,6 +186,8 @@ class SyncTeplouchetCommand extends Command
         $articleCounts = collect($rows)->countBy('article_key');
         $dabBrandIds = Brand::query()->whereRaw('LOWER(name) = ?', ['dab'])->pluck('id')->map(fn ($id) => (int) $id)->all();
         $dabProducts = Product::with('brand')
+            ->active()
+            ->notArchived()
             ->where(function ($query) use ($dabBrandIds): void {
                 $query->whereIn('brand_id', $dabBrandIds)
                     ->orWhereRaw('LOWER(name) LIKE ?', ['%dab%']);
@@ -194,6 +196,8 @@ class SyncTeplouchetCommand extends Command
             ->filter(fn (Product $product) => in_array((int) $product->brand_id, $dabBrandIds, true)
                 || preg_match('/\bdab\b/ui', $product->name));
         $identityProducts = Product::query()
+            ->active()
+            ->notArchived()
             ->where(function ($query) use ($rows): void {
                 $query->whereIn('sku', collect($rows)->pluck('article')->filter()->unique())
                     ->orWhereIn('content_source_url', collect($rows)->pluck('source_url')->filter()->unique());
@@ -370,6 +374,8 @@ class SyncTeplouchetCommand extends Command
         foreach (['wilo', 'grundfos'] as $brand) {
             $brandIds = Brand::query()->whereRaw('LOWER(name) = ?', [$brand])->pluck('id');
             $products = Product::query()
+                ->active()
+                ->notArchived()
                 ->where(function ($query) use ($brand, $brandIds): void {
                     $query->whereIn('brand_id', $brandIds)
                         ->orWhereRaw('LOWER(name) LIKE ?', ['%'.$brand.'%']);
