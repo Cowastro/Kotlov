@@ -176,7 +176,7 @@ class SyncTmManagementCommand extends Command
                 }
 
                 if ($brand === 'Джилекс') {
-                    $header = ['article' => 2, 'name' => 3, 'retail' => 4, 'opt' => 5, 'note' => 6];
+                    $header = ['article' => 2, 'name' => 3, 'retail' => 4, 'opt' => 5, 'availability' => 6];
                 } elseif ($brand === 'SFA') {
                     $header = ['article' => 4, 'name' => 4, 'note' => 5, 'spec_note' => 6, 'opt' => 8, 'retail' => 9];
                 }
@@ -210,6 +210,7 @@ class SyncTmManagementCommand extends Command
                     'article' => $article,
                     'name' => $this->cleanName($name),
                     'note' => $this->joinedNote($cells, $header),
+                    'availability_text' => trim((string) ($cells[$header['availability'] ?? 0] ?? '')),
                     'price_opt' => $opt,
                     'price_retail' => $retail,
                     'category_id' => null,
@@ -290,6 +291,8 @@ class SyncTmManagementCommand extends Command
                 $map['name'] = $col;
             } elseif (str_contains($text, 'примеч')) {
                 $map['note'] = $col;
+            } elseif (str_contains($text, 'налич') || str_contains($text, 'склад')) {
+                $map['availability'] = $col;
             } elseif (str_contains($text, 'опт')) {
                 $map['opt'] = $col;
             } elseif (str_contains($text, 'ррц') || str_contains($text, 'рознич')) {
@@ -460,6 +463,7 @@ class SyncTmManagementCommand extends Command
     {
         $now = now();
         $seo = $ai ? $this->aiSeo($item, $ai) : null;
+        $availability = $this->availabilityFromText($item['availability_text'] ?? null);
         $payload = [
             'category_id' => $categoryId,
             'brand_id' => $brandId,
@@ -474,8 +478,8 @@ class SyncTmManagementCommand extends Command
             'unit' => 'шт',
             'is_active' => true,
             'is_archived' => false,
-            'in_stock' => false,
-            'availability_status' => 'check',
+            'in_stock' => $availability['in_stock'],
+            'availability_status' => $availability['in_stock'] ? 'in_stock' : 'check',
             'stock_qty' => null,
             'is_featured' => false,
             'is_new' => false,
@@ -519,6 +523,7 @@ class SyncTmManagementCommand extends Command
         $now = now();
         $supplierKey = $this->supplierKey($item);
         $publicSupplierArticle = $this->publicSupplierArticle($item);
+        $availability = $this->availabilityFromText($item['availability_text'] ?? null);
 
         // The database uniqueness rule is (supplier_id, supplier_article), while
         // supplier_article_normalized is deliberately a richer matching key. Using
@@ -552,10 +557,10 @@ class SyncTmManagementCommand extends Command
             'currency' => 'BYN',
             'currency_rate' => 1,
             'price_byn' => $item['price_opt'] ?? $item['price_retail'],
-            'in_stock' => false,
+            'in_stock' => $availability['in_stock'],
             'stock_quantity' => null,
-            'stock_status' => 'preorder',
-            'stock_text' => 'Уточняйте наличие',
+            'stock_status' => $availability['status'],
+            'stock_text' => $availability['text'],
             'warehouse_name' => self::SUPPLIER_NAME,
             'delivery_days' => null,
             'last_stock_synced_at' => $now,
@@ -574,6 +579,32 @@ class SyncTmManagementCommand extends Command
         $payload['supplier_id'] = $supplierId;
         $payload['created_at'] = $now;
         DB::table('supplier_products')->insert($payload);
+    }
+
+    /** @return array{in_stock:bool,status:string,text:string} */
+    private function availabilityFromText(mixed $value): array
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', (string) $value) ?? '');
+        $normalized = mb_strtolower($text);
+        $inStock = $normalized !== '' && (
+            str_contains($normalized, 'на складе')
+            || str_contains($normalized, 'в наличии')
+            || $normalized === 'есть'
+        );
+
+        if ($inStock) {
+            return [
+                'in_stock' => true,
+                'status' => 'available_without_quantity',
+                'text' => $text,
+            ];
+        }
+
+        return [
+            'in_stock' => false,
+            'status' => 'unknown',
+            'text' => $text !== '' ? $text : 'Остаток в прайсе не указан',
+        ];
     }
 
     private function uniqueSupplierArticle(int $supplierId, string $article, string $supplierKey, ?int $exceptId = null): string

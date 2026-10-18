@@ -100,6 +100,31 @@ class ManagerStorefrontExperienceTest extends TestCase
         $this->assertSame('7 шт.', $offers->first()['stock']);
     }
 
+    public function test_duplicate_links_from_the_same_supplier_are_collapsed_to_the_best_offer(): void
+    {
+        [$product, $offer] = $this->makeProductWithSupplierOffer();
+        $offer->update(['supplier_name' => $product->name]);
+        $duplicate = $offer->replicate();
+        $duplicate->supplier_article = 'SECRET-OLDER';
+        $duplicate->supplier_article_normalized = 'SECRET-OLDER';
+        $duplicate->supplier_name = 'Другой товар этого поставщика';
+        $duplicate->price_byn = 5;
+        $duplicate->price = 5;
+        $duplicate->in_stock = true;
+        $duplicate->stock_quantity = 20;
+        $duplicate->stock_status = 'in_stock';
+        $duplicate->stock_text = 'на складе';
+        $duplicate->last_stock_synced_at = now();
+        $duplicate->save();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        $offers = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager);
+
+        $this->assertCount(1, $offers);
+        $this->assertSame('SECRET-123', $offers->first()['article']);
+        $this->assertSame('7 шт.', $offers->first()['stock']);
+    }
+
     public function test_internal_supplier_markup_is_not_rendered_for_guests(): void
     {
         [$product] = $this->makeProductWithSupplierOffer();

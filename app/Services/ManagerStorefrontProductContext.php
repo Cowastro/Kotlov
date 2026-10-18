@@ -46,15 +46,18 @@ class ManagerStorefrontProductContext
         ]);
 
         $retailPrice = (float) $product->price > 0 ? (float) $product->price : null;
+        $productNameKey = $this->productNameKey($product->name);
 
         $supplierOffers = $product->supplierProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->supplier?->name))
-            ->map(function ($offer) use ($retailPrice): array {
+            ->map(function ($offer) use ($retailPrice, $productNameKey): array {
                 $quantity = $offer->stock_quantity;
                 $inStock = (float) $quantity > 0 || $offer->in_stock === true;
                 $purchasePrice = (float) $offer->price_byn > 0 ? (float) $offer->price_byn : null;
 
                 return [
+                    'supplier_key' => $this->supplierKey($offer->supplier?->name),
+                    'matches_product_name' => $this->productNameKey($offer->supplier_name) === $productNameKey,
                     'supplier' => $offer->supplier?->name ?: ($offer->supplier?->code ?: 'Поставщик'),
                     'phones' => $offer->supplier?->contactPhoneNumbers() ?? [],
                     'emails' => $offer->supplier?->contactEmailAddresses() ?? [],
@@ -78,12 +81,14 @@ class ManagerStorefrontProductContext
 
         $integrationOffers = $product->integrationProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->source?->supplier?->name))
-            ->map(function ($offer) use ($retailPrice): array {
+            ->map(function ($offer) use ($retailPrice, $productNameKey): array {
                 $quantity = (float) $offer->stock_quantity;
                 $source = $offer->source;
                 $purchasePrice = $offer->normalizedPriceByn();
 
                 return [
+                    'supplier_key' => $this->supplierKey($source?->supplier?->name ?: $source?->name),
+                    'matches_product_name' => $this->productNameKey($offer->name) === $productNameKey,
                     'supplier' => $source?->supplier?->name ?: ($source?->name ?: 'Интеграция'),
                     'phones' => $source?->supplier?->contactPhoneNumbers() ?? [],
                     'emails' => $source?->supplier?->contactEmailAddresses() ?? [],
@@ -106,11 +111,29 @@ class ManagerStorefrontProductContext
         return $supplierOffers
             ->concat($integrationOffers)
             ->sortBy([
+                ['matches_product_name', 'desc'],
                 ['is_fresh', 'desc'],
                 ['in_stock', 'desc'],
                 ['purchase_price', 'asc'],
             ])
+            // A product can retain several historical links to the same supplier
+            // (or have both a legacy and an integration offer). Managers need one
+            // best current row per supplier, not repeated labels that consume the
+            // compact card's two available slots.
+            ->unique('supplier_key')
             ->values();
+    }
+
+    private function supplierKey(?string $name): string
+    {
+        $normalized = preg_replace('/[^\pL\pN]+/u', '', mb_strtolower($name ?? ''));
+
+        return $normalized !== '' ? $normalized : 'unknown-supplier';
+    }
+
+    private function productNameKey(?string $name): string
+    {
+        return preg_replace('/[^\pL\pN]+/u', '', mb_strtolower($name ?? '')) ?? '';
     }
 
     private function isTeplovManufacturer(?string $name): bool
