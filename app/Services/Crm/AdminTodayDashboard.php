@@ -10,6 +10,7 @@ use App\Filament\Resources\SupportConversations\SupportConversationResource;
 use App\Filament\Resources\TelephonyCalls\TelephonyCallResource;
 use App\Models\ContactRequest;
 use App\Models\CrmMailThread;
+use App\Models\CrmReminder;
 use App\Models\InstallRequest;
 use App\Models\Order;
 use App\Models\SupportConversation;
@@ -91,6 +92,15 @@ class AdminTodayDashboard
             'activityItems' => $activity,
             'activityCount' => $activity->count(),
             'rangeLabel' => $rangeLabel,
+            'reminders' => $this->reminders($viewer),
+            'canAssignReminders' => $viewer?->isAdmin() === true,
+            'managerOptions' => $viewer?->isAdmin() === true
+                ? User::query()
+                    ->whereIn('role', ['admin', 'manager', 'sales_manager'])
+                    ->where('is_active', true)
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                : collect(),
             'links' => [
                 ['label' => 'Звонки', 'url' => TelephonyCallResource::getUrl('index')],
                 ['label' => 'Заказы', 'url' => OrderResource::getUrl('index')],
@@ -166,6 +176,7 @@ class AdminTodayDashboard
             )));
 
         $this->requests($managerId)
+            ->with('telephonyCalls.assignedUser')
             ->whereIn('status', ['new', 'read'])
             ->oldest()
             ->limit(20)
@@ -178,10 +189,12 @@ class AdminTodayDashboard
                 time: $request->created_at,
                 url: ContactRequestResource::getUrl('view', ['record' => $request]),
                 tone: $request->status === 'new' ? 'danger' : 'warning',
+                responsible: $request->telephonyCalls->first()?->assignedUser?->name,
                 priority: 2,
             )));
 
         $this->installations($managerId)
+            ->with('installer')
             ->where('status', 'new')
             ->oldest()
             ->limit(20)
@@ -194,10 +207,12 @@ class AdminTodayDashboard
                 time: $request->created_at,
                 url: InstallRequestResource::getUrl('view', ['record' => $request]),
                 tone: 'danger',
+                responsible: $request->installer?->name,
                 priority: 2,
             )));
 
         $this->orders($managerId)
+            ->with('manager')
             ->whereNull('archived_at')
             ->where('status', 'new')
             ->oldest()
@@ -211,6 +226,7 @@ class AdminTodayDashboard
                 time: $order->created_at,
                 url: OrderResource::getUrl('view', ['record' => $order]),
                 tone: 'danger',
+                responsible: $order->manager?->name,
                 priority: 2,
             )));
 
@@ -268,6 +284,7 @@ class AdminTodayDashboard
         $items = collect();
 
         $calls = $this->calls($managerId)
+            ->with('assignedUser')
             ->where('direction', 'inbound')
             ->whereBetween('started_at', [$rangeStart, $rangeEnd]);
         $this->applyStatus($calls, $status, 'handling_status', ['handled', 'irrelevant']);
@@ -283,9 +300,12 @@ class AdminTodayDashboard
                 tone: $call->status === 'missed' ? 'danger' : 'info',
                 closed: in_array($call->handling_status, ['handled', 'irrelevant'], true),
                 statusLabel: TelephonyCall::HANDLING_STATUSES[$call->handling_status] ?? $call->handling_status,
+                responsible: $call->assignedUser?->name,
             )));
 
-        $requests = $this->requests($managerId)->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $requests = $this->requests($managerId)
+            ->with('telephonyCalls.assignedUser')
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
         $this->applyStatus($requests, $status, 'status', ['done']);
         $requests->latest()->limit(80)->get()
             ->each(fn (ContactRequest $request) => $items->push($this->item(
@@ -298,9 +318,12 @@ class AdminTodayDashboard
                 tone: $request->status === 'done' ? 'success' : 'info',
                 closed: $request->status === 'done',
                 statusLabel: ContactRequest::$statuses[$request->status] ?? $request->status,
+                responsible: $request->telephonyCalls->first()?->assignedUser?->name,
             )));
 
-        $installations = $this->installations($managerId)->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $installations = $this->installations($managerId)
+            ->with('installer')
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
         $this->applyStatus($installations, $status, 'status', ['done', 'cancelled']);
         $installations->latest()->limit(80)->get()
             ->each(fn (InstallRequest $request) => $items->push($this->item(
@@ -313,9 +336,13 @@ class AdminTodayDashboard
                 tone: in_array($request->status, ['done', 'cancelled'], true) ? 'success' : 'info',
                 closed: in_array($request->status, ['done', 'cancelled'], true),
                 statusLabel: InstallRequest::STATUSES[$request->status] ?? $request->status,
+                responsible: $request->installer?->name,
             )));
 
-        $orders = $this->orders($managerId)->whereNull('archived_at')->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $orders = $this->orders($managerId)
+            ->with('manager')
+            ->whereNull('archived_at')
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
         $this->applyStatus($orders, $status, 'status', ['delivered', 'completed', 'cancelled']);
         $orders->latest()->limit(80)->get()
             ->each(fn (Order $order) => $items->push($this->item(
@@ -328,9 +355,11 @@ class AdminTodayDashboard
                 tone: $order->status === 'new' ? 'warning' : 'success',
                 closed: in_array($order->status, ['delivered', 'completed', 'cancelled'], true),
                 statusLabel: Order::STATUSES[$order->status] ?? $order->status,
+                responsible: $order->manager?->name,
             )));
 
         $mail = $this->mail($managerId)
+            ->with('assignedUser')
             ->whereHas('messages', fn ($query) => $query
                 ->where('direction', 'incoming')
                 ->whereBetween('received_at', [$rangeStart, $rangeEnd]));
@@ -347,9 +376,12 @@ class AdminTodayDashboard
                 tone: in_array($thread->status, ['new', 'waiting_manager'], true) ? 'warning' : 'info',
                 closed: in_array($thread->status, ['closed', 'spam'], true),
                 statusLabel: CrmMailThread::STATUSES[$thread->status] ?? $thread->status,
+                responsible: $thread->assignedUser?->name,
             )));
 
-        $chats = $this->chats($managerId)->whereBetween('created_at', [$rangeStart, $rangeEnd]);
+        $chats = $this->chats($managerId)
+            ->with('assignedUser')
+            ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
         $this->applyStatus($chats, $status, 'status', ['closed']);
         $chats->latest()->limit(80)->get()
             ->each(fn (SupportConversation $chat) => $items->push($this->item(
@@ -362,6 +394,7 @@ class AdminTodayDashboard
                 tone: $chat->status === 'new' ? 'warning' : 'success',
                 closed: $chat->status === 'closed',
                 statusLabel: SupportConversation::STATUSES[$chat->status] ?? $chat->status,
+                responsible: $chat->assignedUser?->name,
             )));
 
         return ($sort === 'asc' ? $items->sortBy('timeSort') : $items->sortByDesc('timeSort'))
@@ -456,6 +489,38 @@ class AdminTodayDashboard
             $managerId,
             fn (Builder $query, int $id): Builder => $query->where('assigned_user_id', $id),
         );
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    private function reminders(?User $viewer): Collection
+    {
+        $now = now();
+
+        return CrmReminder::query()
+            ->with(['assignedUser', 'creator'])
+            ->whereNull('completed_at')
+            ->when(
+                $viewer?->isOperationalManager() === true,
+                fn (Builder $query): Builder => $query->where('assigned_user_id', $viewer->id),
+            )
+            ->orderByRaw('CASE WHEN due_at IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('due_at')
+            ->latest('created_at')
+            ->limit(20)
+            ->get()
+            ->map(function (CrmReminder $reminder) use ($now): array {
+                $dueAt = $reminder->due_at?->copy()->timezone(self::TIMEZONE);
+
+                return [
+                    'id' => $reminder->id,
+                    'title' => $reminder->title,
+                    'note' => $reminder->note,
+                    'due' => $dueAt?->format('d.m.Y H:i'),
+                    'overdue' => $reminder->due_at?->lt($now) === true,
+                    'responsible' => $reminder->assignedUser?->name,
+                    'creator' => $reminder->creator?->name,
+                ];
+            });
     }
 
     /** @return array<string, mixed> */

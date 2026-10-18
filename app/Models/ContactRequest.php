@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ContactRequest extends Model
 {
@@ -25,4 +26,9 @@ class ContactRequest extends Model
         'read' => 'Прочитана',
         'done' => 'Обработана',
     ];
+
+    public function telephonyCalls(): HasMany
+    {
+        return $this->hasMany(TelephonyCall::class)->latest('started_at');
+    }
 }

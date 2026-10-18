@@ -8,6 +8,7 @@ use App\Models\ContactRequest;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
+use App\Models\CrmReminder;
 use App\Models\InstallRequest;
 use App\Models\Order;
 use App\Models\SupportConversation;
@@ -16,6 +17,7 @@ use App\Models\User;
 use App\Services\Crm\AdminTodayDashboard;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AdminTodayDashboardTest extends TestCase
@@ -45,6 +47,8 @@ class AdminTodayDashboardTest extends TestCase
             ->assertSee('Поступления')
             ->assertSee('Управление')
             ->assertSee('Только незакрытые')
+            ->assertSee('Напоминания')
+            ->assertSee('+ Добавить')
             ->assertDontSee('Состояние обменов');
     }
 
@@ -208,9 +212,62 @@ class AdminTodayDashboardTest extends TestCase
         $this->assertSame(1, $managerData['todayCounts']['calls']);
         $this->assertCount(2, $managerData['activityItems']);
         $this->assertTrue($managerData['activityItems']->contains('title', 'ORD-MINE · ORD-MINE'));
+        $this->assertSame($manager->name, $managerData['activityItems']->firstWhere('title', 'ORD-MINE · ORD-MINE')['responsible']);
         $this->assertFalse($managerData['activityItems']->contains('title', 'ORD-OTHER · ORD-OTHER'));
         $this->assertSame(3, $adminData['todayCounts']['orders']);
         $this->assertSame(3, $adminData['todayCounts']['calls']);
         $this->assertCount(6, $adminData['activityItems']);
+    }
+
+    public function test_manager_can_create_and_complete_only_an_assigned_quick_reminder(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $otherManager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $this->actingAs($manager);
+
+        Livewire::test(CrmTodayCenter::class)
+            ->set('reminderTitle', 'Перезвонить клиенту')
+            ->set('reminderNote', 'Уточнить объём бака')
+            ->set('reminderDueAt', '2026-10-19T10:30')
+            ->set('reminderAssignedUserId', $otherManager->id)
+            ->call('saveQuickReminder')
+            ->assertHasNoErrors();
+
+        $reminder = CrmReminder::query()->firstOrFail();
+        $this->assertSame($manager->id, $reminder->assigned_user_id);
+        $this->assertSame('Уточнить объём бака', $reminder->note);
+
+        Livewire::test(CrmTodayCenter::class)
+            ->call('completeReminder', $reminder->id);
+
+        $this->assertNotNull($reminder->fresh()->completed_at);
+        $this->assertSame($manager->id, $reminder->fresh()->completed_by);
+    }
+
+    public function test_admin_sees_all_reminders_and_can_leave_one_unassigned(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        CrmReminder::query()->create([
+            'title' => 'Задача менеджера',
+            'assigned_user_id' => $manager->id,
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(CrmTodayCenter::class)
+            ->set('reminderTitle', 'Распределить новые заявки')
+            ->call('saveQuickReminder')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('crm_reminders', [
+            'title' => 'Распределить новые заявки',
+            'assigned_user_id' => null,
+            'created_by' => $admin->id,
+        ]);
+        $this->assertCount(2, app(AdminTodayDashboard::class)->data(viewer: $admin)['reminders']);
+        $this->assertCount(1, app(AdminTodayDashboard::class)->data(viewer: $manager)['reminders']);
     }
 }
