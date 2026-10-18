@@ -142,7 +142,6 @@ class SyncTeplouchetCommandTest extends TestCase
 
         $this->get('/'.$category->slug.'/'.$product->slug)
             ->assertOk()
-            ->assertSee('Совместимые аналоги')
-            ->assertSee($wiloAnalog->name);
+            ->assertDontSee('Совместимые аналоги');
     }
 }

@@ -1124,29 +1124,6 @@
         @include('partials.xo-controller-feature')
     @endif
 
-    @if (($analogProducts ?? collect())->isNotEmpty())
-        <section class="flat-spacing">
-            <div class="container">
-                <div class="sect-heading type-2 text-center wow fadeInUp">
-                    <h3 class="s-title">Совместимые аналоги</h3>
-                    <p class="s-subtitle">Модели сопоставлены по таблице подбора производителя и поставщика.</p>
-                </div>
-                <div dir="ltr" class="swiper tf-swiper" data-preview="4" data-tablet="3"
-                    data-mobile-sm="2" data-mobile="1"
-                    data-space-lg="30" data-space-md="20" data-space="10">
-                    <div class="swiper-wrapper">
-                        @foreach ($analogProducts as $analog)
-                            <div class="swiper-slide">
-                                @include('partials.product-card', ['product' => $analog])
-                            </div>
-                        @endforeach
-                    </div>
-                    <div class="sw-dot-default tf-sw-pagination"></div>
-                </div>
-            </div>
-        </section>
-    @endif
-
     {{-- Похожие товары --}}
     @if ($relatedProducts->count() > 0)
         <section class="flat-spacing">
