@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
@@ -246,30 +247,41 @@ class CrmCounterpartyResource extends Resource
             SelectFilter::make('responsible_user_id')->label('Ответственный')->relationship('responsibleUser', 'name')->searchable()->preload(),
             TrashedFilter::make()->label('Корзина'),
         ])->recordActions([
-            ViewAction::make(),
-            EditAction::make()->visible(fn (CrmCounterparty $record): bool => ! $record->trashed()),
-            Action::make('deleteSpam')
-                ->label('Удалить как спам')
-                ->icon('heroicon-o-trash')
-                ->color('danger')
-                ->visible(fn (CrmCounterparty $record): bool => $record->status === 'lead')
-                ->requiresConfirmation()
-                ->modalHeading('Удалить спам-лид?')
-                ->modalDescription('Карточка исчезнет из общего списка, но её можно будет восстановить через фильтр «Корзина».')
-                ->action(function (CrmCounterparty $record): void {
-                    $record->delete();
-                    Notification::make()->success()->title('Лид перемещён в корзину')->send();
-                }),
-            Action::make('restore')
-                ->label('Восстановить')
-                ->icon('heroicon-o-arrow-uturn-left')
-                ->color('success')
-                ->visible(fn (CrmCounterparty $record): bool => $record->trashed())
-                ->requiresConfirmation()
-                ->action(function (CrmCounterparty $record): void {
-                    $record->restore();
-                    Notification::make()->success()->title('Контрагент восстановлен')->send();
-                }),
+            ActionGroup::make([
+                ViewAction::make()
+                    ->label('Открыть карточку')
+                    ->icon('heroicon-o-eye'),
+                EditAction::make()
+                    ->label('Редактировать')
+                    ->icon('heroicon-o-pencil-square')
+                    ->visible(fn (CrmCounterparty $record): bool => ! $record->trashed()),
+                Action::make('deleteSpam')
+                    ->label('Удалить как спам')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->visible(fn (CrmCounterparty $record): bool => $record->status === 'lead')
+                    ->requiresConfirmation()
+                    ->modalHeading('Удалить спам-лид?')
+                    ->modalDescription('Карточка исчезнет из общего списка, но её можно будет восстановить через фильтр «Корзина».')
+                    ->action(function (CrmCounterparty $record): void {
+                        $record->delete();
+                        Notification::make()->success()->title('Лид перемещён в корзину')->send();
+                    }),
+                Action::make('restore')
+                    ->label('Восстановить')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('success')
+                    ->visible(fn (CrmCounterparty $record): bool => $record->trashed())
+                    ->requiresConfirmation()
+                    ->action(function (CrmCounterparty $record): void {
+                        $record->restore();
+                        Notification::make()->success()->title('Контрагент восстановлен')->send();
+                    }),
+            ])
+                ->label('Действия')
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->iconButton()
+                ->tooltip('Действия'),
         ])->toolbarActions([
             BulkActionGroup::make([
                 BulkAction::make('deleteSpam')

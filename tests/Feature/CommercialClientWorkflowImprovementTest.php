@@ -267,6 +267,10 @@ class CommercialClientWorkflowImprovementTest extends TestCase
 
         $this->actingAs($manager);
         Livewire::test(ViewCrmCounterparty::class, ['record' => $counterparty->getRouteKey()])
+            ->assertSee('Быстрая связь')
+            ->assertSee('Коммерческие условия')
+            ->assertSee('Документов пока нет')
+            ->assertSee('Заказов пока нет')
             ->callAction('create_commercial_document')
             ->assertRedirect(CommercialDocumentResource::getUrl('create'));
 

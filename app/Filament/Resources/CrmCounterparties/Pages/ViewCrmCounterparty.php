@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CrmCounterparties\Pages;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
+use App\Models\CrmCounterparty;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -11,6 +12,35 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewCrmCounterparty extends ViewRecord
 {
     protected static string $resource = CrmCounterpartyResource::class;
+
+    protected string $view = 'filament.resources.crm-counterparties.pages.view-crm-counterparty';
+
+    public function getTitle(): string
+    {
+        return $this->record->name;
+    }
+
+    protected function resolveRecord(int|string $key): CrmCounterparty
+    {
+        /** @var CrmCounterparty $record */
+        $record = parent::resolveRecord($key);
+
+        return $record->load([
+            'responsibleUser',
+            'contactPoints',
+            'contacts.contactPoints',
+            'commercialDocuments.manager',
+            'orders',
+            'externalIdentities',
+        ])->loadCount([
+            'contacts',
+            'calls',
+            'mailThreads',
+            'commercialDocuments',
+            'orders',
+            'externalIdentities',
+        ]);
+    }
 
     protected function getHeaderActions(): array
     {
