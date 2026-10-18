@@ -73,9 +73,11 @@ class CrmCounterpartyResource extends Resource
             Section::make('Карточка контрагента')->columns(3)->schema([
                 TextInput::make('name')->label('Название / имя')->required()->maxLength(255)->columnSpan(2),
                 Select::make('type')->label('Тип')->options(CrmCounterparty::TYPES)->required()->default('organization'),
-                Select::make('classification')->label('Категория')->options(CrmCounterparty::CLASSIFICATIONS)
+                Select::make('classification')->label('Категория контрагента')->options(CrmCounterparty::CLASSIFICATIONS)
+                    ->helperText('Кем является контрагент: розничный клиент, B2B-партнёр, поставщик и т. п.')
                     ->required()->default('unclassified'),
-                Select::make('business_unit')->label('Направление')->options(CrmCounterparty::BUSINESS_UNITS)
+                Select::make('business_unit')->label('Подразделение / канал продаж')->options(CrmCounterparty::BUSINESS_UNITS)
+                    ->helperText('Кто ведёт контрагента: розница СБГ.by или опт/B2B СанБизнесГруп. Это не тип клиента.')
                     ->required()->default('wholesale'),
                 Select::make('status')->label('Статус')->options(CrmCounterparty::STATUSES)->required()->default('active'),
                 TextInput::make('legal_name')->label('Юридическое название')->maxLength(255)->columnSpan(2),

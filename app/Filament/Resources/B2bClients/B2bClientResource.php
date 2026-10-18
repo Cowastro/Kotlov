@@ -19,6 +19,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Password;
 
 class B2bClientResource extends Resource
 {
@@ -102,6 +103,25 @@ class B2bClientResource extends Resource
                     ->action(function (B2bClient $record): void {
                         app(B2bClientWorkflow::class)->approve($record, auth()->user());
                         Notification::make()->success()->title('B2B-доступ одобрен')->send();
+                    }),
+                Action::make('sendAccess')
+                    ->label('Задать пароль')
+                    ->icon('heroicon-o-envelope')
+                    ->color('info')
+                    ->visible(fn (B2bClient $record): bool => $record->status === 'approved' && filled($record->user?->email))
+                    ->requiresConfirmation()
+                    ->modalHeading('Отправить партнёру ссылку для входа?')
+                    ->modalDescription(fn (B2bClient $record): string => 'На '.$record->user->email.' придёт безопасная ссылка для задания нового пароля.')
+                    ->action(function (B2bClient $record): void {
+                        $status = Password::sendResetLink(['email' => $record->user->email]);
+
+                        Notification::make()
+                            ->title($status === Password::RESET_LINK_SENT
+                                ? 'Ссылка для задания пароля отправлена'
+                                : 'Не удалось отправить письмо')
+                            ->body($status === Password::RESET_LINK_SENT ? $record->user->email : __($status))
+                            ->color($status === Password::RESET_LINK_SENT ? 'success' : 'danger')
+                            ->send();
                     }),
                 Action::make('pause')->label('Приостановить')->icon('heroicon-o-pause-circle')->color('gray')->requiresConfirmation()
                     ->visible(fn (B2bClient $record): bool => $record->status === 'approved')

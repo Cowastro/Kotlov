@@ -97,6 +97,7 @@ class B2bClientWorkflowTest extends TestCase
         $this->actingAs($admin)
             ->get(B2bClientResource::getUrl('edit', ['record' => $client]))
             ->assertOk()
-            ->assertSee('Коммерческие условия');
+            ->assertSee('Коммерческие условия')
+            ->assertSee('Аккаунт партнёра на сайте');
     }
 }

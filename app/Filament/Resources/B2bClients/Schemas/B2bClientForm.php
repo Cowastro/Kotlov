@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\B2bClients\Schemas;
 
+use App\Enums\ClientType;
 use App\Models\B2bClient;
+use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Str;
 
 class B2bClientForm
 {
@@ -19,7 +22,7 @@ class B2bClientForm
                 ->columns(3)
                 ->schema([
                     Select::make('user_id')
-                        ->label('Учетная запись сайта')
+                        ->label('Аккаунт партнёра на сайте')
                         ->relationship(
                             'user',
                             'email',
@@ -27,6 +30,33 @@ class B2bClientForm
                         )
                         ->searchable(['name', 'email', 'phone'])
                         ->preload()
+                        ->createOptionForm([
+                            TextInput::make('name')
+                                ->label('Имя контактного лица')
+                                ->required()
+                                ->maxLength(255),
+                            TextInput::make('email')
+                                ->label('Email для входа')
+                                ->email()
+                                ->required()
+                                ->unique(User::class, 'email')
+                                ->maxLength(255),
+                            TextInput::make('phone')
+                                ->label('Телефон')
+                                ->tel()
+                                ->maxLength(50),
+                        ])
+                        ->createOptionUsing(fn (array $data): int => User::query()->create([
+                            'name' => trim($data['name']),
+                            'email' => mb_strtolower(trim($data['email'])),
+                            'phone' => $data['phone'] ?? null,
+                            'password' => Str::password(32),
+                            'role' => 'client',
+                            'client_type' => ClientType::Wholesale,
+                            'is_active' => true,
+                            'b2b_approved' => false,
+                        ])->getKey())
+                        ->helperText('Если аккаунта ещё нет, создайте его здесь. После одобрения отправьте партнёру ссылку «Задать пароль».')
                         ->required()
                         ->unique(ignoreRecord: true),
                     Select::make('partner_type')
