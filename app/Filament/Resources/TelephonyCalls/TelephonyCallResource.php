@@ -103,41 +103,122 @@ class TelephonyCallResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema->components([
-            Section::make('Звонок')->columns(3)->schema([
-                TextEntry::make('started_at')->label('Начало')->dateTime('d.m.Y H:i:s', 'Europe/Minsk'),
-                TextEntry::make('direction')->label('Направление')->formatStateUsing(fn (string $state): string => match ($state) {
-                    'outbound' => 'Исходящий', 'internal' => 'Внутренний', default => 'Входящий',
-                }),
-                TextEntry::make('status')->label('Результат')->badge()
-                    ->formatStateUsing(fn (string $state): string => TelephonyCall::STATUSES[$state] ?? $state),
-                TextEntry::make('customer_phone')->label('Телефон клиента')->copyable()->placeholder('—'),
-                TextEntry::make('contact_name')->label('Клиент'),
-                TextEntry::make('crmCounterparty.name')->label('Контрагент CRM')->placeholder('Не определён'),
-                TextEntry::make('crmContact.position')->label('Должность')->placeholder('—'),
-                TextEntry::make('assignedUser.name')->label('Ответственный')->placeholder('Не назначен'),
-                TextEntry::make('order.number')->label('Заказ')->placeholder('Не найден'),
-                TextEntry::make('duration')->label('Общая длительность')->suffix(' сек')->placeholder('—'),
-                TextEntry::make('conversation_duration')->label('Разговор')->suffix(' сек')->placeholder('—'),
-                TextEntry::make('handling_status')->label('Состояние лида')->badge()
-                    ->formatStateUsing(fn (string $state): string => TelephonyCall::HANDLING_STATUSES[$state] ?? $state),
-                TextEntry::make('manager_outcome')->label('Итог обзвона')->badge()->placeholder('Не заполнен')
-                    ->formatStateUsing(fn (?string $state): string => TelephonyCall::MANAGER_OUTCOMES[$state] ?? (string) $state),
-                TextEntry::make('next_follow_up_at')->label('Следующий контакт')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Не назначен'),
-                TextEntry::make('handledByUser.name')->label('Обратную связь оставил')->placeholder('—'),
-                TextEntry::make('failure_reason')->label('Причина ошибки')->placeholder('—')->columnSpan(2),
-                TextEntry::make('manager_note')->label('Результат / следующий шаг')->placeholder('Не заполнен')->columnSpanFull(),
-                TextEntry::make('record_name')->label('Запись разговора')
-                    ->formatStateUsing(fn (TelephonyCall $record): HtmlString => new HtmlString(sprintf(
-                        '<audio controls preload="none" style="width: min(100%%, 680px)" src="%s"></audio>',
-                        e(route('telephony.a1.recording', $record)),
-                    )))
-                    ->html()
+        return $schema
+            ->columns(3)
+            ->components([
+                Section::make('Управление звонком')
+                    ->description('Текущий этап, ответственный и ближайшее действие')
+                    ->icon('heroicon-o-adjustments-horizontal')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->columns(4)
+                    ->schema([
+                        TextEntry::make('handling_status')
+                            ->label('Статус работы')
+                            ->badge()
+                            ->color(fn (?string $state): string => self::handlingStatusColor($state))
+                            ->icon(fn (?string $state): ?string => self::handlingStatusIcon($state))
+                            ->formatStateUsing(fn (?string $state): string => TelephonyCall::HANDLING_STATUSES[$state] ?? ($state ?: '—')),
+                        TextEntry::make('assignedUser.name')
+                            ->label('Ответственный')
+                            ->icon('heroicon-o-user-circle')
+                            ->placeholder('Не назначен')
+                            ->color(fn ($state): string => $state ? 'success' : 'danger'),
+                        TextEntry::make('next_follow_up_at')
+                            ->label('Следующий контакт')
+                            ->icon('heroicon-o-clock')
+                            ->dateTime('d.m.Y H:i', 'Europe/Minsk')
+                            ->placeholder('Не запланирован')
+                            ->color(fn (TelephonyCall $record): string => $record->next_follow_up_at?->isPast() ? 'danger' : 'gray'),
+                        TextEntry::make('manager_outcome')
+                            ->label('Итог разговора')
+                            ->badge()
+                            ->placeholder('Не заполнен')
+                            ->color(fn (?string $state): string => self::managerOutcomeColor($state))
+                            ->formatStateUsing(fn (?string $state): string => TelephonyCall::MANAGER_OUTCOMES[$state] ?? ($state ?: '—')),
+                    ]),
+
+                Section::make('Клиент')
+                    ->icon('heroicon-o-user')
+                    ->columns(2)
+                    ->schema([
+                        TextEntry::make('contact_name')->label('Имя')->weight('bold')->columnSpanFull(),
+                        TextEntry::make('customer_phone')
+                            ->label('Телефон')
+                            ->icon('heroicon-o-phone')
+                            ->copyable()
+                            ->placeholder('Не определён')
+                            ->url(fn (?string $state): ?string => $state ? 'tel:'.$state : null),
+                        TextEntry::make('crmContact.position')->label('Должность')->placeholder('Не указана'),
+                        TextEntry::make('crmCounterparty.name')->label('Контрагент CRM')->placeholder('Не определён'),
+                        TextEntry::make('crmContact.full_name')->label('Контакт CRM')->placeholder('Не определён'),
+                    ]),
+
+                Section::make('Детали звонка')
+                    ->icon('heroicon-o-phone-arrow-up-right')
+                    ->columnSpan(2)
+                    ->columns(3)
+                    ->schema([
+                        TextEntry::make('started_at')->label('Начало')->dateTime('d.m.Y H:i:s', 'Europe/Minsk'),
+                        TextEntry::make('direction')->label('Направление')->badge()
+                            ->formatStateUsing(fn (string $state): string => match ($state) {
+                                'outbound' => 'Исходящий', 'internal' => 'Внутренний', default => 'Входящий',
+                            })
+                            ->color(fn (string $state): string => $state === 'inbound' ? 'info' : 'gray'),
+                        TextEntry::make('status')->label('Результат телефонии')->badge()
+                            ->color(fn (?string $state): string => self::callStatusColor($state))
+                            ->formatStateUsing(fn (string $state): string => TelephonyCall::STATUSES[$state] ?? $state),
+                        TextEntry::make('duration')->label('Общая длительность')
+                            ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : gmdate('i:s', $state)),
+                        TextEntry::make('conversation_duration')->label('Разговор')
+                            ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : gmdate('i:s', $state)),
+                        TextEntry::make('order.number')->label('Связанный заказ')->placeholder('Не найден'),
+                        TextEntry::make('contactRequest.name')->label('Обращение с сайта')->placeholder('Не найдено')->columnSpanFull(),
+                    ]),
+
+                Section::make('Результат и следующий шаг')
+                    ->description('Общая заметка для менеджеров')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->columnSpanFull()
+                    ->columns(3)
+                    ->schema([
+                        TextEntry::make('manager_note')
+                            ->label('Что решили')
+                            ->placeholder('Результат разговора ещё не записан')
+                            ->prose()
+                            ->columnSpan(2),
+                        TextEntry::make('handledByUser.name')
+                            ->label('Результат записал')
+                            ->icon('heroicon-o-user-circle')
+                            ->placeholder('—'),
+                    ]),
+
+                Section::make('Запись разговора')
+                    ->icon('heroicon-o-play-circle')
+                    ->columnSpanFull()
                     ->visible(fn (TelephonyCall $record): bool => filled($record->record_name))
-                    ->columnSpanFull(),
-                TextEntry::make('external_uuid')->label('UUID A1')->copyable()->columnSpanFull(),
-            ]),
-        ]);
+                    ->schema([
+                        TextEntry::make('record_name')
+                            ->label('Прослушать')
+                            ->formatStateUsing(fn (TelephonyCall $record): HtmlString => new HtmlString(sprintf(
+                                '<audio controls preload="none" style="width: min(100%%, 680px)" src="%s"></audio>',
+                                e(route('telephony.a1.recording', $record)),
+                            )))
+                            ->html(),
+                    ]),
+
+                Section::make('Технические данные')
+                    ->icon('heroicon-o-code-bracket')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->collapsed()
+                    ->columns(3)
+                    ->schema([
+                        TextEntry::make('external_uuid')->label('UUID A1')->copyable(),
+                        TextEntry::make('employee_phone')->label('Линия сотрудника')->placeholder('—'),
+                        TextEntry::make('failure_reason')->label('Причина ошибки')->placeholder('Нет'),
+                    ]),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -330,12 +411,55 @@ class TelephonyCallResource extends Resource
             ->emptyStateDescription('После подключения Webhook A1 звонки появятся здесь автоматически.');
     }
 
-    private static function handlingStatusForOutcome(string $outcome): string
+    public static function handlingStatusForOutcome(string $outcome): string
     {
         return match ($outcome) {
             'callback_later', 'no_answer' => 'callback_required',
             'not_interested', 'wrong_number' => 'irrelevant',
             default => 'handled',
+        };
+    }
+
+    private static function handlingStatusColor(?string $status): string
+    {
+        return match ($status) {
+            'callback_required' => 'danger',
+            'unprocessed' => 'warning',
+            'in_progress' => 'info',
+            'handled' => 'success',
+            default => 'gray',
+        };
+    }
+
+    private static function handlingStatusIcon(?string $status): ?string
+    {
+        return match ($status) {
+            'callback_required' => 'heroicon-o-phone-arrow-up-right',
+            'unprocessed' => 'heroicon-o-exclamation-circle',
+            'in_progress' => 'heroicon-o-arrow-path',
+            'handled' => 'heroicon-o-check-circle',
+            'irrelevant' => 'heroicon-o-no-symbol',
+            default => null,
+        };
+    }
+
+    private static function managerOutcomeColor(?string $outcome): string
+    {
+        return match ($outcome) {
+            'interested', 'converted', 'order_created' => 'success',
+            'consultation_needed', 'offer_sent', 'callback_later' => 'info',
+            'no_answer' => 'warning',
+            default => 'gray',
+        };
+    }
+
+    private static function callStatusColor(?string $status): string
+    {
+        return match ($status) {
+            'answered' => 'success',
+            'ringing' => 'info',
+            'missed', 'busy', 'denied', 'failed' => 'danger',
+            default => 'warning',
         };
     }
 
