@@ -306,6 +306,11 @@ jobs:
             grep '^metric\.' "$detail_log" || true
             echo "safe_price_metrics_end"
           fi
+          if [[ "$TASK" == "artisan-dry-run" && "${ARTISAN_ARGV[0]:-}" == "integration:inspect-source" ]]; then
+            echo "safe_integration_source_metrics_begin"
+            grep -E '^\| (Supplier groups|Staged products|Distinct external IDs|Duplicate external IDs|Positive stock|Zero stock|Missing stock|Positive price|Zero price|Missing price) +\|' "$detail_log" || true
+            echo "safe_integration_source_metrics_end"
+          fi
           if [[ "$TASK" == "artisan-dry-run" && "${ARTISAN_ARGV[0]:-}" == "market:openai-smoke" ]]; then
             echo "safe_openai_smoke_begin"
             cat "$detail_log"
