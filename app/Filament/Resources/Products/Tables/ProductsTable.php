@@ -51,6 +51,7 @@ class ProductsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->extraAttributes(['class' => 'products-workspace'])
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('is_archived', false))
             ->columns([
                 ImageColumn::make('images')
@@ -65,8 +66,10 @@ class ProductsTable
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->wrap()
-                    ->width('18rem')
+                    ->limit(72)
+                    ->lineClamp(2)
+                    ->tooltip(fn (Product $record): string => $record->name)
+                    ->width('14rem')
                     ->grow(false)
                     ->url(fn (Product $record): string => ProductResource::getUrl(
                         'view',
@@ -190,8 +193,9 @@ class ProductsTable
                     ->label('Поставщик')
                     ->getStateUsing(fn ($record): string => self::supplierNames($record))
                     ->description(fn ($record): ?HtmlString => self::supplierContacts($record))
-                    ->limit(22)
-                    ->width('9rem')
+                    ->limit(30)
+                    ->lineClamp(1)
+                    ->width('14rem')
                     ->grow(false)
                     ->tooltip(fn ($record): string => self::supplierNames($record))
                     ->searchable(query: fn (Builder $query, string $search) => $query->where(
@@ -1083,7 +1087,7 @@ class ProductsTable
             $links = collect([
                 $phone ? AdminPhoneLinks::render($phone)?->toHtml() : null,
                 $email ? sprintf(
-                    '<button type="button" class="text-primary-600 hover:underline" wire:click.stop="mountTableAction(\'request_supplier_reserve\', \'%s\')" title="Запросить резерв через CRM" aria-label="Запросить резерв у поставщика через CRM">✉ %s</button>',
+                    '<button type="button" class="text-primary-600 hover:underline" wire:click.stop="mountTableAction(\'request_supplier_reserve\', \'%s\')" title="Запросить резерв через CRM: %s" aria-label="Запросить резерв у поставщика через CRM">✉</button>',
                     e((string) $record->getKey()),
                     e($email),
                 ) : null,

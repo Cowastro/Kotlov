@@ -83,6 +83,29 @@
         min-width: 3.5rem;
         white-space: nowrap;
     }
+
+    /* Product management must stay scan-friendly even with long supplier data. */
+    .products-workspace .fi-ta-header-cell {
+        padding: 0.5rem;
+    }
+
+    .products-workspace .fi-ta-text:not(.fi-inline),
+    .products-workspace .fi-ta-icon,
+    .products-workspace .fi-ta-image {
+        padding: 0.625rem 0.5rem;
+    }
+
+    .products-workspace .fi-ta-cell-name,
+    .products-workspace .fi-ta-header-cell-name {
+        min-width: 14rem;
+        max-width: 14rem;
+    }
+
+    .products-workspace .fi-ta-cell-suppliers-list,
+    .products-workspace .fi-ta-header-cell-suppliers-list {
+        min-width: 14rem;
+        max-width: 14rem;
+    }
     @media (max-width: 700px) {
         /* Order actions follow one predictable mobile hierarchy: operational
            steps use full rows, while the two secondary closing actions share
