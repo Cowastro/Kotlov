@@ -39,8 +39,21 @@ class AuditCrmMailThreadsCommand extends Command
                 return $subjects->count() > 1 ? [$thread->id => $subjects] : [];
             });
 
+        $orphanIncoming = CrmMailThread::query()
+            ->where('status', '!=', 'spam')
+            ->whereHas('messages', fn ($query) => $query->where('direction', 'incoming'))
+            ->with(['messages' => fn ($query) => $query
+                ->select('id', 'thread_id', 'message_id', 'in_reply_to', 'direction', 'subject', 'received_at')
+                ->reorder()
+                ->orderBy('received_at')
+                ->orderBy('id')])
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (CrmMailThread $thread): bool => $this->hasOrphanIncomingSubject($thread));
+
         $this->line('hidden_incoming='.$hiddenIncoming->count());
         $this->line('mixed_subject_threads='.$mixedSubjects->count());
+        $this->line('orphan_incoming_threads='.$orphanIncoming->count());
 
         $hiddenIncoming->each(function (CrmMailThread $thread): void {
             $this->line(sprintf(
@@ -56,6 +69,10 @@ class AuditCrmMailThreadsCommand extends Command
                 $threadId,
                 $subjects->implode(' | '),
             ));
+        });
+
+        $orphanIncoming->each(function (CrmMailThread $thread): void {
+            $this->line('orphan_incoming thread='.$thread->id);
         });
 
         if (! $this->option('apply')) {
@@ -90,5 +107,38 @@ class AuditCrmMailThreadsCommand extends Command
         } while ($normalized !== $previous);
 
         return mb_strtolower((string) preg_replace('/\s+/u', ' ', trim($normalized)));
+    }
+
+    private function hasOrphanIncomingSubject(CrmMailThread $thread): bool
+    {
+        $knownSubjects = [];
+        $knownMessageIds = [];
+
+        foreach ($thread->messages as $message) {
+            $subject = $this->normalizeSubject($message->subject);
+            $replyTo = mb_strtolower(trim((string) $message->in_reply_to, " <>\t\n\r\0\x0B"));
+            $isLinkedReply = $replyTo !== '' && isset($knownMessageIds[$replyTo]);
+
+            if (
+                $message->direction === 'incoming'
+                && $subject !== ''
+                && $knownSubjects !== []
+                && ! isset($knownSubjects[$subject])
+                && ! $isLinkedReply
+            ) {
+                return true;
+            }
+
+            if ($subject !== '') {
+                $knownSubjects[$subject] = true;
+            }
+
+            $messageId = mb_strtolower(trim((string) $message->message_id, " <>\t\n\r\0\x0B"));
+            if ($messageId !== '') {
+                $knownMessageIds[$messageId] = true;
+            }
+        }
+
+        return false;
     }
 }

@@ -45,6 +45,7 @@ class AuditCrmMailThreadsTest extends TestCase
         $this->artisan('crm-mail:audit-threads', ['--apply' => true])
             ->expectsOutput('hidden_incoming=1')
             ->expectsOutput('mixed_subject_threads=1')
+            ->expectsOutput('orphan_incoming_threads=1')
             ->expectsOutput('recovered_reactions=1')
             ->assertSuccessful();
 
@@ -79,6 +80,44 @@ class AuditCrmMailThreadsTest extends TestCase
 
         $this->artisan('crm-mail:audit-threads')
             ->expectsOutput('mixed_subject_threads=0')
+            ->expectsOutput('orphan_incoming_threads=0')
+            ->assertSuccessful();
+    }
+
+    public function test_changed_subject_is_not_orphaned_when_in_reply_to_connects_it(): void
+    {
+        $mailbox = $this->mailbox();
+        $thread = CrmMailThread::query()->create([
+            'mailbox_id' => $mailbox->id,
+            'thread_key' => 'linked-changed-subject',
+            'subject' => 'Новая тема ответа',
+            'participant_email' => 'linked@example.com',
+            'status' => 'waiting_manager',
+            'priority' => 'normal',
+            'last_message_at' => now(),
+        ]);
+        CrmMailMessage::query()->create([
+            'thread_id' => $thread->id,
+            'mailbox_id' => $mailbox->id,
+            'message_id' => '<original@example.com>',
+            'direction' => 'outgoing',
+            'from_email' => 'info@kotlov.by',
+            'subject' => 'Старая тема',
+            'received_at' => now()->subMinute(),
+        ]);
+        CrmMailMessage::query()->create([
+            'thread_id' => $thread->id,
+            'mailbox_id' => $mailbox->id,
+            'in_reply_to' => 'original@example.com',
+            'direction' => 'incoming',
+            'from_email' => 'linked@example.com',
+            'subject' => 'Совершенно новая тема ответа',
+            'received_at' => now(),
+        ]);
+
+        $this->artisan('crm-mail:audit-threads')
+            ->expectsOutput('mixed_subject_threads=1')
+            ->expectsOutput('orphan_incoming_threads=0')
             ->assertSuccessful();
     }
 
