@@ -40,6 +40,7 @@ class EnrichTeplodvorCommand extends Command
         {--supplier=       : Process only products linked to this supplier code}
         {--created-today   : Process only products created today}
         {--force-ai        : Regenerate AI text even when content is already present}
+        {--local-seo       : Build SEO text locally without sending product data to an external AI}
         {--no-teplodvor   : Skip teplodvor matching entirely — AI from DB specs only}
         {--preview         : In dry-run, fetch page and show specs (slow)}';
 
@@ -59,6 +60,7 @@ class EnrichTeplodvorCommand extends Command
         'images'   => 0,
         'specs'    => 0,
         'ai_done'  => 0,
+        'seo_done' => 0,
         'no_match' => 0,
         'errors'   => 0,
     ];
@@ -210,8 +212,13 @@ class EnrichTeplodvorCommand extends Command
                 if ($onlyAi && $this->apply) {
                     // No teplodvor page — generate AI from existing DB specs (no HTTP fetch).
                     $brandName = (string) ($brandNames[$product->brand_id] ?? '');
-                    $this->line(sprintf('  [AI/DB] %s', mb_substr($product->name, 0, 60)));
-                    $this->generateAiContent((int) $product->id, ['specs' => [], 'desc' => ''], $brandName, now());
+                    if ($this->option('local-seo')) {
+                        $this->line(sprintf('  [SEO/LOCAL] %s', mb_substr($product->name, 0, 60)));
+                        $this->generateLocalSeoContent((int) $product->id, $brandName, now());
+                    } else {
+                        $this->line(sprintf('  [AI/DB] %s', mb_substr($product->name, 0, 60)));
+                        $this->generateAiContent((int) $product->id, ['specs' => [], 'desc' => ''], $brandName, now());
+                    }
                     usleep($this->sleep * 1000);
                 } else {
                     $this->line(sprintf('  [NO MATCH] %s', mb_substr($product->name, 0, 70)));
@@ -779,6 +786,73 @@ class EnrichTeplodvorCommand extends Command
             $this->stats['ai_done']++;
             $this->line('    AI content generated');
         }
+    }
+
+    private function generateLocalSeoContent(int $pid, string $brandName, $now): void
+    {
+        $product = Product::find($pid);
+        if (! $product) {
+            return;
+        }
+
+        $name = trim((string) $product->name);
+        $nameLower = mb_strtolower($name);
+        $type = match (true) {
+            str_contains($nameLower, 'котел'), str_contains($nameLower, 'котёл') => 'электрический котёл для системы отопления',
+            str_contains($nameLower, 'тэнб'), str_contains($nameLower, 'блок тэн') => 'блок трубчатых электронагревателей',
+            default => 'трубчатый электрический нагреватель',
+        };
+
+        $facts = [];
+        foreach ((array) $product->specs as $spec) {
+            if (! is_array($spec)) {
+                continue;
+            }
+            $key = trim((string) ($spec['key'] ?? $spec['name'] ?? ''));
+            $value = trim((string) ($spec['value'] ?? ''));
+            $unit = trim((string) ($spec['unit'] ?? ''));
+            if ($key === '' || $value === '' || in_array(mb_strtolower($key), ['артикул производителя', 'штрихкод'], true)) {
+                continue;
+            }
+            $facts[$key] = trim($value.' '.$unit);
+        }
+
+        foreach ([
+            'Мощность' => '/(\d+(?:[.,]\d+)?)\s*квт/iu',
+            'Напряжение' => '/\b(220|230|380|400)\s*в\b/iu',
+        ] as $label => $pattern) {
+            if (! isset($facts[$label]) && preg_match($pattern, $name, $match)) {
+                $facts[$label] = str_replace(',', '.', $match[1]).($label === 'Мощность' ? ' кВт' : ' В');
+            }
+        }
+
+        $brand = trim($brandName) !== '' ? trim($brandName) : 'производителя';
+        $intro = "{$name} — {$type} бренда {$brand}. Модель представлена в каталоге с актуальной розничной ценой и остатком поставщика.";
+        $application = str_contains($nameLower, 'котел') || str_contains($nameLower, 'котёл')
+            ? 'Оборудование предназначено для водяных систем отопления. При выборе необходимо учитывать требуемую мощность, напряжение сети и параметры подключения.'
+            : 'Нагревательный элемент подбирают по мощности, напряжению, форме, материалу и присоединительному размеру. Перед заказом следует сверить эти параметры с оборудованием.';
+
+        $list = '';
+        if ($facts !== []) {
+            $items = collect($facts)->take(12)->map(
+                fn (string $value, string $key): string => '<li><strong>'.e($key).':</strong> '.e($value).'</li>'
+            )->implode('');
+            $list = '<h2>Основные характеристики</h2><ul>'.$items.'</ul>';
+        }
+
+        $content = '<p>'.e($intro).'</p><p>'.e($application).'</p>'.$list
+            .'<p>Цена и наличие обновляются автоматически по прайсу ООО «ТЕРМОКРАФТ». Перед заменой ТЭНа или подключением котла рекомендуется проверить совместимость и требования инструкции.</p>';
+        $factSummary = collect($facts)->take(3)->map(fn ($value, $key) => "{$key}: {$value}")->implode('; ');
+        $short = Str::limit($intro.($factSummary !== '' ? ' '.$factSummary.'.' : ''), 240, '');
+
+        $product->forceFill([
+            'content' => $content,
+            'short_description' => $short,
+            'meta_title' => Str::limit($name.' — купить в Минске и Беларуси | KOTLOV', 70, ''),
+            'meta_description' => Str::limit($short.' Доставка по Беларуси.', 160, ''),
+            'updated_at' => $now,
+        ])->save();
+        $this->stats['seo_done']++;
     }
 
     // ── HTTP ──────────────────────────────────────────────────────────────────────
