@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Orders\Pages\EditOrder;
+use App\Filament\Resources\Orders\Schemas\OrderForm;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
@@ -143,6 +144,34 @@ class OrderItemEditingTest extends TestCase
         $this->assertNull($item->fulfillment_purchase_price);
         $this->assertNull($item->fulfillment_confirmed_at);
         $this->assertNotNull($item->supply_captured_at);
+    }
+
+    public function test_order_product_picker_uses_storefront_search_and_shows_retail_price_and_stock(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Мембранные баки',
+            'slug' => 'order-picker-tanks',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = $this->product(
+            $category,
+            'Расширительный вертикальный бак V 300',
+            'KOTLOV-007689',
+            1185,
+        );
+        $product->update([
+            'manual_stock_management' => true,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK,
+            'in_stock' => true,
+            'stock_qty' => 3,
+        ]);
+
+        $options = OrderForm::searchProductOptions('бак 300 расширительный');
+
+        $this->assertArrayHasKey($product->id, $options);
+        $this->assertStringContainsString('розница 1 185,00 BYN', $options[$product->id]);
+        $this->assertStringContainsString('В наличии: 3 шт.', $options[$product->id]);
     }
 
     private function product(Category $category, string $name, string $sku, float $price): Product

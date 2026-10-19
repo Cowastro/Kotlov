@@ -4,13 +4,13 @@ namespace App\Filament\Resources\Orders\Schemas;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\StorefrontProductSearch;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Illuminate\Database\Eloquent\Builder;
 
 class OrderForm
 {
@@ -81,13 +81,9 @@ class OrderForm
                             ->schema([
                                 Select::make('product_id')
                                     ->label('Товар из каталога')
-                                    ->relationship(
-                                        'product',
-                                        'name',
-                                        modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('name'),
-                                    )
-                                    ->getOptionLabelFromRecordUsing(fn (Product $record): string => trim($record->name.' · '.($record->sku ?: 'без артикула')))
-                                    ->searchable(['name', 'sku'])
+                                    ->searchable()
+                                    ->getSearchResultsUsing(fn (string $search): array => self::searchProductOptions($search))
+                                    ->getOptionLabelUsing(fn (mixed $value): ?string => self::selectedProductOptionLabel($value))
                                     ->preload(false)
                                     ->live()
                                     ->afterStateUpdated(function ($state, callable $get, callable $set): void {
@@ -217,5 +213,61 @@ class OrderForm
         $price = max(0, (float) $get('price'));
 
         $set('total', round($quantity * $price, 2));
+    }
+
+    /** @return array<int, string> */
+    public static function searchProductOptions(string $search): array
+    {
+        $search = mb_substr(trim($search), 0, 100);
+
+        if (mb_strlen($search) < 1) {
+            return [];
+        }
+
+        $query = Product::query()
+            ->active()
+            ->notArchived()
+            ->withSupplierChannels()
+            ->with(['brand:id,name', 'category:id,name']);
+
+        app(StorefrontProductSearch::class)->apply($query, $search, true);
+
+        return $query
+            ->orderByDesc('is_featured')
+            ->orderByDesc('rating')
+            ->orderByDesc('views_count')
+            ->limit(30)
+            ->get()
+            ->mapWithKeys(fn (Product $product): array => [
+                $product->id => self::productOptionLabel($product),
+            ])
+            ->all();
+    }
+
+    private static function selectedProductOptionLabel(mixed $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+
+        $product = Product::query()
+            ->withSupplierChannels()
+            ->find($value);
+
+        return $product ? self::productOptionLabel($product) : null;
+    }
+
+    public static function productOptionLabel(Product $product): string
+    {
+        $price = (float) $product->price > 0
+            ? number_format((float) $product->price, 2, ',', ' ').' BYN'
+            : 'Цена по запросу';
+
+        return implode(' · ', array_filter([
+            $product->name,
+            filled($product->sku) ? 'арт. '.$product->sku : null,
+            'розница '.$price,
+            $product->publicAvailabilityLabel(),
+        ]));
     }
 }
