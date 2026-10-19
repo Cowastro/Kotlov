@@ -732,13 +732,17 @@ class CommercialDocumentResource extends Resource
             ->columns([
                 TextColumn::make('number')->label('Номер')->searchable()->sortable()->weight('bold')
                     ->description(fn (CommercialDocument $record): string => 'Редакция №'.($record->revision_number ?: 1)
-                        .($record->allow_unconfirmed_purchase_price ? ' · ⚠ Нет подтверждённой входной цены' : '')),
-                TextColumn::make('type')->label('Тип')->badge()->formatStateUsing(fn (string $state): string => CommercialDocument::TYPES[$state] ?? $state)
+                        .($record->allow_unconfirmed_purchase_price ? ' · ⚠ Нет входной цены' : '')),
+                TextColumn::make('type')->label('Тип')->badge()->formatStateUsing(fn (string $state): string => match ($state) {
+                    'quote' => 'КП',
+                    'invoice' => 'Счёт',
+                    default => CommercialDocument::TYPES[$state] ?? $state,
+                })
                     ->color(fn (string $state): string => $state === 'invoice' ? 'success' : 'info'),
                 TextColumn::make('issued_at')->label('Дата')->date('d.m.Y')->sortable(),
                 TextColumn::make('client_display')->label('Клиент')->state(fn (CommercialDocument $record): string => $record->client_company ?: ($record->client_name ?: 'Не указан'))
                     ->description(fn (CommercialDocument $record): ?string => collect([$record->client_phone, $record->client_email])->filter()->implode(' · ') ?: null),
-                TextColumn::make('items_count')->label('Позиций')->counts('items')->alignCenter(),
+                TextColumn::make('items_count')->label('Поз.')->counts('items')->alignCenter(),
                 TextColumn::make('total')->label('Сумма')->money('BYN')->sortable()->weight('bold'),
                 TextColumn::make('status')->label('Статус')->badge()->formatStateUsing(fn (CommercialDocument $record): string => $record->statusLabel())
                     ->color(fn (string $state, CommercialDocument $record): string => $record->newerRevision() ? 'gray' : match ($state) {
@@ -754,14 +758,15 @@ class CommercialDocumentResource extends Resource
                         'won' => 'success', 'lost' => 'danger', 'needs_revision' => 'warning',
                         'decision_pending', 'negotiation' => 'info', default => 'gray',
                     }),
-                TextColumn::make('manager.name')->label('Менеджер')->placeholder('—'),
+                TextColumn::make('manager.name')->label('Менеджер')->placeholder('—')->limit(18)
+                    ->tooltip(fn (CommercialDocument $record): ?string => $record->manager?->name),
                 TextColumn::make('order.number')->label('Заказ')->placeholder('—')
                     ->url(fn (CommercialDocument $record): ?string => $record->order
                         ? OrderResource::getUrl('view', ['record' => $record->order])
                         : null)
                     ->toggleable(),
                 TextColumn::make('control')
-                    ->label('Следующее действие')
+                    ->label('Контроль')
                     ->state(fn (CommercialDocument $record): string => $record->controlLabel())
                     ->url(fn (CommercialDocument $record): ?string => ($newer = $record->newerRevision())
                         ? self::getUrl('view', ['record' => $newer]) : null)
@@ -792,17 +797,26 @@ class CommercialDocumentResource extends Resource
                     })),
             ])
             ->recordActions([
-                RecordCommercialDocumentContactAction::make(),
+                RecordCommercialDocumentContactAction::make()
+                    ->iconButton()
+                    ->tooltip('Зафиксировать результат контакта'),
                 Action::make('open_mail_thread')
                     ->label('Открыть переписку')
                     ->icon('heroicon-o-envelope-open')
+                    ->iconButton()
+                    ->tooltip('Открыть переписку')
                     ->color('gray')
                     ->visible(fn (CommercialDocument $record): bool => $record->mailThread !== null)
                     ->url(fn (CommercialDocument $record): string => CrmMailThreadResource::getUrl('view', [
                         'record' => $record->mailThread,
                     ])),
-                ViewAction::make(),
-                EditAction::make()->visible(fn (CommercialDocument $record): bool => $record->status === 'draft'),
+                ViewAction::make()
+                    ->iconButton()
+                    ->tooltip('Просмотреть документ'),
+                EditAction::make()
+                    ->iconButton()
+                    ->tooltip('Редактировать документ')
+                    ->visible(fn (CommercialDocument $record): bool => $record->status === 'draft'),
             ])
             ->defaultSort('created_at', 'desc');
     }
