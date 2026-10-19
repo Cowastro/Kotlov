@@ -12,12 +12,58 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ListProducts extends ListRecords
 {
     protected static string $resource = ProductResource::class;
+
+    public function getDefaultActiveTab(): string|int|null
+    {
+        return 'all';
+    }
+
+    public function getTabs(): array
+    {
+        $allRequests = Product::query()->whereHas('supplierMailThreads')->count();
+        $waiting = Product::query()->whereHas(
+            'supplierMailThreads',
+            fn (Builder $query): Builder => $query->where('status', 'waiting_customer'),
+        )->count();
+        $answered = Product::query()->whereHas(
+            'supplierMailThreads',
+            fn (Builder $query): Builder => $query->whereIn('status', ['new', 'waiting_manager']),
+        )->count();
+
+        return [
+            'all' => Tab::make('Все товары')
+                ->icon('heroicon-o-squares-2x2'),
+            'reserve_requests' => Tab::make('Запросы резерва')
+                ->icon('heroicon-o-envelope')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereHas('supplierMailThreads'))
+                ->badge($allRequests ?: null)
+                ->badgeColor('info'),
+            'reserve_waiting' => Tab::make('Ждём ответа')
+                ->icon('heroicon-o-clock')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereHas(
+                    'supplierMailThreads',
+                    fn (Builder $threads): Builder => $threads->where('status', 'waiting_customer'),
+                ))
+                ->badge($waiting ?: null)
+                ->badgeColor('warning'),
+            'reserve_answered' => Tab::make('Ответ получен')
+                ->icon('heroicon-o-envelope-open')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereHas(
+                    'supplierMailThreads',
+                    fn (Builder $threads): Builder => $threads->whereIn('status', ['new', 'waiting_manager']),
+                ))
+                ->badge($answered ?: null)
+                ->badgeColor('success'),
+        ];
+    }
 
     public function getMaxContentWidth(): ?string
     {
