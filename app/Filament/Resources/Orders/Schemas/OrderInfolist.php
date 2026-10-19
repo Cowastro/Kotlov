@@ -67,7 +67,7 @@ class OrderInfolist
                         TextEntry::make('corrected_at')
                             ->label('Скорректирован')
                             ->dateTime('d.m.Y H:i')
-                            ->placeholder('Не корректировался')
+                            ->visible(fn (Order $record): bool => $record->corrected_at !== null)
                             ->helperText(fn (Order $record): ?string => $record->correctedBy?->name),
 
                         TextEntry::make('items_count')
@@ -120,6 +120,8 @@ class OrderInfolist
                     ->icon('heroicon-o-link')
                     ->columnSpanFull()
                     ->compact()
+                    ->collapsible()
+                    ->collapsed()
                     ->columns(3)
                     ->visible(fn (Order $record): bool => filled($record->commercial_document_id)
                         || filled($record->crm_counterparty_id)
@@ -165,6 +167,8 @@ class OrderInfolist
                     ->icon('heroicon-o-arrow-path-rounded-square')
                     ->columnSpanFull()
                     ->compact()
+                    ->collapsible()
+                    ->collapsed()
                     ->columns(4)
                     ->schema([
                         TextEntry::make('onec_exported_at')
@@ -226,10 +230,11 @@ class OrderInfolist
                     ]),
 
                 Section::make('Маршрутизация по источникам')
-                    ->description('Каждый поставщик и каждая 1С подтверждают только свою часть смешанного заказа.')
                     ->icon('heroicon-o-arrows-right-left')
                     ->columnSpanFull()
                     ->compact()
+                    ->collapsible()
+                    ->collapsed()
                     ->visible(fn (Order $record): bool => $record->integrationDeliveries->isNotEmpty())
                     ->schema([
                         RepeatableEntry::make('integrationDeliveries')
@@ -286,11 +291,12 @@ class OrderInfolist
                             ->label('Email')
                             ->copyable()
                             ->placeholder('—')
+                            ->visible(fn (Order $record): bool => filled($record->customer_email))
                             ->url(fn ($state) => $state ? 'mailto:'.$state : null),
 
                         TextEntry::make('user.name')
                             ->label('Аккаунт')
-                            ->placeholder('Гость'),
+                            ->visible(fn (Order $record): bool => $record->user !== null),
 
                         TextEntry::make('company_name')
                             ->label('Организация')
@@ -325,7 +331,7 @@ class OrderInfolist
 
                         TextEntry::make('delivery_region')
                             ->label('Область')
-                            ->placeholder('—'),
+                            ->visible(fn (Order $record): bool => filled($record->delivery_region)),
 
                         TextEntry::make('delivery_city')
                             ->label('Город')
@@ -341,6 +347,13 @@ class OrderInfolist
                                 ])))
                                 : null)
                             ->openUrlInNewTab(),
+
+                        TextEntry::make('planned_delivery_date')
+                            ->label('Плановая дата')
+                            ->date('d.m.Y')
+                            ->badge()
+                            ->color('warning')
+                            ->visible(fn (Order $record): bool => $record->planned_delivery_date !== null),
                     ]),
 
                 // ── Оплата (3 из 3) ──────────────────────────────────────────
@@ -361,11 +374,12 @@ class OrderInfolist
 
                         TextEntry::make('coupon_code')
                             ->label('Промокод')
-                            ->placeholder('—'),
+                            ->visible(fn (Order $record): bool => filled($record->coupon_code)),
 
                         TextEntry::make('discount')
                             ->label('Скидка')
-                            ->formatStateUsing(fn ($state) => (float) $state > 0 ? $byn($state) : '—'),
+                            ->formatStateUsing($byn)
+                            ->visible(fn (Order $record): bool => (float) $record->discount > 0),
 
                         TextEntry::make('subtotal')
                             ->label('Товары')
@@ -379,10 +393,11 @@ class OrderInfolist
                     ]),
 
                 Section::make('Экономический снимок при оформлении')
-                    ->description('Неизменяемые значения на момент заказа. Неизвестная входная цена или расход не подменяется нулём.')
                     ->icon('heroicon-o-calculator')
                     ->columnSpanFull()
                     ->compact()
+                    ->collapsible()
+                    ->collapsed()
                     ->columns(8)
                     ->schema([
                         TextEntry::make('economic_snapshot_status')
@@ -477,10 +492,11 @@ class OrderInfolist
                     ]),
 
                 Section::make('Подтверждённые взаиморасчёты')
-                    ->description('Версионный неизменяемый расчёт после подтверждения маршрутов и расходов. Изменение маршрута не переписывает историю — текущая версия помечается устаревшей.')
                     ->icon('heroicon-o-banknotes')
                     ->columnSpanFull()
                     ->compact()
+                    ->collapsible()
+                    ->collapsed()
                     ->visible(fn (Order $record): bool => $record->latestSettlement !== null)
                     ->columns(8)
                     ->schema([
@@ -548,7 +564,7 @@ class OrderInfolist
 
                 // ── Товары заказа: полная ширина ──────────────────────────────
                 Section::make('Товары заказа')
-                    ->description('Новые заказы сохраняют поставщика, входную цену, НДС, остаток и контакт на момент оформления. Для старых заказов без снимка показана текущая рекомендация.')
+                    ->description('Товар, количество, продажа, поставщик и наличие. Закупочные детали раскрываются внутри позиции.')
                     ->icon('heroicon-o-shopping-bag')
                     ->columnSpanFull()
                     ->compact()
@@ -601,13 +617,27 @@ class OrderInfolist
                                     ->placeholder('Не определён')
                                     ->weight('bold'),
 
-                                TextEntry::make('supply_contact')
-                                    ->label('Контакты поставщика')
+                                TextEntry::make('supply_stock_summary')
+                                    ->label('Наличие')
                                     ->columnSpan(2)
-                                    ->state(fn ($record): ?string => $record->currentSupplyContact())
-                                    ->formatStateUsing(fn (?string $state): HtmlString|string => self::contactLinks($state))
-                                    ->placeholder('Не заполнены')
-                                    ->copyable(),
+                                    ->state(fn ($record): string => $record->supplyContext()['stock_label'])
+                                    ->weight('bold'),
+
+                                Section::make('Закупка и исполнение')
+                                    ->icon('heroicon-o-truck')
+                                    ->columnSpanFull()
+                                    ->compact()
+                                    ->collapsible()
+                                    ->collapsed()
+                                    ->columns(12)
+                                    ->schema([
+                                        TextEntry::make('supply_contact')
+                                            ->label('Контакты поставщика')
+                                            ->columnSpan(3)
+                                            ->state(fn ($record): ?string => $record->currentSupplyContact())
+                                            ->formatStateUsing(fn (?string $state): HtmlString|string => self::contactLinks($state))
+                                            ->placeholder('Не заполнены')
+                                            ->copyable(),
 
                                 TextEntry::make('supply_route')
                                     ->label('Маршрут')
@@ -712,16 +742,18 @@ class OrderInfolist
 
                                 TextEntry::make('fulfillment_note')
                                     ->label('Комментарий к маршруту')
-                                    ->columnSpan(3)
+                                    ->columnSpanFull()
                                     ->placeholder('—'),
+                                    ]),
                             ]),
                     ]),
 
                 Section::make('История решений по исполнению')
-                    ->description('Каждое изменение маршрута сохраняется отдельно: кто, когда и какого исполнителя выбрал.')
                     ->icon('heroicon-o-clipboard-document-check')
                     ->columnSpanFull()
                     ->compact()
+                    ->collapsible()
+                    ->collapsed()
                     ->visible(fn (Order $record): bool => $record->fulfillmentHistory->isNotEmpty())
                     ->schema([
                         RepeatableEntry::make('fulfillmentHistory')
@@ -756,10 +788,11 @@ class OrderInfolist
                     ]),
 
                 Section::make('Заявки поставщикам')
-                    ->description('Статус «Черновик» означает, что поставщику ничего не отправлено. Передача выполняется только отдельным подтверждённым действием; ответы поставщика сохраняются независимо по каждой заявке.')
                     ->icon('heroicon-o-document-duplicate')
                     ->columnSpanFull()
                     ->compact()
+                    ->collapsible()
+                    ->collapsed()
                     ->visible(fn (Order $record): bool => $record->supplierOrderRequests->isNotEmpty())
                     ->schema([
                         RepeatableEntry::make('supplierOrderRequests')
@@ -848,6 +881,8 @@ class OrderInfolist
                 Section::make('История изменений статуса')
                     ->icon('heroicon-o-clock')
                     ->columnSpanFull()
+                    ->collapsible()
+                    ->collapsed()
                     ->schema([
                         RepeatableEntry::make('statusHistory')
                             ->hiddenLabel()

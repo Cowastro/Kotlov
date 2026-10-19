@@ -106,6 +106,33 @@
         min-width: 14rem;
         max-width: 14rem;
     }
+
+    /* Order view is an operational screen: keep the primary facts dense and
+       let explicitly collapsible technical sections carry the long detail. */
+    .order-view-page .fi-main {
+        padding-top: 1rem;
+    }
+
+    .order-view-page .fi-sc {
+        gap: 0.75rem;
+    }
+
+    .order-view-page .fi-section-header {
+        padding: 0.7rem 1rem;
+    }
+
+    .order-view-page .fi-section-content {
+        padding: 0.8rem 1rem;
+    }
+
+    .order-view-page .fi-in-repeatable.fi-contained > .fi-in-repeatable-item {
+        padding: 0.8rem;
+    }
+
+    .order-view-page .fi-in-entry-wrp {
+        gap: 0.2rem;
+    }
+
     @media (max-width: 700px) {
         /* Order actions follow one predictable mobile hierarchy: operational
            steps use full rows, while the two secondary closing actions share
