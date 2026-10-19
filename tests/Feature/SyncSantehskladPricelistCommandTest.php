@@ -126,4 +126,48 @@ class SyncSantehskladPricelistCommandTest extends TestCase
         $this->assertStringContainsString('KIPI Rotary 5-16 кВт', $legacyBurner->supplier_name);
         $this->assertSame(Product::AVAILABILITY_CHECK, $legacyBurner->product->availability_status);
     }
+
+    public function test_it_enriches_only_weak_linked_cards_without_changing_price_or_stock(): void
+    {
+        foreach ([
+            'tverdotoplivnye' => 'Твердотопливные котлы',
+            'kotly-na-pelletah' => 'Пеллетные котлы',
+            'burzhuiki-pechi' => 'Отопительные печи',
+            'pelletnye-gorelki' => 'Пеллетные горелки',
+            'komplektuyushhie-dlya-otopleniya' => 'Комплектующие',
+        ] as $slug => $name) {
+            Category::query()->firstOrCreate(['slug' => $slug], ['name' => $name, 'is_active' => true]);
+        }
+
+        $this->artisan('supplier:sync-santehsklad-pricelist', [
+            '--apply' => true,
+            '--create-missing-products' => true,
+            '--enrich-content' => true,
+        ])
+            ->expectsOutput('metric.santehsklad.products_enriched=103')
+            ->assertSuccessful();
+
+        $supplier = Supplier::query()->where('code', 'santehsklad')->firstOrFail();
+        $standart = $supplier->supplierProducts()
+            ->where('supplier_article_normalized', 'STANDART-12')
+            ->firstOrFail()
+            ->product;
+
+        $this->assertGreaterThan(700, mb_strlen(strip_tags($standart->content)));
+        $this->assertStringContainsString('Назначение и особенности', $standart->content);
+        $this->assertStringContainsString('Твердотопливный', collect($standart->specs)->pluck('value')->implode(' '));
+        $this->assertStringContainsString('domtepla.by', $standart->content_source_url);
+        $this->assertNotEmpty($standart->images);
+        $this->assertSame('2250.00', $standart->price);
+        $this->assertFalse($standart->in_stock);
+        $this->assertSame(Product::AVAILABILITY_CHECK, $standart->availability_status);
+
+        $detailedContent = str_repeat('Уже заполненное экспертное описание. ', 30);
+        $standart->forceFill(['content' => $detailedContent])->save();
+        $this->artisan('supplier:sync-santehsklad-pricelist', [
+            '--apply' => true,
+            '--enrich-content' => true,
+        ])->assertSuccessful();
+        $this->assertSame($detailedContent, $standart->fresh()->content);
+    }
 }

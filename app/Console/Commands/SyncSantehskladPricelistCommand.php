@@ -10,6 +10,7 @@ use App\Models\SupplierProduct;
 use App\Models\SupplierSource;
 use App\Models\SupplierSync;
 use App\Services\SupplierProductAvailabilityService;
+use App\Services\Suppliers\SantehskladCatalogContent;
 use App\Services\Suppliers\SantehskladPriceList;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -25,13 +26,14 @@ class SyncSantehskladPricelistCommand extends Command
         {--apply : Save supplier offers, exact links and prices}
         {--dry-run : Preview only}
         {--create-missing-products : Create exact catalogue cards for unresolved current price-list rows}
+        {--enrich-content : Add SEO copy, catalogue characteristics and verified supplier media to weak linked cards}
         {--sync-retail-prices : Set source RRP on every exact catalogue duplicate}
         {--export-snapshot= : Normalize the XLSX into a deployable JSON snapshot}
         {--report= : Write the complete classification CSV}';
 
     protected $description = 'Сантехсклад: reconcile SAKOVICH/PRAMEN wholesale and retail prices with exact catalogue cards.';
 
-    public function handle(SantehskladPriceList $parser): int
+    public function handle(SantehskladPriceList $parser, SantehskladCatalogContent $catalogContent): int
     {
         $lock = Cache::lock('supplier:sync-santehsklad-pricelist', 900);
         if (! $lock->get()) {
@@ -64,7 +66,7 @@ class SyncSantehskladPricelistCommand extends Command
                 return self::SUCCESS;
             }
 
-            $stats = DB::transaction(function () use ($payload, $classified, &$supplier, $parser): array {
+            $stats = DB::transaction(function () use ($payload, $classified, &$supplier, $parser, $catalogContent): array {
                 [$supplier, $source, $sync] = $this->ensureSupplier($payload, $supplier);
                 $stats = [
                     'offers' => 0,
@@ -74,6 +76,9 @@ class SyncSantehskladPricelistCommand extends Command
                     'duplicate_retail_updated' => 0,
                     'price_confirmation_cleared' => 0,
                     'products_created' => 0,
+                    'products_enriched' => 0,
+                    'enriched_with_source' => 0,
+                    'enriched_with_image' => 0,
                 ];
                 $touched = [];
 
@@ -149,6 +154,12 @@ class SyncSantehskladPricelistCommand extends Command
                         if ($target->brand_id) {
                             $supplier->brands()->syncWithoutDetaching([$target->brand_id]);
                         }
+                    }
+                    if ($this->option('enrich-content') && $catalogContent->enrich($product, $row, $payload)) {
+                        $product->refresh();
+                        $stats['products_enriched']++;
+                        $stats['enriched_with_source'] += filled($product->content_source_url) ? 1 : 0;
+                        $stats['enriched_with_image'] += $product->imagePaths() !== [] ? 1 : 0;
                     }
                 }
 
