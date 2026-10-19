@@ -48,4 +48,22 @@ class ProbeDealByCommandTest extends TestCase
             && $request->hasHeader('Authorization', 'Bearer secret-test-token')
             && $request->url() === 'https://my.deal.test/api/v1/orders/list?limit=1');
     }
+
+    public function test_it_fails_when_deal_by_returns_an_error_in_a_successful_http_response(): void
+    {
+        config()->set('services.deal_by', [
+            'base_url' => 'https://my.deal.test/api/v1',
+            'token' => 'secret-test-token',
+            'connect_timeout' => 1,
+            'timeout' => 1,
+        ]);
+
+        Http::fake([
+            'https://my.deal.test/api/v1/products/list*' => Http::response(['error' => 'Incorrect datetime format']),
+        ]);
+
+        $this->artisan('deal:probe')
+            ->expectsOutputToContain('Deal.by API недоступен')
+            ->assertFailed();
+    }
 }

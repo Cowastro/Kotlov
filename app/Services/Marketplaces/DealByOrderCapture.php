@@ -67,8 +67,8 @@ class DealByOrderCapture
             $lastId = null;
             for ($page = 1; $page <= 1000; $page++) {
                 $payload = $this->client->listOrders(self::PAGE_SIZE, $lastId, [
-                    'last_modified_from' => $effectiveFrom->format('Y-m-d\TH:i:s\Z'),
-                    'last_modified_to' => $effectiveTo->format('Y-m-d\TH:i:s\Z'),
+                    'last_modified_from' => $effectiveFrom->format('Y-m-d H:i:s'),
+                    'last_modified_to' => $effectiveTo->format('Y-m-d H:i:s'),
                     'sort_dir' => 'asc',
                 ]);
                 if (! isset($payload['orders']) || ! is_array($payload['orders'])) {

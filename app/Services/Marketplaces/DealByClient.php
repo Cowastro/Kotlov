@@ -40,7 +40,7 @@ class DealByClient
     }
 
     /** @param array<string, scalar> $query
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     private function get(string $path, array $query = []): array
     {
@@ -51,6 +51,10 @@ class DealByClient
         $payload = $response->json();
         if (! is_array($payload)) {
             throw new RuntimeException('Deal.by вернул ответ не в формате JSON.');
+        }
+
+        if (filled($payload['error'] ?? null)) {
+            throw new RuntimeException('Deal.by API отклонил параметры запроса: '.trim((string) $payload['error']));
         }
 
         return $payload;

@@ -65,8 +65,8 @@ class DealByOrderCaptureTest extends TestCase
             && $request->hasHeader('Authorization', 'Bearer secret-test-token')
             && $request['limit'] === 100
             && $request['sort_dir'] === 'asc'
-            && $request['last_modified_from'] === '2026-09-19T08:00:00Z'
-            && $request['last_modified_to'] === '2026-10-19T08:00:00Z');
+            && $request['last_modified_from'] === '2026-09-19 08:00:00'
+            && $request['last_modified_to'] === '2026-10-19 08:00:00');
     }
 
     public function test_repeated_capture_updates_the_same_inbox_record(): void
@@ -86,7 +86,7 @@ class DealByOrderCaptureTest extends TestCase
         $this->assertNull($inbox->order_id);
 
         $requests = Http::recorded();
-        $this->assertSame('2026-10-19T07:45:00Z', $requests[1][0]['last_modified_from']);
+        $this->assertSame('2026-10-19 07:45:00', $requests[1][0]['last_modified_from']);
     }
 
     public function test_disabled_capture_does_not_call_deal_by(): void
