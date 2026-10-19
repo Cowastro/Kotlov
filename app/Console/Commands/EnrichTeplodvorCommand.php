@@ -502,7 +502,13 @@ class EnrichTeplodvorCommand extends Command
                     if (is_array($decoded)) {
                         // Re-scrape if fewer than 2 keys (e.g. only "Производитель" without Импортер/Сервисный центр)
                         // or if all values are very short (just brand name like "Ariston")
-                        $maxLen = ! empty($decoded) ? max(array_map(fn ($v) => strlen((string) $v), array_values($decoded))) : 0;
+                        $serviceValues = array_map(
+                            fn ($value): string => is_array($value)
+                                ? (string) ($value['value'] ?? '')
+                                : (string) $value,
+                            array_values($decoded)
+                        );
+                        $maxLen = $serviceValues !== [] ? max(array_map('strlen', $serviceValues)) : 0;
                         $needsUpdate = count($decoded) < 2 || $maxLen < 50 || $maxLen > 600;
                     }
                 }
