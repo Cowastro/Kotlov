@@ -243,12 +243,39 @@ class EnrichThermokraftOfficialCommand extends Command
         'ТЭНБ - 12 - G1½"- НЧ с колпаком' => 'img/products/sten/sten-tenb-g112-12.png',
     ];
 
+    /**
+     * Local copies of verified manufacturer images for cards whose remote
+     * TENKO URLs are blocked by hotlink protection. Keep these local paths
+     * authoritative so a later scheduled sync cannot reintroduce broken
+     * external thumbnails.
+     *
+     * @var array<string,array{image:string,source:string}>
+     */
+    private const TENKO_LOCAL_IMAGES = [
+        'ТЭН трубчатый 1,2 кВт/220В крепление гайка латунная 1/2" L=400мм' => [
+            'image' => 'img/products/tenko/tenko-heater-1200w-g12.png',
+            'source' => 'https://tenko.ua/ru/catalog/good/1200vt',
+        ],
+        'ТЭН трубчатый 1,5 кВт/220В крепление гайка латунная 1 1/4"' => [
+            'image' => 'img/products/tenko/tenko-heater-g114.jpg',
+            'source' => 'https://tenko.ua/ru/catalog/good/15-kvt-nerghaveyka',
+        ],
+        'ТЭН трубчатый 2 кВт/220В крепление гайка латунная 1 1/4"' => [
+            'image' => 'img/products/tenko/tenko-heater-g114.jpg',
+            'source' => 'https://tenko.ua/ru/catalog/good/2-kvt-nerghaveyka',
+        ],
+        'ТЭН трубчатый 3 кВт/220В крепление гайка латунная 1 1/4"' => [
+            'image' => 'img/products/tenko/tenko-heater-block-3000w-g114.jpg',
+            'source' => 'https://tenko.by/katalog/komplektuyushhie/blok-tenov-iz-nerzhaveyushhej-stali-moshhnostyu-3,0-kvt/220v-dlya-kotlov-serii-mini-tm-tenko-%28prisoedinitelnaya-rezba-1-1/4-dyujma%29.html',
+        ],
+    ];
+
     public function handle(ProductSourceEnricher $enricher): int
     {
         $apply = (bool) $this->option('apply');
         $limit = max(1, (int) $this->option('limit'));
         $sleep = max(300, (int) $this->option('sleep'));
-        $stats = ['linked_cards' => 0, 'missing_images_before' => 0, 'missing_images_after' => 0, 'candidates' => 0, 'verified' => 0, 'enriched' => 0, 'images' => 0, 'specs' => 0, 'skipped' => 0, 'errors' => 0, 'sten_heater_cards' => 0, 'sten_missing_before' => 0, 'sten_candidates' => 0, 'sten_enriched' => 0, 'sten_missing_after' => 0];
+        $stats = ['linked_cards' => 0, 'missing_images_before' => 0, 'missing_images_after' => 0, 'candidates' => 0, 'verified' => 0, 'enriched' => 0, 'images' => 0, 'specs' => 0, 'skipped' => 0, 'errors' => 0, 'tenko_local_candidates' => 0, 'tenko_local_repaired' => 0, 'sten_heater_cards' => 0, 'sten_missing_before' => 0, 'sten_candidates' => 0, 'sten_enriched' => 0, 'sten_missing_after' => 0];
 
         $rows = DB::table('supplier_products as sp')
             ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
@@ -338,6 +365,32 @@ class EnrichThermokraftOfficialCommand extends Command
             usleep($sleep * 1000);
         }
 
+        foreach (self::TENKO_LOCAL_IMAGES as $name => $local) {
+            $row = $rows->get($this->key($name));
+            if (! $row) {
+                continue;
+            }
+
+            $current = $this->firstImage($row->images);
+            if ($current === $local['image']) {
+                continue;
+            }
+
+            $stats['tenko_local_candidates']++;
+            if ($apply) {
+                $product = Product::query()->findOrFail((int) $row->product_id);
+                $product->images = [$local['image']];
+                $product->content_source_url = $local['source'];
+                $product->save();
+
+                DB::table('supplier_products')->where('id', (int) $row->supplier_product_id)->update([
+                    'source_url' => $local['source'],
+                    'updated_at' => now(),
+                ]);
+                $stats['tenko_local_repaired']++;
+            }
+        }
+
         $stats['missing_images_after'] = Product::query()
             ->whereIn('id', $rows->pluck('product_id'))
             ->get(['images'])
@@ -424,5 +477,21 @@ class EnrichThermokraftOfficialCommand extends Command
         }
 
         return ! is_array($images) || $images === [];
+    }
+
+    private function firstImage(mixed $images): ?string
+    {
+        if (is_string($images)) {
+            $decoded = json_decode($images, true);
+            $images = json_last_error() === JSON_ERROR_NONE ? $decoded : [$images];
+        }
+
+        if (! is_array($images)) {
+            return null;
+        }
+
+        $first = reset($images);
+
+        return is_string($first) && trim($first) !== '' ? trim($first) : null;
     }
 }
