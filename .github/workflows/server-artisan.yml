@@ -21,6 +21,7 @@ on:
           - audit-price-integrity
           - audit-svah-group
           - audit-belomo
+          - audit-santehsklad
           - audit-gas-meter-demand
           - verify-commercial-pdf
           - research-price-batch
@@ -54,7 +55,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|audit-gas-meter-demand|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|audit-santehsklad|audit-gas-meter-demand|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -209,6 +210,12 @@ jobs:
                   --dry-run \
                   --sync-retail-prices \
                   --report=storage/app/reports/suppliers/belomo/current-audit.csv
+                ;;
+              audit-santehsklad)
+                "$PHP_BIN" artisan supplier:sync-santehsklad-pricelist \
+                  --dry-run \
+                  --sync-retail-prices \
+                  --report=storage/app/reports/suppliers/santehsklad/current-audit.csv
                 ;;
               audit-gas-meter-demand)
                 "$PHP_BIN" artisan orders:audit-gas-meter-demand \
@@ -484,6 +491,31 @@ jobs:
         with:
           name: belomo-current-audit
           path: artifacts/belomo-current-audit.csv
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Download Santehsklad audit
+        if: inputs.task == 'audit-santehsklad'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          set -euo pipefail
+          port="${SERVER_PORT:-22}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          mkdir -p artifacts
+          scp -q -i ~/.ssh/server_key -P "$port" \
+            "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/reports/suppliers/santehsklad/current-audit.csv" \
+            artifacts/santehsklad-current-audit.csv
+
+      - name: Upload Santehsklad audit artifact
+        if: inputs.task == 'audit-santehsklad'
+        uses: actions/upload-artifact@v6
+        with:
+          name: santehsklad-current-audit
+          path: artifacts/santehsklad-current-audit.csv
           if-no-files-found: error
           retention-days: 7
 
