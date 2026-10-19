@@ -747,7 +747,7 @@ class EnrichTeplodvorCommand extends Command
             return;
         }
 
-        $product = DB::table('products')->where('id', $pid)->first(['name', 'specs']);
+        $product = DB::table('products')->where('id', $pid)->first(['name', 'specs', 'content']);
         if (! $product) {
             return;
         }
@@ -759,7 +759,7 @@ class EnrichTeplodvorCommand extends Command
         $aiContent = $enricher->enrich(
             (string) $product->name,
             $brandName,
-            $card['desc'] ?: null,
+            $card['desc'] ?: ((string) ($product->content ?? '') ?: null),
             $mergedSpecs
         );
 
