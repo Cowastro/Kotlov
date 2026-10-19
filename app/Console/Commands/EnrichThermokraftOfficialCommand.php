@@ -26,11 +26,6 @@ class EnrichThermokraftOfficialCommand extends Command
      */
     private const VERIFIED = [
         [
-            'name' => 'ТЭН трубчатый 3000 Вт/220В крепление гайка латунная 1 1/4" L=250мм',
-            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-3000vt-kreplenie-gayka-latunnaya-114-l250mm',
-            'required' => ['3000', '220', '11/4', '250'],
-        ],
-        [
             'name' => 'ТЭН трубчатый 4500 Вт/220В крепление гайка латунная 1,5" L=300мм',
             'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-4500vt-kreplenie-gayka-latunnaya-15-l300mm',
             'required' => ['4500', '220', '1,5', '300'],
