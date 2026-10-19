@@ -127,6 +127,15 @@ Schedule::command('supplier:sync-maitek-group --apply --sync-retail-prices')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/maitek-group-price-stock-sync.log'));
 
+// Термокрафт: live-прайс UNIVAT и ТЭНов TENKO/СТЭН. Новые карточки
+// создаются только в первом проверенном ручном запуске; cron обновляет связи.
+Schedule::command('supplier:sync-thermokraft --apply --sync-retail-prices')
+    ->hourlyAt(15)
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/thermokraft-price-stock-sync.log'));
+
 // Thermostudio: frequent safe price/stock refresh for already linked products only.
 Schedule::command('supplier:sync-thermostudio-pricelist --apply --only-linked --sync-retail-prices --mark-missing')
     ->hourlyAt(20)
