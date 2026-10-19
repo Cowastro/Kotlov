@@ -38,6 +38,19 @@ class BelomoDesignationsPageTest extends TestCase
             ->assertOk()
             ->assertSeeText('База знаний')
             ->assertSeeText('Техническая информация')
+            ->assertSee('article-blog', false)
+            ->assertSee(BelomoGasMeterDesignations::PAGE_URL, false);
+
+        $this->get(KnowledgeBase::URL . '?q=' . urlencode('скат nb-iot'))
+            ->assertOk()
+            ->assertSee(BelomoGasMeterDesignations::PAGE_URL, false);
+
+        $this->get(KnowledgeBase::URL . '?q=' . urlencode('пеллетный котел'))
+            ->assertOk()
+            ->assertSeeText('Ничего не найдено');
+
+        $this->get(KnowledgeBase::URL . '?tag=' . urlencode('БелОМО'))
+            ->assertOk()
             ->assertSee(BelomoGasMeterDesignations::PAGE_URL, false);
 
         $this->get(BelomoGasMeterDesignations::PAGE_URL)
