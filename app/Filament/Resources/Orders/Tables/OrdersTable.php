@@ -7,11 +7,13 @@ use App\Filament\Resources\Orders\Actions\RequestOrderSupplierReserveAction;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderPortalLink;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Integrations\OneCOrderQueue;
 use App\Services\Orders\OrderSettlementManager;
+use App\Services\Orders\OrderPortal;
 use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -103,6 +105,10 @@ class OrdersTable
                     'placedEconomicSnapshot',
                     'latestSettlement',
                     'supplierOrderRequests:id,order_id,supplier_id,supplier_name,status,sent_at,acknowledged_at',
+                    'portalLinks' => fn ($query) => $query
+                        ->whereNull('revoked_at')
+                        ->where('expires_at', '>', now())
+                        ->latest('id'),
                     'integrationIssues' => fn ($query) => $query
                         ->open()
                         ->orders()
@@ -560,6 +566,15 @@ class OrdersTable
                 ViewAction::make(),
                 ActionGroup::make([
                     RequestOrderSupplierReserveAction::make(),
+                    Action::make('openOrderOnline')
+                        ->label('Открыть онлайн-заказ')
+                        ->icon('heroicon-o-globe-alt')
+                        ->color('primary')
+                        ->visible(fn (Order $record): bool => self::activePortalLink($record) !== null)
+                        ->url(fn (Order $record): ?string => ($link = self::activePortalLink($record))
+                            ? app(OrderPortal::class)->url($link)
+                            : null)
+                        ->openUrlInNewTab(),
                     Action::make('confirmed')
                         ->label('Принять заказ')
                         ->icon('heroicon-o-check')
@@ -700,6 +715,25 @@ class OrdersTable
             $requests->contains('status', 'draft') => 'Черновик',
             default => 'Закрыто',
         };
+    }
+
+    private static function activePortalLink(Order $order): ?OrderPortalLink
+    {
+        if ($order->status === 'cancelled'
+            || $order->status === 'completed'
+            || ($order->status === 'delivered' && $order->payment_status === 'paid')) {
+            return null;
+        }
+
+        if ($order->relationLoaded('portalLinks')) {
+            return $order->portalLinks->first();
+        }
+
+        return $order->portalLinks()
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now())
+            ->latest('id')
+            ->first();
     }
 
     public static function supplierReserveDescription(Order $order): ?string

@@ -14,6 +14,7 @@ use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
 use App\Models\SupplierProduct;
 use App\Models\User;
+use App\Services\Orders\OrderPortal;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -80,6 +81,20 @@ class OrderSupplierReserveQuickActionTest extends TestCase
         $this->assertSame('Резерв подтверждён', OrdersTable::supplierReserveStatus($order));
         $this->assertSame('success', OrdersTable::supplierReserveColor($order));
         $this->assertSame($supplier->name, OrdersTable::supplierReserveDescription($order));
+    }
+
+    public function test_order_row_action_opens_existing_online_order_link(): void
+    {
+        [$manager, , $order] = $this->fixture();
+        $portal = app(OrderPortal::class);
+        $link = $portal->publish($order, $manager);
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(ListOrders::class)
+            ->assertTableActionVisible('openOrderOnline', $order)
+            ->assertTableActionHasUrl('openOrderOnline', $portal->url($link), $order);
     }
 
     /** @return array{User, Supplier, Order, OrderItem} */
