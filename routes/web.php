@@ -97,6 +97,9 @@ Route::get('/admin/orders/{order}/online-preview', [OrderPortalController::class
     ->name('admin.orders.online-preview');
 
 Route::prefix('order-view')->group(function (): void {
+    Route::get('/access/{token}/print', [OrderPortalController::class, 'print'])
+        ->where('token', '[A-Za-z0-9]{80}')
+        ->name('order-portal.print');
     Route::get('/access/{token}', [OrderPortalController::class, 'access'])
         ->where('token', '[A-Za-z0-9]{80}')
         ->name('order-portal.access');

@@ -136,6 +136,7 @@ class ViewOrder extends ViewRecord
                     ->label('Создать ссылку и QR')
                     ->icon('heroicon-o-qr-code')
                     ->color('primary')
+                    ->visible(fn (): bool => ! in_array($this->record->status, ['delivered', 'completed', 'cancelled'], true))
                     ->action(function (): void {
                         try {
                             $portal = app(OrderPortal::class);
@@ -154,8 +155,8 @@ class ViewOrder extends ViewRecord
                     ->label('Показать QR и ссылку')
                     ->icon('heroicon-o-qr-code')
                     ->color('gray')
-                    ->visible(fn (): bool => $this->record->portalLinks()
-                        ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                    ->visible(fn (): bool => ! in_array($this->record->status, ['delivered', 'completed', 'cancelled'], true)
+                        && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
                     ->modalHeading(fn (): string => 'Онлайн-заказ '.$this->record->number)
                     ->modalDescription('QR и ссылка ведут на одну защищённую страницу всего заказа, как в онлайн-КП.')
                     ->modalWidth(Width::Large)
@@ -170,15 +171,29 @@ class ViewOrder extends ViewRecord
                             'order' => $this->record,
                             'url' => $portal->url($link),
                             'qr' => $portal->qrDataUri($link),
+                            'expiresAt' => $link->expires_at,
                         ]);
                     }),
                 Action::make('previewOrderOnline')
                     ->label('Предпросмотр заказа')
                     ->icon('heroicon-o-eye')
                     ->color('gray')
-                    ->visible(fn (): bool => $this->record->portalLinks()
-                        ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                    ->visible(fn (): bool => ! in_array($this->record->status, ['delivered', 'completed', 'cancelled'], true)
+                        && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
                     ->url(fn (): string => route('admin.orders.online-preview', $this->record))
+                    ->openUrlInNewTab(),
+                Action::make('printOrderOnline')
+                    ->label('Версия для печати')
+                    ->icon('heroicon-o-printer')
+                    ->color('gray')
+                    ->visible(fn (): bool => ! in_array($this->record->status, ['delivered', 'completed', 'cancelled'], true)
+                        && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                    ->url(function (): string {
+                        $link = $this->record->portalLinks()
+                            ->whereNull('revoked_at')->where('expires_at', '>', now())->latest('id')->firstOrFail();
+
+                        return app(OrderPortal::class)->printUrl($link);
+                    })
                     ->openUrlInNewTab(),
                 Action::make('revokeOrderOnline')
                     ->label('Отозвать онлайн-доступ')

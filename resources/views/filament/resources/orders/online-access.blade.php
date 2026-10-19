@@ -5,6 +5,7 @@
     <div>
         <strong>{{ $order->number }}</strong>
         <div style="margin-top:6px;color:#9ca3af">Одна ссылка открывает весь заказ со всеми позициями и текущими статусами.</div>
+        <div style="margin-top:6px;color:#f59e0b">Действует до {{ $expiresAt->timezone('Europe/Minsk')->format('d.m.Y H:i') }} или до завершения/отмены заказа.</div>
     </div>
     <input type="text" value="{{ $url }}" readonly onclick="this.select()" style="width:100%;padding:10px 12px;border:1px solid #4b5563;border-radius:8px;background:#111827;color:#f9fafb">
     <a href="{{ $url }}" target="_blank" rel="noopener noreferrer" style="color:#60a5fa">Открыть защищённую ссылку ↗</a>

@@ -2,6 +2,9 @@
 
 @php
     $preview = $preview ?? false;
+    $printUrl = $preview
+        ? route('admin.orders.procurement', $order)
+        : app(\App\Services\Orders\OrderPortal::class)->printUrl($link);
 @endphp
 
 @section('content')
@@ -80,7 +83,9 @@
             @if((float) $order->discount > 0)<div class="sum-row"><span>Скидка</span><strong>− {{ number_format((float) $order->discount, 2, ',', ' ') }} BYN</strong></div>@endif
             @if((float) $order->delivery_price > 0)<div class="sum-row"><span>Доставка</span><strong>{{ number_format((float) $order->delivery_price, 2, ',', ' ') }} BYN</strong></div>@endif
             <div class="sum-row total"><span>К оплате</span><span>{{ number_format((float) $order->total, 2, ',', ' ') }} BYN</span></div>
+            <a class="button" href="{{ $printUrl }}" target="_blank" rel="noopener noreferrer">Версия для печати</a>
             <p class="small">Данные на странице обновляются вместе с заказом: изменения состава, поставщиков, остатков и статусов видны без создания новой ссылки.</p>
+            @unless($preview)<p class="small">Ссылка действует до {{ $link->expires_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }} и закроется раньше при завершении или отмене заказа.</p>@endunless
             <p class="small"><strong>{{ $order->manager?->name ?: 'Менеджер KOTLOV.BY' }}</strong><br>{{ $order->manager?->phone }}<br>order@kotlov.by</p>
         </div>
     </aside>

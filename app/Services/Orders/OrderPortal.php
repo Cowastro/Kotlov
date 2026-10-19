@@ -16,6 +16,10 @@ class OrderPortal
 {
     public function publish(Order $order, ?User $user = null): OrderPortalLink
     {
+        if (in_array($order->status, ['delivered', 'completed', 'cancelled'], true)) {
+            throw new RuntimeException('Для завершённого или отменённого заказа нельзя создать новую ссылку.');
+        }
+
         $active = $order->portalLinks()
             ->whereNull('revoked_at')
             ->where('expires_at', '>', now())
@@ -23,8 +27,12 @@ class OrderPortal
             ->first();
 
         if ($active) {
-            if ($active->access_email !== null) {
-                $active->forceFill(['access_email' => null])->save();
+            $maximumExpiry = $active->created_at->copy()->addDays(15);
+            if ($active->access_email !== null || $active->expires_at->gt($maximumExpiry)) {
+                $active->forceFill([
+                    'access_email' => null,
+                    'expires_at' => $active->expires_at->min($maximumExpiry),
+                ])->save();
             }
 
             return $active;
@@ -37,7 +45,7 @@ class OrderPortal
             'token_encrypted' => $token,
             'access_email' => null,
             'created_by' => $user?->id,
-            'expires_at' => now()->addDays(30),
+            'expires_at' => now()->addDays(15),
         ]);
         $this->event($link, null, 'link_created');
 
@@ -60,6 +68,12 @@ class OrderPortal
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    public function printUrl(OrderPortalLink $link): string
+    {
+        return rtrim((string) config('app.url'), '/').'/order-view/access/'
+            .rawurlencode($link->token_encrypted).'/print';
     }
 
     public function resolveToken(string $token): OrderPortalLink

@@ -36,6 +36,31 @@ class OrderPortalController extends Controller
         return $this->orderView($link, null, false);
     }
 
+    public function print(string $token, Request $request, OrderPortal $portal)
+    {
+        try {
+            $link = $portal->resolveToken($token);
+        } catch (Throwable $exception) {
+            return $this->securedView('order-portal.unavailable', ['message' => $exception->getMessage()], 410);
+        }
+
+        $link->loadMissing([
+            'order.manager',
+            'order.correctedBy',
+            'order.items.product',
+            'order.items.fulfillmentSupplier.crmCounterparty.contactPoints',
+            'order.items.supplySupplier.crmCounterparty.contactPoints',
+            'order.items.fulfillmentConfirmedBy',
+            'order.items.supplierOrderRequestItem.request',
+        ]);
+        $portal->event($link, null, 'order_print_viewed', $request);
+
+        return $this->securedView('order-portal.print', [
+            'link' => $link,
+            'order' => $link->order,
+        ]);
+    }
+
     private function orderView(OrderPortalLink $link, mixed $session, bool $preview)
     {
         $link->loadMissing([

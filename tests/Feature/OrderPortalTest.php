@@ -18,6 +18,8 @@ class OrderPortalTest extends TestCase
         $portal = app(OrderPortal::class);
         $link = $portal->publish($order, $manager);
 
+        $this->assertTrue($link->expires_at->between(now()->addDays(14), now()->addDays(15)->addMinute()));
+
         $this->get($portal->url($link))
             ->assertOk()
             ->assertSee($order->number)
@@ -27,6 +29,12 @@ class OrderPortalTest extends TestCase
             ->assertSee('913,00 BYN');
         $this->assertNull($link->fresh()->access_email);
         $this->assertDatabaseCount('order_portal_sessions', 0);
+
+        $this->get($portal->printUrl($link))
+            ->assertOk()
+            ->assertSee('Заказ '.$order->number)
+            ->assertSee('Вернуться к заказу')
+            ->assertSee('Комплект автоматики');
     }
 
     public function test_the_same_link_can_be_forwarded_and_opened_in_another_session(): void
@@ -44,6 +52,18 @@ class OrderPortalTest extends TestCase
 
         $this->assertSame(2, $link->fresh()->open_count);
         $this->assertDatabaseCount('order_portal_challenges', 0);
+    }
+
+    public function test_link_stops_working_when_order_is_completed(): void
+    {
+        [$order, $manager] = $this->order();
+        $portal = app(OrderPortal::class);
+        $link = $portal->publish($order, $manager);
+
+        $order->update(['status' => 'delivered']);
+
+        $this->get($portal->url($link))->assertGone()->assertSee('недоступен');
+        $this->get($portal->printUrl($link))->assertGone()->assertSee('недоступен');
     }
 
     private function order(): array
