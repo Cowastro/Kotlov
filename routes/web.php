@@ -44,6 +44,7 @@ use App\Models\EmailSubscriber;
 use App\Models\Product;
 use App\Rules\NoHtmlOrLinks;
 use App\Rules\PhoneNotSpam;
+use App\Support\Catalog\BelomoGasMeterDesignations;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
@@ -269,6 +270,30 @@ Route::get('/akcii/kotlov-xo-evo-26', [PromotionController::class, 'xoEvo26'])->
 Route::get('/akcii/hotta-ceramik-20-30', [PromotionController::class, 'hottaCeramik'])->name('promotions.hotta-ceramik');
 Route::view('/dostavka', 'pages.dostavka');
 Route::get('/partners', fn () => view('pages.partners'))->name('partners');
+Route::get(BelomoGasMeterDesignations::PAGE_URL, fn () => view('pages.partners-belomo-designations', [
+    'models' => BelomoGasMeterDesignations::models(),
+    'variants' => BelomoGasMeterDesignations::variants(),
+]))->name('partners.belomo-designations');
+Route::get(BelomoGasMeterDesignations::CSV_URL, function () {
+    return response()->streamDownload(function () {
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, ['Модель', 'Обозначение', 'Типоразмер', 'Доп. устройство', 'Резьба', 'Связь', 'Адаптер', 'Наименование при заказе'], ';');
+        foreach (BelomoGasMeterDesignations::variants() as $row) {
+            fputcsv($out, [
+                BelomoGasMeterDesignations::models()[$row['model']]['name'],
+                $row['code'],
+                $row['size'],
+                $row['option'] ?? '',
+                $row['thread'] ? $row['thread'] . ' (' . BelomoGasMeterDesignations::THREADS[$row['thread']] . ')' : '',
+                $row['network'] ?? '',
+                $row['adapter'] === 'pc' ? 'ПК' : ($row['adapter'] === 'modbus' ? 'Modbus' : ''),
+                $row['name'],
+            ], ';');
+        }
+        fclose($out);
+    }, 'belomo-kata-skat-oboznacheniya.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+})->name('partners.belomo-designations.csv');
 Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->middleware('public.form.protect:installer')->name('partners.apply-installer');
 Route::get('/suppliers', fn () => view('pages.suppliers'))->name('suppliers');
 Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->middleware('public.form.protect:supplier')->name('suppliers.apply');
