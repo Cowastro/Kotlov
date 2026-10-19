@@ -17,6 +17,7 @@ class AuditProductImagesCommand extends Command
         {--supplier= : Supplier code or id}
         {--brand= : Brand name filter}
         {--missing-only : Show only empty, placeholder or broken images}
+        {--content : Also audit empty and thin product descriptions}
         {--summary-by-brand : Show missing image counts grouped by brand}
         {--icons : Also audit public/icons SVG files}
         {--limit=100 : Max product rows to show, 0 means no limit}';
@@ -96,6 +97,9 @@ class AuditProductImagesCommand extends Command
             'broken' => 0,
             'remote' => 0,
             'with_source_url' => 0,
+            'content_ok' => 0,
+            'content_empty' => 0,
+            'content_thin' => 0,
         ];
 
         $rows = [];
@@ -103,6 +107,7 @@ class AuditProductImagesCommand extends Command
         $limit = max(0, (int) $this->option('limit'));
         $missingOnly = (bool) $this->option('missing-only');
         $summaryByBrand = (bool) $this->option('summary-by-brand');
+        $auditContent = (bool) $this->option('content');
 
         Product::query()
             ->orderable()
@@ -119,8 +124,8 @@ class AuditProductImagesCommand extends Command
             ->orderByDesc('is_featured')
             ->orderByDesc('created_at')
             ->orderBy('name')
-            ->get(['id', 'category_id', 'brand_id', 'name', 'slug', 'sku', 'images'])
-            ->each(function (Product $product) use (&$summary, &$rows, &$brandSummary, $sourceUrls, $missingOnly, $limit, $summaryByBrand): void {
+            ->get(['id', 'category_id', 'brand_id', 'name', 'slug', 'sku', 'images', 'content', 'short_description'])
+            ->each(function (Product $product) use (&$summary, &$rows, &$brandSummary, $sourceUrls, $missingOnly, $limit, $summaryByBrand, $auditContent): void {
                 $summary['checked']++;
 
                 $sourceUrl = (string) ($sourceUrls->get($product->id) ?? '');
@@ -130,6 +135,8 @@ class AuditProductImagesCommand extends Command
 
                 [$status, $detail] = $this->imageStatus($product);
                 $summary[$status]++;
+                $contentStatus = $this->contentStatus($product);
+                $summary['content_'.$contentStatus]++;
                 if ($summaryByBrand) {
                     $brand = (string) ($product->brand?->name ?? 'Без бренда');
                     $brandSummary[$brand] ??= [
@@ -153,7 +160,7 @@ class AuditProductImagesCommand extends Command
                     }
                 }
 
-                if ($missingOnly && $status === 'ok') {
+                if ($missingOnly && $status === 'ok' && (! $auditContent || $contentStatus === 'ok')) {
                     return;
                 }
 
@@ -167,6 +174,7 @@ class AuditProductImagesCommand extends Command
                     mb_strimwidth((string) ($product->brand?->name ?? ''), 0, 16, '...'),
                     mb_strimwidth($product->name, 0, 44, '...'),
                     $status,
+                    $auditContent ? $contentStatus : 'not checked',
                     $sourceUrl !== '' ? 'yes' : 'no',
                     mb_strimwidth($detail, 0, 72, '...'),
                 ];
@@ -188,6 +196,9 @@ class AuditProductImagesCommand extends Command
 
         $this->line('Products in ' . implode(' + ', $scope));
         $this->table(['metric', 'count'], collect($summary)->map(fn ($count, $metric) => [$metric, $count])->values()->all());
+        foreach ($summary as $metric => $count) {
+            $this->line("metric.catalog_images.{$metric}={$count}");
+        }
 
         if ($summaryByBrand && $brandSummary !== []) {
             $brandRows = collect($brandSummary)
@@ -210,7 +221,7 @@ class AuditProductImagesCommand extends Command
         }
 
         if ($rows !== []) {
-            $this->table(['id', 'slug', 'brand', 'name', 'image', 'source', 'detail'], $rows);
+            $this->table(['id', 'slug', 'brand', 'name', 'image', 'content', 'source', 'detail'], $rows);
         }
 
         return self::SUCCESS;
@@ -283,6 +294,16 @@ class AuditProductImagesCommand extends Command
         $idPath = $this->legacyIdPath($product, $raw);
 
         return file_exists(public_path('images/' . $idPath)) ? ['ok', 'legacy:' . $idPath] : ['broken', 'legacy:' . $idPath];
+    }
+
+    private function contentStatus(Product $product): string
+    {
+        $plain = trim(preg_replace('/\s+/u', ' ', strip_tags((string) $product->content)) ?? '');
+        if ($plain === '') {
+            return 'empty';
+        }
+
+        return mb_strlen($plain) < 200 ? 'thin' : 'ok';
     }
 
     private function legacySkuPath(Product $product, string $file): ?string

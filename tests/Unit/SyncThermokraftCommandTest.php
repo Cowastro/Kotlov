@@ -45,6 +45,26 @@ class SyncThermokraftCommandTest extends TestCase
         $this->assertStringStartsWith('СТЭН-', $rows[0]['article']);
     }
 
+    #[Test]
+    public function it_imports_regler_automation_and_marks_an_invalid_retail_price(): void
+    {
+        $csv = implode("\n", [
+            'Наименование,Артикул,Штрихкод,,Опт,РРЦ,Количество,Гарантия,Бренд,Страна,Описание',
+            'Контроллер ReglerPro Wifi,,,,305,359,0,12,REGLER PRO,Россия,',
+            'Вентилятор VSK 120,,,,313,265,0,12,REGLER PRO,Россия,',
+            'Контроллер другого бренда,,,,200,250,2,12,TECH,Польша,',
+        ]);
+
+        $rows = $this->parse($csv, '494936167', 'automation');
+
+        $this->assertCount(2, $rows);
+        $this->assertSame('REGLER PRO', $rows[0]['brand']);
+        $this->assertTrue($rows[0]['valid_price']);
+        $this->assertFalse($rows[1]['valid_price']);
+        $this->assertSame(313.0, $rows[1]['wholesale']);
+        $this->assertSame(265.0, $rows[1]['retail']);
+    }
+
     /** @return array<int,array<string,mixed>> */
     private function parse(string $csv, string $gid, string $kind): array
     {

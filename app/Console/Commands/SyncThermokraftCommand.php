@@ -34,6 +34,10 @@ class SyncThermokraftCommand extends Command
 
     private const HEATERS_GID = '1999481119';
 
+    private const AUTOMATION_GID = '494936167';
+
+    private const REGLER_SOURCE_URL = 'https://regler.pro/reglerproelite';
+
     private const SUPPLIER_CODE = 'thermokraft';
 
     private const SUPPLIER_NAME = 'ООО «ТЕРМОКРАФТ»';
@@ -91,7 +95,7 @@ class SyncThermokraftCommand extends Command
         }
 
         $rows = [];
-        foreach ([self::ELECTRIC_GID => 'boiler', self::HEATERS_GID => 'heater'] as $gid => $kind) {
+        foreach ([self::ELECTRIC_GID => 'boiler', self::HEATERS_GID => 'heater', self::AUTOMATION_GID => 'automation'] as $gid => $kind) {
             $csv = $this->fetch("https://docs.google.com/spreadsheets/d/{$sheetId}/export?format=csv&gid={$gid}");
             foreach ($this->parseCsv($csv, $gid, $kind) as $row) {
                 $rows[] = $row;
@@ -116,7 +120,7 @@ class SyncThermokraftCommand extends Command
             $cells = array_map(fn ($value) => $this->clean((string) $value), $cells);
             $name = $cells[0] ?? '';
             $brand = $this->brand($cells[8] ?? '', $name);
-            if ($name === '' || ! in_array($brand, ['UNIVAT', 'TENKO', 'СТЭН'], true)) {
+            if ($name === '' || ! in_array($brand, ['UNIVAT', 'TENKO', 'СТЭН', 'REGLER PRO'], true)) {
                 continue;
             }
             if ($kind === 'boiler' && ! in_array($brand, ['UNIVAT', 'СТЭН'], true)) {
@@ -125,15 +129,16 @@ class SyncThermokraftCommand extends Command
             if ($kind === 'heater' && ! in_array($brand, ['TENKO', 'СТЭН'], true)) {
                 continue;
             }
+            if ($kind === 'automation' && $brand !== 'REGLER PRO') {
+                continue;
+            }
 
             $wholesale = $this->money($cells[4] ?? '');
             $retail = $this->money($cells[5] ?? '');
             if ($wholesale === null && $retail === null) {
                 continue;
             }
-            if ($wholesale !== null && $retail !== null && $retail + 0.005 < $wholesale) {
-                throw new RuntimeException("РРЦ ниже опта: строка {$rowNumber}, {$name}.");
-            }
+            $validPrice = ! ($wholesale !== null && $retail !== null && $retail + 0.005 < $wholesale);
 
             $stockText = $cells[6] ?? '';
             $article = $cells[1] ?? '';
@@ -157,6 +162,7 @@ class SyncThermokraftCommand extends Command
                 'barcode' => $barcode,
                 'wholesale' => $wholesale,
                 'retail' => $retail,
+                'valid_price' => $validPrice,
                 'stock_text' => $stockText,
                 'stock_quantity' => $quantity,
                 'in_stock' => $quantity !== null && $quantity > 0,
@@ -186,8 +192,16 @@ class SyncThermokraftCommand extends Command
             $byName[$this->nameKey($product->name)][] = $product;
         }
 
-        $counts = ['rows' => count($rows), 'matched' => 0, 'create_candidates' => 0, 'in_stock' => 0, 'zero_stock' => 0, 'univat' => 0, 'tenko' => 0, 'sten' => 0, 'invalid' => 0];
+        $counts = ['rows' => count($rows), 'matched' => 0, 'create_candidates' => 0, 'in_stock' => 0, 'zero_stock' => 0, 'univat' => 0, 'tenko' => 0, 'sten' => 0, 'regler_pro' => 0, 'invalid' => 0];
         foreach ($rows as &$row) {
+            if (! $row['valid_price']) {
+                $row['product_id'] = null;
+                $row['match_reason'] = 'invalid_price';
+                $counts['invalid']++;
+
+                continue;
+            }
+
             $productId = (int) ($links->get($row['article_key'])?->product_id ?? 0);
             $reason = $productId ? 'supplier_article' : null;
             foreach (array_filter([$row['article_key'], $this->key($row['barcode'])]) as $key) {
@@ -211,6 +225,7 @@ class SyncThermokraftCommand extends Command
                 'UNIVAT' => 'univat',
                 'TENKO' => 'tenko',
                 'СТЭН' => 'sten',
+                'REGLER PRO' => 'regler_pro',
             };
             $counts[$brandMetric]++;
         }
@@ -235,8 +250,8 @@ class SyncThermokraftCommand extends Command
             'supplier_id' => $supplier->id,
             'name' => self::SUPPLIER_NAME,
             'code' => self::SUPPLIER_CODE,
-            'title' => 'Термокрафт: UNIVAT и ТЭНы TENKO/СТЭН',
-            'description' => 'Прямые опт, РРЦ и остатки из Google Sheets.',
+            'title' => 'Термокрафт: UNIVAT, TENKO/СТЭН и автоматика ReglerPro',
+            'description' => 'Прямые опт, РРЦ и остатки из Google Sheets; карточки ReglerPro дополнены данными производителя.',
             'command' => 'supplier:sync-thermokraft',
             'source_url' => self::SHEET_URL,
             'is_active' => true,
@@ -252,6 +267,12 @@ class SyncThermokraftCommand extends Command
 
         foreach ($rows as $row) {
             try {
+                if (! $row['valid_price']) {
+                    $stats['skipped']++;
+
+                    continue;
+                }
+
                 $product = $row['product_id'] ? Product::query()->find($row['product_id']) : null;
                 if (! $product && $this->option('create-new')) {
                     $product = $this->createProduct($row);
@@ -265,9 +286,15 @@ class SyncThermokraftCommand extends Command
 
                 $existingLink = $existingLinks->get($row['article_key']);
                 $sheetSourceUrl = self::SHEET_URL.'#gid='.$row['gid'];
-                $sourceUrl = preg_match('#^https?://(?:www\.)?(?:tenko\.(?:ua|by)|sten\.ru)/#i', (string) $existingLink?->source_url)
-                    ? $existingLink->source_url
-                    : $sheetSourceUrl;
+                $sourceUrl = $row['brand'] === 'REGLER PRO'
+                    ? self::REGLER_SOURCE_URL
+                    : (preg_match('#^https?://(?:www\.)?(?:tenko\.(?:ua|by)|sten\.ru)/#i', (string) $existingLink?->source_url)
+                        ? $existingLink->source_url
+                        : $sheetSourceUrl);
+
+                if ($row['brand'] === 'REGLER PRO') {
+                    $this->enrichReglerProduct($product, $row);
+                }
 
                 $link = SupplierProduct::query()->updateOrCreate([
                     'supplier_id' => $supplier->id,
@@ -322,7 +349,12 @@ class SyncThermokraftCommand extends Command
     private function createProduct(array $row): Product
     {
         $brand = Brand::query()->firstOrCreate(['name' => $row['brand']], ['slug' => Str::slug($row['brand']), 'h1' => $row['brand'], 'is_active' => true]);
-        $categoryId = (int) DB::table('categories')->where('slug', $row['kind'] === 'boiler' ? 'elektricheskie' : 'elektricheskie-teny-dlya-otopleniya')->value('id');
+        $categorySlug = match ($row['kind']) {
+            'boiler' => 'elektricheskie',
+            'automation' => 'avtomatika-i-termoregulyatory',
+            default => 'elektricheskie-teny-dlya-otopleniya',
+        };
+        $categoryId = (int) DB::table('categories')->where('slug', $categorySlug)->value('id');
         if ($categoryId <= 0) {
             $categoryId = (int) DB::table('categories')->where('slug', 'komplektuyushhie-dlya-otopleniya')->value('id');
         }
@@ -389,6 +421,7 @@ class SyncThermokraftCommand extends Command
             str_contains($text, 'UNIVAT') => 'UNIVAT',
             str_contains($text, 'TENKO') => 'TENKO',
             str_contains($text, 'СТЭН') || str_contains($text, 'STEN') => 'СТЭН',
+            str_contains($text, 'REGLER') => 'REGLER PRO',
             default => trim($raw),
         };
     }
@@ -427,7 +460,7 @@ class SyncThermokraftCommand extends Command
     private function nameKey(string $value): string
     {
         $value = mb_strtolower(str_replace('ё', 'е', $value));
-        $value = preg_replace('/\b(univat|tenko|стэн|sten)\b/u', ' ', $value) ?? $value;
+        $value = preg_replace('/\b(univat|tenko|стэн|sten|regler\s*pro)\b/u', ' ', $value) ?? $value;
 
         return trim(preg_replace('/[^a-zа-я0-9]+/u', ' ', $value) ?? '');
     }
@@ -459,5 +492,80 @@ class SyncThermokraftCommand extends Command
         }
 
         return $slug;
+    }
+
+    private function enrichReglerProduct(Product $product, array $row): void
+    {
+        $isKit = str_contains(mb_strtolower($row['name']), 'комплект');
+        $images = $isKit
+            ? ['img/products/regler-pro/kit-controller-vsk-120.jpg', 'img/products/regler-pro/kit-fan-vsk-120.jpg']
+            : ['img/products/regler-pro/controller-wifi.jpg', 'img/products/regler-pro/controller-wifi-close.jpg', 'img/products/regler-pro/mobile-control.png'];
+
+        $content = $isKit
+            ? '<p>Комплект автоматики ReglerPro Wi‑Fi предназначен для управления твердотопливным котлом с принудительной подачей воздуха. В набор входят контроллер и вентилятор VSK 120.</p><p>Контроллер поддерживает заданную температуру теплоносителя и помещения, плавно регулирует обороты вентилятора, управляет циркуляционным насосом и помогает защищать котёл от перегрева. Встроенный Wi‑Fi позволяет контролировать работу отопления со смартфона и получать уведомления о состоянии системы.</p><p>Комплект подходит для модернизации полуавтоматических твердотопливных котлов. Перед заказом рекомендуем сверить посадочные размеры вентилятора и электрическую схему котла.</p>'
+            : '<p>ReglerPro Wi‑Fi — контроллер для полуавтоматических твердотопливных котлов. Он поддерживает заданную температуру теплоносителя и помещения, плавно управляет вентилятором наддува и включает циркуляционный насос.</p><p>Контроллер оснащён Wi‑Fi: со смартфона можно менять температуру, наблюдать за работой котла и получать уведомления об аварийных ситуациях. В комплект входит датчик климат-контроля.</p><p>Плавное снижение оборотов вентилятора при приближении к заданной температуре уменьшает температурные скачки и помогает полнее использовать топливо. Гарантия производителя — 12 месяцев.</p>';
+
+        $specs = [
+            ['name' => 'Назначение', 'value' => 'Управление твердотопливным котлом'],
+            ['name' => 'Напряжение питания', 'value' => '230 В ±5%'],
+            ['name' => 'Потребляемая мощность', 'value' => 'не более 5 Вт'],
+            ['name' => 'Степень защиты', 'value' => 'IP40'],
+            ['name' => 'Температура эксплуатации', 'value' => 'от −10 до +40 °C'],
+            ['name' => 'Максимальная мощность выхода насоса ЦО', 'value' => '250 Вт'],
+            ['name' => 'Максимальная мощность выхода вентилятора', 'value' => '220 Вт'],
+            ['name' => 'Управление со смартфона', 'value' => 'Wi‑Fi'],
+            ['name' => 'Страна бренда', 'value' => 'Россия'],
+        ];
+        if ($isKit) {
+            array_unshift($specs, ['name' => 'Комплектация', 'value' => 'Контроллер ReglerPro Wi‑Fi, вентилятор VSK 120']);
+        } else {
+            array_unshift(
+                $specs,
+                ['name' => 'Габариты контроллера', 'value' => '175 × 100 × 75 мм'],
+                ['name' => 'Масса контроллера', 'value' => 'не более 700 г'],
+            );
+        }
+
+        $updates = [
+            'short_description' => $isKit
+                ? 'Комплект управления твердотопливным котлом: Wi‑Fi-контроллер ReglerPro и вентилятор VSK 120.'
+                : 'Wi‑Fi-контроллер твердотопливного котла с управлением вентилятором, насосом ЦО и климат-контролем.',
+            'specs' => $this->mergeSpecs((array) ($product->specs ?? []), $specs),
+            'meta_title' => $row['name'].' — купить в Минске | KOTLOV',
+            'meta_description' => $isKit
+                ? 'Комплект автоматики ReglerPro Wi‑Fi с вентилятором VSK 120. Цена, наличие, характеристики и доставка по Беларуси.'
+                : 'Контроллер ReglerPro Wi‑Fi для твердотопливного котла. Характеристики, цена, наличие и доставка по Беларуси.',
+        ];
+
+        $currentImages = is_array($product->images) ? array_values(array_filter($product->images)) : [];
+        if ($currentImages === []) {
+            $updates['images'] = $images;
+        }
+        $plainContent = trim(strip_tags((string) $product->content));
+        if (mb_strlen($plainContent) < 200 || str_contains($plainContent, 'Актуальные цена и наличие')) {
+            $updates['content'] = $content;
+        }
+
+        $product->forceFill($updates)->save();
+    }
+
+    /**
+     * @param  array<int,array{name?:string,value?:string}>  $current
+     * @param  array<int,array{name:string,value:string}>  $verified
+     * @return array<int,array{name:string,value:string}>
+     */
+    private function mergeSpecs(array $current, array $verified): array
+    {
+        $result = [];
+        foreach (array_merge($current, $verified) as $spec) {
+            $name = trim((string) ($spec['name'] ?? ''));
+            $value = trim((string) ($spec['value'] ?? ''));
+            if ($name === '' || $value === '') {
+                continue;
+            }
+            $result[mb_strtolower($name)] = ['name' => $name, 'value' => $value];
+        }
+
+        return array_values($result);
     }
 }
