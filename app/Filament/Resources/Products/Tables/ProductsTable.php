@@ -207,11 +207,9 @@ class ProductsTable
                     ))
                     ->toggleable(),
 
-                TextColumn::make('reserve_request_status')
+                IconColumn::make('reserve_request_status')
                     ->label('Резерв')
                     ->state(fn (Product $record): string => self::reserveRequestStatus($record))
-                    ->description(fn (Product $record): ?string => self::reserveRequestDescription($record))
-                    ->badge()
                     ->color(fn (Product $record): string => self::reserveRequestColor($record))
                     ->icon(fn (Product $record): ?string => self::reserveRequestIcon($record))
                     ->tooltip(fn (Product $record): string => self::reserveRequestTooltip($record))
@@ -220,7 +218,8 @@ class ProductsTable
                             'filters' => ['product_id' => ['value' => $record->id]],
                         ])
                         : null)
-                    ->width('8.5rem')
+                    ->alignCenter()
+                    ->width('3.5rem')
                     ->grow(false),
 
                 TextColumn::make('supplier_channels')
@@ -808,7 +807,7 @@ class ProductsTable
             $statuses->contains('waiting_customer') => 'heroicon-o-clock',
             $statuses->contains('draft') => 'heroicon-o-pencil-square',
             $statuses->isNotEmpty() => 'heroicon-o-check-circle',
-            default => null,
+            default => 'heroicon-o-minus',
         };
     }
 
@@ -826,6 +825,8 @@ class ProductsTable
         $closed = $threads->whereIn('status', ['closed', 'spam'])->count();
 
         return collect([
+            self::reserveRequestStatus($product),
+            self::reserveRequestDescription($product),
             'Запросов: '.$count,
             $answers > 0 ? 'ответ получен: '.$answers : null,
             $waiting > 0 ? 'ожидаем ответ: '.$waiting : null,
