@@ -97,8 +97,8 @@
 
     .products-workspace .fi-ta-cell-name,
     .products-workspace .fi-ta-header-cell-name {
-        min-width: 14rem;
-        max-width: 14rem;
+        min-width: 20rem;
+        max-width: 20rem;
     }
 
     .products-workspace .fi-ta-cell-suppliers-list,

@@ -66,10 +66,8 @@ class ProductsTable
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->limit(72)
-                    ->lineClamp(2)
-                    ->tooltip(fn (Product $record): string => $record->name)
-                    ->width('14rem')
+                    ->wrap()
+                    ->width('20rem')
                     ->grow(false)
                     ->url(fn (Product $record): string => ProductResource::getUrl(
                         'view',
@@ -77,20 +75,24 @@ class ProductsTable
                         panel: 'admin',
                     )),
 
-                TextColumn::make('frontend_url')
-                    ->label('Карточка')
-                    ->state(fn ($record): string => $record->is_active || $record->is_archived
-                        ? 'Открыть'
-                        : 'Предпросмотр')
+                IconColumn::make('frontend_url')
+                    ->label('')
+                    ->state(true)
                     ->url(fn ($record) => self::productUrl($record))
                     ->openUrlInNewTab()
                     ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->tooltip('Открыть карточку на сайте')
+                    ->alignCenter()
+                    ->width('2.5rem')
+                    ->grow(false)
                     ->toggleable(),
 
                 TextColumn::make('sku')
                     ->label('Артикул')
                     ->searchable()
                     ->copyable()
+                    ->limit(18)
+                    ->tooltip(fn (Product $record): ?string => $record->sku)
                     ->width('7.5rem')
                     ->grow(false)
                     ->toggleable(),
