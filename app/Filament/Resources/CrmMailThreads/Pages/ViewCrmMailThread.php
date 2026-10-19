@@ -415,14 +415,14 @@ class ViewCrmMailThread extends ViewRecord
                 ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--spam'])
                 ->visible(fn (): bool => ! in_array($this->record->status, ['draft', 'spam'], true))
                 ->requiresConfirmation()
-                ->modalHeading('Пометить переписку как спам?')
-                ->modalDescription('Переписка исчезнет из рабочей почты и будет доступна во вкладке «Спам».')
+                ->modalHeading('Отправить в спам и заблокировать адрес?')
+                ->modalDescription('Переписка исчезнет из рабочей почты. Следующие письма с этого адреса автоматически попадут в «Спам» без уведомлений и счётчика непрочитанных.')
                 ->action(function (): void {
                     $this->record->markAsSpam();
                     $this->redirect(CrmMailThreadResource::getUrl('index', ['activeTab' => 'spam']));
                 }),
             Action::make('restore_spam')
-                ->label('Вернуть из спама')
+                ->label('Вернуть и разблокировать')
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('success')
                 ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--restore'])

@@ -17,6 +17,7 @@ class DealByOrderInbox extends Model
         'remote_order_id', 'remote_status', 'remote_status_name', 'remote_created_at',
         'remote_modified_at', 'first_seen_at', 'last_seen_at', 'payload_hash', 'payload',
         'processing_status', 'order_id', 'processing_attempts', 'processed_at', 'last_error',
+        'last_pushed_status', 'last_pushed_at', 'last_push_error', 'push_attempts',
     ];
 
     protected $hidden = ['payload'];
@@ -29,6 +30,8 @@ class DealByOrderInbox extends Model
         'payload' => 'encrypted:array',
         'processing_attempts' => 'integer',
         'processed_at' => 'datetime',
+        'last_pushed_at' => 'datetime',
+        'push_attempts' => 'integer',
     ];
 
     public function customerName(): string

@@ -230,6 +230,10 @@ class CrmMailThread extends Model
 
     public function markCustomerReplied(): void
     {
+        if ($this->status === 'spam') {
+            return;
+        }
+
         $updates = [
             'status' => $this->status === 'new' ? 'new' : 'waiting_manager',
         ];

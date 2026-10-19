@@ -4,10 +4,14 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Pages\Dashboard;
+use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
+use App\Models\CrmMailbox;
+use App\Models\CrmMailThread;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -42,6 +46,20 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
+            ->navigationItems([
+                NavigationItem::make('Резервы поставщиков')
+                    ->group('Продажи')
+                    ->icon('heroicon-o-envelope')
+                    ->sort(2)
+                    ->url(fn (): string => CrmMailThreadResource::getUrl('index', [
+                        'mailbox' => (string) self::orderMailboxId(),
+                        'tab' => 'all',
+                    ], panel: 'admin'))
+                    ->badge(fn (): ?string => ($count = self::activeOrderMailboxThreads()) > 0 ? (string) $count : null, 'warning')
+                    ->visible(fn (): bool => self::orderMailboxId() !== null)
+                    ->isActiveWhen(fn (): bool => request()->routeIs('filament.admin.resources.crm-mail-threads.*')
+                        && (int) request()->query('mailbox') === self::orderMailboxId()),
+            ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->middleware([
                 EncryptCookies::class,
@@ -57,5 +75,25 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+    }
+
+    private static function orderMailboxId(): ?int
+    {
+        return CrmMailbox::query()
+            ->whereRaw('LOWER(email) = ?', ['order@kotlov.by'])
+            ->where('is_enabled', true)
+            ->value('id');
+    }
+
+    private static function activeOrderMailboxThreads(): int
+    {
+        $mailboxId = self::orderMailboxId();
+
+        return $mailboxId
+            ? CrmMailThread::query()
+                ->where('mailbox_id', $mailboxId)
+                ->whereNotIn('status', ['closed', 'spam'])
+                ->count()
+            : 0;
     }
 }

@@ -84,15 +84,28 @@ class ImapMailboxSynchronizer
                 $structure = imap_fetchstructure($imap, $messageNumber);
                 $bodies = $this->extractBodies($imap, $messageNumber, $structure);
                 $attachments = $this->extractAttachments($imap, $messageNumber, $structure, $mailbox->id, (int) $uid);
-                [$counterparty, $contact] = $this->leadMatcher->resolve(
-                    $fromEmail,
-                    $fromName,
-                    $mailbox->create_leads,
-                );
+                $latestSenderThread = CrmMailThread::query()
+                    ->where('mailbox_id', $mailbox->id)
+                    ->where('participant_email', $fromEmail)
+                    ->orderByDesc('updated_at')
+                    ->orderByDesc('id')
+                    ->first();
+                $isBlockedSender = $latestSenderThread?->status === 'spam';
+
+                if ($isBlockedSender) {
+                    $counterparty = $latestSenderThread->counterparty;
+                    $contact = $latestSenderThread->contact;
+                } else {
+                    [$counterparty, $contact] = $this->leadMatcher->resolve(
+                        $fromEmail,
+                        $fromName,
+                        $mailbox->create_leads,
+                    );
+                }
 
                 $message = DB::transaction(function () use (
                     $mailbox, $uid, $header, $fromEmail, $fromName, $subject, $messageId,
-                    $inReplyTo, $bodies, $attachments, $counterparty, $contact
+                    $inReplyTo, $bodies, $attachments, $counterparty, $contact, $isBlockedSender
                 ): CrmMailMessage {
                     $receivedAt = $this->parseDate($header->date ?? null);
                     $thread = $this->threadResolver->resolve(
@@ -115,7 +128,7 @@ class ImapMailboxSynchronizer
                                 'subject' => $subject,
                                 'participant_name' => $fromName,
                                 'participant_email' => $fromEmail,
-                                'status' => 'new',
+                                'status' => $isBlockedSender ? 'spam' : 'new',
                                 'priority' => 'normal',
                             ],
                         );
@@ -141,7 +154,7 @@ class ImapMailboxSynchronizer
                         'text_body' => $bodies['text'],
                         'html_body' => $bodies['html'],
                         'attachments_count' => count($attachments),
-                        'is_read' => false,
+                        'is_read' => $isBlockedSender,
                         'received_at' => $receivedAt,
                         'metadata' => [
                             'size' => $header->Size ?? null,
@@ -157,21 +170,27 @@ class ImapMailboxSynchronizer
                         'participant_email' => $fromEmail,
                         'subject' => $subject,
                         'messages_count' => $thread->messages()->count(),
-                        'unread_count' => $thread->unread_count + 1,
+                        'unread_count' => $isBlockedSender ? 0 : $thread->unread_count + 1,
                         'last_message_at' => $receivedAt,
-                        'status' => $wasTrashed || in_array($thread->status, ['closed', 'waiting_customer'], true)
-                            ? 'waiting_manager'
-                            : $thread->status,
+                        'status' => $isBlockedSender
+                            ? 'spam'
+                            : ($wasTrashed || in_array($thread->status, ['closed', 'waiting_customer'], true)
+                                ? 'waiting_manager'
+                                : $thread->status),
                     ])->save();
 
-                    $thread->markCustomerReplied();
+                    if (! $isBlockedSender) {
+                        $thread->markCustomerReplied();
+                    }
 
                     $counterparty?->forceFill(['last_contact_at' => $receivedAt])->save();
 
                     return $message;
                 });
 
-                $this->telegramNotifier->send($message);
+                if (! $isBlockedSender) {
+                    $this->telegramNotifier->send($message);
+                }
 
                 $mailbox->last_uid = max((int) $mailbox->last_uid, (int) $uid);
                 $imported++;
