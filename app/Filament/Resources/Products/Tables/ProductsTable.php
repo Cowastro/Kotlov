@@ -203,6 +203,22 @@ class ProductsTable
                     ))
                     ->toggleable(),
 
+                TextColumn::make('reserve_request_status')
+                    ->label('Резерв')
+                    ->state(fn (Product $record): string => self::reserveRequestStatus($record))
+                    ->description(fn (Product $record): ?string => self::reserveRequestDescription($record))
+                    ->badge()
+                    ->color(fn (Product $record): string => self::reserveRequestColor($record))
+                    ->icon(fn (Product $record): ?string => self::reserveRequestIcon($record))
+                    ->tooltip(fn (Product $record): string => self::reserveRequestTooltip($record))
+                    ->url(fn (Product $record): ?string => $record->latestSupplierMailThread
+                        ? CrmMailThreadResource::getUrl('index', [
+                            'filters' => ['product_id' => ['value' => $record->id]],
+                        ])
+                        : null)
+                    ->width('8.5rem')
+                    ->grow(false),
+
                 TextColumn::make('supplier_channels')
                     ->label('Канал данных')
                     ->getStateUsing(fn ($record): string => self::supplierChannelState($record))
@@ -720,6 +736,99 @@ class ProductsTable
         return $recommendedPrice > 0 && $currentPrice - $recommendedPrice >= 0.01
             ? $report
             : null;
+    }
+
+    private static function reserveRequestStatus(Product $product): string
+    {
+        $threads = $product->supplierMailThreads;
+        if ($threads->isEmpty()) {
+            return 'Не запрашивали';
+        }
+
+        $answers = $threads->whereIn('status', ['waiting_manager', 'new'])->count();
+        $waiting = $threads->where('status', 'waiting_customer')->count();
+        $inProgress = $threads->where('status', 'in_progress')->count();
+        $drafts = $threads->where('status', 'draft')->count();
+
+        if ($answers > 0 && $waiting > 0) {
+            return 'Ответ: '.$answers.' · ждём: '.$waiting;
+        }
+        if ($answers > 0) {
+            return $answers > 1 ? 'Ответов: '.$answers : 'Ответ получен';
+        }
+        if ($inProgress > 0) {
+            return $inProgress > 1 ? 'В работе: '.$inProgress : 'Ответ в работе';
+        }
+        if ($waiting > 0) {
+            return $waiting > 1 ? 'Ждём ответа · '.$waiting : 'Ждём ответа';
+        }
+        if ($drafts > 0) {
+            return $drafts > 1 ? 'Черновиков: '.$drafts : 'Черновик';
+        }
+
+        return 'Закрыто · '.$threads->count();
+    }
+
+    private static function reserveRequestDescription(Product $product): ?string
+    {
+        $thread = $product->latestSupplierMailThread;
+        if (! $thread) {
+            return null;
+        }
+
+        $supplier = $thread->supplier?->name ?: $thread->participant_name ?: $thread->participant_email;
+        $date = $thread->last_message_at?->timezone('Europe/Minsk')->format('d.m H:i');
+
+        return collect([$supplier, $date])->filter()->implode(' · ') ?: null;
+    }
+
+    private static function reserveRequestColor(Product $product): string
+    {
+        $statuses = $product->supplierMailThreads->pluck('status');
+
+        return match (true) {
+            $statuses->contains(fn (string $status): bool => in_array($status, ['waiting_manager', 'new'], true)) => 'success',
+            $statuses->contains('in_progress') => 'info',
+            $statuses->contains('waiting_customer') => 'warning',
+            default => 'gray',
+        };
+    }
+
+    private static function reserveRequestIcon(Product $product): ?string
+    {
+        $statuses = $product->supplierMailThreads->pluck('status');
+
+        return match (true) {
+            $statuses->contains(fn (string $status): bool => in_array($status, ['waiting_manager', 'new'], true)) => 'heroicon-o-envelope-open',
+            $statuses->contains('in_progress') => 'heroicon-o-arrow-path',
+            $statuses->contains('waiting_customer') => 'heroicon-o-clock',
+            $statuses->contains('draft') => 'heroicon-o-pencil-square',
+            $statuses->isNotEmpty() => 'heroicon-o-check-circle',
+            default => null,
+        };
+    }
+
+    private static function reserveRequestTooltip(Product $product): string
+    {
+        $count = (int) ($product->supplier_mail_threads_count ?? 0);
+        if ($count === 0) {
+            return 'Запросов резерва ещё не было';
+        }
+
+        $threads = $product->supplierMailThreads;
+        $answers = $threads->whereIn('status', ['waiting_manager', 'new'])->count();
+        $waiting = $threads->where('status', 'waiting_customer')->count();
+        $inProgress = $threads->where('status', 'in_progress')->count();
+        $closed = $threads->whereIn('status', ['closed', 'spam'])->count();
+
+        return collect([
+            'Запросов: '.$count,
+            $answers > 0 ? 'ответ получен: '.$answers : null,
+            $waiting > 0 ? 'ожидаем ответ: '.$waiting : null,
+            $inProgress > 0 ? 'обрабатывается: '.$inProgress : null,
+            $closed > 0 ? 'закрыто: '.$closed : null,
+            'Нажмите, чтобы открыть всю историю.',
+        ])->filter()->implode(' · ');
     }
 
     private static function highMarketPriceTooltip(Product $product): string

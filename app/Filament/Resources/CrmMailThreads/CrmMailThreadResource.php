@@ -284,6 +284,7 @@ class CrmMailThreadResource extends Resource
                 SelectFilter::make('priority')->label('Приоритет')->options(CrmMailThread::PRIORITIES),
                 SelectFilter::make('assigned_user_id')->label('Ответственный')->relationship('assignedUser', 'name')->searchable()->preload(),
                 SelectFilter::make('mailbox_id')->label('Ящик')->relationship('mailbox', 'email'),
+                SelectFilter::make('product_id')->label('Товар')->relationship('product', 'name')->searchable(),
             ])
             ->recordActions([
                 ViewAction::make()->label('Открыть')

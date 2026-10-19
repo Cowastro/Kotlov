@@ -63,7 +63,10 @@ class ProductResource extends Resource
                 'integrationProducts.source.supplier.crmCounterparty.contactPoints',
                 'marketPriceObservations.source',
                 'latestMarketResearchReport',
-                'latestSupplierMailThread',
+                'latestSupplierMailThread.supplier:id,name',
+                'latestSupplierMailThread.latestMessage',
+                'supplierMailThreads:id,product_id,supplier_id,status,last_message_at,participant_name,participant_email',
+                'supplierMailThreads.supplier:id,name',
                 'purchasePriceSources',
             ]);
     }
