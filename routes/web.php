@@ -271,8 +271,11 @@ Route::get('/akcii/kotlov-xo-evo-26', [PromotionController::class, 'xoEvo26'])->
 Route::get('/akcii/hotta-ceramik-20-30', [PromotionController::class, 'hottaCeramik'])->name('promotions.hotta-ceramik');
 Route::view('/dostavka', 'pages.dostavka');
 Route::get('/partners', fn () => view('pages.partners'))->name('partners');
-Route::get(KnowledgeBase::URL, fn () => view('pages.knowledge-base', [
-    'sections' => KnowledgeBase::sections(),
+Route::get(KnowledgeBase::URL, fn (Request $request) => view('pages.knowledge-base', [
+    'items' => KnowledgeBase::filter($request->query('category'), $request->query('tag'), $request->query('q')),
+    'all' => KnowledgeBase::items(),
+    'categories' => KnowledgeBase::categories(),
+    'tags' => KnowledgeBase::tags(),
 ]))->name('knowledge-base');
 Route::permanentRedirect(BelomoGasMeterDesignations::LEGACY_PAGE_URL, BelomoGasMeterDesignations::PAGE_URL);
 Route::permanentRedirect(BelomoGasMeterDesignations::LEGACY_PAGE_URL . '.csv', BelomoGasMeterDesignations::CSV_URL);
