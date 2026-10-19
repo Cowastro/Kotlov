@@ -195,29 +195,6 @@
     </section>
     {{-- /Кому подходит --}}
 
-    {{-- Материалы для партнёров --}}
-    <section class="flat-spacing pb-0" id="materials">
-        <div class="container">
-            <div class="sect-heading type-2 text-center mb-40">
-                <h3 class="s-title">Технические материалы для партнёров</h3>
-            </div>
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="box-why p-4 border rounded-4">
-                        <i class="icon icon-Package fs-32 mb-12"></i>
-                        <p class="title h5 fw-medium">Обозначения счетчиков газа БелОМО КАТА и СКАТ</p>
-                        <p class="sub cl-text-2 mb-12">
-                            Расшифровка наименования ультразвуковых счетчиков: типоразмер, цифровой выход, NB-IoT/GSM,
-                            клапан, датчик давления и резьба. Все 80 вариантов исполнения с поиском, таблица для Excel и PDF производителя.
-                        </p>
-                        <a href="{{ \App\Support\Catalog\BelomoGasMeterDesignations::PAGE_URL }}" class="tf-btn animate-btn">Открыть справочник</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    {{-- /Материалы для партнёров --}}
-
     {{-- FAQ --}}
     <section class="flat-spacing">
         <div class="container">
