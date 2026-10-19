@@ -445,12 +445,19 @@ class SantehskladCatalogContent
         } elseif (str_contains(mb_strtolower((string) $row['name']), 'regler granda')) {
             $url = 'https://regler.pro/reglerprogrande';
             $image = 'https://static.tildacdn.com/tild3161-3266-4966-a164-373261393262/photo.png';
+        } elseif (str_contains(mb_strtolower((string) $row['name']), 'regler')) {
+            $url = 'https://regler.pro/reglerproelite';
+            $image = 'img/products/regler-pro/controller-wifi.jpg';
         } elseif (str_contains(mb_strtolower((string) $row['name']), 'dm320')) {
             $url = 'https://domavtomatika.com/pl/';
             $image = 'https://domavtomatika.com/images/dm310-350_big.png';
+        } elseif (in_array($identity, ['accessory_50a8b50657694630e752', 'accessory_847fd749aaef346fa509'], true)) {
+            $volume = $identity === 'accessory_50a8b50657694630e752' ? '350' : '450';
+            $url = $base.'/gorelki/bunker_dlya_hraneniya_pelleta/toplivnyj-bunker-standart-'.$volume.'-litrov';
+            $image = $base.'/image/cache/catalog/kotly/bunkers/bunker-standart-800x800.jpg';
         } elseif (str_contains(mb_strtolower((string) $row['name']), 'бункер')) {
             $normalizedName = mb_strtolower((string) $row['name']);
-            if (preg_match('/(350|450|700|1000|1500|2000)\s*l/ui', $normalizedName, $match)) {
+            if (preg_match('/(350|450|700|1000|1500|2000)\s*[lл]/ui', $normalizedName, $match)) {
                 $url = $base.'/gorelki/bunker_dlya_hraneniya_pelleta/toplivnyj-bunker-standart-'.$match[1].'-litrov';
                 $image = $base.'/image/cache/catalog/kotly/bunkers/bunker-standart-800x800.jpg';
             } elseif (preg_match('/(190|230|300|400|550)\s*l/ui', $normalizedName, $match)) {

@@ -47,7 +47,10 @@ class SantehskladPriceListTest extends TestCase
             'pellet_eco_70',
             'pellet_standart_4mm_16',
             'accessory_5c3208ca6d03a1cc138b',
+            'accessory_2765461f5b68c92c9365',
             'accessory_401ce62ce6dd9ab47735',
+            'accessory_50a8b50657694630e752',
+            'accessory_847fd749aaef346fa509',
             'accessory_fd1ca7cffec6c00d726f',
             'accessory_26a5c502c230c6187412',
         ] as $identity) {
