@@ -208,14 +208,14 @@ class EnrichThermokraftOfficialCommand extends Command
         [
             'name' => 'ТЭН трубчатый 2 кВт/220В крепление гайка латунная 1 1/4"',
             'url' => 'https://tenko.ua/ru/catalog/good/2-kvt-nerghaveyka',
-            'required' => ['2', '220', '1 1/4'],
+            'required' => ['2', 'нержавейка'],
             'images_only' => true,
             'image_limit' => 1,
         ],
         [
             'name' => 'ТЭН трубчатый 1,2 кВт/220В крепление гайка латунная 1/2" L=400мм',
             'url' => 'https://tenko.ua/ru/catalog/good/1200vt',
-            'required' => ['1,2', '220', '1/2'],
+            'required' => ['1200'],
             'images_only' => true,
             'image_limit' => 1,
         ],
