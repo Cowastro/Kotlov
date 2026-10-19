@@ -173,9 +173,20 @@ class OrderPortal
                 $plannedDate = filled($details['planned_delivery_date'] ?? null)
                     ? (string) $details['planned_delivery_date']
                     : null;
+                $timezone = config('app.display_timezone', 'Europe/Minsk');
+                $adminNote = '['.now()->timezone($timezone)->format('d.m.Y H:i').'] '
+                    .$actor.' — '.$label.': '.$note;
                 if ($plannedDate) {
-                    $order->forceFill(['planned_delivery_date' => $plannedDate])->save();
+                    $adminNote .= ' Плановая доставка: '
+                        .\Illuminate\Support\Carbon::parse($plannedDate)->format('d.m.Y').'.';
                 }
+                $adminComment = filled($order->admin_comment)
+                    ? rtrim((string) $order->admin_comment)."\n\n".$adminNote
+                    : $adminNote;
+                $order->forceFill([
+                    'admin_comment' => $adminComment,
+                    'planned_delivery_date' => $plannedDate ?: $order->planned_delivery_date,
+                ])->save();
                 $eventDetails = [
                     'comment_category' => $category,
                     'note' => $note,

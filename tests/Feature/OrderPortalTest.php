@@ -83,7 +83,11 @@ class OrderPortalTest extends TestCase
             'planned_delivery_date' => $plannedDate,
         ])->assertRedirect($portal->url($link));
 
-        $this->assertSame($plannedDate, $order->fresh()->planned_delivery_date->toDateString());
+        $order->refresh();
+        $this->assertSame($plannedDate, $order->planned_delivery_date->toDateString());
+        $this->assertStringContainsString('Анна, офис — Нет в наличии', (string) $order->admin_comment);
+        $this->assertStringContainsString('Одной позиции нет в наличии, ожидаем поступление.', (string) $order->admin_comment);
+        $this->assertStringContainsString(today()->addDays(3)->format('d.m.Y'), (string) $order->admin_comment);
         $this->get($portal->url($link))
             ->assertOk()
             ->assertSee('Нет в наличии')
