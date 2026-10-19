@@ -25,7 +25,7 @@ class ReviewResource extends Resource
     protected static ?string $pluralModelLabel = 'Отзывы';
     protected static ?int $navigationSort = 2;
 
-    public static function getNavigationGroup(): ?string { return 'Продажи'; }
+    public static function getNavigationGroup(): ?string { return 'Контент'; }
 
     public static function getNavigationBadge(): ?string
     {

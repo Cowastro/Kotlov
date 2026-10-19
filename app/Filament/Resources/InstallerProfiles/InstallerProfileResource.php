@@ -27,7 +27,7 @@ class InstallerProfileResource extends Resource
     protected static ?string $pluralModelLabel = 'Монтажники';
     protected static ?int $navigationSort = 2;
 
-    public static function getNavigationGroup(): ?string { return 'Продажи'; }
+    public static function getNavigationGroup(): ?string { return 'Партнёры'; }
     public static function form(Schema $schema): Schema { return InstallerProfileForm::configure($schema); }
     public static function infolist(Schema $schema): Schema { return InstallerProfileInfolist::configure($schema); }
     public static function table(Table $table): Table { return InstallerProfilesTable::configure($table); }

@@ -26,7 +26,7 @@ class CouponResource extends Resource
     protected static ?string $recordTitleAttribute = 'code';
     protected static ?int $navigationSort = 4;
 
-    public static function getNavigationGroup(): ?string { return 'Продажи'; }
+    public static function getNavigationGroup(): ?string { return 'Маркетинг'; }
     public static function form(Schema $schema): Schema { return CouponForm::configure($schema); }
     public static function infolist(Schema $schema): Schema { return CouponInfolist::configure($schema); }
     public static function table(Table $table): Table { return CouponsTable::configure($table); }

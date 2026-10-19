@@ -57,7 +57,7 @@ class StockDemandAnalytics extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Продажи';
+        return 'Аналитика';
     }
 
     public function getMaxContentWidth(): Width|string|null

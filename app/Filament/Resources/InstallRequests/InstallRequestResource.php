@@ -25,7 +25,7 @@ class InstallRequestResource extends Resource
     protected static ?string $pluralModelLabel = 'Заявки на монтаж';
     protected static ?int $navigationSort = 3;
 
-    public static function getNavigationGroup(): ?string { return 'Продажи'; }
+    public static function getNavigationGroup(): ?string { return 'Партнёры'; }
 
     public static function getNavigationBadge(): ?string
     {
