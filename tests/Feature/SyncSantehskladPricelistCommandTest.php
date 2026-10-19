@@ -162,6 +162,13 @@ class SyncSantehskladPricelistCommandTest extends TestCase
         $this->assertFalse($standart->in_stock);
         $this->assertSame(Product::AVAILABILITY_CHECK, $standart->availability_status);
 
+        $controller = $supplier->supplierProducts()
+            ->where('supplier_name', 'like', '%DM320%')
+            ->firstOrFail()
+            ->product;
+        $this->assertStringContainsString('Контроллер для автоматического управления', $controller->short_description);
+        $this->assertStringNotContainsString('Наддувный вентилятор', $controller->short_description);
+
         $detailedContent = str_repeat('Уже заполненное экспертное описание. ', 30);
         $standart->forceFill(['content' => $detailedContent])->save();
         $this->artisan('supplier:sync-santehsklad-pricelist', [

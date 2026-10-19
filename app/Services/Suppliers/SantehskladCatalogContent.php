@@ -7,12 +7,17 @@ use Illuminate\Support\Str;
 
 class SantehskladCatalogContent
 {
+    private const CONTENT_VERSION = 2;
+
     public function shouldEnrich(Product $product): bool
     {
         $content = trim(strip_tags((string) $product->content));
+        $serviceInfo = is_array($product->service_info) ? $product->service_info : [];
+        $currentVersion = (int) data_get($serviceInfo, 'santehsklad_content.version', 0);
 
         return mb_strlen($content) < 500
-            || str_contains($content, 'Цена привязана к прайсу поставщика «Сантехсклад»');
+            || str_contains($content, 'Цена привязана к прайсу поставщика «Сантехсклад»')
+            || (isset($serviceInfo['santehsklad_content']) && $currentVersion < self::CONTENT_VERSION);
     }
 
     /** @param array<string,mixed> $row @param array<string,mixed> $payload */
@@ -46,6 +51,7 @@ class SantehskladCatalogContent
         ));
         $serviceInfo = is_array($product->service_info) ? $product->service_info : [];
         $serviceInfo['santehsklad_content'] = [
+            'version' => self::CONTENT_VERSION,
             'source_date' => $payload['source_date'],
             'source_type' => 'supplier_pricelist_and_verified_catalogue',
             'enriched_at' => now()->toIso8601String(),
@@ -207,21 +213,6 @@ class SantehskladCatalogContent
                 'warranty' => '12 месяцев',
             ];
         }
-        if (str_contains($name, 'вентилятор')) {
-            return [
-                'kind' => 'fan',
-                'short' => 'Наддувный вентилятор для управляемой подачи воздуха в твердотопливный котёл.',
-                'intro' => 'вентилятор наддува для подачи воздуха в камеру сгорания твердотопливного котла по команде совместимого контроллера.',
-                'meta' => 'Вентилятор наддува для твердотопливного котла.',
-                'features' => [
-                    'Помогает контролировать интенсивность горения и температуру теплоносителя.',
-                    'Работает совместно с подходящим контроллером котла.',
-                    'Подбирается по производительности, мощности котла и присоединительным размерам.',
-                ],
-                'specs' => [['key' => 'Назначение', 'value' => 'Наддув воздуха в котёл']],
-                'warranty' => '12 месяцев',
-            ];
-        }
         if (str_contains($name, 'контроллер')) {
             return [
                 'kind' => 'controller',
@@ -234,6 +225,21 @@ class SantehskladCatalogContent
                     'Совместимость с датчиками, приводами и Wi‑Fi определяется по конкретной модификации.',
                 ],
                 'specs' => [['key' => 'Тип', 'value' => 'Контроллер котла']],
+                'warranty' => '12 месяцев',
+            ];
+        }
+        if (str_starts_with($name, 'вентилятор')) {
+            return [
+                'kind' => 'fan',
+                'short' => 'Наддувный вентилятор для управляемой подачи воздуха в твердотопливный котёл.',
+                'intro' => 'вентилятор наддува для подачи воздуха в камеру сгорания твердотопливного котла по команде совместимого контроллера.',
+                'meta' => 'Вентилятор наддува для твердотопливного котла.',
+                'features' => [
+                    'Помогает контролировать интенсивность горения и температуру теплоносителя.',
+                    'Работает совместно с подходящим контроллером котла.',
+                    'Подбирается по производительности, мощности котла и присоединительным размерам.',
+                ],
+                'specs' => [['key' => 'Назначение', 'value' => 'Наддув воздуха в котёл']],
                 'warranty' => '12 месяцев',
             ];
         }
