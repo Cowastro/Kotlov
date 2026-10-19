@@ -45,10 +45,13 @@ class OrderPortalLink extends Model
 
     public function isUsable(): bool
     {
-        $terminal = ['delivered', 'completed', 'cancelled'];
+        $order = $this->order;
+        $completed = $order?->status === 'completed'
+            || ($order?->status === 'delivered' && $order?->payment_status === 'paid');
 
         return ! $this->revoked_at
             && $this->expires_at->isFuture()
-            && ! in_array($this->order?->status, $terminal, true);
+            && ! $completed
+            && $order?->status !== 'cancelled';
     }
 }

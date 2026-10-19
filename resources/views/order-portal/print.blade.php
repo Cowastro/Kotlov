@@ -51,6 +51,11 @@
         </tbody>
     </table>
     <div class="totals">Товары: <strong>{{ number_format((float)$order->subtotal, 2, ',', ' ') }} BYN</strong> · Итого: <strong>{{ number_format((float)$order->total, 2, ',', ' ') }} BYN</strong></div>
+    @if($order->portalEvents->isNotEmpty())
+        <div class="validity"><strong>История действий:</strong>
+            @foreach($order->portalEvents as $event)<br>{{ $event->occurred_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }} — {{ $event->metadata['label'] ?? 'Изменение заказа' }} · {{ $event->metadata['actor'] ?? 'не указан' }}@endforeach
+        </div>
+    @endif
     <div class="validity">Сформировано {{ now()->timezone('Europe/Minsk')->format('d.m.Y H:i') }} · онлайн-ссылка действует до {{ $link->expires_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }} или до завершения/отмены заказа.</div>
 </main>
 </body>

@@ -9,6 +9,7 @@ use App\Models\OrderPortalSession;
 use App\Models\User;
 use chillerlan\QRCode\QRCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -16,7 +17,9 @@ class OrderPortal
 {
     public function publish(Order $order, ?User $user = null): OrderPortalLink
     {
-        if (in_array($order->status, ['delivered', 'completed', 'cancelled'], true)) {
+        if ($order->status === 'completed'
+            || $order->status === 'cancelled'
+            || ($order->status === 'delivered' && $order->payment_status === 'paid')) {
             throw new RuntimeException('Для завершённого или отменённого заказа нельзя создать новую ссылку.');
         }
 
@@ -118,6 +121,55 @@ class OrderPortal
         $link->forceFill(['revoked_at' => now()])->save();
         $link->sessions()->whereNull('revoked_at')->update(['revoked_at' => now()]);
         $this->event($link, null, 'link_revoked', metadata: $metadata);
+    }
+
+    public function performAction(OrderPortalLink $link, string $action, string $actor, Request $request): bool
+    {
+        $actor = trim($actor);
+        if ($actor === '') {
+            throw new RuntimeException('Укажите имя сотрудника, который выполняет действие.');
+        }
+
+        return DB::transaction(function () use ($link, $action, $actor, $request): bool {
+            $order = Order::query()->lockForUpdate()->findOrFail($link->order_id);
+            $fromStatus = $order->status;
+            $fromPayment = $order->payment_status;
+            $label = '';
+
+            if ($action === 'accept_delivery') {
+                if (! in_array($order->status, ['confirmed', 'processing'], true)) {
+                    throw new RuntimeException('Передать в доставку можно только подтверждённый заказ или заказ в обработке.');
+                }
+                $label = 'Принят в доставку';
+                $order->transitionTo('shipped', 'Онлайн-заказ: '.$actor.' — '.$label.'.');
+            } elseif ($action === 'delivered_paid') {
+                if ($order->status !== 'shipped') {
+                    throw new RuntimeException('Сначала заказ должен быть принят в доставку.');
+                }
+                $label = 'Доставлен и оплачен';
+                $order->transitionTo('delivered', 'Онлайн-заказ: '.$actor.' — '.$label.'.', [
+                    'payment_status' => 'paid',
+                ]);
+            } else {
+                throw new RuntimeException('Неизвестное действие.');
+            }
+
+            $order->refresh();
+            $completed = $order->status === 'completed'
+                || ($order->status === 'delivered' && $order->payment_status === 'paid');
+            $this->event($link, null, 'order_action', $request, [
+                'actor' => $actor,
+                'action' => $action,
+                'label' => $label,
+                'status_from' => $fromStatus,
+                'status_to' => $order->status,
+                'payment_from' => $fromPayment,
+                'payment_to' => $order->payment_status,
+                'completed' => $completed,
+            ]);
+
+            return $completed;
+        });
     }
 
     private function ipHash(?string $ip): ?string

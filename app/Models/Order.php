@@ -338,6 +338,11 @@ class Order extends Model
         return $this->hasMany(OrderPortalLink::class);
     }
 
+    public function portalEvents(): HasMany
+    {
+        return $this->hasMany(OrderPortalEvent::class)->latest('occurred_at');
+    }
+
     public function archivedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'archived_by');

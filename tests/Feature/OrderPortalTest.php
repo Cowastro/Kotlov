@@ -60,10 +60,50 @@ class OrderPortalTest extends TestCase
         $portal = app(OrderPortal::class);
         $link = $portal->publish($order, $manager);
 
-        $order->update(['status' => 'delivered']);
+        $order->update(['status' => 'delivered', 'payment_status' => 'paid']);
 
         $this->get($portal->url($link))->assertGone()->assertSee('недоступен');
         $this->get($portal->printUrl($link))->assertGone()->assertSee('недоступен');
+    }
+
+    public function test_office_can_accept_delivery_then_finish_delivery_and_payment_with_actor_audit(): void
+    {
+        [$order, $manager] = $this->order();
+        $portal = app(OrderPortal::class);
+        $link = $portal->publish($order, $manager);
+
+        $this->post(route('order-portal.action', $link->token_encrypted), [
+            'actor' => 'Анна, офис',
+            'workflow_action' => 'accept_delivery',
+        ])->assertRedirect($portal->url($link));
+
+        $this->assertSame('shipped', $order->fresh()->status);
+        $this->get($portal->url($link))
+            ->assertOk()
+            ->assertSee('Принят в доставку')
+            ->assertSee('Анна, офис');
+
+        $this->post(route('order-portal.action', $link->token_encrypted), [
+            'actor' => 'Анна, офис',
+            'workflow_action' => 'delivered_paid',
+        ])->assertOk()
+            ->assertSee('Доставка и оплата подтверждены')
+            ->assertSee('Анна, офис');
+
+        $order->refresh();
+        $this->assertSame('delivered', $order->status);
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertDatabaseHas('order_status_history', [
+            'order_id' => $order->id,
+            'status_from' => 'shipped',
+            'status_to' => 'delivered',
+            'comment' => 'Онлайн-заказ: Анна, офис — Доставлен и оплачен.',
+        ]);
+        $this->assertDatabaseHas('order_portal_events', [
+            'order_id' => $order->id,
+            'type' => 'order_action',
+        ]);
+        $this->get($portal->url($link))->assertGone();
     }
 
     private function order(): array

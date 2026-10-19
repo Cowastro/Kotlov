@@ -136,7 +136,7 @@ class ViewOrder extends ViewRecord
                     ->label('Создать ссылку и QR')
                     ->icon('heroicon-o-qr-code')
                     ->color('primary')
-                    ->visible(fn (): bool => ! in_array($this->record->status, ['delivered', 'completed', 'cancelled'], true))
+                    ->visible(fn (): bool => ! $this->orderPortalIsComplete())
                     ->action(function (): void {
                         try {
                             $portal = app(OrderPortal::class);
@@ -155,7 +155,7 @@ class ViewOrder extends ViewRecord
                     ->label('Показать QR и ссылку')
                     ->icon('heroicon-o-qr-code')
                     ->color('gray')
-                    ->visible(fn (): bool => ! in_array($this->record->status, ['delivered', 'completed', 'cancelled'], true)
+                    ->visible(fn (): bool => ! $this->orderPortalIsComplete()
                         && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
                     ->modalHeading(fn (): string => 'Онлайн-заказ '.$this->record->number)
                     ->modalDescription('QR и ссылка ведут на одну защищённую страницу всего заказа, как в онлайн-КП.')
@@ -178,7 +178,7 @@ class ViewOrder extends ViewRecord
                     ->label('Предпросмотр заказа')
                     ->icon('heroicon-o-eye')
                     ->color('gray')
-                    ->visible(fn (): bool => ! in_array($this->record->status, ['delivered', 'completed', 'cancelled'], true)
+                    ->visible(fn (): bool => ! $this->orderPortalIsComplete()
                         && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
                     ->url(fn (): string => route('admin.orders.online-preview', $this->record))
                     ->openUrlInNewTab(),
@@ -186,7 +186,7 @@ class ViewOrder extends ViewRecord
                     ->label('Версия для печати')
                     ->icon('heroicon-o-printer')
                     ->color('gray')
-                    ->visible(fn (): bool => ! in_array($this->record->status, ['delivered', 'completed', 'cancelled'], true)
+                    ->visible(fn (): bool => ! $this->orderPortalIsComplete()
                         && $this->record->portalLinks()->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
                     ->url(function (): string {
                         $link = $this->record->portalLinks()
@@ -784,5 +784,12 @@ class ViewOrder extends ViewRecord
         $lines[] = 'Ссылка открывается сразу и не привязана к email — её можно переслать ответственному сотруднику.';
 
         return implode("\n", $lines);
+    }
+
+    private function orderPortalIsComplete(): bool
+    {
+        return $this->record->status === 'completed'
+            || $this->record->status === 'cancelled'
+            || ($this->record->status === 'delivered' && $this->record->payment_status === 'paid');
     }
 }

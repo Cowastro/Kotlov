@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderPortalLink;
 use App\Services\Orders\OrderPortal;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use RuntimeException;
 use Throwable;
 
 class OrderPortalController extends Controller
@@ -52,6 +54,7 @@ class OrderPortalController extends Controller
             'order.items.supplySupplier.crmCounterparty.contactPoints',
             'order.items.fulfillmentConfirmedBy',
             'order.items.supplierOrderRequestItem.request',
+            'order.portalEvents' => fn ($query) => $query->where('type', 'order_action')->limit(20),
         ]);
         $portal->event($link, null, 'order_print_viewed', $request);
 
@@ -59,6 +62,36 @@ class OrderPortalController extends Controller
             'link' => $link,
             'order' => $link->order,
         ]);
+    }
+
+    public function action(string $token, Request $request, OrderPortal $portal): RedirectResponse|\Illuminate\Http\Response
+    {
+        $data = $request->validate([
+            'actor' => ['required', 'string', 'max:100'],
+            'workflow_action' => ['required', 'in:accept_delivery,delivered_paid'],
+        ]);
+
+        try {
+            $link = $portal->resolveToken($token);
+            $completed = $portal->performAction(
+                $link,
+                $data['workflow_action'],
+                $data['actor'],
+                $request,
+            );
+            $request->session()->put('order_portal.actor.'.$link->public_id, trim($data['actor']));
+
+            if ($completed) {
+                return $this->securedView('order-portal.finished', [
+                    'order' => $link->order()->firstOrFail(),
+                    'actor' => trim($data['actor']),
+                ]);
+            }
+
+            return redirect($portal->url($link))->with('portal_success', 'Статус заказа обновлён.');
+        } catch (RuntimeException $exception) {
+            return back()->withErrors(['workflow_action' => $exception->getMessage()]);
+        }
     }
 
     private function orderView(OrderPortalLink $link, mixed $session, bool $preview)
@@ -71,6 +104,7 @@ class OrderPortalController extends Controller
             'order.items.supplySupplier.crmCounterparty.contactPoints',
             'order.items.fulfillmentConfirmedBy',
             'order.items.supplierOrderRequestItem.request',
+            'order.portalEvents' => fn ($query) => $query->where('type', 'order_action')->limit(20),
         ]);
 
         return $this->securedView('order-portal.show', [
@@ -78,6 +112,7 @@ class OrderPortalController extends Controller
             'order' => $link->order,
             'session' => $session,
             'preview' => $preview,
+            'actor' => $preview ? '' : request()->session()->get('order_portal.actor.'.$link->public_id, ''),
         ]);
     }
 

@@ -103,6 +103,10 @@ Route::prefix('order-view')->group(function (): void {
     Route::get('/access/{token}', [OrderPortalController::class, 'access'])
         ->where('token', '[A-Za-z0-9]{80}')
         ->name('order-portal.access');
+    Route::post('/access/{token}/action', [OrderPortalController::class, 'action'])
+        ->where('token', '[A-Za-z0-9]{80}')
+        ->middleware('throttle:20,1')
+        ->name('order-portal.action');
 });
 
 Route::get('/admin/purchase-price-sources/{source}/attachment', ProductPurchasePriceSourceAttachmentController::class)
