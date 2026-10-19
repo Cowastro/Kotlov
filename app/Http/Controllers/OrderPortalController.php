@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderPortalLink;
+use App\Models\User;
 use App\Services\Orders\OrderPortal;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -67,8 +68,9 @@ class OrderPortalController extends Controller
 
     public function action(string $token, Request $request, OrderPortal $portal): RedirectResponse|\Illuminate\Http\Response
     {
+        $employee = $this->authenticatedEmployee($request);
         $data = $request->validate([
-            'actor' => ['required', 'string', 'max:100'],
+            'actor' => [$employee ? 'nullable' : 'required', 'nullable', 'string', 'max:100'],
             'workflow_action' => ['required', 'in:accept_delivery,delivered_paid,add_comment'],
             'comment_category' => ['required_if:workflow_action,add_comment', 'nullable', 'in:no_stock,delivery,general'],
             'note' => ['required_if:workflow_action,add_comment', 'nullable', 'string', 'max:2000'],
@@ -77,19 +79,23 @@ class OrderPortalController extends Controller
 
         try {
             $link = $portal->resolveToken($token);
+            $actor = $employee?->name ?: trim((string) ($data['actor'] ?? ''));
+            $data['actor_user_id'] = $employee?->id;
             $completed = $portal->performAction(
                 $link,
                 $data['workflow_action'],
-                $data['actor'],
+                $actor,
                 $request,
                 $data,
             );
-            $request->session()->put('order_portal.actor.'.$link->public_id, trim($data['actor']));
+            if (! $employee) {
+                $request->session()->put('order_portal.actor.'.$link->public_id, $actor);
+            }
 
             if ($completed) {
                 return $this->securedView('order-portal.finished', [
                     'order' => $link->order()->firstOrFail(),
-                    'actor' => trim($data['actor']),
+                    'actor' => $actor,
                 ]);
             }
 
@@ -117,8 +123,22 @@ class OrderPortalController extends Controller
             'order' => $link->order,
             'session' => $session,
             'preview' => $preview,
+            'employee' => $this->authenticatedEmployee(request()),
             'actor' => $preview ? '' : request()->session()->get('order_portal.actor.'.$link->public_id, ''),
         ]);
+    }
+
+    private function authenticatedEmployee(Request $request): ?User
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User || ! $user->is_active) {
+            return null;
+        }
+
+        return in_array($user->role, ['admin', 'manager', 'sales_manager'], true) || $user->is_crm_user
+            ? $user
+            : null;
     }
 
     private function securedView(string $view, array $data, int $status = 200)

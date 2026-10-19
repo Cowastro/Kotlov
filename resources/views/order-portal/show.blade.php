@@ -91,11 +91,15 @@
             @unless($preview)
                 <div class="workflow">
                     <h3>Управление заказом</h3>
-                    <p class="small">Имя сотрудника сохранится в истории действия.</p>
+                    @if($employee)
+                        <p class="small">Действие будет записано за пользователем: <strong>{{ $employee->name }}</strong>.</p>
+                    @else
+                        <p class="small">Имя сотрудника сохранится в истории действия.</p>
+                    @endif
                     @if(in_array($order->status, ['confirmed', 'processing', 'shipped'], true))
                         <form method="post" action="{{ route('order-portal.action', $link->token_encrypted) }}">
                             @csrf
-                            <input type="text" name="actor" value="{{ old('actor', $actor) }}" placeholder="Имя сотрудника" maxlength="100" required>
+                            @unless($employee)<input type="text" name="actor" value="{{ old('actor', $actor) }}" placeholder="Имя сотрудника" maxlength="100" required>@endunless
                             @if(in_array($order->status, ['confirmed', 'processing'], true))
                                 <button class="button" type="submit" name="workflow_action" value="accept_delivery">Принять в доставку</button>
                             @elseif($order->status === 'shipped')
@@ -109,7 +113,7 @@
                     <form method="post" action="{{ route('order-portal.action', $link->token_encrypted) }}" style="margin-top:18px">
                         @csrf
                         <h3>Комментарий офиса</h3>
-                        <input type="text" name="actor" value="{{ old('actor', $actor) }}" placeholder="Имя сотрудника" maxlength="100" required>
+                        @unless($employee)<input type="text" name="actor" value="{{ old('actor', $actor) }}" placeholder="Имя сотрудника" maxlength="100" required>@endunless
                         <select name="comment_category" required>
                             <option value="">Тип отметки</option>
                             <option value="no_stock" @selected(old('comment_category') === 'no_stock')>Нет в наличии</option>

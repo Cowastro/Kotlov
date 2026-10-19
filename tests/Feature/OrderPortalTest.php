@@ -128,6 +128,35 @@ class OrderPortalTest extends TestCase
         $this->get($portal->url($link))->assertGone();
     }
 
+    public function test_logged_in_employee_is_used_as_actor_without_typing_a_name(): void
+    {
+        [$order, $manager] = $this->order();
+        $manager->update(['name' => 'Мария Менеджер']);
+        $portal = app(OrderPortal::class);
+        $link = $portal->publish($order, $manager);
+
+        $this->actingAs($manager)
+            ->get($portal->url($link))
+            ->assertOk()
+            ->assertSee('Действие будет записано за пользователем')
+            ->assertSee('Мария Менеджер')
+            ->assertDontSee('placeholder="Имя сотрудника"', false);
+
+        $this->actingAs($manager)->post(route('order-portal.action', $link->token_encrypted), [
+            'workflow_action' => 'add_comment',
+            'comment_category' => 'delivery',
+            'note' => 'Доставка согласована с клиентом.',
+        ])->assertRedirect($portal->url($link));
+
+        $order->refresh();
+        $this->assertStringContainsString('Мария Менеджер — Доставка', (string) $order->admin_comment);
+        $this->assertDatabaseHas('order_portal_events', [
+            'order_id' => $order->id,
+            'type' => 'order_action',
+        ]);
+        $this->assertSame($manager->id, $order->portalEvents()->where('type', 'order_action')->first()->metadata['actor_user_id']);
+    }
+
     private function order(): array
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);

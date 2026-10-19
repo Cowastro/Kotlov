@@ -208,6 +208,7 @@ class OrderPortal
                 'payment_from' => $fromPayment,
                 'payment_to' => $order->payment_status,
                 'completed' => $completed,
+                'actor_user_id' => $details['actor_user_id'] ?? null,
             ] + $eventDetails);
 
             return $completed;
