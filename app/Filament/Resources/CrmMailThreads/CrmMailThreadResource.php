@@ -108,6 +108,11 @@ class CrmMailThreadResource extends Resource
         ]);
     }
 
+    public static function getRecordRouteBindingEloquentQuery(): Builder
+    {
+        return static::getEloquentQuery()->withTrashed();
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
+use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\User;
@@ -61,6 +62,23 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
             ->assertCanNotSeeTableRecords($threads->except(['new', 'waiting_manager'])->values())
             ->assertCanNotSeeTableRecords([$trashed]);
         $this->assertSame('2', $page->instance()->getTabs()['needs_response']->getBadge());
+    }
+
+    public function test_trashed_thread_can_be_opened_from_trash_without_appearing_in_active_tabs(): void
+    {
+        $mailbox = CrmMailbox::create([
+            'name' => 'Trash route',
+            'email' => 'trash-route@example.com',
+            'username' => 'trash-route@example.com',
+        ]);
+        $trashed = $this->thread($mailbox, 'trashed-route@example.com', 'waiting_manager');
+        $trashed->delete();
+
+        $resolved = CrmMailThreadResource::resolveRecordRouteBinding($trashed->id);
+
+        $this->assertNotNull($resolved);
+        $this->assertTrue($resolved->trashed());
+        $this->assertNull(CrmMailThread::query()->find($trashed->id));
     }
 
     private function thread(CrmMailbox $mailbox, string $email, string $status): CrmMailThread
