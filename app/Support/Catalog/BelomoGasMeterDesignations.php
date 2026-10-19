@@ -8,11 +8,13 @@ namespace App\Support\Catalog;
  */
 final class BelomoGasMeterDesignations
 {
-    public const PAGE_URL = '/partners/belomo-kata-skat-oboznacheniya';
+    public const PAGE_URL = '/baza-znaniy/belomo-kata-skat-oboznacheniya';
+
+    public const LEGACY_PAGE_URL = '/partners/belomo-kata-skat-oboznacheniya';
 
     public const PDF_URL = '/docs/belomo-kata-skat-varianty-ispolneniya.pdf';
 
-    public const CSV_URL = '/partners/belomo-kata-skat-oboznacheniya.csv';
+    public const CSV_URL = '/baza-znaniy/belomo-kata-skat-oboznacheniya.csv';
 
     public const OPTIONS = [
         'B' => 'с цифровым выходом',

@@ -45,6 +45,7 @@ use App\Models\Product;
 use App\Rules\NoHtmlOrLinks;
 use App\Rules\PhoneNotSpam;
 use App\Support\Catalog\BelomoGasMeterDesignations;
+use App\Support\KnowledgeBase;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
@@ -270,10 +271,15 @@ Route::get('/akcii/kotlov-xo-evo-26', [PromotionController::class, 'xoEvo26'])->
 Route::get('/akcii/hotta-ceramik-20-30', [PromotionController::class, 'hottaCeramik'])->name('promotions.hotta-ceramik');
 Route::view('/dostavka', 'pages.dostavka');
 Route::get('/partners', fn () => view('pages.partners'))->name('partners');
-Route::get(BelomoGasMeterDesignations::PAGE_URL, fn () => view('pages.partners-belomo-designations', [
+Route::get(KnowledgeBase::URL, fn () => view('pages.knowledge-base', [
+    'sections' => KnowledgeBase::sections(),
+]))->name('knowledge-base');
+Route::permanentRedirect(BelomoGasMeterDesignations::LEGACY_PAGE_URL, BelomoGasMeterDesignations::PAGE_URL);
+Route::permanentRedirect(BelomoGasMeterDesignations::LEGACY_PAGE_URL . '.csv', BelomoGasMeterDesignations::CSV_URL);
+Route::get(BelomoGasMeterDesignations::PAGE_URL, fn () => view('pages.knowledge-base-belomo-designations', [
     'models' => BelomoGasMeterDesignations::models(),
     'variants' => BelomoGasMeterDesignations::variants(),
-]))->name('partners.belomo-designations');
+]))->name('knowledge-base.belomo-designations');
 Route::get(BelomoGasMeterDesignations::CSV_URL, function () {
     return response()->streamDownload(function () {
         $out = fopen('php://output', 'w');
@@ -293,7 +299,7 @@ Route::get(BelomoGasMeterDesignations::CSV_URL, function () {
         }
         fclose($out);
     }, 'belomo-kata-skat-oboznacheniya.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
-})->name('partners.belomo-designations.csv');
+})->name('knowledge-base.belomo-designations.csv');
 Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->middleware('public.form.protect:installer')->name('partners.apply-installer');
 Route::get('/suppliers', fn () => view('pages.suppliers'))->name('suppliers');
 Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->middleware('public.form.protect:supplier')->name('suppliers.apply');

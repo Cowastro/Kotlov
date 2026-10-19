@@ -96,6 +96,7 @@
                 <li><a href="/brands">Бренды</a></li>
                 <li><a href="/akcii">Акции</a></li>
                 <li><a href="/blog">Статьи</a></li>
+                <li><a href="/baza-znaniy">База знаний</a></li>
                 <li><a href="/dostavka">Доставка</a></li>
                 <li><a href="/contacts">Контакты</a></li>
                 <li><a href="/partners">Партнёрам</a></li>
