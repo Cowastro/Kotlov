@@ -245,6 +245,10 @@ class SyncThermokraftCommand extends Command
         ]);
         $stats = ['offers' => 0, 'linked' => 0, 'created' => 0, 'retail_updated' => 0, 'skipped' => 0, 'errors' => 0];
         $touched = [];
+        $existingLinks = SupplierProduct::query()
+            ->where('supplier_id', $supplier->id)
+            ->get()
+            ->keyBy('supplier_article_normalized');
 
         foreach ($rows as $row) {
             try {
@@ -259,7 +263,13 @@ class SyncThermokraftCommand extends Command
                     continue;
                 }
 
-                SupplierProduct::query()->updateOrCreate([
+                $existingLink = $existingLinks->get($row['article_key']);
+                $sheetSourceUrl = self::SHEET_URL.'#gid='.$row['gid'];
+                $sourceUrl = str_contains((string) $existingLink?->source_url, 'tenko.ua/')
+                    ? $existingLink->source_url
+                    : $sheetSourceUrl;
+
+                $link = SupplierProduct::query()->updateOrCreate([
                     'supplier_id' => $supplier->id,
                     'supplier_article_normalized' => $row['article_key'],
                 ], [
@@ -269,7 +279,7 @@ class SyncThermokraftCommand extends Command
                     'supplier_article' => $row['article'],
                     'supplier_article_compact' => preg_replace('/[^A-ZА-ЯЁ0-9]+/u', '', $row['article_key']),
                     'supplier_name' => $row['name'],
-                    'source_url' => self::SHEET_URL.'#gid='.$row['gid'],
+                    'source_url' => $sourceUrl,
                     'price' => $row['wholesale'],
                     'price_byn' => $row['wholesale'],
                     'currency' => 'BYN',
@@ -286,6 +296,7 @@ class SyncThermokraftCommand extends Command
                     'raw' => $row,
                     'last_synced_at' => now(),
                 ]);
+                $existingLinks->put($row['article_key'], $link);
                 if ($this->option('sync-retail-prices') && $row['retail'] !== null && abs((float) $product->price - $row['retail']) > 0.005) {
                     $product->forceFill(['price' => $row['retail']])->save();
                     $stats['retail_updated']++;

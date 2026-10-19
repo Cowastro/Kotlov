@@ -22,9 +22,14 @@ class EnrichThermokraftOfficialCommand extends Command
      * Only exact, manually verified modifications belong here. Similar power alone
      * is not sufficient: voltage, thread and immersion length must also match.
      *
-     * @var array<int,array{name:string,url:string,required:array<int,string>}>
+     * @var array<int,array{name:string,url:string,required:array<int,string>,images_only?:bool}>
      */
     private const VERIFIED = [
+        [
+            'name' => 'ТЭН трубчатый 3000 Вт/220В крепление гайка латунная 1 1/4" L=250мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-3000vt-kreplenie-gayka-latunnaya-114-l250mm',
+            'required' => ['3000', '220', '11/4', '250'],
+        ],
         [
             'name' => 'ТЭН трубчатый 4500 Вт/220В крепление гайка латунная 1,5" L=300мм',
             'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-4500vt-kreplenie-gayka-latunnaya-15-l300mm',
@@ -95,6 +100,83 @@ class EnrichThermokraftOfficialCommand extends Command
             'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-15000vt-kreplenie-gayka-latunnaya-2-l-450-mm',
             'required' => ['15000', '380', '2', '450'],
         ],
+        [
+            'name' => 'ТЭН 1,5 кВт, фланец, гнутый, под анод М6',
+            'url' => 'https://tenko.ua/ru/catalog/good/ten-15-kvt-flanec-gnutyy-pod-anod-m6',
+            'required' => ['1,5', '220', 'м6', 'гнут'],
+        ],
+        [
+            'name' => 'ТЭН 1,5 кВт, гайка, гнутый, под анод М6',
+            'url' => 'https://tenko.ua/ru/catalog/good/ten-15-kvt-gayka-gnutyy-pod-anod-m6',
+            'required' => ['1,5', '220', 'м6', 'гнут'],
+        ],
+        [
+            'name' => 'ТЭН 1,5 кВт, фланец, гнутый, длинная ножка, под анод М6',
+            'url' => 'https://tenko.ua/ru/catalog/good/ten-15-kvt-flanec-gnutyy-dlinnaya-noghka-pod-anod-m6',
+            'required' => ['1,5', '220', 'м6', 'гнут'],
+        ],
+        [
+            'name' => 'ТЭН 1,5 кВт, гайка, прямой, нерж. под анод М6',
+            'url' => 'https://tenko.ua/ru/catalog/good/15-kvt-nerghaveyka',
+            'required' => ['1,5', '220', 'м6', 'прям'],
+        ],
+        [
+            'name' => 'Блок нагревателей регулируемый БНР 1,5" 3_220/380',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-nagrevateley-reguliruemyy-bnr-3-220-15',
+            'required' => ['3', '230', '1,5'],
+            'images_only' => true,
+        ],
+        [
+            'name' => 'Блок нагревателей регулируемый БНР 1,5" 4,5_220/380',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-nagrevateley-reguliruemyy-bnr-45-220-15',
+            'required' => ['4,5', '230', '1,5'],
+            'images_only' => true,
+        ],
+        [
+            'name' => 'Блок нагревателей регулируемый БНР 1,5" 6_220/380',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-nagrevateley-reguliruemyy-bnr-6-220-15',
+            'required' => ['6', '230', '1,5'],
+            'images_only' => true,
+        ],
+        [
+            'name' => 'Блок нагревателей регулируемый БНР 1,5" 7,5_220/380',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-nagrevateley-reguliruemyy-bnr-75-220-15',
+            'required' => ['7,5', '230', '1,5'],
+            'images_only' => true,
+        ],
+        [
+            'name' => 'Блок нагревателей регулируемый БНР 1,5" 9_220/380',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-nagrevateley-reguliruemyy-bnr-9-380-15',
+            'required' => ['9', '400', '1,5'],
+            'images_only' => true,
+        ],
+        [
+            'name' => 'Блок нагревателей регулируемый БНР 1,5" 10,5 220/380',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-nagrevateley-reguliruemyy-bnr-105-380-15',
+            'required' => ['10,5', '400', '1,5'],
+            'images_only' => true,
+        ],
+        [
+            'name' => 'Блок нагревателей регулируемый БНР 1,5" 12_380',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-nagrevateley-reguliruemyy-bnr-12-380-15',
+            'required' => ['12', '400', '1,5'],
+            'images_only' => true,
+        ],
+        [
+            'name' => 'ТЭН трубчатый 1,5 кВт/220В крепление гайка латунная 1 1/4"',
+            'url' => 'https://tenko.ua/ru/catalog/good/ten-rs-15-kvt-rezyba-114-pryamoy-s-termostatom-medy',
+            'required' => ['1,5', '220', '11/4'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 2 кВт/220В крепление гайка латунная 1 1/4"',
+            'url' => 'https://tenko.ua/ru/catalog/good/ten-rs-20-kvt-rezyba-114-pryamoy-s-termostatom-medy',
+            'required' => ['2', '220', '11/4'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 3 кВт/220В крепление гайка латунная 1 1/4"',
+            'url' => 'https://tenko.ua/ru/catalog/good/ten-rsg-30-kvt-rezyba-114-gnutyys-termostatom-medy',
+            'required' => ['3', '220', '11/4'],
+        ],
     ];
 
     public function handle(ProductSourceEnricher $enricher): int
@@ -102,15 +184,22 @@ class EnrichThermokraftOfficialCommand extends Command
         $apply = (bool) $this->option('apply');
         $limit = max(1, (int) $this->option('limit'));
         $sleep = max(300, (int) $this->option('sleep'));
-        $stats = ['candidates' => 0, 'verified' => 0, 'enriched' => 0, 'images' => 0, 'specs' => 0, 'skipped' => 0, 'errors' => 0];
+        $stats = ['linked_cards' => 0, 'missing_images_before' => 0, 'missing_images_after' => 0, 'candidates' => 0, 'verified' => 0, 'enriched' => 0, 'images' => 0, 'specs' => 0, 'skipped' => 0, 'errors' => 0];
 
         $rows = DB::table('supplier_products as sp')
             ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
             ->join('products as p', 'p.id', '=', 'sp.product_id')
             ->where('s.code', 'thermokraft')
             ->where('p.is_archived', false)
-            ->select('sp.id as supplier_product_id', 'sp.source_url', 'p.id as product_id', 'p.name')
-            ->get()
+            ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->where('b.name', 'TENKO')
+            ->select('sp.id as supplier_product_id', 'sp.source_url', 'p.id as product_id', 'p.name', 'p.images')
+            ->get();
+
+        $stats['linked_cards'] = $rows->count();
+        $stats['missing_images_before'] = $rows->filter(fn ($row) => $this->hasNoImages($row->images))->count();
+
+        $rows = $rows
             ->keyBy(fn ($row): string => $this->key((string) $row->name));
 
         foreach (self::VERIFIED as $rule) {
@@ -121,10 +210,12 @@ class EnrichThermokraftOfficialCommand extends Command
             $row = $rows->get($this->key($rule['name']));
             if (! $row) {
                 $stats['skipped']++;
+
                 continue;
             }
-            if (str_contains((string) $row->source_url, 'tenko.ua/')) {
+            if (str_contains((string) $row->source_url, 'tenko.ua/') && ! $this->hasNoImages($row->images)) {
                 $stats['skipped']++;
+
                 continue;
             }
 
@@ -134,6 +225,7 @@ class EnrichThermokraftOfficialCommand extends Command
                 if (! $this->matchesOfficialCard((string) ($parsed['title'] ?? ''), $parsed['specs'] ?? [], $rule['required'])) {
                     $stats['errors']++;
                     $this->warn('Official card signature mismatch for product #'.(int) $row->product_id);
+
                     continue;
                 }
 
@@ -143,15 +235,16 @@ class EnrichThermokraftOfficialCommand extends Command
 
                 if ($apply) {
                     $product = Product::query()->findOrFail((int) $row->product_id);
+                    $imagesOnly = (bool) ($rule['images_only'] ?? false);
                     $result = $enricher->enrichFromParsed($product, $rule['url'], $parsed, [
                         'replace_images' => (bool) $this->option('overwrite-images'),
                         'update_images' => true,
-                        'update_specs' => true,
-                        'replace_specs' => (bool) $this->option('replace-specs'),
+                        'update_specs' => ! $imagesOnly,
+                        'replace_specs' => ! $imagesOnly && (bool) $this->option('replace-specs'),
                         'min_specs_to_replace' => 4,
-                        'update_service' => true,
-                        'update_documents' => true,
-                        'update_video' => true,
+                        'update_service' => ! $imagesOnly,
+                        'update_documents' => ! $imagesOnly,
+                        'update_video' => ! $imagesOnly,
                         'update_content' => false,
                     ]);
                     DB::table('supplier_products')->where('id', (int) $row->supplier_product_id)->update([
@@ -169,6 +262,12 @@ class EnrichThermokraftOfficialCommand extends Command
 
             usleep($sleep * 1000);
         }
+
+        $stats['missing_images_after'] = Product::query()
+            ->whereIn('id', $rows->pluck('product_id'))
+            ->get(['images'])
+            ->filter(fn (Product $product) => $this->hasNoImages($product->images))
+            ->count();
 
         foreach ($stats as $key => $value) {
             $this->line("metric.thermokraft_official.{$key}={$value}");
@@ -196,5 +295,14 @@ class EnrichThermokraftOfficialCommand extends Command
         $value = mb_strtoupper(str_replace(['Ё', 'MM', 'KW'], ['Е', 'ММ', 'КВТ'], $value));
 
         return preg_replace('/[^A-ZА-Я0-9]+/u', '', $value) ?? '';
+    }
+
+    private function hasNoImages(mixed $images): bool
+    {
+        if (is_string($images)) {
+            $images = json_decode($images, true);
+        }
+
+        return ! is_array($images) || $images === [];
     }
 }
