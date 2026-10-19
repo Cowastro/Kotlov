@@ -45,6 +45,56 @@ class EnrichThermokraftOfficialCommand extends Command
             'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-4500vt-kreplenie-gayka-latunnaya-114-l300mm',
             'required' => ['4500', '220', '11/4', '300'],
         ],
+        [
+            'name' => 'ТЭН трубчатый 3000 Вт/220В крепление гайка латунная 1,5" L=250мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-3000vt-kreplenie-gayka-latunnaya-15-l250mm_HF',
+            'required' => ['3000', '220', '1,5', '250'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 3000 Вт/220В крепление гайка латунная 2" L=250мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-3000vt-kreplenie-gayka-latunnaya-2-l250mm',
+            'required' => ['3000', '220', '2', '250'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 4500 Вт/220В крепление гайка латунная 2" L=300мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-4500vt-kreplenie-gayka-latunnaya-2-l300mm',
+            'required' => ['4500', '220', '2', '300'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 6000 Вт/220В крепление гайка латунная 1,5" L=320мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-6000vt-kreplenie-gayka-latunnaya-15-l320mm',
+            'required' => ['6000', '220', '1,5', '320'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 6000 Вт/220В крепление гайка латунная 2" L=320мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-6000vt-kreplenie-gayka-latunnaya-2-l320mm',
+            'required' => ['6000', '220', '2', '320'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 7500 Вт/220В крепление гайка латунная 1,5" L=370мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-7500vt-kreplenie-gayka-latunnaya-15-l370mm',
+            'required' => ['7500', '220', '1,5', '370'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 7500 Вт/220В крепление гайка латунная 2" L=370мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-7500vt-kreplenie-gayka-latunnaya-2-l370mm',
+            'required' => ['7500', '220', '2', '370'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 12000 Вт/380В крепление гайка латунная 1,5" L=450мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-12000vt-kreplenie-gayka-latunnaya-15-l450mm',
+            'required' => ['12000', '380', '1,5', '450'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 15000 Вт/380В крепление гайка латунная 1,5" L=500мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-15000vt-kreplenie-gayka-latunnaya-15-l500mm',
+            'required' => ['15000', '380', '1,5', '500'],
+        ],
+        [
+            'name' => 'ТЭН трубчатый 15000 Вт/380В крепление гайка латунная 2" L=450мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-15000vt-kreplenie-gayka-latunnaya-2-l-450-mm',
+            'required' => ['15000', '380', '2', '450'],
+        ],
     ];
 
     public function handle(ProductSourceEnricher $enricher): int
