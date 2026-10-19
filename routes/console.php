@@ -145,6 +145,15 @@ Schedule::command('supplier:sync-thermokraft --apply --sync-retail-prices')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/thermokraft-price-stock-sync.log'));
 
+// TENKO: enrich only manually verified exact modifications from the official
+// manufacturer catalogue. Small batches avoid accidental broad replacements.
+Schedule::command('supplier:enrich-thermokraft-official --apply --limit=3')
+    ->dailyAt('08:35')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/thermokraft-official-enrichment.log'));
+
 // Thermostudio: frequent safe price/stock refresh for already linked products only.
 Schedule::command('supplier:sync-thermostudio-pricelist --apply --only-linked --sync-retail-prices --mark-missing')
     ->hourlyAt(20)

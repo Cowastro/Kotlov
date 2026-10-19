@@ -814,6 +814,13 @@ class ProductSourceEnricher
             }
         }
 
+        if ($this->isTenkoUrl($url)) {
+            $tenkoSpecs = $this->extractTenkoSpecs($html);
+            if ($tenkoSpecs !== []) {
+                $parsed['specs'] = $tenkoSpecs;
+            }
+        }
+
         if ($this->isRusklimatUrl($url) && $this->isSupplierPromoDescription((string) $parsed['short_description'])) {
             $parsed['short_description'] = $this->sourceSummary((string) $parsed['description']);
         }
@@ -824,6 +831,43 @@ class ProductSourceEnricher
     private function isSupplierPromoDescription(string $text): bool
     {
         return preg_match('/(?:купить\s+оптом|b2b\.?\s*русклимат|доставк\w*\s+по\s+россии)/iu', $text) === 1;
+    }
+
+    private function isTenkoUrl(string $url): bool
+    {
+        $host = mb_strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return $host === 'tenko.ua' || str_ends_with($host, '.tenko.ua');
+    }
+
+    /** @return array<int,array{key:string,value:string,unit:string}> */
+    private function extractTenkoSpecs(string $html): array
+    {
+        $specs = [];
+
+        if (preg_match('/Артикул\s+(?:товара|товару)\s*:\s*<span[^>]*>(.*?)<\/span>/isu', $html, $match)) {
+            $article = $this->cleanText(strip_tags((string) $match[1]));
+            if ($article !== '') {
+                $specs[] = ['key' => 'Артикул производителя', 'value' => $article, 'unit' => ''];
+            }
+        }
+
+        if (preg_match_all(
+            '/<div[^>]*class=["\'][^"\']*one-char[^"\']*["\'][^>]*>\s*<div[^>]*class=["\'][^"\']*left[^"\']*["\'][^>]*>(.*?)<\/div>\s*<div[^>]*class=["\'][^"\']*right[^"\']*["\'][^>]*>(.*?)<\/div>/isu',
+            $html,
+            $matches,
+            PREG_SET_ORDER
+        )) {
+            foreach ($matches as $match) {
+                $key = $this->cleanText(strip_tags((string) $match[1]));
+                $value = $this->cleanText(strip_tags((string) $match[2]));
+                if ($key !== '' && $value !== '') {
+                    $specs[] = ['key' => $key, 'value' => $value, 'unit' => ''];
+                }
+            }
+        }
+
+        return $this->normalizeParsedSpecs($specs);
     }
 
     private function sourceSummary(string $text): string

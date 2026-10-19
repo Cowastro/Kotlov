@@ -8,6 +8,24 @@ use ReflectionMethod;
 
 class ProductSourceEnricherTest extends TestCase
 {
+    public function test_it_extracts_tenko_official_characteristics(): void
+    {
+        $html = <<<'HTML'
+        <h1 class="bold">Блок тэнов 9000Вт крепление гайка латунная 380В 2&quot; L=420mm</h1>
+        <p class="article">Артикул товара: <span class="bold article_data">49181</span></p>
+        <div class="one-char"><div class="left">Материал</div><div class="right">Нержавейка</div></div>
+        <div class="one-char"><div class="left">Номинальная потребляемая мощность, кВт</div><div class="right">9 kW</div></div>
+        <div class="one-char"><div class="left">Номинальное напряжение, В</div><div class="right">380</div></div>
+        HTML;
+
+        $method = new ReflectionMethod(ProductSourceEnricher::class, 'parsePage');
+        $parsed = $method->invoke(new ProductSourceEnricher(), $html, 'https://tenko.ua/ru/catalog/good/example');
+
+        $this->assertCount(4, $parsed['specs']);
+        $this->assertContains(['key' => 'Артикул производителя', 'value' => '49181', 'unit' => ''], $parsed['specs']);
+        $this->assertContains(['key' => 'Номинальное напряжение, В', 'value' => '380', 'unit' => ''], $parsed['specs']);
+    }
+
     public function test_it_extracts_rusklimat_b2b_characteristics(): void
     {
         $html = <<<'HTML'
