@@ -123,13 +123,11 @@ class CommercialDocumentFollowUpTest extends TestCase
         Livewire::actingAs($manager)
             ->test(ListCommercialDocuments::class)
             ->assertSuccessful()
-            ->assertSeeText('Результат контакта');
+            ->assertTableActionVisible('record_contact', $quote);
 
         Livewire::actingAs($manager)
             ->test(ViewCommercialDocument::class, ['record' => $quote->getRouteKey()])
             ->assertSuccessful()
-            ->assertSeeText('Результат контакта')
-            ->assertSeeText('Стадия работы')
-            ->assertSeeText('Следующий контакт');
+            ->assertActionVisible('record_contact');
     }
 }
