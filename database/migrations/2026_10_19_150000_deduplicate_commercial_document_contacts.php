@@ -33,7 +33,10 @@ return new class extends Migration
                         $clean[] = $entry;
                     }
 
-                    $updates = ['contact_history' => json_encode(array_values($clean), JSON_UNESCAPED_UNICODE)];
+                    $updates = ['contact_history' => json_encode(
+                        array_values($clean),
+                        JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR,
+                    )];
                     $outcomeNote = $this->cleanNote($document->outcome_note ?? null);
                     $followUpNote = $this->cleanNote($document->follow_up_note ?? null);
                     $updates['outcome_note'] = $outcomeNote !== '' ? $outcomeNote : null;
