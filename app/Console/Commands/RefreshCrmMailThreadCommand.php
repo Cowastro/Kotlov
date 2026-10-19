@@ -7,7 +7,9 @@ use Illuminate\Console\Command;
 
 class RefreshCrmMailThreadCommand extends Command
 {
-    protected $signature = 'crm-mail:refresh-thread {thread : ID почтовой карточки}';
+    protected $signature = 'crm-mail:refresh-thread
+        {thread : ID почтовой карточки}
+        {--recover-reaction : Вернуть последнее входящее письмо в очередь «Требуют реакции»}';
 
     protected $description = 'Пересчитать тему, дату, количество и непрочитанные письма карточки';
 
@@ -16,9 +18,19 @@ class RefreshCrmMailThreadCommand extends Command
         $thread = CrmMailThread::query()->findOrFail((int) $this->argument('thread'));
         $thread->refreshMessageSummary();
 
+        $recovered = false;
+        if ($this->option('recover-reaction') && $thread->latestMessage?->direction === 'incoming') {
+            $thread->forceFill([
+                'status' => $thread->status === 'new' ? 'new' : 'waiting_manager',
+                'handled_at' => null,
+            ])->save();
+            $recovered = true;
+        }
+
         $this->info('refreshed=1');
         $this->line('thread_id='.$thread->id);
         $this->line('messages='.$thread->messages_count);
+        $this->line('reaction_recovered='.(int) $recovered);
 
         return self::SUCCESS;
     }

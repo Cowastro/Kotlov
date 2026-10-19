@@ -100,6 +100,7 @@ class ImapMailboxSynchronizer
                         $fromEmail,
                         $counterparty?->id,
                         $inReplyTo,
+                        $subject,
                     );
 
                     if (! $thread) {

@@ -14,6 +14,7 @@ class CrmMailThreadResolver
         string $participantEmail,
         ?int $counterpartyId = null,
         ?string $inReplyTo = null,
+        ?string $subject = null,
     ): ?CrmMailThread {
         if (filled($inReplyTo)) {
             $message = CrmMailMessage::query()
@@ -30,7 +31,7 @@ class CrmMailThreadResolver
 
         $email = mb_strtolower(trim($participantEmail));
 
-        return CrmMailThread::query()
+        $query = CrmMailThread::query()
             ->where('mailbox_id', $mailbox->id)
             ->where('status', '!=', 'spam')
             ->where(function (Builder $query) use ($counterpartyId, $email): void {
@@ -46,7 +47,28 @@ class CrmMailThreadResolver
                 $query->whereRaw('LOWER(participant_email) = ?', [$email]);
             })
             ->orderByDesc('last_message_at')
-            ->orderByDesc('id')
-            ->first();
+            ->orderByDesc('id');
+
+        if (filled($subject)) {
+            $normalizedSubject = $this->normalizeSubject((string) $subject);
+
+            return $query->get()->first(
+                fn (CrmMailThread $thread): bool => $this->normalizeSubject((string) $thread->subject) === $normalizedSubject,
+            );
+        }
+
+        return $query->first();
+    }
+
+    private function normalizeSubject(string $subject): string
+    {
+        $subject = mb_strtolower(trim($subject));
+
+        do {
+            $previous = $subject;
+            $subject = preg_replace('/^(?:re|fw|fwd|ответ|пересылка)\s*:\s*/iu', '', $subject) ?? $subject;
+        } while ($subject !== $previous);
+
+        return preg_replace('/\s+/u', ' ', trim($subject)) ?? trim($subject);
     }
 }

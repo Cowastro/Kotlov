@@ -230,13 +230,18 @@ class CrmMailThread extends Model
 
     public function markCustomerReplied(): void
     {
+        $updates = [
+            'status' => $this->status === 'new' ? 'new' : 'waiting_manager',
+        ];
+
         if (! $this->isPotentialDeal()) {
+            $this->forceFill($updates)->save();
+
             return;
         }
 
-        $this->forceFill([
+        $this->forceFill($updates + [
             'sales_stage' => 'negotiation',
-            'status' => 'waiting_manager',
             'next_follow_up_at' => now(),
             'follow_up_note' => 'Получен ответ клиента — обработать и назначить следующий контакт.',
         ])->save();
