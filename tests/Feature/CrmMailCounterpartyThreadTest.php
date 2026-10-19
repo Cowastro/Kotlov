@@ -107,6 +107,33 @@ class CrmMailCounterpartyThreadTest extends TestCase
         $this->assertSame('ЕВРОПОЧТА. Документы для договора', $thread->fresh()->subject);
     }
 
+    public function test_refresh_command_restores_trashed_thread_with_latest_incoming_message(): void
+    {
+        [$mailbox, $counterparty] = $this->mailboxAndCounterparty();
+        $thread = $this->thread($mailbox, $counterparty, 'buyer@example.com');
+        $thread->messages()->create([
+            'mailbox_id' => $mailbox->id,
+            'direction' => 'incoming',
+            'from_email' => 'buyer@example.com',
+            'subject' => 'Документы для договора',
+            'is_read' => false,
+            'received_at' => now(),
+        ]);
+        $thread->delete();
+
+        $this->artisan('crm-mail:refresh-thread', [
+            'thread' => $thread->id,
+            '--recover-reaction' => true,
+        ])
+            ->expectsOutput('reaction_recovered=1')
+            ->expectsOutput('thread_visible=1')
+            ->assertSuccessful();
+
+        $restored = CrmMailThread::query()->findOrFail($thread->id);
+        $this->assertSame('waiting_manager', $restored->status);
+        $this->assertNull($restored->deleted_at);
+    }
+
     public function test_manual_outgoing_mail_is_appended_to_existing_counterparty_thread(): void
     {
         [$mailbox, $counterparty] = $this->mailboxAndCounterparty();

@@ -15,11 +15,15 @@ class RefreshCrmMailThreadCommand extends Command
 
     public function handle(): int
     {
-        $thread = CrmMailThread::query()->findOrFail((int) $this->argument('thread'));
+        $thread = CrmMailThread::withTrashed()->findOrFail((int) $this->argument('thread'));
         $thread->refreshMessageSummary();
 
         $recovered = false;
         if ($this->option('recover-reaction') && $thread->latestMessage?->direction === 'incoming') {
+            if ($thread->trashed()) {
+                $thread->restore();
+            }
+
             $thread->forceFill([
                 'status' => $thread->status === 'new' ? 'new' : 'waiting_manager',
                 'handled_at' => null,
@@ -31,6 +35,7 @@ class RefreshCrmMailThreadCommand extends Command
         $this->line('thread_id='.$thread->id);
         $this->line('messages='.$thread->messages_count);
         $this->line('reaction_recovered='.(int) $recovered);
+        $this->line('thread_visible='.(int) ! $thread->trashed());
 
         return self::SUCCESS;
     }
