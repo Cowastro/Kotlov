@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\CommercialDocuments\CommercialDocumentMailSync;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,7 +36,10 @@ class CrmMailThread extends Model
         'new_inquiry' => 'Новый запрос',
         'qualification' => 'Уточнение потребности',
         'proposal_sent' => 'КП отправлено',
+        'contact_planned' => 'Запланирован контакт',
+        'decision_pending' => 'Клиент думает',
         'negotiation' => 'Переговоры / дожим',
+        'needs_revision' => 'Нужна корректировка КП',
         'won' => 'Сделка успешна',
         'lost' => 'Сделка не состоялась',
     ];
@@ -44,7 +48,10 @@ class CrmMailThread extends Model
         'new_inquiry',
         'qualification',
         'proposal_sent',
+        'contact_planned',
+        'decision_pending',
         'negotiation',
+        'needs_revision',
     ];
 
     protected $fillable = [
@@ -61,6 +68,18 @@ class CrmMailThread extends Model
         'next_follow_up_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (CrmMailThread $thread): void {
+            if ($thread->wasChanged([
+                'assigned_user_id', 'status', 'sales_stage', 'next_follow_up_at',
+                'follow_up_note', 'manager_note',
+            ])) {
+                app(CommercialDocumentMailSync::class)->fromMailThread($thread);
+            }
+        });
+    }
 
     public function mailbox(): BelongsTo
     {
@@ -140,6 +159,18 @@ class CrmMailThread extends Model
     public function scopeNeedsAttention(Builder $query): Builder
     {
         return $query->whereIn('status', ['new', 'waiting_manager']);
+    }
+
+    public function scopeRequiresReaction(Builder $query): Builder
+    {
+        return $query->where(function (Builder $reaction): void {
+            $reaction->whereIn('status', ['new', 'waiting_manager'])
+                ->orWhere(function (Builder $followUp): void {
+                    $followUp->whereNotIn('status', ['closed', 'spam'])
+                        ->whereNotNull('next_follow_up_at')
+                        ->where('next_follow_up_at', '<=', now());
+                });
+        });
     }
 
     public function scopePotentialDeals(Builder $query): Builder

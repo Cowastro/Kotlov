@@ -9,6 +9,7 @@ use App\Models\CommercialDocument;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\User;
+use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
@@ -130,6 +131,72 @@ class CrmSalesFollowUpTest extends TestCase
             ->set('activeTab', 'potential_deals')
             ->assertSee('КП отправлено')
             ->assertSee('Просрочено');
+    }
+
+    public function test_linked_quote_and_mail_thread_share_stage_reminder_and_required_reaction(): void
+    {
+        Carbon::setTestNow('2026-10-19 12:00:00');
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $thread = $this->thread([
+            'assigned_user_id' => $manager->id,
+            'status' => 'waiting_customer',
+            'sales_stage' => 'proposal_sent',
+            'next_follow_up_at' => now()->addDay(),
+            'follow_up_note' => 'Ожидаем первичный ответ клиента.',
+        ]);
+        $quote = CommercialDocument::query()->create([
+            'number' => 'КП-SYNC-00001',
+            'type' => 'quote',
+            'status' => 'sent',
+            'crm_mail_thread_id' => $thread->id,
+            'manager_id' => $manager->id,
+            'valid_until' => today()->addDays(10),
+        ]);
+
+        $thread->update([
+            'status' => 'waiting_manager',
+            'sales_stage' => 'negotiation',
+            'next_follow_up_at' => now(),
+            'follow_up_note' => 'Получен ответ: клиент просит уточнить срок поставки.',
+        ]);
+
+        $quote->refresh();
+        $this->assertSame('negotiation', $quote->follow_up_stage);
+        $this->assertSame('negotiation', $quote->last_contact_result);
+        $this->assertTrue($quote->next_follow_up_at->equalTo(now()));
+        $this->assertSame('Получен ответ: клиент просит уточнить срок поставки.', $quote->follow_up_note);
+        $this->assertTrue($quote->needsManagerControl());
+        $this->assertTrue(CrmMailThread::query()->requiresReaction()->whereKey($thread)->exists());
+        $this->assertSame('mail', $quote->contact_history[0]['source']);
+
+        Livewire::actingAs($manager)
+            ->test(ListCrmMailThreads::class)
+            ->set('activeTab', 'needs_response')
+            ->assertCanSeeTableRecords([$thread])
+            ->assertTableActionVisible('open_quote', $thread);
+
+        Livewire::actingAs($manager)
+            ->test(ViewCrmMailThread::class, ['record' => $thread->getRouteKey()])
+            ->assertSuccessful()
+            ->assertSeeText('КП-SYNC-00001')
+            ->assertSeeText('Обсудили условия');
+
+        $callbackAt = now()->addDays(2)->setTime(10, 30);
+        app(CommercialDocumentWorkflow::class)->recordContact(
+            $quote,
+            $manager,
+            'decision_pending',
+            'decision_pending',
+            'Клиент думает, вернуться после внутреннего согласования.',
+            $callbackAt,
+        );
+
+        $thread->refresh();
+        $this->assertSame('decision_pending', $thread->sales_stage);
+        $this->assertSame('waiting_customer', $thread->status);
+        $this->assertSame($callbackAt->timestamp, $thread->next_follow_up_at?->timestamp);
+        $this->assertSame('Клиент думает, вернуться после внутреннего согласования.', $thread->follow_up_note);
+        $this->assertFalse(CrmMailThread::query()->requiresReaction()->whereKey($thread)->exists());
     }
 
     private function thread(array $attributes = []): CrmMailThread

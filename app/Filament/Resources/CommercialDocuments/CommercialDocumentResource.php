@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\CommercialDocuments;
 
+use App\Filament\Resources\CommercialDocuments\Actions\RecordCommercialDocumentContactAction;
 use App\Filament\Resources\CommercialDocuments\Pages\CreateCommercialDocument;
 use App\Filament\Resources\CommercialDocuments\Pages\EditCommercialDocument;
 use App\Filament\Resources\CommercialDocuments\Pages\ListCommercialDocuments;
 use App\Filament\Resources\CommercialDocuments\Pages\ViewCommercialDocument;
+use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CommercialDocument;
@@ -621,6 +623,18 @@ class CommercialDocumentResource extends Resource
                                 default => 'warning',
                             })
                             ->formatStateUsing(fn (CommercialDocument $record): string => $record->statusLabel()),
+                        TextEntry::make('follow_up_stage')->label('Стадия работы')->badge()->placeholder('Не задана')
+                            ->formatStateUsing(fn (?string $state): string => CommercialDocument::FOLLOW_UP_STAGES[$state] ?? (string) $state),
+                        TextEntry::make('last_contact_result')->label('Последний контакт')->badge()->placeholder('Не было')
+                            ->formatStateUsing(fn (?string $state): string => CommercialDocument::CONTACT_RESULTS[$state] ?? (string) $state),
+                        TextEntry::make('next_follow_up_at')->label('Следующий контакт')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Не назначен')
+                            ->color(fn (CommercialDocument $record): string => $record->next_follow_up_at?->isPast() ? 'danger' : 'info'),
+                        TextEntry::make('follow_up_note')->label('Договорённость / следующий шаг')->placeholder('Не заполнено')->columnSpan(2),
+                        TextEntry::make('mailThread.subject')->label('Связанная переписка')->placeholder('Не связана')
+                            ->url(fn (CommercialDocument $record): ?string => $record->mailThread
+                                ? CrmMailThreadResource::getUrl('view', ['record' => $record->mailThread])
+                                : null)
+                            ->color('primary'),
                         TextEntry::make('issued_at')->label('Дата')->date('d.m.Y'),
                         TextEntry::make('revision_number')->label('Редакция')->formatStateUsing(fn ($state): string => '№ '.($state ?: 1)),
                         TextEntry::make('client_company')->label('Компания')
@@ -647,6 +661,11 @@ class CommercialDocumentResource extends Resource
                             ->url(fn (CommercialDocument $record): ?string => $record->order
                                 ? OrderResource::getUrl('view', ['record' => $record->order])
                                 : null),
+                        ViewEntry::make('contact_history_view')
+                            ->label('История контактов')
+                            ->view('filament.commercial-documents.contact-history')
+                            ->columnSpanFull()
+                            ->visible(fn (CommercialDocument $record): bool => filled($record->contact_history)),
                     ]),
                 Section::make('Итого')
                     ->icon('heroicon-o-calculator')
@@ -718,7 +737,7 @@ class CommercialDocumentResource extends Resource
                     ->color(fn (string $state): string => $state === 'invoice' ? 'success' : 'info'),
                 TextColumn::make('issued_at')->label('Дата')->date('d.m.Y')->sortable(),
                 TextColumn::make('client_display')->label('Клиент')->state(fn (CommercialDocument $record): string => $record->client_company ?: ($record->client_name ?: 'Не указан'))
-                    ->description(fn (CommercialDocument $record): ?string => $record->client_email),
+                    ->description(fn (CommercialDocument $record): ?string => collect([$record->client_phone, $record->client_email])->filter()->implode(' · ') ?: null),
                 TextColumn::make('items_count')->label('Позиций')->counts('items')->alignCenter(),
                 TextColumn::make('total')->label('Сумма')->money('BYN')->sortable()->weight('bold'),
                 TextColumn::make('status')->label('Статус')->badge()->formatStateUsing(fn (CommercialDocument $record): string => $record->statusLabel())
@@ -728,6 +747,12 @@ class CommercialDocumentResource extends Resource
                         'rejected', 'cancelled' => 'danger',
                         'expired' => 'gray',
                         default => 'warning'
+                    }),
+                TextColumn::make('follow_up_stage')->label('Стадия')->badge()->placeholder('—')
+                    ->formatStateUsing(fn (?string $state): string => CommercialDocument::FOLLOW_UP_STAGES[$state] ?? (string) $state)
+                    ->color(fn (?string $state): string => match ($state) {
+                        'won' => 'success', 'lost' => 'danger', 'needs_revision' => 'warning',
+                        'decision_pending', 'negotiation' => 'info', default => 'gray',
                     }),
                 TextColumn::make('manager.name')->label('Менеджер')->placeholder('—'),
                 TextColumn::make('order.number')->label('Заказ')->placeholder('—')
@@ -741,20 +766,24 @@ class CommercialDocumentResource extends Resource
                     ->url(fn (CommercialDocument $record): ?string => ($newer = $record->newerRevision())
                         ? self::getUrl('view', ['record' => $newer]) : null)
                     ->badge()
-                    ->color(fn (CommercialDocument $record): string => match ($record->controlLabel()) {
-                        'Просрочено' => 'danger',
-                        'Истекает сегодня', 'Создать заказ', 'Создать новую редакцию' => 'warning',
-                        '—' => 'gray',
+                    ->color(fn (CommercialDocument $record): string => match (true) {
+                        in_array($record->controlLabel(), ['Просрочено'], true),
+                        str_starts_with($record->controlLabel(), 'Просрочен контакт') => 'danger',
+                        in_array($record->controlLabel(), ['Истекает сегодня', 'Создать заказ', 'Создать новую редакцию'], true) => 'warning',
+                        $record->controlLabel() === '—' => 'gray',
                         default => $record->needsManagerControl() ? 'info' : 'gray',
                     }),
             ])
             ->filters([
                 SelectFilter::make('type')->label('Тип')->options(CommercialDocument::TYPES),
                 SelectFilter::make('status')->label('Статус')->options(CommercialDocument::STATUSES),
+                SelectFilter::make('follow_up_stage')->label('Стадия работы')->options(CommercialDocument::FOLLOW_UP_STAGES),
                 Filter::make('needs_control')
                     ->label('Требует действия')
                     ->query(fn (Builder $query): Builder => $query->currentRevision()->where('type', 'quote')->where(function (Builder $control): void {
-                        $control->where('status', 'needs_revision')
+                        $control->where(function (Builder $due): void {
+                            $due->whereNotNull('next_follow_up_at')->where('next_follow_up_at', '<=', now());
+                        })->orWhere('status', 'needs_revision')
                             ->orWhere(function (Builder $sent): void {
                                 $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));
                             })->orWhere(function (Builder $accepted): void {
@@ -763,6 +792,15 @@ class CommercialDocumentResource extends Resource
                     })),
             ])
             ->recordActions([
+                RecordCommercialDocumentContactAction::make(),
+                Action::make('open_mail_thread')
+                    ->label('Открыть переписку')
+                    ->icon('heroicon-o-envelope-open')
+                    ->color('gray')
+                    ->visible(fn (CommercialDocument $record): bool => $record->mailThread !== null)
+                    ->url(fn (CommercialDocument $record): string => CrmMailThreadResource::getUrl('view', [
+                        'record' => $record->mailThread,
+                    ])),
                 ViewAction::make(),
                 EditAction::make()->visible(fn (CommercialDocument $record): bool => $record->status === 'draft'),
             ])

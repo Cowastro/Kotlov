@@ -11,11 +11,99 @@ use App\Models\Order;
 use App\Models\User;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\Orders\OrderEconomicSnapshotRecorder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class CommercialDocumentWorkflow
 {
+    public function recordContact(
+        CommercialDocument $document,
+        User $user,
+        string $stage,
+        string $result,
+        string $note,
+        mixed $nextFollowUpAt = null,
+        ?string $lossReason = null,
+    ): void {
+        if ($document->type !== 'quote' || ! in_array($document->status, ['sent', 'accepted', 'needs_revision'], true)) {
+            throw new RuntimeException('Результат контакта можно фиксировать только по отправленному КП.');
+        }
+        if (! array_key_exists($stage, CommercialDocument::FOLLOW_UP_STAGES)) {
+            throw new RuntimeException('Выберите допустимую стадию работы.');
+        }
+        if (! array_key_exists($result, CommercialDocument::CONTACT_RESULTS)) {
+            throw new RuntimeException('Выберите допустимый результат контакта.');
+        }
+        if (! in_array($result, ['accepted', 'rejected', 'needs_revision'], true)
+            && in_array($stage, ['won', 'lost', 'needs_revision'], true)) {
+            throw new RuntimeException('Закрывающая стадия должна соответствовать результату контакта.');
+        }
+
+        $note = trim($note);
+        if ($note === '') {
+            throw new RuntimeException('Кратко запишите результат разговора.');
+        }
+
+        $nextContact = filled($nextFollowUpAt) ? Carbon::parse($nextFollowUpAt) : null;
+        if (in_array($result, ['no_answer', 'callback_later', 'decision_pending', 'negotiation'], true) && ! $nextContact) {
+            throw new RuntimeException('Укажите дату следующего контакта.');
+        }
+
+        DB::transaction(function () use ($document, $user, $stage, $result, $note, $nextContact, $lossReason): void {
+            if ($result === 'accepted') {
+                $this->accept($document);
+                $stage = 'won';
+                $nextContact = null;
+            } elseif ($result === 'rejected') {
+                $this->reject($document, (string) $lossReason, $note);
+                $stage = 'lost';
+                $nextContact = null;
+            } elseif ($result === 'needs_revision') {
+                $this->requestRevision($document, $note);
+                $stage = 'needs_revision';
+                $nextContact = null;
+            }
+
+            $history = $document->fresh()->contact_history ?? [];
+            $history[] = [
+                'contacted_at' => now()->toIso8601String(),
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'stage' => $stage,
+                'result' => $result,
+                'note' => $note,
+                'next_follow_up_at' => $nextContact?->toIso8601String(),
+            ];
+
+            $document->forceFill([
+                'follow_up_stage' => $stage,
+                'last_contact_result' => $result,
+                'last_contacted_at' => now(),
+                'next_follow_up_at' => $nextContact,
+                'follow_up_note' => $note,
+                'contact_history' => array_slice($history, -100),
+                'last_control_notified_at' => null,
+            ])->save();
+
+            $document->mailThread?->forceFill([
+                'assigned_user_id' => $document->mailThread->assigned_user_id ?: $user->id,
+                'sales_stage' => match ($stage) {
+                    'won' => 'won', 'lost' => 'lost',
+                    'contact_planned', 'decision_pending', 'negotiation', 'needs_revision' => $stage,
+                    default => 'proposal_sent',
+                },
+                'status' => match ($stage) {
+                    'won', 'lost' => 'closed',
+                    'needs_revision' => 'waiting_manager',
+                    default => 'waiting_customer',
+                },
+                'next_follow_up_at' => $nextContact,
+                'follow_up_note' => $note,
+            ])->save();
+        });
+    }
+
     public function convertToOrder(CommercialDocument $document, User $user): Order
     {
         if ($document->type !== 'quote' || $document->status !== 'accepted') {
@@ -127,6 +215,8 @@ class CommercialDocumentWorkflow
         DB::transaction(function () use ($document): void {
             $document->forceFill([
                 'status' => 'accepted',
+                'follow_up_stage' => 'won',
+                'next_follow_up_at' => null,
                 'accepted_at' => now(),
                 'outcome_reason' => null,
                 'outcome_note' => null,
@@ -151,6 +241,8 @@ class CommercialDocumentWorkflow
         DB::transaction(function () use ($document, $reason, $note): void {
             $document->forceFill([
                 'status' => 'rejected',
+                'follow_up_stage' => 'lost',
+                'next_follow_up_at' => null,
                 'outcome_reason' => $reason,
                 'outcome_note' => $note,
                 'closed_at' => now(),
@@ -167,7 +259,7 @@ class CommercialDocumentWorkflow
 
     public function requestRevision(CommercialDocument $document, string $note): void
     {
-        if ($document->type !== 'quote' || ! in_array($document->status, ['sent', 'accepted'], true)) {
+        if ($document->type !== 'quote' || ! in_array($document->status, ['sent', 'accepted', 'needs_revision'], true)) {
             throw new RuntimeException('Корректировку можно запросить только для отправленного или согласованного КП.');
         }
 
@@ -179,6 +271,8 @@ class CommercialDocumentWorkflow
         DB::transaction(function () use ($document, $note): void {
             $document->forceFill([
                 'status' => 'needs_revision',
+                'follow_up_stage' => 'needs_revision',
+                'next_follow_up_at' => null,
                 'accepted_at' => null,
                 'outcome_reason' => null,
                 'outcome_note' => $note,
@@ -200,6 +294,8 @@ class CommercialDocumentWorkflow
         DB::transaction(function () use ($document): void {
             $document->forceFill([
                 'status' => 'expired',
+                'follow_up_stage' => 'lost',
+                'next_follow_up_at' => null,
                 'outcome_reason' => 'no_response',
                 'outcome_note' => 'Срок действия предложения истёк.',
                 'closed_at' => now(),

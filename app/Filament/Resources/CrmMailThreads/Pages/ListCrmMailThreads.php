@@ -68,8 +68,8 @@ class ListCrmMailThreads extends ListRecords
                 ->badge($messageCounts['inbox'] ?: null),
             'needs_response' => Tab::make('Требуют реакции')
                 ->icon('heroicon-o-flag')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', ['new', 'waiting_manager']))
-                ->badge(CrmMailThread::query()->whereIn('status', ['new', 'waiting_manager'])->count() ?: null)
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->requiresReaction())
+                ->badge(CrmMailThread::query()->requiresReaction()->count() ?: null)
                 ->badgeColor('danger'),
             'my_work' => Tab::make('Мои в работе')
                 ->icon('heroicon-o-briefcase')

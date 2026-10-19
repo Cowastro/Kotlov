@@ -113,7 +113,15 @@ class CrmMailSender
             ->get();
 
         foreach ($documents as $document) {
-            $document->forceFill(['status' => 'sent', 'sent_at' => now()])->save();
+            $document->forceFill([
+                'status' => 'sent',
+                'sent_at' => now(),
+                'follow_up_stage' => $document->type === 'quote' ? 'proposal_sent' : null,
+                'next_follow_up_at' => $document->type === 'quote' ? now()->addWeekdays(2)->setTime(10, 0) : null,
+                'follow_up_note' => $document->type === 'quote'
+                    ? 'Связаться с клиентом после отправки коммерческого предложения.'
+                    : null,
+            ])->save();
 
             if ($document->type !== 'quote' || ! $document->revision_of_id) {
                 continue;

@@ -37,13 +37,34 @@ class CommercialDocument extends Model
         'other' => 'Другая причина',
     ];
 
+    public const FOLLOW_UP_STAGES = [
+        'proposal_sent' => 'КП отправлено',
+        'contact_planned' => 'Запланирован контакт',
+        'decision_pending' => 'Клиент думает',
+        'negotiation' => 'Переговоры',
+        'needs_revision' => 'Нужна корректировка',
+        'won' => 'Согласовано',
+        'lost' => 'Отказ',
+    ];
+
+    public const CONTACT_RESULTS = [
+        'no_answer' => 'Не дозвонились',
+        'callback_later' => 'Попросили перезвонить',
+        'decision_pending' => 'Клиент думает',
+        'negotiation' => 'Обсудили условия',
+        'needs_revision' => 'Нужна корректировка КП',
+        'accepted' => 'КП согласовано',
+        'rejected' => 'Клиент отказался',
+    ];
+
     protected $fillable = [
-        'number', 'type', 'status', 'outcome_reason', 'outcome_note', 'ai_assisted',
+        'number', 'type', 'status', 'follow_up_stage', 'last_contact_result', 'outcome_reason', 'outcome_note', 'ai_assisted',
         'source_document_id', 'revision_of_id', 'revision_number', 'created_by', 'manager_id', 'crm_mail_thread_id',
         'crm_counterparty_id', 'crm_contact_id',
         'client_name', 'client_company', 'client_legal_name', 'client_email', 'client_phone', 'client_unp', 'client_address',
         'issued_at', 'valid_until', 'currency', 'subtotal', 'discount_total', 'delivery_price', 'delivery_to_client', 'total',
         'vat_rate', 'payment_terms', 'delivery_terms', 'notes', 'seller_snapshot', 'sent_at', 'accepted_at', 'closed_at',
+        'last_contacted_at', 'next_follow_up_at', 'follow_up_note', 'contact_history',
         'last_control_notified_at', 'allow_unconfirmed_purchase_price',
     ];
 
@@ -53,6 +74,9 @@ class CommercialDocument extends Model
         'sent_at' => 'datetime',
         'accepted_at' => 'datetime',
         'closed_at' => 'datetime',
+        'last_contacted_at' => 'datetime',
+        'next_follow_up_at' => 'datetime',
+        'contact_history' => 'array',
         'last_control_notified_at' => 'datetime',
         'ai_assisted' => 'boolean',
         'delivery_to_client' => 'boolean',
@@ -110,7 +134,8 @@ class CommercialDocument extends Model
             return false;
         }
 
-        return ($this->type === 'quote' && $this->status === 'needs_revision')
+        return ($this->type === 'quote' && $this->next_follow_up_at?->lte(now()))
+            || ($this->type === 'quote' && $this->status === 'needs_revision')
             || ($this->type === 'quote' && $this->status === 'sent' && $this->valid_until?->lte(today()->addDays(3)))
             || ($this->type === 'quote' && $this->status === 'accepted' && ! $this->order()->exists());
     }
@@ -127,6 +152,12 @@ class CommercialDocument extends Model
 
         if ($this->type === 'quote' && $this->status === 'accepted' && ! $this->order()->exists()) {
             return 'Создать заказ';
+        }
+
+        if ($this->type === 'quote' && $this->next_follow_up_at) {
+            $prefix = $this->next_follow_up_at->isPast() ? 'Просрочен контакт' : 'Перезвонить';
+
+            return $prefix.' '.$this->next_follow_up_at->timezone('Europe/Minsk')->format('d.m H:i');
         }
 
         if ($this->type !== 'quote' || $this->status !== 'sent' || ! $this->valid_until) {

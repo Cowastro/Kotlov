@@ -11,6 +11,7 @@ use App\Filament\Resources\CrmMailThreads\Pages\ViewCrmMailThread;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Models\Category;
+use App\Models\CommercialDocument;
 use App\Models\CrmContact;
 use App\Models\CrmContactPoint;
 use App\Models\CrmMailMessage;
@@ -173,6 +174,20 @@ class CrmMailThreadResource extends Resource
                     ->color('primary'),
                 TextEntry::make('manager_note')->label('Внутренняя заметка')->placeholder('Не заполнена')->columnSpanFull(),
                 TextEntry::make('follow_up_note')->label('Что напомнить')->placeholder('Не заполнено')->columnSpanFull(),
+                TextEntry::make('linked_quote')
+                    ->label('Связанное КП')
+                    ->state(fn (CrmMailThread $record): ?string => static::linkedQuote($record)?->reference(true))
+                    ->placeholder('Нет связанного КП')
+                    ->url(fn (CrmMailThread $record): ?string => ($quote = static::linkedQuote($record))
+                        ? CommercialDocumentResource::getUrl('view', ['record' => $quote])
+                        : null)
+                    ->color('primary'),
+                TextEntry::make('linked_quote_result')
+                    ->label('Итог контакта по КП')
+                    ->state(fn (CrmMailThread $record): ?string => ($quote = static::linkedQuote($record))
+                        ? (CommercialDocument::CONTACT_RESULTS[$quote->last_contact_result] ?? null)
+                        : null)
+                    ->placeholder('Не зафиксирован'),
             ]),
             Section::make('Переписка')
                 ->extraAttributes(['class' => 'crm-mail-conversation'])
@@ -262,6 +277,16 @@ class CrmMailThreadResource extends Resource
                     ->iconButton()
                     ->tooltip('Открыть письмо')
                     ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()),
+                Action::make('open_quote')
+                    ->label('Открыть КП')
+                    ->icon('heroicon-o-document-currency-dollar')
+                    ->iconButton()
+                    ->tooltip('Открыть связанное коммерческое предложение')
+                    ->color('info')
+                    ->visible(fn (CrmMailThread $record): bool => static::linkedQuote($record) !== null)
+                    ->url(fn (CrmMailThread $record): ?string => ($quote = static::linkedQuote($record))
+                        ? CommercialDocumentResource::getUrl('view', ['record' => $quote])
+                        : null),
                 ManageMailThreadNotesAction::make()
                     ->iconButton(),
                 Action::make('quick_quote')
@@ -539,7 +564,9 @@ class CrmMailThreadResource extends Resource
             'new_inquiry' => 'danger',
             'qualification' => 'warning',
             'proposal_sent' => 'info',
+            'contact_planned', 'decision_pending' => 'warning',
             'negotiation' => 'primary',
+            'needs_revision' => 'warning',
             'won' => 'success',
             'lost' => 'gray',
             default => 'gray',
@@ -575,6 +602,22 @@ class CrmMailThreadResource extends Resource
         return $record->commercialDocuments->contains(fn ($document): bool => $document->status === 'sent')
             ? 'heroicon-o-document-check'
             : null;
+    }
+
+    public static function linkedQuote(CrmMailThread $record): ?CommercialDocument
+    {
+        $documents = $record->relationLoaded('commercialDocuments')
+            ? $record->commercialDocuments
+            : $record->commercialDocuments()->get();
+
+        return $documents
+            ->where('type', 'quote')
+            ->where('status', '!=', 'cancelled')
+            ->sortByDesc(fn (CommercialDocument $document): array => [
+                (int) ($document->revision_number ?: 1),
+                $document->id,
+            ])
+            ->first();
     }
 
     public static function commercialOfferIconColor(CrmMailThread $record): string

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CommercialDocuments\Pages;
 
+use App\Filament\Resources\CommercialDocuments\Actions\RecordCommercialDocumentContactAction;
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Orders\OrderResource;
@@ -47,6 +48,15 @@ class ViewCommercialDocument extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            RecordCommercialDocumentContactAction::make(),
+            Action::make('open_mail_thread')
+                ->label('Открыть переписку')
+                ->icon('heroicon-o-envelope-open')
+                ->color('gray')
+                ->visible(fn (): bool => $this->record->mailThread !== null)
+                ->url(fn (): string => CrmMailThreadResource::getUrl('view', [
+                    'record' => $this->record->mailThread,
+                ])),
             EditAction::make()
                 ->label('Редактировать')
                 ->icon('heroicon-o-pencil-square')

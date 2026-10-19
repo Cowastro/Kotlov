@@ -17,7 +17,10 @@ class CommercialDocumentControlNotifier
             ->currentRevision()
             ->with('manager')
             ->where(function ($control): void {
-                $control->where(function ($revision): void {
+                $control->where(function ($followUp): void {
+                    $followUp->where('type', 'quote')->whereNotNull('next_follow_up_at')
+                        ->where('next_follow_up_at', '<=', now());
+                })->orWhere(function ($revision): void {
                     $revision->where('type', 'quote')->where('status', 'needs_revision');
                 })->orWhere(function ($sent): void {
                     $sent->where('type', 'quote')->where('status', 'sent')

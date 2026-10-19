@@ -70,4 +70,25 @@ class CommercialDocumentControlNotificationTest extends TestCase
         $this->assertStringContainsString($quote->number, $notification->data['body']);
         $this->assertStringContainsString('Создать новую редакцию', $notification->data['body']);
     }
+
+    public function test_due_callback_is_included_even_when_offer_deadline_is_not_close(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $quote = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'sent',
+            'manager_id' => $manager->id,
+            'valid_until' => today()->addMonth(),
+            'next_follow_up_at' => now()->subMinute(),
+            'follow_up_note' => 'Клиент думает, уточнить решение.',
+        ]);
+
+        $this->artisan('commercial-documents:notify-control')
+            ->expectsOutput('КП с отправленным напоминанием: 1')
+            ->assertSuccessful();
+
+        $notification = $manager->notifications()->firstOrFail();
+        $this->assertStringContainsString($quote->number, $notification->data['body']);
+        $this->assertStringContainsString('Просрочен контакт', $notification->data['body']);
+    }
 }

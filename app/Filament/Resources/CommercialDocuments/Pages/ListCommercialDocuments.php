@@ -42,7 +42,9 @@ class ListCommercialDocuments extends ListRecords
             ->currentRevision()
             ->where('type', 'quote')
             ->where(function (Builder $control): void {
-                $control->where('status', 'needs_revision')
+                $control->where(function (Builder $due): void {
+                    $due->whereNotNull('next_follow_up_at')->where('next_follow_up_at', '<=', now());
+                })->orWhere('status', 'needs_revision')
                     ->orWhere(function (Builder $sent): void {
                         $sent->where('status', 'sent')->whereDate('valid_until', '<=', today()->addDays(3));
                     })->orWhere(function (Builder $accepted): void {
