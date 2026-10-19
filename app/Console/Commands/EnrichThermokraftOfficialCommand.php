@@ -22,7 +22,7 @@ class EnrichThermokraftOfficialCommand extends Command
      * Only exact, manually verified modifications belong here. Similar power alone
      * is not sufficient: voltage, thread and immersion length must also match.
      *
-     * @var array<int,array{name:string,url:string,required:array<int,string>,images_only?:bool}>
+     * @var array<int,array{name:string,url:string,required:array<int,string>,images_only?:bool,image_limit?:int}>
      */
     private const VERIFIED = [
         [
@@ -158,19 +158,12 @@ class EnrichThermokraftOfficialCommand extends Command
             'images_only' => true,
         ],
         [
-            'name' => 'ТЭН трубчатый 1,5 кВт/220В крепление гайка латунная 1 1/4"',
-            'url' => 'https://tenko.ua/ru/catalog/good/ten-rs-15-kvt-rezyba-114-pryamoy-s-termostatom-medy',
-            'required' => ['1,5', '220', '11/4'],
-        ],
-        [
-            'name' => 'ТЭН трубчатый 2 кВт/220В крепление гайка латунная 1 1/4"',
-            'url' => 'https://tenko.ua/ru/catalog/good/ten-rs-20-kvt-rezyba-114-pryamoy-s-termostatom-medy',
-            'required' => ['2', '220', '11/4'],
-        ],
-        [
             'name' => 'ТЭН трубчатый 3 кВт/220В крепление гайка латунная 1 1/4"',
-            'url' => 'https://tenko.ua/ru/catalog/good/ten-rsg-30-kvt-rezyba-114-gnutyys-termostatom-medy',
-            'required' => ['3', '220', '11/4'],
+            'url' => 'https://tenko.by/katalog/komplektuyushhie/blok-tenov-iz-nerzhaveyushhej-stali-moshhnostyu-3,0-kvt/220v-dlya-kotlov-serii-mini-tm-tenko-%28prisoedinitelnaya-rezba-1-1/4-dyujma%29.html',
+            'required' => ['3,0', '220', '1 1/4', '250'],
+            'images_only' => true,
+            // The following images on tenko.by are recommendation cards.
+            'image_limit' => 1,
         ],
     ];
 
@@ -220,6 +213,16 @@ class EnrichThermokraftOfficialCommand extends Command
                 if (! $this->matchesOfficialCard((string) ($parsed['title'] ?? ''), $parsed['specs'] ?? [], $rule['required'])) {
                     $stats['errors']++;
                     $this->warn('Official card signature mismatch for product #'.(int) $row->product_id);
+
+                    continue;
+                }
+
+                if (isset($rule['image_limit'])) {
+                    $parsed['images'] = array_slice($parsed['images'] ?? [], 0, max(0, (int) $rule['image_limit']));
+                }
+                if (($parsed['images'] ?? []) === []) {
+                    $stats['errors']++;
+                    $this->warn('Official card has no usable images for product #'.(int) $row->product_id);
 
                     continue;
                 }
