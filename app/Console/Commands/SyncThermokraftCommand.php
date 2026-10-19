@@ -183,7 +183,7 @@ class SyncThermokraftCommand extends Command
         $links = $supplier
             ? $supplier->supplierProducts()->whereNotNull('product_id')->get()->keyBy('supplier_article_normalized')
             : collect();
-        $products = Product::query()->where('is_archived', false)->with('brand:id,name')->get(['id', 'sku', 'name', 'brand_id']);
+        $products = Product::query()->where('is_archived', false)->with('brand:id,name')->get(['id', 'sku', 'name', 'slug', 'brand_id']);
         $bySku = [];
         $byName = [];
         foreach ($products as $product) {
@@ -204,6 +204,13 @@ class SyncThermokraftCommand extends Command
 
             $productId = (int) ($links->get($row['article_key'])?->product_id ?? 0);
             $reason = $productId ? 'supplier_article' : null;
+            if ($row['brand'] === 'REGLER PRO' && $this->isStandardReglerController($row['name'])) {
+                $canonical = $products->firstWhere('slug', 'kontroller-kotla-regler-wi-fi-nasos-co-1-ventiliator');
+                if ($canonical) {
+                    $productId = (int) $canonical->id;
+                    $reason = 'verified_regler_alias';
+                }
+            }
             foreach (array_filter([$row['article_key'], $this->key($row['barcode'])]) as $key) {
                 if ($productId === 0 && count($bySku[$key] ?? []) === 1) {
                     $productId = (int) $bySku[$key][0]->id;
@@ -258,7 +265,7 @@ class SyncThermokraftCommand extends Command
             'last_run_at' => now(),
             'last_status' => 'running',
         ]);
-        $stats = ['offers' => 0, 'linked' => 0, 'created' => 0, 'retail_updated' => 0, 'skipped' => 0, 'errors' => 0];
+        $stats = ['offers' => 0, 'linked' => 0, 'created' => 0, 'retail_updated' => 0, 'archived_duplicates' => 0, 'skipped' => 0, 'errors' => 0];
         $touched = [];
         $existingLinks = SupplierProduct::query()
             ->where('supplier_id', $supplier->id)
@@ -285,6 +292,7 @@ class SyncThermokraftCommand extends Command
                 }
 
                 $existingLink = $existingLinks->get($row['article_key']);
+                $previousProductId = (int) ($existingLink?->product_id ?? 0);
                 $sheetSourceUrl = self::SHEET_URL.'#gid='.$row['gid'];
                 $sourceUrl = $row['brand'] === 'REGLER PRO'
                     ? self::REGLER_SOURCE_URL
@@ -324,6 +332,14 @@ class SyncThermokraftCommand extends Command
                     'last_synced_at' => now(),
                 ]);
                 $existingLinks->put($row['article_key'], $link);
+                if ($previousProductId > 0 && $previousProductId !== (int) $product->id) {
+                    $duplicate = Product::query()->find($previousProductId);
+                    $stillLinked = SupplierProduct::query()->where('product_id', $previousProductId)->exists();
+                    if ($duplicate && ! $stillLinked && str_starts_with((string) $duplicate->sku, 'THERMOKRAFT-')) {
+                        $duplicate->forceFill(['is_active' => false, 'is_archived' => true])->save();
+                        $stats['archived_duplicates']++;
+                    }
+                }
                 if ($this->option('sync-retail-prices') && $row['retail'] !== null && abs((float) $product->price - $row['retail']) > 0.005) {
                     $product->forceFill(['price' => $row['retail']])->save();
                     $stats['retail_updated']++;
@@ -547,6 +563,17 @@ class SyncThermokraftCommand extends Command
         }
 
         $product->forceFill($updates)->save();
+    }
+
+    private function isStandardReglerController(string $name): bool
+    {
+        $normalized = mb_strtolower($name);
+
+        return str_contains($normalized, 'контроллер')
+            && str_contains($normalized, 'regler')
+            && ! str_contains($normalized, 'комплект')
+            && ! str_contains($normalized, 'granda')
+            && ! str_contains($normalized, 'mini');
     }
 
     /**

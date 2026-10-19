@@ -65,6 +65,18 @@ class SyncThermokraftCommandTest extends TestCase
         $this->assertSame(265.0, $rows[1]['retail']);
     }
 
+    #[Test]
+    public function it_maps_only_the_standard_regler_controller_to_the_existing_catalogue_card(): void
+    {
+        $method = new ReflectionMethod(SyncThermokraftCommand::class, 'isStandardReglerController');
+        $method->setAccessible(true);
+        $command = new SyncThermokraftCommand;
+
+        $this->assertTrue($method->invoke($command, 'Контроллер ReglerPro Wifi'));
+        $this->assertFalse($method->invoke($command, 'Комплект автоматики (контроллер ReglerPro Wifi + вентилятор VSK 120)'));
+        $this->assertFalse($method->invoke($command, 'Контроллер котла REGLER GRANDA, wi-fi'));
+    }
+
     /** @return array<int,array<string,mixed>> */
     private function parse(string $csv, string $gid, string $kind): array
     {
