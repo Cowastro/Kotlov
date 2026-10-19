@@ -16,7 +16,7 @@ class EnrichThermokraftOfficialCommand extends Command
         {--replace-specs : Replace characteristics with the official set}
         {--sleep=900 : Delay between official page requests, ms}';
 
-    protected $description = 'Gradually enrich exact Thermokraft TENKO cards from official tenko.ua pages.';
+    protected $description = 'Gradually enrich exact Thermokraft TENKO cards from official TENKO pages.';
 
     /**
      * Only exact, manually verified modifications belong here. Similar power alone
@@ -165,6 +165,13 @@ class EnrichThermokraftOfficialCommand extends Command
             // The following images on tenko.by are recommendation cards.
             'image_limit' => 1,
         ],
+        [
+            'name' => 'ТЭН трубчатый 3000 Вт/220В крепление гайка латунная 1 1/4" L=250мм',
+            'url' => 'https://tenko.by/katalog/komplektuyushhie/blok-tenov-iz-nerzhaveyushhej-stali-moshhnostyu-3,0-kvt/220v-dlya-kotlov-serii-mini-tm-tenko-%28prisoedinitelnaya-rezba-1-1/4-dyujma%29.html',
+            'required' => ['3,0', '220', '1 1/4', '250'],
+            'images_only' => true,
+            'image_limit' => 1,
+        ],
     ];
 
     public function handle(ProductSourceEnricher $enricher): int
@@ -201,7 +208,7 @@ class EnrichThermokraftOfficialCommand extends Command
 
                 continue;
             }
-            if (str_contains((string) $row->source_url, 'tenko.ua/') && ! $this->hasNoImages($row->images)) {
+            if (preg_match('#^https?://(?:www\.)?tenko\.(?:ua|by)/#i', (string) $row->source_url) === 1 && ! $this->hasNoImages($row->images)) {
                 $stats['skipped']++;
 
                 continue;
