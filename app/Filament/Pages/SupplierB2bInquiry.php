@@ -102,8 +102,8 @@ class SupplierB2bInquiry extends Page
                     TextInput::make('custom_product_name')
                         ->label('Название товара')
                         ->placeholder('Введите товар, модель или краткое описание')
+                        ->helperText('Необязательно. Можно оставить пустым и написать произвольные тему и текст письма ниже.')
                         ->maxLength(500)
-                        ->required(fn (Get $get): bool => (bool) $get('product_not_in_catalog'))
                         ->visible(fn (Get $get): bool => (bool) $get('product_not_in_catalog'))
                         ->live(onBlur: true)
                         ->afterStateUpdated(function (mixed $state, Set $set): void {

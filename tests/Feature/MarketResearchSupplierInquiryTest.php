@@ -216,6 +216,43 @@ class MarketResearchSupplierInquiryTest extends TestCase
         $this->assertStringContainsString($productName, $draft->thread->manager_note);
     }
 
+    public function test_uncatalogued_product_name_can_be_empty_for_a_free_form_letter(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::query()->updateOrCreate(['email' => 'info@kotlov.by'], [
+            'name' => 'KOTLOV',
+            'username' => 'info@kotlov.by',
+            'password' => 'secret',
+            'imap_host' => 'imap.example.com',
+            'smtp_host' => 'smtp.example.com',
+            'is_enabled' => true,
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(SupplierB2bInquiry::class)
+            ->callAction('create_b2b_inquiry', [
+                'product_not_in_catalog' => true,
+                'product_id' => null,
+                'custom_product_name' => '',
+                'supplier_id' => null,
+                'mailbox_id' => $mailbox->id,
+                'recipient' => 'free-form@example.test',
+                'participant_name' => 'Произвольный получатель',
+                'cc' => [],
+                'attach_russian_representative' => false,
+                'subject' => 'Произвольная тема запроса',
+                'body' => 'Полностью произвольный текст письма без товара из базы.',
+                'send_now' => false,
+            ])
+            ->assertHasNoActionErrors()
+            ->assertRedirect();
+
+        $draft = $mailbox->messages()->where('direction', 'draft')->firstOrFail();
+        $this->assertNull($draft->metadata['product_id']);
+        $this->assertSame('Произвольная тема запроса', $draft->subject);
+        $this->assertStringContainsString('Полностью произвольный текст', $draft->text_body);
+    }
+
     public function test_client_cannot_open_the_supplier_b2b_inquiry_page(): void
     {
         $this->actingAs(User::factory()->create(['role' => 'client', 'is_active' => true]));
