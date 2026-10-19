@@ -96,4 +96,14 @@ return [
         'password' => env('BELARUS_COMPANY_REGISTRY_PASSWORD', ''),
     ],
 
+    'deal_by' => [
+        'base_url' => env('DEAL_BY_API_BASE_URL', 'https://my.deal.by/api/v1'),
+        'token' => env('DEAL_BY_API_TOKEN', ''),
+        'connect_timeout' => (int) env('DEAL_BY_API_CONNECT_TIMEOUT', 5),
+        'timeout' => (int) env('DEAL_BY_API_TIMEOUT', 20),
+        'orders_capture_enabled' => (bool) env('DEAL_BY_ORDERS_CAPTURE_ENABLED', false),
+        'orders_initial_lookback_days' => (int) env('DEAL_BY_ORDERS_INITIAL_LOOKBACK_DAYS', 30),
+        'orders_overlap_minutes' => (int) env('DEAL_BY_ORDERS_OVERLAP_MINUTES', 15),
+    ],
+
 ];

@@ -26,6 +26,8 @@ on:
           - research-price-batch
           - upload-svah-pricelist
           - configure-openai
+          - configure-deal-by
+          - enable-deal-by-orders
           - deploy-safe
           - deploy-recover
       artisan_args:
@@ -54,7 +56,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|audit-gas-meter-demand|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|audit-gas-meter-demand|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|configure-deal-by|enable-deal-by-orders|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -108,7 +110,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Run remote task
-        if: inputs.task != 'configure-openai' && inputs.task != 'upload-svah-pricelist'
+        if: inputs.task != 'configure-openai' && inputs.task != 'configure-deal-by' && inputs.task != 'upload-svah-pricelist'
         env:
           TASK: ${{ inputs.task }}
           ARTISAN_ARGS: ${{ inputs.artisan_args }}
@@ -157,6 +159,30 @@ jobs:
                 git pull
                 git checkout -- public/icons
                 "$PHP_BIN" artisan optimize:clear
+                ;;
+              enable-deal-by-orders)
+                test -f .env
+                umask 077
+                temp_env="$(mktemp "$SERVER_PATH/.env.deal-by.XXXXXX")"
+                cleanup() { rm -f "$temp_env"; }
+                trap cleanup EXIT
+                replaced=0
+                while IFS= read -r line || [[ -n "$line" ]]; do
+                  if [[ "$line" == DEAL_BY_ORDERS_CAPTURE_ENABLED=* ]]; then
+                    printf 'DEAL_BY_ORDERS_CAPTURE_ENABLED=true\n' >> "$temp_env"
+                    replaced=1
+                  else
+                    printf '%s\n' "$line" >> "$temp_env"
+                  fi
+                done < .env
+                if [[ "$replaced" -eq 0 ]]; then
+                  printf '\nDEAL_BY_ORDERS_CAPTURE_ENABLED=true\n' >> "$temp_env"
+                fi
+                chmod --reference=.env "$temp_env" 2>/dev/null || chmod 600 "$temp_env"
+                mv "$temp_env" .env
+                trap - EXIT
+                "$PHP_BIN" artisan optimize:clear >/dev/null
+                echo 'deal_by_orders_enabled=1'
                 ;;
               artisan-dry-run|artisan-apply)
                 "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}"
@@ -607,6 +633,71 @@ jobs:
           SCRIPT
           )
           remote_script="${remote_script/__OPENAI_KEY_LITERAL__/$key_literal}"
+
+          ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
+            "SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \
+            <<< "$remote_script"
+
+      - name: Configure Deal.by production secret
+        if: inputs.task == 'configure-deal-by'
+        env:
+          DEAL_BY_API_TOKEN: ${{ secrets.DEAL_BY_API_TOKEN }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+          PHP_BIN: ${{ secrets.SERVER_PHP_BIN }}
+        run: |
+          set -euo pipefail
+          test -n "$DEAL_BY_API_TOKEN"
+
+          port="${SERVER_PORT:-22}"
+          php_bin="${PHP_BIN:-/opt/alt/php83/usr/bin/php}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          token_literal="$(printf '%q' "$DEAL_BY_API_TOKEN")"
+
+          remote_script=$(cat <<'SCRIPT'
+          set -euo pipefail
+          cd "$SERVER_PATH"
+          deal_by_token=__DEAL_BY_TOKEN_LITERAL__
+          test -n "$deal_by_token"
+          test -f .env
+
+          umask 077
+          temp_env="$(mktemp "$SERVER_PATH/.env.deal-by.XXXXXX")"
+          cleanup() { rm -f "$temp_env"; }
+          trap cleanup EXIT
+          token_replaced=0
+          enabled_replaced=0
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            case "$line" in
+              DEAL_BY_API_TOKEN=*)
+                printf 'DEAL_BY_API_TOKEN=%s\n' "$deal_by_token" >> "$temp_env"
+                token_replaced=1
+                ;;
+              DEAL_BY_ORDERS_CAPTURE_ENABLED=*)
+                printf 'DEAL_BY_ORDERS_CAPTURE_ENABLED=false\n' >> "$temp_env"
+                enabled_replaced=1
+                ;;
+              *) printf '%s\n' "$line" >> "$temp_env" ;;
+            esac
+          done < .env
+          if [[ "$token_replaced" -eq 0 ]]; then
+            printf '\nDEAL_BY_API_TOKEN=%s\n' "$deal_by_token" >> "$temp_env"
+          fi
+          if [[ "$enabled_replaced" -eq 0 ]]; then
+            printf 'DEAL_BY_ORDERS_CAPTURE_ENABLED=false\n' >> "$temp_env"
+          fi
+
+          chmod --reference=.env "$temp_env" 2>/dev/null || chmod 600 "$temp_env"
+          mv "$temp_env" .env
+          trap - EXIT
+          "$PHP_BIN" artisan optimize:clear >/dev/null
+          echo 'deal_by_token_configured=1'
+          echo 'deal_by_orders_enabled=0'
+          SCRIPT
+          )
+          remote_script="${remote_script/__DEAL_BY_TOKEN_LITERAL__/$token_literal}"
 
           ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
             "SERVER_PATH='$server_path' PHP_BIN='$php_bin' bash -s" \

@@ -9,6 +9,15 @@ Schedule::command('integration:scan-issues')
     ->withoutOverlapping(5)
     ->runInBackground();
 
+// Deal.by orders first land in an encrypted, idempotent inbox. This capture
+// never creates operational orders and is inert until explicitly enabled.
+Schedule::command('deal:pull-orders')
+    ->everyTwoMinutes()
+    ->when(fn (): bool => (bool) config('services.deal_by.orders_capture_enabled'))
+    ->withoutOverlapping(5)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/deal-by-orders.log'));
+
 Schedule::command('integration:prune-exchange-files')
     ->dailyAt('03:20')
     ->timezone('Europe/Minsk')
