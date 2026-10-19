@@ -175,6 +175,47 @@ class MarketResearchSupplierInquiryTest extends TestCase
         $this->assertStringNotContainsString($product->sku, $draft->text_body);
     }
 
+    public function test_manager_can_request_a_product_that_is_not_in_the_catalog(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::query()->updateOrCreate(['email' => 'info@kotlov.by'], [
+            'name' => 'KOTLOV',
+            'username' => 'info@kotlov.by',
+            'password' => 'secret',
+            'imap_host' => 'imap.example.com',
+            'smtp_host' => 'smtp.example.com',
+            'is_enabled' => true,
+        ]);
+        $productName = 'Редкий контроллер XYZ-500 вне каталога';
+        $service = app(MarketResearchSupplierInquiry::class);
+
+        Livewire::actingAs($manager)
+            ->test(SupplierB2bInquiry::class)
+            ->callAction('create_b2b_inquiry', [
+                'product_not_in_catalog' => true,
+                'product_id' => null,
+                'custom_product_name' => $productName,
+                'supplier_id' => null,
+                'mailbox_id' => $mailbox->id,
+                'recipient' => 'external-supplier@example.test',
+                'participant_name' => 'Внешний поставщик',
+                'cc' => [],
+                'attach_russian_representative' => false,
+                'subject' => $service->subjectForName($productName),
+                'body' => $service->bodyForName($productName),
+                'send_now' => false,
+            ])
+            ->assertHasNoActionErrors()
+            ->assertRedirect();
+
+        $draft = $mailbox->messages()->where('direction', 'draft')->firstOrFail();
+        $this->assertNull($draft->metadata['product_id']);
+        $this->assertSame($productName, $draft->metadata['product_name']);
+        $this->assertStringContainsString($productName, $draft->subject);
+        $this->assertStringContainsString($productName, $draft->text_body);
+        $this->assertStringContainsString($productName, $draft->thread->manager_note);
+    }
+
     public function test_client_cannot_open_the_supplier_b2b_inquiry_page(): void
     {
         $this->actingAs(User::factory()->create(['role' => 'client', 'is_active' => true]));

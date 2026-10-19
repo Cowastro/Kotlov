@@ -90,18 +90,27 @@ class MarketResearchSupplierInquiry
 
     public function subjectForProduct(?Product $product): string
     {
-        return 'Запрос цены и наличия — '.($product?->name ?? 'товар');
+        return $this->subjectForName($product?->name);
     }
 
     public function bodyForProduct(?Product $product): string
     {
+        return $this->bodyForName($product?->name);
+    }
 
+    public function subjectForName(?string $productName): string
+    {
+        return 'Запрос цены и наличия — '.(filled($productName) ? trim($productName) : 'товар');
+    }
+
+    public function bodyForName(?string $productName): string
+    {
         return implode("\n", [
             'Здравствуйте!',
             '',
             'Просим сообщить актуальную партнёрскую B2B-цену и наличие на складе:',
             '',
-            $product?->name ?? 'Товар',
+            filled($productName) ? trim($productName) : 'Товар',
             '',
             'Спасибо.',
         ]);
@@ -135,7 +144,7 @@ class MarketResearchSupplierInquiry
     }
 
     public function createStandaloneDraft(
-        Product $product,
+        ?Product $product,
         ?Supplier $supplier,
         CrmMailbox $mailbox,
         User $user,
@@ -145,6 +154,7 @@ class MarketResearchSupplierInquiry
         string $subject,
         string $body,
         bool $attachRussianRepresentative = false,
+        ?string $customProductName = null,
     ): CrmMailThread {
         return $this->createProductDraft(
             $product,
@@ -157,6 +167,8 @@ class MarketResearchSupplierInquiry
             $subject,
             $body,
             $attachRussianRepresentative,
+            null,
+            $customProductName,
         );
     }
 
@@ -172,6 +184,7 @@ class MarketResearchSupplierInquiry
         string $body,
         bool $attachRussianRepresentative = false,
         ?MarketResearchReport $report = null,
+        ?string $customProductName = null,
     ): CrmMailThread {
         if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
             throw new RuntimeException('Укажите корректный email поставщика.');
@@ -181,7 +194,9 @@ class MarketResearchSupplierInquiry
             ? trim((string) $participantName)
             : $supplier?->name;
 
-        return DB::transaction(function () use ($product, $report, $supplier, $mailbox, $user, $recipient, $cc, $participantName, $subject, $body, $attachRussianRepresentative): CrmMailThread {
+        $productName = $product?->name ?: (filled($customProductName) ? trim($customProductName) : 'Товар');
+
+        return DB::transaction(function () use ($product, $productName, $report, $supplier, $mailbox, $user, $recipient, $cc, $participantName, $subject, $body, $attachRussianRepresentative): CrmMailThread {
             [$attachments, $attachmentNames] = $this->russianRepresentativeAttachment($attachRussianRepresentative);
             if ($attachRussianRepresentative) {
                 $body = rtrim($body)."\n\nДля оформления поставки и выставления счёта в РФ используйте реквизиты нашего российского представительства ООО «МИНСКАЯ ПРОМЫШЛЕННАЯ ГРУППА» (ИНН 6732146305). Реквизиты приложены к письму.";
@@ -203,7 +218,7 @@ class MarketResearchSupplierInquiry
                 'crm_counterparty_id' => $supplier?->crm_counterparty_id ?: $thread->crm_counterparty_id,
                 'manager_note' => $report
                     ? 'Запрос партнёрской B2B-цены из анализа рынка №'.$report->id.'.'
-                    : 'B2B-заявка поставщику по товару «'.($product?->name ?? 'Товар').'».',
+                    : 'B2B-заявка поставщику по товару «'.$productName.'».',
             ])->save();
 
             $draft = $thread->messages()->where('direction', 'draft')->latest('id')->first();
@@ -215,6 +230,7 @@ class MarketResearchSupplierInquiry
                     'market_research_report_id' => $report?->id,
                     'supplier_id' => $supplier?->id,
                     'product_id' => $product?->id,
+                    'product_name' => $productName,
                 ]])->save();
             }
 

@@ -18,6 +18,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
@@ -61,9 +62,22 @@ class SupplierB2bInquiry extends Page
                 ->modalSubmitActionLabel('Создать и отправить запрос')
                 ->fillForm(fn (): array => $this->defaultFormData())
                 ->schema([
+                    Toggle::make('product_not_in_catalog')
+                        ->label('Товара нет в базе')
+                        ->live()
+                        ->afterStateUpdated(function (bool $state, Set $set): void {
+                            if ($state) {
+                                $set('product_id', null);
+                            }
+
+                            $service = app(MarketResearchSupplierInquiry::class);
+                            $set('subject', $service->subjectForName(null));
+                            $set('body', $service->bodyForName(null));
+                        }),
                     Select::make('product_id')
                         ->label('Товар')
-                        ->required()
+                        ->required(fn (Get $get): bool => ! (bool) $get('product_not_in_catalog'))
+                        ->visible(fn (Get $get): bool => ! (bool) $get('product_not_in_catalog'))
                         ->searchable()
                         ->getSearchResultsUsing(fn (string $search): array => Product::query()
                             ->where('is_archived', false)
@@ -84,6 +98,19 @@ class SupplierB2bInquiry extends Page
                             $service = app(MarketResearchSupplierInquiry::class);
                             $set('subject', $service->subjectForProduct($product));
                             $set('body', $service->bodyForProduct($product));
+                        }),
+                    TextInput::make('custom_product_name')
+                        ->label('Название товара')
+                        ->placeholder('Введите товар, модель или краткое описание')
+                        ->maxLength(500)
+                        ->required(fn (Get $get): bool => (bool) $get('product_not_in_catalog'))
+                        ->visible(fn (Get $get): bool => (bool) $get('product_not_in_catalog'))
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (mixed $state, Set $set): void {
+                            $service = app(MarketResearchSupplierInquiry::class);
+                            $name = trim((string) $state);
+                            $set('subject', $service->subjectForName($name));
+                            $set('body', $service->bodyForName($name));
                         }),
                     Select::make('supplier_id')
                         ->label('Поставщик из базы')
@@ -134,7 +161,13 @@ class SupplierB2bInquiry extends Page
                 ])
                 ->action(function (array $data) {
                     try {
-                        $product = Product::query()->findOrFail((int) $data['product_id']);
+                        $productNotInCatalog = (bool) ($data['product_not_in_catalog'] ?? false);
+                        $product = $productNotInCatalog
+                            ? null
+                            : Product::query()->findOrFail((int) $data['product_id']);
+                        $customProductName = $productNotInCatalog
+                            ? trim((string) ($data['custom_product_name'] ?? ''))
+                            : null;
                         $supplier = filled($data['supplier_id'] ?? null)
                             ? Supplier::query()->find((int) $data['supplier_id'])
                             : null;
@@ -151,6 +184,7 @@ class SupplierB2bInquiry extends Page
                             (string) $data['subject'],
                             (string) $data['body'],
                             (bool) ($data['attach_russian_representative'] ?? false),
+                            $customProductName,
                         );
 
                         if ((bool) ($data['send_now'] ?? false)) {
@@ -179,7 +213,9 @@ class SupplierB2bInquiry extends Page
         $service = app(MarketResearchSupplierInquiry::class);
 
         return [
+            'product_not_in_catalog' => false,
             'product_id' => null,
+            'custom_product_name' => '',
             'supplier_id' => null,
             'mailbox_id' => $mailbox?->id,
             'recipient' => '',
