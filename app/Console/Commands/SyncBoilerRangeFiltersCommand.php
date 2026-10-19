@@ -102,6 +102,9 @@ class SyncBoilerRangeFiltersCommand extends Command
             'already_correct' => 0,
             'would_insert' => 0,
             'would_repair' => 0,
+            'repair_multiple' => 0,
+            'repair_wrong_attribute' => 0,
+            'repair_wrong_option' => 0,
             'inserted' => 0,
             'repaired' => 0,
             'missing_numeric_fact' => 0,
@@ -137,6 +140,9 @@ class SyncBoilerRangeFiltersCommand extends Command
                     'already_correct' => 0,
                     'would_insert' => 0,
                     'would_repair' => 0,
+                    'repair_multiple' => 0,
+                    'repair_wrong_attribute' => 0,
+                    'repair_wrong_option' => 0,
                     'inserted' => 0,
                     'repaired' => 0,
                     'missing_numeric_fact' => 0,
@@ -182,6 +188,15 @@ class SyncBoilerRangeFiltersCommand extends Command
 
                     $action = $existing->isEmpty() ? 'insert' : 'repair';
                     $stats['would_'.$action]++;
+                    if ($action === 'repair') {
+                        if ($existing->count() > 1) {
+                            $stats['repair_multiple']++;
+                        } elseif ((int) $existing->first()->attribute_id !== $filter['primary_attribute_id']) {
+                            $stats['repair_wrong_attribute']++;
+                        } else {
+                            $stats['repair_wrong_option']++;
+                        }
+                    }
                     if (! $apply) {
                         continue;
                     }
