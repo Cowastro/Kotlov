@@ -174,6 +174,51 @@ class EnrichThermokraftOfficialCommand extends Command
             'images_only' => true,
             'image_limit' => 1,
         ],
+        // These discontinued/non-standard variants no longer have exact cards in
+        // the current Belarus catalog. Use only a verified official image of the
+        // same TENKO construction family; never copy its specs or description.
+        [
+            'name' => 'ТЭН трубчатый 9000 Вт/220В крепление гайка латунная 1,5" L=420мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-9000vt-kreplenie-gayka-latunnaya-15-l420mm',
+            'required' => ['9', '380', '1,5', '420'],
+            'images_only' => true,
+            'image_limit' => 1,
+        ],
+        [
+            'name' => 'ТЭН трубчатый 10500 Вт/380В крепление гайка латунная 1,5" L=420мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-10500vt-kreplenie-gayka-latunnaya-380v-2-l420mm',
+            'required' => ['10,5', '380', '2', '420'],
+            'images_only' => true,
+            'image_limit' => 1,
+        ],
+        [
+            'name' => 'ТЭН трубчатый 10500 Вт/380В крепление гайка латунная 2" L=450мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/blok-tenov-10500vt-kreplenie-gayka-latunnaya-380v-2-l420mm',
+            'required' => ['10,5', '380', '2', '420'],
+            'images_only' => true,
+            'image_limit' => 1,
+        ],
+        [
+            'name' => 'ТЭН трубчатый 1,5 кВт/220В крепление гайка латунная 1 1/4"',
+            'url' => 'https://tenko.ua/ru/catalog/good/15-kvt-nerghaveyka',
+            'required' => ['1,5', '220', '1 1/4', '285'],
+            'images_only' => true,
+            'image_limit' => 1,
+        ],
+        [
+            'name' => 'ТЭН трубчатый 2 кВт/220В крепление гайка латунная 1 1/4"',
+            'url' => 'https://tenko.ua/ru/catalog/good/2-kvt-nerghaveyka',
+            'required' => ['2', '220', '1 1/4'],
+            'images_only' => true,
+            'image_limit' => 1,
+        ],
+        [
+            'name' => 'ТЭН трубчатый 1,2 кВт/220В крепление гайка латунная 1/2" L=400мм',
+            'url' => 'https://tenko.ua/ru/catalog/good/1200vt',
+            'required' => ['1,2', '220', '1/2'],
+            'images_only' => true,
+            'image_limit' => 1,
+        ],
     ];
 
     /** @var array<string,string> Exact Thermokraft names mapped to official STEN catalog images. */
