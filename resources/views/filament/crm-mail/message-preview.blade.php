@@ -15,6 +15,7 @@
     $isLatestMessage = $isLatestMessage ?? false;
     $canTakeThread = $canTakeThread ?? false;
     $canMarkPotentialDeal = $canMarkPotentialDeal ?? false;
+    $canSkipThread = $canSkipThread ?? false;
     $showBody = $hasVisibleBody || $attachments->isEmpty();
     $hasOriginalHtml = $hasVisibleBody && filled($originalHtml);
 @endphp
@@ -63,6 +64,15 @@
                         wire:loading.attr="disabled"
                         wire:target="markPotentialDeal"
                     >★ Потенциальный клиент</button>
+                @endif
+                @if ($isLatestMessage && $canSkipThread)
+                    <button
+                        type="button"
+                        class="crm-mail-skip-button"
+                        wire:click="skipThread"
+                        wire:loading.attr="disabled"
+                        wire:target="skipThread"
+                    >✓ Пропустить</button>
                 @endif
                 @if ($message->direction === 'incoming')
                     <button
@@ -184,12 +194,13 @@
         .crm-mail-date { white-space: nowrap; }
         .crm-mail-header-actions { display: grid; justify-items: end; gap: 9px; }
         .crm-mail-message-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
-        .crm-mail-forward-button, .crm-mail-reply-button, .crm-mail-take-button, .crm-mail-potential-button { border: 1px solid rgb(82 82 91); border-radius: 8px; padding: 6px 10px; color: rgb(212 212 216); font-size: 13px; font-weight: 600; transition: border-color .15s ease, background-color .15s ease; }
-        .crm-mail-forward-button:hover, .crm-mail-reply-button:hover, .crm-mail-take-button:hover, .crm-mail-potential-button:hover { border-color: rgb(161 161 170); background: rgb(63 63 70 / .6); }
+        .crm-mail-forward-button, .crm-mail-reply-button, .crm-mail-take-button, .crm-mail-potential-button, .crm-mail-skip-button { border: 1px solid rgb(82 82 91); border-radius: 8px; padding: 6px 10px; color: rgb(212 212 216); font-size: 13px; font-weight: 600; transition: border-color .15s ease, background-color .15s ease; }
+        .crm-mail-forward-button:hover, .crm-mail-reply-button:hover, .crm-mail-take-button:hover, .crm-mail-potential-button:hover, .crm-mail-skip-button:hover { border-color: rgb(161 161 170); background: rgb(63 63 70 / .6); }
         .crm-mail-reply-button { border-color: rgb(217 119 6); color: rgb(251 191 36); }
         .crm-mail-take-button { border-color: rgb(217 119 6); color: rgb(253 186 116); }
         .crm-mail-potential-button { border-color: rgb(14 165 233); color: rgb(125 211 252); }
-        .crm-mail-forward-button:disabled, .crm-mail-reply-button:disabled, .crm-mail-take-button:disabled, .crm-mail-potential-button:disabled { cursor: wait; opacity: .55; }
+        .crm-mail-skip-button { border-color: rgb(113 113 122); color: rgb(161 161 170); }
+        .crm-mail-forward-button:disabled, .crm-mail-reply-button:disabled, .crm-mail-take-button:disabled, .crm-mail-potential-button:disabled, .crm-mail-skip-button:disabled { cursor: wait; opacity: .55; }
         .crm-mail-subject { padding: 18px 22px 0; color: rgb(250 250 250); font-size: 18px; font-weight: 700; line-height: 1.4; }
         .crm-mail-body { max-width: 1050px; padding: 18px 22px 26px; color: rgb(228 228 231); font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; }
         .crm-mail-body p { margin: 0 0 1em; }

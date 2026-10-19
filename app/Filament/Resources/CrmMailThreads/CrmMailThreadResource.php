@@ -197,6 +197,8 @@ class CrmMailThreadResource extends Resource
                                         && $livewire->canTakeThread(),
                                     'canMarkPotentialDeal' => $livewire instanceof ViewCrmMailThread
                                         && $livewire->canMarkPotentialDeal(),
+                                    'canSkipThread' => $livewire instanceof ViewCrmMailThread
+                                        && $livewire->canSkipThread(),
                                 ];
                             })
                             ->columnSpanFull(),

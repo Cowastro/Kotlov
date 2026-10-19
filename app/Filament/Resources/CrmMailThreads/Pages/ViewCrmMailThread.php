@@ -465,6 +465,11 @@ class ViewCrmMailThread extends ViewRecord
             && blank($this->record->sales_stage);
     }
 
+    public function canSkipThread(): bool
+    {
+        return ! in_array($this->record->status, ['draft', 'closed', 'spam'], true);
+    }
+
     public function takeThread(): void
     {
         if (! $this->canTakeThread()) {
@@ -490,6 +495,24 @@ class ViewCrmMailThread extends ViewRecord
         ]);
         $this->refreshThreadForDisplay();
         Notification::make()->success()->title('Добавлено в потенциальные сделки')->send();
+    }
+
+    public function skipThread(): void
+    {
+        if (! $this->canSkipThread()) {
+            return;
+        }
+
+        $this->record->update([
+            'status' => 'closed',
+            'handled_at' => now(),
+            'next_follow_up_at' => null,
+            'follow_up_note' => null,
+            'unread_count' => 0,
+        ]);
+        $this->record->messages()->where('direction', 'incoming')->update(['is_read' => true]);
+        $this->refreshThreadForDisplay();
+        Notification::make()->success()->title('Переписка пропущена и закрыта')->send();
     }
 
     private function refreshThreadForDisplay(): void

@@ -121,17 +121,21 @@ class CrmMailThreadUnreadPresentationTest extends TestCase
             ->test(ViewCrmMailThread::class, ['record' => $thread->getRouteKey()])
             ->assertSee('wire:click="takeThread"', false)
             ->assertSee('wire:click="markPotentialDeal"', false)
+            ->assertSee('wire:click="skipThread"', false)
             ->call('takeThread')
             ->call('markPotentialDeal')
+            ->call('skipThread')
             ->assertDontSee('wire:click="takeThread"', false)
-            ->assertDontSee('wire:click="markPotentialDeal"', false);
+            ->assertDontSee('wire:click="markPotentialDeal"', false)
+            ->assertDontSee('wire:click="skipThread"', false);
 
         $thread->refresh();
         $this->assertSame($manager->id, $thread->assigned_user_id);
-        $this->assertSame('in_progress', $thread->status);
+        $this->assertSame('closed', $thread->status);
         $this->assertSame('new_inquiry', $thread->sales_stage);
-        $this->assertNotNull($thread->next_follow_up_at);
-        $this->assertSame('Уточнить потребность клиента и следующий шаг.', $thread->follow_up_note);
+        $this->assertNotNull($thread->handled_at);
+        $this->assertNull($thread->next_follow_up_at);
+        $this->assertNull($thread->follow_up_note);
     }
 
     /** @return array{CrmMailbox, CrmMailThread} */
