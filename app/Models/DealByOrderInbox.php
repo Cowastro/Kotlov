@@ -27,8 +27,55 @@ class DealByOrderInbox extends Model
         'first_seen_at' => 'datetime',
         'last_seen_at' => 'datetime',
         'payload' => 'encrypted:array',
+        'processing_attempts' => 'integer',
         'processed_at' => 'datetime',
     ];
+
+    public function customerName(): string
+    {
+        return collect([
+            data_get($this->payload, 'client_last_name'),
+            data_get($this->payload, 'client_first_name'),
+            data_get($this->payload, 'client_second_name'),
+        ])->filter(fn (mixed $value): bool => filled($value))->implode(' ') ?: 'Имя не указано';
+    }
+
+    public function customerPhone(): ?string
+    {
+        $phone = trim((string) data_get($this->payload, 'phone'));
+
+        return $phone !== '' ? $phone : null;
+    }
+
+    public function orderTotal(): ?float
+    {
+        $value = data_get($this->payload, 'full_price', data_get($this->payload, 'price'));
+
+        return is_numeric($value) ? (float) $value : null;
+    }
+
+    public function productsCount(): int
+    {
+        $products = data_get($this->payload, 'products', []);
+
+        return is_array($products) ? count($products) : 0;
+    }
+
+    public function productsSummary(): string
+    {
+        $products = data_get($this->payload, 'products', []);
+        if (! is_array($products)) {
+            return 'Товары не указаны';
+        }
+
+        return collect($products)
+            ->map(fn (mixed $product): string => is_array($product)
+                ? trim((string) ($product['name'] ?? $product['sku'] ?? ''))
+                : '')
+            ->filter()
+            ->take(2)
+            ->implode(', ') ?: 'Товары не указаны';
+    }
 
     public function order(): BelongsTo
     {

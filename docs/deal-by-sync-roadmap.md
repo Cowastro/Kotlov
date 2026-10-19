@@ -21,6 +21,7 @@ Implemented locally:
 - capture switch disabled by default;
 - a two-minute schedule that runs only after explicit enablement;
 - aggregate health output without customer data;
+- a separate read-only admin section for reviewing captured Deal.by orders;
 - no writes to Deal.by, `orders`, `order_items` or the 1C queue.
 
 Targeted verification: 8 tests / 46 assertions passed locally on 19.10.2026. It covers encryption, idempotency, pagination, disabled mode, API failure and malformed-response cursor safety.
