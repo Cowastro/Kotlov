@@ -37,6 +37,9 @@ class EnrichTeplodvorCommand extends Command
         {--min-score=0.75  : Minimum token match score (0–1)}
         {--sleep=800       : Delay between HTTP requests (ms)}
         {--brand=          : Filter by brand name (e.g. "Kermi", "Grundfos")}
+        {--supplier=       : Process only products linked to this supplier code}
+        {--created-today   : Process only products created today}
+        {--force-ai        : Regenerate AI text even when content is already present}
         {--no-teplodvor   : Skip teplodvor matching entirely — AI from DB specs only}
         {--preview         : In dry-run, fetch page and show specs (slow)}';
 
@@ -123,6 +126,21 @@ class EnrichTeplodvorCommand extends Command
             ));
         }
 
+        if ($supplierCode = trim((string) $this->option('supplier'))) {
+            $query->whereExists(function ($subquery) use ($supplierCode): void {
+                $subquery->selectRaw('1')
+                    ->from('supplier_products as enrichment_sp')
+                    ->join('suppliers as enrichment_s', 'enrichment_s.id', '=', 'enrichment_sp.supplier_id')
+                    ->whereColumn('enrichment_sp.product_id', 'products.id')
+                    ->where('enrichment_s.code', $supplierCode);
+            });
+            $this->info('Supplier filter: '.$supplierCode);
+        }
+
+        if ($this->option('created-today')) {
+            $query->whereDate('products.created_at', now()->toDateString());
+        }
+
         $productIds = [];
         foreach (explode(',', (string) $this->option('products')) as $part) {
             $id = (int) trim($part);
@@ -135,7 +153,7 @@ class EnrichTeplodvorCommand extends Command
             $query->whereIn('id', $productIds);
         } elseif ($this->option('product')) {
             $query->where('id', (int) $this->option('product'));
-        } elseif ($onlyAi) {
+        } elseif ($onlyAi && ! $this->option('force-ai')) {
             $query->where(function ($q) {
                 $q->whereNull('content')->orWhere('content', '');
             });
@@ -229,6 +247,10 @@ class EnrichTeplodvorCommand extends Command
             ['metric', 'count'],
             array_map(fn ($k, $v) => [$k, $v], array_keys($this->stats), array_values($this->stats))
         );
+
+        foreach ($this->stats as $key => $value) {
+            $this->line("metric.teplodvor.{$key}={$value}");
+        }
 
         return $this->stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
@@ -500,7 +522,10 @@ class EnrichTeplodvorCommand extends Command
             }
         }
 
-        DB::table('products')->where('id', $pid)->update(['updated_at' => $now]);
+        DB::table('products')->where('id', $pid)->update([
+            'content_source_url' => $url,
+            'updated_at' => $now,
+        ]);
         $this->stats['enriched']++;
     }
 
