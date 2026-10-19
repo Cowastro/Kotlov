@@ -15,13 +15,22 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\EmbeddedTable;
+use Filament\Schemas\Components\RenderHook;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\View;
+use Filament\Schemas\Schema;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Database\Eloquent\Builder;
+use Livewire\Attributes\Url;
 use Throwable;
 
 class ListCrmMailThreads extends ListRecords
 {
     protected static string $resource = CrmMailThreadResource::class;
+
+    #[Url(as: 'mailbox', except: 'all')]
+    public string $mailbox = 'all';
 
     public function getDefaultActiveTab(): string|int|null
     {
@@ -57,7 +66,8 @@ class ListCrmMailThreads extends ListRecords
 
     public function getTabs(): array
     {
-        $messageCounts = static::messageBadgeCounts();
+        $mailboxId = $this->selectedMailboxId();
+        $messageCounts = static::messageBadgeCounts($mailboxId);
 
         return [
             'inbox' => Tab::make('Рабочая почта')
@@ -69,12 +79,12 @@ class ListCrmMailThreads extends ListRecords
             'needs_response' => Tab::make('Требуют реакции')
                 ->icon('heroicon-o-flag')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->requiresReaction())
-                ->badge(CrmMailThread::query()->requiresReaction()->count() ?: null)
+                ->badge(static::threadQueryForMailbox($mailboxId)->requiresReaction()->count() ?: null)
                 ->badgeColor('danger'),
             'my_work' => Tab::make('Мои в работе')
                 ->icon('heroicon-o-briefcase')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->assignedWork((int) auth()->id()))
-                ->badge(CrmMailThread::query()->assignedWork((int) auth()->id())->count() ?: null)
+                ->badge(static::threadQueryForMailbox($mailboxId)->assignedWork((int) auth()->id())->count() ?: null)
                 ->badgeColor('info'),
             'unread' => Tab::make('Непрочитанные')
                 ->icon('heroicon-o-envelope')
@@ -95,12 +105,12 @@ class ListCrmMailThreads extends ListRecords
             'potential_deals' => Tab::make('Потенциальные сделки')
                 ->icon('heroicon-o-currency-dollar')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->potentialDeals())
-                ->badge(CrmMailThread::query()->potentialDeals()->count() ?: null)
+                ->badge(static::threadQueryForMailbox($mailboxId)->potentialDeals()->count() ?: null)
                 ->badgeColor('info'),
             'follow_up' => Tab::make('Нужен контроль')
                 ->icon('heroicon-o-bell-alert')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->followUpDue())
-                ->badge(CrmMailThread::query()->followUpDue()->count() ?: null)
+                ->badge(static::threadQueryForMailbox($mailboxId)->followUpDue()->count() ?: null)
                 ->badgeColor('danger'),
             'drafts' => Tab::make('Черновики')
                 ->icon('heroicon-o-document-text')
@@ -138,9 +148,10 @@ class ListCrmMailThreads extends ListRecords
      *
      * @return array{inbox: int, unread: int, incoming: int, drafts: int, sent: int, spam: int, trash: int, all: int}
      */
-    public static function messageBadgeCounts(): array
+    public static function messageBadgeCounts(?int $mailboxId = null): array
     {
         $activeMessages = fn () => CrmMailMessage::query()
+            ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
             ->whereHas('thread', fn (Builder $threads): Builder => $threads
                 ->whereNotIn('status', ['draft', 'spam', 'closed']));
 
@@ -155,17 +166,90 @@ class ListCrmMailThreads extends ListRecords
                 ->count(),
             'incoming' => $activeMessages()->where('direction', 'incoming')->count(),
             'drafts' => CrmMailMessage::query()
+                ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
                 ->whereHas('thread', fn (Builder $threads): Builder => $threads->where('status', 'draft'))
                 ->count(),
             'sent' => $activeMessages()->where('direction', 'outgoing')->count(),
             'spam' => CrmMailMessage::query()
+                ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
                 ->whereHas('thread', fn (Builder $threads): Builder => $threads->where('status', 'spam'))
                 ->count(),
             'trash' => CrmMailMessage::query()
+                ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
                 ->whereHas('thread', fn (Builder $threads): Builder => $threads->onlyTrashed())
                 ->count(),
-            'all' => CrmMailMessage::query()->whereHas('thread')->count(),
+            'all' => CrmMailMessage::query()
+                ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
+                ->whereHas('thread')
+                ->count(),
         ];
+    }
+
+    protected function getTableQuery(): Builder
+    {
+        return static::threadQueryForMailbox(
+            $this->selectedMailboxId(),
+            CrmMailThreadResource::getEloquentQuery(),
+        );
+    }
+
+    public static function threadQueryForMailbox(?int $mailboxId, ?Builder $query = null): Builder
+    {
+        return ($query ?? CrmMailThread::query())
+            ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId));
+    }
+
+    public function selectedMailboxId(): ?int
+    {
+        if ($this->mailbox === 'all' || ! ctype_digit($this->mailbox)) {
+            return null;
+        }
+
+        $mailboxId = (int) $this->mailbox;
+
+        return CrmMailbox::query()->whereKey($mailboxId)->where('is_enabled', true)->exists()
+            ? $mailboxId
+            : null;
+    }
+
+    /** @return array<int, array{id: string, email: string, name: string, unread: int}> */
+    public function mailboxSwitchOptions(): array
+    {
+        $mailboxes = CrmMailbox::query()
+            ->where('is_enabled', true)
+            ->withCount(['messages as unread_count' => fn (Builder $query): Builder => $query
+                ->where('direction', 'incoming')
+                ->where('is_read', false)])
+            ->orderByRaw("CASE WHEN email = 'info@kotlov.by' THEN 0 WHEN email = 'order@kotlov.by' THEN 1 ELSE 2 END")
+            ->orderBy('email')
+            ->get(['id', 'name', 'email']);
+
+        return $mailboxes->map(fn (CrmMailbox $mailbox): array => [
+            'id' => (string) $mailbox->id,
+            'email' => $mailbox->email,
+            'name' => $mailbox->email === 'info@kotlov.by'
+                ? 'Основная почта'
+                : ($mailbox->email === 'order@kotlov.by' ? 'Заказы и резервы' : $mailbox->name),
+            'unread' => (int) $mailbox->unread_count,
+        ])->all();
+    }
+
+    public function selectMailbox(string $mailbox): void
+    {
+        $this->mailbox = $mailbox;
+        $this->resetPage();
+    }
+
+    public function content(Schema $schema): Schema
+    {
+        return $schema->components([
+            View::make('filament.resources.crm-mail-threads.mailbox-switcher')
+                ->viewData(fn (): array => ['mailboxes' => $this->mailboxSwitchOptions()]),
+            $this->getTabsContentComponent(),
+            RenderHook::make(PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_BEFORE),
+            EmbeddedTable::make(),
+            RenderHook::make(PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_AFTER),
+        ]);
     }
 
     protected function getHeaderActions(): array
