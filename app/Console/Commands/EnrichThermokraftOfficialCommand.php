@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 
 class EnrichThermokraftOfficialCommand extends Command
 {
+    private const STEN_CATALOG_URL = 'https://sten.ru/upload/iblock/8f9/katalog-gk-sten-2018_1.pdf';
+
     protected $signature = 'supplier:enrich-thermokraft-official
         {--apply : Write verified official data}
         {--limit=3 : Maximum cards per run}
@@ -174,12 +176,34 @@ class EnrichThermokraftOfficialCommand extends Command
         ],
     ];
 
+    /** @var array<string,string> Exact Thermokraft names mapped to official STEN catalog images. */
+    private const STEN_IMAGES = [
+        'ТНБР-3-1 1/4 - ТН с терморегулятором (ТЭН нержавейка)' => 'img/products/sten/sten-tenbr-g114.jpg',
+        'ТНБР-3-1 1/4 - Т с терморегулятором' => 'img/products/sten/sten-tenbr-g114.jpg',
+        'ТНБР-4-1 1/4 - Т с терморегулятором' => 'img/products/sten/sten-tenbr-g114.jpg',
+        'ТНБР-5-1 1/4 - Т с терморегулятором' => 'img/products/sten/sten-tenbr-g114.jpg',
+        'ТЭНБ - 3 - G1½"- Ч с колпаком' => 'img/products/sten/sten-tenb-g112-3.png',
+        'ТЭНБ - 4,5 - G1½"- Ч с колпаком' => 'img/products/sten/sten-tenb-g112-4-5.png',
+        'ТЭНБ - 6 - G1½"- Ч с колпаком' => 'img/products/sten/sten-tenb-g112-6.png',
+        'ТЭНБ - 7,5 - G1½"- Ч с колпаком' => 'img/products/sten/sten-tenb-g112-7-5.png',
+        'ТЭНБ - 9 - G1½"- Ч с колпаком' => 'img/products/sten/sten-tenb-g112-9.png',
+        'ТЭНБ - 10,5 - G1½"- Ч с колпаком' => 'img/products/sten/sten-tenb-g112-12.png',
+        'ТЭНБ - 12 - G1½"- Ч с колпаком' => 'img/products/sten/sten-tenb-g112-12.png',
+        'ТЭНБ - 3 - G1½"- НЧ с колпаком' => 'img/products/sten/sten-tenb-g112-3.png',
+        'ТЭНБ - 4,5 - G1½"- НЧ с колпаком' => 'img/products/sten/sten-tenb-g112-4-5.png',
+        'ТЭНБ - 6 - G1½"- НЧ с колпаком' => 'img/products/sten/sten-tenb-g112-6.png',
+        'ТЭНБ - 7,5 - G1½"- НЧ с колпаком' => 'img/products/sten/sten-tenb-g112-7-5.png',
+        'ТЭНБ - 9 - G1½"- НЧ с колпаком' => 'img/products/sten/sten-tenb-g112-9.png',
+        'ТЭНБ - 10,5 - G1½"- НЧ с колпаком' => 'img/products/sten/sten-tenb-g112-12.png',
+        'ТЭНБ - 12 - G1½"- НЧ с колпаком' => 'img/products/sten/sten-tenb-g112-12.png',
+    ];
+
     public function handle(ProductSourceEnricher $enricher): int
     {
         $apply = (bool) $this->option('apply');
         $limit = max(1, (int) $this->option('limit'));
         $sleep = max(300, (int) $this->option('sleep'));
-        $stats = ['linked_cards' => 0, 'missing_images_before' => 0, 'missing_images_after' => 0, 'candidates' => 0, 'verified' => 0, 'enriched' => 0, 'images' => 0, 'specs' => 0, 'skipped' => 0, 'errors' => 0];
+        $stats = ['linked_cards' => 0, 'missing_images_before' => 0, 'missing_images_after' => 0, 'candidates' => 0, 'verified' => 0, 'enriched' => 0, 'images' => 0, 'specs' => 0, 'skipped' => 0, 'errors' => 0, 'sten_heater_cards' => 0, 'sten_missing_before' => 0, 'sten_candidates' => 0, 'sten_enriched' => 0, 'sten_missing_after' => 0];
 
         $rows = DB::table('supplier_products as sp')
             ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
@@ -270,6 +294,51 @@ class EnrichThermokraftOfficialCommand extends Command
 
         $stats['missing_images_after'] = Product::query()
             ->whereIn('id', $rows->pluck('product_id'))
+            ->get(['images'])
+            ->filter(fn (Product $product) => $this->hasNoImages($product->images))
+            ->count();
+
+        $stenRows = DB::table('supplier_products as sp')
+            ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
+            ->join('products as p', 'p.id', '=', 'sp.product_id')
+            ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
+            ->where('s.code', 'thermokraft')
+            ->where('p.is_archived', false)
+            ->where('b.name', 'СТЭН')
+            ->where(function ($query) {
+                $query->where('p.name', 'like', 'ТЭН%')
+                    ->orWhere('p.name', 'like', 'ТНБР%');
+            })
+            ->select('sp.id as supplier_product_id', 'p.id as product_id', 'p.name', 'p.images')
+            ->get()
+            ->keyBy(fn ($row): string => $this->key((string) $row->name));
+
+        $stats['sten_heater_cards'] = $stenRows->count();
+        $stats['sten_missing_before'] = $stenRows->filter(fn ($row) => $this->hasNoImages($row->images))->count();
+
+        foreach (self::STEN_IMAGES as $name => $image) {
+            $row = $stenRows->get($this->key($name));
+            if (! $row || ! $this->hasNoImages($row->images)) {
+                continue;
+            }
+
+            $stats['sten_candidates']++;
+            if ($apply) {
+                $product = Product::query()->findOrFail((int) $row->product_id);
+                $product->images = [$image];
+                $product->content_source_url = self::STEN_CATALOG_URL;
+                $product->save();
+
+                DB::table('supplier_products')->where('id', (int) $row->supplier_product_id)->update([
+                    'source_url' => self::STEN_CATALOG_URL,
+                    'updated_at' => now(),
+                ]);
+                $stats['sten_enriched']++;
+            }
+        }
+
+        $stats['sten_missing_after'] = Product::query()
+            ->whereIn('id', $stenRows->pluck('product_id'))
             ->get(['images'])
             ->filter(fn (Product $product) => $this->hasNoImages($product->images))
             ->count();

@@ -265,7 +265,7 @@ class SyncThermokraftCommand extends Command
 
                 $existingLink = $existingLinks->get($row['article_key']);
                 $sheetSourceUrl = self::SHEET_URL.'#gid='.$row['gid'];
-                $sourceUrl = preg_match('#^https?://(?:www\.)?tenko\.(?:ua|by)/#i', (string) $existingLink?->source_url)
+                $sourceUrl = preg_match('#^https?://(?:www\.)?(?:tenko\.(?:ua|by)|sten\.ru)/#i', (string) $existingLink?->source_url)
                     ? $existingLink->source_url
                     : $sheetSourceUrl;
 
