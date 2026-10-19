@@ -48,6 +48,10 @@ return [
         'notification_email' => env('B2B_NOTIFICATION_EMAIL', 'order@kotlov.by'),
     ],
 
+    'procurement' => [
+        'email' => env('PROCUREMENT_EMAIL', ''),
+    ],
+
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'allow_in_tests' => (bool) env('TELEGRAM_ALLOW_IN_TESTS', false),

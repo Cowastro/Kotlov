@@ -53,6 +53,23 @@ class CrmMailSender
         return $message;
     }
 
+    public function sendOrderProcurementDraft(CrmMailThread $thread, User $user): CrmMailMessage
+    {
+        if (! $user->isManager()) {
+            throw new RuntimeException('Отправлять закупочный лист может только менеджер.');
+        }
+        if (! $thread->order_id) {
+            throw new RuntimeException('Письмо не связано с заказом.');
+        }
+
+        $draft = $thread->messages()->where('direction', 'draft')->latest('id')->first();
+        if (($draft?->metadata['source'] ?? null) !== 'order_procurement') {
+            throw new RuntimeException('Это письмо не является закупочным листом заказа.');
+        }
+
+        return $this->deliverDraft($thread, $user, true);
+    }
+
     private function deliverDraft(CrmMailThread $thread, User $user, bool $supplierServiceMail): CrmMailMessage
     {
         $thread->loadMissing(['mailbox', 'messages']);

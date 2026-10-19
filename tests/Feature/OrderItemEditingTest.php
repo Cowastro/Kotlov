@@ -86,6 +86,8 @@ class OrderItemEditingTest extends TestCase
         $this->assertSame('300.00', $order->items->firstWhere('product_id', $extraProduct->id)->total);
         $this->assertSame('1500.00', $order->subtotal);
         $this->assertSame('1480.00', $order->total);
+        $this->assertNotNull($order->corrected_at);
+        $this->assertSame($manager->id, $order->corrected_by);
     }
 
     public function test_replacing_a_product_clears_the_old_supply_and_fulfillment_snapshot(): void

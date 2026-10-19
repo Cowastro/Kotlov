@@ -72,6 +72,14 @@ class EditOrder extends EditRecord
         ])->save();
     }
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $data['corrected_at'] = now();
+        $data['corrected_by'] = auth()->id();
+
+        return $data;
+    }
+
     protected function getRedirectUrl(): string
     {
         return static::getResource()::getUrl('view', ['record' => $this->record]);

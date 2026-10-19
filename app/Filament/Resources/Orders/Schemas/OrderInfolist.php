@@ -64,9 +64,11 @@ class OrderInfolist
                             ->label('Создан')
                             ->dateTime('d.m.Y H:i'),
 
-                        TextEntry::make('updated_at')
-                            ->label('Обновлён')
-                            ->dateTime('d.m.Y H:i'),
+                        TextEntry::make('corrected_at')
+                            ->label('Скорректирован')
+                            ->dateTime('d.m.Y H:i')
+                            ->placeholder('Не корректировался')
+                            ->helperText(fn (Order $record): ?string => $record->correctedBy?->name),
 
                         TextEntry::make('items_count')
                             ->label('Позиций')

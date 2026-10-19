@@ -25,6 +25,7 @@ use App\Http\Controllers\InstallerController;
 use App\Http\Controllers\InstallRequestController;
 use App\Http\Controllers\MarketResearchReportPdfController;
 use App\Http\Controllers\OneCExchangeController;
+use App\Http\Controllers\OrderProcurementController;
 use App\Http\Controllers\PartnerApplicationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductPurchasePriceSourceAttachmentController;
@@ -83,6 +84,11 @@ Route::match(['get', 'post'], '/1c/exchange/{source}', OneCExchangeController::c
 Route::get('/admin/commercial-documents/{commercialDocument}/pdf', CommercialDocumentPdfController::class)
     ->middleware('auth')
     ->name('admin.commercial-documents.pdf');
+
+Route::get('/admin/orders/{order}/procurement', OrderProcurementController::class)
+    ->whereNumber('order')
+    ->middleware('auth')
+    ->name('admin.orders.procurement');
 
 Route::get('/admin/purchase-price-sources/{source}/attachment', ProductPurchasePriceSourceAttachmentController::class)
     ->whereNumber('source')

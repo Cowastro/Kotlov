@@ -8,6 +8,8 @@ use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
 use App\Services\Integrations\OneCOrderQueue;
+use App\Services\CrmMail\CrmMailSender;
+use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\SupplierOrderRequestBuilder;
@@ -53,6 +55,8 @@ class ViewOrder extends ViewRecord
             'statusHistory.user',
             'user',
             'manager',
+            'correctedBy',
+            'procurementSentBy',
             'dealByInbox',
             'integrationDeliveries.source',
         ])->findOrFail($key);
@@ -66,6 +70,57 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('printProcurement')
+                ->label('Печать для закупок')
+                ->icon('heroicon-o-printer')
+                ->color('gray')
+                ->url(fn (): string => route('admin.orders.procurement', ['order' => $this->record]))
+                ->openUrlInNewTab(),
+            Action::make('emailProcurement')
+                ->label('Отправить в закупки')
+                ->icon('heroicon-o-paper-airplane')
+                ->color('info')
+                ->modalHeading('Отправить закупочный лист')
+                ->modalDescription('Письмо уйдёт с order@kotlov.by. В защищённой ссылке всегда отображаются текущие поставщики, входные цены, контакты и статусы исполнения.')
+                ->fillForm(fn (): array => [
+                    'recipient' => $this->record->procurement_recipient ?: config('services.procurement.email'),
+                    'note' => null,
+                ])
+                ->schema([
+                    TextInput::make('recipient')
+                        ->label('Email отдела закупок')
+                        ->email()
+                        ->required(),
+                    Textarea::make('note')
+                        ->label('Комментарий')
+                        ->rows(3)
+                        ->maxLength(2000),
+                ])
+                ->modalSubmitActionLabel('Отправить')
+                ->action(function (array $data): void {
+                    $user = auth()->user();
+                    $thread = app(SupplierRequestMailDraftService::class)->createOrderProcurementDraft(
+                        $this->record,
+                        $user,
+                        $data['recipient'],
+                        'Закупка по заказу '.$this->record->number,
+                        $this->procurementEmailBody($data['note'] ?? null),
+                    );
+                    app(CrmMailSender::class)->sendOrderProcurementDraft($thread, $user);
+
+                    $this->record->forceFill([
+                        'procurement_sent_at' => now(),
+                        'procurement_sent_by' => $user->id,
+                        'procurement_recipient' => mb_strtolower(trim($data['recipient'])),
+                    ])->save();
+                    $this->reloadRecord();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Закупочный лист отправлен')
+                        ->body('Получатель: '.$data['recipient'])
+                        ->send();
+                }),
             Action::make('viewProductOnSite')
                 ->label('Посмотреть на сайте')
                 ->icon('heroicon-o-arrow-top-right-on-square')
@@ -564,6 +619,8 @@ class ViewOrder extends ViewRecord
             'items.fulfillmentSupplier',
             'statusHistory.user',
             'manager',
+            'correctedBy',
+            'procurementSentBy',
             'supplierOrderRequests.items',
             'supplierOrderRequests.mailDraft',
             'integrationDeliveries.source',
@@ -597,5 +654,41 @@ class ViewOrder extends ViewRecord
             ?->fulfillmentSupplier;
 
         return $supplier?->contactEmailAddresses()[0] ?? null;
+    }
+
+    private function procurementEmailBody(?string $note = null): string
+    {
+        $this->record->loadMissing(['items.fulfillmentSupplier', 'items.supplySupplier', 'items.supplierOrderRequestItem.request', 'manager']);
+        $lines = [
+            'Заказ '.$this->record->number.' передан в отдел закупок.',
+            'Статус: '.(Order::STATUSES[$this->record->status] ?? $this->record->status).'.',
+            'Ответственный: '.($this->record->manager?->name ?? $this->record->assigned_to ?? 'не назначен').'.',
+            '',
+            'Позиции:',
+        ];
+
+        foreach ($this->record->items as $item) {
+            $supplier = $item->fulfillmentSupplier ?: $item->supplySupplier;
+            $supplierName = $item->fulfillment_supplier_name ?: $supplier?->name ?: $item->supply_supplier_name ?: 'не определён';
+            $purchasePrice = $item->fulfillment_purchase_price ?? $item->supply_purchase_price;
+            $request = $item->supplierOrderRequestItem?->request;
+            $status = $request?->statusLabel()
+                ?? ($item->fulfillment_confirmed_at ? ($item->fulfillmentRouteLabel() ?: 'подтверждено') : 'ожидает решения');
+            $lines[] = '• '.$item->product_name.' — '.$item->quantity.' шт. · '.$supplierName
+                .' · вход '.($purchasePrice !== null ? number_format((float) $purchasePrice, 2, ',', ' ').' BYN' : 'не указан')
+                .' · '.$status;
+        }
+
+        if (filled($note)) {
+            $lines[] = '';
+            $lines[] = 'Комментарий: '.trim((string) $note);
+        }
+
+        $lines[] = '';
+        $lines[] = 'Актуальный закупочный лист и статусы:';
+        $lines[] = route('admin.orders.procurement', ['order' => $this->record]);
+        $lines[] = 'Ссылка доступна после входа в админку KOTLOV.';
+
+        return implode("\n", $lines);
     }
 }

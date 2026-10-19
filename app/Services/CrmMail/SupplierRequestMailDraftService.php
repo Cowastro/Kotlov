@@ -5,6 +5,7 @@ namespace App\Services\CrmMail;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
@@ -146,6 +147,57 @@ class SupplierRequestMailDraftService
             ])->save();
 
             return $thread->fresh(['mailbox', 'messages']);
+        });
+    }
+
+    public function createOrderProcurementDraft(
+        Order $order,
+        User $user,
+        string $recipient,
+        string $subject,
+        string $body,
+    ): CrmMailThread {
+        $mailbox = $this->orderMailbox();
+        $recipients = $this->normalizeAddresses($recipient);
+
+        if ($recipients === []) {
+            throw new RuntimeException('Укажите корректный email отдела закупок.');
+        }
+
+        return DB::transaction(function () use ($order, $user, $mailbox, $recipients, $subject, $body): CrmMailThread {
+            $thread = CrmMailThread::query()->create([
+                'mailbox_id' => $mailbox->id,
+                'order_id' => $order->id,
+                'assigned_user_id' => $user->id,
+                'thread_key' => hash('sha256', 'order-procurement|'.$order->id.'|'.Str::uuid()),
+                'subject' => trim($subject),
+                'participant_name' => 'Отдел закупок',
+                'participant_email' => $recipients[0],
+                'status' => 'draft',
+                'priority' => 'high',
+                'messages_count' => 0,
+                'unread_count' => 0,
+                'last_message_at' => now(),
+            ]);
+
+            $thread->messages()->create([
+                'mailbox_id' => $mailbox->id,
+                'sent_by_user_id' => $user->id,
+                'direction' => 'draft',
+                'from_name' => $mailbox->name,
+                'from_email' => $mailbox->email,
+                'to' => $this->addressRecords($recipients, 'Отдел закупок'),
+                'subject' => trim($subject),
+                'text_body' => trim($body),
+                'attachments_count' => 0,
+                'is_read' => true,
+                'received_at' => now(),
+                'metadata' => ['source' => 'order_procurement', 'order_id' => $order->id],
+            ]);
+
+            $thread->forceFill(['messages_count' => 1])->save();
+
+            return $thread->fresh(['mailbox', 'messages', 'order']);
         });
     }
 

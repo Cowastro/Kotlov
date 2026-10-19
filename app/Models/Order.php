@@ -59,6 +59,7 @@ class Order extends Model
         'coupon_code', 'discount',
         'subtotal', 'total',
         'comment', 'admin_comment',
+        'corrected_at', 'corrected_by', 'procurement_sent_at', 'procurement_sent_by', 'procurement_recipient',
         'assigned_to', 'telegram_message_id', 'manager_id', 'onec_exported_at',
         'onec_external_id', 'onec_order_guid', 'onec_order_number', 'onec_status', 'onec_status_received_at',
         'archived_at', 'archived_by', 'archive_reason',
@@ -72,6 +73,8 @@ class Order extends Model
         'onec_exported_at' => 'datetime',
         'onec_status_received_at' => 'datetime',
         'archived_at' => 'datetime',
+        'corrected_at' => 'datetime',
+        'procurement_sent_at' => 'datetime',
     ];
 
     // Статусы для отображения
@@ -313,6 +316,21 @@ class Order extends Model
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function correctedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'corrected_by');
+    }
+
+    public function procurementSentBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'procurement_sent_by');
+    }
+
+    public function procurementMailThreads(): HasMany
+    {
+        return $this->hasMany(CrmMailThread::class);
     }
 
     public function archivedBy(): BelongsTo

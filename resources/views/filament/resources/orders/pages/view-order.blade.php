@@ -57,10 +57,17 @@
                 <span>Создан: {{ $order->created_at->format('d.m.Y H:i') }}</span>
             </div>
 
-            @if($order->updated_at != $order->created_at)
+            @if($order->corrected_at)
             <div class="flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500">
                 <x-heroicon-o-pencil-square class="h-4 w-4 shrink-0"/>
-                <span>Обновлён: {{ $order->updated_at->format('d.m.Y H:i') }}</span>
+                <span>Скорректирован: {{ $order->corrected_at->format('d.m.Y H:i') }} · {{ $order->correctedBy?->name ?? 'система' }}</span>
+            </div>
+            @endif
+
+            @if($order->procurement_sent_at)
+            <div class="flex items-center gap-1.5 text-sm text-gray-400 dark:text-gray-500">
+                <x-heroicon-o-paper-airplane class="h-4 w-4 shrink-0"/>
+                <span>В закупки: {{ $order->procurement_sent_at->format('d.m.Y H:i') }} · {{ $order->procurement_recipient }}</span>
             </div>
             @endif
 
