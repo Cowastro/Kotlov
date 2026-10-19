@@ -321,6 +321,11 @@ jobs:
             cat "$detail_log"
             echo "safe_availability_diagnostic_end"
           fi
+          if [[ "$TASK" == artisan-* && "${ARTISAN_ARGV[0]:-}" == "catalog:sync-boiler-range-filters" ]]; then
+            echo "safe_filter_metrics_begin"
+            grep '^metric\.filter\.' "$detail_log" || true
+            echo "safe_filter_metrics_end"
+          fi
           if [[ "$TASK" == "artisan-dry-run" && "${ARTISAN_ARGV[0]:-}" == "integration:list-sbg-unmatched" ]]; then
             echo "safe_sbg_unmatched_output_begin"
             cat "$detail_log"

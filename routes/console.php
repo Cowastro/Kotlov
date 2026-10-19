@@ -284,3 +284,13 @@ Schedule::command('catalog:normalize-stove-materials --apply --sample=0')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/stove-material-normalization.log'));
+
+// Новые импорты иногда добавляют числовые характеристики, но не создают
+// привязку к select-диапазонам каталога. Восстанавливаем только однозначные
+// значения мощности/площади; площадь из мощности не вычисляем.
+Schedule::command('catalog:sync-boiler-range-filters --apply --sample=0')
+    ->dailyAt('09:15')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/boiler-range-filters.log'));
