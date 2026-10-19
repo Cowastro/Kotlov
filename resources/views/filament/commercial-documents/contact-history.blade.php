@@ -1,4 +1,29 @@
-@php($entries = collect($record->contact_history ?? [])->reverse())
+@php
+    $cleanEntries = [];
+
+    foreach ($record->contact_history ?? [] as $entry) {
+        if (! is_array($entry)) {
+            continue;
+        }
+
+        $previous = end($cleanEntries);
+        $note = mb_strtolower(trim((string) ($entry['note'] ?? ''), " \t\n\r\0\x0B,.;:–—-"));
+        $previousNote = is_array($previous)
+            ? mb_strtolower(trim((string) ($previous['note'] ?? ''), " \t\n\r\0\x0B,.;:–—-"))
+            : null;
+        $isRepeatedTerminalResult = in_array($entry['result'] ?? null, ['accepted', 'rejected'], true)
+            && is_array($previous)
+            && ($previous['stage'] ?? null) === ($entry['stage'] ?? null)
+            && ($previous['result'] ?? null) === ($entry['result'] ?? null)
+            && $previousNote === $note;
+
+        if (! $isRepeatedTerminalResult) {
+            $cleanEntries[] = $entry;
+        }
+    }
+
+    $entries = collect($cleanEntries)->reverse();
+@endphp
 
 <div style="display:grid;gap:10px">
     @forelse ($entries as $entry)

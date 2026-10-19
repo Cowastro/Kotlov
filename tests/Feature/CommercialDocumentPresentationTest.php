@@ -6,17 +6,15 @@ use App\Models\CommercialDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class DeduplicateCommercialDocumentContactsMigrationTest extends TestCase
+class CommercialDocumentPresentationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_removes_only_consecutive_duplicate_terminal_actions_and_stray_punctuation(): void
+    public function test_contact_history_hides_a_repeated_terminal_result(): void
     {
         $quote = CommercialDocument::query()->create([
             'type' => 'quote',
             'status' => 'rejected',
-            'outcome_note' => ' , ',
-            'follow_up_note' => ',',
             'contact_history' => [
                 [
                     'contacted_at' => '2026-10-19T11:48:00+03:00',
@@ -35,16 +33,11 @@ class DeduplicateCommercialDocumentContactsMigrationTest extends TestCase
             ],
         ]);
 
-        $migration = require database_path('migrations/2026_10_19_150000_deduplicate_commercial_document_contacts.php');
-        $migration->up();
+        $html = view('filament.commercial-documents.contact-history', ['record' => $quote])->render();
 
-        $quote->refresh();
-
-        $this->assertCount(1, $quote->contact_history);
-        $this->assertSame('Первый менеджер', $quote->contact_history[0]['user_name']);
-        $this->assertSame('Выбран другой поставщик', $quote->contact_history[0]['note']);
-        $this->assertNull($quote->outcome_note);
-        $this->assertNull($quote->follow_up_note);
+        $this->assertSame(1, substr_count($html, 'Клиент отказался'));
+        $this->assertStringContainsString('Первый менеджер', $html);
+        $this->assertStringNotContainsString('Второй менеджер', $html);
     }
 
     public function test_items_view_uses_stable_inline_table_layout(): void
