@@ -59,4 +59,21 @@ class EditOrder extends EditRecord
                 }),
         ];
     }
+
+    protected function afterSave(): void
+    {
+        $subtotal = round((float) $this->record->items()->sum('total'), 2);
+        $discount = max(0, (float) $this->record->discount);
+        $deliveryPrice = max(0, (float) $this->record->delivery_price);
+
+        $this->record->forceFill([
+            'subtotal' => $subtotal,
+            'total' => round(max(0, $subtotal - $discount) + $deliveryPrice, 2),
+        ])->save();
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return static::getResource()::getUrl('view', ['record' => $this->record]);
+    }
 }

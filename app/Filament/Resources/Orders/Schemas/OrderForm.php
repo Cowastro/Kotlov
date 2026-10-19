@@ -3,11 +3,14 @@
 namespace App\Filament\Resources\Orders\Schemas;
 
 use App\Models\Order;
+use App\Models\Product;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class OrderForm
 {
@@ -64,6 +67,83 @@ class OrderForm
                         TextInput::make('customer_email')->label('Email')->email()->columnSpanFull(),
                     ]),
 
+                Section::make('Состав заказа')
+                    ->description('Чтобы заменить товар, удалите старую строку и добавьте новую. Название, артикул и текущая цена подставятся из каталога, но их можно уточнить вручную.')
+                    ->icon('heroicon-o-shopping-cart')
+                    ->columnSpanFull()
+                    ->schema([
+                        Repeater::make('items')
+                            ->relationship()
+                            ->label('Позиции')
+                            ->addActionLabel('Добавить позицию')
+                            ->minItems(1)
+                            ->columns(12)
+                            ->schema([
+                                Select::make('product_id')
+                                    ->label('Товар из каталога')
+                                    ->relationship(
+                                        'product',
+                                        'name',
+                                        modifyQueryUsing: fn (Builder $query): Builder => $query->orderBy('name'),
+                                    )
+                                    ->getOptionLabelFromRecordUsing(fn (Product $record): string => trim($record->name.' · '.($record->sku ?: 'без артикула')))
+                                    ->searchable(['name', 'sku'])
+                                    ->preload(false)
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, callable $get, callable $set): void {
+                                        $product = $state ? Product::query()->find($state) : null;
+
+                                        if (! $product) {
+                                            return;
+                                        }
+
+                                        $set('product_name', $product->name);
+                                        $set('product_sku', $product->sku);
+                                        $set('price', (float) $product->price);
+                                        $set('total', round(
+                                            max(1, (int) $get('quantity')) * max(0, (float) $product->price),
+                                            2,
+                                        ));
+                                    })
+                                    ->columnSpan(5),
+                                TextInput::make('product_name')
+                                    ->label('Наименование')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->columnSpan(5),
+                                TextInput::make('product_sku')
+                                    ->label('Артикул')
+                                    ->maxLength(100)
+                                    ->columnSpan(2),
+                                TextInput::make('quantity')
+                                    ->label('Количество')
+                                    ->numeric()
+                                    ->integer()
+                                    ->minValue(1)
+                                    ->default(1)
+                                    ->required()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(fn ($state, callable $get, callable $set) => self::updateItemTotal($get, $set))
+                                    ->columnSpan(3),
+                                TextInput::make('price')
+                                    ->label('Цена, BYN')
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->default(0)
+                                    ->required()
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(fn ($state, callable $get, callable $set) => self::updateItemTotal($get, $set))
+                                    ->columnSpan(3),
+                                TextInput::make('total')
+                                    ->label('Сумма, BYN')
+                                    ->numeric()
+                                    ->readOnly()
+                                    ->dehydrated()
+                                    ->default(0)
+                                    ->columnSpan(3),
+                            ]),
+                    ]),
+
                 Section::make('Доставка')
                     ->icon('heroicon-o-truck')
                     ->columns(2)
@@ -83,12 +163,12 @@ class OrderForm
 
                 Section::make('Суммы')
                     ->icon('heroicon-o-banknotes')
-                    ->description('Изменение сумм не пересчитывает товары автоматически.')
+                    ->description('Сумма товаров и итог пересчитываются автоматически после сохранения состава заказа.')
                     ->columns(2)
                     ->schema([
-                        TextInput::make('subtotal')->label('Сумма товаров')->numeric()->prefix('BYN')->default(0),
+                        TextInput::make('subtotal')->label('Сумма товаров')->numeric()->prefix('BYN')->readOnly()->default(0),
                         TextInput::make('discount')->label('Скидка')->numeric()->prefix('BYN')->default(0),
-                        TextInput::make('total')->label('Итого')->numeric()->prefix('BYN')->default(0)->columnSpanFull(),
+                        TextInput::make('total')->label('Итого')->numeric()->prefix('BYN')->readOnly()->default(0)->columnSpanFull(),
                     ]),
 
                 Section::make('Юридическое лицо')
@@ -129,5 +209,13 @@ class OrderForm
                         TextInput::make('coupon_code')->label('Промокод'),
                     ]),
             ]);
+    }
+
+    private static function updateItemTotal(callable $get, callable $set): void
+    {
+        $quantity = max(1, (int) $get('quantity'));
+        $price = max(0, (float) $get('price'));
+
+        $set('total', round($quantity * $price, 2));
     }
 }

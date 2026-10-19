@@ -54,36 +54,72 @@ class OrderItem extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (OrderItem $item): void {
+            $item->quantity = max(1, (int) $item->quantity);
+            $item->price = round(max(0, (float) $item->price), 2);
+            $item->total = round((float) $item->price * $item->quantity, 2);
+        });
+
         static::creating(function (OrderItem $item): void {
             if ($item->supply_captured_at || ! Schema::hasColumn('order_items', 'supply_captured_at')) {
                 return;
             }
 
-            $context = app(OrderItemSupplyContextResolver::class)->resolve($item);
+            self::captureSupplySnapshot($item);
+        });
 
-            if ($item->product?->manual_stock_management) {
-                $context['is_available'] = $item->product->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK;
-                $context['stock_quantity'] = $context['is_available'] ? $item->product->stock_qty : null;
+        static::updating(function (OrderItem $item): void {
+            if (! $item->isDirty('product_id') || ! Schema::hasColumn('order_items', 'supply_captured_at')) {
+                return;
             }
 
+            // A fulfillment decision and supplier snapshot belong to the old
+            // product. Never carry them over when a manager replaces a line.
             $item->forceFill([
-                'supply_status' => $context['status'],
-                'supply_route_label' => $context['route_label'],
-                'supply_supplier_id' => $context['supplier_id'],
-                'supply_integration_source_id' => $context['integration_source_id'],
-                'supply_channel' => $context['channel'],
-                'supply_supplier_name' => $context['supplier_name'],
-                'supply_supplier_contact' => $context['supplier_contact'],
-                'supply_source_label' => $context['source_label'],
-                'supply_purchase_price' => $context['wholesale_price'],
-                'supply_price_tax_mode' => $context['price_tax_mode'],
-                'supply_vat_rate' => $context['vat_rate'],
-                'supply_stock_quantity' => $context['stock_quantity'],
-                'supply_is_available' => $context['is_available'],
-                'supply_candidate_count' => $context['candidate_count'],
-                'supply_captured_at' => now(),
+                'integration_product_id' => null,
+                'supply_captured_at' => null,
+                'fulfillment_route' => null,
+                'fulfillment_supplier_id' => null,
+                'fulfillment_supplier_name' => null,
+                'fulfillment_supplier_contact' => null,
+                'fulfillment_purchase_price' => null,
+                'fulfillment_confirmed_by' => null,
+                'fulfillment_confirmed_at' => null,
+                'fulfillment_note' => null,
             ]);
+            $item->unsetRelation('product');
+            $item->unsetRelation('integrationProduct');
+
+            self::captureSupplySnapshot($item);
         });
+    }
+
+    private static function captureSupplySnapshot(OrderItem $item): void
+    {
+        $context = app(OrderItemSupplyContextResolver::class)->resolve($item);
+
+        if ($item->product?->manual_stock_management) {
+            $context['is_available'] = $item->product->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK;
+            $context['stock_quantity'] = $context['is_available'] ? $item->product->stock_qty : null;
+        }
+
+        $item->forceFill([
+            'supply_status' => $context['status'],
+            'supply_route_label' => $context['route_label'],
+            'supply_supplier_id' => $context['supplier_id'],
+            'supply_integration_source_id' => $context['integration_source_id'],
+            'supply_channel' => $context['channel'],
+            'supply_supplier_name' => $context['supplier_name'],
+            'supply_supplier_contact' => $context['supplier_contact'],
+            'supply_source_label' => $context['source_label'],
+            'supply_purchase_price' => $context['wholesale_price'],
+            'supply_price_tax_mode' => $context['price_tax_mode'],
+            'supply_vat_rate' => $context['vat_rate'],
+            'supply_stock_quantity' => $context['stock_quantity'],
+            'supply_is_available' => $context['is_available'],
+            'supply_candidate_count' => $context['candidate_count'],
+            'supply_captured_at' => now(),
+        ]);
     }
 
     public function order(): BelongsTo
