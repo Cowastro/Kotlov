@@ -92,6 +92,12 @@
                 </li>
 
                 <li class="menu-item">
+                    <a href="/baza-znaniy" class="item-link">
+                        <span class="text cus-text">База знаний</span>
+                    </a>
+                </li>
+
+                <li class="menu-item">
                     <a href="/dostavka" class="item-link">
                         <span class="text cus-text">Доставка</span>
                     </a>

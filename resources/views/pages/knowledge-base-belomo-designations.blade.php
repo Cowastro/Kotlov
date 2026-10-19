@@ -1,7 +1,7 @@
 @extends('layouts.amerce')
 
 @section('title', 'Обозначения счетчиков газа БелОМО КАТА и СКАТ — варианты исполнения | KOTLOV')
-@section('description', 'Расшифровка обозначений ультразвуковых счетчиков газа БелОМО КАТА и СКАТ: типоразмер, цифровой выход, NB-IoT/GSM, клапан, датчик давления, резьба. Таблица всех вариантов исполнения для партнёров.')
+@section('description', 'Расшифровка обозначений ультразвуковых счетчиков газа БелОМО КАТА и СКАТ: типоразмер, цифровой выход, NB-IoT/GSM, клапан, датчик давления, резьба. Таблица всех вариантов исполнения — база знаний KOTLOV.')
 
 @php
     use App\Support\Catalog\BelomoGasMeterDesignations as Belomo;
@@ -64,13 +64,13 @@
                 <div class="breadcrumbs">
                     <a href="/" class="text-caption-01 cl-text-3 link">Главная</a>
                     <i class="icon icon-CaretRightThin cl-text-3"></i>
-                    <a href="/partners" class="text-caption-01 cl-text-3 link">Партнёрам</a>
+                    <a href="{{ \App\Support\KnowledgeBase::URL }}" class="text-caption-01 cl-text-3 link">База знаний</a>
                     <i class="icon icon-CaretRightThin cl-text-3"></i>
                     <p class="text-caption-01">Обозначения КАТА и СКАТ</p>
                 </div>
                 <h1 class="h3">Обозначения счетчиков газа БелОМО КАТА и СКАТ</h1>
                 <p class="text-body-1 cl-text-2">
-                    Справочник для партнёров: как расшифровать наименование ультразвукового счетчика
+                    Техническая информация: как расшифровать наименование ультразвукового счетчика
                     и какой вариант исполнения указать в заказе.
                 </p>
                 <div class="bm-doc__actions">
