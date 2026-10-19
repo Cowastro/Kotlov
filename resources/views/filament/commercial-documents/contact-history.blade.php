@@ -1,23 +1,25 @@
 @php($entries = collect($record->contact_history ?? [])->reverse())
 
-<div class="space-y-3">
+<div style="display:grid;gap:10px">
     @forelse ($entries as $entry)
-        <div class="rounded-xl border border-gray-200 p-4 dark:border-white/10">
-            <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+        <div style="border:1px solid rgba(156,163,175,.25);border-radius:10px;padding:12px 14px">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font-size:13px">
                 <strong>{{ \App\Models\CommercialDocument::CONTACT_RESULTS[$entry['result'] ?? ''] ?? ($entry['result'] ?? 'Контакт') }}</strong>
-                <span class="text-gray-500">
+                <span style="color:#9ca3af;font-size:12px">
                     {{ filled($entry['contacted_at'] ?? null) ? \Illuminate\Support\Carbon::parse($entry['contacted_at'])->timezone('Europe/Minsk')->format('d.m.Y H:i') : '' }}
                     @if (filled($entry['user_name'] ?? null)) · {{ $entry['user_name'] }} @endif
                 </span>
             </div>
-            <div class="mt-1 text-sm text-gray-700 dark:text-gray-300">{{ $entry['note'] ?? '' }}</div>
+            @if (filled(trim((string) ($entry['note'] ?? ''), " \t\n\r\0\x0B,.;:–—-")))
+                <div style="margin-top:5px;font-size:13px;line-height:1.45">{{ trim((string) $entry['note'], " \t\n\r\0\x0B,.;:–—-") }}</div>
+            @endif
             @if (filled($entry['next_follow_up_at'] ?? null))
-                <div class="mt-2 text-sm font-medium text-primary-600 dark:text-primary-400">
+                <div style="margin-top:7px;font-size:12px;font-weight:600;color:#f59e0b">
                     Следующий контакт: {{ \Illuminate\Support\Carbon::parse($entry['next_follow_up_at'])->timezone('Europe/Minsk')->format('d.m.Y H:i') }}
                 </div>
             @endif
         </div>
     @empty
-        <div class="text-sm text-gray-500">Контакты с клиентом ещё не зафиксированы.</div>
+        <div style="font-size:13px;color:#9ca3af">Контакты с клиентом ещё не зафиксированы.</div>
     @endforelse
 </div>

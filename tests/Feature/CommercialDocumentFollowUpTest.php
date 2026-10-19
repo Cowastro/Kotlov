@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use RuntimeException;
 use Tests\TestCase;
 
 class CommercialDocumentFollowUpTest extends TestCase
@@ -107,6 +108,83 @@ class CommercialDocumentFollowUpTest extends TestCase
         $this->assertSame('won', $quote->follow_up_stage);
         $this->assertNull($quote->next_follow_up_at);
         $this->assertSame('accepted', $quote->contact_history[0]['result']);
+    }
+
+    public function test_stale_second_manager_cannot_record_the_same_terminal_result_twice(): void
+    {
+        $firstManager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $secondManager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $quote = CommercialDocument::query()->create(['type' => 'quote', 'status' => 'sent']);
+        $staleCopy = CommercialDocument::query()->findOrFail($quote->id);
+
+        app(CommercialDocumentWorkflow::class)->recordContact(
+            $quote,
+            $firstManager,
+            'lost',
+            'rejected',
+            'Выбран другой поставщик',
+            null,
+            'competitor',
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('уже зафиксирован другим менеджером');
+
+        app(CommercialDocumentWorkflow::class)->recordContact(
+            $staleCopy,
+            $secondManager,
+            'lost',
+            'rejected',
+            'Выбран другой поставщик',
+            null,
+            'competitor',
+        );
+    }
+
+    public function test_contact_note_must_contain_meaningful_text(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $quote = CommercialDocument::query()->create(['type' => 'quote', 'status' => 'sent']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('осмысленный результат');
+
+        app(CommercialDocumentWorkflow::class)->recordContact(
+            $quote,
+            $manager,
+            'lost',
+            'rejected',
+            ' , ',
+            null,
+            'competitor',
+        );
+    }
+
+    public function test_stale_second_manager_cannot_accept_the_same_quote_twice(): void
+    {
+        $firstManager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $secondManager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $quote = CommercialDocument::query()->create(['type' => 'quote', 'status' => 'sent']);
+        $staleCopy = CommercialDocument::query()->findOrFail($quote->id);
+
+        app(CommercialDocumentWorkflow::class)->recordContact(
+            $quote,
+            $firstManager,
+            'won',
+            'accepted',
+            'Клиент подтвердил заказ',
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('уже зафиксирован другим менеджером');
+
+        app(CommercialDocumentWorkflow::class)->recordContact(
+            $staleCopy,
+            $secondManager,
+            'won',
+            'accepted',
+            'Клиент подтвердил заказ',
+        );
     }
 
     public function test_contact_action_is_available_in_the_list_and_quote_card(): void

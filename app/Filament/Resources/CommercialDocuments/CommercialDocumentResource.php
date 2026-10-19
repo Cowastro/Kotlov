@@ -630,7 +630,9 @@ class CommercialDocumentResource extends Resource
                             ->formatStateUsing(fn (?string $state): string => CommercialDocument::CONTACT_RESULTS[$state] ?? (string) $state),
                         TextEntry::make('next_follow_up_at')->label('Следующий контакт')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Не назначен')
                             ->color(fn (CommercialDocument $record): string => $record->next_follow_up_at?->isPast() ? 'danger' : 'info'),
-                        TextEntry::make('follow_up_note')->label('Договорённость / следующий шаг')->placeholder('Не заполнено')->columnSpan(2),
+                        TextEntry::make('follow_up_note')->label('Договорённость / следующий шаг')->placeholder('Не заполнено')->columnSpan(2)
+                            ->formatStateUsing(fn (?string $state): string => trim((string) $state, " \t\n\r\0\x0B,.;:–—-"))
+                            ->visible(fn (CommercialDocument $record): bool => self::shouldShowStandaloneContactNote($record, $record->follow_up_note)),
                         TextEntry::make('mailThread.subject')->label('Связанная переписка')->placeholder('Не связана')
                             ->url(fn (CommercialDocument $record): ?string => $record->mailThread
                                 ? CrmMailThreadResource::getUrl('view', ['record' => $record->mailThread])
@@ -657,7 +659,8 @@ class CommercialDocumentResource extends Resource
                             ->visible(fn (CommercialDocument $record): bool => filled($record->outcome_reason))
                             ->formatStateUsing(fn (?string $state): string => $state ? (CommercialDocument::OUTCOME_REASONS[$state] ?? $state) : '—'),
                         TextEntry::make('outcome_note')->label('Комментарий по результату')->columnSpan(2)
-                            ->visible(fn (CommercialDocument $record): bool => filled($record->outcome_note)),
+                            ->formatStateUsing(fn (?string $state): string => trim((string) $state, " \t\n\r\0\x0B,.;:–—-"))
+                            ->visible(fn (CommercialDocument $record): bool => self::shouldShowStandaloneContactNote($record, $record->outcome_note)),
                         TextEntry::make('order.number')->label('Созданный заказ')
                             ->visible(fn (CommercialDocument $record): bool => $record->order !== null)
                             ->url(fn (CommercialDocument $record): ?string => $record->order
@@ -1031,5 +1034,23 @@ class CommercialDocumentResource extends Resource
         $set('client_name', $contact->full_name);
         $set('client_email', $points->firstWhere('type', 'email')?->value);
         $set('client_phone', $points->firstWhere('type', 'phone')?->value);
+    }
+
+    private static function shouldShowStandaloneContactNote(CommercialDocument $record, ?string $note): bool
+    {
+        $normalizedNote = self::normalizeContactNote($note);
+        if ($normalizedNote === '') {
+            return false;
+        }
+
+        return ! collect($record->contact_history ?? [])->contains(
+            fn (mixed $entry): bool => is_array($entry)
+                && self::normalizeContactNote($entry['note'] ?? null) === $normalizedNote,
+        );
+    }
+
+    private static function normalizeContactNote(?string $note): string
+    {
+        return mb_strtolower(trim((string) $note, " \t\n\r\0\x0B,.;:–—-"));
     }
 }

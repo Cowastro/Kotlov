@@ -26,9 +26,6 @@ class CommercialDocumentWorkflow
         mixed $nextFollowUpAt = null,
         ?string $lossReason = null,
     ): void {
-        if ($document->type !== 'quote' || ! in_array($document->status, ['sent', 'accepted', 'needs_revision'], true)) {
-            throw new RuntimeException('Результат контакта можно фиксировать только по отправленному КП.');
-        }
         if (! array_key_exists($stage, CommercialDocument::FOLLOW_UP_STAGES)) {
             throw new RuntimeException('Выберите допустимую стадию работы.');
         }
@@ -41,8 +38,8 @@ class CommercialDocumentWorkflow
         }
 
         $note = trim($note);
-        if ($note === '') {
-            throw new RuntimeException('Кратко запишите результат разговора.');
+        if (trim($note, " \t\n\r\0\x0B,.;:–—-") === '') {
+            throw new RuntimeException('Кратко запишите осмысленный результат разговора, а не знак препинания.');
         }
 
         $nextContact = filled($nextFollowUpAt) ? Carbon::parse($nextFollowUpAt) : null;
@@ -51,6 +48,21 @@ class CommercialDocumentWorkflow
         }
 
         DB::transaction(function () use ($document, $user, $stage, $result, $note, $nextContact, $lossReason): void {
+            $document = CommercialDocument::query()
+                ->lockForUpdate()
+                ->findOrFail($document->getKey());
+
+            if ($document->type !== 'quote' || ! in_array($document->status, ['sent', 'accepted', 'needs_revision'], true)) {
+                throw new RuntimeException('Результат контакта уже зафиксирован другим менеджером или КП закрыто. Обновите карточку.');
+            }
+
+            $lastContact = collect($document->contact_history ?? [])->last();
+            if (in_array($result, ['accepted', 'rejected'], true)
+                && is_array($lastContact)
+                && ($lastContact['result'] ?? null) === $result) {
+                throw new RuntimeException('Результат контакта уже зафиксирован другим менеджером или КП закрыто. Обновите карточку.');
+            }
+
             if ($result === 'accepted') {
                 $this->accept($document);
                 $stage = 'won';

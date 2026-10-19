@@ -1,26 +1,26 @@
-<div class="overflow-x-auto rounded-xl ring-1 ring-gray-950/5 dark:ring-white/10">
-    <table class="w-full min-w-[760px] divide-y divide-gray-200 text-sm dark:divide-white/10">
-        <thead class="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:bg-white/5 dark:text-gray-400">
+<div style="overflow-x:auto;border:1px solid rgba(156,163,175,.28);border-radius:12px">
+    <table style="width:100%;min-width:760px;border-collapse:collapse;font-size:13px">
+        <thead style="background:rgba(156,163,175,.08);color:#9ca3af;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em">
             <tr>
-                <th class="px-4 py-3">Товар</th>
-                <th class="px-4 py-3">Артикул</th>
-                <th class="px-4 py-3 text-right">Количество</th>
-                <th class="px-4 py-3 text-right">Цена</th>
-                <th class="px-4 py-3 text-right">Сумма</th>
+                <th style="padding:11px 14px;width:46%">Товар</th>
+                <th style="padding:11px 14px;width:18%">Артикул</th>
+                <th style="padding:11px 14px;text-align:right;width:12%">Количество</th>
+                <th style="padding:11px 14px;text-align:right;width:12%">Цена</th>
+                <th style="padding:11px 14px;text-align:right;width:12%">Сумма</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 bg-white dark:divide-white/10 dark:bg-transparent">
+        <tbody>
             @foreach ($items as $item)
                 @php
                     $quantity = number_format((float) $item->quantity, 3, ',', ' ');
                     $quantity = rtrim(rtrim($quantity, '0'), ',');
                 @endphp
-                <tr>
-                    <td class="px-4 py-3 font-semibold text-gray-950 dark:text-white">{{ $item->name }}</td>
-                    <td class="px-4 py-3 font-mono text-xs text-gray-600 dark:text-gray-300">{{ $item->sku ?: '—' }}</td>
-                    <td class="whitespace-nowrap px-4 py-3 text-right">{{ $quantity }} {{ $item->unit }}</td>
-                    <td class="whitespace-nowrap px-4 py-3 text-right">{{ number_format((float) $item->unit_price, 2, ',', ' ') }} BYN</td>
-                    <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-gray-950 dark:text-white">{{ number_format((float) $item->line_total, 2, ',', ' ') }} BYN</td>
+                <tr style="border-top:1px solid rgba(156,163,175,.2)">
+                    <td style="padding:13px 14px;font-weight:650;line-height:1.35">{{ $item->name }}</td>
+                    <td style="padding:13px 14px;font-family:ui-monospace,monospace;font-size:12px;color:#9ca3af">{{ $item->sku ?: '—' }}</td>
+                    <td style="padding:13px 14px;text-align:right;white-space:nowrap">{{ $quantity }} {{ $item->unit }}</td>
+                    <td style="padding:13px 14px;text-align:right;white-space:nowrap">{{ number_format((float) $item->unit_price, 2, ',', ' ') }} BYN</td>
+                    <td style="padding:13px 14px;text-align:right;white-space:nowrap;font-weight:700">{{ number_format((float) $item->line_total, 2, ',', ' ') }} BYN</td>
                 </tr>
             @endforeach
         </tbody>
