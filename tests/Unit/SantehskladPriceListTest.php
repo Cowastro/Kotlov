@@ -26,5 +26,11 @@ class SantehskladPriceListTest extends TestCase
         $this->assertSame('standart_pro_14', $parser->productIdentity('Котел Сакович Standart Pro 14'));
         $this->assertSame('pellet_standart_praktik_15', $parser->productIdentity('Пеллетный котел Sakovich Pellet Standart 15 с горелкой Praktik и бункером'));
         $this->assertSame('promka_8_no_glass', $parser->productIdentity('Печь Sakovich Promka 8 кВт без стекла'));
+        $this->assertSame('kipi_rotary_4_16', $parser->productIdentity('Пеллетная горелка KIPI Rotary 4–16 кВт'));
+
+        $legacyKipi = collect($payload['rows'])->firstWhere('identity', 'accessory_22c200b9e5e180b28724');
+        $this->assertSame('kipi_rotary_4_16', $parser->rowMatchIdentity($legacyKipi));
+        $this->assertStringContainsString('KIPI Rotary 5-16 кВт', $legacyKipi['name']);
+        $this->assertStringContainsString('KIPI Rotary 4–16 кВт', $parser->catalogName($legacyKipi));
     }
 }

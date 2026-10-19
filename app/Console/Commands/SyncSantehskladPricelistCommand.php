@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -13,6 +15,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class SyncSantehskladPricelistCommand extends Command
@@ -21,6 +24,7 @@ class SyncSantehskladPricelistCommand extends Command
         {file=resources/data/suppliers/santehsklad-sakovich-2026-09-17.json : XLSX or normalized JSON snapshot}
         {--apply : Save supplier offers, exact links and prices}
         {--dry-run : Preview only}
+        {--create-missing-products : Create exact catalogue cards for unresolved current price-list rows}
         {--sync-retail-prices : Set source RRP on every exact catalogue duplicate}
         {--export-snapshot= : Normalize the XLSX into a deployable JSON snapshot}
         {--report= : Write the complete classification CSV}';
@@ -60,7 +64,7 @@ class SyncSantehskladPricelistCommand extends Command
                 return self::SUCCESS;
             }
 
-            $stats = DB::transaction(function () use ($payload, $classified, &$supplier): array {
+            $stats = DB::transaction(function () use ($payload, $classified, &$supplier, $parser): array {
                 [$supplier, $source, $sync] = $this->ensureSupplier($payload, $supplier);
                 $stats = [
                     'offers' => 0,
@@ -69,11 +73,19 @@ class SyncSantehskladPricelistCommand extends Command
                     'retail_updated' => 0,
                     'duplicate_retail_updated' => 0,
                     'price_confirmation_cleared' => 0,
+                    'products_created' => 0,
                 ];
                 $touched = [];
 
                 foreach ($classified as $row) {
                     $product = $row['product_id'] ? Product::query()->find($row['product_id']) : null;
+                    if (! $product && $this->option('create-missing-products')) {
+                        $product = $this->createProductForRow($row, $supplier, $payload, $parser);
+                        $row['product_id'] = $product->id;
+                        $row['candidate_ids'] = [$product->id];
+                        $row['match_reason'] = 'created_from_current_supplier_pricelist';
+                        $stats['products_created']++;
+                    }
                     $existing = SupplierProduct::query()
                         ->where('supplier_id', $supplier->id)
                         ->where('supplier_article_normalized', $row['article_key'])
@@ -153,6 +165,9 @@ class SyncSantehskladPricelistCommand extends Command
 
             return self::SUCCESS;
         } catch (\Throwable $e) {
+            if (app()->runningUnitTests()) {
+                throw $e;
+            }
             $this->error($e->getMessage());
 
             return self::FAILURE;
@@ -181,7 +196,8 @@ class SyncSantehskladPricelistCommand extends Command
             : collect();
 
         foreach ($rows as &$row) {
-            $candidates = $byIdentity[$row['identity']] ?? [];
+            $matchIdentity = $parser->rowMatchIdentity($row);
+            $candidates = $byIdentity[$matchIdentity] ?? [];
             if ($candidates === [] && str_starts_with($row['identity'], 'accessory_')) {
                 $candidates = $byName[$parser->nameKey($row['name'])] ?? [];
             }
@@ -216,6 +232,129 @@ class SyncSantehskladPricelistCommand extends Command
             + count($product->images ?? []) * 500
             + count($product->specs ?? []) * 50
             + (str_starts_with((string) $product->sku, 'KOTLOV-') ? 0 : 25);
+    }
+
+    private function createProductForRow(array $row, Supplier $supplier, array $payload, SantehskladPriceList $parser): Product
+    {
+        $category = Category::query()->where('slug', $this->categorySlug($row))->first();
+        if (! $category) {
+            throw new RuntimeException('Не найдена категория '.$this->categorySlug($row).' для '.$row['article'].'.');
+        }
+
+        $brandName = $this->brandName($row);
+        $brand = $brandName
+            ? Brand::query()->firstOrCreate(
+                ['slug' => Str::slug($brandName)],
+                ['name' => $brandName, 'is_active' => true]
+            )
+            : null;
+        $name = $parser->catalogName($row);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand?->id,
+            'name' => $name,
+            'h1' => $name,
+            'slug' => 'new-product-'.Str::uuid(),
+            'sku' => null,
+            'price' => $row['retail'],
+            'currency' => 'BYN',
+            'short_description' => 'Позиция из актуального прайса Сантехсклада. Наличие и срок поставки подтверждает менеджер.',
+            'content' => '<p>Цена привязана к прайсу поставщика «Сантехсклад» от '
+                .date('d.m.Y', strtotime((string) $payload['source_date']))
+                .'. Наличие и срок поставки необходимо подтвердить у менеджера перед оформлением.</p>',
+            'specs' => $this->sourceSpecs($row, $payload),
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+            'stock_qty' => null,
+            'requires_price_confirmation' => false,
+            'meta_title' => $name.' — цена и заказ | KOTLOV.BY',
+            'meta_description' => $name.'. Цена по прайсу Сантехсклада; наличие и срок поставки подтверждает менеджер.',
+        ]);
+        $product->forceFill([
+            'sku' => $this->uniqueSku($product->id),
+            'slug' => $this->uniqueSlug($name, $product->id),
+        ])->save();
+        if ($brand) {
+            $supplier->brands()->syncWithoutDetaching([$brand->id]);
+        }
+
+        return $product;
+    }
+
+    private function categorySlug(array $row): string
+    {
+        $identity = (string) $row['identity'];
+        $group = mb_strtolower((string) $row['group']);
+        $variant = (string) (($row['variant'] ?? null) ?: $row['name']);
+
+        return match (true) {
+            str_starts_with($identity, 'pellet_') => 'kotly-na-pelletah',
+            str_starts_with($identity, 'promka_'), str_starts_with($identity, 'madera_') => 'burzhuiki-pechi',
+            ! str_starts_with($identity, 'accessory_') => 'tverdotoplivnye',
+            str_contains($group, 'rotary') && preg_match('/\d+\s*[-–]\s*\d+\s*(?:квт|kw)/ui', $variant) => 'pelletnye-gorelki',
+            default => 'komplektuyushhie-dlya-otopleniya',
+        };
+    }
+
+    private function brandName(array $row): ?string
+    {
+        $identity = (string) $row['identity'];
+        $value = mb_strtolower(implode(' ', [$row['name'], $row['group'], $row['variant']]));
+
+        return match (true) {
+            ! str_starts_with($identity, 'accessory_'), str_contains($value, 'бункер') => 'Sakovich',
+            str_contains($value, 'kipi'), str_contains($value, 'rotary') => 'KIPI',
+            str_contains($value, 'plum'), str_contains($value, 'ester'), str_contains($value, 'econet') => 'PLUM',
+            str_contains($value, 'icma') => 'ICMA',
+            default => null,
+        };
+    }
+
+    private function sourceSpecs(array $row, array $payload): array
+    {
+        $specs = [
+            ['key' => 'Поставщик', 'value' => 'Сантехсклад'],
+            ['key' => 'Артикул поставщика', 'value' => $row['article']],
+            ['key' => 'Дата прайса', 'value' => date('d.m.Y', strtotime((string) $payload['source_date']))],
+        ];
+        if ($row['power']) {
+            $power = trim((string) $row['power']);
+            $specs[] = [
+                'key' => 'Мощность',
+                'value' => preg_match('/(?:квт|kw)$/ui', $power)
+                    ? str_ireplace('kW', 'кВт', $power)
+                    : $power.' кВт',
+            ];
+        }
+        if ($row['variant'] && trim((string) $row['variant']) !== trim((string) $row['name'])) {
+            $specs[] = ['key' => 'Исполнение', 'value' => trim((string) $row['variant'])];
+        }
+
+        return $specs;
+    }
+
+    private function uniqueSku(int $productId): string
+    {
+        $number = $productId;
+        do {
+            $sku = sprintf('KOTLOV-%06d', $number++);
+        } while (Product::query()->where('sku', $sku)->exists());
+
+        return $sku;
+    }
+
+    private function uniqueSlug(string $name, int $productId): string
+    {
+        $base = Str::slug($name) ?: 'product-'.$productId;
+        $slug = $base;
+        $suffix = 2;
+        while (Product::query()->where('slug', $slug)->whereKeyNot($productId)->exists()) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
     }
 
     /** @return array{0:Supplier,1:SupplierSource,2:SupplierSync} */

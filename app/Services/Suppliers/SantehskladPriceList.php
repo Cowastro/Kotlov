@@ -18,6 +18,15 @@ class SantehskladPriceList
 
         if (strtolower(pathinfo($path, PATHINFO_EXTENSION)) === 'json') {
             $payload = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+            foreach ($payload['rows'] ?? [] as $index => $row) {
+                $label = (string) (($row['variant'] ?? null) ?: ($row['name'] ?? ''));
+                $payload['rows'][$index]['name'] = $this->displayName(
+                    (string) ($row['source_sheet'] ?? ''),
+                    (string) ($row['group'] ?? ''),
+                    $label,
+                    (string) ($row['power'] ?? '')
+                );
+            }
             $this->validate($payload);
 
             return $payload;
@@ -90,6 +99,10 @@ class SantehskladPriceList
     public function productIdentity(string $name): string
     {
         $value = $this->normalize($name);
+        if ((str_contains($value, 'kipi') || str_contains($value, 'rotary'))
+            && preg_match('/(\d+)\s*(?:[-–]|\s)\s*(\d+)\s*(?:квт|kw)/u', $value, $range)) {
+            return 'kipi_rotary_'.$this->canonicalKipiRange($range[1].'-'.$range[2]);
+        }
         if (! str_contains($value, 'sakovich')
             && ! str_contains($value, 'сакович')
             && ! str_contains($value, 'pramen')
@@ -133,6 +146,27 @@ class SantehskladPriceList
     public function nameKey(string $value): string
     {
         return (string) preg_replace('/[^\p{L}\p{N}]+/u', '', $this->normalize($value));
+    }
+
+    /** Match identity may normalize legacy supplier nomenclature without changing its stable article. */
+    public function rowMatchIdentity(array $row): string
+    {
+        if (str_contains($this->normalize((string) ($row['group'] ?? '')), 'rotary')
+            && preg_match('/(\d+)\s*[-–]\s*(\d+)\s*(?:квт|kw)/ui', (string) (($row['variant'] ?? null) ?: ($row['name'] ?? '')), $range)) {
+            return 'kipi_rotary_'.$this->canonicalKipiRange($range[1].'-'.$range[2]);
+        }
+
+        return (string) ($row['identity'] ?? '');
+    }
+
+    public function catalogName(array $row): string
+    {
+        $identity = $this->rowMatchIdentity($row);
+        if (preg_match('/^kipi_rotary_(\d+)_(\d+)$/', $identity, $range)) {
+            return "Пеллетная горелка KIPI Rotary {$range[1]}–{$range[2]} кВт с подающим устройством и автоматикой PLUM ecoMAX 361";
+        }
+
+        return trim((string) ($row['name'] ?? ''));
     }
 
     private function rowIdentity(string $sheet, string $group, string $label, string $power): string
@@ -193,7 +227,28 @@ class SantehskladPriceList
             }
         }
 
-        return trim($label.' '.$power);
+        if (str_contains($this->normalize($group), 'rotary')
+            && preg_match('/\d+\s*[-–]\s*\d+\s*(?:квт|kw)/ui', $label)) {
+            return 'Пеллетная горелка KIPI Rotary '.str_replace('kW', 'кВт', trim($label))
+                .' с подающим устройством и автоматикой PLUM ecoMAX 361';
+        }
+
+        return trim(str_replace(
+            ['STANDAR 350L.', 'STANDART) 450L.', 'пеллета'],
+            ['STANDART 350 л', 'STANDART 450 л', 'пеллет'],
+            $label.' '.$power
+        ));
+    }
+
+    private function canonicalKipiRange(string $range): string
+    {
+        return str_replace('-', '_', match ($range) {
+            '5-16' => '4-16',
+            '35-200' => '30-200',
+            '50-250' => '35-250',
+            '70-300' => '50-300',
+            default => $range,
+        });
     }
 
     private function isGroupRow(string $label, string $power, float $retail, string $sheet, int $row): bool

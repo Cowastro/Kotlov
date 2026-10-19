@@ -91,4 +91,39 @@ class SyncSantehskladPricelistCommandTest extends TestCase
         $this->assertSame('6800.00', $praktik->fresh()->price);
         $this->assertSame('150.00', $accessory->fresh()->price);
     }
+
+    public function test_it_can_create_and_link_every_current_pricelist_row_without_inventing_stock(): void
+    {
+        foreach ([
+            'tverdotoplivnye' => 'Твердотопливные котлы',
+            'kotly-na-pelletah' => 'Пеллетные котлы',
+            'burzhuiki-pechi' => 'Отопительные печи',
+            'pelletnye-gorelki' => 'Пеллетные горелки',
+            'komplektuyushhie-dlya-otopleniya' => 'Комплектующие',
+        ] as $slug => $name) {
+            Category::query()->firstOrCreate(['slug' => $slug], ['name' => $name, 'is_active' => true]);
+        }
+        $productCountBefore = Product::query()->count();
+
+        $this->artisan('supplier:sync-santehsklad-pricelist', [
+            '--apply' => true,
+            '--sync-retail-prices' => true,
+            '--create-missing-products' => true,
+        ])
+            ->expectsOutput('metric.santehsklad.unlinked=0')
+            ->expectsOutput('metric.santehsklad.products_created=103')
+            ->assertSuccessful();
+
+        $supplier = Supplier::query()->where('code', 'santehsklad')->firstOrFail();
+        $this->assertSame(103, $supplier->supplierProducts()->whereNotNull('product_id')->count());
+        $this->assertSame($productCountBefore + 103, Product::query()->count());
+        $this->assertSame(0, $supplier->supplierProducts()->whereHas('product', fn ($query) => $query->where('in_stock', true))->count());
+
+        $legacyBurner = $supplier->supplierProducts()
+            ->where('supplier_article_normalized', 'ACCESSORY-22C200B9E5E180B28724')
+            ->firstOrFail();
+        $this->assertStringContainsString('KIPI Rotary 4–16 кВт', $legacyBurner->product->name);
+        $this->assertStringContainsString('KIPI Rotary 5-16 кВт', $legacyBurner->supplier_name);
+        $this->assertSame(Product::AVAILABILITY_CHECK, $legacyBurner->product->availability_status);
+    }
 }
