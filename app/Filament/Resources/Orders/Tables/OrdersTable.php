@@ -3,15 +3,16 @@
 namespace App\Filament\Resources\Orders\Tables;
 
 use App\Filament\Exports\OrderExporter;
+use App\Filament\Resources\Orders\Actions\RequestOrderSupplierReserveAction;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Support\AdminPhoneLinks;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Integrations\OneCOrderQueue;
 use App\Services\Orders\OrderSettlementManager;
+use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -101,7 +102,7 @@ class OrdersTable
                     'archivedBy:id,name',
                     'placedEconomicSnapshot',
                     'latestSettlement',
-                    'supplierOrderRequests:id,order_id,status',
+                    'supplierOrderRequests:id,order_id,supplier_id,supplier_name,status,sent_at,acknowledged_at',
                     'integrationIssues' => fn ($query) => $query
                         ->open()
                         ->orders()
@@ -400,10 +401,6 @@ class OrdersTable
                             $parts[] = 'Без маршрута: '.$summary['unresolved_count'];
                         }
 
-                        if ($requestSummary = $record->supplierRequestStatusSummary()) {
-                            $parts[] = 'Заявки: '.$requestSummary;
-                        }
-
                         $status = $parts !== [] ? implode(' · ', $parts) : null;
                         $contacts = self::orderSupplierContacts($record);
 
@@ -419,6 +416,17 @@ class OrdersTable
                         default => 'success',
                     })
                     ->width('190px')
+                    ->grow(false)
+                    ->wrap(),
+
+                TextColumn::make('supplier_reserve_status')
+                    ->label('Резерв')
+                    ->state(fn (Order $record): string => self::supplierReserveStatus($record))
+                    ->description(fn (Order $record): ?string => self::supplierReserveDescription($record))
+                    ->badge()
+                    ->color(fn (Order $record): string => self::supplierReserveColor($record))
+                    ->icon(fn (Order $record): string => self::supplierReserveIcon($record))
+                    ->width('150px')
                     ->grow(false)
                     ->wrap(),
 
@@ -550,6 +558,7 @@ class OrdersTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                RequestOrderSupplierReserveAction::make(),
                 ActionGroup::make([
                     Action::make('confirmed')
                         ->label('Принять заказ')
@@ -667,6 +676,69 @@ class OrdersTable
                     })
                     ->deselectRecordsAfterCompletion(),
             ]);
+    }
+
+    public static function supplierReserveStatus(Order $order): string
+    {
+        $requests = $order->relationLoaded('supplierOrderRequests')
+            ? $order->supplierOrderRequests
+            : $order->supplierOrderRequests()->get();
+
+        if ($requests->isEmpty()) {
+            return 'Не запрошен';
+        }
+
+        $waiting = $requests->where('status', 'sent')->count();
+        $confirmed = $requests->whereIn('status', ['acknowledged', 'fulfilled'])->count();
+        $rejected = $requests->where('status', 'rejected')->count();
+
+        return match (true) {
+            $rejected > 0 => $rejected > 1 ? 'Отказов: '.$rejected : 'Есть отказ',
+            $confirmed > 0 && $waiting > 0 => 'Ответ: '.$confirmed.' · ждём: '.$waiting,
+            $confirmed > 0 => $confirmed > 1 ? 'Подтверждено: '.$confirmed : 'Резерв подтверждён',
+            $waiting > 0 => $waiting > 1 ? 'Ждём: '.$waiting : 'Ждём ответа',
+            $requests->contains('status', 'draft') => 'Черновик',
+            default => 'Закрыто',
+        };
+    }
+
+    public static function supplierReserveDescription(Order $order): ?string
+    {
+        $requests = $order->relationLoaded('supplierOrderRequests')
+            ? $order->supplierOrderRequests
+            : $order->supplierOrderRequests()->get();
+
+        if ($requests->isEmpty()) {
+            return null;
+        }
+
+        return $requests->pluck('supplier_name')->filter()->unique()->implode(', ');
+    }
+
+    public static function supplierReserveColor(Order $order): string
+    {
+        $statuses = ($order->relationLoaded('supplierOrderRequests')
+            ? $order->supplierOrderRequests
+            : $order->supplierOrderRequests()->get())->pluck('status');
+
+        return match (true) {
+            $statuses->contains('rejected') => 'danger',
+            $statuses->contains(fn (string $status): bool => in_array($status, ['acknowledged', 'fulfilled'], true)) => 'success',
+            $statuses->contains('sent') => 'warning',
+            $statuses->contains('draft') => 'info',
+            default => 'gray',
+        };
+    }
+
+    public static function supplierReserveIcon(Order $order): string
+    {
+        return match (self::supplierReserveColor($order)) {
+            'danger' => 'heroicon-o-x-circle',
+            'success' => 'heroicon-o-check-circle',
+            'warning' => 'heroicon-o-clock',
+            'info' => 'heroicon-o-pencil-square',
+            default => 'heroicon-o-minus-circle',
+        };
     }
 
     private static function compactProductList(Order $order): string
