@@ -392,6 +392,13 @@ class SyncTmManagementCommand extends Command
             'code' => self::SUPPLIER_CODE,
             'currency' => 'BYN',
             'currency_rate' => 1,
+            'contact' => '+375 (44) 592-09-20 — Андрей Логацкий, специалист насосного отдела',
+            'communication_channels' => json_encode([[
+                'type' => 'phone',
+                'name' => 'Андрей Логацкий',
+                'value' => '+375445920920',
+                'note' => 'Специалист насосного отдела ТМ Менеджмент',
+            ]], JSON_UNESCAPED_UNICODE),
             'notes' => 'Google Sheets: https://docs.google.com/spreadsheets/d/1yVThZ3ZbL6dBqzpxxsUCtF-8N32lQtHK/edit',
             'is_active' => true,
             'created_at' => $now,
