@@ -23,14 +23,29 @@ class SantehskladCatalogContent
     /** @param array<string,mixed> $row @param array<string,mixed> $payload */
     public function enrich(Product $product, array $row, array $payload): bool
     {
-        if (! $this->shouldEnrich($product)) {
+        $source = $this->source($row);
+        $needsSourceMedia = $product->imagePaths() === [] && filled($source['image']);
+        $needsContent = $this->shouldEnrich($product);
+
+        if (! $needsContent && ! $needsSourceMedia) {
             return false;
+        }
+
+        if (! $needsContent) {
+            $changes = ['images' => [$source['image']]];
+
+            if (blank($product->content_source_url) && $source['url']) {
+                $changes['content_source_url'] = $source['url'];
+            }
+
+            $product->forceFill($changes)->save();
+
+            return true;
         }
 
         $profile = $this->profile($row);
         $name = trim((string) $product->name);
         $power = $this->power($row);
-        $source = $this->source($row);
         $features = array_values(array_unique(array_filter(array_merge(
             $profile['features'],
             $this->rowFeatures($row)
@@ -386,7 +401,7 @@ class SantehskladCatalogContent
             $image = $power === '12'
                 ? $base.'/image/cache/catalog/kotly/standart/standart-800x800.jpg'
                 : $base.'/image/cache/catalog/kotly/standartpro/standart-550x700.png-800x800.png';
-        } elseif (str_starts_with($identity, 'max_') && $power !== '300') {
+        } elseif (str_starts_with($identity, 'max_')) {
             $slug = in_array($power, ['99', '125'], true) ? 'kotel-sakovich-max-'.$power.'kvt' : 'tverdotoplivnyj-kotel-sakovich-max-'.$power.'kvt';
             $url = $base.'/kotly-i-chasti-kotlov/tverdotoplivnye_kotly/promyshlennye-vodogrejnye-kotly/'.$slug;
             $image = $base.'/image/cache/catalog/kotly/max/max-800x800.png';
@@ -399,6 +414,10 @@ class SantehskladCatalogContent
             $image = $base.'/image/cache/catalog/kotly/pelletmax50/pelletmax-800x800.jpg';
         } elseif (str_starts_with($identity, 'pellet_eco_')) {
             $url = $base.'/kotly-i-chasti-kotlov/tverdotoplivnye_kotly/pelletnye_kotly/pelletnyj-kotel-sakovich-eco-'.$power.'-kvt';
+            $image = $base.'/image/cache/catalog/kotly/eco/2-800x800.jpg';
+        } elseif (str_starts_with($identity, 'pellet_standart_4mm_') || str_starts_with($identity, 'pellet_standart_5mm_')) {
+            $url = $base.'/kotly-i-chasti-kotlov/tverdotoplivnye_kotly/pelletnye_kotly/pelletnyj-kotel-sakovich-standart-pellet-'.$power.'-kvt';
+            $image = $base.'/image/cache/catalog/2025/03-25/kotel-standart/stansdart-pellet-800x800.jpg';
         } elseif (str_starts_with($identity, 'pellet_standart_praktik_')) {
             $suffix = $power === '10' ? '10kvt' : $power.'-kvt';
             $url = $base.'/kotly-i-chasti-kotlov/tverdotoplivnye_kotly/pelletnye_kotly/pelletnyj-kotel-sakovich-standart-pellet-'.$suffix;
@@ -423,6 +442,47 @@ class SantehskladCatalogContent
         } elseif (str_contains(mb_strtolower((string) $row['name']), 'klimat pro max')) {
             $url = $base.'/avtomatika-i-ventilyatory/avtomatika-dlya-tverdotoplivnyh-kotlov/kontroller-klimat-pro-max-ventilyator-nasos';
             $image = $base.'/image/cache/catalog/2025/10-25/proMAx/1-800x800.jpg';
+        } elseif (str_contains(mb_strtolower((string) $row['name']), 'regler granda')) {
+            $url = 'https://regler.pro/reglerprogrande';
+            $image = 'https://static.tildacdn.com/tild3161-3266-4966-a164-373261393262/photo.png';
+        } elseif (str_contains(mb_strtolower((string) $row['name']), 'dm320')) {
+            $url = 'https://domavtomatika.com/pl/';
+            $image = 'https://domavtomatika.com/images/dm310-350_big.png';
+        } elseif (str_contains(mb_strtolower((string) $row['name']), 'бункер')) {
+            $normalizedName = mb_strtolower((string) $row['name']);
+            if (preg_match('/(350|450|700|1000|1500|2000)\s*l/ui', $normalizedName, $match)) {
+                $url = $base.'/gorelki/bunker_dlya_hraneniya_pelleta/toplivnyj-bunker-standart-'.$match[1].'-litrov';
+                $image = $base.'/image/cache/catalog/kotly/bunkers/bunker-standart-800x800.jpg';
+            } elseif (preg_match('/(190|230|300|400|550)\s*l/ui', $normalizedName, $match)) {
+                $url = $base.'/gorelki/bunker_dlya_hraneniya_pelleta/toplivnyj-bunker-bio-'.$match[1].'-litrov';
+                $image = $base.'/image/cache/catalog/kotly/bunkers/new/bio/photo_2023-05-11_15-51-46-800x800.jpg';
+            }
+        } elseif (preg_match('/(\d+)\s*[-–]\s*(\d+)\s*(?:kw|квт)/ui', implode(' ', [(string) ($row['variant'] ?? ''), (string) $row['name']]), $range)
+            && str_contains(mb_strtolower((string) ($row['group'] ?? '')), 'rotary')) {
+            $canonical = match ($range[1].'-'.$range[2]) {
+                '5-16' => '4-16',
+                '35-200' => '30-200',
+                '50-250' => '35-250',
+                '70-300' => '50-300',
+                default => $range[1].'-'.$range[2],
+            };
+            $url = 'https://kipi.pl/en/palniki_na_pellet/palnik-rotary-'.$canonical.'-kw/';
+            $image = 'https://kipi.pl/wp-content/uploads/2020/05/Palnik-na-pellet-ROTARY-'.$canonical.'-kW-przod.jpg';
+        } elseif (str_contains(mb_strtolower((string) $row['name']), 'ester_x40')) {
+            $url = 'https://kipi.pl/en/produkty/elektronika/sterowanie-zdalne/';
+            $image = 'https://kipi.pl/wp-content/uploads/2020/05/eSTER_x40-768x768.jpg';
+        } elseif (str_contains(mb_strtolower((string) $row['name']), 'модули расширения')) {
+            $url = 'https://kipi.pl/en/produkty/elektronika/moduly/';
+            $image = 'https://kipi.pl/wp-content/uploads/2020/08/Modu%C5%82-B-768x768.jpg';
+        } elseif (str_contains(mb_strtolower((string) $row['name']), 'датчик пламени')) {
+            $url = 'https://biospal.pl/produkt/optyczny-czujnik-plomienia-ocp-5-plum/';
+            $image = 'https://biospal.pl/wp-content/uploads/2023/08/OCP-5-czujnik-optyczny-plomienia.jpg';
+        } elseif (str_contains(mb_strtolower((string) $row['name']), 'свеча накала kipi')) {
+            $url = 'https://biospal.pl/produkt/zapalarka-grzalka-ceramiczna-do-palnikow-kipi-rauschert/';
+            $image = 'https://biospal.pl/wp-content/uploads/2023/08/zapalarka-ceramiczna-gsp-kipi-defro-pellas.png';
+        } elseif (str_contains(mb_strtolower((string) $row['name']), 'регулятор тяги icma')) {
+            $url = 'https://www.icmaspa.it/categoria-prodotto/centrali-termiche-a-gas-gasolio-biocombustibili/regolatore-di-tiraggio/';
+            $image = 'https://www.icmaspa.it/wp-content/uploads/2020/09/147-600x600.jpg';
         }
 
         return compact('url', 'image');

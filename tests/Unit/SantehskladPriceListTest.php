@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Services\Suppliers\SantehskladCatalogContent;
 use App\Services\Suppliers\SantehskladPriceList;
 use PHPUnit\Framework\TestCase;
 
@@ -32,5 +33,28 @@ class SantehskladPriceListTest extends TestCase
         $this->assertSame('kipi_rotary_4_16', $parser->rowMatchIdentity($legacyKipi));
         $this->assertStringContainsString('KIPI Rotary 5-16 кВт', $legacyKipi['name']);
         $this->assertStringContainsString('KIPI Rotary 4–16 кВт', $parser->catalogName($legacyKipi));
+    }
+
+    public function test_content_sources_cover_the_previously_empty_product_families(): void
+    {
+        $parser = new SantehskladPriceList;
+        $payload = $parser->load(dirname(__DIR__, 2).'/resources/data/suppliers/santehsklad-sakovich-2026-09-17.json');
+        $content = new SantehskladCatalogContent;
+        $source = (new \ReflectionClass($content))->getMethod('source');
+
+        foreach ([
+            'max_300',
+            'pellet_eco_70',
+            'pellet_standart_4mm_16',
+            'accessory_5c3208ca6d03a1cc138b',
+            'accessory_401ce62ce6dd9ab47735',
+            'accessory_fd1ca7cffec6c00d726f',
+            'accessory_26a5c502c230c6187412',
+        ] as $identity) {
+            $row = collect($payload['rows'])->firstWhere('identity', $identity);
+
+            $this->assertNotNull($row, "Missing fixture row {$identity}");
+            $this->assertNotEmpty($source->invoke($content, $row)['image'], "Missing source image for {$identity}");
+        }
     }
 }

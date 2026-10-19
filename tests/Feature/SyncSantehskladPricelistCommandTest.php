@@ -170,11 +170,15 @@ class SyncSantehskladPricelistCommandTest extends TestCase
         $this->assertStringNotContainsString('Наддувный вентилятор', $controller->short_description);
 
         $detailedContent = str_repeat('Уже заполненное экспертное описание. ', 30);
-        $standart->forceFill(['content' => $detailedContent])->save();
+        $standart->forceFill([
+            'content' => $detailedContent,
+            'images' => [],
+        ])->save();
         $this->artisan('supplier:sync-santehsklad-pricelist', [
             '--apply' => true,
             '--enrich-content' => true,
         ])->assertSuccessful();
         $this->assertSame($detailedContent, $standart->fresh()->content);
+        $this->assertNotEmpty($standart->fresh()->images);
     }
 }
