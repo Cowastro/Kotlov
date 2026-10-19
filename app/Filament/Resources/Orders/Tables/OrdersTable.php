@@ -558,8 +558,8 @@ class OrdersTable
             ])
             ->recordActions([
                 ViewAction::make(),
-                RequestOrderSupplierReserveAction::make(),
                 ActionGroup::make([
+                    RequestOrderSupplierReserveAction::make(),
                     Action::make('confirmed')
                         ->label('Принять заказ')
                         ->icon('heroicon-o-check')
