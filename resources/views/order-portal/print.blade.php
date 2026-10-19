@@ -24,6 +24,7 @@
                 <span>Статус: <strong>{{ \App\Models\Order::STATUSES[$order->status] ?? $order->status }}</strong></span>
                 <span>Создан: <strong>{{ $order->created_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</strong></span>
                 @if($order->corrected_at)<span>Скорректирован: <strong>{{ $order->corrected_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</strong></span>@endif
+                @if($order->planned_delivery_date)<span>Плановая доставка: <strong>{{ $order->planned_delivery_date->format('d.m.Y') }}</strong></span>@endif
                 <span>Ответственный: <strong>{{ $order->manager?->name ?? $order->assigned_to ?? 'не назначен' }}</strong></span>
                 <span>Клиент: <strong>{{ $order->customer_name }}</strong> · {{ $order->customer_phone }}</span>
             </div>
@@ -64,7 +65,7 @@
     <div class="totals">Товары: <strong>{{ number_format((float)$order->subtotal, 2, ',', ' ') }} BYN</strong> · Итого: <strong>{{ number_format((float)$order->total, 2, ',', ' ') }} BYN</strong></div>
     @if($order->portalEvents->isNotEmpty())
         <div class="validity"><strong>История действий:</strong>
-            @foreach($order->portalEvents as $event)<br>{{ $event->occurred_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }} — {{ $event->metadata['label'] ?? 'Изменение заказа' }} · {{ $event->metadata['actor'] ?? 'не указан' }}@endforeach
+            @foreach($order->portalEvents as $event)<br>{{ $event->occurred_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }} — {{ $event->metadata['label'] ?? 'Изменение заказа' }}@if($event->metadata['note'] ?? null): {{ $event->metadata['note'] }}@endif @if($event->metadata['planned_delivery_date'] ?? null)(доставка {{ \Illuminate\Support\Carbon::parse($event->metadata['planned_delivery_date'])->format('d.m.Y') }})@endif · {{ $event->metadata['actor'] ?? 'не указан' }}@endforeach
         </div>
     @endif
     <div class="validity">Сформировано {{ now()->timezone('Europe/Minsk')->format('d.m.Y H:i') }} · онлайн-ссылка действует до {{ $link->expires_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }} или до завершения/отмены заказа.</div>

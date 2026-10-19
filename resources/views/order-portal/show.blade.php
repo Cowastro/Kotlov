@@ -19,6 +19,7 @@
         <span class="status">{{ $order->status === 'delivered' && $order->payment_status === 'paid' ? 'Завершён' : (\App\Models\Order::STATUSES[$order->status] ?? $order->status) }}</span>
         <span>Создан {{ $order->created_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</span>
         @if($order->corrected_at)<span>Скорректирован {{ $order->corrected_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</span>@endif
+        @if($order->planned_delivery_date)<span>Плановая доставка: <strong>{{ $order->planned_delivery_date->format('d.m.Y') }}</strong></span>@endif
         <span>Ответственный: {{ $order->manager?->name ?? $order->assigned_to ?? 'не назначен' }}</span>
         <span>{{ $preview ? 'Предпросмотр администратора' : 'Просмотр по защищённой ссылке' }}</span>
     </div>
@@ -105,11 +106,26 @@
                         <p class="small">Для текущего статуса доступных действий нет.</p>
                     @endif
 
+                    <form method="post" action="{{ route('order-portal.action', $link->token_encrypted) }}" style="margin-top:18px">
+                        @csrf
+                        <h3>Комментарий офиса</h3>
+                        <input type="text" name="actor" value="{{ old('actor', $actor) }}" placeholder="Имя сотрудника" maxlength="100" required>
+                        <select name="comment_category" required>
+                            <option value="">Тип отметки</option>
+                            <option value="no_stock" @selected(old('comment_category') === 'no_stock')>Нет в наличии</option>
+                            <option value="delivery" @selected(old('comment_category') === 'delivery')>Доставка</option>
+                            <option value="general" @selected(old('comment_category') === 'general')>Общий комментарий</option>
+                        </select>
+                        <input type="date" name="planned_delivery_date" value="{{ old('planned_delivery_date', $order->planned_delivery_date?->format('Y-m-d')) }}" aria-label="Плановая дата доставки">
+                        <textarea name="note" rows="3" maxlength="2000" placeholder="Комментарий сотрудника" required>{{ old('note') }}</textarea>
+                        <button class="button secondary" type="submit" name="workflow_action" value="add_comment">Добавить комментарий</button>
+                    </form>
+
                     @if($order->portalEvents->isNotEmpty())
                         <h3 style="margin-top:18px">История</h3>
                         <ul class="history">
                             @foreach($order->portalEvents as $event)
-                                <li><strong>{{ $event->metadata['label'] ?? 'Изменение заказа' }}</strong><br><span class="small">{{ $event->metadata['actor'] ?? 'Не указан' }} · {{ $event->occurred_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</span></li>
+                                <li><strong>{{ $event->metadata['label'] ?? 'Изменение заказа' }}</strong>@if($event->metadata['note'] ?? null)<br>{{ $event->metadata['note'] }}@endif @if($event->metadata['planned_delivery_date'] ?? null)<br><span class="small">Плановая доставка: {{ \Illuminate\Support\Carbon::parse($event->metadata['planned_delivery_date'])->format('d.m.Y') }}</span>@endif<br><span class="small">{{ $event->metadata['actor'] ?? 'Не указан' }} · {{ $event->occurred_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</span></li>
                             @endforeach
                         </ul>
                     @endif

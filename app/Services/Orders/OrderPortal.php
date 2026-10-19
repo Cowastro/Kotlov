@@ -123,18 +123,25 @@ class OrderPortal
         $this->event($link, null, 'link_revoked', metadata: $metadata);
     }
 
-    public function performAction(OrderPortalLink $link, string $action, string $actor, Request $request): bool
+    public function performAction(
+        OrderPortalLink $link,
+        string $action,
+        string $actor,
+        Request $request,
+        array $details = [],
+    ): bool
     {
         $actor = trim($actor);
         if ($actor === '') {
             throw new RuntimeException('Укажите имя сотрудника, который выполняет действие.');
         }
 
-        return DB::transaction(function () use ($link, $action, $actor, $request): bool {
+        return DB::transaction(function () use ($link, $action, $actor, $request, $details): bool {
             $order = Order::query()->lockForUpdate()->findOrFail($link->order_id);
             $fromStatus = $order->status;
             $fromPayment = $order->payment_status;
             $label = '';
+            $eventDetails = [];
 
             if ($action === 'accept_delivery') {
                 if (! in_array($order->status, ['confirmed', 'processing'], true)) {
@@ -150,6 +157,30 @@ class OrderPortal
                 $order->transitionTo('delivered', 'Онлайн-заказ: '.$actor.' — '.$label.'.', [
                     'payment_status' => 'paid',
                 ]);
+            } elseif ($action === 'add_comment') {
+                $categories = [
+                    'no_stock' => 'Нет в наличии',
+                    'delivery' => 'Доставка',
+                    'general' => 'Комментарий офиса',
+                ];
+                $category = (string) ($details['comment_category'] ?? 'general');
+                $note = trim((string) ($details['note'] ?? ''));
+                if (! isset($categories[$category]) || $note === '') {
+                    throw new RuntimeException('Выберите тип отметки и напишите комментарий.');
+                }
+
+                $label = $categories[$category];
+                $plannedDate = filled($details['planned_delivery_date'] ?? null)
+                    ? (string) $details['planned_delivery_date']
+                    : null;
+                if ($plannedDate) {
+                    $order->forceFill(['planned_delivery_date' => $plannedDate])->save();
+                }
+                $eventDetails = [
+                    'comment_category' => $category,
+                    'note' => $note,
+                    'planned_delivery_date' => $plannedDate,
+                ];
             } else {
                 throw new RuntimeException('Неизвестное действие.');
             }
@@ -166,7 +197,7 @@ class OrderPortal
                 'payment_from' => $fromPayment,
                 'payment_to' => $order->payment_status,
                 'completed' => $completed,
-            ]);
+            ] + $eventDetails);
 
             return $completed;
         });

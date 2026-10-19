@@ -69,7 +69,10 @@ class OrderPortalController extends Controller
     {
         $data = $request->validate([
             'actor' => ['required', 'string', 'max:100'],
-            'workflow_action' => ['required', 'in:accept_delivery,delivered_paid'],
+            'workflow_action' => ['required', 'in:accept_delivery,delivered_paid,add_comment'],
+            'comment_category' => ['required_if:workflow_action,add_comment', 'nullable', 'in:no_stock,delivery,general'],
+            'note' => ['required_if:workflow_action,add_comment', 'nullable', 'string', 'max:2000'],
+            'planned_delivery_date' => ['nullable', 'date'],
         ]);
 
         try {
@@ -79,6 +82,7 @@ class OrderPortalController extends Controller
                 $data['workflow_action'],
                 $data['actor'],
                 $request,
+                $data,
             );
             $request->session()->put('order_portal.actor.'.$link->public_id, trim($data['actor']));
 

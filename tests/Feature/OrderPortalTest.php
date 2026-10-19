@@ -74,6 +74,22 @@ class OrderPortalTest extends TestCase
         $portal = app(OrderPortal::class);
         $link = $portal->publish($order, $manager);
 
+        $plannedDate = today()->addDays(3)->toDateString();
+        $this->post(route('order-portal.action', $link->token_encrypted), [
+            'actor' => 'Анна, офис',
+            'workflow_action' => 'add_comment',
+            'comment_category' => 'no_stock',
+            'note' => 'Одной позиции нет в наличии, ожидаем поступление.',
+            'planned_delivery_date' => $plannedDate,
+        ])->assertRedirect($portal->url($link));
+
+        $this->assertSame($plannedDate, $order->fresh()->planned_delivery_date->toDateString());
+        $this->get($portal->url($link))
+            ->assertOk()
+            ->assertSee('Нет в наличии')
+            ->assertSee('Одной позиции нет в наличии, ожидаем поступление.')
+            ->assertSee(today()->addDays(3)->format('d.m.Y'));
+
         $this->post(route('order-portal.action', $link->token_encrypted), [
             'actor' => 'Анна, офис',
             'workflow_action' => 'accept_delivery',
