@@ -347,7 +347,7 @@ jobs:
             cat "$detail_log"
             echo "safe_availability_diagnostic_end"
           fi
-          if [[ "$TASK" == artisan-* && "${ARTISAN_ARGV[0]:-}" == "catalog:sync-boiler-range-filters" ]]; then
+          if [[ "$TASK" == artisan-* && ( "${ARTISAN_ARGV[0]:-}" == "catalog:sync-boiler-range-filters" || "${ARTISAN_ARGV[0]:-}" == "catalog:sync-membrane-tank-volume-filter" ) ]]; then
             echo "safe_filter_metrics_begin"
             grep '^metric\.filter\.' "$detail_log" || true
             echo "safe_filter_metrics_end"

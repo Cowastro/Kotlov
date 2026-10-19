@@ -74,6 +74,14 @@ Schedule::command('catalog:recalculate-popularity')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/catalog-popularity.log'));
 
+// New supplier cards inherit the same litre filter automatically. The command
+// only links an explicit tank volume and ignores membranes, brackets and kits.
+Schedule::command('catalog:sync-membrane-tank-volume-filter --apply')
+    ->dailyAt('04:10')
+    ->timezone('Europe/Minsk')
+    ->withoutOverlapping(10)
+    ->appendOutputTo(storage_path('logs/catalog-filter-sync.log'));
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
