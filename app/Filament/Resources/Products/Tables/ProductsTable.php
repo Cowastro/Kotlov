@@ -358,8 +358,6 @@ class ProductsTable
                 CreateCommercialDocumentAction::make()
                     ->iconButton()
                     ->tooltip('Создать КП и привязать к лиду'),
-                RequestSupplierReserveAction::make()
-                    ->iconButton(),
                 Action::make('open_supplier_correspondence')
                     ->label('Переписка с поставщиком')
                     ->icon('heroicon-o-envelope-open')
@@ -381,6 +379,7 @@ class ProductsTable
                         'filters' => ['product_id' => ['value' => $record->id]],
                     ])),
                 ActionGroup::make([
+                    RequestSupplierReserveAction::make(),
                     Action::make('market_price_details')
                         ->label('Рынок и цены')
                         ->icon('heroicon-o-presentation-chart-line')
@@ -965,7 +964,7 @@ class ProductsTable
     {
         $suppliers = self::productSuppliers($record);
         $showNames = $suppliers->count() > 1;
-        $rows = $suppliers->map(function (Supplier $supplier) use ($showNames): ?string {
+        $rows = $suppliers->map(function (Supplier $supplier) use ($record, $showNames): ?string {
             $phone = $supplier->contactPhoneNumbers()[0] ?? null;
             $email = $supplier->contactEmailAddresses()[0] ?? null;
             if (! $phone && ! $email) {
@@ -974,7 +973,11 @@ class ProductsTable
 
             $links = collect([
                 $phone ? AdminPhoneLinks::render($phone)?->toHtml() : null,
-                $email ? '<a class="text-primary-600 hover:underline" href="mailto:'.e($email).'">✉ '.e($email).'</a>' : null,
+                $email ? sprintf(
+                    '<button type="button" class="text-primary-600 hover:underline" wire:click.stop="mountTableAction(\'request_supplier_reserve\', \'%s\')" title="Запросить резерв через CRM" aria-label="Запросить резерв у поставщика через CRM">✉ %s</button>',
+                    e((string) $record->getKey()),
+                    e($email),
+                ) : null,
             ])->filter()->implode(' · ');
 
             return ($showNames ? '<span class="text-gray-500">'.e($supplier->name).':</span> ' : '').$links;
