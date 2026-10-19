@@ -61,6 +61,7 @@ class OrderPortalController extends Controller
         return $this->securedView('order-portal.print', [
             'link' => $link,
             'order' => $link->order,
+            'qr' => $portal->qrDataUri($link),
         ]);
     }
 

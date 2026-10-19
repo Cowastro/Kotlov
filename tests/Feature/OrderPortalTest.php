@@ -34,6 +34,8 @@ class OrderPortalTest extends TestCase
             ->assertOk()
             ->assertSee('Заказ '.$order->number)
             ->assertSee('Вернуться к заказу')
+            ->assertSee('Открыть заказ с телефона')
+            ->assertSee('QR-код онлайн-заказа')
             ->assertSee('Комплект автоматики');
     }
 
