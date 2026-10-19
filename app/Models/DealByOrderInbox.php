@@ -81,4 +81,9 @@ class DealByOrderInbox extends Model
     {
         return $this->belongsTo(Order::class);
     }
+
+    public function sourceLabel(): string
+    {
+        return 'Deal.by №'.$this->remote_order_id;
+    }
 }

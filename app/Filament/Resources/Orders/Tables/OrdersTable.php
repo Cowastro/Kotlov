@@ -96,6 +96,7 @@ class OrdersTable
                     'items.product.integrationProducts.source.supplier.crmCounterparty.contactPoints',
                     'items.product.supplierProducts.supplier.crmCounterparty.contactPoints',
                     'manager:id,name',
+                    'dealByInbox:id,order_id,remote_order_id,remote_status,remote_status_name,remote_created_at',
                     'archivedBy:id,name',
                     'placedEconomicSnapshot',
                     'latestSettlement',
@@ -112,7 +113,10 @@ class OrdersTable
                     ->label('№ заказа')
                     ->searchable()
                     ->sortable()
-                    ->description(fn (Order $record): string => $record->created_at?->format('d.m.Y H:i') ?? 'Дата не указана')
+                    ->description(fn (Order $record): string => collect([
+                        $record->dealByInbox?->sourceLabel(),
+                        $record->created_at?->format('d.m.Y H:i') ?? 'Дата не указана',
+                    ])->filter()->implode(' · '))
                     ->width('132px')
                     ->grow(false)
                     ->weight('bold'),

@@ -20,7 +20,10 @@ class DealByOrderCapture
 
     private const PAGE_SIZE = 100;
 
-    public function __construct(private readonly DealByClient $client) {}
+    public function __construct(
+        private readonly DealByClient $client,
+        private readonly DealByOrderProjector $projector,
+    ) {}
 
     /**
      * @return array{received:int,created:int,updated:int,unchanged:int,from:string,to:string}
@@ -131,14 +134,14 @@ class DealByOrderCapture
         $encoded = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         $hash = hash('sha256', $encoded);
 
-        return DB::transaction(function () use ($payload, $seenAt, $remoteOrderId, $hash): string {
+        [$result, $inboxId] = DB::transaction(function () use ($payload, $seenAt, $remoteOrderId, $hash): array {
             $inbox = DealByOrderInbox::query()
                 ->where('remote_order_id', $remoteOrderId)
                 ->lockForUpdate()
                 ->first();
 
             if (! $inbox) {
-                DealByOrderInbox::query()->create([
+                $inbox = DealByOrderInbox::query()->create([
                     ...$this->attributes($payload, $seenAt),
                     'remote_order_id' => $remoteOrderId,
                     'first_seen_at' => $seenAt,
@@ -147,13 +150,13 @@ class DealByOrderCapture
                     'processing_status' => DealByOrderInbox::STATUS_PENDING,
                 ]);
 
-                return 'created';
+                return ['created', $inbox->id];
             }
 
             if (hash_equals($inbox->payload_hash, $hash)) {
                 $inbox->forceFill(['last_seen_at' => $seenAt])->save();
 
-                return 'unchanged';
+                return ['unchanged', $inbox->id];
             }
 
             $inbox->forceFill([
@@ -166,8 +169,12 @@ class DealByOrderCapture
                 'last_error' => null,
             ])->save();
 
-            return 'updated';
+            return ['updated', $inbox->id];
         });
+
+        $this->projector->projectSafely(DealByOrderInbox::query()->findOrFail($inboxId));
+
+        return $result;
     }
 
     /** @param array<string, mixed> $payload

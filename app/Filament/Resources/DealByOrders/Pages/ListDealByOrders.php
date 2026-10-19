@@ -3,15 +3,14 @@
 namespace App\Filament\Resources\DealByOrders\Pages;
 
 use App\Filament\Resources\DealByOrders\DealByOrderResource;
-use Filament\Resources\Pages\ListRecords;
-use Filament\Support\Enums\Width;
+use App\Filament\Resources\Orders\Pages\ListOrders;
 
-class ListDealByOrders extends ListRecords
+class ListDealByOrders extends ListOrders
 {
     protected static string $resource = DealByOrderResource::class;
 
-    public function getMaxContentWidth(): Width|string|null
+    protected function getHeaderActions(): array
     {
-        return Width::Full;
+        return [];
     }
 }

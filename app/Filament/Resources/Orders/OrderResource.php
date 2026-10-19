@@ -16,6 +16,7 @@ use Filament\Support\Colors\Color;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class OrderResource extends Resource
 {
@@ -31,7 +32,7 @@ class OrderResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = Order::where('status', 'new')->count();
+        $count = static::getEloquentQuery()->where('status', 'new')->count();
         return $count > 0 ? (string) $count : null;
     }
 
@@ -42,6 +43,11 @@ class OrderResource extends Resource
     public static function form(Schema $schema): Schema { return OrderForm::configure($schema); }
     public static function infolist(Schema $schema): Schema { return OrderInfolist::configure($schema); }
     public static function table(Table $table): Table { return OrdersTable::configure($table); }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->whereDoesntHave('dealByInbox');
+    }
     public static function getRelations(): array { return []; }
     public static function getPages(): array
     {

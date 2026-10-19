@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\DealByOrders\DealByOrderResource;
+use App\Filament\Resources\Orders\OrderResource;
 use App\Models\DealByOrderInbox;
 use App\Models\User;
+use App\Services\Marketplaces\DealByOrderProjector;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -12,10 +14,10 @@ class DealByOrderAdminResourceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_manager_can_view_deal_by_order_in_its_separate_read_only_section(): void
+    public function test_manager_gets_the_regular_order_workspace_for_deal_by_orders(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
-        $order = DealByOrderInbox::query()->create([
+        $inbox = DealByOrderInbox::query()->create([
             'remote_order_id' => '987654',
             'remote_status' => 'pending',
             'remote_status_name' => 'Новый',
@@ -45,13 +47,16 @@ class DealByOrderAdminResourceTest extends TestCase
             'processing_status' => DealByOrderInbox::STATUS_PENDING,
         ]);
 
+        $order = app(DealByOrderProjector::class)->project($inbox);
+
         $this->actingAs($manager)
             ->get(DealByOrderResource::getUrl('index', panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Заказы Deal.by')
-            ->assertSeeText($order->remote_order_id)
+            ->assertSeeText('DBY-987654')
             ->assertSeeText('Покупатель Иван')
-            ->assertSeeText('Тестовый котёл');
+            ->assertSeeText('Мои заказы')
+            ->assertSeeText('Без ответственного');
 
         $this->actingAs($manager)
             ->get(DealByOrderResource::getUrl('view', ['record' => $order], panel: 'admin'))
@@ -60,11 +65,21 @@ class DealByOrderAdminResourceTest extends TestCase
             ->assertSeeText('+375290000000')
             ->assertSeeText('buyer@example.test')
             ->assertSeeText('Позвонить перед доставкой')
-            ->assertSeeText('Тестовый котёл');
+            ->assertSeeText('Тестовый котёл')
+            ->assertSeeText('Принять заказ');
+
+        $this->actingAs($manager)
+            ->get(DealByOrderResource::getUrl('edit', ['record' => $order], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Управление заказом');
+
+        $this->actingAs($manager)
+            ->get(OrderResource::getUrl('view', ['record' => $order], panel: 'admin'))
+            ->assertNotFound();
 
         $this->assertFalse(DealByOrderResource::canCreate());
-        $this->assertFalse(DealByOrderResource::canEdit($order));
-        $this->assertFalse(DealByOrderResource::canDelete($order));
-        $this->assertFalse(DealByOrderResource::canDeleteAny());
+        $this->assertTrue(DealByOrderResource::canEdit($order));
+        $this->assertFalse(OrderResource::getEloquentQuery()->whereKey($order)->exists());
+        $this->assertTrue(DealByOrderResource::getEloquentQuery()->whereKey($order)->exists());
     }
 }

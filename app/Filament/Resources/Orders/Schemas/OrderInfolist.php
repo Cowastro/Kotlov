@@ -118,8 +118,20 @@ class OrderInfolist
                     ->columnSpanFull()
                     ->compact()
                     ->columns(3)
-                    ->visible(fn (Order $record): bool => filled($record->commercial_document_id) || filled($record->crm_counterparty_id))
+                    ->visible(fn (Order $record): bool => filled($record->commercial_document_id)
+                        || filled($record->crm_counterparty_id)
+                        || $record->dealByInbox !== null)
                     ->schema([
+                        TextEntry::make('dealByInbox.remote_order_id')
+                            ->label('Источник')
+                            ->formatStateUsing(fn (?string $state): string => $state ? 'Deal.by №'.$state : '—')
+                            ->badge()
+                            ->color('info')
+                            ->placeholder('—'),
+                        TextEntry::make('dealByInbox.remote_status_name')
+                            ->label('Статус Deal.by')
+                            ->badge()
+                            ->placeholder('—'),
                         TextEntry::make('commercialDocument.number')
                             ->label('Коммерческое предложение')
                             ->placeholder('—')

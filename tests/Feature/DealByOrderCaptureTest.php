@@ -37,7 +37,7 @@ class DealByOrderCaptureTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_it_captures_an_order_without_creating_an_operational_order(): void
+    public function test_it_captures_and_projects_an_operational_order(): void
     {
         Http::fake([
             'https://my.deal.test/api/v1/orders/list*' => Http::response([
@@ -48,13 +48,26 @@ class DealByOrderCaptureTest extends TestCase
         $this->artisan('deal:pull-orders')->assertSuccessful();
 
         $this->assertDatabaseCount('deal_by_order_inboxes', 1);
-        $this->assertDatabaseCount('orders', 0);
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseCount('order_items', 1);
 
         $inbox = DealByOrderInbox::query()->sole();
         $this->assertSame('987654', $inbox->remote_order_id);
         $this->assertSame('pending', $inbox->remote_status);
         $this->assertSame('buyer@example.test', $inbox->payload['email']);
-        $this->assertSame(DealByOrderInbox::STATUS_PENDING, $inbox->processing_status);
+        $this->assertSame(DealByOrderInbox::STATUS_PROCESSED, $inbox->processing_status);
+        $this->assertNotNull($inbox->order_id);
+        $this->assertDatabaseHas('orders', [
+            'id' => $inbox->order_id,
+            'number' => 'DBY-987654',
+            'customer_email' => 'buyer@example.test',
+            'status' => 'new',
+        ]);
+        $this->assertDatabaseHas('order_items', [
+            'order_id' => $inbox->order_id,
+            'product_sku' => 'test-product',
+            'quantity' => 1,
+        ]);
         $this->assertNotNull(MarketplaceSyncCursor::query()->where('channel', 'deal_by')->where('stream', 'orders')->first()?->last_succeeded_at);
 
         $rawPayload = DB::table('deal_by_order_inboxes')->value('payload');
@@ -80,10 +93,11 @@ class DealByOrderCaptureTest extends TestCase
         $this->artisan('deal:pull-orders')->assertSuccessful();
 
         $this->assertDatabaseCount('deal_by_order_inboxes', 1);
+        $this->assertDatabaseCount('orders', 1);
         $inbox = DealByOrderInbox::query()->sole();
         $this->assertSame('received', $inbox->remote_status);
         $this->assertSame('received', $inbox->payload['status']);
-        $this->assertNull($inbox->order_id);
+        $this->assertNotNull($inbox->order_id);
 
         $requests = Http::recorded();
         $this->assertSame('2026-10-19 07:45:00', $requests[1][0]['last_modified_from']);
@@ -131,6 +145,7 @@ class DealByOrderCaptureTest extends TestCase
         $this->artisan('deal:pull-orders')->assertSuccessful();
 
         $this->assertDatabaseCount('deal_by_order_inboxes', 101);
+        $this->assertDatabaseCount('orders', 101);
         Http::assertSentCount(2);
         $requests = Http::recorded();
         $this->assertFalse(isset($requests[0][0]['last_id']));

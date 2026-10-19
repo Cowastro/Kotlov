@@ -32,7 +32,7 @@ class ViewOrder extends ViewRecord
 
     protected function resolveRecord(int|string $key): Order
     {
-        return Order::with([
+        return static::getResource()::getEloquentQuery()->with([
             'items.product.category',
             'items.product.supplierProducts.supplier',
             'items.product.integrationProducts.source.supplier',
@@ -53,6 +53,7 @@ class ViewOrder extends ViewRecord
             'statusHistory.user',
             'user',
             'manager',
+            'dealByInbox',
             'integrationDeliveries.source',
         ])->findOrFail($key);
     }

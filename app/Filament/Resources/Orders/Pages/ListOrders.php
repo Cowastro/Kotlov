@@ -38,25 +38,25 @@ class ListOrders extends ListRecords
             'cancelled' => 'danger',
         ];
 
-        $workQueueCount = Order::query()->operationallyActive()->count();
-        $unassigned = Order::query()
+        $workQueueCount = $this->ordersQuery()->operationallyActive()->count();
+        $unassigned = $this->ordersQuery()
             ->operationallyActive()
             ->whereNull('manager_id')
             ->where(fn (Builder $query): Builder => $query
                 ->whereNull('assigned_to')
                 ->orWhere('assigned_to', ''))
             ->count();
-        $myCount = Order::where('manager_id', auth()->id())->count();
-        $attentionCount = Order::query()->withOperationalProblem('needs_attention')->count();
-        $missingPriceCount = Order::query()->operationallyActive()->withOperationalProblem('missing_price')->count();
-        $missingSupplierCount = Order::query()->operationallyActive()->withOperationalProblem('missing_supplier')->count();
-        $marginRiskCount = Order::query()
+        $myCount = $this->ordersQuery()->where('manager_id', auth()->id())->count();
+        $attentionCount = $this->ordersQuery()->withOperationalProblem('needs_attention')->count();
+        $missingPriceCount = $this->ordersQuery()->operationallyActive()->withOperationalProblem('missing_price')->count();
+        $missingSupplierCount = $this->ordersQuery()->operationallyActive()->withOperationalProblem('missing_supplier')->count();
+        $marginRiskCount = $this->ordersQuery()
             ->operationallyActive()
             ->where(fn (Builder $query): Builder => $query
                 ->withOperationalProblem('negative_margin')
                 ->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem('low_margin')))
             ->count();
-        $archivedCount = Order::query()->archived()->count();
+        $archivedCount = $this->ordersQuery()->archived()->count();
 
         $tabs = [
             'work_queue' => Tab::make('В работе')
@@ -117,11 +117,11 @@ class ListOrders extends ListRecords
                 ->badgeColor('danger'),
 
             'all' => Tab::make('Все заказы')
-                ->badge(Order::count()),
+                ->badge($this->ordersQuery()->count()),
         ];
 
         foreach (Order::STATUSES as $key => $label) {
-            $count = Order::where('status', $key)->count();
+            $count = $this->ordersQuery()->where('status', $key)->count();
             $tabs[$key] = Tab::make($label)
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', $key))
                 ->badge($count ?: null)
@@ -129,5 +129,10 @@ class ListOrders extends ListRecords
         }
 
         return $tabs;
+    }
+
+    protected function ordersQuery(): Builder
+    {
+        return static::getResource()::getEloquentQuery();
     }
 }

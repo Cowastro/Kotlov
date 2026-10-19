@@ -42,7 +42,7 @@ class PullDealByOrdersCommand extends Command
             $result['updated'],
             $result['unchanged'],
         ]]);
-        $this->info('Заказы сохранены во входящий журнал. Рабочие заказы и Deal.by не изменялись.');
+        $this->info('Заказы сохранены во входящий журнал и переданы в рабочую очередь менеджеров.');
 
         return self::SUCCESS;
     }

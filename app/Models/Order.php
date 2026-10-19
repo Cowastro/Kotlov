@@ -283,6 +283,11 @@ class Order extends Model
         return $this->belongsTo(CommercialDocument::class);
     }
 
+    public function dealByInbox(): HasOne
+    {
+        return $this->hasOne(DealByOrderInbox::class);
+    }
+
     public function crmCounterparty(): BelongsTo
     {
         return $this->belongsTo(CrmCounterparty::class);

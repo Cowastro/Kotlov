@@ -55,7 +55,7 @@ class EditOrder extends EditRecord
                         ->title('Заказ закрыт и перемещён в архив')
                         ->send();
 
-                    $this->redirect(OrderResource::getUrl('view', ['record' => $this->record]));
+                    $this->redirect(static::getResource()::getUrl('view', ['record' => $this->record]));
                 }),
         ];
     }
