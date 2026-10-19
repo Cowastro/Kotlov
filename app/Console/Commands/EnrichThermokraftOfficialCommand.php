@@ -313,6 +313,7 @@ class EnrichThermokraftOfficialCommand extends Command
                     $result = $enricher->enrichFromParsed($product, $rule['url'], $parsed, [
                         'replace_images' => (bool) $this->option('overwrite-images'),
                         'update_images' => true,
+                        'fallback_remote_images' => $imagesOnly,
                         'update_specs' => ! $imagesOnly,
                         'replace_specs' => ! $imagesOnly && (bool) $this->option('replace-specs'),
                         'min_specs_to_replace' => 4,
