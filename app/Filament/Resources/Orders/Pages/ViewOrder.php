@@ -16,6 +16,7 @@ use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
 use App\Services\Orders\SupplierReservationMailService;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -70,13 +71,14 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('printProcurement')
+            ActionGroup::make([
+                Action::make('printProcurement')
                 ->label('Печать для закупок')
                 ->icon('heroicon-o-printer')
                 ->color('gray')
                 ->url(fn (): string => route('admin.orders.procurement', ['order' => $this->record]))
                 ->openUrlInNewTab(),
-            Action::make('emailProcurement')
+                Action::make('emailProcurement')
                 ->label('Отправить в закупки')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('info')
@@ -121,16 +123,25 @@ class ViewOrder extends ViewRecord
                         ->body('Получатель: '.$data['recipient'])
                         ->send();
                 }),
-            Action::make('viewProductOnSite')
-                ->label('Посмотреть на сайте')
-                ->icon('heroicon-o-arrow-top-right-on-square')
+                Action::make('viewProductsOnSite')
+                ->label('Товары на сайте')
+                ->icon('heroicon-o-link')
                 ->color('gray')
-                ->url(fn (): ?string => $this->record->items
-                    ->first(fn (OrderItem $item): bool => filled($item->publicProductUrl()))
-                    ?->publicProductUrl())
-                ->openUrlInNewTab()
+                ->modalHeading('Карточки товаров заказа')
+                ->modalDescription('Каждая ссылка ведёт на соответствующую позицию заказа, а не только на первый товар.')
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel('Закрыть')
+                ->modalContent(fn () => view('filament.resources.orders.product-links', [
+                    'items' => $this->record->items
+                        ->filter(fn (OrderItem $item): bool => filled($item->publicProductUrl())),
+                ]))
                 ->visible(fn (): bool => $this->record->items
                     ->contains(fn (OrderItem $item): bool => filled($item->publicProductUrl()))),
+            ])
+                ->label('Документы')
+                ->icon('heroicon-o-document-text')
+                ->color('gray')
+                ->button(),
             Action::make('acceptOrder')
                 ->label('Принять заказ')
                 ->icon('heroicon-o-hand-raised')
@@ -172,7 +183,8 @@ class ViewOrder extends ViewRecord
                 ->visible(fn (): bool => $this->record->status === 'shipped')
                 ->requiresConfirmation()
                 ->action(fn () => $this->transitionOrder('delivered', 'Клиент получил заказ.')),
-            Action::make('confirmFulfillment')
+            ActionGroup::make([
+                Action::make('confirmFulfillment')
                 ->label('Подтвердить исполнение')
                 ->icon('heroicon-o-check-badge')
                 ->color('warning')
@@ -495,7 +507,13 @@ class ViewOrder extends ViewRecord
                         ->body('Она опубликована в изолированном кабинете поставщика. Автоматического письма не отправлялось.')
                         ->send();
                 }),
-            Action::make('changeWorkflowStatus')
+            ])
+                ->label('Исполнение и закупки')
+                ->icon('heroicon-o-truck')
+                ->color('warning')
+                ->button(),
+            ActionGroup::make([
+                Action::make('changeWorkflowStatus')
                 ->label('Изменить этап вручную')
                 ->icon('heroicon-o-arrows-right-left')
                 ->color('gray')
@@ -560,8 +578,14 @@ class ViewOrder extends ViewRecord
                         ->send();
                 }),
             EditAction::make()
+                ->label('Редактировать заказ')
                 ->icon('heroicon-o-pencil-square')
                 ->extraAttributes(['class' => 'order-view-action order-view-action--edit']),
+            ])
+                ->label('Управление')
+                ->icon('heroicon-o-ellipsis-horizontal')
+                ->color('gray')
+                ->button(),
         ];
     }
 
