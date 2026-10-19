@@ -583,6 +583,35 @@ class ViewOrder extends ViewRecord
                 ->color('warning')
                 ->button(),
             ActionGroup::make([
+            Action::make('addManagerComment')
+                ->label('Добавить комментарий')
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->color('info')
+                ->schema([
+                    Textarea::make('comment')
+                        ->label('Комментарий сотрудника')
+                        ->rows(3)
+                        ->minLength(2)
+                        ->maxLength(2000)
+                        ->required(),
+                ])
+                ->modalHeading('Комментарий к заказу')
+                ->modalSubmitActionLabel('Добавить')
+                ->action(function (array $data): void {
+                    $user = auth()->user();
+                    $timezone = config('app.display_timezone', 'Europe/Minsk');
+                    $note = '['.now()->timezone($timezone)->format('d.m.Y H:i').'] '
+                        .($user?->name ?: 'Сотрудник').' — Комментарий менеджера: '
+                        .trim((string) $data['comment']);
+                    $comment = filled($this->record->admin_comment)
+                        ? rtrim((string) $this->record->admin_comment)."\n\n".$note
+                        : $note;
+
+                    $this->record->forceFill(['admin_comment' => $comment])->save();
+                    $this->reloadRecord();
+
+                    Notification::make()->success()->title('Комментарий добавлен')->send();
+                }),
                 Action::make('changeWorkflowStatus')
                 ->label('Изменить этап вручную')
                 ->icon('heroicon-o-arrows-right-left')

@@ -14,6 +14,7 @@ use App\Models\OrderItem;
 use App\Models\SupplierOrderRequest;
 use App\Services\Orders\OrderSettlementManager;
 use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -575,17 +576,20 @@ class OrderInfolist
                             ->schema([
                                 TextEntry::make('product_name')
                                     ->label('Товар')
-                                    ->columnSpan(2)
+                                    ->columnSpan(3)
                                     ->url(fn ($record): ?string => $record->publicProductUrl())
                                     ->openUrlInNewTab(),
 
-                                TextEntry::make('public_product_page')
-                                    ->label('На сайте')
-                                    ->state(fn ($record): ?string => $record->publicProductUrl() ? 'Посмотреть' : null)
-                                    ->placeholder('Нет страницы')
-                                    ->badge()
+                                IconEntry::make('public_product_page')
+                                    ->hiddenLabel()
+                                    ->state(fn ($record): bool => $record->publicProductUrl() !== null)
+                                    ->boolean()
+                                    ->trueIcon('heroicon-o-arrow-top-right-on-square')
+                                    ->falseIcon('heroicon-o-minus')
                                     ->color(fn ($record): string => $record->publicProductUrl() ? 'info' : 'gray')
-                                    ->icon('heroicon-o-arrow-top-right-on-square')
+                                    ->tooltip(fn ($record): string => $record->publicProductUrl()
+                                        ? 'Открыть товар на сайте'
+                                        : 'Карточка на сайте отсутствует')
                                     ->url(fn ($record): ?string => $record->publicProductUrl())
                                     ->openUrlInNewTab(),
 
@@ -601,14 +605,11 @@ class OrderInfolist
                                     ->suffix(' шт.'),
 
                                 TextEntry::make('price')
-                                    ->label('Продажа / шт.')
-                                    ->formatStateUsing($byn),
-
-                                TextEntry::make('total')
-                                    ->label('Сумма')
+                                    ->label('Продажа')
                                     ->weight('bold')
                                     ->color('primary')
-                                    ->formatStateUsing($byn),
+                                    ->formatStateUsing(fn ($state, $record): string => $byn($state)
+                                        .((int) $record->quantity > 1 ? ' × '.(int) $record->quantity.' = '.$byn($record->total) : '')),
 
                                 TextEntry::make('supply_supplier')
                                     ->label('Поставщик')
@@ -622,6 +623,33 @@ class OrderInfolist
                                     ->columnSpan(2)
                                     ->state(fn ($record): string => $record->supplyContext()['stock_label'])
                                     ->weight('bold'),
+
+                                TextEntry::make('fulfillment_result_summary')
+                                    ->label('Итог исполнения')
+                                    ->columnSpanFull()
+                                    ->state(function ($record) use ($byn): string {
+                                        if (! $record->fulfillment_route) {
+                                            return 'Требует решения: маршрут и входная цена не подтверждены';
+                                        }
+
+                                        return collect([
+                                            $record->fulfillmentRouteLabel(),
+                                            $record->fulfillment_supplier_name
+                                                ?: ($record->fulfillment_route === 'own_stock' ? 'Собственный склад' : null),
+                                            $record->fulfillment_purchase_price !== null
+                                                ? 'вход '.$byn($record->fulfillment_purchase_price)
+                                                : 'входная цена не указана',
+                                            $record->fulfillment_confirmed_at
+                                                ? 'подтвердил '.($record->fulfillmentConfirmedBy?->name ?? 'система')
+                                                    .' · '.$record->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
+                                                : null,
+                                        ])->filter()->implode(' · ');
+                                    })
+                                    ->badge()
+                                    ->color(fn ($record): string => $record->fulfillment_route ? 'success' : 'warning')
+                                    ->icon(fn ($record): string => $record->fulfillment_route
+                                        ? 'heroicon-o-check-circle'
+                                        : 'heroicon-o-exclamation-triangle'),
 
                                 Section::make('Закупка и исполнение')
                                     ->icon('heroicon-o-truck')
@@ -676,74 +704,10 @@ class OrderInfolist
                                         default => 'success',
                                     }),
 
-                                TextEntry::make('supply_stock')
-                                    ->label('Наличие')
-                                    ->columnSpan(2)
-                                    ->state(fn ($record): string => $record->supplyContext()['stock_label']),
-
-                                TextEntry::make('supply_source')
-                                    ->label('Источник данных')
-                                    ->columnSpan(2)
-                                    ->state(fn ($record): ?string => $record->supplyContext()['source_label'])
-                                    ->placeholder('Нет источника'),
-
-                                TextEntry::make('supply_confidence')
-                                    ->label('Надёжность маршрута')
-                                    ->columnSpan(2)
-                                    ->state(function ($record): string {
-                                        $context = $record->supplyContext();
-
-                                        return match (true) {
-                                            $context['is_snapshot'] => 'Снимок заказа · '.optional($record->supply_captured_at)->timezone('Europe/Minsk')->format('d.m.Y H:i'),
-                                            $context['is_explicit'] => 'Явная связь товара',
-                                            $context['candidate_count'] > 1 => 'Рекомендация · вариантов: '.$context['candidate_count'],
-                                            $context['candidate_count'] === 1 => 'Текущая рекомендация',
-                                            default => 'Нужна ручная маршрутизация',
-                                        };
-                                    })
-                                    ->badge()
-                                    ->color(fn ($record): string => match (true) {
-                                        $record->supplyContext()['is_explicit'] => 'success',
-                                        $record->supplyContext()['candidate_count'] > 1 => 'warning',
-                                        $record->supplyContext()['candidate_count'] === 1 => 'info',
-                                        default => 'danger',
-                                    }),
-
-                                TextEntry::make('fulfillment_decision')
-                                    ->label('Решение менеджера')
-                                    ->columnSpan(3)
-                                    ->state(fn ($record): ?string => $record->fulfillmentRouteLabel())
-                                    ->placeholder('Не подтверждено')
-                                    ->badge()
-                                    ->color(fn ($record): string => $record->fulfillment_route ? 'success' : 'warning'),
-
-                                TextEntry::make('fulfillment_executor')
-                                    ->label('Исполнитель')
-                                    ->columnSpan(3)
-                                    ->state(fn ($record): ?string => $record->fulfillment_supplier_name)
-                                    ->placeholder(fn ($record): string => $record->fulfillment_route === 'own_stock'
-                                        ? 'Собственный склад'
-                                        : 'Не выбран'),
-
-                                TextEntry::make('fulfillment_confirmation')
-                                    ->label('Подтвердил')
-                                    ->columnSpan(3)
-                                    ->state(fn ($record): ?string => $record->fulfillment_confirmed_at
-                                        ? (($record->fulfillmentConfirmedBy?->name ?? 'Система').' · '.$record->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i'))
-                                        : null)
-                                    ->placeholder('Ожидает решения'),
-
-                                TextEntry::make('fulfillment_purchase_price')
-                                    ->label('Подтверждённая входная цена')
-                                    ->columnSpan(3)
-                                    ->placeholder('Не указана')
-                                    ->formatStateUsing(fn ($state): string => $state === null ? 'Не указана' : $byn($state))
-                                    ->color(fn ($state): string => $state === null ? 'warning' : 'success'),
-
                                 TextEntry::make('fulfillment_note')
                                     ->label('Комментарий к маршруту')
                                     ->columnSpanFull()
-                                    ->placeholder('—'),
+                                    ->visible(fn ($record): bool => filled($record->fulfillment_note)),
                                     ]),
                             ]),
                     ]),
@@ -874,7 +838,8 @@ class OrderInfolist
 
                         TextEntry::make('admin_comment')
                             ->label('Комментарий менеджера')
-                            ->placeholder('Комментарий отсутствует'),
+                            ->placeholder('Комментарий отсутствует')
+                            ->helperText(fn (Order $record): ?string => self::managerCommentAttribution($record)),
                     ]),
 
                 // ── История: полная ширина ────────────────────────────────────
@@ -939,5 +904,26 @@ class OrderInfolist
         ) ?? $escaped;
 
         return new HtmlString($escaped);
+    }
+
+    private static function managerCommentAttribution(Order $order): ?string
+    {
+        if (blank($order->admin_comment)) {
+            return null;
+        }
+
+        preg_match_all(
+            '/\[(\d{2}\.\d{2}\.\d{4} \d{2}:\d{2})\]\s+(.+?)\s+—/u',
+            (string) $order->admin_comment,
+            $matches,
+        );
+
+        if (! empty($matches[1])) {
+            $last = array_key_last($matches[1]);
+
+            return 'Последний автор: '.$matches[2][$last].' · '.$matches[1][$last];
+        }
+
+        return 'Автор не зафиксирован: комментарий создан до включения журнала сотрудников.';
     }
 }

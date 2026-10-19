@@ -65,6 +65,28 @@ class OrderClosureWorkflowTest extends TestCase
         $this->assertFalse($shipped->canBeClosedAsIrrelevant());
     }
 
+    public function test_manager_comment_is_signed_with_logged_in_employee_and_time(): void
+    {
+        $manager = User::factory()->create([
+            'name' => 'Анна Офис',
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+        $order = $this->order('confirmed');
+
+        Livewire::actingAs($manager)
+            ->test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionVisible('addManagerComment')
+            ->callAction('addManagerComment', [
+                'comment' => 'Доставка согласована на понедельник.',
+            ])
+            ->assertHasNoActionErrors();
+
+        $comment = (string) $order->fresh()->admin_comment;
+        $this->assertStringContainsString('Анна Офис — Комментарий менеджера', $comment);
+        $this->assertStringContainsString('Доставка согласована на понедельник.', $comment);
+    }
+
     public function test_order_with_catalog_product_has_visible_public_site_action(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
