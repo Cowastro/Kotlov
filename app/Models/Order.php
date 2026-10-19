@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Marketplaces\DealByOrderStatusSync;
 use App\Services\Orders\OrderItemSupplyContextResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -159,10 +160,17 @@ class Order extends Model
 
     public function transitionTo(string $status, ?string $historyComment = null, array $attributes = []): bool
     {
+        $previousStatus = $this->status;
         $this->pendingStatusHistoryComment = $historyComment;
 
         try {
-            return $this->update([...$attributes, 'status' => $status]);
+            $updated = $this->update([...$attributes, 'status' => $status]);
+
+            if ($updated && $previousStatus !== $status) {
+                app(DealByOrderStatusSync::class)->syncSafely($this, $historyComment);
+            }
+
+            return $updated;
         } finally {
             $this->pendingStatusHistoryComment = null;
         }

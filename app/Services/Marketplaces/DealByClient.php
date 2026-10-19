@@ -39,6 +39,25 @@ class DealByClient
         ]), fn (mixed $value): bool => $value !== null && $value !== ''));
     }
 
+    /**
+     * @param  array<int, int|string>  $orderIds
+     * @return array<string, mixed>
+     */
+    public function setOrderStatus(array $orderIds, string $status, ?string $cancellationText = null): array
+    {
+        $body = [
+            'status' => $status,
+            'ids' => array_values($orderIds),
+        ];
+
+        if ($status === 'canceled') {
+            $body['cancellation_reason'] = 'another';
+            $body['cancellation_text'] = $cancellationText ?: 'Отменено менеджером KOTLOV.BY';
+        }
+
+        return $this->post('orders/set_status', $body);
+    }
+
     /** @param array<string, scalar> $query
      * @return array<string, mixed>
      */
@@ -55,6 +74,27 @@ class DealByClient
 
         if (filled($payload['error'] ?? null)) {
             throw new RuntimeException('Deal.by API отклонил параметры запроса: '.trim((string) $payload['error']));
+        }
+
+        return $payload;
+    }
+
+    /** @param array<string, mixed> $body
+     * @return array<string, mixed>
+     */
+    private function post(string $path, array $body): array
+    {
+        $response = $this->request()
+            ->post($this->url($path), $body)
+            ->throw();
+
+        $payload = $response->json();
+        if (! is_array($payload)) {
+            throw new RuntimeException('Deal.by вернул ответ не в формате JSON.');
+        }
+
+        if (filled($payload['error'] ?? null) || filled($payload['errors'] ?? null)) {
+            throw new RuntimeException('Deal.by не принял новый статус заказа.');
         }
 
         return $payload;

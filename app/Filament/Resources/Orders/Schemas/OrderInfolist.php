@@ -133,6 +133,15 @@ class OrderInfolist
                             ->label('Статус Deal.by')
                             ->badge()
                             ->placeholder('—'),
+                        TextEntry::make('dealByInbox.last_pushed_at')
+                            ->label('Передан в Deal.by')
+                            ->dateTime('d.m.Y H:i:s', 'Europe/Minsk')
+                            ->placeholder('Ещё не передавался'),
+                        TextEntry::make('dealByInbox.last_push_error')
+                            ->label('Ошибка передачи в Deal.by')
+                            ->color('danger')
+                            ->columnSpanFull()
+                            ->visible(fn (Order $record): bool => filled($record->dealByInbox?->last_push_error)),
                         TextEntry::make('commercialDocument.number')
                             ->label('Коммерческое предложение')
                             ->placeholder('—')
