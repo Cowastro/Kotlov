@@ -180,6 +180,27 @@ class CrmMailModuleTest extends TestCase
         $this->assertNull($thread->fresh()->handled_at);
     }
 
+    public function test_incoming_activity_cannot_restore_a_spam_thread_to_work(): void
+    {
+        $mailbox = CrmMailbox::create([
+            'name' => 'KOTLOV',
+            'email' => 'blocked-sender@kotlov.by',
+            'username' => 'blocked-sender@kotlov.by',
+        ]);
+        $thread = CrmMailThread::create([
+            'mailbox_id' => $mailbox->id,
+            'thread_key' => hash('sha256', 'spam@example.com|advertising'),
+            'participant_email' => 'spam@example.com',
+            'status' => 'spam',
+            'unread_count' => 0,
+        ]);
+
+        $thread->markCustomerReplied();
+
+        $this->assertSame('spam', $thread->fresh()->status);
+        $this->assertSame(0, $thread->fresh()->unread_count);
+    }
+
     public function test_branded_reply_contains_manager_signature_and_safe_customer_text(): void
     {
         $manager = User::factory()->create([
