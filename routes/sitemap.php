@@ -38,7 +38,7 @@ Route::get('/sitemap.xml', function () {
         foreach ([
             '/', '/about', '/dostavka', '/reviews', '/catalog',
             '/brands', '/akcii', '/akcii/kotlov-xo-ceramic-pro', '/akcii/kotlov-xo-evo-26', '/akcii/hotta-ceramik-20-30', '/contacts', '/installers', '/become-installer',
-            '/montazh-teplovyh-nasosov', '/montazh-kaminov', '/partners', '/suppliers', '/faq', '/privacy', '/blog',
+            '/montazh-teplovyh-nasosov', '/montazh-kaminov', '/partners', '/partners/belomo-kata-skat-oboznacheniya', '/suppliers', '/faq', '/privacy', '/blog',
             '/teplovye-nasosy-r290', '/teplovye-nasosy-dlya-radiatorov',
             '/teplovye-nasosy-dlya-teplogo-pola', '/teplovye-nasosy-dlya-doma',
         ] as $path) {
