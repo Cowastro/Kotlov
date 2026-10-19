@@ -12,6 +12,7 @@ use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
+use App\Services\Orders\SupplierReservationMailService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
@@ -19,6 +20,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Enums\Width;
 use Throwable;
 
@@ -36,7 +38,7 @@ class ViewOrder extends ViewRecord
             'items.product.integrationProducts.source.supplier',
             'items.integrationProduct.source.supplier',
             'items.fulfillmentConfirmedBy',
-            'items.fulfillmentSupplier',
+            'items.fulfillmentSupplier.crmCounterparty.contactPoints',
             'fulfillmentHistory.item',
             'fulfillmentHistory.user',
             'fulfillmentHistory.previousSupplier',
@@ -212,6 +214,71 @@ class ViewOrder extends ViewRecord
                         ->body('Создано или обновлено заявок: '.$requests->count().'. Письма доступны в «Почта и лиды» → «Черновики». Автоматической отправки не было.')
                         ->send();
                 }),
+            Action::make('emailSupplierReserve')
+                ->label('Запросить резерв')
+                ->icon('heroicon-o-envelope')
+                ->color('success')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
+                ->visible(fn (): bool => $this->supplierRequestChoices() !== [])
+                ->modalHeading('Отправить поставщику запрос резерва')
+                ->modalDescription('Письмо уйдёт с order@kotlov.by. В нём будут позиции этого поставщика, входные цены и остатки из снимка заказа. Ответ сохранится в связанной переписке.')
+                ->fillForm(function (): array {
+                    $key = array_key_first($this->supplierRequestChoices());
+
+                    return [
+                        'supplier_route' => $key,
+                        'recipient' => $key ? $this->supplierEmailForRequestKey($key) : null,
+                        'note' => 'Просим подтвердить резерв и сообщить возможную дату отгрузки.',
+                    ];
+                })
+                ->schema([
+                    Select::make('supplier_route')
+                        ->label('Поставщик и маршрут')
+                        ->options(fn (): array => $this->supplierRequestChoices())
+                        ->live()
+                        ->afterStateUpdated(fn (?string $state, Set $set) => $set(
+                            'recipient',
+                            $state ? $this->supplierEmailForRequestKey($state) : null,
+                        ))
+                        ->required(),
+                    TextInput::make('recipient')
+                        ->label('Email поставщика')
+                        ->email()
+                        ->required(),
+                    Textarea::make('note')
+                        ->label('Комментарий поставщику')
+                        ->rows(3)
+                        ->maxLength(2000),
+                ])
+                ->modalSubmitActionLabel('Отправить запрос')
+                ->action(function (array $data): void {
+                    [$supplierId, $route] = explode('|', (string) $data['supplier_route'], 2);
+                    $requests = app(SupplierOrderRequestBuilder::class)
+                        ->buildDrafts($this->record, auth()->user(), (int) $supplierId, $route);
+                    $request = $requests->first(
+                        fn (SupplierOrderRequest $candidate): bool => $candidate->supplier_id === (int) $supplierId
+                            && $candidate->route === $route
+                    );
+
+                    if (! $request) {
+                        throw new \RuntimeException('Не удалось сформировать заявку выбранному поставщику.');
+                    }
+
+                    $thread = app(SupplierReservationMailService::class)->sendOrderRequest(
+                        $request,
+                        auth()->user(),
+                        $data['recipient'],
+                        $data['note'] ?? null,
+                    );
+
+                    $this->reloadRecord();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Запрос резерва отправлен')
+                        ->body('Письмо отправлено с order@kotlov.by. Переписка #'.$thread->id.' привязана к заявке и заказу.')
+                        ->send();
+                }),
             Action::make('confirmSettlement')
                 ->label('Зафиксировать взаиморасчёт')
                 ->icon('heroicon-o-banknotes')
@@ -269,6 +336,60 @@ class ViewOrder extends ViewRecord
                         ->success()
                         ->title('Взаиморасчёт зафиксирован')
                         ->body('Версия '.$settlement->version.' · прибыль '.number_format((float) $settlement->net_profit, 2, '.', ' ').' BYN.')
+                        ->send();
+                }),
+            Action::make('recordSupplierEmailResponse')
+                ->label('Ответ поставщика')
+                ->icon('heroicon-o-inbox-arrow-down')
+                ->color('info')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
+                ->visible(fn (): bool => $this->record->supplierOrderRequests
+                    ->contains(fn (SupplierOrderRequest $request): bool => $request->status === 'sent'
+                        && $request->transfer_mode === 'email'))
+                ->modalHeading('Зафиксировать ответ поставщика')
+                ->modalDescription('Письмо остаётся в связанной переписке. Здесь фиксируется итог: резерв подтверждён или поставщик отказал.')
+                ->schema([
+                    Select::make('supplier_order_request_id')
+                        ->label('Заявка')
+                        ->options(fn (): array => $this->record->supplierOrderRequests
+                            ->filter(fn (SupplierOrderRequest $request): bool => $request->status === 'sent'
+                                && $request->transfer_mode === 'email')
+                            ->mapWithKeys(fn (SupplierOrderRequest $request): array => [
+                                $request->id => $request->number.' · '.$request->supplier_name,
+                            ])->all())
+                        ->required(),
+                    Select::make('status')
+                        ->label('Результат')
+                        ->options([
+                            'acknowledged' => 'Резерв подтверждён',
+                            'rejected' => 'Поставщик отказал',
+                        ])
+                        ->required(),
+                    Textarea::make('note')
+                        ->label('Что подтвердил поставщик')
+                        ->placeholder('Например: 2 шт. в резерве до 22.10, отгрузка после оплаты.')
+                        ->rows(3)
+                        ->required()
+                        ->maxLength(2000),
+                ])
+                ->modalSubmitActionLabel('Сохранить ответ')
+                ->action(function (array $data): void {
+                    $request = $this->record->supplierOrderRequests()
+                        ->where('status', 'sent')
+                        ->where('transfer_mode', 'email')
+                        ->findOrFail($data['supplier_order_request_id']);
+
+                    app(SupplierOrderRequestWorkflow::class)->recordEmailResponse(
+                        $request,
+                        $data['status'],
+                        auth()->user(),
+                        $data['note'],
+                    );
+                    $this->reloadRecord();
+
+                    Notification::make()
+                        ->success()
+                        ->title($data['status'] === 'acknowledged' ? 'Резерв подтверждён' : 'Отказ поставщика сохранён')
                         ->send();
                 }),
             Action::make('publishSupplierRequest')
@@ -447,5 +568,33 @@ class ViewOrder extends ViewRecord
             'integrationDeliveries.source',
             'integrationDeliveries.queuedBy',
         ]);
+    }
+
+    /** @return array<string, string> */
+    private function supplierRequestChoices(): array
+    {
+        return $this->record->items
+            ->filter(fn (OrderItem $item): bool => in_array($item->fulfillment_route, ['supplier_purchase', 'direct_supplier'], true)
+                && $item->fulfillment_supplier_id !== null)
+            ->groupBy(fn (OrderItem $item): string => $item->fulfillment_supplier_id.'|'.$item->fulfillment_route)
+            ->map(function ($items, string $key): string {
+                /** @var OrderItem $first */
+                $first = $items->first();
+
+                return ($first->fulfillment_supplier_name ?: $first->fulfillmentSupplier?->name ?: 'Поставщик')
+                    .' · '.(OrderItem::FULFILLMENT_ROUTES[$first->fulfillment_route] ?? $first->fulfillment_route)
+                    .' · '.$items->count().' поз.';
+            })
+            ->all();
+    }
+
+    private function supplierEmailForRequestKey(string $key): ?string
+    {
+        [$supplierId] = explode('|', $key, 2);
+        $supplier = $this->record->items
+            ->firstWhere('fulfillment_supplier_id', (int) $supplierId)
+            ?->fulfillmentSupplier;
+
+        return $supplier?->contactEmailAddresses()[0] ?? null;
     }
 }

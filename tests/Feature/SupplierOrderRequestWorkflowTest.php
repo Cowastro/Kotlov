@@ -5,19 +5,23 @@ namespace Tests\Feature;
 use App\Filament\Resources\Orders\Pages\ViewOrder as AdminViewOrder;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Filament\Supplier\Resources\SupplierOrderRequests\SupplierOrderRequestResource;
+use App\Models\Category;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
 use App\Models\CrmMailbox;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
 use App\Models\SupplierOrderRequestItem;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\Orders\SupplierAutoTransferManager;
 use App\Services\Orders\SupplierAutoTransferReadiness;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
+use App\Services\Orders\SupplierReservationMailService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -40,10 +44,10 @@ class SupplierOrderRequestWorkflowTest extends TestCase
         ]);
         [, , , $request] = $this->requestFixture('LATE-EMAIL', $manager, $supplier);
         CrmMailbox::query()->firstOrCreate(
-            ['email' => 'info@kotlov.by'],
+            ['email' => 'order@kotlov.by'],
             [
-                'name' => 'KOTLOV',
-                'username' => 'info@kotlov.by',
+                'name' => 'Заказы KOTLOV',
+                'username' => 'order@kotlov.by',
                 'is_enabled' => true,
             ],
         );
@@ -72,6 +76,138 @@ class SupplierOrderRequestWorkflowTest extends TestCase
                 ->pluck('email')
                 ->all(),
         );
+    }
+
+    public function test_order_request_draft_uses_order_mailbox_prices_stock_and_manager_note(): void
+    {
+        [$manager, , , $request] = $this->requestFixture('EMAIL-BODY');
+        CrmMailbox::query()->create([
+            'name' => 'Заказы KOTLOV',
+            'email' => 'order@kotlov.by',
+            'username' => 'order@kotlov.by',
+            'is_enabled' => true,
+        ]);
+        $request->items()->firstOrFail()->orderItem()->update([
+            'supply_is_available' => true,
+            'supply_stock_quantity' => 7,
+        ]);
+
+        $thread = app(SupplierRequestMailDraftService::class)->sync(
+            $request,
+            $manager,
+            'Нужна отгрузка до пятницы.',
+        );
+        $draft = $thread->messages()->where('direction', 'draft')->firstOrFail();
+
+        $this->assertSame('order@kotlov.by', $thread->mailbox->email);
+        $this->assertStringContainsString('80,00 BYN', $draft->text_body);
+        $this->assertStringContainsString('остаток по прайсу: 7 шт.', $draft->text_body);
+        $this->assertStringContainsString('Нужна отгрузка до пятницы.', $draft->text_body);
+        $this->assertStringContainsString('ответным письмом подтвердите резерв', $draft->text_body);
+    }
+
+    public function test_email_transfer_does_not_require_supplier_portal_user_and_is_audited(): void
+    {
+        [$manager, $supplier, $supplierUser, $request] = $this->requestFixture('EMAIL-ONLY');
+        $supplier->users()->detach($supplierUser);
+
+        $result = app(SupplierOrderRequestWorkflow::class)->markEmailSent(
+            $request,
+            $manager,
+            'Отправлено с order@kotlov.by.',
+        );
+
+        $this->assertSame('sent', $result->status);
+        $this->assertSame('email', $result->transfer_mode);
+        $this->assertSame($manager->id, $result->sent_by);
+        $this->assertDatabaseHas('supplier_order_request_status_histories', [
+            'supplier_order_request_id' => $request->id,
+            'actor_scope' => 'manager_email',
+            'status_from' => 'draft',
+            'status_to' => 'sent',
+        ]);
+    }
+
+    public function test_manager_records_supplier_email_reservation_response(): void
+    {
+        [$manager, , , $request] = $this->requestFixture('EMAIL-RESPONSE');
+        $workflow = app(SupplierOrderRequestWorkflow::class);
+        $request = $workflow->markEmailSent($request, $manager);
+
+        $result = $workflow->recordEmailResponse(
+            $request,
+            'acknowledged',
+            $manager,
+            'Две штуки в резерве до 22.10.',
+        );
+
+        $this->assertSame('acknowledged', $result->status);
+        $this->assertNotNull($result->acknowledged_at);
+        $this->assertSame('Две штуки в резерве до 22.10.', $result->supplier_response_note);
+        $this->assertDatabaseHas('supplier_order_request_status_histories', [
+            'supplier_order_request_id' => $request->id,
+            'actor_scope' => 'manager_email',
+            'status_from' => 'sent',
+            'status_to' => 'acknowledged',
+        ]);
+    }
+
+    public function test_product_reserve_draft_is_linked_to_product_supplier_and_mail_thread(): void
+    {
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'product-reserve-supplier',
+            'name' => 'Поставщик товара',
+            'contact' => 'reserve@supplier.test',
+            'is_active' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Категория резерва',
+            'slug' => 'reserve-category',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Котёл для резерва',
+            'slug' => 'reserve-product',
+            'sku' => 'KOTEL-1',
+            'price' => 120,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'SUP-001',
+            'price' => 75,
+            'price_byn' => 75,
+            'currency' => 'BYN',
+            'in_stock' => true,
+            'stock_quantity' => 4,
+            'match_status' => 'matched',
+        ]);
+        CrmMailbox::query()->create([
+            'name' => 'Заказы KOTLOV',
+            'email' => 'order@kotlov.by',
+            'username' => 'order@kotlov.by',
+            'is_enabled' => true,
+        ]);
+
+        $thread = app(SupplierReservationMailService::class)->prepareProductRequest(
+            $product,
+            $supplier->id,
+            $manager,
+            2,
+            'reserve@supplier.test',
+            'Поставка на наш склад.',
+        );
+        $draft = $thread->messages()->where('direction', 'draft')->firstOrFail();
+
+        $this->assertSame($product->id, $thread->product_id);
+        $this->assertSame($supplier->id, $thread->supplier_id);
+        $this->assertSame('order@kotlov.by', $thread->mailbox->email);
+        $this->assertStringContainsString('SUP-001', $draft->text_body);
+        $this->assertStringContainsString('2 шт. × 75,00 BYN = 150,00 BYN', $draft->text_body);
+        $this->assertStringContainsString('Остаток по нашим данным: 4 шт.', $draft->text_body);
+        $this->assertSame($thread->id, $product->fresh()->latestSupplierMailThread?->id);
     }
 
     public function test_manager_explicitly_publishes_a_request_to_only_the_assigned_supplier_portal(): void

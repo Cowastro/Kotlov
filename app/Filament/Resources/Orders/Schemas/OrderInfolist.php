@@ -763,10 +763,16 @@ class OrderInfolist
                                 TextEntry::make('transfer_mode')
                                     ->label('Передача')
                                     ->badge()
-                                    ->formatStateUsing(fn (?string $state): string => $state === 'automatic'
-                                        ? 'Автоматически'
-                                        : 'Менеджером')
-                                    ->color(fn (?string $state): string => $state === 'automatic' ? 'info' : 'gray')
+                                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                                        'automatic' => 'Автоматически',
+                                        'email' => 'Email',
+                                        default => 'Менеджером',
+                                    })
+                                    ->color(fn (?string $state): string => match ($state) {
+                                        'automatic' => 'info',
+                                        'email' => 'success',
+                                        default => 'gray',
+                                    })
                                     ->tooltip(fn ($record): ?string => $record->automatic_transfer_run_uuid
                                         ? 'Запуск '.$record->automatic_transfer_run_uuid
                                         : null),

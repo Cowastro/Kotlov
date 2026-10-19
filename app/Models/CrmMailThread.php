@@ -56,7 +56,7 @@ class CrmMailThread extends Model
 
     protected $fillable = [
         'mailbox_id', 'crm_counterparty_id', 'crm_contact_id', 'assigned_user_id',
-        'supplier_order_request_id',
+        'supplier_order_request_id', 'product_id', 'supplier_id',
         'thread_key', 'subject', 'participant_name', 'participant_email', 'status', 'sales_stage',
         'priority', 'messages_count', 'unread_count', 'last_message_at', 'handled_at',
         'next_follow_up_at', 'follow_up_note', 'manager_note',
@@ -104,6 +104,16 @@ class CrmMailThread extends Model
     public function supplierOrderRequest(): BelongsTo
     {
         return $this->belongsTo(SupplierOrderRequest::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     public function messages(): HasMany

@@ -5,6 +5,8 @@ namespace App\Services\CrmMail;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
+use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -147,19 +149,14 @@ class SupplierRequestMailDraftService
         });
     }
 
-    public function sync(SupplierOrderRequest $request, ?User $user): CrmMailThread
+    public function sync(SupplierOrderRequest $request, ?User $user, ?string $note = null): CrmMailThread
     {
-        $request->loadMissing(['order', 'items', 'supplier.crmCounterparty.contactPoints']);
-        $mailbox = CrmMailbox::query()->manualSending()->where('is_enabled', true)->first()
-            ?? CrmMailbox::query()->manualSending()->first();
-
-        if (! $mailbox) {
-            throw new RuntimeException('Сначала создайте общий почтовый ящик в разделе «Настройка почты».');
-        }
+        $request->loadMissing(['order', 'items.orderItem', 'supplier.crmCounterparty.contactPoints']);
+        $mailbox = $this->orderMailbox();
 
         $recipient = $request->supplier?->contactEmailAddresses()[0] ?? '';
         $subject = 'Заявка '.$request->number.' — заказ '.$request->order->number;
-        $body = $this->body($request);
+        $body = $this->orderBody($request, $note);
 
         return DB::transaction(function () use ($request, $user, $mailbox, $recipient, $subject, $body): CrmMailThread {
             $thread = CrmMailThread::query()->firstOrNew([
@@ -215,6 +212,80 @@ class SupplierRequestMailDraftService
             ])->save();
 
             return $thread->fresh(['mailbox', 'messages', 'supplierOrderRequest.order']);
+        });
+    }
+
+    public function createProductReserveDraft(
+        Product $product,
+        Supplier $supplier,
+        User $user,
+        int $quantity,
+        ?float $purchasePrice,
+        ?float $stockQuantity,
+        ?string $supplierArticle,
+        string $recipient,
+        ?string $note = null,
+    ): CrmMailThread {
+        $mailbox = $this->orderMailbox();
+        $recipient = mb_strtolower(trim($recipient));
+
+        if (filter_var($recipient, FILTER_VALIDATE_EMAIL) === false) {
+            throw new RuntimeException('У поставщика не указан корректный email для заявки.');
+        }
+
+        $subject = 'Запрос резерва — '.$product->name.' — '.now()->format('d.m.Y');
+        $body = $this->productBody(
+            $product,
+            $quantity,
+            $purchasePrice,
+            $stockQuantity,
+            $supplierArticle,
+            $note,
+        );
+
+        return DB::transaction(function () use ($product, $supplier, $user, $mailbox, $recipient, $subject, $body, $quantity, $purchasePrice, $stockQuantity, $supplierArticle): CrmMailThread {
+            $thread = CrmMailThread::query()->create([
+                'mailbox_id' => $mailbox->id,
+                'crm_counterparty_id' => $supplier->crm_counterparty_id,
+                'assigned_user_id' => $user->id,
+                'product_id' => $product->id,
+                'supplier_id' => $supplier->id,
+                'thread_key' => hash('sha256', 'supplier-product-reserve|'.Str::uuid()),
+                'subject' => $subject,
+                'participant_name' => $supplier->name,
+                'participant_email' => $recipient,
+                'status' => 'draft',
+                'priority' => 'normal',
+                'messages_count' => 1,
+                'unread_count' => 0,
+                'last_message_at' => now(),
+                'manager_note' => 'Запрос резерва по товару #'.$product->id.'.',
+            ]);
+
+            $thread->messages()->create([
+                'mailbox_id' => $mailbox->id,
+                'sent_by_user_id' => $user->id,
+                'direction' => 'draft',
+                'from_name' => $mailbox->name,
+                'from_email' => $mailbox->email,
+                'to' => [['name' => $supplier->name, 'email' => $recipient]],
+                'subject' => $subject,
+                'text_body' => $body,
+                'attachments_count' => 0,
+                'is_read' => true,
+                'received_at' => now(),
+                'metadata' => [
+                    'source' => 'supplier_product_reserve',
+                    'product_id' => $product->id,
+                    'supplier_id' => $supplier->id,
+                    'quantity' => $quantity,
+                    'purchase_price' => $purchasePrice,
+                    'stock_quantity' => $stockQuantity,
+                    'supplier_article' => $supplierArticle,
+                ],
+            ]);
+
+            return $thread->fresh(['mailbox', 'messages', 'product', 'supplier']);
         });
     }
 
@@ -348,15 +419,19 @@ class SupplierRequestMailDraftService
             ->values()->all();
     }
 
-    private function body(SupplierOrderRequest $request): string
+    public function orderBody(SupplierOrderRequest $request, ?string $note = null): string
     {
+        $request->loadMissing(['order', 'items.orderItem']);
         $lines = [
             'Здравствуйте!',
             '',
-            'Просим подтвердить возможность поставки по заявке '.$request->number.'.',
+            'Просим поставить в резерв позиции по заявке '.$request->number.'.',
+            $request->order ? 'Наш заказ: '.$request->order->number.'.' : null,
             '',
             'Состав заявки:',
         ];
+
+        $lines = array_values(array_filter($lines, fn (?string $line): bool => $line !== null));
 
         foreach ($request->items as $item) {
             $line = '• '.$item->product_name;
@@ -364,13 +439,94 @@ class SupplierRequestMailDraftService
                 $line .= ' ['.$item->product_sku.']';
             }
             $line .= ' — '.$item->quantity.' шт.';
+            if ($item->purchase_price !== null) {
+                $line .= ' × '.$this->money((float) $item->purchase_price);
+            }
+            if ($item->purchase_total !== null) {
+                $line .= ' = '.$this->money((float) $item->purchase_total);
+            }
+            $availability = $this->availabilityLabel($item->orderItem?->supply_is_available, $item->orderItem?->supply_stock_quantity);
+            if ($availability) {
+                $line .= ' · '.$availability;
+            }
             $lines[] = $line;
         }
 
+        if ($request->purchase_total !== null) {
+            $lines[] = '';
+            $lines[] = 'Итого по входной цене: '.$this->money((float) $request->purchase_total).'.';
+        }
+        if (filled($note)) {
+            $lines[] = '';
+            $lines[] = 'Комментарий менеджера: '.trim((string) $note);
+        }
         $lines[] = '';
-        $lines[] = 'Пожалуйста, подтвердите наличие, актуальную закупочную цену и срок отгрузки.';
+        $lines[] = 'Пожалуйста, ответным письмом подтвердите резерв, актуальную входную цену, количество и срок отгрузки.';
         $lines[] = 'В ответе укажите номер заявки '.$request->number.'.';
 
         return implode("\n", $lines);
+    }
+
+    public function productBody(
+        Product $product,
+        int $quantity,
+        ?float $purchasePrice,
+        ?float $stockQuantity,
+        ?string $supplierArticle,
+        ?string $note = null,
+    ): string {
+        $article = filled($supplierArticle) ? $supplierArticle : $product->sku;
+        $line = '• '.$product->name;
+        if (filled($article)) {
+            $line .= ' ['.$article.']';
+        }
+        $line .= ' — '.$quantity.' шт.';
+        if ($purchasePrice !== null) {
+            $line .= ' × '.$this->money($purchasePrice).' = '.$this->money($purchasePrice * $quantity);
+        }
+
+        $lines = [
+            'Здравствуйте!',
+            '',
+            'Просим подтвердить наличие и поставить товар в резерв:',
+            $line,
+            $stockQuantity !== null ? 'Остаток по нашим данным: '.rtrim(rtrim(number_format($stockQuantity, 3, ',', ' '), '0'), ',').' шт.' : null,
+            filled($note) ? 'Комментарий менеджера: '.trim((string) $note) : null,
+            '',
+            'Пожалуйста, ответным письмом подтвердите резерв, актуальную входную цену, количество и срок отгрузки.',
+        ];
+
+        return implode("\n", array_values(array_filter($lines, fn (?string $line): bool => $line !== null)));
+    }
+
+    private function orderMailbox(): CrmMailbox
+    {
+        $mailbox = CrmMailbox::query()
+            ->whereRaw('LOWER(email) = ?', ['order@kotlov.by'])
+            ->first();
+
+        if (! $mailbox) {
+            throw new RuntimeException('Сначала настройте почтовый ящик order@kotlov.by в разделе «Настройка почты».');
+        }
+
+        return $mailbox;
+    }
+
+    private function money(float $value): string
+    {
+        return number_format($value, 2, ',', ' ').' BYN';
+    }
+
+    private function availabilityLabel(?bool $available, mixed $stock): ?string
+    {
+        if ($stock !== null) {
+            return 'остаток по прайсу: '.rtrim(rtrim(number_format((float) $stock, 3, ',', ' '), '0'), ',').' шт.';
+        }
+
+        return match ($available) {
+            true => 'по прайсу: в наличии',
+            false => 'по прайсу: нет в наличии',
+            default => null,
+        };
     }
 }

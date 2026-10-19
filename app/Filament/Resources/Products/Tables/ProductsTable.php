@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\Products\Tables;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
+use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
 use App\Filament\Resources\Products\Actions\CreateCommercialDocumentAction;
 use App\Filament\Resources\Products\Actions\ManualPricingAction;
+use App\Filament\Resources\Products\Actions\RequestSupplierReserveAction;
 use App\Filament\Resources\Products\ProductResource;
 use App\Jobs\RunProductCatalogAiReview;
 use App\Jobs\RunProductSourceEnrichment;
@@ -355,6 +357,18 @@ class ProductsTable
                 CreateCommercialDocumentAction::make()
                     ->iconButton()
                     ->tooltip('Создать КП и привязать к лиду'),
+                RequestSupplierReserveAction::make()
+                    ->iconButton(),
+                Action::make('open_supplier_correspondence')
+                    ->label('Переписка с поставщиком')
+                    ->icon('heroicon-o-envelope-open')
+                    ->iconButton()
+                    ->color('gray')
+                    ->tooltip(fn (Product $record): string => 'Переписка с поставщиком · '.(int) $record->supplier_mail_threads_count)
+                    ->visible(fn (Product $record): bool => $record->latestSupplierMailThread !== null)
+                    ->url(fn (Product $record): string => CrmMailThreadResource::getUrl('view', [
+                        'record' => $record->latestSupplierMailThread,
+                    ])),
                 Action::make('review_high_market_price')
                     ->label('Цена выше рынка')
                     ->icon('heroicon-o-flag')

@@ -8,6 +8,7 @@ use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\User;
 use App\Services\CommercialDocuments\CommercialDocumentPortal;
+use App\Services\Orders\SupplierOrderRequestWorkflow;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -19,6 +20,40 @@ use Symfony\Component\Mime\Email;
 class CrmMailSender
 {
     public function sendDraft(CrmMailThread $thread, User $user): CrmMailMessage
+    {
+        if ($thread->supplier_order_request_id || $thread->product_id) {
+            return $this->sendSupplierDraft($thread, $user);
+        }
+
+        return $this->deliverDraft($thread, $user, false);
+    }
+
+    public function sendSupplierDraft(CrmMailThread $thread, User $user): CrmMailMessage
+    {
+        if (! $user->isManager()) {
+            throw new RuntimeException('Отправлять заявки поставщикам может только менеджер.');
+        }
+        if (! $thread->supplier_order_request_id && ! $thread->product_id) {
+            throw new RuntimeException('Письмо не связано с заявкой поставщику или товаром.');
+        }
+
+        $message = $this->deliverDraft($thread, $user, true);
+
+        if ($thread->supplier_order_request_id) {
+            $request = $thread->supplierOrderRequest()->first();
+            if ($request?->status === 'draft') {
+                app(SupplierOrderRequestWorkflow::class)->markEmailSent(
+                    $request,
+                    $user,
+                    $request->note,
+                );
+            }
+        }
+
+        return $message;
+    }
+
+    private function deliverDraft(CrmMailThread $thread, User $user, bool $supplierServiceMail): CrmMailMessage
     {
         $thread->loadMissing(['mailbox', 'messages']);
 
@@ -41,7 +76,16 @@ class CrmMailSender
             ->first();
 
         $mailbox = $thread->mailbox;
-        $this->assertManualSendingAllowed($mailbox);
+        if ($supplierServiceMail) {
+            if (mb_strtolower(trim((string) $mailbox?->email)) !== 'order@kotlov.by') {
+                throw new RuntimeException('Заявки поставщикам отправляются только с order@kotlov.by.');
+            }
+        } else {
+            $this->assertManualSendingAllowed($mailbox);
+        }
+        if (! $mailbox?->is_enabled) {
+            throw new RuntimeException('Почтовый ящик отключён или не найден.');
+        }
         $messageId = Str::uuid().'@'.parse_url(config('app.url'), PHP_URL_HOST);
         $body = trim((string) $draft->text_body);
         $htmlBody = $this->brandedHtml($body, $user);

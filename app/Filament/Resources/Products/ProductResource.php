@@ -47,6 +47,7 @@ class ProductResource extends Resource
     {
         return parent::getEloquentQuery()
             ->withCount('marketResearchReports')
+            ->withCount('supplierMailThreads')
             ->with([
                 'category:id,name,slug',
                 'brand:id,name',
@@ -58,10 +59,11 @@ class ProductResource extends Resource
                 'supplierProducts.supplier.crmCounterparty.contactPoints',
                 'integrationProducts:id,product_id,integration_source_id,external_sku,price,price_currency,price_currency_rate,price_tax_mode,price_vat_rate,price_byn,stock_quantity,match_status,stock_confirmed_at',
                 'integrationProducts.source:id,supplier_id,name,driver,price_currency,price_currency_rate,settings,is_active',
-                'integrationProducts.source.supplier:id,crm_counterparty_id,name,contact',
+                'integrationProducts.source.supplier:id,crm_counterparty_id,name,contact,is_active',
                 'integrationProducts.source.supplier.crmCounterparty.contactPoints',
                 'marketPriceObservations.source',
                 'latestMarketResearchReport',
+                'latestSupplierMailThread',
                 'purchasePriceSources',
             ]);
     }

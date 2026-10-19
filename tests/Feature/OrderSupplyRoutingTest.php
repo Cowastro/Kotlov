@@ -8,6 +8,7 @@ use App\Filament\Resources\Products\ProductResource;
 use App\Models\Category;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
+use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use App\Models\IntegrationProduct;
@@ -401,6 +402,12 @@ class OrderSupplyRoutingTest extends TestCase
     {
         $fixture = $this->fixture();
         $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        CrmMailbox::query()->create([
+            'name' => 'Заказы KOTLOV',
+            'email' => 'order@kotlov.by',
+            'username' => 'order@kotlov.by',
+            'is_enabled' => true,
+        ]);
         $ownSupplier = Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail();
         $externalSupplier = Supplier::query()->where('code', 'legacy-route-supplier-1')->firstOrFail();
 

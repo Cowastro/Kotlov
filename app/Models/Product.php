@@ -822,6 +822,16 @@ class Product extends Model
         return $this->hasMany(IntegrationProduct::class);
     }
 
+    public function supplierMailThreads(): HasMany
+    {
+        return $this->hasMany(CrmMailThread::class);
+    }
+
+    public function latestSupplierMailThread(): HasOne
+    {
+        return $this->hasOne(CrmMailThread::class)->latestOfMany();
+    }
+
     public function marketPriceObservations(): HasMany
     {
         return $this->hasMany(MarketPriceObservation::class);

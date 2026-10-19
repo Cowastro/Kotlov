@@ -31,6 +31,94 @@ class SupplierOrderRequestWorkflow
         );
     }
 
+    public function markEmailSent(SupplierOrderRequest $request, User $user, ?string $note = null): SupplierOrderRequest
+    {
+        if (! $user->isManager()) {
+            throw ValidationException::withMessages([
+                'request' => 'Отправлять заявки поставщикам может только менеджер.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($request, $user, $note): SupplierOrderRequest {
+            $locked = SupplierOrderRequest::query()
+                ->with('items')
+                ->lockForUpdate()
+                ->findOrFail($request->id);
+
+            if ($locked->status !== 'draft') {
+                throw ValidationException::withMessages([
+                    'request' => "Заявка {$locked->number} уже отправлена или закрыта.",
+                ]);
+            }
+            if ($locked->items->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'request' => 'Нельзя отправить пустую заявку.',
+                ]);
+            }
+
+            $locked->forceFill([
+                'status' => 'sent',
+                'transfer_mode' => 'email',
+                'automatic_transfer_run_uuid' => null,
+                'sent_at' => now(),
+                'sent_by' => $user->id,
+                'status_updated_by' => $user->id,
+                'status_updated_at' => now(),
+                'note' => filled($note) ? trim($note) : $locked->note,
+            ])->save();
+
+            $this->recordHistory($locked, $user, 'manager_email', 'draft', 'sent', $note);
+
+            return $locked->fresh(['supplier', 'items', 'statusHistories', 'mailDraft']);
+        });
+    }
+
+    public function recordEmailResponse(
+        SupplierOrderRequest $request,
+        string $status,
+        User $user,
+        ?string $note = null,
+    ): SupplierOrderRequest {
+        if (! $user->isManager()) {
+            throw ValidationException::withMessages([
+                'request' => 'Фиксировать ответ поставщика может только менеджер.',
+            ]);
+        }
+        if (! in_array($status, ['acknowledged', 'rejected'], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Выберите подтверждение резерва или отказ поставщика.',
+            ]);
+        }
+        if (blank($note)) {
+            throw ValidationException::withMessages([
+                'note' => 'Кратко укажите, что ответил поставщик.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($request, $status, $user, $note): SupplierOrderRequest {
+            $locked = SupplierOrderRequest::query()->lockForUpdate()->findOrFail($request->id);
+            if ($locked->status !== 'sent' || $locked->transfer_mode !== 'email') {
+                throw ValidationException::withMessages([
+                    'request' => 'Зафиксировать ответ можно только для отправленной email-заявки.',
+                ]);
+            }
+
+            $now = now();
+            $locked->forceFill([
+                'status' => $status,
+                'acknowledged_at' => $status === 'acknowledged' ? $now : null,
+                'rejected_at' => $status === 'rejected' ? $now : null,
+                'supplier_response_note' => trim((string) $note),
+                'status_updated_by' => $user->id,
+                'status_updated_at' => $now,
+            ])->save();
+
+            $this->recordHistory($locked, $user, 'manager_email', 'sent', $status, $note);
+
+            return $locked->fresh(['supplier', 'items', 'statusHistories', 'mailDraft']);
+        });
+    }
+
     private function publishRequest(
         SupplierOrderRequest $request,
         ?User $user,

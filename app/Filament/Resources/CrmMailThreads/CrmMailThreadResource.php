@@ -9,6 +9,7 @@ use App\Filament\Resources\CrmMailThreads\Pages\EditCrmMailThread;
 use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
 use App\Filament\Resources\CrmMailThreads\Pages\ViewCrmMailThread;
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Models\Category;
 use App\Models\CommercialDocument;
@@ -103,7 +104,7 @@ class CrmMailThreadResource extends Resource
                 ->orderByDesc('received_at')
                 ->orderByDesc('id'),
             'latestMessage', 'commercialDocuments', 'supplierOrderRequest.order',
-            'supplierOrderRequest.supplier.crmCounterparty',
+            'supplierOrderRequest.supplier.crmCounterparty', 'product', 'supplier',
         ]);
     }
 
@@ -170,6 +171,13 @@ class CrmMailThreadResource extends Resource
                     ->visible(fn (CrmMailThread $record): bool => $record->supplier_order_request_id !== null)
                     ->url(fn (CrmMailThread $record): string => OrderResource::getUrl('view', [
                         'record' => $record->supplierOrderRequest->order_id,
+                    ]))
+                    ->color('primary'),
+                TextEntry::make('product.name')
+                    ->label('Исходный товар')
+                    ->visible(fn (CrmMailThread $record): bool => $record->product_id !== null)
+                    ->url(fn (CrmMailThread $record): string => ProductResource::getUrl('view', [
+                        'record' => $record->product_id,
                     ]))
                     ->color('primary'),
                 TextEntry::make('manager_note')->label('Внутренняя заметка')->placeholder('Не заполнена')->columnSpanFull(),

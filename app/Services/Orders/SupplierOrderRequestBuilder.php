@@ -15,12 +15,20 @@ use Illuminate\Validation\ValidationException;
 class SupplierOrderRequestBuilder
 {
     /** @return Collection<int, SupplierOrderRequest> */
-    public function buildDrafts(Order $order, ?User $user): Collection
-    {
+    public function buildDrafts(
+        Order $order,
+        ?User $user,
+        ?int $supplierId = null,
+        ?string $route = null,
+    ): Collection {
         $order->loadMissing('items');
         $externalItems = $order->items
             ->filter(fn (OrderItem $item): bool => in_array($item->fulfillment_route, ['supplier_purchase', 'direct_supplier'], true)
-                && $item->fulfillment_supplier_id !== null);
+                && $item->fulfillment_supplier_id !== null)
+            ->when($supplierId !== null, fn (Collection $items): Collection => $items
+                ->where('fulfillment_supplier_id', $supplierId))
+            ->when($route !== null, fn (Collection $items): Collection => $items
+                ->where('fulfillment_route', $route));
 
         if ($externalItems->isEmpty()) {
             throw ValidationException::withMessages([
@@ -28,7 +36,7 @@ class SupplierOrderRequestBuilder
             ]);
         }
 
-        $requests = DB::transaction(function () use ($order, $externalItems, $user): Collection {
+        $requests = DB::transaction(function () use ($order, $externalItems, $user, $supplierId, $route): Collection {
             $requests = $externalItems
                 ->groupBy(fn (OrderItem $item): string => $item->fulfillment_supplier_id.'|'.$item->fulfillment_route)
                 ->map(function (Collection $items) use ($order, $user): SupplierOrderRequest {
@@ -87,15 +95,17 @@ class SupplierOrderRequestBuilder
                 })
                 ->values();
 
-            SupplierOrderRequest::query()
-                ->where('order_id', $order->id)
-                ->where('status', 'draft')
-                ->whereNotIn('id', $requests->pluck('id'))
-                ->update([
-                    'status' => 'cancelled',
-                    'item_count' => 0,
-                    'purchase_total' => null,
-                ]);
+            if ($supplierId === null && $route === null) {
+                SupplierOrderRequest::query()
+                    ->where('order_id', $order->id)
+                    ->where('status', 'draft')
+                    ->whereNotIn('id', $requests->pluck('id'))
+                    ->update([
+                        'status' => 'cancelled',
+                        'item_count' => 0,
+                        'purchase_total' => null,
+                    ]);
+            }
 
             return $requests;
         });
