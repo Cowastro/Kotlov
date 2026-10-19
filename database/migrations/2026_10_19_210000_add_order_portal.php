@@ -14,7 +14,7 @@ return new class extends Migration
             $table->uuid('public_id')->unique();
             $table->string('token_hash', 64)->unique();
             $table->text('token_encrypted');
-            $table->string('access_email');
+            $table->string('access_email')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('expires_at')->index();
             $table->timestamp('first_activated_at')->nullable();

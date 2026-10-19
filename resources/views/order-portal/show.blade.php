@@ -15,7 +15,7 @@
         <span>Создан {{ $order->created_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</span>
         @if($order->corrected_at)<span>Скорректирован {{ $order->corrected_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</span>@endif
         <span>Ответственный: {{ $order->manager?->name ?? $order->assigned_to ?? 'не назначен' }}</span>
-        <span>{{ $preview ? 'Предпросмотр администратора' : $session->device_label }}</span>
+        <span>{{ $preview ? 'Предпросмотр администратора' : 'Просмотр по защищённой ссылке' }}</span>
     </div>
 </section>
 

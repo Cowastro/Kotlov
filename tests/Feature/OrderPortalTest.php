@@ -2,61 +2,48 @@
 
 namespace Tests\Feature;
 
-use App\Mail\OrderAccessCodeMail;
 use App\Models\Order;
-use App\Models\OrderPortalChallenge;
 use App\Models\User;
 use App\Services\Orders\OrderPortal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class OrderPortalTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_qr_link_opens_the_complete_live_order_on_first_confirmed_device(): void
+    public function test_qr_link_opens_the_complete_live_order_without_email_or_device_confirmation(): void
     {
         [$order, $manager] = $this->order();
         $portal = app(OrderPortal::class);
-        $link = $portal->publish($order, 'office@example.com', $manager);
+        $link = $portal->publish($order, $manager);
 
         $this->get($portal->url($link))
-            ->assertOk()
-            ->assertSee('Открыть заказ');
-        $this->assertDatabaseCount('order_portal_sessions', 0);
-
-        $this->post(route('order-portal.activate', $link->token_encrypted))
-            ->assertRedirect(route('order-portal.show', $link->public_id));
-
-        $this->get(route('order-portal.show', $link->public_id))
             ->assertOk()
             ->assertSee($order->number)
             ->assertSee('Расширительный бак V 300')
             ->assertSee('Комплект автоматики')
             ->assertSee('ТМ Менеджмент')
             ->assertSee('913,00 BYN');
-        $this->assertDatabaseCount('order_portal_sessions', 1);
+        $this->assertNull($link->fresh()->access_email);
+        $this->assertDatabaseCount('order_portal_sessions', 0);
     }
 
-    public function test_second_device_requires_code_sent_to_the_office_email(): void
+    public function test_the_same_link_can_be_forwarded_and_opened_in_another_session(): void
     {
-        Mail::fake();
         [$order, $manager] = $this->order();
         $portal = app(OrderPortal::class);
-        $link = $portal->publish($order, 'office@example.com', $manager);
-        $this->post(route('order-portal.activate', $link->token_encrypted));
+        $link = $portal->publish($order, $manager);
+
+        $this->get($portal->url($link))->assertOk();
 
         $this->flushSession();
-        $this->post(route('order-portal.activate', $link->token_encrypted))->assertRedirect();
+        $this->get($portal->url($link))
+            ->assertOk()
+            ->assertSee('Комплект автоматики');
 
-        $this->assertSame(1, OrderPortalChallenge::query()->count());
-        Mail::assertSent(
-            OrderAccessCodeMail::class,
-            fn (OrderAccessCodeMail $mail): bool => $mail->hasTo('office@example.com')
-                && $mail->reference === $order->number
-                && strlen($mail->code) === 6,
-        );
+        $this->assertSame(2, $link->fresh()->open_count);
+        $this->assertDatabaseCount('order_portal_challenges', 0);
     }
 
     private function order(): array

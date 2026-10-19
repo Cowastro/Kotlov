@@ -103,7 +103,7 @@ class ViewOrder extends ViewRecord
                 ->action(function (array $data): void {
                     $user = auth()->user();
                     $portal = app(OrderPortal::class);
-                    $portalLink = $portal->publish($this->record, $data['recipient'], $user);
+                    $portalLink = $portal->publish($this->record, $user);
                     $thread = app(SupplierRequestMailDraftService::class)->createOrderProcurementDraft(
                         $this->record,
                         $user,
@@ -136,23 +136,10 @@ class ViewOrder extends ViewRecord
                     ->label('Создать ссылку и QR')
                     ->icon('heroicon-o-qr-code')
                     ->color('primary')
-                    ->fillForm(fn (): array => [
-                        'access_email' => $this->record->procurement_recipient
-                            ?: config('services.procurement.email')
-                            ?: 'order@kotlov.by',
-                    ])
-                    ->schema([
-                        TextInput::make('access_email')
-                            ->label('Email для подтверждения новых устройств')
-                            ->helperText('Первое устройство откроется сразу. На следующих устройствах код придёт на этот адрес.')
-                            ->email()
-                            ->required(),
-                    ])
-                    ->modalSubmitActionLabel('Создать доступ')
-                    ->action(function (array $data): void {
+                    ->action(function (): void {
                         try {
                             $portal = app(OrderPortal::class);
-                            $link = $portal->publish($this->record, $data['access_email'], auth()->user());
+                            $link = $portal->publish($this->record, auth()->user());
                             Notification::make()
                                 ->success()
                                 ->title('Онлайн-заказ и QR готовы')
@@ -204,39 +191,6 @@ class ViewOrder extends ViewRecord
                         $link = $this->record->portalLinks()->whereNull('revoked_at')->latest('id')->firstOrFail();
                         app(OrderPortal::class)->revoke($link);
                         Notification::make()->success()->title('Онлайн-доступ к заказу отозван')->send();
-                    }),
-                Action::make('revokeOrderPortalDevice')
-                    ->label('Отключить устройство')
-                    ->icon('heroicon-o-device-phone-mobile')
-                    ->color('danger')
-                    ->visible(fn (): bool => $this->record->portalLinks()
-                        ->whereHas('sessions', fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now()))
-                        ->exists())
-                    ->schema([
-                        Select::make('session_id')
-                            ->label('Подтверждённое устройство')
-                            ->options(function (): array {
-                                $link = $this->record->portalLinks()
-                                    ->whereHas('sessions', fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now()))
-                                    ->latest('id')->first();
-
-                                return $link?->sessions()
-                                    ->whereNull('revoked_at')->where('expires_at', '>', now())
-                                    ->latest('last_seen_at')->get()
-                                    ->mapWithKeys(fn ($session): array => [
-                                        $session->id => ($session->device_label ?: 'Неизвестное устройство')
-                                            .' · последнее посещение '.($session->last_seen_at?->format('d.m.Y H:i') ?: 'не было'),
-                                    ])->all() ?? [];
-                            })
-                            ->required(),
-                    ])
-                    ->requiresConfirmation()
-                    ->modalHeading('Отключить выбранное устройство?')
-                    ->action(function (array $data): void {
-                        $link = $this->record->portalLinks()->latest('id')->firstOrFail();
-                        $session = $link->sessions()->findOrFail((int) $data['session_id']);
-                        app(OrderPortal::class)->revokeSession($session, auth()->user());
-                        Notification::make()->success()->title('Устройство отключено')->send();
                     }),
             ])
                 ->label('Онлайн-заказ')
@@ -812,7 +766,7 @@ class ViewOrder extends ViewRecord
         $lines[] = '';
         $lines[] = 'Онлайн-заказ со всеми позициями, ценами, поставщиками, остатками и статусами:';
         $lines[] = $portalUrl;
-        $lines[] = 'Первое устройство откроется сразу; для нового устройства код подтверждения придёт на этот email.';
+        $lines[] = 'Ссылка открывается сразу и не привязана к email — её можно переслать ответственному сотруднику.';
 
         return implode("\n", $lines);
     }
