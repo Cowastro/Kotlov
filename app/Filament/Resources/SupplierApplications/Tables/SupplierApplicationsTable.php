@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SupplierApplications\Tables;
 
 use App\Models\SupplierApplication;
+use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -11,6 +12,7 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class SupplierApplicationsTable
 {
@@ -27,6 +29,8 @@ class SupplierApplicationsTable
                     ->searchable(),
                 TextColumn::make('phone')
                     ->label('Телефон')
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                    ->html()
                     ->searchable(),
                 TextColumn::make('email')
                     ->label('Email')

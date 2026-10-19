@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\SupplierApplications\Schemas;
 
 use App\Models\SupplierApplication;
+use App\Support\AdminPhoneLinks;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class SupplierApplicationInfolist
 {
@@ -13,7 +15,8 @@ class SupplierApplicationInfolist
         return $schema->components([
             TextEntry::make('company_name')->label('Компания'),
             TextEntry::make('contact_name')->label('Контактное лицо'),
-            TextEntry::make('phone')->label('Телефон'),
+            TextEntry::make('phone')->label('Телефон')
+                ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))->html(),
             TextEntry::make('email')->label('Email')->placeholder('-'),
             TextEntry::make('website')->label('Сайт')->placeholder('-'),
             TextEntry::make('product_categories')

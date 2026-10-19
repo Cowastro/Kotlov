@@ -14,6 +14,7 @@ use App\Models\CrmCounterparty;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\B2bCounterpartyConverter;
+use App\Support\AdminPhoneLinks;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -38,6 +39,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Collection;
 
@@ -190,7 +192,8 @@ class CrmCounterpartyResource extends Resource
                     ->formatStateUsing(fn (string $state): string => CrmCounterparty::BUSINESS_UNITS[$state] ?? $state),
                 TextEntry::make('legal_name')->label('Юридическое название')->placeholder('—'),
                 TextEntry::make('unp')->label('УНП / ИНН')->placeholder('—'),
-                TextEntry::make('phones_list')->label('Телефоны')->placeholder('—')->copyable(),
+                TextEntry::make('phones_list')->label('Телефоны')->placeholder('—')->copyable()
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::renderList($state))->html(),
                 TextEntry::make('emails_list')->label('Email')->placeholder('—')->copyable(),
                 TextEntry::make('responsibleUser.name')->label('Ответственный')->placeholder('Не назначен'),
                 TextEntry::make('source')->label('Источник лида')->badge()
@@ -277,6 +280,7 @@ class CrmCounterpartyResource extends Resource
                 }),
             TextColumn::make('unp')->label('УНП')->searchable()->placeholder('—')->copyable(),
             TextColumn::make('phones_list')->label('Телефоны')->copyable()->placeholder('—')
+                ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::renderList($state))->html()
                 ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                     'contactPoints',
                     fn (Builder $points): Builder => $points->where('type', 'phone')->where('value', 'like', "%{$search}%"),

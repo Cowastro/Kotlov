@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Tables;
 
 use App\Models\User;
+use App\Support\AdminPhoneLinks;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -13,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class UsersTable
 {
@@ -36,6 +38,8 @@ class UsersTable
 
                 TextColumn::make('phone')
                     ->label('Телефон')
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                    ->html()
                     ->searchable(),
 
                 TextColumn::make('job_title')

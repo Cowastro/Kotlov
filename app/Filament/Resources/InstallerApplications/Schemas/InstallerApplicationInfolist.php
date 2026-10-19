@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\InstallerApplications\Schemas;
 
 use App\Models\InstallerApplication;
+use App\Support\AdminPhoneLinks;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class InstallerApplicationInfolist
 {
@@ -12,7 +14,8 @@ class InstallerApplicationInfolist
     {
         return $schema->components([
             TextEntry::make('contact_name')->label('Имя'),
-            TextEntry::make('phone')->label('Телефон'),
+            TextEntry::make('phone')->label('Телефон')
+                ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))->html(),
             TextEntry::make('email')->label('Email')->placeholder('-'),
             TextEntry::make('city')->label('Город')->placeholder('-'),
             TextEntry::make('company_name')->label('Компания')->placeholder('-'),

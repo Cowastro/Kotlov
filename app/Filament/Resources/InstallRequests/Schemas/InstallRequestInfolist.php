@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\InstallRequests\Schemas;
 
+use App\Support\AdminPhoneLinks;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class InstallRequestInfolist
 {
@@ -22,7 +24,9 @@ class InstallRequestInfolist
                         TextEntry::make('customer_name')
                             ->label('Имя клиента'),
                         TextEntry::make('customer_phone')
-                            ->label('Телефон'),
+                            ->label('Телефон')
+                            ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                            ->html(),
                         TextEntry::make('customer_email')
                             ->label('Email клиента')
                             ->placeholder('-'),

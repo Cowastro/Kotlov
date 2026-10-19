@@ -75,6 +75,10 @@ class SyncSantehskladPricelistCommandTest extends TestCase
         ])->assertSuccessful();
 
         $supplier = Supplier::where('code', 'santehsklad')->firstOrFail();
+        $this->assertTrue(collect($supplier->communication_channels)->contains(
+            fn (array $channel): bool => ($channel['value'] ?? null) === '+375295155377'
+                && ($channel['name'] ?? null) === 'Приём заявок'
+        ));
         $this->assertSame(103, $supplier->supplierProducts()->count());
         $offer = $supplier->supplierProducts()->where('supplier_article_normalized', 'STANDART-12')->firstOrFail();
         $this->assertSame($detailed->id, $offer->product_id);

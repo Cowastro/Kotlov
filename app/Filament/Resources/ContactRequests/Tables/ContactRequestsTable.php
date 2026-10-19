@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ContactRequests\Tables;
 
 use App\Models\ContactRequest;
+use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -12,6 +13,7 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class ContactRequestsTable
 {
@@ -29,6 +31,8 @@ class ContactRequestsTable
                     ->label('Телефон')
                     ->searchable()
                     ->copyable()
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                    ->html()
                     ->weight('bold'),
 
                 TextColumn::make('message')

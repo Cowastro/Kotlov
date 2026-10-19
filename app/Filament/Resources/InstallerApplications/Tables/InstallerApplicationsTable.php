@@ -6,6 +6,7 @@ use App\Filament\Resources\InstallerProfiles\InstallerProfileResource;
 use App\Models\InstallerApplication;
 use App\Services\InstallerApplicationConverter;
 use App\Services\InstallerApplicationTelegramNotifier;
+use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -16,6 +17,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class InstallerApplicationsTable
 {
@@ -29,6 +31,8 @@ class InstallerApplicationsTable
                     ->sortable(),
                 TextColumn::make('phone')
                     ->label('Телефон')
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                    ->html()
                     ->searchable(),
                 TextColumn::make('email')
                     ->label('Email')

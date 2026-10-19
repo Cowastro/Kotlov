@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\InstallerProfiles\Tables;
 
 use App\Support\InstallerMedia;
+use App\Support\AdminPhoneLinks;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteBulkAction;
@@ -14,6 +15,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class InstallerProfilesTable
 {
@@ -39,6 +41,8 @@ class InstallerProfilesTable
                     ->placeholder('—'),
                 TextColumn::make('phone')
                     ->label('Телефон')
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                    ->html()
                     ->searchable()
                     ->placeholder('—'),
                 TextColumn::make('city')

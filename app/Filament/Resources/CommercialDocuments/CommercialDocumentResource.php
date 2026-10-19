@@ -23,6 +23,7 @@ use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
 use App\Services\Market\MarketWebResearchService;
 use App\Services\Telephony\PhoneNumber;
+use App\Support\AdminPhoneLinks;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -646,6 +647,7 @@ class CommercialDocumentResource extends Resource
                         TextEntry::make('client_email')->label('Email')->copyable()
                             ->visible(fn (CommercialDocument $record): bool => filled($record->client_email)),
                         TextEntry::make('client_phone')->label('Телефон')->copyable()
+                            ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))->html()
                             ->visible(fn (CommercialDocument $record): bool => filled($record->client_phone)),
                         TextEntry::make('client_unp')->label('УНП / ИНН')->copyable()
                             ->visible(fn (CommercialDocument $record): bool => filled($record->client_unp)),

@@ -41,25 +41,28 @@ class Supplier extends Model
     /** @return array<int, string> */
     public function contactPhoneNumbers(): array
     {
-        $phones = $this->crmCounterparty?->contactPoints
+        $crmPhones = $this->crmCounterparty?->contactPoints
             ->where('is_active', true)
             ->where('type', 'phone')
             ->pluck('value')
             ->filter()
-            ->unique()
             ->values()
             ->all() ?? [];
 
-        if ($phones !== []) {
-            return $phones;
-        }
+        $channelPhones = collect($this->communication_channels ?? [])
+            ->filter(fn ($channel): bool => is_array($channel))
+            ->filter(fn (array $channel): bool => in_array($channel['type'] ?? null, ['phone', 'whatsapp', 'viber', 'telegram'], true))
+            ->pluck('value')
+            ->filter(fn ($value): bool => preg_match('/\d{7,}/', preg_replace('/\D/', '', (string) $value) ?? '') === 1)
+            ->values()
+            ->all();
 
         preg_match_all('/(?<!\w)(?:\+?\d[\d\s().\-]{5,}\d)(?!\w)/u', (string) $this->contact, $matches);
 
-        return collect($matches[0] ?? [])
+        return collect([...$crmPhones, ...$channelPhones, ...($matches[0] ?? [])])
             ->map(fn (string $phone): string => trim($phone))
             ->filter()
-            ->unique()
+            ->unique(fn (string $phone): string => preg_replace('/\D/', '', $phone) ?? $phone)
             ->values()
             ->all();
     }

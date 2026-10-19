@@ -5,6 +5,7 @@ namespace App\Filament\Resources\SupportConversations;
 use App\Filament\Resources\SupportConversations\Pages\ListSupportConversations;
 use App\Filament\Resources\SupportConversations\Pages\ViewSupportConversation;
 use App\Models\SupportConversation;
+use App\Support\AdminPhoneLinks;
 use App\Models\SupportMessage;
 use BackedEnum;
 use Filament\Actions\ViewAction;
@@ -19,6 +20,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 
 class SupportConversationResource extends Resource
 {
@@ -117,7 +119,8 @@ class SupportConversationResource extends Resource
         return $schema->components([
             Section::make('Клиент')->columns(3)->schema([
                 TextEntry::make('name')->label('Имя'),
-                TextEntry::make('phone')->label('Телефон')->copyable(),
+                TextEntry::make('phone')->label('Телефон')->copyable()
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))->html(),
                 TextEntry::make('status')->label('Статус')->badge()
                     ->formatStateUsing(fn (string $state): string => SupportConversation::STATUSES[$state] ?? $state),
                 TextEntry::make('page_url')->label('Страница обращения')->url(fn (?string $state) => $state)->openUrlInNewTab()->placeholder('—')->columnSpanFull(),

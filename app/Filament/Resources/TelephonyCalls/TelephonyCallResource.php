@@ -9,6 +9,7 @@ use App\Models\CrmContact;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
 use App\Models\TelephonyCall;
+use App\Support\AdminPhoneLinks;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -148,7 +149,8 @@ class TelephonyCallResource extends Resource
                             ->icon('heroicon-o-phone')
                             ->copyable()
                             ->placeholder('Не определён')
-                            ->url(fn (?string $state): ?string => $state ? 'tel:'.$state : null),
+                            ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                            ->html(),
                         TextEntry::make('crmContact.position')->label('Должность')->placeholder('Не указана'),
                         TextEntry::make('crmCounterparty.name')->label('Контрагент CRM')->placeholder('Не определён'),
                         TextEntry::make('crmContact.full_name')->label('Контакт CRM')->placeholder('Не определён'),
@@ -237,6 +239,8 @@ class TelephonyCallResource extends Resource
                         'answered' => 'success', 'ringing' => 'info', 'missed', 'busy', 'denied', 'failed' => 'danger', default => 'warning',
                     }),
                 TextColumn::make('customer_phone')->label('Клиент')->searchable()->copyable()->weight('bold')
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                    ->html()
                     ->description(fn (TelephonyCall $record): string => $record->crmCounterparty
                         ? $record->contact_name.' · '.$record->crmCounterparty->name
                         : $record->contact_name),

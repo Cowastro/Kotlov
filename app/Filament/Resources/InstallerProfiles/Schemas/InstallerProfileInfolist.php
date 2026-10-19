@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\InstallerProfiles\Schemas;
 
+use App\Support\AdminPhoneLinks;
 use App\Support\InstallerMedia;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class InstallerProfileInfolist
 {
@@ -62,9 +64,13 @@ class InstallerProfileInfolist
                     ->schema([
                         TextEntry::make('phone')
                             ->label('Основной телефон')
+                            ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                            ->html()
                             ->placeholder('—'),
                         TextEntry::make('additional_phone')
                             ->label('Дополнительный телефон')
+                            ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                            ->html()
                             ->placeholder('—'),
                         TextEntry::make('email')
                             ->label('Email')

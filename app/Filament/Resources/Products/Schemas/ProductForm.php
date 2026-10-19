@@ -7,6 +7,7 @@ use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Models\CrmCounterparty;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Support\AdminPhoneLinks;
 use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
@@ -587,9 +588,8 @@ class ProductForm
             ->unique(fn (array $item): string => $item['type'].'|'.mb_strtolower($item['value']))
             ->map(function (array $item): string {
                 $isPhone = $item['type'] === 'phone';
-                $href = $isPhone
-                    ? 'tel:'.preg_replace('/[^\d+]/', '', $item['value'])
-                    : 'mailto:'.$item['value'];
+                $phoneLinks = $isPhone ? AdminPhoneLinks::render($item['value'])?->toHtml() : null;
+                $href = 'mailto:'.$item['value'];
                 $icon = $isPhone ? '☎' : '✉';
                 $label = $item['label'] !== ''
                     ? '<span style="color:#9ca3af;font-size:11px">'.e($item['label']).'</span>'
@@ -597,7 +597,7 @@ class ProductForm
 
                 return '<div style="display:flex;align-items:center;gap:8px;min-width:0">'
                     .'<span aria-hidden="true" style="color:#f59e0b">'.$icon.'</span>'
-                    .'<a href="'.e($href).'" style="color:#e5e7eb;font-weight:600;text-decoration:none">'.e($item['value']).'</a>'
+                    .($phoneLinks ?: '<a href="'.e($href).'" style="color:#e5e7eb;font-weight:600;text-decoration:none">'.e($item['value']).'</a>')
                     .$label.'</div>';
             })
             ->values()

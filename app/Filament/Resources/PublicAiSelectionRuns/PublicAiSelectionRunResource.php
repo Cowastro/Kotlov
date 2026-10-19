@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PublicAiSelectionRuns;
 use App\Filament\Resources\PublicAiSelectionRuns\Pages\ListPublicAiSelectionRuns;
 use App\Filament\Resources\PublicAiSelectionRuns\Pages\ViewPublicAiSelectionRun;
 use App\Models\PublicAiSelectionRun;
+use App\Support\AdminPhoneLinks;
 use BackedEnum;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
@@ -16,6 +17,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 class PublicAiSelectionRunResource extends Resource
@@ -77,6 +79,7 @@ class PublicAiSelectionRunResource extends Resource
                         'no_results', 'abandoned' => 'danger', 'completed' => 'warning', default => 'gray',
                     }),
                 TextColumn::make('contactRequest.phone')->label('Контакт')->copyable()->placeholder('—')
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))->html()
                     ->description(fn (PublicAiSelectionRun $record): ?string => $record->contactRequest?->name),
             ])
             ->filters([
@@ -107,7 +110,8 @@ class PublicAiSelectionRunResource extends Resource
             ]),
             Section::make('Контакт и этапы')->columns(3)->schema([
                 TextEntry::make('contactRequest.name')->label('Имя')->placeholder('Не оставил'),
-                TextEntry::make('contactRequest.phone')->label('Телефон')->copyable()->placeholder('Не оставил'),
+                TextEntry::make('contactRequest.phone')->label('Телефон')->copyable()->placeholder('Не оставил')
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))->html(),
                 TextEntry::make('current_step')->label('Последний этап'),
                 TextEntry::make('created_at')->label('Начал')->dateTime('d.m.Y H:i:s'),
                 TextEntry::make('recommended_at')->label('Получил подбор')->dateTime('d.m.Y H:i:s')->placeholder('—'),

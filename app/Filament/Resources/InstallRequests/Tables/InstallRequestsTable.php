@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\InstallRequests\Tables;
 
 use App\Models\InstallerProfile;
+use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -11,6 +12,7 @@ use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class InstallRequestsTable
 {
@@ -24,6 +26,8 @@ class InstallRequestsTable
                     ->sortable(),
                 TextColumn::make('customer_phone')
                     ->label('Телефон')
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                    ->html()
                     ->searchable(),
                 TextColumn::make('customer_email')
                     ->label('Email')

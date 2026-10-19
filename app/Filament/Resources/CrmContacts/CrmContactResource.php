@@ -8,6 +8,7 @@ use App\Filament\Resources\CrmContacts\Pages\ListCrmContacts;
 use App\Filament\Resources\CrmContacts\Pages\ViewCrmContact;
 use App\Models\CrmContact;
 use App\Models\CrmCounterparty;
+use App\Support\AdminPhoneLinks;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -26,6 +27,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 
 class CrmContactResource extends Resource
 {
@@ -93,7 +95,8 @@ class CrmContactResource extends Resource
                 TextEntry::make('full_name')->label('Имя')->weight('bold'),
                 TextEntry::make('position')->label('Должность')->placeholder('—'),
                 TextEntry::make('counterparty.name')->label('Контрагент')->placeholder('Не привязан'),
-                TextEntry::make('phones_list')->label('Телефоны')->placeholder('—')->copyable(),
+                TextEntry::make('phones_list')->label('Телефоны')->placeholder('—')->copyable()
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::renderList($state))->html(),
                 TextEntry::make('emails_list')->label('Email')->placeholder('—')->copyable(),
                 TextEntry::make('counterparty.responsibleUser.name')->label('Ответственный')->placeholder('Не назначен'),
                 TextEntry::make('calls_count')->label('Звонков')->state(fn (CrmContact $record): int => $record->calls()->count()),
@@ -112,7 +115,8 @@ class CrmContactResource extends Resource
                     ? (CrmCounterparty::CLASSIFICATIONS[$record->counterparty->classification] ?? null) : null),
             TextColumn::make('phones_list')->label('Телефоны')->searchable(query: fn (Builder $query, string $search): Builder => $query
                 ->whereHas('contactPoints', fn (Builder $points): Builder => $points->where('type', 'phone')->where('value', 'like', "%{$search}%")))
-                ->copyable()->placeholder('—'),
+                ->copyable()->placeholder('—')
+                ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::renderList($state))->html(),
             TextColumn::make('emails_list')->label('Email')->placeholder('—')->toggleable(),
             TextColumn::make('counterparty.responsibleUser.name')->label('Ответственный')->placeholder('Не назначен'),
             IconColumn::make('is_active')->label('Активен')->boolean(),

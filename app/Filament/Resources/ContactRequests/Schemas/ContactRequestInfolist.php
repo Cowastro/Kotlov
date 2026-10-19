@@ -3,9 +3,11 @@
 namespace App\Filament\Resources\ContactRequests\Schemas;
 
 use App\Models\ContactRequest;
+use App\Support\AdminPhoneLinks;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class ContactRequestInfolist
 {
@@ -53,7 +55,8 @@ class ContactRequestInfolist
                             ->label('Телефон')
                             ->icon('heroicon-o-phone')
                             ->copyable()
-                            ->url(fn (?string $state): ?string => $state ? 'tel:'.$state : null),
+                            ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                            ->html(),
                         TextEntry::make('email')
                             ->label('Email')
                             ->icon('heroicon-o-envelope')

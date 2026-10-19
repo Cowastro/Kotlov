@@ -372,6 +372,24 @@ class SyncSantehskladPricelistCommand extends Command
     private function ensureSupplier(array $payload, ?Supplier $supplier): array
     {
         $supplier ??= new Supplier;
+        $ordersPhone = '+375295155377';
+        $channels = collect($supplier->communication_channels ?? [])
+            ->filter(fn ($channel): bool => is_array($channel))
+            ->reject(fn (array $channel): bool => preg_replace('/\D/', '', (string) ($channel['value'] ?? '')) === '375295155377')
+            ->values()
+            ->all();
+        $channels[] = [
+            'type' => 'phone',
+            'name' => 'Приём заявок',
+            'value' => $ordersPhone,
+            'note' => 'Сантехсклад — заказы и наличие',
+        ];
+
+        $contact = trim((string) $supplier->contact);
+        if (preg_match('/375\D*29\D*515\D*53\D*77/u', $contact) !== 1) {
+            $contact = trim($contact.($contact !== '' ? ' · ' : '').'+375 (29) 515-53-77 — приём заявок');
+        }
+
         $priceListNote = 'Прайс SAKOVICH/PRAMEN: отдельные оптовые цены с НДС и РРЦ. Наличие в файле не указано.';
         $notes = trim((string) $supplier->notes);
         if (! str_contains($notes, $priceListNote)) {
@@ -382,6 +400,8 @@ class SyncSantehskladPricelistCommand extends Command
             'name' => $supplier->exists ? $supplier->name : 'Сантехсклад',
             'currency' => 'BYN',
             'currency_rate' => 1,
+            'contact' => $contact,
+            'communication_channels' => $channels,
             'notes' => $notes,
             'is_active' => true,
         ])->save();

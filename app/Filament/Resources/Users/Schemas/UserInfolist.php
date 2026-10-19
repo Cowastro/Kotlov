@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Users\Schemas;
 
+use App\Support\AdminPhoneLinks;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class UserInfolist
 {
@@ -20,6 +22,8 @@ class UserInfolist
                     ->badge(),
                 TextEntry::make('phone')
                     ->label('Рабочий телефон')
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                    ->html()
                     ->placeholder('-'),
                 TextEntry::make('job_title')
                     ->label('Должность')

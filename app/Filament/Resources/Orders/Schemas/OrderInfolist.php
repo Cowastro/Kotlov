@@ -7,6 +7,7 @@ use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Models\IntegrationIssue;
 use App\Models\Order;
+use App\Support\AdminPhoneLinks;
 use App\Models\OrderEconomicSnapshot;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
@@ -267,7 +268,8 @@ class OrderInfolist
                         TextEntry::make('customer_phone')
                             ->label('Телефон')
                             ->copyable()
-                            ->url(fn ($state) => $state ? 'tel:'.preg_replace('/\s+/', '', $state) : null),
+                            ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                            ->html(),
 
                         TextEntry::make('customer_email')
                             ->label('Email')

@@ -16,6 +16,7 @@ use App\Models\Category;
 use App\Models\MarketResearchReport;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Support\AdminPhoneLinks;
 use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
@@ -972,7 +973,7 @@ class ProductsTable
             }
 
             $links = collect([
-                $phone ? '<a class="text-primary-600 hover:underline" href="tel:'.e(preg_replace('/[^\d+]/', '', $phone)).'">☎ '.e($phone).'</a>' : null,
+                $phone ? AdminPhoneLinks::render($phone)?->toHtml() : null,
                 $email ? '<a class="text-primary-600 hover:underline" href="mailto:'.e($email).'">✉ '.e($email).'</a>' : null,
             ])->filter()->implode(' · ');
 

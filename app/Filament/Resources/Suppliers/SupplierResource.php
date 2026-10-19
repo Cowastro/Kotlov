@@ -19,6 +19,7 @@ use App\Services\Integrations\IntegrationOperationsSummary;
 use App\Services\Orders\SupplierAutoTransferManager;
 use App\Services\Orders\SupplierAutoTransferReadiness;
 use App\Services\Pricing\CurrencyPriceConverter;
+use App\Support\AdminPhoneLinks;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -44,6 +45,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\HtmlString;
 
 class SupplierResource extends Resource
 {
@@ -199,8 +201,8 @@ class SupplierResource extends Resource
                     TextEntry::make('brands.name')->label('Бренды')->badge()->placeholder('Не указаны')->columnSpan(2),
                     TextEntry::make('crmCounterparty.name')->label('Карточка CRM')->placeholder('Не связана'),
                     TextEntry::make('contact_summary')->label('Телефоны и email')
-                        ->state(fn (Supplier $record): ?string => $record->contactSummary())
-                        ->placeholder('Не указаны')->copyable(),
+                        ->state(fn (Supplier $record): ?HtmlString => self::contactSummaryHtml($record))
+                        ->placeholder('Не указаны')->html(),
                     IconEntry::make('is_active')->label('Работаем')->boolean(),
                     TextEntry::make('notes')->label('Что важно знать менеджеру')->placeholder('—')->columnSpanFull(),
                 ]),
@@ -212,7 +214,9 @@ class SupplierResource extends Resource
                             'email' => 'Email', 'website' => 'Сайт', default => 'Другое',
                         }),
                         TextEntry::make('name')->label('Чат или контакт')->placeholder('—'),
-                        TextEntry::make('value')->label('Адрес / номер')->copyable(),
+                        TextEntry::make('value')->label('Адрес / номер')
+                            ->formatStateUsing(fn (?string $state): HtmlString => AdminPhoneLinks::render($state) ?? new HtmlString(e($state)))
+                            ->copyable()->html(),
                         TextEntry::make('note')->label('Комментарий')->placeholder('—'),
                     ])->columns(4),
                 ]),
@@ -270,9 +274,8 @@ class SupplierResource extends Resource
 
                 TextColumn::make('manager_contacts')
                     ->label('Контакты')
-                    ->state(fn (Supplier $record): array => self::managerContacts($record))
-                    ->listWithLineBreaks()
-                    ->limitList(3)
+                    ->state(fn (Supplier $record): HtmlString => self::managerContactsHtml($record))
+                    ->html()
                     ->placeholder('Нужно заполнить')
                     ->description(fn (Supplier $record): ?string => $record->crmCounterparty?->name
                         ? 'CRM: '.$record->crmCounterparty->name
@@ -392,22 +395,45 @@ class SupplierResource extends Resource
         return $supplier->code.' · '.$currency.$rate;
     }
 
-    /** @return array<int, string> */
-    private static function managerContacts(Supplier $supplier): array
+    private static function managerContactsHtml(Supplier $supplier): HtmlString
     {
+        $structuredPhoneDigits = collect($supplier->communication_channels ?? [])
+            ->filter(fn ($channel): bool => is_array($channel))
+            ->map(fn (array $channel): string => AdminPhoneLinks::digits((string) ($channel['value'] ?? '')))
+            ->filter();
         $structuredChannels = collect($supplier->communication_channels ?? [])
-            ->map(function (array $channel): string {
+            ->map(function (array $channel): string|HtmlString {
                 $label = trim((string) ($channel['name'] ?? ''));
                 $value = trim((string) ($channel['value'] ?? ''));
+                $rendered = AdminPhoneLinks::render($value)?->toHtml() ?? e($value);
 
-                return $label !== '' ? $label.': '.$value : $value;
+                return new HtmlString(($label !== '' ? '<span style="color:#9ca3af">'.e($label).':</span> ' : '').$rendered);
             });
 
-        return collect([
-            ...$supplier->contactPhoneNumbers(),
-            ...$supplier->contactEmailAddresses(),
-            ...$structuredChannels,
-        ])->filter()->unique()->values()->all();
+        $phones = collect($supplier->contactPhoneNumbers())
+            ->reject(fn (string $phone): bool => $structuredPhoneDigits->contains(AdminPhoneLinks::digits($phone)))
+            ->map(fn (string $phone): ?HtmlString => AdminPhoneLinks::render($phone));
+        $emails = collect($supplier->contactEmailAddresses())
+            ->map(fn (string $email): HtmlString => new HtmlString('<a href="mailto:'.e($email).'">'.e($email).'</a>'));
+
+        return new HtmlString(collect([...$phones, ...$emails, ...$structuredChannels])
+            ->filter()
+            ->unique(fn (HtmlString $item): string => $item->toHtml())
+            ->take(4)
+            ->map(fn (HtmlString $item): string => $item->toHtml())
+            ->implode('<br>'));
+    }
+
+    private static function contactSummaryHtml(Supplier $supplier): ?HtmlString
+    {
+        $rows = collect($supplier->contactPhoneNumbers())
+            ->map(fn (string $phone): ?string => AdminPhoneLinks::render($phone)?->toHtml())
+            ->merge(collect($supplier->contactEmailAddresses())->map(
+                fn (string $email): string => '<a href="mailto:'.e($email).'">'.e($email).'</a>'
+            ))
+            ->filter();
+
+        return $rows->isEmpty() ? null : new HtmlString($rows->implode('<br>'));
     }
 
     private static function syncSummary(Supplier $supplier): string

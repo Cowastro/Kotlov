@@ -6,6 +6,7 @@ use App\Filament\Exports\OrderExporter;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Support\AdminPhoneLinks;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
@@ -143,6 +144,8 @@ class OrdersTable
                 TextColumn::make('customer_phone')
                     ->label('Телефон')
                     ->searchable()
+                    ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
+                    ->html()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('customer_email')
@@ -811,7 +814,7 @@ class OrdersTable
             $phone = $contact['phone'];
             $email = $contact['email'];
             $links = collect([
-                $phone ? '<a class="text-primary-600 hover:underline" href="tel:'.e(preg_replace('/[^\d+]/', '', $phone)).'">☎ '.e($phone).'</a>' : null,
+                $phone ? AdminPhoneLinks::render($phone)?->toHtml() : null,
                 $email ? '<a class="text-primary-600 hover:underline" href="mailto:'.e($email).'">✉ '.e($email).'</a>' : null,
             ])->filter()->implode(' · ');
 
