@@ -26,6 +26,7 @@ use App\Http\Controllers\InstallRequestController;
 use App\Http\Controllers\MarketResearchReportPdfController;
 use App\Http\Controllers\OneCExchangeController;
 use App\Http\Controllers\OrderProcurementController;
+use App\Http\Controllers\OrderPortalController;
 use App\Http\Controllers\PartnerApplicationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductPurchasePriceSourceAttachmentController;
@@ -89,6 +90,28 @@ Route::get('/admin/orders/{order}/procurement', OrderProcurementController::clas
     ->whereNumber('order')
     ->middleware('auth')
     ->name('admin.orders.procurement');
+
+Route::get('/admin/orders/{order}/online-preview', [OrderPortalController::class, 'preview'])
+    ->whereNumber('order')
+    ->middleware('auth')
+    ->name('admin.orders.online-preview');
+
+Route::prefix('order-view')->group(function (): void {
+    Route::get('/access/{token}', [OrderPortalController::class, 'access'])
+        ->where('token', '[A-Za-z0-9]{80}')
+        ->name('order-portal.access');
+    Route::post('/access/{token}', [OrderPortalController::class, 'activate'])
+        ->where('token', '[A-Za-z0-9]{80}')
+        ->middleware('throttle:10,1')
+        ->name('order-portal.activate');
+    Route::get('/verify/{challenge:public_id}', [OrderPortalController::class, 'verifyForm'])
+        ->name('order-portal.verify-form');
+    Route::post('/verify/{challenge:public_id}', [OrderPortalController::class, 'verify'])
+        ->middleware('throttle:10,10')
+        ->name('order-portal.verify');
+    Route::get('/{link:public_id}', [OrderPortalController::class, 'show'])
+        ->name('order-portal.show');
+});
 
 Route::get('/admin/purchase-price-sources/{source}/attachment', ProductPurchasePriceSourceAttachmentController::class)
     ->whereNumber('source')

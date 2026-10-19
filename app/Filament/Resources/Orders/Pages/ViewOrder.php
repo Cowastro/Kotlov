@@ -12,6 +12,7 @@ use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderSettlementManager;
+use App\Services\Orders\OrderPortal;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
 use App\Services\Orders\SupplierReservationMailService;
@@ -101,12 +102,14 @@ class ViewOrder extends ViewRecord
                 ->modalSubmitActionLabel('Отправить')
                 ->action(function (array $data): void {
                     $user = auth()->user();
+                    $portal = app(OrderPortal::class);
+                    $portalLink = $portal->publish($this->record, $data['recipient'], $user);
                     $thread = app(SupplierRequestMailDraftService::class)->createOrderProcurementDraft(
                         $this->record,
                         $user,
                         $data['recipient'],
                         'Закупка по заказу '.$this->record->number,
-                        $this->procurementEmailBody($data['note'] ?? null),
+                        $this->procurementEmailBody($portal->url($portalLink), $data['note'] ?? null),
                     );
                     app(CrmMailSender::class)->sendOrderProcurementDraft($thread, $user);
 
@@ -123,23 +126,121 @@ class ViewOrder extends ViewRecord
                         ->body('Получатель: '.$data['recipient'])
                         ->send();
                 }),
-                Action::make('viewProductsOnSite')
-                ->label('Товары на сайте')
-                ->icon('heroicon-o-link')
-                ->color('gray')
-                ->modalHeading('Карточки товаров заказа')
-                ->modalDescription('Каждая ссылка ведёт на соответствующую позицию заказа, а не только на первый товар.')
-                ->modalSubmitAction(false)
-                ->modalCancelActionLabel('Закрыть')
-                ->modalContent(fn () => view('filament.resources.orders.product-links', [
-                    'items' => $this->record->items
-                        ->filter(fn (OrderItem $item): bool => filled($item->publicProductUrl())),
-                ]))
-                ->visible(fn (): bool => $this->record->items
-                    ->contains(fn (OrderItem $item): bool => filled($item->publicProductUrl()))),
             ])
                 ->label('Документы')
                 ->icon('heroicon-o-document-text')
+                ->color('gray')
+                ->button(),
+            ActionGroup::make([
+                Action::make('publishOrderOnline')
+                    ->label('Создать ссылку и QR')
+                    ->icon('heroicon-o-qr-code')
+                    ->color('primary')
+                    ->fillForm(fn (): array => [
+                        'access_email' => $this->record->procurement_recipient
+                            ?: config('services.procurement.email')
+                            ?: 'order@kotlov.by',
+                    ])
+                    ->schema([
+                        TextInput::make('access_email')
+                            ->label('Email для подтверждения новых устройств')
+                            ->helperText('Первое устройство откроется сразу. На следующих устройствах код придёт на этот адрес.')
+                            ->email()
+                            ->required(),
+                    ])
+                    ->modalSubmitActionLabel('Создать доступ')
+                    ->action(function (array $data): void {
+                        try {
+                            $portal = app(OrderPortal::class);
+                            $link = $portal->publish($this->record, $data['access_email'], auth()->user());
+                            Notification::make()
+                                ->success()
+                                ->title('Онлайн-заказ и QR готовы')
+                                ->body($portal->url($link))
+                                ->persistent()
+                                ->send();
+                        } catch (Throwable $exception) {
+                            Notification::make()->danger()->title('Не удалось создать доступ')->body($exception->getMessage())->send();
+                        }
+                    }),
+                Action::make('showOrderQr')
+                    ->label('Показать QR и ссылку')
+                    ->icon('heroicon-o-qr-code')
+                    ->color('gray')
+                    ->visible(fn (): bool => $this->record->portalLinks()
+                        ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                    ->modalHeading(fn (): string => 'Онлайн-заказ '.$this->record->number)
+                    ->modalDescription('QR и ссылка ведут на одну защищённую страницу всего заказа, как в онлайн-КП.')
+                    ->modalWidth(Width::Large)
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Закрыть')
+                    ->modalContent(function () {
+                        $link = $this->record->portalLinks()
+                            ->whereNull('revoked_at')->where('expires_at', '>', now())->latest('id')->firstOrFail();
+                        $portal = app(OrderPortal::class);
+
+                        return view('filament.resources.orders.online-access', [
+                            'order' => $this->record,
+                            'url' => $portal->url($link),
+                            'qr' => $portal->qrDataUri($link),
+                        ]);
+                    }),
+                Action::make('previewOrderOnline')
+                    ->label('Предпросмотр заказа')
+                    ->icon('heroicon-o-eye')
+                    ->color('gray')
+                    ->visible(fn (): bool => $this->record->portalLinks()
+                        ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                    ->url(fn (): string => route('admin.orders.online-preview', $this->record))
+                    ->openUrlInNewTab(),
+                Action::make('revokeOrderOnline')
+                    ->label('Отозвать онлайн-доступ')
+                    ->icon('heroicon-o-lock-closed')
+                    ->color('danger')
+                    ->visible(fn (): bool => $this->record->portalLinks()
+                        ->whereNull('revoked_at')->where('expires_at', '>', now())->exists())
+                    ->requiresConfirmation()
+                    ->action(function (): void {
+                        $link = $this->record->portalLinks()->whereNull('revoked_at')->latest('id')->firstOrFail();
+                        app(OrderPortal::class)->revoke($link);
+                        Notification::make()->success()->title('Онлайн-доступ к заказу отозван')->send();
+                    }),
+                Action::make('revokeOrderPortalDevice')
+                    ->label('Отключить устройство')
+                    ->icon('heroicon-o-device-phone-mobile')
+                    ->color('danger')
+                    ->visible(fn (): bool => $this->record->portalLinks()
+                        ->whereHas('sessions', fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now()))
+                        ->exists())
+                    ->schema([
+                        Select::make('session_id')
+                            ->label('Подтверждённое устройство')
+                            ->options(function (): array {
+                                $link = $this->record->portalLinks()
+                                    ->whereHas('sessions', fn ($query) => $query->whereNull('revoked_at')->where('expires_at', '>', now()))
+                                    ->latest('id')->first();
+
+                                return $link?->sessions()
+                                    ->whereNull('revoked_at')->where('expires_at', '>', now())
+                                    ->latest('last_seen_at')->get()
+                                    ->mapWithKeys(fn ($session): array => [
+                                        $session->id => ($session->device_label ?: 'Неизвестное устройство')
+                                            .' · последнее посещение '.($session->last_seen_at?->format('d.m.Y H:i') ?: 'не было'),
+                                    ])->all() ?? [];
+                            })
+                            ->required(),
+                    ])
+                    ->requiresConfirmation()
+                    ->modalHeading('Отключить выбранное устройство?')
+                    ->action(function (array $data): void {
+                        $link = $this->record->portalLinks()->latest('id')->firstOrFail();
+                        $session = $link->sessions()->findOrFail((int) $data['session_id']);
+                        app(OrderPortal::class)->revokeSession($session, auth()->user());
+                        Notification::make()->success()->title('Устройство отключено')->send();
+                    }),
+            ])
+                ->label('Онлайн-заказ')
+                ->icon('heroicon-o-globe-alt')
                 ->color('gray')
                 ->button(),
             Action::make('acceptOrder')
@@ -680,7 +781,7 @@ class ViewOrder extends ViewRecord
         return $supplier?->contactEmailAddresses()[0] ?? null;
     }
 
-    private function procurementEmailBody(?string $note = null): string
+    private function procurementEmailBody(string $portalUrl, ?string $note = null): string
     {
         $this->record->loadMissing(['items.fulfillmentSupplier', 'items.supplySupplier', 'items.supplierOrderRequestItem.request', 'manager']);
         $lines = [
@@ -709,9 +810,9 @@ class ViewOrder extends ViewRecord
         }
 
         $lines[] = '';
-        $lines[] = 'Актуальный закупочный лист и статусы:';
-        $lines[] = route('admin.orders.procurement', ['order' => $this->record]);
-        $lines[] = 'Ссылка доступна после входа в админку KOTLOV.';
+        $lines[] = 'Онлайн-заказ со всеми позициями, ценами, поставщиками, остатками и статусами:';
+        $lines[] = $portalUrl;
+        $lines[] = 'Первое устройство откроется сразу; для нового устройства код подтверждения придёт на этот email.';
 
         return implode("\n", $lines);
     }

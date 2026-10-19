@@ -333,6 +333,11 @@ class Order extends Model
         return $this->hasMany(CrmMailThread::class);
     }
 
+    public function portalLinks(): HasMany
+    {
+        return $this->hasMany(OrderPortalLink::class);
+    }
+
     public function archivedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'archived_by');
