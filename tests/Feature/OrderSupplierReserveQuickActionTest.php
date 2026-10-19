@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Tables\OrdersTable;
 use App\Models\Category;
+use App\Models\CrmMailbox;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -20,6 +22,21 @@ use Tests\TestCase;
 class OrderSupplierReserveQuickActionTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_supplier_reserve_mailbox_is_available_next_to_orders_in_navigation(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        CrmMailbox::query()->updateOrCreate(['email' => 'order@kotlov.by'], [
+            'name' => 'Заказы KOTLOV',
+            'username' => 'order@kotlov.by',
+            'is_enabled' => true,
+        ]);
+
+        $this->actingAs($manager)
+            ->get(OrderResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Резервы поставщиков');
+    }
 
     public function test_order_row_offers_supplier_selection_for_a_reserve_request(): void
     {
