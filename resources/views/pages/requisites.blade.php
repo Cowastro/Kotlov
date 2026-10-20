@@ -46,16 +46,29 @@
         .requisites-field--wide { grid-column:auto; }
     }
     @media print {
-        @page { size:A4; margin:14mm; }
-        header, footer, .requisites-breadcrumbs, .requisites-actions, .requisites-copy, .online-order-promo, .requisites-toast { display:none !important; }
-        .requisites-page { padding:0; background:#fff; }
+        @page { size:A4 portrait; margin:11mm 13mm; }
+        html, body { margin:0 !important; padding:0 !important; background:#fff !important; }
+        body > * { display:none !important; }
+        body > .requisites-page { display:block !important; }
+        .requisites-breadcrumbs, .requisites-actions, .requisites-copy, .requisites-toast { display:none !important; }
+        .requisites-page { padding:0; color:#000; background:#fff; }
         .requisites-shell { width:100%; }
-        .requisites-hero { padding:0 0 18px; color:#000; background:#fff; border-radius:0; border-bottom:2px solid #000; }
+        .requisites-hero { display:block; margin:0 0 5mm; padding:0 0 5mm; color:#000; background:#fff; border-radius:0; border-bottom:2px solid #000; }
         .requisites-hero h1, .requisites-hero p { color:#000; }
-        .requisites-kicker { color:#000; }
-        .requisites-card { padding:0; border:0; box-shadow:none; }
-        .requisites-section { break-inside:avoid; }
-        .requisites-note { border:1px solid #bbb; background:#fff; }
+        .requisites-hero h1 { max-width:none; margin:0 0 2mm; font-size:25px; }
+        .requisites-hero p { max-width:none; font-size:12px; line-height:1.4; }
+        .requisites-kicker { margin-bottom:2mm; color:#000; font-size:9px; }
+        .requisites-card { display:grid; grid-template-columns:1fr 1fr; column-gap:9mm; padding:0; border:0; box-shadow:none; }
+        .requisites-section { padding:0 0 5mm; border:0; break-inside:avoid; }
+        .requisites-section:first-child { padding-right:9mm; border-right:1px solid #bbb; }
+        .requisites-section:nth-child(2) .requisites-grid { grid-template-columns:1fr; }
+        .requisites-section:nth-child(3) { grid-column:1 / -1; padding-top:5mm; border-top:1px solid #bbb; }
+        .requisites-section h2 { margin:0 0 3.5mm; font-size:17px; }
+        .requisites-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:3.5mm 7mm; }
+        .requisites-field--wide { grid-column:1 / -1; }
+        .requisites-label { margin-bottom:1mm; font-size:9px; }
+        .requisites-value { font-size:11.5px; line-height:1.35; }
+        .requisites-note { margin-top:0; padding:3mm 4mm; border:1px solid #bbb; background:#fff; font-size:9.5px; line-height:1.4; break-inside:avoid; }
     }
 </style>
 @endpush
