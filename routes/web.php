@@ -296,6 +296,9 @@ Route::get('/akcii/kotlov-xo-evo-26', [PromotionController::class, 'xoEvo26'])->
 Route::get('/akcii/hotta-ceramik-20-30', [PromotionController::class, 'hottaCeramik'])->name('promotions.hotta-ceramik');
 Route::view('/dostavka', 'pages.dostavka');
 Route::get('/partners', fn () => view('pages.partners'))->name('partners');
+Route::get('/rekvizity', fn () => view('pages.requisites', [
+    'company' => config('legal.commercial_documents'),
+]))->name('company.requisites');
 Route::get(KnowledgeBase::URL, fn (Request $request) => view('pages.knowledge-base', [
     'items' => KnowledgeBase::filter($request->query('category'), $request->query('tag'), $request->query('q')),
     'all' => KnowledgeBase::items(),

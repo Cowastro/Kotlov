@@ -113,6 +113,7 @@
                             <div class="tf-collapse-content">
                                 <ul class="footer-menu-list">
                                     <li><a href="/partners" class="cl-text-3 link">Стать партнёром</a></li>
+                                    <li><a href="{{ route('company.requisites') }}" class="cl-text-3 link">Реквизиты компании</a></li>
                                     <li><a href="/installers" class="cl-text-3 link">Монтажникам</a></li>
                                     <li><a href="/suppliers" class="cl-text-3 link">Для поставщиков</a></li>
                                     <li><a href="/account" class="cl-text-3 link">Личный кабинет</a></li>
