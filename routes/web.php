@@ -185,7 +185,7 @@ Route::get('/robots.txt', function (Request $request) {
 Route::get('/', function () {
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
-    $data = Cache::remember('home:data:v2', 600, function () {
+    $data = Cache::remember('home:data:v3', 600, function () {
         $categoryBranchIds = function ($categoryId) {
             $categories = Category::where('is_active', true)
                 ->get(['id', 'parent_id'])
@@ -223,6 +223,70 @@ Route::get('/', function () {
                     ->whereIn('category_id', $categoryBranchIds($category->id))
                     ->count();
             });
+
+        // Универсальная витрина ходовых товаров. В отличие от тематических
+        // вкладок ниже она показывает и инженерную мелочёвку: счётчики,
+        // сигнализаторы, насосы и баки. В подборку допускаются только товары,
+        // для которых реально настроен действующий маршрут к поставщику.
+        $popularOrderProducts = collect();
+        $popularOrderGroups = [
+            ['%счетчик%газ%', '%счётчик%газ%', '%газ%счетчик%', '%газ%счётчик%'],
+            ['%загазован%', '%сигнализатор%газ%', '%датчик%CO%'],
+            ['%циркуляционный насос%', '%насос циркуляционный%'],
+            ['%расширительный бак%', '%мембранный бак%'],
+        ];
+
+        foreach ($popularOrderGroups as $patterns) {
+            $addedFromGroup = 0;
+            $candidates = $sellableProducts()
+                ->withSupplierChannels()
+                ->with(['category', 'brand'])
+                ->where(function ($query) use ($patterns) {
+                    foreach ($patterns as $pattern) {
+                        $query->orWhere('name', 'like', $pattern);
+                    }
+                })
+                ->homepageRatingOrder(true)
+                ->limit(24)
+                ->get();
+
+            foreach ($candidates as $candidate) {
+                if ($popularOrderProducts->has($candidate->id) || ! $candidate->canBeAddedToCart()) {
+                    continue;
+                }
+
+                $popularOrderProducts->put($candidate->id, $candidate);
+                $addedFromGroup++;
+
+                if ($addedFromGroup >= 2) {
+                    break;
+                }
+            }
+        }
+
+        if ($popularOrderProducts->count() < 8) {
+            $fallbackProducts = $sellableProducts()
+                ->withSupplierChannels()
+                ->with(['category', 'brand'])
+                ->whereNotIn('id', $popularOrderProducts->keys())
+                ->homepageRatingOrder(true)
+                ->limit(80)
+                ->get();
+
+            foreach ($fallbackProducts as $candidate) {
+                if (! $candidate->canBeAddedToCart()) {
+                    continue;
+                }
+
+                $popularOrderProducts->put($candidate->id, $candidate);
+
+                if ($popularOrderProducts->count() >= 8) {
+                    break;
+                }
+            }
+        }
+
+        $popularOrderProducts = $popularOrderProducts->take(8)->values();
 
         $kotlyCatId = Category::where('slug', 'kotly')->value('id');
         $kotlyIds = $kotlyCatId ? $categoryBranchIds($kotlyCatId) : collect();
@@ -276,6 +340,7 @@ Route::get('/', function () {
 
         return compact(
             'popularCategories',
+            'popularOrderProducts',
             'productsKotly', 'productsNasosy',
             'productsKaminy', 'productsAkcii',
             'bannersHero',

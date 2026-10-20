@@ -247,6 +247,36 @@
                 </div>
             </section>
             <!-- /Categories -->
+
+            @if($popularOrderProducts->isNotEmpty())
+            <!-- Popular order products -->
+            <section class="flat-spacing pt-0 home-popular-order-products">
+                <div class="container">
+                    <div class="sect-heading type-2 has-col-right">
+                        <div class="wow fadeInUp">
+                            <p class="text-caption-01 cl-text-2 mb-8 fw-semibold" style="letter-spacing:.08em;text-transform:uppercase;">
+                                Быстрый заказ
+                            </p>
+                            <h3 class="s-title">Популярные товары к заказу</h3>
+                            <p class="s-desc text-body-1 cl-text-2">
+                                Счётчики газа, сигнализаторы загазованности и другая ходовая техника с привязанным поставщиком.
+                            </p>
+                        </div>
+                        <div class="col-right wow fadeInUp" data-wow-delay="0.1s">
+                            <a href="/catalog" class="tf-btn btn-white btn-stroke">Смотреть весь каталог</a>
+                        </div>
+                    </div>
+
+                    <div class="tf-grid-layout tf-col-2 md-col-3 lg-col-4 gap-20">
+                        @foreach($popularOrderProducts as $product)
+                            @include('partials.product-card', ['product' => $product])
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+            <!-- /Popular order products -->
+
+            @endif
             <!-- Top Pick -->
             <section class="section-top-pick-v02 flat-animate-tab">
                 <div class="container">
