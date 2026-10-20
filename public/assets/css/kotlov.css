@@ -164,6 +164,31 @@ li {
     min-height: 90px;
 }
 
+@media (max-width: 767px) {
+    .tf-header {
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    .tf-header .header-inner {
+        min-height: 64px;
+    }
+
+    .tf-header .logo-site img {
+        width: 110px;
+        max-width: 110px;
+        max-height: 26px;
+    }
+
+    .tf-header .btn-open-menu,
+    .tf-header .nav-icon-item {
+        min-width: 44px;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
 /* =========================================
    Убираем fashion-стили шаблона
 ========================================= */
