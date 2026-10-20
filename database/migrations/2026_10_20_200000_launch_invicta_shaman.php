@@ -33,7 +33,7 @@ return new class extends Migration
                 'category_id' => $categoryId,
                 'author_id' => null,
                 'title' => 'Invicta Shaman: новый чугунный камин уже доступен к заказу',
-                'excerpt' => 'Новый чугунный камин Invicta Shaman мощностью 14 кВт доступен к заказу в Беларуси. Первую партию ожидаем на следующей неделе.',
+                'excerpt' => 'Новый чугунный камин Invicta Shaman мощностью 14 кВт доступен к заказу в Беларуси. Поступление первой партии ожидается 26–30 октября 2026 года.',
                 'content' => $this->content(),
                 'cover_image' => 'img/blog/invicta-shaman-cover.jpg',
                 'images' => json_encode([], JSON_UNESCAPED_UNICODE),
@@ -48,7 +48,7 @@ return new class extends Migration
                 'is_published' => true,
                 'published_at' => '2026-10-20 14:30:00',
                 'meta_title' => 'Invicta Shaman — новый чугунный камин 14 кВт | KOTLOV.BY',
-                'meta_description' => 'Чугунный камин Invicta Shaman 14 кВт уже доступен к заказу в Беларуси. Обогрев до 170 м², КПД 78,7%, длительное горение до 8 часов. Поступление ожидается на следующей неделе.',
+                'meta_description' => 'Чугунный камин Invicta Shaman 14 кВт уже доступен к заказу в Беларуси. Обогрев до 170 м², КПД 78,7%, длительное горение до 8 часов. Поступление 26–30 октября 2026 года.',
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
@@ -59,7 +59,7 @@ return new class extends Migration
             [
                 'title' => 'Invicta Shaman',
                 'subtitle' => 'Новинка · доступен к заказу',
-                'description' => 'Чугунный камин мощностью 14 кВт. Поступление первой партии ожидается на следующей неделе.',
+                'description' => 'Чугунный камин мощностью 14 кВт. Поступление первой партии ожидается 26–30 октября 2026 года.',
                 'image_mobile' => null,
                 'link' => self::PRODUCT_PATH,
                 'button_text' => 'Заказать Shaman',
@@ -83,7 +83,7 @@ return new class extends Migration
     private function content(): string
     {
         return <<<'HTML'
-<p class="text text-body-1"><strong>Invicta Shaman уже доступен к заказу в KOTLOV.BY.</strong> Первую партию новых чугунных каминов ожидаем на складе поставщика в Москве на следующей неделе. Заказ можно оформить заранее — менеджер подтвердит срок поставки и рассчитает доставку по Беларуси.</p>
+<p class="text text-body-1"><strong>Invicta Shaman уже доступен к заказу в KOTLOV.BY.</strong> Поступление первой партии на склад поставщика в Москве ожидается 26–30 октября 2026 года. Заказ можно оформить заранее — менеджер подтвердит срок поставки и рассчитает доставку по Беларуси.</p>
 
 <div class="blog-image-2">
     <img loading="eager" width="2000" height="2000" src="/img/blog/invicta-shaman-cover.jpg" alt="Чугунный камин Invicta Shaman 14 кВт">
