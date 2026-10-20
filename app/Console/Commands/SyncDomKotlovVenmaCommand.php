@@ -330,7 +330,10 @@ HTML;
         $saved = [];
         foreach (array_slice($urls, 0, 8) as $index => $url) {
             try {
-                $response = Http::withHeaders(['User-Agent' => 'Mozilla/5.0'])->timeout(30)->retry(2, 300)->get($url);
+                $response = Http::withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+                    'Referer' => DomKotlovVenmaScraper::CATEGORY_URL,
+                ])->timeout(30)->retry(2, 300)->get($url);
                 if (! $response->successful() || strlen($response->body()) < 1500) {
                     continue;
                 }

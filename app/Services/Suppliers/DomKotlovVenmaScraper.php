@@ -139,8 +139,11 @@ class DomKotlovVenmaScraper
     private function fetch(string $url): string
     {
         return Http::withHeaders([
-            'User-Agent' => 'Mozilla/5.0 (compatible; KotlovCatalogBot/1.0)',
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36',
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language' => 'ru-BY,ru;q=0.9,en;q=0.7',
+            'Cache-Control' => 'no-cache',
+            'Referer' => self::CATEGORY_URL,
         ])->timeout(35)->retry(3, 500)->get($url)->throw()->body();
     }
 
