@@ -30,6 +30,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Enums\Width;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -156,7 +157,7 @@ class ViewOrder extends ViewRecord
                     ->fillForm(fn (): array => [
                         'recipient' => config('services.accounting.email', 'buh-sbg@yandex.ru'),
                         'amount' => $this->accountingSuggestedAmount(),
-                        'due_date' => now()->addBusinessDays(2)->toDateString(),
+                        'due_date' => now()->addWeekdays(2)->toDateString(),
                         'comment' => null,
                     ])
                     ->schema([
@@ -202,31 +203,61 @@ class ViewOrder extends ViewRecord
                     ->action(function (array $data): void {
                         $user = auth()->user();
                         $recipient = mb_strtolower(trim((string) $data['recipient']));
-                        $thread = app(SupplierRequestMailDraftService::class)->createOrderAccountingDraft(
-                            $this->record,
-                            $user,
-                            $recipient,
-                            'Оплата поставщику — заказ '.$this->record->number,
-                            $this->accountingEmailBody($data),
-                            $data['attachments'] ?? [],
-                            $data['attachment_file_names'] ?? [],
-                        );
-                        $request = $this->record->accountingRequests()->create([
-                            'mail_thread_id' => $thread->id,
-                            'requested_by_user_id' => $user->id,
-                            'recipient_email' => $recipient,
-                            'amount' => filled($data['amount'] ?? null) ? (float) $data['amount'] : null,
-                            'due_date' => $data['due_date'] ?? null,
-                            'status' => 'draft',
-                            'comment' => $data['comment'] ?? null,
-                        ]);
+
+                        try {
+                            [$thread, $request] = DB::transaction(function () use ($data, $user, $recipient): array {
+                                $thread = app(SupplierRequestMailDraftService::class)->createOrderAccountingDraft(
+                                    $this->record,
+                                    $user,
+                                    $recipient,
+                                    'Оплата поставщику — заказ '.$this->record->number,
+                                    $this->accountingEmailBody($data),
+                                    $data['attachments'] ?? [],
+                                    $data['attachment_file_names'] ?? [],
+                                );
+                                $request = $this->record->accountingRequests()->create([
+                                    'mail_thread_id' => $thread->id,
+                                    'requested_by_user_id' => $user->id,
+                                    'recipient_email' => $recipient,
+                                    'amount' => filled($data['amount'] ?? null) ? (float) $data['amount'] : null,
+                                    'due_date' => $data['due_date'] ?? null,
+                                    'status' => 'draft',
+                                    'comment' => $data['comment'] ?? null,
+                                ]);
+
+                                return [$thread, $request];
+                            });
+                        } catch (Throwable $exception) {
+                            report($exception);
+                            Notification::make()
+                                ->danger()
+                                ->title('Не удалось сохранить поручение')
+                                ->body($exception->getMessage())
+                                ->send();
+
+                            return;
+                        }
 
                         try {
                             app(CrmMailSender::class)->sendOrderAccountingDraft($thread, $user);
                             $request->update(['status' => 'sent', 'sent_at' => now(), 'last_error' => null]);
+                            $this->record->statusHistory()->create([
+                                'user_id' => $user->id,
+                                'status_from' => $this->record->status,
+                                'status_to' => $this->record->status,
+                                'comment' => 'Счёт поставщика передан в бухгалтерию · поручение №'.$request->id
+                                    .' · '.$recipient
+                                    .(filled($data['amount'] ?? null) ? ' · '.number_format((float) $data['amount'], 2, ',', ' ').' BYN' : ''),
+                            ]);
                             Notification::make()->success()->title('Поручение отправлено в бухгалтерию')->body($recipient)->send();
                         } catch (Throwable $exception) {
                             $request->update(['last_error' => $exception->getMessage()]);
+                            $this->record->statusHistory()->create([
+                                'user_id' => $user->id,
+                                'status_from' => $this->record->status,
+                                'status_to' => $this->record->status,
+                                'comment' => 'Счёт поставщика прикреплён к заказу, но письмо в бухгалтерию не отправлено · поручение №'.$request->id,
+                            ]);
                             Notification::make()->warning()->title('Поручение сохранено, но письмо не отправлено')->body($exception->getMessage())->send();
                         }
 

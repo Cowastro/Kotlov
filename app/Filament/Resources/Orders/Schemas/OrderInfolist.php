@@ -11,6 +11,7 @@ use App\Models\OrderAccountingRequest;
 use App\Models\OrderEconomicSnapshot;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
+use App\Models\OrderStatusHistory;
 use App\Models\Supplier;
 use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
@@ -1012,7 +1013,8 @@ class OrderInfolist
                             ]),
                     ]),
 
-                Section::make('Бухгалтерия · оплата поставщикам')
+                Section::make('История счетов и переписки с бухгалтерией')
+                    ->description('Все поручения на оплату привязаны к заказу. Откройте письмо, чтобы увидеть приложенный счёт и продолжить переписку.')
                     ->icon('heroicon-o-banknotes')
                     ->columnSpanFull()
                     ->compact()
@@ -1036,7 +1038,7 @@ class OrderInfolist
                                 TextEntry::make('due_date')->label('Оплатить до')->date('d.m.Y')->placeholder('Срок не указан'),
                                 TextEntry::make('recipient_email')->label('Бухгалтерия')->copyable()->columnSpan(2),
                                 TextEntry::make('mailThread.subject')
-                                    ->label('Письмо и документ')
+                                    ->label('Письмо со счётом')
                                     ->placeholder('Переписка не создана')
                                     ->url(fn (OrderAccountingRequest $record): ?string => $record->mailThread
                                         ? CrmMailThreadResource::getUrl('view', ['record' => $record->mailThread])
@@ -1045,7 +1047,10 @@ class OrderInfolist
                                     ->color('primary')
                                     ->columnSpan(2),
                                 TextEntry::make('requestedBy.name')->label('Поручил')->placeholder('Система'),
+                                TextEntry::make('created_at')->label('Создано')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
                                 TextEntry::make('sent_at')->label('Передано')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Не отправлено'),
+                                TextEntry::make('mailThread.messages_count')->label('Писем')->badge()->placeholder('0'),
+                                TextEntry::make('mailThread.last_message_at')->label('Последняя переписка')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('—'),
                                 TextEntry::make('completedBy.name')->label('Отметил оплату')->placeholder('—'),
                                 TextEntry::make('completed_at')->label('Оплачено')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('—'),
                                 TextEntry::make('comment')->label('Комментарий')->placeholder('—')->columnSpan(3),
@@ -1071,7 +1076,7 @@ class OrderInfolist
                     ]),
 
                 // ── История: полная ширина ────────────────────────────────────
-                Section::make('История изменений статуса')
+                Section::make('История этапов и действий')
                     ->icon('heroicon-o-clock')
                     ->columnSpanFull()
                     ->collapsible()
@@ -1091,7 +1096,7 @@ class OrderInfolist
                                     ->placeholder('Система'),
 
                                 TextEntry::make('status_from')
-                                    ->label('Было')
+                                    ->label(fn (OrderStatusHistory $record): string => $record->status_from === $record->status_to ? 'Этап заказа' : 'Было')
                                     ->badge()
                                     ->color($statusColor)
                                     ->formatStateUsing(fn (?string $state) => $state ? (Order::STATUSES[$state] ?? $state) : '—'),
@@ -1100,10 +1105,12 @@ class OrderInfolist
                                     ->label('Стало')
                                     ->badge()
                                     ->color($statusColor)
+                                    ->visible(fn (OrderStatusHistory $record): bool => $record->status_from !== $record->status_to)
                                     ->formatStateUsing(fn (?string $state) => $state ? (Order::STATUSES[$state] ?? $state) : '—'),
 
                                 TextEntry::make('comment')
                                     ->label('Комментарий')
+                                    ->columnSpan(fn (OrderStatusHistory $record): int => $record->status_from === $record->status_to ? 2 : 1)
                                     ->placeholder('—'),
                             ]),
                     ]),
