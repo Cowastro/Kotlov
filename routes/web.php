@@ -40,6 +40,7 @@ use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Banner;
 use App\Models\BlogPost;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\ContactRequest;
 use App\Models\EmailSubscriber;
@@ -185,7 +186,7 @@ Route::get('/robots.txt', function (Request $request) {
 Route::get('/', function () {
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
-    $data = Cache::remember('home:data:v3', 600, function () {
+    $data = Cache::remember('home:data:v4', 600, function () {
         $categoryBranchIds = function ($categoryId) {
             $categories = Category::where('is_active', true)
                 ->get(['id', 'parent_id'])
@@ -224,70 +225,6 @@ Route::get('/', function () {
                     ->count();
             });
 
-        // Универсальная витрина ходовых товаров. В отличие от тематических
-        // вкладок ниже она показывает и инженерную мелочёвку: счётчики,
-        // сигнализаторы, насосы и баки. В подборку допускаются только товары,
-        // для которых реально настроен действующий маршрут к поставщику.
-        $popularOrderProducts = collect();
-        $popularOrderGroups = [
-            ['%счетчик%газ%', '%счётчик%газ%', '%газ%счетчик%', '%газ%счётчик%'],
-            ['%загазован%', '%сигнализатор%газ%', '%датчик%CO%'],
-            ['%циркуляционный насос%', '%насос циркуляционный%'],
-            ['%расширительный бак%', '%мембранный бак%'],
-        ];
-
-        foreach ($popularOrderGroups as $patterns) {
-            $addedFromGroup = 0;
-            $candidates = $sellableProducts()
-                ->withSupplierChannels()
-                ->with(['category', 'brand'])
-                ->where(function ($query) use ($patterns) {
-                    foreach ($patterns as $pattern) {
-                        $query->orWhere('name', 'like', $pattern);
-                    }
-                })
-                ->homepageRatingOrder(true)
-                ->limit(24)
-                ->get();
-
-            foreach ($candidates as $candidate) {
-                if ($popularOrderProducts->has($candidate->id) || ! $candidate->canBeAddedToCart()) {
-                    continue;
-                }
-
-                $popularOrderProducts->put($candidate->id, $candidate);
-                $addedFromGroup++;
-
-                if ($addedFromGroup >= 2) {
-                    break;
-                }
-            }
-        }
-
-        if ($popularOrderProducts->count() < 8) {
-            $fallbackProducts = $sellableProducts()
-                ->withSupplierChannels()
-                ->with(['category', 'brand'])
-                ->whereNotIn('id', $popularOrderProducts->keys())
-                ->homepageRatingOrder(true)
-                ->limit(80)
-                ->get();
-
-            foreach ($fallbackProducts as $candidate) {
-                if (! $candidate->canBeAddedToCart()) {
-                    continue;
-                }
-
-                $popularOrderProducts->put($candidate->id, $candidate);
-
-                if ($popularOrderProducts->count() >= 8) {
-                    break;
-                }
-            }
-        }
-
-        $popularOrderProducts = $popularOrderProducts->take(8)->values();
-
         $kotlyCatId = Category::where('slug', 'kotly')->value('id');
         $kotlyIds = $kotlyCatId ? $categoryBranchIds($kotlyCatId) : collect();
 
@@ -297,9 +234,71 @@ Route::get('/', function () {
         $kaminCatId = Category::where('slug', 'kaminy')->value('id');
         $kaminIds = $kaminCatId ? $categoryBranchIds($kaminCatId) : collect();
 
+        // Главная розничная витрина ЭкоКамин: сначала модели АЛЬФА, затем
+        // другие доступные топки бренда. Служебные данные поставщиков здесь
+        // намеренно не показываются, а выбранные товары исключаются из хитов.
+        $ecokaminBrandId = Brand::query()
+            ->where('slug', 'ecokamin')
+            ->orWhere('name', 'ЭкоКамин')
+            ->value('id');
+        $popularOrderProducts = collect();
+
+        if ($ecokaminBrandId) {
+            $alphaProducts = $sellableProducts()
+                ->withSupplierChannels()
+                ->with(['category', 'brand'])
+                ->where('brand_id', $ecokaminBrandId)
+                ->whereIn('category_id', $kaminIds)
+                ->where(function ($query) {
+                    $query->where('name', 'like', '%АЛЬФА%')
+                        ->orWhere('name', 'like', '%Альфа%')
+                        ->orWhere('name', 'like', '%ALPHA%')
+                        ->orWhere('name', 'like', '%Alpha%');
+                })
+                ->homepageRatingOrder(true)
+                ->limit(24)
+                ->get();
+
+            foreach ($alphaProducts as $candidate) {
+                if ($candidate->canBeAddedToCart()) {
+                    $popularOrderProducts->put($candidate->id, $candidate);
+                }
+
+                if ($popularOrderProducts->count() >= 8) {
+                    break;
+                }
+            }
+
+            if ($popularOrderProducts->count() < 8) {
+                $moreEcokaminProducts = $sellableProducts()
+                    ->withSupplierChannels()
+                    ->with(['category', 'brand'])
+                    ->where('brand_id', $ecokaminBrandId)
+                    ->whereIn('category_id', $kaminIds)
+                    ->whereNotIn('id', $popularOrderProducts->keys())
+                    ->homepageRatingOrder(true)
+                    ->limit(40)
+                    ->get();
+
+                foreach ($moreEcokaminProducts as $candidate) {
+                    if ($candidate->canBeAddedToCart()) {
+                        $popularOrderProducts->put($candidate->id, $candidate);
+                    }
+
+                    if ($popularOrderProducts->count() >= 8) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        $popularOrderProducts = $popularOrderProducts->take(8)->values();
+        $featuredEcokaminIds = $popularOrderProducts->pluck('id');
+
         $productsKotly = $sellableProducts()
             ->withSupplierChannels()
             ->whereIn('category_id', $kotlyIds)
+            ->whereNotIn('id', $featuredEcokaminIds)
             ->with(['category', 'brand'])
             ->homepageRatingOrder(true)
             ->limit(8)->get();
@@ -307,20 +306,39 @@ Route::get('/', function () {
         $productsNasosy = $sellableProducts()
             ->withSupplierChannels()
             ->whereIn('category_id', $nasosIds)
+            ->whereNotIn('id', $featuredEcokaminIds)
             ->with(['category', 'brand'])
             ->homepageRatingOrder(true)
             ->limit(8)->get();
 
-        $productsKaminy = $sellableProducts()
-            ->withSupplierChannels()
-            ->whereIn('category_id', $kaminIds)
-            ->with(['category', 'brand'])
-            ->homepageRatingOrder(true)
-            ->limit(8)->get();
+        $productsKaminy = $ecokaminBrandId
+            ? $sellableProducts()
+                ->withSupplierChannels()
+                ->where('brand_id', $ecokaminBrandId)
+                ->whereIn('category_id', $kaminIds)
+                ->whereNotIn('id', $featuredEcokaminIds)
+                ->with(['category', 'brand'])
+                ->homepageRatingOrder(true)
+                ->limit(8)->get()
+            : collect();
+
+        if ($productsKaminy->count() < 8) {
+            $productsKaminy = $productsKaminy->concat(
+                $sellableProducts()
+                    ->withSupplierChannels()
+                    ->whereIn('category_id', $kaminIds)
+                    ->whereNotIn('id', $featuredEcokaminIds->merge($productsKaminy->pluck('id')))
+                    ->with(['category', 'brand'])
+                    ->homepageRatingOrder(true)
+                    ->limit(8 - $productsKaminy->count())
+                    ->get()
+            )->values();
+        }
 
         $productsAkcii = $sellableProducts()
             ->withSupplierChannels()
             ->where('is_sale', true)
+            ->whereNotIn('id', $featuredEcokaminIds)
             ->with(['category', 'brand'])
             ->homepageRatingOrder()
             ->limit(8)->get();

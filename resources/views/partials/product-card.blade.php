@@ -202,7 +202,9 @@
             </p>
         @endif
 
-        @include('partials.manager-product-context', ['product' => $product, 'compact' => true, 'productUrl' => $productUrl])
+        @if ($showManagerContext ?? true)
+            @include('partials.manager-product-context', ['product' => $product, 'compact' => true, 'productUrl' => $productUrl])
+        @endif
 
     </div>
 </div>

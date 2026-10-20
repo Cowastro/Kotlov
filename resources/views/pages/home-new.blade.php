@@ -255,21 +255,21 @@
                     <div class="sect-heading type-2 has-col-right">
                         <div class="wow fadeInUp">
                             <p class="text-caption-01 cl-text-2 mb-8 fw-semibold" style="letter-spacing:.08em;text-transform:uppercase;">
-                                Быстрый заказ
+                                ЭкоКамин в Беларуси
                             </p>
-                            <h3 class="s-title">Популярные товары к заказу</h3>
+                            <h3 class="s-title">Каминные топки ЭкоКамин АЛЬФА</h3>
                             <p class="s-desc text-body-1 cl-text-2">
-                                Счётчики газа, сигнализаторы загазованности и другая ходовая техника с привязанным поставщиком.
+                                Фронтальные, угловые и трёхсторонние модели с реальными фото проектов. Поможем подобрать топку, дымоход и комплектацию.
                             </p>
                         </div>
                         <div class="col-right wow fadeInUp" data-wow-delay="0.1s">
-                            <a href="/catalog" class="tf-btn btn-white btn-stroke">Смотреть весь каталог</a>
+                            <a href="/brands/ecokamin" class="tf-btn btn-white btn-stroke">Вся коллекция ЭкоКамин</a>
                         </div>
                     </div>
 
                     <div class="tf-grid-layout tf-col-2 md-col-3 lg-col-4 gap-20">
                         @foreach($popularOrderProducts as $product)
-                            @include('partials.product-card', ['product' => $product])
+                            @include('partials.product-card', ['product' => $product, 'showManagerContext' => false])
                         @endforeach
                     </div>
                 </div>
@@ -294,7 +294,7 @@
     <div class="overflow-auto" style="position: relative;">
         <ul class="tab-btn-wrap-v2" role="tablist" style="flex-wrap: nowrap; padding-bottom: 4px;">
             <li class="nav-tab-item" role="presentation">
-                <a href="#kotly" data-bs-toggle="tab" class="tf-btn-tab active" role="tab">
+                <a href="#kotly" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
                     <span class="fw-semibold" style="white-space: nowrap;">Котлы</span>
                 </a>
             </li>
@@ -304,8 +304,8 @@
                 </a>
             </li>
             <li class="nav-tab-item" role="presentation">
-                <a href="#kaminy" data-bs-toggle="tab" class="tf-btn-tab" role="tab">
-                    <span class="fw-semibold" style="white-space: nowrap;">Камины</span>
+                <a href="#kaminy" data-bs-toggle="tab" class="tf-btn-tab active" role="tab">
+                    <span class="fw-semibold" style="white-space: nowrap;">ЭкоКамин</span>
                 </a>
             </li>
             <li class="nav-tab-item" role="presentation">
@@ -320,7 +320,7 @@
                  <div class="tab-content">
 
     {{-- ТАБ: КОТЛЫ --}}
-    <div class="tab-pane active show" id="kotly" role="tabpanel">
+    <div class="tab-pane" id="kotly" role="tabpanel">
         <div class="wrap-prd">
             <div class="col-prd-1">
                 @include('partials.promo-banner', [
@@ -333,14 +333,14 @@
                 ])
                 <div class="tf-grid-layout tf-col-2 gap-20">
                     @foreach ($productsKotly->take(2) as $product)
-                        @include('partials.product-card', ['product' => $product])
+                        @include('partials.product-card', ['product' => $product, 'showManagerContext' => false])
                     @endforeach
                 </div>
             </div>
             <div class="col-prd-2">
                 <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
                     @foreach ($productsKotly->skip(2)->take(6) as $product)
-                        @include('partials.product-card', ['product' => $product])
+                        @include('partials.product-card', ['product' => $product, 'showManagerContext' => false])
                     @endforeach
                 </div>
             </div>
@@ -361,14 +361,14 @@
                 ])
                 <div class="tf-grid-layout tf-col-2 gap-20">
                     @foreach ($productsNasosy->take(2) as $product)
-                        @include('partials.product-card', ['product' => $product])
+                        @include('partials.product-card', ['product' => $product, 'showManagerContext' => false])
                     @endforeach
                 </div>
             </div>
             <div class="col-prd-2">
                 <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
                     @foreach ($productsNasosy->skip(2)->take(6) as $product)
-                        @include('partials.product-card', ['product' => $product])
+                        @include('partials.product-card', ['product' => $product, 'showManagerContext' => false])
                     @endforeach
                 </div>
             </div>
@@ -376,27 +376,27 @@
     </div>
 
     {{-- ТАБ: КАМИНЫ --}}
-    <div class="tab-pane" id="kaminy" role="tabpanel">
+    <div class="tab-pane active show" id="kaminy" role="tabpanel">
         <div class="wrap-prd">
             <div class="col-prd-1">
                 @include('partials.promo-banner', [
-                    'banner'        => $bannerPromoKaminy,
-                    'fallbackImage' => 'img/banners/banner-fireplace1.jpg',
-                    'fallbackLink'  => '/kaminy',
-                    'fallbackTitle' => 'Камины<br>и топки',
-                    'fallbackDesc'  => 'Каминные топки, печи-камины и готовые решения для дома.',
-                    'fallbackBtn'   => 'Перейти в каталог',
+                    'banner'        => null,
+                    'fallbackImage' => 'img/products/ecokamin/portfolio-full/ecokamin-firebox-real-hero-retouched.webp',
+                    'fallbackLink'  => '/brands/ecokamin',
+                    'fallbackTitle' => 'ЭкоКамин<br>в Беларуси',
+                    'fallbackDesc'  => 'Топки АЛЬФА, ВЕГА и ДЕЛЬТА, готовые камины и реальные проекты.',
+                    'fallbackBtn'   => 'Смотреть ЭкоКамин',
                 ])
                 <div class="tf-grid-layout tf-col-2 gap-20">
                     @foreach ($productsKaminy->take(2) as $product)
-                        @include('partials.product-card', ['product' => $product])
+                        @include('partials.product-card', ['product' => $product, 'showManagerContext' => false])
                     @endforeach
                 </div>
             </div>
             <div class="col-prd-2">
                 <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
                     @foreach ($productsKaminy->skip(2)->take(6) as $product)
-                        @include('partials.product-card', ['product' => $product])
+                        @include('partials.product-card', ['product' => $product, 'showManagerContext' => false])
                     @endforeach
                 </div>
             </div>
@@ -417,14 +417,14 @@
                 ])
                 <div class="tf-grid-layout tf-col-2 gap-20">
                     @foreach ($productsAkcii->take(2) as $product)
-                        @include('partials.product-card', ['product' => $product])
+                        @include('partials.product-card', ['product' => $product, 'showManagerContext' => false])
                     @endforeach
                 </div>
             </div>
             <div class="col-prd-2">
                 <div class="tf-grid-layout tf-col-2 lg-col-3 gap-20">
                     @foreach ($productsAkcii->skip(2)->take(6) as $product)
-                        @include('partials.product-card', ['product' => $product])
+                        @include('partials.product-card', ['product' => $product, 'showManagerContext' => false])
                     @endforeach
                 </div>
             </div>
