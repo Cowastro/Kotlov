@@ -249,7 +249,7 @@ class CrmMailSender
         ?CrmMailMessage $replyTo = null,
     ): CrmMailMessage {
         $mailbox = $thread->mailbox;
-        $this->assertManualSendingAllowed($mailbox);
+        $this->assertOperatorSendingAllowed($mailbox);
 
         if (! $mailbox || ! $mailbox->is_enabled) {
             throw new RuntimeException('Почтовый ящик отключён или не найден.');
@@ -365,7 +365,7 @@ class CrmMailSender
         array $attachmentNames = [],
     ): CrmMailMessage {
         $mailbox = $thread->mailbox;
-        $this->assertManualSendingAllowed($mailbox);
+        $this->assertOperatorSendingAllowed($mailbox);
 
         if ($source->thread_id !== $thread->id) {
             throw new RuntimeException('Исходное письмо не относится к этой переписке.');

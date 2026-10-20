@@ -66,6 +66,39 @@ class ServiceMailboxGuardTest extends TestCase
         app(CrmMailSender::class)->sendTest($mailbox, 'recipient@example.com', User::factory()->make());
     }
 
+    public function test_operator_reply_and_forward_are_allowed_from_the_order_mailbox(): void
+    {
+        $mailbox = CrmMailbox::query()->create([
+            'name' => 'Заказы и резервы',
+            'email' => 'order@kotlov.by',
+            'username' => 'order@kotlov.by',
+            'password' => 'secret',
+            'is_enabled' => true,
+        ]);
+        $guard = new \ReflectionMethod(CrmMailSender::class, 'assertOperatorSendingAllowed');
+
+        $guard->invoke(app(CrmMailSender::class), $mailbox);
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function test_operator_reply_and_forward_remain_blocked_for_no_reply_mailbox(): void
+    {
+        $mailbox = CrmMailbox::query()->create([
+            'name' => 'Системные уведомления',
+            'email' => 'no-reply@kotlov.by',
+            'username' => 'no-reply@kotlov.by',
+            'password' => 'secret',
+            'is_enabled' => true,
+        ]);
+        $guard = new \ReflectionMethod(CrmMailSender::class, 'assertOperatorSendingAllowed');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Ручная отправка запрещена');
+
+        $guard->invoke(app(CrmMailSender::class), $mailbox);
+    }
+
     public function test_service_mailbox_only_exposes_the_fixed_system_preview_action(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
