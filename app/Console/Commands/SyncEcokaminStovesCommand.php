@@ -99,7 +99,7 @@ class SyncEcokaminStovesCommand extends Command
             'listing_image'          => null,
             'dealer_discount_percent'=> 25.0,
             'stock_status'           => 'preorder',
-            'stock_text'             => 'Доступен к заказу. Поступление первой партии ожидается 26–30 октября 2026 года',
+            'stock_text'             => 'Доступен к заказу',
             'is_new'                 => true,
             'is_featured'            => true,
             'live_photos_url'         => 'https://cloud.mail.ru/public/b6qm/2Ua58bCkh',
@@ -589,7 +589,7 @@ class SyncEcokaminStovesCommand extends Command
     <li>масса — 160 кг.</li>
 </ul>
 
-<p>Перед заказом специалисты KOTLOV.BY помогут проверить параметры дымохода, основание, безопасные расстояния и необходимую мощность для конкретного дома. Поступление первой партии ожидается <strong>26–30 октября 2026 года</strong>.</p>
+<p><strong>Камин доступен к заказу.</strong></p>
 HTML;
             $item['meta_title'] = 'Камин ЭкоКамин ШАМАН 14 кВт купить в %city% | KOTLOV.BY';
             $item['meta_description'] = 'Купить чугунный камин ЭкоКамин ШАМАН 14 кВт в Беларуси. КПД 78,7%, обогрев 75–170 м², дымоход 180 мм. Подбор и доставка KOTLOV.BY.';

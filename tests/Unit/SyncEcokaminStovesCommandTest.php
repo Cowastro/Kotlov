@@ -79,6 +79,9 @@ class SyncEcokaminStovesCommandTest extends TestCase
         self::assertStringNotContainsString('товар бренда Invicta', $item['content']);
         self::assertFalse($item['in_stock']);
         self::assertSame('preorder', $item['stock_status']);
+        self::assertSame('Доступен к заказу', $item['stock_text']);
+        self::assertStringContainsString('Камин доступен к заказу', $item['content']);
+        self::assertStringNotContainsString('26–30 октября 2026 года', $item['content']);
         self::assertSame('https://cloud.mail.ru/public/b6qm/2Ua58bCkh', $item['live_photos_url']);
     }
 }
