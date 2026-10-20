@@ -91,6 +91,23 @@ class DomKotlovVenmaScraper
         ];
     }
 
+    /** @param array<string, mixed> $card @return array<string, mixed> */
+    public function applyWarehouseAvailabilityPolicy(array $card): array
+    {
+        $power = (int) preg_replace('/\D+/', '', (string) ($card['model'] ?? ''));
+        $warehouseStock = $power > 0 && $power <= 100;
+
+        $card['source_in_stock'] = (bool) ($card['in_stock'] ?? false);
+        $card['source_stock_text'] = (string) ($card['stock_text'] ?? '');
+        $card['in_stock'] = $warehouseStock;
+        $card['stock_status'] = $warehouseStock ? 'available_without_quantity' : 'preorder';
+        $card['stock_text'] = $warehouseStock
+            ? 'В наличии на складе поставщика'
+            : 'Под заказ у поставщика';
+
+        return $card;
+    }
+
     /** @return array<string, mixed>|null */
     public function parseProductHtml(string $html, string $url): ?array
     {

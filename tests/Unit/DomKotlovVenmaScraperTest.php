@@ -83,6 +83,22 @@ HTML;
         $this->assertSame(8478.75, $card['purchase_price']);
     }
 
+    public function test_warehouse_stock_is_limited_to_models_up_to_100_kw(): void
+    {
+        $scraper = new DomKotlovVenmaScraper();
+        $base = ['in_stock' => true, 'stock_text' => 'В наличии на сайте поставщика'];
+
+        $r100 = $scraper->applyWarehouseAvailabilityPolicy($base + ['model' => 'R100']);
+        $r125 = $scraper->applyWarehouseAvailabilityPolicy($base + ['model' => 'R125']);
+
+        $this->assertTrue($r100['in_stock']);
+        $this->assertSame('available_without_quantity', $r100['stock_status']);
+        $this->assertFalse($r125['in_stock']);
+        $this->assertSame('preorder', $r125['stock_status']);
+        $this->assertSame('Под заказ у поставщика', $r125['stock_text']);
+        $this->assertTrue($r125['source_in_stock']);
+    }
+
     public function test_listing_keeps_only_unique_venma_product_links(): void
     {
         $html = <<<'HTML'

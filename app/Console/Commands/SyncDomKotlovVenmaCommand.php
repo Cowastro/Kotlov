@@ -74,6 +74,8 @@ class SyncDomKotlovVenmaCommand extends Command
                     continue;
                 }
 
+                $card = $scraper->applyWarehouseAvailabilityPolicy($card);
+
                 $stats['valid']++;
                 $stats['in_stock'] += $card['in_stock'] ? 1 : 0;
                 $seenArticles[] = $card['article'];
@@ -84,7 +86,7 @@ class SyncDomKotlovVenmaCommand extends Command
                     $card['model'],
                     number_format($card['retail_price'], 2, '.', ' '),
                     number_format($card['purchase_price'], 2, '.', ' '),
-                    $card['in_stock'] ? 'В наличии' : 'Нет в наличии',
+                    $card['in_stock'] ? 'В наличии' : 'Под заказ',
                 ];
 
                 if ($apply) {
@@ -238,7 +240,7 @@ class SyncDomKotlovVenmaCommand extends Command
                 'is_active' => true,
                 'is_archived' => false,
                 'in_stock' => $card['in_stock'],
-                'availability_status' => $card['in_stock'] ? Product::AVAILABILITY_IN_STOCK : Product::AVAILABILITY_OUT_OF_STOCK,
+                'availability_status' => $card['in_stock'] ? Product::AVAILABILITY_IN_STOCK : Product::AVAILABILITY_CHECK,
                 'stock_qty' => null,
                 'requires_price_confirmation' => false,
                 'meta_title' => $card['name'].' купить в %city%',
@@ -279,7 +281,7 @@ class SyncDomKotlovVenmaCommand extends Command
                     'price_byn' => $card['purchase_price'],
                     'in_stock' => $card['in_stock'],
                     'stock_quantity' => null,
-                    'stock_status' => $card['in_stock'] ? 'available_without_quantity' : 'out_of_stock',
+                    'stock_status' => $card['stock_status'],
                     'stock_text' => $card['stock_text'],
                     'warehouse_name' => 'Дом котлов',
                     'last_stock_synced_at' => now(),
