@@ -201,6 +201,67 @@ class SupplierRequestMailDraftService
         });
     }
 
+    public function createOrderAccountingDraft(
+        Order $order,
+        User $user,
+        string $recipient,
+        string $subject,
+        string $body,
+        array $attachments,
+        array $attachmentNames = [],
+    ): CrmMailThread {
+        $mailbox = $this->orderMailbox();
+        $recipients = $this->normalizeAddresses($recipient);
+        $attachmentMetadata = $this->attachmentMetadata($attachments, $attachmentNames);
+
+        if ($recipients === []) {
+            throw new RuntimeException('Укажите корректный email бухгалтерии.');
+        }
+        if ($attachmentMetadata === []) {
+            throw new RuntimeException('Прикрепите документ для оплаты.');
+        }
+
+        return DB::transaction(function () use ($order, $user, $mailbox, $recipients, $subject, $body, $attachmentMetadata): CrmMailThread {
+            $thread = CrmMailThread::query()->create([
+                'mailbox_id' => $mailbox->id,
+                'order_id' => $order->id,
+                'assigned_user_id' => $user->id,
+                'thread_key' => hash('sha256', 'order-accounting|'.$order->id.'|'.Str::uuid()),
+                'subject' => trim($subject),
+                'participant_name' => 'Бухгалтерия',
+                'participant_email' => $recipients[0],
+                'status' => 'draft',
+                'priority' => 'high',
+                'messages_count' => 0,
+                'unread_count' => 0,
+                'last_message_at' => now(),
+            ]);
+
+            $thread->messages()->create([
+                'mailbox_id' => $mailbox->id,
+                'sent_by_user_id' => $user->id,
+                'direction' => 'draft',
+                'from_name' => $mailbox->name,
+                'from_email' => $mailbox->email,
+                'to' => $this->addressRecords($recipients, 'Бухгалтерия'),
+                'subject' => trim($subject),
+                'text_body' => trim($body),
+                'attachments_count' => count($attachmentMetadata),
+                'is_read' => true,
+                'received_at' => now(),
+                'metadata' => [
+                    'source' => 'order_accounting_payment',
+                    'order_id' => $order->id,
+                    'attachments' => $attachmentMetadata,
+                ],
+            ]);
+
+            $thread->forceFill(['messages_count' => 1])->save();
+
+            return $thread->fresh(['mailbox', 'messages', 'order']);
+        });
+    }
+
     public function sync(SupplierOrderRequest $request, ?User $user, ?string $note = null): CrmMailThread
     {
         $request->loadMissing(['order', 'items.orderItem', 'supplier.crmCounterparty.contactPoints']);

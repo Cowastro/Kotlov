@@ -65,4 +65,10 @@ class CrmMailbox extends Model
     {
         return $query->whereNotIn('email', array_keys(self::SERVICE_MAILBOXES));
     }
+
+    /** Mailboxes an employee may choose in the CRM composer. */
+    public function scopeOperatorSending(Builder $query): Builder
+    {
+        return $query->where('email', '!=', 'no-reply@kotlov.by');
+    }
 }

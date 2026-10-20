@@ -6,6 +6,7 @@ use App\Models\CommercialDocument;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
+use App\Models\OrderAccountingRequest;
 use App\Models\User;
 use App\Services\CommercialDocuments\CommercialDocumentPortal;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
@@ -70,6 +71,23 @@ class CrmMailSender
         return $this->deliverDraft($thread, $user, true);
     }
 
+    public function sendOrderAccountingDraft(CrmMailThread $thread, User $user): CrmMailMessage
+    {
+        if (! $user->isManager()) {
+            throw new RuntimeException('Передавать документы в бухгалтерию может только менеджер.');
+        }
+        if (! $thread->order_id) {
+            throw new RuntimeException('Поручение не связано с заказом.');
+        }
+
+        $draft = $thread->messages()->where('direction', 'draft')->latest('id')->first();
+        if (($draft?->metadata['source'] ?? null) !== 'order_accounting_payment') {
+            throw new RuntimeException('Это письмо не является поручением бухгалтерии.');
+        }
+
+        return $this->deliverDraft($thread, $user, true);
+    }
+
     private function deliverDraft(CrmMailThread $thread, User $user, bool $supplierServiceMail): CrmMailMessage
     {
         $thread->loadMissing(['mailbox', 'messages']);
@@ -98,7 +116,7 @@ class CrmMailSender
                 throw new RuntimeException('Заявки поставщикам отправляются только с order@kotlov.by.');
             }
         } else {
-            $this->assertManualSendingAllowed($mailbox);
+            $this->assertOperatorSendingAllowed($mailbox);
         }
         if (! $mailbox?->is_enabled) {
             throw new RuntimeException('Почтовый ящик отключён или не найден.');
@@ -155,6 +173,18 @@ class CrmMailSender
                 'last_message_at' => now(),
                 'handled_at' => now(),
             ])->save();
+
+            if (($draft->metadata['source'] ?? null) === 'order_accounting_payment') {
+                OrderAccountingRequest::query()
+                    ->where('mail_thread_id', $thread->id)
+                    ->where('status', 'draft')
+                    ->update([
+                        'status' => 'sent',
+                        'sent_at' => now(),
+                        'last_error' => null,
+                        'updated_at' => now(),
+                    ]);
+            }
 
             $commercialDocuments = $this->markCommercialDocumentsSent($thread);
 
@@ -507,6 +537,13 @@ class CrmMailSender
     private function assertManualSendingAllowed(?CrmMailbox $mailbox): void
     {
         if ($mailbox?->isServiceMailbox()) {
+            throw new RuntimeException('Служебный ящик «'.$mailbox->email.'» используется только автоматикой. Ручная отправка запрещена.');
+        }
+    }
+
+    private function assertOperatorSendingAllowed(?CrmMailbox $mailbox): void
+    {
+        if ($mailbox?->isServiceMailbox() && mb_strtolower(trim((string) $mailbox->email)) !== 'order@kotlov.by') {
             throw new RuntimeException('Служебный ящик «'.$mailbox->email.'» используется только автоматикой. Ручная отправка запрещена.');
         }
     }

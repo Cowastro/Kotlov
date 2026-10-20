@@ -37,6 +37,11 @@ class ServiceMailboxGuardTest extends TestCase
         $this->assertContains('info@kotlov.by', $manualMailboxes);
         $this->assertNotContains('order@kotlov.by', $manualMailboxes);
         $this->assertNotContains('no-reply@kotlov.by', $manualMailboxes);
+
+        $operatorMailboxes = CrmMailbox::query()->operatorSending()->pluck('email')->all();
+        $this->assertContains('info@kotlov.by', $operatorMailboxes);
+        $this->assertContains('order@kotlov.by', $operatorMailboxes);
+        $this->assertNotContains('no-reply@kotlov.by', $operatorMailboxes);
     }
 
     public function test_manual_test_email_is_blocked_for_a_service_mailbox(): void

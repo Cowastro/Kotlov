@@ -290,8 +290,8 @@ class ListCrmMailThreads extends ListRecords
                 ->schema(array_merge([
                     Select::make('mailbox_id')
                         ->label('Отправить с ящика')
-                        ->options(fn (): array => CrmMailbox::query()->manualSending()->where('is_enabled', true)->pluck('email', 'id')->all())
-                        ->default(fn (): ?int => CrmMailbox::query()->manualSending()->where('is_enabled', true)->value('id'))
+                        ->options(fn (): array => CrmMailbox::query()->operatorSending()->where('is_enabled', true)->pluck('email', 'id')->all())
+                        ->default(fn (): ?int => CrmMailbox::query()->operatorSending()->where('is_enabled', true)->value('id'))
                         ->required(),
                     TextInput::make('participant_name')->label('Имя / компания получателя')->maxLength(255),
                 ], CrmMailThreadResource::draftFields(true)))

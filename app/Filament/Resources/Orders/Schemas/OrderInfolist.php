@@ -7,12 +7,13 @@ use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Models\IntegrationIssue;
 use App\Models\Order;
-use App\Support\AdminPhoneLinks;
+use App\Models\OrderAccountingRequest;
 use App\Models\OrderEconomicSnapshot;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
 use App\Models\SupplierOrderRequest;
 use App\Services\Orders\OrderSettlementManager;
+use App\Support\AdminPhoneLinks;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -822,6 +823,47 @@ class OrderInfolist
                                 TextEntry::make('statusUpdatedBy.name')->label('Кто ответил')->placeholder('—'),
                                 TextEntry::make('note')->label('Комментарий KOTLOV')->placeholder('—')->columnSpan(2),
                                 TextEntry::make('supplier_response_note')->label('Ответ поставщика')->placeholder('—')->columnSpan(3),
+                            ]),
+                    ]),
+
+                Section::make('Бухгалтерия · оплата поставщикам')
+                    ->icon('heroicon-o-banknotes')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->visible(fn (Order $record): bool => $record->accountingRequests->isNotEmpty())
+                    ->schema([
+                        RepeatableEntry::make('accountingRequests')
+                            ->hiddenLabel()
+                            ->columns(8)
+                            ->schema([
+                                TextEntry::make('status')
+                                    ->label('Статус')
+                                    ->badge()
+                                    ->formatStateUsing(fn (string $state): string => OrderAccountingRequest::STATUSES[$state] ?? $state)
+                                    ->color(fn (string $state): string => match ($state) {
+                                        'paid' => 'success',
+                                        'sent' => 'info',
+                                        'cancelled' => 'danger',
+                                        default => 'warning',
+                                    }),
+                                TextEntry::make('amount')->label('Сумма')->money('BYN')->placeholder('Не указана'),
+                                TextEntry::make('due_date')->label('Оплатить до')->date('d.m.Y')->placeholder('Срок не указан'),
+                                TextEntry::make('recipient_email')->label('Бухгалтерия')->copyable()->columnSpan(2),
+                                TextEntry::make('mailThread.subject')
+                                    ->label('Письмо и документ')
+                                    ->placeholder('Переписка не создана')
+                                    ->url(fn (OrderAccountingRequest $record): ?string => $record->mailThread
+                                        ? CrmMailThreadResource::getUrl('view', ['record' => $record->mailThread])
+                                        : null)
+                                    ->icon('heroicon-o-paper-clip')
+                                    ->color('primary')
+                                    ->columnSpan(2),
+                                TextEntry::make('requestedBy.name')->label('Поручил')->placeholder('Система'),
+                                TextEntry::make('sent_at')->label('Передано')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Не отправлено'),
+                                TextEntry::make('completedBy.name')->label('Отметил оплату')->placeholder('—'),
+                                TextEntry::make('completed_at')->label('Оплачено')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('—'),
+                                TextEntry::make('comment')->label('Комментарий')->placeholder('—')->columnSpan(3),
+                                TextEntry::make('last_error')->label('Ошибка отправки')->color('danger')->visible(fn ($record): bool => filled($record->last_error))->columnSpanFull(),
                             ]),
                     ]),
 

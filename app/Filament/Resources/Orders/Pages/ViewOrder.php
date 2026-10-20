@@ -4,12 +4,13 @@ namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
+use App\Models\OrderAccountingRequest;
 use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
-use App\Services\Integrations\OneCOrderQueue;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
+use App\Services\Integrations\OneCOrderQueue;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\OrderPortal;
@@ -19,6 +20,8 @@ use App\Services\Orders\SupplierReservationMailService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -54,6 +57,9 @@ class ViewOrder extends ViewRecord
             'supplierOrderRequests.creator',
             'supplierOrderRequests.sentBy',
             'supplierOrderRequests.statusUpdatedBy',
+            'accountingRequests.mailThread',
+            'accountingRequests.requestedBy',
+            'accountingRequests.completedBy',
             'statusHistory.user',
             'user',
             'manager',
@@ -126,6 +132,122 @@ class ViewOrder extends ViewRecord
                         ->body('Получатель: '.$data['recipient'])
                         ->send();
                 }),
+                Action::make('sendAccountingPaymentRequest')
+                    ->label('Передать счёт в бухгалтерию')
+                    ->icon('heroicon-o-banknotes')
+                    ->color('warning')
+                    ->modalHeading('Поручение бухгалтерии на оплату')
+                    ->modalDescription('Письмо и документ будут отправлены с order@kotlov.by и останутся связанными с заказом.')
+                    ->fillForm(fn (): array => [
+                        'recipient' => config('services.accounting.email', 'buh-sbg@yandex.ru'),
+                        'amount' => $this->accountingSuggestedAmount(),
+                        'due_date' => now()->addBusinessDays(2)->toDateString(),
+                        'comment' => null,
+                    ])
+                    ->schema([
+                        TextInput::make('recipient')
+                            ->label('Email бухгалтерии')
+                            ->email()
+                            ->required(),
+                        TextInput::make('amount')
+                            ->label('Сумма к оплате, BYN')
+                            ->numeric()
+                            ->minValue(0.01),
+                        DatePicker::make('due_date')
+                            ->label('Оплатить до')
+                            ->native(false),
+                        FileUpload::make('attachments')
+                            ->label('Счёт или другой документ на оплату')
+                            ->disk('local')
+                            ->directory('crm-mail-attachments/accounting')
+                            ->visibility('private')
+                            ->multiple()
+                            ->required()
+                            ->maxFiles(5)
+                            ->maxSize(15360)
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'application/vnd.ms-excel',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'application/msword',
+                            ])
+                            ->storeFileNamesIn('attachment_file_names')
+                            ->helperText('PDF, фото или Excel. До 5 файлов, каждый не более 15 МБ.'),
+                        Textarea::make('comment')
+                            ->label('Комментарий бухгалтеру')
+                            ->placeholder('Например: оплатить после подтверждения резерва, назначение платежа…')
+                            ->rows(3)
+                            ->maxLength(2000),
+                    ])
+                    ->modalSubmitActionLabel('Отправить поручение')
+                    ->action(function (array $data): void {
+                        $user = auth()->user();
+                        $recipient = mb_strtolower(trim((string) $data['recipient']));
+                        $thread = app(SupplierRequestMailDraftService::class)->createOrderAccountingDraft(
+                            $this->record,
+                            $user,
+                            $recipient,
+                            'Оплата поставщику — заказ '.$this->record->number,
+                            $this->accountingEmailBody($data),
+                            $data['attachments'] ?? [],
+                            $data['attachment_file_names'] ?? [],
+                        );
+                        $request = $this->record->accountingRequests()->create([
+                            'mail_thread_id' => $thread->id,
+                            'requested_by_user_id' => $user->id,
+                            'recipient_email' => $recipient,
+                            'amount' => filled($data['amount'] ?? null) ? (float) $data['amount'] : null,
+                            'due_date' => $data['due_date'] ?? null,
+                            'status' => 'draft',
+                            'comment' => $data['comment'] ?? null,
+                        ]);
+
+                        try {
+                            app(CrmMailSender::class)->sendOrderAccountingDraft($thread, $user);
+                            $request->update(['status' => 'sent', 'sent_at' => now(), 'last_error' => null]);
+                            Notification::make()->success()->title('Поручение отправлено в бухгалтерию')->body($recipient)->send();
+                        } catch (Throwable $exception) {
+                            $request->update(['last_error' => $exception->getMessage()]);
+                            Notification::make()->warning()->title('Поручение сохранено, но письмо не отправлено')->body($exception->getMessage())->send();
+                        }
+
+                        $this->reloadRecord();
+                    }),
+                Action::make('completeAccountingPaymentRequest')
+                    ->label('Отметить оплату поставщику')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn (): bool => $this->record->accountingRequests->where('status', 'sent')->isNotEmpty())
+                    ->schema([
+                        Select::make('accounting_request_id')
+                            ->label('Поручение')
+                            ->options(fn (): array => $this->record->accountingRequests
+                                ->where('status', 'sent')
+                                ->mapWithKeys(fn (OrderAccountingRequest $request): array => [
+                                    $request->id => '№'.$request->id.' · '.($request->amount !== null ? number_format((float) $request->amount, 2, '.', ' ').' BYN' : 'сумма не указана').' · '.$request->recipient_email,
+                                ])->all())
+                            ->required(),
+                        Textarea::make('comment')
+                            ->label('Комментарий об оплате')
+                            ->rows(2)
+                            ->maxLength(1000),
+                    ])
+                    ->modalSubmitActionLabel('Подтвердить оплату')
+                    ->action(function (array $data): void {
+                        $request = $this->record->accountingRequests()->where('status', 'sent')->findOrFail($data['accounting_request_id']);
+                        $request->update([
+                            'status' => 'paid',
+                            'completed_by_user_id' => auth()->id(),
+                            'completed_at' => now(),
+                            'comment' => collect([$request->comment, $data['comment'] ?? null])->filter()->implode("\n"),
+                        ]);
+                        $this->reloadRecord();
+                        Notification::make()->success()->title('Оплата поставщику отмечена')->send();
+                    }),
             ])
                 ->label('Документы')
                 ->icon('heroicon-o-document-text')
@@ -746,6 +868,9 @@ class ViewOrder extends ViewRecord
             'procurementSentBy',
             'supplierOrderRequests.items',
             'supplierOrderRequests.mailDraft',
+            'accountingRequests.mailThread',
+            'accountingRequests.requestedBy',
+            'accountingRequests.completedBy',
             'integrationDeliveries.source',
             'integrationDeliveries.queuedBy',
         ]);
@@ -813,6 +938,35 @@ class ViewOrder extends ViewRecord
         $lines[] = 'Ссылка открывается сразу и не привязана к email — её можно переслать ответственному сотруднику.';
 
         return implode("\n", $lines);
+    }
+
+    private function accountingSuggestedAmount(): ?float
+    {
+        $amount = $this->record->items->sum(function (OrderItem $item): float {
+            $price = $item->fulfillment_purchase_price ?? $item->supply_purchase_price;
+
+            return $price !== null ? (float) $price * (int) $item->quantity : 0;
+        });
+
+        return $amount > 0 ? round($amount, 2) : null;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function accountingEmailBody(array $data): string
+    {
+        $suppliers = $this->record->items
+            ->map(fn (OrderItem $item): ?string => $item->fulfillment_supplier_name ?: $item->supply_supplier_name)
+            ->filter()->unique()->implode(', ');
+
+        return collect([
+            'Просим оплатить документ поставщика по заказу '.$this->record->number.'.',
+            $suppliers !== '' ? 'Поставщик: '.$suppliers.'.' : null,
+            filled($data['amount'] ?? null) ? 'Сумма: '.number_format((float) $data['amount'], 2, ',', ' ').' BYN.' : null,
+            filled($data['due_date'] ?? null) ? 'Желаемый срок оплаты: '.date('d.m.Y', strtotime((string) $data['due_date'])).'.' : null,
+            '',
+            filled($data['comment'] ?? null) ? 'Комментарий: '.trim((string) $data['comment']) : null,
+            'Документ для оплаты приложен к письму.',
+        ])->filter(fn ($line): bool => $line !== null)->implode("\n");
     }
 
     private function orderPortalIsComplete(): bool

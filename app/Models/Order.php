@@ -162,6 +162,11 @@ class Order extends Model
             ->whereNotIn('status', ['delivered', 'completed', 'cancelled']);
     }
 
+    public function accountingRequests(): HasMany
+    {
+        return $this->hasMany(OrderAccountingRequest::class)->latest('id');
+    }
+
     public function transitionTo(string $status, ?string $historyComment = null, array $attributes = []): bool
     {
         $previousStatus = $this->status;
