@@ -11,13 +11,15 @@ return new class extends Migration
 
     public function up(): void
     {
-        DB::table('products')
-            ->where('slug', self::PRODUCT_SLUG)
-            ->update([
+        $productId = DB::table('products')->where('slug', self::PRODUCT_SLUG)->value('id');
+
+        if ($productId) {
+            DB::table('supplier_products')->where('product_id', $productId)->update([
                 'stock_status' => 'preorder',
                 'stock_text' => 'Доступен к заказу',
                 'updated_at' => now(),
             ]);
+        }
 
         $this->replaceContent('products', self::PRODUCT_SLUG, [
             '<p>Первая партия ожидается на складе поставщика в Москве <strong>26–30 октября 2026 года</strong>. Перед заказом специалисты KOTLOV.BY проверят расчётную тепловую нагрузку, параметры дымохода, основание и безопасные расстояния до горючих конструкций.</p>'
