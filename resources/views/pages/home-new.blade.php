@@ -93,11 +93,11 @@
                                             <div class="shaman-launch__facts"><span>14 кВт</span><span>чугун</span><span>до 170 м²</span><span>КПД 78,7%</span></div>
                                             <div class="shaman-launch__actions">
                                                 <a href="{{ $banner->link }}" class="tf-btn btn-white">{{ $banner->button_text }}</a>
-                                                <a href="/blog/invicta-shaman-novinka-dostupen-k-zakazu" class="shaman-launch__more">Подробнее о новинке</a>
+                                                <a href="/blog/ecokamin-shaman-analog-legendarnogo-kamina" class="shaman-launch__more">Подробнее о новинке</a>
                                             </div>
                                         </div>
                                         <div class="shaman-launch__product">
-                                            <img src="{{ asset('img/blog/invicta-shaman-cover.jpg') }}" alt="Чугунный камин Invicta Shaman" width="720" height="720">
+                                            <img src="{{ asset('img/blog/invicta-shaman-cover.jpg') }}" alt="Чугунный камин ЭкоКамин ШАМАН" width="720" height="720">
                                         </div>
                                     </div>
                                 </div>

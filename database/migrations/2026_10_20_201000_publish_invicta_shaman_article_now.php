@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    private const ARTICLE_SLUG = 'invicta-shaman-novinka-dostupen-k-zakazu';
+    private const ARTICLE_SLUG = 'ecokamin-shaman-analog-legendarnogo-kamina';
 
     public function up(): void
     {

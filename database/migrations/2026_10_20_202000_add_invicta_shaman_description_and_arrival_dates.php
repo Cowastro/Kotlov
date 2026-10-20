@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    private const PRODUCT_SLUG = 'invicta-shaman-chugunnyy-kamin';
-    private const ARTICLE_SLUG = 'invicta-shaman-novinka-dostupen-k-zakazu';
+    private const PRODUCT_SLUG = 'ecokamin-shaman-chugunnyy-kamin';
+    private const ARTICLE_SLUG = 'ecokamin-shaman-analog-legendarnogo-kamina';
     private const BANNER_IMAGE = 'banners/invicta-shaman-launch.svg';
 
     public function up(): void
@@ -16,9 +16,9 @@ return new class extends Migration
 
         if ($productId) {
             DB::table('products')->where('id', $productId)->update([
-                'short_description' => 'Вертикальный чугунный камин Invicta Shaman мощностью 14 кВт для отопления помещений площадью до 170 м². Длительное горение до 8 часов, вторичный дожиг и система очистки стекла.',
+                'short_description' => 'Чугунный камин ЭкоКамин ШАМАН мощностью 14 кВт — современный аналог легендарного Invicta Shaman. Для помещений до 170 м², с длительным горением, вторичным дожигом и системой очистки стекла.',
                 'content' => $this->productContent(),
-                'meta_description' => 'Чугунный камин Invicta Shaman 14 кВт для помещений до 170 м². КПД 78,7%, длительное горение до 8 часов. Поступление 26–30 октября 2026 года.',
+                'meta_description' => 'Чугунный камин ЭкоКамин ШАМАН 14 кВт — современный аналог легендарного Invicta Shaman. До 170 м², КПД 78,7%, длительное горение до 8 часов.',
                 'updated_at' => now(),
             ]);
 
@@ -37,9 +37,9 @@ return new class extends Migration
             ]);
 
         DB::table('blog_posts')->where('slug', self::ARTICLE_SLUG)->update([
-            'excerpt' => 'Новый чугунный камин Invicta Shaman мощностью 14 кВт доступен к заказу в Беларуси. Поступление первой партии ожидается 26–30 октября 2026 года.',
+            'excerpt' => 'Новый чугунный камин ЭкоКамин ШАМАН мощностью 14 кВт — современный аналог легендарного Invicta Shaman. Поступление первой партии ожидается 26–30 октября 2026 года.',
             'content' => DB::raw("REPLACE(content, 'на следующей неделе', '26–30 октября 2026 года')"),
-            'meta_description' => 'Чугунный камин Invicta Shaman 14 кВт уже доступен к заказу в Беларуси. Обогрев до 170 м², КПД 78,7%, длительное горение до 8 часов. Поступление 26–30 октября 2026 года.',
+            'meta_description' => 'Чугунный камин ЭкоКамин ШАМАН 14 кВт — современный аналог легендарного Invicta Shaman. До 170 м², КПД 78,7%, поступление 26–30 октября 2026 года.',
             'updated_at' => now(),
         ]);
 
@@ -54,7 +54,9 @@ return new class extends Migration
     private function productContent(): string
     {
         return <<<'HTML'
-<p><strong>Invicta Shaman</strong> — высокий вертикальный камин из чугуна для просторной гостиной, загородного дома или помещения с высоким потолком. Номинальная мощность 14 кВт рассчитана на отопление площади от 75 до 170 м².</p>
+<p><strong>ЭкоКамин ШАМАН</strong> — чугунный камин российского производителя «ЭкоКамин». По формату, вертикальному силуэту и характеру модели это современный аналог легендарного <strong>Invicta Shaman</strong>, но не товар бренда Invicta.</p>
+
+<p>Высокий вертикальный камин рассчитан на просторную гостиную, загородный дом или помещение с высоким потолком. Номинальная мощность 14 кВт подходит для отопления площади от 75 до 170 м².</p>
 
 <p>Диапазон мощности от 9,5 до 21 кВт позволяет регулировать интенсивность обогрева. КПД модели составляет 78,7%. Корпус и футеровка выполнены из чугуна, а система вторичного дожига помогает эффективнее использовать топливо.</p>
 

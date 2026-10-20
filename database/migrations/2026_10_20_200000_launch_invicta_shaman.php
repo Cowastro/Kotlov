@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    private const ARTICLE_SLUG = 'invicta-shaman-novinka-dostupen-k-zakazu';
-    private const PRODUCT_PATH = '/pechi-kaminy/invicta-shaman-chugunnyy-kamin';
+    private const ARTICLE_SLUG = 'ecokamin-shaman-analog-legendarnogo-kamina';
+    private const PRODUCT_PATH = '/pechi-kaminy/ecokamin-shaman-chugunnyy-kamin';
     private const BANNER_IMAGE = 'banners/invicta-shaman-launch.svg';
 
     public function up(): void
@@ -32,14 +32,15 @@ return new class extends Migration
             [
                 'category_id' => $categoryId,
                 'author_id' => null,
-                'title' => 'Invicta Shaman: новый чугунный камин уже доступен к заказу',
-                'excerpt' => 'Новый чугунный камин Invicta Shaman мощностью 14 кВт доступен к заказу в Беларуси. Поступление первой партии ожидается 26–30 октября 2026 года.',
+                'title' => 'ЭкоКамин ШАМАН — современный аналог легендарного Invicta Shaman',
+                'excerpt' => 'Новый чугунный камин ЭкоКамин ШАМАН мощностью 14 кВт — современный аналог легендарного Invicta Shaman. Поступление первой партии ожидается 26–30 октября 2026 года.',
                 'content' => $this->content(),
                 'cover_image' => 'img/blog/invicta-shaman-cover.jpg',
                 'images' => json_encode([], JSON_UNESCAPED_UNICODE),
                 'tags' => json_encode([
-                    'Invicta',
-                    'Shaman',
+                    'ЭкоКамин',
+                    'ШАМАН',
+                    'аналог Invicta Shaman',
                     'чугунный камин',
                     'печь-камин',
                     'камин 14 кВт',
@@ -47,8 +48,8 @@ return new class extends Migration
                 ], JSON_UNESCAPED_UNICODE),
                 'is_published' => true,
                 'published_at' => '2026-10-20 14:30:00',
-                'meta_title' => 'Invicta Shaman — новый чугунный камин 14 кВт | KOTLOV.BY',
-                'meta_description' => 'Чугунный камин Invicta Shaman 14 кВт уже доступен к заказу в Беларуси. Обогрев до 170 м², КПД 78,7%, длительное горение до 8 часов. Поступление 26–30 октября 2026 года.',
+                'meta_title' => 'ЭкоКамин ШАМАН — аналог Invicta Shaman 14 кВт | KOTLOV.BY',
+                'meta_description' => 'Чугунный камин ЭкоКамин ШАМАН 14 кВт — современный аналог легендарного Invicta Shaman. До 170 м², КПД 78,7%, поступление 26–30 октября 2026 года.',
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
@@ -57,12 +58,12 @@ return new class extends Migration
         DB::table('banners')->updateOrInsert(
             ['image' => self::BANNER_IMAGE, 'position' => 'hero'],
             [
-                'title' => 'Invicta Shaman',
+                'title' => 'ЭкоКамин ШАМАН',
                 'subtitle' => 'Новинка · доступен к заказу',
                 'description' => 'Чугунный камин мощностью 14 кВт. Поступление первой партии ожидается 26–30 октября 2026 года.',
                 'image_mobile' => null,
                 'link' => self::PRODUCT_PATH,
-                'button_text' => 'Заказать Shaman',
+                'button_text' => 'Заказать ШАМАН',
                 'sort_order' => -200,
                 'is_active' => true,
                 'created_at' => $now,
@@ -83,22 +84,22 @@ return new class extends Migration
     private function content(): string
     {
         return <<<'HTML'
-<p class="text text-body-1"><strong>Invicta Shaman уже доступен к заказу в KOTLOV.BY.</strong> Поступление первой партии на склад поставщика в Москве ожидается 26–30 октября 2026 года. Заказ можно оформить заранее — менеджер подтвердит срок поставки и рассчитает доставку по Беларуси.</p>
+<p class="text text-body-1"><strong>ЭкоКамин ШАМАН уже доступен к заказу в KOTLOV.BY.</strong> Это камин российского производителя «ЭкоКамин», выполненный в духе легендарного Invicta Shaman. Поступление первой партии на склад поставщика в Москве ожидается 26–30 октября 2026 года.</p>
 
 <div class="blog-image-2">
-    <img loading="eager" width="2000" height="2000" src="/img/blog/invicta-shaman-cover.jpg" alt="Чугунный камин Invicta Shaman 14 кВт">
+    <img loading="eager" width="2000" height="2000" src="/img/blog/invicta-shaman-cover.jpg" alt="Чугунный камин ЭкоКамин ШАМАН 14 кВт">
 </div>
 
 <h2>Высокий камин для просторного дома</h2>
 
-<p class="text text-body-1">Shaman — вертикальный чугунный камин с прямым стеклом и выразительным современным силуэтом. Номинальная мощность 14 кВт рассчитана на помещения площадью от 75 до 170 м², а регулируемый диапазон мощности составляет от 9,5 до 21 кВт. Модель подойдёт для загородного дома, большой гостиной или открытого пространства с высоким потолком.</p>
+<p class="text text-body-1">ШАМАН — вертикальный чугунный камин с прямым стеклом и выразительным современным силуэтом. По формату и характеру модели это современный аналог легендарного Invicta Shaman, но производитель этой модели — российская компания «ЭкоКамин». Номинальная мощность 14 кВт рассчитана на помещения площадью от 75 до 170 м².</p>
 
 <div class="kotlov-article-note">
     <strong>Ключевые параметры</strong>
     14 кВт · обогрев до 170 м² · КПД 78,7% · чугунная конструкция · дымоход 180 мм · длительное горение до 8 часов.
 </div>
 
-<h2>Что важно в конструкции Invicta Shaman</h2>
+<h2>Что важно в конструкции ЭкоКамин ШАМАН</h2>
 
 <p class="text text-body-1">Корпус и футеровка выполнены из чугуна. Система вторичного дожига помогает полнее использовать топливо, а подача воздуха на стекло снижает образование копоти. Дверца открывается вбок, максимальная длина полена — 44 см. Габариты камина составляют 560 × 1200 × 578 мм, масса — 160 кг.</p>
 
@@ -108,7 +109,7 @@ return new class extends Migration
 
 <p class="text text-body-1">Актуальная розничная цена указана в карточке товара. Поступление первой партии ожидается 26–30 октября 2026 года.</p>
 
-<p class="text text-body-1"><a href="/pechi-kaminy/invicta-shaman-chugunnyy-kamin"><strong>Посмотреть актуальную цену и заказать Invicta Shaman →</strong></a></p>
+<p class="text text-body-1"><a href="/pechi-kaminy/ecokamin-shaman-chugunnyy-kamin"><strong>Посмотреть актуальную цену и заказать ЭкоКамин ШАМАН →</strong></a></p>
 
 <p class="text text-body-1">Другие готовые решения можно сравнить в разделе <a href="/pechki"><strong>печей и каминов</strong></a>, а подходящий дымоход — в разделе <a href="/dymohody"><strong>дымоходных систем</strong></a>.</p>
 HTML;
