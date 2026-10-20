@@ -31,8 +31,8 @@ class ProductVariantSelector
 
     private function build(Product $product, bool $forAdmin): ?array
     {
-        if ($this->isTisStandard50($product)) {
-            return $this->buildTisStandard50($product, $forAdmin);
+        if ($this->isTisStandard($product)) {
+            return $this->buildTisStandard($product, $forAdmin);
         }
 
         if ($product->category?->slug !== 'membrannye-baki') {
@@ -92,14 +92,17 @@ class ProductVariantSelector
         ];
     }
 
-    private function isTisStandard50(Product $product): bool
+    private function isTisStandard(Product $product): bool
     {
-        return data_get($product->specs, 'Серия') === 'ТиС «Стандарт 50»'
+        return in_array(data_get($product->specs, 'Серия'), [
+            'ТиС «Стандарт 30»',
+            'ТиС «Стандарт 50»',
+        ], true)
             && filled(data_get($product->specs, 'Тип элемента'))
             && filled(data_get($product->specs, 'Диаметр'));
     }
 
-    private function buildTisStandard50(Product $product, bool $forAdmin): ?array
+    private function buildTisStandard(Product $product, bool $forAdmin): ?array
     {
         $product->loadMissing('brand');
         $series = trim((string) data_get($product->specs, 'Серия'));
@@ -110,12 +113,19 @@ class ProductVariantSelector
             return null;
         }
 
+        $articlePrefixes = $execution === 'Моно'
+            ? ['TIS30-%', 'TIS50-%']
+            : [$series === 'ТиС «Стандарт 30»' ? 'TIS30-%' : 'TIS50-%'];
+
         $variants = Product::query()
             ->where('brand_id', $product->brand_id)
-            ->where(function ($query): void {
-                $query->where('sku', 'like', 'TIS50-%')
-                    ->orWhereHas('supplierProducts', fn ($supplierProducts) => $supplierProducts
-                        ->where('supplier_article', 'like', 'TIS50-%'));
+            ->where(function ($query) use ($articlePrefixes): void {
+                foreach ($articlePrefixes as $index => $prefix) {
+                    $method = $index === 0 ? 'where' : 'orWhere';
+                    $query->{$method}('sku', 'like', $prefix)
+                        ->orWhereHas('supplierProducts', fn ($supplierProducts) => $supplierProducts
+                            ->where('supplier_article', 'like', $prefix));
+                }
             })
             ->when(! $forAdmin, fn ($query) => $query
                 ->where('variant_selector_excluded', false)
@@ -127,7 +137,12 @@ class ProductVariantSelector
             ->get()
             ->map(function (Product $candidate) use ($series, $execution, $element, $product): ?array {
                 $specs = $candidate->specs ?: [];
-                if (trim((string) ($specs['Серия'] ?? '')) !== $series
+                $candidateSeries = trim((string) ($specs['Серия'] ?? ''));
+                $seriesMatches = $execution === 'Моно'
+                    ? in_array($candidateSeries, ['ТиС «Стандарт 30»', 'ТиС «Стандарт 50»'], true)
+                    : $candidateSeries === $series;
+
+                if (! $seriesMatches
                     || trim((string) ($specs['Исполнение'] ?? '')) !== $execution
                     || trim((string) ($specs['Тип элемента'] ?? '')) !== $element) {
                     return null;

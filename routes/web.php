@@ -37,6 +37,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SupportChatController;
 use App\Http\Controllers\TaxpayerLookupController;
 use App\Http\Controllers\TelegramWebhookController;
+use App\Http\Controllers\TisStandard30PriceListController;
 use App\Http\Controllers\TisStandard50PriceListController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Banner;
@@ -419,6 +420,10 @@ Route::get('/dymohody/tis-standart-50', TisStandard50PriceListController::class)
     ->name('chimneys.tis-standard-50');
 Route::get('/dymohody/tis-standart-50.csv', [TisStandard50PriceListController::class, 'csv'])
     ->name('chimneys.tis-standard-50.csv');
+Route::get('/dymohody/tis-standart-30', TisStandard30PriceListController::class)
+    ->name('chimneys.tis-standard-30');
+Route::get('/dymohody/tis-standart-30.csv', [TisStandard30PriceListController::class, 'csv'])
+    ->name('chimneys.tis-standard-30.csv');
 Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->middleware('public.form.protect:installer')->name('partners.apply-installer');
 Route::get('/suppliers', fn () => view('pages.suppliers'))->name('suppliers');
 Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->middleware('public.form.protect:supplier')->name('suppliers.apply');

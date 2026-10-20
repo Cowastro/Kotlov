@@ -215,6 +215,8 @@ class HandleRedirects
         // not legacy category/product paths. Let their explicit routes handle
         // them instead of collapsing them back to /dymohody.
         if (in_array($path, [
+            '/dymohody/tis-standart-30',
+            '/dymohody/tis-standart-30.csv',
             '/dymohody/tis-standart-50',
             '/dymohody/tis-standart-50.csv',
         ], true)) {

@@ -11,7 +11,7 @@
 @if (in_array($category->slug, ['dymohody', 'truby-i-fitingi', 'bani-i-sauny', 'schetchiki-gaza'], true))
     @push('styles')
         <style>
-            .catalog-brand-note{margin-top:22px}.catalog-brand-note__inner{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:22px 26px;border:1px solid var(--line);border-radius:18px;background:var(--bg)}.catalog-brand-note__eyebrow{display:block;margin-bottom:5px;color:var(--text-2);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}.catalog-brand-note h2{margin:0 0 5px;font-size:22px;line-height:1.2}.catalog-brand-note p{max-width:790px;margin:0;color:var(--text-2);font-size:13px;line-height:1.5}.catalog-brand-note .tf-btn{flex:0 0 auto;min-width:210px;justify-content:center}@media(max-width:767px){.catalog-brand-note{margin-top:16px}.catalog-brand-note__inner{align-items:stretch;flex-direction:column;gap:16px;padding:19px}.catalog-brand-note h2{font-size:20px}.catalog-brand-note .tf-btn{box-sizing:border-box;width:100%;min-width:0}}
+            .catalog-brand-note{margin-top:22px}.catalog-brand-note__inner{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:22px 26px;border:1px solid var(--line);border-radius:18px;background:var(--bg)}.catalog-brand-note__eyebrow{display:block;margin-bottom:5px;color:var(--text-2);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}.catalog-brand-note h2{margin:0 0 5px;font-size:22px;line-height:1.2}.catalog-brand-note p{max-width:790px;margin:0;color:var(--text-2);font-size:13px;line-height:1.5}.catalog-brand-note__actions{display:flex;flex:0 0 auto;gap:10px}.catalog-brand-note .tf-btn{flex:0 0 auto;min-width:190px;justify-content:center}@media(max-width:767px){.catalog-brand-note{margin-top:16px}.catalog-brand-note__inner{align-items:stretch;flex-direction:column;gap:16px;padding:19px}.catalog-brand-note h2{font-size:20px}.catalog-brand-note__actions{flex-direction:column}.catalog-brand-note .tf-btn{box-sizing:border-box;width:100%;min-width:0}}
         </style>
     @endpush
 @endif
@@ -53,15 +53,18 @@
     </section>
 
     @if (in_array($category->slug, ['dymohody', 'dymohody-mono', 'dymohody-sendvich'], true))
-        <section class="catalog-brand-note" aria-labelledby="tis-standard-50-title">
+        <section class="catalog-brand-note" aria-labelledby="tis-standard-title">
             <div class="container">
                 <div class="catalog-brand-note__inner">
                     <div>
                         <span class="catalog-brand-note__eyebrow">Новая система дымоходов</span>
-                        <h2 id="tis-standard-50-title">ТиС «Стандарт 50»: Моно и Термо</h2>
-                        <p>Прайс по элементам и диаметрам, карточки AISI 304 и быстрый переход между типоразмерами. Поставка под заказ за 5–7 рабочих дней.</p>
+                        <h2 id="tis-standard-title">ТиС «Стандарт 30» и «Стандарт 50»</h2>
+                        <p>Два удобных прайса по элементам и диаметрам, карточки AISI 304 и быстрый переход между типоразмерами. Поставка под заказ за 5–7 рабочих дней.</p>
                     </div>
-                    <a href="{{ route('chimneys.tis-standard-50') }}" class="tf-btn btn-white btn-stroke">Открыть удобный прайс</a>
+                    <div class="catalog-brand-note__actions">
+                        <a href="{{ route('chimneys.tis-standard-30') }}" class="tf-btn btn-white btn-stroke">Прайс Стандарт 30</a>
+                        <a href="{{ route('chimneys.tis-standard-50') }}" class="tf-btn btn-white btn-stroke">Прайс Стандарт 50</a>
+                    </div>
                 </div>
             </div>
         </section>
