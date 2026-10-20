@@ -64,7 +64,7 @@ class UnconfirmedProductCheckoutTest extends TestCase
         $this->assertDatabaseCount((new Order)->getTable(), $orderCount + 1);
         $this->assertDatabaseHas('order_items', [
             'product_id' => $product->id,
-            'supply_is_available' => null,
+            'supply_is_available' => false,
         ]);
         Notification::assertSentTo(
             $manager,
@@ -206,7 +206,7 @@ class UnconfirmedProductCheckoutTest extends TestCase
             ],
         );
 
-        return Product::query()->create([
+        $product = Product::query()->create([
             'category_id' => $category->id,
             'name' => 'Товар с неподтверждённым наличием',
             'slug' => 'unconfirmed-product-'.uniqid(),
@@ -217,6 +217,22 @@ class UnconfirmedProductCheckoutTest extends TestCase
             'in_stock' => false,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+
+        $supplier = Supplier::query()->create([
+            'code' => 'unconfirmed-supplier-'.uniqid(),
+            'name' => 'Поставщик с уточняемым наличием',
+            'is_active' => true,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'UNCONFIRMED-'.uniqid(),
+            'price_byn' => 25,
+            'in_stock' => false,
+            'stock_status' => 'unknown',
+        ]);
+
+        return $product->fresh();
     }
 
     private function confirmedProduct(float $price): Product

@@ -165,9 +165,10 @@
                                     @php
                                         $compareB2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)
                                             ->forProduct($product, auth()->user());
+                                        $hasAssignedSupplier = $product->hasAssignedSupplier();
                                         $compareCanBuy = $compareB2bOffer
-                                            ? $product->is_active && ! $product->is_archived && (float) $compareB2bOffer->stock_quantity >= 1
-                                            : $product->canBePurchased();
+                                            ? $hasAssignedSupplier && $product->is_active && ! $product->is_archived && (float) $compareB2bOffer->stock_quantity >= 1
+                                            : $product->canBeAddedToCart();
                                     @endphp
                                     <td class="compare-col compare-value">
                                         @if ($compareCanBuy)
@@ -178,8 +179,11 @@
                                         </a>
                                         @else
                                         <a href="#ask" data-bs-toggle="modal"
-                                            class="tf-btn s-small animate-btn">
-                                            Заказать консультацию
+                                            class="tf-btn s-small animate-btn btn-product-availability-request"
+                                            data-product-id="{{ $product->id }}"
+                                            data-product-name="{{ $product->name }}"
+                                            data-product-url="{{ url('/'.($product->category->slug ?? 'catalog').'/'.$product->slug) }}">
+                                            Уточнить наличие
                                         </a>
                                         @endif
                                     </td>

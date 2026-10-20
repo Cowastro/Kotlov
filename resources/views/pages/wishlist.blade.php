@@ -47,9 +47,10 @@
                             $productUrl = '/' . ($product->category->slug ?? 'catalog') . '/' . $product->slug;
                             $wishlistB2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)
                                 ->forProduct($product, auth()->user());
+                            $hasAssignedSupplier = $product->hasAssignedSupplier();
                             $canBuy = $wishlistB2bOffer
-                                ? $product->is_active && ! $product->is_archived && (float) $wishlistB2bOffer->stock_quantity >= 1
-                                : $product->canBePurchased();
+                                ? $hasAssignedSupplier && $product->is_active && ! $product->is_archived && (float) $wishlistB2bOffer->stock_quantity >= 1
+                                : $product->canBeAddedToCart();
                             $quickViewImages = collect($product->images ?: [$product->main_image])
                                 ->filter()
                                 ->keys()
@@ -126,8 +127,11 @@
                                     </a>
                                     @else
                                     <a href="#ask" data-bs-toggle="modal"
-                                        class="tf-btn btn-white small w-100">
-                                        Заказать консультацию
+                                        class="tf-btn btn-white small w-100 btn-product-availability-request"
+                                        data-product-id="{{ $product->id }}"
+                                        data-product-name="{{ $product->name }}"
+                                        data-product-url="{{ url($productUrl) }}">
+                                        Уточнить наличие
                                     </a>
                                     @endif
                                 </div>

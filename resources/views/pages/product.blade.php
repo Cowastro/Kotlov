@@ -227,18 +227,19 @@
                                     $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
                                     $b2bOffer = $b2bComparison['offer'] ?? null;
                                     $isProcurementOffer = $b2bOffer && $b2bOffer->source?->isProcurementMode();
+                                    $hasAssignedSupplier = $product->hasAssignedSupplier();
                                     if (!$product->is_active || $product->is_archived) {
                                         $availabilityStatus = 'out_of_stock';
                                     } elseif ($b2bOffer && (float) $b2bOffer->stock_quantity > 0) {
                                         $availabilityStatus = 'in_stock';
                                     } else {
                                         $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus')
-                                            ? $product->effectiveAvailabilityStatus()
+                                            ? $product->publicAvailabilityStatus()
                                             : 'check';
                                     }
                                     $canBuy = $b2bOffer
-                                        ? $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
-                                        : $product->canBeOrdered();
+                                        ? $hasAssignedSupplier && $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
+                                        : $product->canBeAddedToCart();
                                     $availabilityLabel = $b2bOffer
                                         ? (\App\Models\Product::availabilityStatusOptions()[$availabilityStatus] ?? 'Уточняйте наличие')
                                         : $product->publicAvailabilityLabel();
@@ -386,7 +387,11 @@
                                         <span class="stock check-stock fw-medium" style="color:#b45309;">
                                             <i class="icon icon-CheckCircle" style="color:#b45309;"></i> {{ $availabilityLabel }}
                                         </span>
-                                        <p class="text-caption-01 cl-text-2 mt-4 mb-0">Менеджер подтвердит наличие и срок поставки после оформления.</p>
+                                        <p class="text-caption-01 cl-text-2 mt-4 mb-0">
+                                            {{ $hasAssignedSupplier
+                                                ? 'Менеджер подтвердит наличие и срок поставки после оформления.'
+                                                : 'Поставщик пока не назначен. Оставьте запрос — менеджер уточнит наличие и возможность поставки.' }}
+                                        </p>
                                     @else
                                         <span class="stock out-stock fw-medium text-danger">
                                             <i class="icon icon-XCircle"></i> Нет в наличии
@@ -408,6 +413,14 @@
                                 <a href="#ask" data-bs-toggle="modal"
                                     class="tf-btn type-xl btn-primary animate-btn w-100">
                                     Заказать консультацию
+                                </a>
+                            @elseif (! $hasAssignedSupplier)
+                                <a href="#ask" data-bs-toggle="modal"
+                                    class="tf-btn type-xl btn-primary animate-btn w-100 btn-product-availability-request"
+                                    data-product-id="{{ $product->id }}"
+                                    data-product-name="{{ $product->name }}"
+                                    data-product-url="{{ url()->current() }}">
+                                    Уточнить наличие
                                 </a>
                             @elseif ($canBuy)
                                 {{-- Количество и кнопки — есть в наличии --}}

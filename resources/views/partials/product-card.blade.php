@@ -11,9 +11,10 @@
     $b2bOffer = $b2bComparison['offer'] ?? null;
     $isB2bOffer = $b2bOffer !== null;
     $isProcurementOffer = $isB2bOffer && $b2bOffer->source?->isProcurementMode();
+    $hasAssignedSupplier = method_exists($product, 'hasAssignedSupplier') && $product->hasAssignedSupplier();
     $canBuy = $isB2bOffer
-        ? $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
-        : (method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->is_active && $product->price > 0));
+        ? $hasAssignedSupplier && $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
+        : (method_exists($product, 'canBeAddedToCart') ? $product->canBeAddedToCart() : false);
     $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
     $isWishlisted = in_array((int) $product->id, $wishlistProductIds ?? [], true);
 
@@ -117,10 +118,13 @@
                 <span class="add-to-cart-label">{{ $availabilityStatus === 'check' && ! $isB2bOffer ? 'Заказать' : 'В корзину' }}</span>
             </a>
             @else
-            <a href="#ask" data-bs-toggle="modal" class="tf-btn btn-white small w-100 btn-product-consultation"
-                aria-label="Заказать консультацию: {{ $product->name }}" title="Уточнить условия заказа">
+            <a href="#ask" data-bs-toggle="modal" class="tf-btn btn-white small w-100 btn-product-consultation btn-product-availability-request"
+                data-product-id="{{ $product->id }}"
+                data-product-name="{{ $product->name }}"
+                data-product-url="{{ url($productUrl) }}"
+                aria-label="Уточнить наличие: {{ $product->name }}" title="Уточнить наличие">
                 <i class="icon icon-Question" aria-hidden="true"></i>
-                <span class="product-consultation-label">Заказать консультацию</span>
+                <span class="product-consultation-label">Уточнить наличие</span>
             </a>
             @endif
         </div>

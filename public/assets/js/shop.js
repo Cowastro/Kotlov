@@ -73,6 +73,7 @@
             var addToCart = $("#quickView .btn-action-price");
             var buyActions = $("#quickView-buy-actions");
             var consultationActions = $("#quickView-consultation-actions");
+            var availabilityRequest = consultationActions.find(".btn-product-availability-request");
             var quickViewWishlist = $("#quickView-wishlist");
             var cardWishlist = card ? card.querySelector(".wishlist") : null;
             var isWishlisted = cardWishlist ? cardWishlist.classList.contains("addwishlist") : false;
@@ -91,6 +92,10 @@
 
             buyActions.toggleClass("d-none", !canBuy);
             consultationActions.toggleClass("d-none", canBuy);
+            availabilityRequest
+                .attr("data-product-id", productId)
+                .attr("data-product-name", name)
+                .attr("data-product-url", url);
 
             if (canBuy) {
                 addToCart

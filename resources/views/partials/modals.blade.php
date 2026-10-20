@@ -360,14 +360,10 @@
                 <form class="form-log mb-20" action="{{ route('ask.store') }}" method="POST" data-consultant-form>
                     @csrf
                     <x-form-protection />
-                    @isset($product)
-                        <input type="hidden" name="product_id" value="{{ $product->id }}">
-                        <input type="hidden" name="product_name" value="{{ $product->name }}">
-                        <input type="hidden" name="product_url" value="{{ url()->current() }}">
-                        <input type="hidden" name="source" value="product_page">
-                    @else
-                        <input type="hidden" name="source" value="consultation_form">
-                    @endisset
+                    <input type="hidden" name="product_id" value="{{ $product->id ?? '' }}" data-ask-product-id>
+                    <input type="hidden" name="product_name" value="{{ $product->name ?? '' }}" data-ask-product-name>
+                    <input type="hidden" name="product_url" value="{{ isset($product) ? url()->current() : '' }}" data-ask-product-url>
+                    <input type="hidden" name="source" value="{{ isset($product) ? 'product_page' : 'consultation_form' }}" data-ask-source>
                     <input type="hidden" name="city" value="{{ $cityName ?? ($currentCity->name ?? '') }}">
                     <div class="form-content">
                         <fieldset class="tf-field">
@@ -493,8 +489,8 @@
                     </div>
                 </div>
                 <div class="product-total-quantity">
-                    <a href="#ask" data-bs-toggle="modal" class="tf-btn type-xl btn-primary animate-btn w-100">
-                        Заказать консультацию
+                    <a href="#ask" data-bs-toggle="modal" class="tf-btn type-xl btn-primary animate-btn w-100 btn-product-availability-request">
+                        Уточнить наличие
                     </a>
                 </div>
             </div>

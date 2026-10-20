@@ -332,6 +332,37 @@
         });
 
         document.addEventListener('click', function (e) {
+            var requestButton = e.target.closest('.btn-product-availability-request');
+            if (!requestButton) return;
+
+            var askModal = document.getElementById('ask');
+            if (!askModal) return;
+
+            var productId = requestButton.dataset.productId || '';
+            var productName = requestButton.dataset.productName || '';
+            var productUrl = requestButton.dataset.productUrl || window.location.href;
+            var idField = askModal.querySelector('[data-ask-product-id]');
+            var nameField = askModal.querySelector('[data-ask-product-name]');
+            var urlField = askModal.querySelector('[data-ask-product-url]');
+            var sourceField = askModal.querySelector('[data-ask-source]');
+            var messageField = askModal.querySelector('[name="message"]');
+            var title = askModal.querySelector('.title-pop');
+            var description = askModal.querySelector('.desc-pop');
+
+            if (idField && productId) idField.value = productId;
+            if (nameField && productName) nameField.value = productName;
+            if (urlField) urlField.value = productUrl;
+            if (sourceField) sourceField.value = 'product_availability_request';
+            if (messageField && !messageField.value.trim()) {
+                messageField.value = productName
+                    ? 'Прошу уточнить наличие и возможность поставки товара: ' + productName
+                    : 'Прошу уточнить наличие и возможность поставки товара.';
+            }
+            if (title) title.textContent = 'Уточнить наличие';
+            if (description) description.textContent = 'Оставьте контакты — менеджер проверит поставщика, наличие и срок поставки.';
+        });
+
+        document.addEventListener('click', function (e) {
             var button = e.target.closest('[data-apply-online3]');
             if (!button) return;
             var form = button.closest('form');

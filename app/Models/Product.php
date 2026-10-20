@@ -139,6 +139,10 @@ class Product extends Model
 
     public function publicAvailabilityLabel(): string
     {
+        if (! $this->hasAssignedSupplier()) {
+            return 'Наличие по запросу';
+        }
+
         $status = $this->publicAvailabilityStatus();
         if ($status === self::AVAILABILITY_IN_STOCK) {
             $quantity = $this->confirmedStockQuantity();
@@ -174,6 +178,10 @@ class Product extends Model
     /** The same resolved state is used by public labels, the cart and checkout. */
     public function publicAvailabilityStatus(): string
     {
+        if (! $this->hasAssignedSupplier()) {
+            return self::AVAILABILITY_CHECK;
+        }
+
         return $this->effectiveAvailabilityStatus();
     }
 
@@ -245,6 +253,61 @@ class Product extends Model
             && ! $this->is_archived
             && (float) $this->price > 0
             && $this->effectiveAvailabilityStatus() === self::AVAILABILITY_IN_STOCK;
+    }
+
+    /**
+     * A storefront order must always have an operational supplier route.
+     * A price or an old stock flag on the product itself is not enough.
+     */
+    public function hasAssignedSupplier(): bool
+    {
+        $hasLegacySupplier = $this->relationLoaded('supplierProducts')
+            ? $this->supplierProducts->contains(
+                fn (SupplierProduct $item): bool => $item->supplier?->is_active === true
+                    && $item->supplier->usesLegacyChannel()
+            )
+            : $this->supplierProducts()
+                ->whereHas('supplier', fn ($supplier) => $supplier
+                    ->where('is_active', true)
+                    ->whereDoesntHave('latestChannelTransition', fn ($transition) => $transition
+                        ->where('status', SupplierChannelTransition::STATUS_LEGACY_DISABLED)))
+                ->exists();
+
+        if ($hasLegacySupplier) {
+            return true;
+        }
+
+        $hasIntegrationSupplier = $this->relationLoaded('integrationProducts')
+            ? $this->integrationProducts->contains(
+                fn (IntegrationProduct $item): bool => $item->match_status === 'matched'
+                    && $item->source?->is_active === true
+                    && $item->source?->supplier?->is_active === true
+            )
+            : $this->integrationProducts()
+                ->where('match_status', 'matched')
+                ->whereHas('source', fn ($source) => $source
+                    ->where('is_active', true)
+                    ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true)))
+                ->exists();
+
+        if ($hasIntegrationSupplier) {
+            return true;
+        }
+
+        return $this->relationLoaded('purchasePriceSources')
+            ? $this->purchasePriceSources->contains(
+                fn (ProductPurchasePriceSource $source): bool => $source->isUsable()
+                    && $source->supplier?->is_active === true
+            )
+            : $this->purchasePriceSources()
+                ->usable()
+                ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true))
+                ->exists();
+    }
+
+    public function canBeAddedToCart(): bool
+    {
+        return $this->canBeOrdered() && $this->hasAssignedSupplier();
     }
 
     public function requiresAvailabilityConfirmation(): bool
@@ -329,11 +392,13 @@ class Product extends Model
             'supplierProducts:id,product_id,supplier_id,supplier_article,supplier_name,price_byn,in_stock,stock_status,stock_quantity,stock_text,warehouse_name,delivery_days,last_stock_synced_at,last_synced_at,updated_at',
             'supplierProducts.supplier:id,crm_counterparty_id,code,name,contact,is_active',
             'supplierProducts.supplier.crmCounterparty.contactPoints',
+            'supplierProducts.supplier.latestChannelTransition',
             'integrationProducts:id,product_id,integration_source_id,external_sku,name,price,price_currency,price_currency_rate,price_tax_mode,price_vat_rate,price_byn,stock_quantity,match_status,last_seen_at,last_offer_seen_at,stock_confirmed_at',
             'integrationProducts.source:id,supplier_id,code,name,driver,price_currency,price_currency_rate,is_active,settings',
             'integrationProducts.source.supplier:id,crm_counterparty_id,code,name,contact,is_active',
             'integrationProducts.source.supplier.crmCounterparty.contactPoints',
             'integrationProducts.source.latestSuccessfulCatalogExchangeRun',
+            'purchasePriceSources.supplier:id,crm_counterparty_id,code,name,contact,is_active',
         ]);
     }
 

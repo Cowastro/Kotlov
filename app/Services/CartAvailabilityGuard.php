@@ -41,7 +41,7 @@ class CartAvailabilityGuard
             $productId = (int) ($item['id'] ?? $key);
             $product = $products->get($productId);
 
-            if (! $product || ! $product->canBeOrdered()) {
+            if (! $product || ! $product->canBeAddedToCart()) {
                 unset($cart[$key]);
                 $removedIds[] = $productId;
 

@@ -62,6 +62,14 @@ class CartController extends Controller
             return back()->with('error', 'Товар недоступен для заказа.');
         }
 
+        if (! $product->hasAssignedSupplier()) {
+            $message = 'Товар нельзя добавить в корзину: поставщик пока не назначен. Оставьте запрос — менеджер уточнит наличие и возможность поставки.';
+
+            return $request->expectsJson()
+                ? response()->json(['message' => $message], 422)
+                : back()->with('error', $message);
+        }
+
         $canBeOrdered = $b2bOffer
             ? $product->is_active && ! $product->is_archived && $offerResolver->canOrder($b2bOffer)
             : $product->canBeOrdered();

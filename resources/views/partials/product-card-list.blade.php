@@ -13,9 +13,10 @@
     $b2bOffer = $b2bComparison['offer'] ?? null;
     $isB2bOffer = $b2bOffer !== null;
     $isProcurementOffer = $isB2bOffer && $b2bOffer->source?->isProcurementMode();
+    $hasAssignedSupplier = method_exists($product, 'hasAssignedSupplier') && $product->hasAssignedSupplier();
     $canBuy = $isB2bOffer
-        ? $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
-        : (method_exists($product, 'canBeOrdered') ? $product->canBeOrdered() : ($product->is_active && $product->price > 0));
+        ? $hasAssignedSupplier && $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
+        : (method_exists($product, 'canBeAddedToCart') ? $product->canBeAddedToCart() : false);
     $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
     $isWishlisted = in_array((int) $product->id, $wishlistProductIds ?? [], true);
 
@@ -186,9 +187,12 @@
             </li>
             @else
             <li>
-                <a href="#ask" data-bs-toggle="modal" class="hover-tooltip box-icon">
+                <a href="#ask" data-bs-toggle="modal" class="hover-tooltip box-icon btn-product-availability-request"
+                    data-product-id="{{ $product->id }}"
+                    data-product-name="{{ $product->name }}"
+                    data-product-url="{{ url($productUrl) }}">
                     <span class="icon icon-Phone"></span>
-                    <span class="tooltip">Заказать консультацию</span>
+                    <span class="tooltip">Уточнить наличие</span>
                 </a>
             </li>
             @endif
