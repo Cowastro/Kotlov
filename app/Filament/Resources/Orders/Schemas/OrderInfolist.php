@@ -651,6 +651,7 @@ class OrderInfolist
                                             ->tooltip('Назначить или сменить фактического поставщика')
                                             ->modalHeading(fn (OrderItem $record): string => 'Поставщик: '.$record->product_name)
                                             ->modalDescription('Рекомендация из базы сохранится для сравнения. Здесь фиксируется фактический поставщик, наличие или резерв и решение менеджера.')
+                                            ->modalSubmitActionLabel('Подтвердить')
                                             ->fillForm(function (OrderItem $record): array {
                                                 $recommendedRoute = $record->supplyContext()['status'];
 
