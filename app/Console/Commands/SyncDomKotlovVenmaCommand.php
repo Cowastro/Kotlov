@@ -109,13 +109,6 @@ class SyncDomKotlovVenmaCommand extends Command
             }
         }
 
-        if ($apply && $brand && $supplier) {
-            $sync = $this->ensureSync($supplier);
-            $linkedProductIds = $this->linkExistingVenmaProducts($brand, $supplier, $sync);
-            $stats['linked_existing'] = count($linkedProductIds);
-            $touchedProductIds = [...$touchedProductIds, ...$linkedProductIds];
-        }
-
         // Only a complete, error-free catalogue scan may conclude that a
         // previously known card disappeared. A limited/manual check or a
         // partial network failure must never hide the other VENMA offers.
@@ -123,6 +116,7 @@ class SyncDomKotlovVenmaCommand extends Command
             $missing = SupplierProduct::query()
                 ->where('supplier_id', $supplier->id)
                 ->where('raw->catalog', 'domkotlov_venma')
+                ->whereNull('raw->link_reason')
                 ->whereNotIn('supplier_article', $seenArticles)
                 ->get();
             foreach ($missing as $offer) {
@@ -145,6 +139,13 @@ class SyncDomKotlovVenmaCommand extends Command
                 'last_status' => $stats['errors'] === 0 ? 'updated' : 'failed',
                 'last_exit_code' => $stats['errors'] === 0 ? self::SUCCESS : self::FAILURE,
             ]);
+        }
+
+        if ($apply && $brand && $supplier) {
+            $sync = $this->ensureSync($supplier);
+            $linkedProductIds = $this->linkExistingVenmaProducts($brand, $supplier, $sync);
+            $stats['linked_existing'] = count($linkedProductIds);
+            $touchedProductIds = [...$touchedProductIds, ...$linkedProductIds];
         }
 
         if ($apply && $touchedProductIds !== []) {
@@ -313,7 +314,12 @@ class SyncDomKotlovVenmaCommand extends Command
 
         Product::query()
             ->where('brand_id', $brand->id)
-            ->whereDoesntHave('supplierProducts', fn ($query) => $query->where('supplier_id', $supplier->id))
+            ->where(function ($query) use ($supplier): void {
+                $query->whereDoesntHave('supplierProducts', fn ($offers) => $offers->where('supplier_id', $supplier->id))
+                    ->orWhereHas('supplierProducts', fn ($offers) => $offers
+                        ->where('supplier_id', $supplier->id)
+                        ->whereNotNull('raw->link_reason'));
+            })
             ->orderBy('id')
             ->each(function (Product $product) use ($supplier, $sync, &$productIds): void {
                 preg_match('/\bCOMFORT\s+(R?\d+)\b/iu', $product->name, $modelMatch);
