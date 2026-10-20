@@ -2,15 +2,21 @@
 
 namespace App\Filament\Resources\Orders\Schemas;
 
+use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Services\StorefrontProductSearch;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class OrderForm
 {
@@ -79,12 +85,46 @@ class OrderForm
                             ->minItems(1)
                             ->columns(12)
                             ->schema([
+                                Select::make('catalog_supplier_id')
+                                    ->label('Поставщик / склад')
+                                    ->placeholder('Все поставщики')
+                                    ->options(fn (): array => self::supplierOptions())
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->dehydrated(false)
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        $set('catalog_category_id', null);
+                                        self::clearSelectedProduct($set);
+                                    })
+                                    ->helperText('Оставьте пустым, чтобы искать по всему каталогу.')
+                                    ->columnSpan(4),
+                                Select::make('catalog_category_id')
+                                    ->label('Категория')
+                                    ->placeholder('Все категории')
+                                    ->options(fn (Get $get): array => self::categoryOptions(self::filterId($get('catalog_supplier_id'))))
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->dehydrated(false)
+                                    ->afterStateUpdated(function (Set $set): void {
+                                        self::clearSelectedProduct($set);
+                                    })
+                                    ->helperText('Список категорий учитывает выбранного поставщика.')
+                                    ->columnSpan(4),
                                 Select::make('product_id')
                                     ->label('Товар из каталога')
                                     ->searchable()
-                                    ->getSearchResultsUsing(fn (string $search): array => self::searchProductOptions($search))
-                                    ->getOptionLabelUsing(fn (mixed $value): ?string => self::selectedProductOptionLabel($value))
-                                    ->preload(false)
+                                    ->getSearchResultsUsing(fn (string $search, Get $get): array => self::searchProductOptions(
+                                        $search,
+                                        self::filterId($get('catalog_supplier_id')),
+                                        self::filterId($get('catalog_category_id')),
+                                    ))
+                                    ->getOptionLabelUsing(fn (mixed $value, Get $get): ?string => self::selectedProductOptionLabel(
+                                        $value,
+                                        self::filterId($get('catalog_supplier_id')),
+                                    ))
+                                    ->preload()
                                     ->live()
                                     ->afterStateUpdated(function ($state, callable $get, callable $set): void {
                                         $product = $state ? Product::query()->find($state) : null;
@@ -101,16 +141,17 @@ class OrderForm
                                             2,
                                         ));
                                     })
-                                    ->columnSpan(5),
+                                    ->helperText('Можно искать по названию, модели или артикулу. Без текста покажем первые позиции по выбранным фильтрам.')
+                                    ->columnSpan(4),
                                 TextInput::make('product_name')
                                     ->label('Наименование')
                                     ->required()
                                     ->maxLength(255)
-                                    ->columnSpan(5),
+                                    ->columnSpan(8),
                                 TextInput::make('product_sku')
                                     ->label('Артикул')
                                     ->maxLength(100)
-                                    ->columnSpan(2),
+                                    ->columnSpan(4),
                                 TextInput::make('quantity')
                                     ->label('Количество')
                                     ->numeric()
@@ -215,12 +256,25 @@ class OrderForm
         $set('total', round($quantity * $price, 2));
     }
 
+    private static function clearSelectedProduct(Set $set): void
+    {
+        $set('product_id', null);
+        $set('product_name', null);
+        $set('product_sku', null);
+        $set('price', 0);
+        $set('total', 0);
+    }
+
     /** @return array<int, string> */
-    public static function searchProductOptions(string $search): array
+    public static function searchProductOptions(
+        string $search,
+        ?int $supplierId = null,
+        ?int $categoryId = null,
+    ): array
     {
         $search = mb_substr(trim($search), 0, 100);
 
-        if (mb_strlen($search) < 1) {
+        if (mb_strlen($search) < 1 && ! $supplierId && ! $categoryId) {
             return [];
         }
 
@@ -230,21 +284,27 @@ class OrderForm
             ->withSupplierChannels()
             ->with(['brand:id,name', 'category:id,name']);
 
-        app(StorefrontProductSearch::class)->apply($query, $search, true);
+        self::applyPickerFilters($query, $supplierId, $categoryId);
+
+        if ($search !== '') {
+            app(StorefrontProductSearch::class)->apply($query, $search, true);
+        }
 
         return $query
+            ->orderByDesc('in_stock')
+            ->orderByDesc('stock_qty')
             ->orderByDesc('is_featured')
             ->orderByDesc('rating')
             ->orderByDesc('views_count')
-            ->limit(30)
+            ->limit(50)
             ->get()
             ->mapWithKeys(fn (Product $product): array => [
-                $product->id => self::productOptionLabel($product),
+                $product->id => self::productOptionLabel($product, $supplierId),
             ])
             ->all();
     }
 
-    private static function selectedProductOptionLabel(mixed $value): ?string
+    private static function selectedProductOptionLabel(mixed $value, ?int $supplierId = null): ?string
     {
         if (! $value) {
             return null;
@@ -254,10 +314,10 @@ class OrderForm
             ->withSupplierChannels()
             ->find($value);
 
-        return $product ? self::productOptionLabel($product) : null;
+        return $product ? self::productOptionLabel($product, $supplierId) : null;
     }
 
-    public static function productOptionLabel(Product $product): string
+    public static function productOptionLabel(Product $product, ?int $supplierId = null): string
     {
         $price = (float) $product->price > 0
             ? number_format((float) $product->price, 2, ',', ' ').' BYN'
@@ -266,8 +326,173 @@ class OrderForm
         return implode(' · ', array_filter([
             $product->name,
             filled($product->sku) ? 'арт. '.$product->sku : null,
+            $supplierId ? self::supplierOfferLabel($product, $supplierId) : null,
             'розница '.$price,
-            $product->publicAvailabilityLabel(),
+            $supplierId ? null : $product->publicAvailabilityLabel(),
         ]));
+    }
+
+    /** @return array<int, string> */
+    public static function supplierOptions(): array
+    {
+        return Supplier::query()
+            ->where('is_active', true)
+            ->where(function (Builder $query): void {
+                $query
+                    ->whereHas('supplierProducts.product', fn (Builder $product): Builder => $product->active()->notArchived())
+                    ->orWhereHas('integrationSources', fn (Builder $source): Builder => $source
+                        ->where('is_active', true)
+                        ->whereHas('products.product', fn (Builder $product): Builder => $product->active()->notArchived()));
+            })
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    /** @return array<int, string> */
+    public static function categoryOptions(?int $supplierId = null): array
+    {
+        $productCategoryIds = Product::query()
+            ->active()
+            ->notArchived()
+            ->whereNotNull('category_id')
+            ->tap(fn (Builder $query) => self::applySupplierFilter($query, $supplierId))
+            ->distinct()
+            ->pluck('category_id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
+
+        if ($productCategoryIds === []) {
+            return [];
+        }
+
+        $categories = Category::query()
+            ->where('is_active', true)
+            ->get(['id', 'parent_id', 'name'])
+            ->keyBy('id');
+        $visibleIds = collect($productCategoryIds)->flip();
+
+        foreach ($productCategoryIds as $categoryId) {
+            $parentId = (int) ($categories->get($categoryId)?->parent_id ?? 0);
+            $guard = 0;
+
+            while ($parentId > 0 && $guard++ < 12) {
+                $visibleIds->put($parentId, true);
+                $parentId = (int) ($categories->get($parentId)?->parent_id ?? 0);
+            }
+        }
+
+        return $categories
+            ->filter(fn (Category $category): bool => $visibleIds->has($category->id))
+            ->sortBy(fn (Category $category): string => self::categoryPath($category, $categories))
+            ->mapWithKeys(fn (Category $category): array => [
+                $category->id => self::categoryPath($category, $categories),
+            ])
+            ->all();
+    }
+
+    public static function filterId(mixed $value): ?int
+    {
+        $id = (int) $value;
+
+        return $id > 0 ? $id : null;
+    }
+
+    private static function applyPickerFilters(Builder $query, ?int $supplierId, ?int $categoryId): void
+    {
+        self::applySupplierFilter($query, $supplierId);
+
+        if ($categoryId) {
+            $query->whereIn('category_id', self::categoryAndDescendantIds($categoryId));
+        }
+    }
+
+    private static function applySupplierFilter(Builder $query, ?int $supplierId): void
+    {
+        if (! $supplierId) {
+            return;
+        }
+
+        $query->where(function (Builder $query) use ($supplierId): void {
+            $query
+                ->whereHas('supplierProducts', fn (Builder $offer): Builder => $offer->where('supplier_id', $supplierId))
+                ->orWhereHas('integrationProducts', fn (Builder $offer): Builder => $offer
+                    ->where('match_status', 'matched')
+                    ->whereHas('source', fn (Builder $source): Builder => $source
+                        ->where('supplier_id', $supplierId)
+                        ->where('is_active', true)));
+        });
+    }
+
+    /** @return list<int> */
+    private static function categoryAndDescendantIds(int $categoryId): array
+    {
+        $categories = Category::query()->where('is_active', true)->get(['id', 'parent_id']);
+        $ids = [$categoryId];
+
+        do {
+            $children = $categories
+                ->whereIn('parent_id', $ids)
+                ->pluck('id')
+                ->map(fn (mixed $id): int => (int) $id)
+                ->diff($ids)
+                ->values()
+                ->all();
+            $before = count($ids);
+            $ids = array_values(array_unique([...$ids, ...$children]));
+        } while (count($ids) > $before);
+
+        return $ids;
+    }
+
+    /** @param Collection<int, Category> $categories */
+    private static function categoryPath(Category $category, Collection $categories): string
+    {
+        $parts = [$category->name];
+        $parentId = (int) $category->parent_id;
+        $guard = 0;
+
+        while ($parentId > 0 && $guard++ < 12) {
+            $parent = $categories->get($parentId);
+            if (! $parent) {
+                break;
+            }
+
+            array_unshift($parts, $parent->name);
+            $parentId = (int) $parent->parent_id;
+        }
+
+        return implode(' → ', $parts);
+    }
+
+    private static function supplierOfferLabel(Product $product, int $supplierId): string
+    {
+        $legacy = $product->supplierProducts->where('supplier_id', $supplierId);
+        $integrated = $product->integrationProducts->filter(
+            fn ($offer): bool => (int) $offer->source?->supplier_id === $supplierId
+                && $offer->match_status === 'matched'
+                && (bool) $offer->source?->is_active,
+        );
+        $supplierName = $legacy->first()?->supplier?->name
+            ?? $integrated->first()?->source?->supplier?->name
+            ?? 'Выбранный поставщик';
+        $quantities = $legacy->pluck('stock_quantity')
+            ->merge($integrated->pluck('stock_quantity'))
+            ->filter(fn (mixed $value): bool => $value !== null)
+            ->map(fn (mixed $value): float => (float) $value);
+        $available = $quantities->sum() > 0
+            || $legacy->contains(fn ($offer): bool => (bool) $offer->in_stock);
+        $stock = $quantities->isNotEmpty()
+            ? 'склад '.number_format($quantities->sum(), 0, ',', ' ').' шт.'
+            : ($available ? 'есть на складе' : 'остаток не указан');
+        $purchasePrices = $legacy->pluck('price_byn')
+            ->merge($integrated->map(fn ($offer) => $offer->normalizedPriceByn()))
+            ->filter(fn (mixed $value): bool => (float) $value > 0)
+            ->map(fn (mixed $value): float => (float) $value);
+        $purchase = $purchasePrices->isNotEmpty()
+            ? 'закупка '.number_format($purchasePrices->min(), 2, ',', ' ').' BYN'
+            : 'закупка не указана';
+
+        return $supplierName.' · '.$stock.' · '.$purchase;
     }
 }

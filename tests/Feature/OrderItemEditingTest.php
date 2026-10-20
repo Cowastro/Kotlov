@@ -5,8 +5,12 @@ namespace Tests\Feature;
 use App\Filament\Resources\Orders\Pages\EditOrder;
 use App\Filament\Resources\Orders\Schemas\OrderForm;
 use App\Models\Category;
+use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -174,6 +178,91 @@ class OrderItemEditingTest extends TestCase
         $this->assertArrayHasKey($product->id, $options);
         $this->assertStringContainsString('розница 1 185,00 BYN', $options[$product->id]);
         $this->assertStringContainsString('В наличии: 3 шт.', $options[$product->id]);
+    }
+
+    public function test_order_product_picker_filters_by_supplier_warehouse_and_category_tree(): void
+    {
+        $root = Category::query()->create([
+            'name' => 'Инженерная сантехника',
+            'slug' => 'engineering-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $tanks = Category::query()->create([
+            'name' => 'Мембранные баки',
+            'slug' => 'supplier-tanks-test',
+            'parent_id' => $root->id,
+            'is_active' => true,
+        ]);
+        $pumps = Category::query()->create([
+            'name' => 'Насосы',
+            'slug' => 'supplier-pumps-test',
+            'parent_id' => $root->id,
+            'is_active' => true,
+        ]);
+        $sanbusiness = Supplier::query()->create([
+            'code' => 'sbg-picker-test',
+            'name' => 'Санбизнесгруп',
+            'currency' => 'BYN',
+            'currency_rate' => 1,
+            'is_active' => true,
+        ]);
+        $otherSupplier = Supplier::query()->create([
+            'code' => 'other-picker-test',
+            'name' => 'Другой поставщик',
+            'currency' => 'BYN',
+            'currency_rate' => 1,
+            'is_active' => true,
+        ]);
+        $tank = $this->product($tanks, 'Бак SBG 200', 'SBG-TANK-200', 420);
+        $pump = $this->product($pumps, 'Насос другого склада', 'OTHER-PUMP', 900);
+
+        $sanbusinessSource = IntegrationSource::query()->create([
+            'supplier_id' => $sanbusiness->id,
+            'code' => 'onec-sbg-picker-test',
+            'name' => '1С Санбизнесгруп',
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $sanbusinessSource->id,
+            'product_id' => $tank->id,
+            'external_id' => 'sbg-picker-tank-200',
+            'external_sku' => 'SBG-200',
+            'name' => $tank->name,
+            'price' => 300,
+            'price_byn' => 300,
+            'stock_quantity' => 7,
+            'match_status' => 'matched',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $otherSupplier->id,
+            'product_id' => $pump->id,
+            'product_sku' => $pump->sku,
+            'supplier_article' => 'OTHER-1',
+            'supplier_name' => $pump->name,
+            'price' => 700,
+            'price_byn' => 700,
+            'currency' => 'BYN',
+            'in_stock' => true,
+            'stock_quantity' => 2,
+            'match_status' => 'matched',
+        ]);
+
+        $suppliers = OrderForm::supplierOptions();
+        $categories = OrderForm::categoryOptions($sanbusiness->id);
+        $options = OrderForm::searchProductOptions('', $sanbusiness->id, $root->id);
+
+        $this->assertSame('Санбизнесгруп', $suppliers[$sanbusiness->id]);
+        $this->assertArrayHasKey($root->id, $categories);
+        $this->assertSame('Инженерная сантехника → Мембранные баки', $categories[$tanks->id]);
+        $this->assertArrayNotHasKey($pumps->id, $categories);
+        $this->assertArrayHasKey($tank->id, $options);
+        $this->assertArrayNotHasKey($pump->id, $options);
+        $this->assertStringContainsString('Санбизнесгруп', $options[$tank->id]);
+        $this->assertStringContainsString('склад 7 шт.', $options[$tank->id]);
+        $this->assertStringContainsString('закупка 300,00 BYN', $options[$tank->id]);
+        $this->assertStringContainsString('розница 420,00 BYN', $options[$tank->id]);
     }
 
     private function product(Category $category, string $name, string $sku, float $price): Product
