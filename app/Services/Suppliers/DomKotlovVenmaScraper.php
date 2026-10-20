@@ -10,10 +10,16 @@ class DomKotlovVenmaScraper
 
     public const CATEGORY_URL = self::BASE_URL.'/katalog/pelletnye-gorelki';
 
+    public const SITEMAP_URL = self::BASE_URL.'/sitemap.xml';
+
     /** @return list<string> */
     public function discoverUrls(): array
     {
-        return $this->parseListingHtml($this->fetch(self::CATEGORY_URL));
+        $urls = $this->parseListingHtml($this->fetch(self::CATEGORY_URL));
+
+        return $urls !== []
+            ? $urls
+            : $this->parseSitemapXml($this->fetch(self::SITEMAP_URL));
     }
 
     /** @return list<string> */
@@ -27,6 +33,20 @@ class DomKotlovVenmaScraper
 
         return collect($matches[1] ?? [])
             ->map(fn (string $url): string => $this->absoluteUrl(html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8')))
+            ->filter(fn (string $url): bool => str_starts_with($url, self::CATEGORY_URL.'/'))
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+    }
+
+    /** @return list<string> */
+    public function parseSitemapXml(string $xml): array
+    {
+        preg_match_all('~<loc>\s*([^<]*pelletnaya-gorelka-venma[^<]*)\s*</loc>~iu', $xml, $matches);
+
+        return collect($matches[1] ?? [])
+            ->map(fn (string $url): string => html_entity_decode(trim($url), ENT_QUOTES | ENT_XML1, 'UTF-8'))
             ->filter(fn (string $url): bool => str_starts_with($url, self::CATEGORY_URL.'/'))
             ->unique()
             ->sort()

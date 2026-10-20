@@ -67,4 +67,22 @@ HTML;
             'https://domkotlov.by/katalog/pelletnye-gorelki/pelletnaya-gorelka-venma-comfort-16',
         ], $urls);
     }
+
+    public function test_sitemap_can_be_used_when_the_category_page_is_regionally_empty(): void
+    {
+        $xml = <<<'XML'
+<urlset>
+  <url><loc>https://domkotlov.by/katalog/pelletnye-gorelki/pelletnaya-gorelka-venma-comfort-16</loc></url>
+  <url><loc>https://domkotlov.by/katalog/pelletnye-gorelki/pelletnaya-gorelka-venma-comfort-r100</loc></url>
+  <url><loc>https://domkotlov.by/katalog/pelletnye-gorelki/zapasnaya-chast-venma</loc></url>
+</urlset>
+XML;
+
+        $urls = (new DomKotlovVenmaScraper())->parseSitemapXml($xml);
+
+        $this->assertSame([
+            'https://domkotlov.by/katalog/pelletnye-gorelki/pelletnaya-gorelka-venma-comfort-16',
+            'https://domkotlov.by/katalog/pelletnye-gorelki/pelletnaya-gorelka-venma-comfort-r100',
+        ], $urls);
+    }
 }
