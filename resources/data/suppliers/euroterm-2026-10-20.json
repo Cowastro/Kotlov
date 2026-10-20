@@ -1,0 +1,3197 @@
+{
+    "source_date": "2026-10-20",
+    "source_sha256": "d549f023b0189bfc45d9567877208b00013ff6dc70fb1c14aa06a4c0d17c8deb",
+    "supplier": {
+        "code": "euroterm",
+        "name": "ООО «Евротерм»",
+        "website": "https://euroterm.by/"
+    },
+    "warehouse": {
+        "name": "Евротерм · Машиностроителей, 9А",
+        "address": "Минск, ул. Машиностроителей, 9А"
+    },
+    "rows": [
+        {
+            "article": "KL04RF",
+            "article_key": "kl04rf",
+            "name": "KL04RF модуль расширительный 4-зонный беспроводной, Китай",
+            "name_key": "kl04rfmoдyльpacшиpиteльhый4зohhыйбecпpoboдhoй",
+            "category_path": [
+                "Автоматика и электроника",
+                "Salus Controls",
+                "Smart Home"
+            ],
+            "section": "Автоматика и электроника",
+            "category": "Salus Controls",
+            "brand": "Salus Controls",
+            "unit": "шт",
+            "wholesale": 100.63,
+            "retail": 128.39,
+            "stock_quantity": 5,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 5",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika.html",
+            "source_row": 10,
+            "source_rows": [
+                10
+            ]
+        },
+        {
+            "article": "SPE868",
+            "article_key": "spe868",
+            "name": "SPE868 умная розетка",
+            "name_key": "spe868ymhaяpoзetka",
+            "category_path": [
+                "Автоматика и электроника",
+                "Salus Controls",
+                "Smart Home"
+            ],
+            "section": "Автоматика и электроника",
+            "category": "Salus Controls",
+            "brand": "Salus Controls",
+            "unit": "шт",
+            "wholesale": 124.92,
+            "retail": 152.68,
+            "stock_quantity": 4,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 4",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika.html",
+            "source_row": 11,
+            "source_rows": [
+                11
+            ]
+        },
+        {
+            "article": "TRV10RFM",
+            "article_key": "trv10rfm",
+            "name": "TRV10RFM беспроводная радиаторная термоголовка, Salus, Китай",
+            "name_key": "trv10rfmбecпpoboдhaяpaдиatophaяtepmoгoлobkasalus",
+            "category_path": [
+                "Автоматика и электроника",
+                "Salus Controls",
+                "Smart Home"
+            ],
+            "section": "Автоматика и электроника",
+            "category": "Salus Controls",
+            "brand": "Salus Controls",
+            "unit": "шт",
+            "wholesale": 176.97,
+            "retail": 222.08,
+            "stock_quantity": 16,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 16",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika.html",
+            "source_row": 12,
+            "source_rows": [
+                12
+            ]
+        },
+        {
+            "article": "WLS600",
+            "article_key": "wls600",
+            "name": "WLS600 датчик протечки, Китай",
+            "name_key": "wls600дatчиkпpoteчkи",
+            "category_path": [
+                "Автоматика и электроника",
+                "Salus Controls",
+                "Smart Home"
+            ],
+            "section": "Автоматика и электроника",
+            "category": "Salus Controls",
+            "brand": "Salus Controls",
+            "unit": "шт",
+            "wholesale": 114.51,
+            "retail": 142.27,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika.html",
+            "source_row": 13,
+            "source_rows": [
+                13
+            ]
+        },
+        {
+            "article": "ZT клапан",
+            "article_key": "ztkлaпah",
+            "name": "ZT клапан термостатический, Польша",
+            "name_key": "ztkлaпahtepmoctatичeckий",
+            "category_path": [
+                "Автоматика и электроника",
+                "Salus Controls",
+                "Другое"
+            ],
+            "section": "Автоматика и электроника",
+            "category": "Salus Controls",
+            "brand": "Salus Controls",
+            "unit": "шт",
+            "wholesale": 10.76,
+            "retail": 13.88,
+            "stock_quantity": 13,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 13",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika.html",
+            "source_row": 16,
+            "source_rows": [
+                16
+            ]
+        },
+        {
+            "article": "ZO клапан",
+            "article_key": "zokлaпah",
+            "name": "ZО клапан регулировочно-блокировочный 1/2",
+            "name_key": "zokлaпahpeгyлиpoboчhoблokиpoboчhый12",
+            "category_path": [
+                "Автоматика и электроника",
+                "Salus Controls",
+                "Другое"
+            ],
+            "section": "Автоматика и электроника",
+            "category": "Salus Controls",
+            "brand": "Salus Controls",
+            "unit": "шт",
+            "wholesale": 7.98,
+            "retail": 10.41,
+            "stock_quantity": 30,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 30",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika.html",
+            "source_row": 17,
+            "source_rows": [
+                17
+            ]
+        },
+        {
+            "article": "30 G",
+            "article_key": "30g",
+            "name": "G30 интернет шлюз (iT600RF серия)",
+            "name_key": "g30иhtephetшлюзit600rfcepия",
+            "category_path": [
+                "Автоматика и электроника",
+                "Salus Controls",
+                "Старые серии"
+            ],
+            "section": "Автоматика и электроника",
+            "category": "Salus Controls",
+            "brand": "Salus Controls",
+            "unit": "шт",
+            "wholesale": 482.33,
+            "retail": 603.78,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika.html",
+            "source_row": 19,
+            "source_rows": [
+                19
+            ]
+        },
+        {
+            "article": "10 KL",
+            "article_key": "10kl",
+            "name": "KL10 центр коммутации 8-зонный проводной 230V (iT600 серия), Польша",
+            "name_key": "kl10цehtpkommytaции8зohhыйпpoboдhoй230vit600cepия",
+            "category_path": [
+                "Автоматика и электроника",
+                "Salus Controls",
+                "Старые серии"
+            ],
+            "section": "Автоматика и электроника",
+            "category": "Salus Controls",
+            "brand": "Salus Controls",
+            "unit": "шт",
+            "wholesale": 451.1,
+            "retail": 555.2,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika.html",
+            "source_row": 20,
+            "source_rows": [
+                20
+            ]
+        },
+        {
+            "article": "KIG-150L",
+            "article_key": "kig150l",
+            "name": "Бойлер косвенного нагрева Navien KIG-150L",
+            "name_key": "бoйлepkocbehhoгohaгpebanavienkig150l",
+            "category_path": [
+                "Водонагреватели",
+                "Косвенного нагрева",
+                "Navien"
+            ],
+            "section": "Водонагреватели",
+            "category": "Косвенного нагрева",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 1717.65,
+            "retail": 2064.65,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/vodonagrevateli/kosvennogo-nagreva.html",
+            "source_row": 24,
+            "source_rows": [
+                24
+            ]
+        },
+        {
+            "article": "KIG-200L",
+            "article_key": "kig200l",
+            "name": "Бойлер косвенного нагрева Navien KIG-200L",
+            "name_key": "бoйлepkocbehhoгohaгpebanavienkig200l",
+            "category_path": [
+                "Водонагреватели",
+                "Косвенного нагрева",
+                "Navien"
+            ],
+            "section": "Водонагреватели",
+            "category": "Косвенного нагрева",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 1905.03,
+            "retail": 2252.03,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/vodonagrevateli/kosvennogo-nagreva.html",
+            "source_row": 25,
+            "source_rows": [
+                25
+            ]
+        },
+        {
+            "article": "Deluxe ONE 24K",
+            "article_key": "deluxeone24k",
+            "name": "NAVIEN Deluxe ONE 24K, Котел газовый настенный одноконтурный",
+            "name_key": "naviendeluxeone24kkoteлгaзobыйhactehhыйoдhokohtyphый",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 1950,
+            "retail": 2300,
+            "stock_quantity": 4,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 4",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 29,
+            "source_rows": [
+                29
+            ]
+        },
+        {
+            "article": "Deluxe ONE 30K",
+            "article_key": "deluxeone30k",
+            "name": "NAVIEN Deluxe ONE 30K, Котел газовый настенный одноконтурный",
+            "name_key": "naviendeluxeone30kkoteлгaзobыйhactehhыйoдhokohtyphый",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 2250,
+            "retail": 2650,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 30,
+            "source_rows": [
+                30
+            ]
+        },
+        {
+            "article": "Deluxe ONE 35K",
+            "article_key": "deluxeone35k",
+            "name": "NAVIEN Deluxe ONE 35K, Котел газовый настенный одноконтурный",
+            "name_key": "naviendeluxeone35kkoteлгaзobыйhactehhыйoдhokohtyphый",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 2300,
+            "retail": 2700,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 31,
+            "source_rows": [
+                31
+            ]
+        },
+        {
+            "article": "Deluxe ONE 40K",
+            "article_key": "deluxeone40k",
+            "name": "NAVIEN Deluxe ONE 40K, Котел газовый настенный одноконтурный",
+            "name_key": "naviendeluxeone40kkoteлгaзobыйhactehhыйoдhokohtyphый",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 2425,
+            "retail": 2800,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 32,
+            "source_rows": [
+                32
+            ]
+        },
+        {
+            "article": "DELUXE S COAXIAL-13K",
+            "article_key": "deluxescoaxial13k",
+            "name": "NAVIEN DELUXE S COAXIAL-13K Котел газовый настенный 2-х контурный, Корея",
+            "name_key": "naviendeluxescoaxial13kkoteлгaзobыйhactehhый2xkohtyphый",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 1840,
+            "retail": 2200,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 33,
+            "source_rows": [
+                33
+            ]
+        },
+        {
+            "article": "35 K S Deluxe",
+            "article_key": "35ksdeluxe",
+            "name": "NAVIEN DELUXE S COAXIAL-35K Котел газовый настенный 2-х контурный, Корея",
+            "name_key": "naviendeluxescoaxial35kkoteлгaзobыйhactehhый2xkohtyphый",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 2315,
+            "retail": 2750,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 34,
+            "source_rows": [
+                34
+            ]
+        },
+        {
+            "article": "NGB210-24K",
+            "article_key": "ngb21024k",
+            "name": "Navien NGB210-24K Котел газовый настенный 2-х контурный",
+            "name_key": "navienngb21024kkoteлгaзobыйhactehhый2xkohtyphый",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 1530,
+            "retail": 1850,
+            "stock_quantity": 10,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 10",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 35,
+            "source_rows": [
+                35
+            ]
+        },
+        {
+            "article": "DELUXE S COAXIAL-40K",
+            "article_key": "deluxescoaxial40k",
+            "name": "Котел газовый настенный 2-х контурный NAVIEN DELUXE S COAXIAL-40K",
+            "name_key": "koteлгaзobыйhactehhый2xkohtyphыйnaviendeluxescoaxial40k",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 2430,
+            "retail": 2899,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 36,
+            "source_rows": [
+                36
+            ]
+        },
+        {
+            "article": "Deluxe S PRO-13K",
+            "article_key": "deluxespro13k",
+            "name": "Котел газовый настенный 2-х контурный NAVIEN DELUXE S PRO-13K",
+            "name_key": "koteлгaзobыйhactehhый2xkohtyphыйnaviendeluxespro13k",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 1840,
+            "retail": 2200,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 37,
+            "source_rows": [
+                37
+            ]
+        },
+        {
+            "article": "DELUXE S PRO-16K",
+            "article_key": "deluxespro16k",
+            "name": "Котел газовый настенный 2-х контурный NAVIEN DELUXE S PRO-16K",
+            "name_key": "koteлгaзobыйhactehhый2xkohtyphыйnaviendeluxespro16k",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 1855,
+            "retail": 2225,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 38,
+            "source_rows": [
+                38
+            ]
+        },
+        {
+            "article": "DELUXE S PRO-24K",
+            "article_key": "deluxespro24k",
+            "name": "Котел газовый настенный 2-х контурный NAVIEN DELUXE S PRO-24K",
+            "name_key": "koteлгaзobыйhactehhый2xkohtyphыйnaviendeluxespro24k",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 1950,
+            "retail": 2299,
+            "stock_quantity": 9,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 9",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 39,
+            "source_rows": [
+                39
+            ]
+        },
+        {
+            "article": "NGB150 - 24A",
+            "article_key": "ngb15024a",
+            "name": "Котел газовый настенный 2-х контурный NAVIEN NGB150 - 24A",
+            "name_key": "koteлгaзobыйhactehhый2xkohtyphыйnavienngb15024a",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 1585,
+            "retail": 1900,
+            "stock_quantity": 5,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 5",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 40,
+            "source_rows": [
+                40
+            ]
+        },
+        {
+            "article": "10015241",
+            "article_key": "10015241",
+            "name": "25 KOO Пантера газовый настенный котел, Proterm /страна происхождения- Словакия/",
+            "name_key": "25kooпahtepaгaзobыйhactehhыйkoteлproterm",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Protherm"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Protherm",
+            "unit": "шт",
+            "wholesale": 3528,
+            "retail": 4234,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 42,
+            "source_rows": [
+                42
+            ]
+        },
+        {
+            "article": "25 KOV",
+            "article_key": "25kov",
+            "name": "25 KOV газовый настенный котел PANTHER",
+            "name_key": "25kovгaзobыйhactehhыйkoteлpanther",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Protherm"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Protherm",
+            "unit": "шт",
+            "wholesale": 3748,
+            "retail": 4496,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 43,
+            "source_rows": [
+                43
+            ]
+        },
+        {
+            "article": "Lynx HK 24 (N-RU)",
+            "article_key": "lynxhk24nru",
+            "name": "Lynx HK 24 (N-RU) Котел газовый настенный двухконтурный",
+            "name_key": "lynxhk24nrukoteлгaзobыйhactehhыйдbyxkohtyphый",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Protherm"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Protherm",
+            "unit": "шт",
+            "wholesale": 2048,
+            "retail": 2459,
+            "stock_quantity": 5,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 5",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 44,
+            "source_rows": [
+                44
+            ]
+        },
+        {
+            "article": "10019349",
+            "article_key": "10019349",
+            "name": "VU 282/5-5 газовый настенный котел, Vaillant, Словакия",
+            "name_key": "vu28255гaзobыйhactehhыйkoteлvaillant",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Vaillant"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Vaillant",
+            "unit": "шт",
+            "wholesale": 4298,
+            "retail": 5159,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 46,
+            "source_rows": [
+                46
+            ]
+        },
+        {
+            "article": "10019343",
+            "article_key": "10019343",
+            "name": "VUW 242/5-3 газовый настенный котел, Vaillant, Словакия",
+            "name_key": "vuw24253гaзobыйhactehhыйkoteлvaillant",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Vaillant"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Vaillant",
+            "unit": "шт",
+            "wholesale": 3629,
+            "retail": 4356,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 47,
+            "source_rows": [
+                47
+            ]
+        },
+        {
+            "article": "10015310",
+            "article_key": "10015310",
+            "name": "VUW 282/5-3 газовый настенный котел, Vaillant, Словакия",
+            "name_key": "vuw28253гaзobыйhactehhыйkoteлvaillant",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "Vaillant"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "Vaillant",
+            "unit": "шт",
+            "wholesale": 4025,
+            "retail": 4831,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 48,
+            "source_rows": [
+                48
+            ]
+        },
+        {
+            "article": "4600012002",
+            "article_key": "4600012002",
+            "name": "VGR turboFLEX VU 25",
+            "name_key": "vgrturboflexvu25",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы газовые",
+                "VGR"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы газовые",
+            "brand": "VGR",
+            "unit": "шт",
+            "wholesale": 1901,
+            "retail": 2470,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/gazovye-kotly.html",
+            "source_row": 50,
+            "source_rows": [
+                50
+            ]
+        },
+        {
+            "article": "Navien EQB 12 HW",
+            "article_key": "navieneqb12hw",
+            "name": "Котел электрический настенный одноконтурный Navien EQB 12 HW, Корея",
+            "name_key": "koteлэлektpичeckийhactehhыйoдhokohtyphыйnavieneqb12hw",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы электрические",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы электрические",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 2035,
+            "retail": 2440,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/elektricheskie-kotly.html",
+            "source_row": 53,
+            "source_rows": [
+                53
+            ]
+        },
+        {
+            "article": "Navien EQB 15 HW",
+            "article_key": "navieneqb15hw",
+            "name": "Котел электрический настенный одноконтурный Navien EQB 15 HW, Корея",
+            "name_key": "koteлэлektpичeckийhactehhыйoдhokohtyphыйnavieneqb15hw",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы электрические",
+                "Navien"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы электрические",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 2135,
+            "retail": 2560,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/elektricheskie-kotly.html",
+            "source_row": 54,
+            "source_rows": [
+                54
+            ]
+        },
+        {
+            "article": "10023648",
+            "article_key": "10023648",
+            "name": "10023648, Электрический котел Скат 12KE 14, Словакия",
+            "name_key": "10023648элektpичeckийkoteлckat12ke14",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы электрические",
+                "Protherm"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы электрические",
+            "brand": "Protherm",
+            "unit": "шт",
+            "wholesale": 2963,
+            "retail": 3557,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/elektricheskie-kotly.html",
+            "source_row": 56,
+            "source_rows": [
+                56
+            ]
+        },
+        {
+            "article": "10023654",
+            "article_key": "10023654",
+            "name": "eloBLOCK VE 6/14 электрический котел",
+            "name_key": "eloblockve614элektpичeckийkoteл",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы электрические",
+                "Vaillant"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы электрические",
+            "brand": "Vaillant",
+            "unit": "шт",
+            "wholesale": 3053,
+            "retail": 3665,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/elektricheskie-kotly.html",
+            "source_row": 58,
+            "source_rows": [
+                58
+            ]
+        },
+        {
+            "article": "4600040004",
+            "article_key": "4600040004",
+            "name": "4600040004 Настенный электрический котел VGR eloLITE pro 12",
+            "name_key": "4600040004hactehhыйэлektpичeckийkoteлvgrelolitepro12",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы электрические",
+                "VGR"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы электрические",
+            "brand": "VGR",
+            "unit": "шт",
+            "wholesale": 1490,
+            "retail": 1937,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/elektricheskie-kotly.html",
+            "source_row": 60,
+            "source_rows": [
+                60
+            ]
+        },
+        {
+            "article": "4600040011",
+            "article_key": "4600040011",
+            "name": "4600040011 Настенный электрический котел VGR eloLITE pro 6 (220/380)",
+            "name_key": "4600040011hactehhыйэлektpичeckийkoteлvgrelolitepro6220380",
+            "category_path": [
+                "Отопительное оборудование",
+                "Котлы электрические",
+                "VGR"
+            ],
+            "section": "Отопительное оборудование",
+            "category": "Котлы электрические",
+            "brand": "VGR",
+            "unit": "шт",
+            "wholesale": 1256,
+            "retail": 1634,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/otopitelnoe-oborudovanie/elektricheskie-kotly.html",
+            "source_row": 61,
+            "source_rows": [
+                61
+            ]
+        },
+        {
+            "article": "HD2000",
+            "article_key": "hd2000",
+            "name": "Датчик загазованности и угарного газа HD2000",
+            "name_key": "дatчиkзaгaзobahhoctииyгaphoгoгaзahd2000",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Детекторы СО и газа"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Детекторы СО и газа",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 62.46,
+            "retail": 79.81,
+            "stock_quantity": 377,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 377",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika/detektory-gaza.html",
+            "source_row": 64,
+            "source_rows": [
+                64
+            ]
+        },
+        {
+            "article": "JKD 808",
+            "article_key": "jkd808",
+            "name": "Детектор газа JKD-808, Китай",
+            "name_key": "дetektopгaзajkd808",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Детекторы СО и газа"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Детекторы СО и газа",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 38.17,
+            "retail": 48.58,
+            "stock_quantity": 858,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 858",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika/detektory-gaza.html",
+            "source_row": 65,
+            "source_rows": [
+                65
+            ]
+        },
+        {
+            "article": "JKD-601",
+            "article_key": "jkd601",
+            "name": "Детектор угарного газа JKD-601, Китай",
+            "name_key": "дetektopyгaphoгoгaзajkd601",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Детекторы СО и газа"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Детекторы СО и газа",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 27.76,
+            "retail": 38.17,
+            "stock_quantity": 89,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 89",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika/detektory-gaza.html",
+            "source_row": 66,
+            "source_rows": [
+                66
+            ]
+        },
+        {
+            "article": "XF 20102-11",
+            "article_key": "xf2010211",
+            "name": "XF 20102 коллектор латунный 1\"(11way), Китай",
+            "name_key": "xf20102koллektopлatyhhый111way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 156.15,
+            "retail": 239.43,
+            "stock_quantity": 10,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 10",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 68,
+            "source_rows": [
+                68
+            ]
+        },
+        {
+            "article": "XF 20102-12",
+            "article_key": "xf2010212",
+            "name": "XF 20102 коллектор латунный 1\"(12way), Китай",
+            "name_key": "xf20102koллektopлatyhhый112way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 170.03,
+            "retail": 260.25,
+            "stock_quantity": 11,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 11",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 69,
+            "source_rows": [
+                69
+            ]
+        },
+        {
+            "article": "XF 20102-6",
+            "article_key": "xf201026",
+            "name": "XF 20102 коллектор латунный 1\"(6way), Китай",
+            "name_key": "xf20102koллektopлatyhhый16way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 107.57,
+            "retail": 166.56,
+            "stock_quantity": 39,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 39",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 70,
+            "source_rows": [
+                70
+            ]
+        },
+        {
+            "article": "XF 20135-11",
+            "article_key": "xf2013511",
+            "name": "XF 20135 коллектор латунный 1\"(11way), Китай",
+            "name_key": "xf20135koллektopлatyhhый111way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 159.62,
+            "retail": 246.37,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 71,
+            "source_rows": [
+                71
+            ]
+        },
+        {
+            "article": "20153 XF 1 11way",
+            "article_key": "20153xf111way",
+            "name": "XF 20153 коллектор латунный 1\"(11way), Китай",
+            "name_key": "xf20153koллektopлatyhhый111way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 159.62,
+            "retail": 246.37,
+            "stock_quantity": 4,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 4",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 72,
+            "source_rows": [
+                72
+            ]
+        },
+        {
+            "article": "XF20137B 1\"(11way)",
+            "article_key": "xf20137b111way",
+            "name": "XF20137B коллектор латунный 1\"(11way), Китай",
+            "name_key": "xf20137bkoллektopлatyhhый111way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 235.96,
+            "retail": 378.23,
+            "stock_quantity": 5,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 5",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 73,
+            "source_rows": [
+                73
+            ]
+        },
+        {
+            "article": "XF20137B (3way)",
+            "article_key": "xf20137b3way",
+            "name": "XF20137B коллектор латунный 1\"(3way), Китай",
+            "name_key": "xf20137bkoллektopлatyhhый13way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 120.76,
+            "retail": 173.5,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 74,
+            "source_rows": [
+                74
+            ]
+        },
+        {
+            "article": "XF20137B 1\"(4way)",
+            "article_key": "xf20137b14way",
+            "name": "XF20137B коллектор латунный 1\"(4way), Китай",
+            "name_key": "xf20137bkoллektopлatyhhый14way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 124.23,
+            "retail": 199.53,
+            "stock_quantity": 33,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 33",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 75,
+            "source_rows": [
+                75
+            ]
+        },
+        {
+            "article": "XF20137B 1\"(5way)",
+            "article_key": "xf20137b15way",
+            "name": "XF20137B коллектор латунный 1\"(5way), Китай",
+            "name_key": "xf20137bkoллektopлatyhhый15way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 141.23,
+            "retail": 225.55,
+            "stock_quantity": 37,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 37",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 76,
+            "source_rows": [
+                76
+            ]
+        },
+        {
+            "article": "XF20137B 1\"(6way)",
+            "article_key": "xf20137b16way",
+            "name": "XF20137B коллектор латунный 1\"(6way), Китай",
+            "name_key": "xf20137bkoллektopлatyhhый16way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 156.15,
+            "retail": 249.84,
+            "stock_quantity": 33,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 33",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 77,
+            "source_rows": [
+                77
+            ]
+        },
+        {
+            "article": "XF20137B 1\"(7way)",
+            "article_key": "xf20137b17way",
+            "name": "XF20137B коллектор латунный 1\"(7way), Китай",
+            "name_key": "xf20137bkoллektopлatyhhый17way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 171.77,
+            "retail": 275.87,
+            "stock_quantity": 16,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 16",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 78,
+            "source_rows": [
+                78
+            ]
+        },
+        {
+            "article": "XF20137B 1\"(9way)",
+            "article_key": "xf20137b19way",
+            "name": "XF20137B коллектор латунный 1\"(9way), Китай",
+            "name_key": "xf20137bkoллektopлatyhhый19way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 203,
+            "retail": 327.92,
+            "stock_quantity": 5,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 5",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 79,
+            "source_rows": [
+                79
+            ]
+        },
+        {
+            "article": "XF20162B 1\"(10way)",
+            "article_key": "xf20162b110way",
+            "name": "XF20162B коллектор латунный 1\"(10way), Китай",
+            "name_key": "xf20162bkoллektopлatyhhый110way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 208.2,
+            "retail": 334.86,
+            "stock_quantity": 8,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 8",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 80,
+            "source_rows": [
+                80
+            ]
+        },
+        {
+            "article": "XF20162B 1\"(12way)",
+            "article_key": "xf20162b112way",
+            "name": "XF20162B коллектор латунный 1\"(12way), Китай",
+            "name_key": "xf20162bkoллektopлatyhhый112way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 237.7,
+            "retail": 381.7,
+            "stock_quantity": 4,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 4",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 81,
+            "source_rows": [
+                81
+            ]
+        },
+        {
+            "article": "XF20162B 1\"(4way)",
+            "article_key": "xf20162b14way",
+            "name": "XF20162B коллектор латунный 1\"(4way), Китай",
+            "name_key": "xf20162bkoллektopлatyhhый14way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 117.98,
+            "retail": 190.85,
+            "stock_quantity": 7,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 7",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 82,
+            "source_rows": [
+                82
+            ]
+        },
+        {
+            "article": "XF20162B 1\"(6way)",
+            "article_key": "xf20162b16way",
+            "name": "XF20162B коллектор латунный 1\"(6way), Китай",
+            "name_key": "xf20162bkoллektopлatyhhый16way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 148.52,
+            "retail": 237.7,
+            "stock_quantity": 3,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 3",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 83,
+            "source_rows": [
+                83
+            ]
+        },
+        {
+            "article": "XF20162B 1\"(7way)",
+            "article_key": "xf20162b17way",
+            "name": "XF20162B коллектор латунный 1\"(7way), Китай",
+            "name_key": "xf20162bkoллektopлatyhhый17way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 163.09,
+            "retail": 261.99,
+            "stock_quantity": 4,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 4",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 84,
+            "source_rows": [
+                84
+            ]
+        },
+        {
+            "article": "XF20162B 1\"(9way)",
+            "article_key": "xf20162b19way",
+            "name": "XF20162B коллектор латунный 1\"(9way), Китай",
+            "name_key": "xf20162bkoллektopлatyhhый19way",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Распределительные коллекторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Распределительные коллекторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 192.59,
+            "retail": 310.57,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/",
+            "source_row": 85,
+            "source_rows": [
+                85
+            ]
+        },
+        {
+            "article": "A60-60",
+            "article_key": "a6060",
+            "name": "A60-60 Адаптер конденсационный PROFLine D 60 (M/M)",
+            "name_key": "a6060aдaпtepkohдehcaциohhыйproflined60mm",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 18.95,
+            "retail": 27.48,
+            "stock_quantity": 3,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 3",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 87,
+            "source_rows": [
+                87
+            ]
+        },
+        {
+            "article": "A60-80",
+            "article_key": "a6080",
+            "name": "A60-80 Переход с Ø60/100 на Ø80/125 конденсационный",
+            "name_key": "a6080пepexoдcø60100haø80125kohдehcaциohhый",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 65.44,
+            "retail": 94.87,
+            "stock_quantity": 7,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 7",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 88,
+            "source_rows": [
+                88
+            ]
+        },
+        {
+            "article": "A80-80",
+            "article_key": "a8080",
+            "name": "A80-80 Адаптер конденсационный PROFLine D 80 (M/M)",
+            "name_key": "a8080aдaпtepkohдehcaциohhыйproflined80mm",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 28.11,
+            "retail": 36.44,
+            "stock_quantity": 5,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 5",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 89,
+            "source_rows": [
+                89
+            ]
+        },
+        {
+            "article": "AMM-60",
+            "article_key": "amm60",
+            "name": "AMM-60 Адаптер соединительный Д.60",
+            "name_key": "amm60aдaпtepcoeдиhиteльhыйд60",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 9.02,
+            "retail": 11.28,
+            "stock_quantity": 25,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 25",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 90,
+            "source_rows": [
+                90
+            ]
+        },
+        {
+            "article": "AMM-80",
+            "article_key": "amm80",
+            "name": "AMM-80 Адаптер соединительный D80 м/м PROFLine",
+            "name_key": "amm80aдaпtepcoeдиhиteльhыйd80mmprofline",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 12.67,
+            "retail": 16.31,
+            "stock_quantity": 6,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 6",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 91,
+            "source_rows": [
+                91
+            ]
+        },
+        {
+            "article": "AMP60-80",
+            "article_key": "amp6080",
+            "name": "AMP60-80 Адаптер соединительный с Д60 на Д80",
+            "name_key": "amp6080aдaпtepcoeдиhиteльhыйcд60haд80",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 16.66,
+            "retail": 22.56,
+            "stock_quantity": 6,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 6",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 92,
+            "source_rows": [
+                92
+            ]
+        },
+        {
+            "article": "AN-1",
+            "article_key": "an1",
+            "name": "AN-1 Адаптер PROFLine 60/75 M/F",
+            "name_key": "an1aдaпtepprofline6075mf",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 5.9,
+            "retail": 8.5,
+            "stock_quantity": 5,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 5",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 93,
+            "source_rows": [
+                93
+            ]
+        },
+        {
+            "article": "AR80-01NT-02T",
+            "article_key": "ar8001nt02t",
+            "name": "AR80-01NT-02T Комплект адаптеров D80 для перехода на раздельную систему",
+            "name_key": "ar8001nt02tkomплektaдaпtepobd80дляпepexoдahapaздeльhyюcиctemy",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 48.58,
+            "retail": 62.46,
+            "stock_quantity": 4,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 4",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 94,
+            "source_rows": [
+                94
+            ]
+        },
+        {
+            "article": "CK-80-LN",
+            "article_key": "ck80ln",
+            "name": "CK-80-LN Комплект для конденсационных котлов 80/125 PROFLine",
+            "name_key": "ck80lnkomплektдляkohдehcaциohhыxkotлob80125profline",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 197.79,
+            "retail": 249.84,
+            "stock_quantity": 4,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 4",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 95,
+            "source_rows": [
+                95
+            ]
+        },
+        {
+            "article": "CK-LNT",
+            "article_key": "cklnt",
+            "name": "CK-LNT Комплект универсальный для конденс. котлов 60/100",
+            "name_key": "cklntkomплektyhиbepcaльhыйдляkohдehckotлob60100",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 107.57,
+            "retail": 135.33,
+            "stock_quantity": 5,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 5",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 96,
+            "source_rows": [
+                96
+            ]
+        },
+        {
+            "article": "CT-80-T",
+            "article_key": "ct80t",
+            "name": "CT-80-T Конденсатоотводчик универсальный D80",
+            "name_key": "ct80tkohдehcatootboдчиkyhиbepcaльhыйd80",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 47.54,
+            "retail": 58.99,
+            "stock_quantity": 6,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 6",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 97,
+            "source_rows": [
+                97
+            ]
+        },
+        {
+            "article": "CT60100",
+            "article_key": "ct60100",
+            "name": "CT60100 Конденсатоотводчик универсальный 60/100",
+            "name_key": "ct60100kohдehcatootboдчиkyhиbepcaльhый60100",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 115.03,
+            "retail": 166.77,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 98,
+            "source_rows": [
+                98
+            ]
+        },
+        {
+            "article": "CW-45-01",
+            "article_key": "cw4501",
+            "name": "CW-45-01 Отвод коаксикальный 60/100 угол 45 FM (для CK-I, CK-BV)",
+            "name_key": "cw4501otboдkoakcиkaльhый60100yгoл45fmдляckickbv",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 38.17,
+            "retail": 47.71,
+            "stock_quantity": 10,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 10",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 99,
+            "source_rows": [
+                99
+            ]
+        },
+        {
+            "article": "CW-90-05",
+            "article_key": "cw9005",
+            "name": "CW-90-05 Отвод коаксикальный 60/100 промежуточный 90 град. M/F",
+            "name_key": "cw9005otboдkoakcиkaльhый60100пpomeжytoчhый90гpaдmf",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 41.64,
+            "retail": 52.05,
+            "stock_quantity": 11,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 11",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 100,
+            "source_rows": [
+                100
+            ]
+        },
+        {
+            "article": "CY-025",
+            "article_key": "cy025",
+            "name": "CY-025 Удлинение конденсац. 60/100 длина 250 мм",
+            "name_key": "cy025yдлиhehиekohдehcaц60100длиha250mm",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 41.64,
+            "retail": 52.05,
+            "stock_quantity": 3,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 3",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 101,
+            "source_rows": [
+                101
+            ]
+        },
+        {
+            "article": "CY80-15",
+            "article_key": "cy8015",
+            "name": "CY80-15 Удлинение конденсац. 80 длина 1500 мм",
+            "name_key": "cy8015yдлиhehиekohдehcaц80длиha1500mm",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 90.22,
+            "retail": 121.45,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 102,
+            "source_rows": [
+                102
+            ]
+        },
+        {
+            "article": "F-01-02",
+            "article_key": "f0102",
+            "name": "F-01-02 Прокладка фланца D100",
+            "name_key": "f0102пpokлaдkaфлahцad100",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 2.5,
+            "retail": 3.61,
+            "stock_quantity": 5,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 5",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 103,
+            "source_rows": [
+                103
+            ]
+        },
+        {
+            "article": "F-02",
+            "article_key": "f02",
+            "name": "F-02 Фланец пластиковый (комплект) Д.100, РФ",
+            "name_key": "f02флaheцплactиkobыйkomплektд100",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 7.29,
+            "retail": 10.06,
+            "stock_quantity": 17,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 17",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 104,
+            "source_rows": [
+                104
+            ]
+        },
+        {
+            "article": "H-01",
+            "article_key": "h01",
+            "name": "H-01 Хомут комплект D100 (резиновый хомут, хомут стальн.гнутый, саморезы острые 2 шт), РФ",
+            "name_key": "h01xomytkomплektd100peзиhobыйxomytxomytctaльhгhytыйcamopeзыoctpыe2шt",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 5.21,
+            "retail": 6.94,
+            "stock_quantity": 30,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 30",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 105,
+            "source_rows": [
+                105
+            ]
+        },
+        {
+            "article": "H-1",
+            "article_key": "h1",
+            "name": "H-1 Хомут PROFLine стальной",
+            "name_key": "h1xomytproflinectaльhoй",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 13.88,
+            "retail": 20.13,
+            "stock_quantity": 39,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 39",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 106,
+            "source_rows": [
+                106
+            ]
+        },
+        {
+            "article": "K-01В",
+            "article_key": "k01b",
+            "name": "K-01В Отвод котловой коаксиальный 60/100 угол 90(Baxi,Ariston,Vaillant,Viessmann,Beretta) (30 шт/уп)",
+            "name_key": "k01botboдkotлoboйkoakcиaльhый60100yгoл90baxiaristonvaillantviessmannberetta30шtyп",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "Vaillant",
+            "unit": "шт",
+            "wholesale": 43.72,
+            "retail": 63.5,
+            "stock_quantity": 3,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 3",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 107,
+            "source_rows": [
+                107
+            ]
+        },
+        {
+            "article": "K-02N",
+            "article_key": "k02n",
+            "name": "K-02N Отвод котловой коаксиальный 60/100 угол 90 (Navien,Bosch,Buderus) KRATS (30 шт/уп), РФ",
+            "name_key": "k02notboдkotлoboйkoakcиaльhый60100yгoл90navienboschbuderuskrats30шtyп",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "Navien",
+            "unit": "шт",
+            "wholesale": 47.54,
+            "retail": 69.05,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 108,
+            "source_rows": [
+                108
+            ]
+        },
+        {
+            "article": "KO-80",
+            "article_key": "ko80",
+            "name": "KO-80 Конденсатоотводчик",
+            "name_key": "ko80kohдehcatootboдчиk",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 47.54,
+            "retail": 58.99,
+            "stock_quantity": 5,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 5",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 109,
+            "source_rows": [
+                109
+            ]
+        },
+        {
+            "article": "KOT-60100",
+            "article_key": "kot60100",
+            "name": "KOT-60100 Конденсатоотводчик традиц. 60ППМ/100ППМ Т-образный",
+            "name_key": "kot60100kohдehcatootboдчиktpaдиц60ппm100ппmtoбpaзhый",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 152.68,
+            "retail": 190.85,
+            "stock_quantity": 20,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 20",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 110,
+            "source_rows": [
+                110
+            ]
+        },
+        {
+            "article": "KOT-80",
+            "article_key": "kot80",
+            "name": "KOT-80 Конденсатосборник 80 Т-образный",
+            "name_key": "kot80kohдehcatocбophиk80toбpaзhый",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 58.99,
+            "retail": 74.61,
+            "stock_quantity": 20,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 20",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 111,
+            "source_rows": [
+                111
+            ]
+        },
+        {
+            "article": "KS-100",
+            "article_key": "ks100",
+            "name": "KS-100 Крепление к стене D100 белое",
+            "name_key": "ks100kpeплehиekctehed100бeлoe",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 9.02,
+            "retail": 13.19,
+            "stock_quantity": 14,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 14",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 112,
+            "source_rows": [
+                112
+            ]
+        },
+        {
+            "article": "KTL-01B-075-S",
+            "article_key": "ktl01b075s",
+            "name": "KTL-01B-075-S Комплект дымохода традиц. 60/100 антилед",
+            "name_key": "ktl01b075skomплektдыmoxoдatpaдиц60100ahtилeд",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 75.65,
+            "retail": 102.02,
+            "stock_quantity": 27,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 27",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 113,
+            "source_rows": [
+                113
+            ]
+        },
+        {
+            "article": "KTL-02F-075-S",
+            "article_key": "ktl02f075s",
+            "name": "KTL-02F-075-S Комплект дымохода традиц. 60/100 антилед",
+            "name_key": "ktl02f075skomплektдыmoxoдatpaдиц60100ahtилeд",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 75.65,
+            "retail": 102.02,
+            "stock_quantity": 95,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 95",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 114,
+            "source_rows": [
+                114
+            ]
+        },
+        {
+            "article": "KTS-01P-075",
+            "article_key": "kts01p075",
+            "name": "KTS-01P-075 Комплект дымохода стандарт 60/100 - 900мм",
+            "name_key": "kts01p075komплektдыmoxoдactahдapt60100900mm",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 76.34,
+            "retail": 110.69,
+            "stock_quantity": 20,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 20",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 115,
+            "source_rows": [
+                115
+            ]
+        },
+        {
+            "article": "ND-100",
+            "article_key": "nd100",
+            "name": "ND-100 Накладка декоративная D100",
+            "name_key": "nd100hakлaдkaдekopatиbhaяd100",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 3.82,
+            "retail": 4.86,
+            "stock_quantity": 22,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 22",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 116,
+            "source_rows": [
+                116
+            ]
+        },
+        {
+            "article": "ND-80",
+            "article_key": "nd80",
+            "name": "ND-80 Накладка декоративная D80",
+            "name_key": "nd80hakлaдkaдekopatиbhaяd80",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 3.78,
+            "retail": 4.79,
+            "stock_quantity": 31,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 31",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 117,
+            "source_rows": [
+                117
+            ]
+        },
+        {
+            "article": "OR-100",
+            "article_key": "or100",
+            "name": "OR-100 Уплотнение силиконовое D100",
+            "name_key": "or100yплothehиecилиkohoboed100",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 8.68,
+            "retail": 12.15,
+            "stock_quantity": 37,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 37",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 118,
+            "source_rows": [
+                118
+            ]
+        },
+        {
+            "article": "OR-60",
+            "article_key": "or60",
+            "name": "OR-60 Уплотнение силиконовое D60",
+            "name_key": "or60yплothehиecилиkohoboed60",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 3.47,
+            "retail": 4.34,
+            "stock_quantity": 34,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 34",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 119,
+            "source_rows": [
+                119
+            ]
+        },
+        {
+            "article": "OR-80",
+            "article_key": "or80",
+            "name": "OR-80 Уплотнение силиконовое D80",
+            "name_key": "or80yплothehиecилиkohoboed80",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 6.25,
+            "retail": 10.41,
+            "stock_quantity": 21,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 21",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 120,
+            "source_rows": [
+                120
+            ]
+        },
+        {
+            "article": "PK-90-05L",
+            "article_key": "pk9005l",
+            "name": "PK-90-05L Отвод промежуточный угол 90 гр. 60/100 полнонаправленный",
+            "name_key": "pk9005lotboдпpomeжytoчhыйyгoл90гp60100пoлhohaпpabлehhый",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 36.44,
+            "retail": 45.11,
+            "stock_quantity": 7,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 7",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 121,
+            "source_rows": [
+                121
+            ]
+        },
+        {
+            "article": "PK80-90",
+            "article_key": "pk8090",
+            "name": "PK80-90 Отвод D 80 угол 90 M/F (W80-90), РФ",
+            "name_key": "pk8090otboдd80yгoл90mfw8090",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 36.44,
+            "retail": 52.05,
+            "stock_quantity": 29,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 29",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 122,
+            "source_rows": [
+                122
+            ]
+        },
+        {
+            "article": "PP60-80",
+            "article_key": "pp6080",
+            "name": "PP60-80 Адаптер конденсационный с D60 на D80",
+            "name_key": "pp6080aдaпtepkohдehcaциohhыйcd60had80",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 32.97,
+            "retail": 41.64,
+            "stock_quantity": 10,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 10",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 123,
+            "source_rows": [
+                123
+            ]
+        },
+        {
+            "article": "TELBMF80.90",
+            "article_key": "telbmf8090",
+            "name": "TELBMF80.90 Отвод D80 угол 90гр. M/F (мама/папа), РФ",
+            "name_key": "telbmf8090otboдd80yгoл90гpmfmamaпaпa",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 37.61,
+            "retail": 54.51,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 124,
+            "source_rows": [
+                124
+            ]
+        },
+        {
+            "article": "TK-075",
+            "article_key": "tk075",
+            "name": "TK-075 Труба 60/100 конденсац.для прохода через стену с наконечником L 750 мм M, РФ",
+            "name_key": "tk075tpyбa60100kohдehcaцдляпpoxoдaчepeзctehychakoheчhиkoml750mmm",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 58.23,
+            "retail": 84.46,
+            "stock_quantity": 29,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 29",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 125,
+            "source_rows": [
+                125
+            ]
+        },
+        {
+            "article": "TS-075 MST",
+            "article_key": "ts075mst",
+            "name": "TS-075 M/ST Труба коаксикальная раструбн. 60/100 L 750 состанд. наконечником (15 шт/уп)",
+            "name_key": "ts075msttpyбakoakcиkaльhaяpactpyбh60100l750coctahдhakoheчhиkom15шtyп",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 34.01,
+            "retail": 48.93,
+            "stock_quantity": 8,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 8",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 126,
+            "source_rows": [
+                126,
+                127
+            ]
+        },
+        {
+            "article": "TT6060",
+            "article_key": "tt6060",
+            "name": "TT6060 Конденсатосборник Т-образный D 60/100",
+            "name_key": "tt6060kohдehcatocбophиktoбpaзhыйd60100",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 152.68,
+            "retail": 190.85,
+            "stock_quantity": 7,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 7",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 128,
+            "source_rows": [
+                128
+            ]
+        },
+        {
+            "article": "UK-90",
+            "article_key": "uk90",
+            "name": "UK-90 Отвод конденсационный 60/100 угол 90 FM (CW-90-LN), РФ",
+            "name_key": "uk90otboдkohдehcaциohhый60100yгoл90fmcw90ln",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 44.42,
+            "retail": 55.52,
+            "stock_quantity": 6,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 6",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 129,
+            "source_rows": [
+                129
+            ]
+        },
+        {
+            "article": "V-60",
+            "article_key": "v60",
+            "name": "V-60 Втулка Д.60 L-50, РФ",
+            "name_key": "v60btyлkaд60l50",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 3.99,
+            "retail": 5.03,
+            "stock_quantity": 60,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 60",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 130,
+            "source_rows": [
+                130
+            ]
+        },
+        {
+            "article": "VA-02N",
+            "article_key": "va02n",
+            "name": "VA-02N Адаптер верт. 60/100 в компл адаптер 6-/75 и фланец",
+            "name_key": "va02naдaпtepbept60100bkomплaдaпtep675ифлaheц",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 32.62,
+            "retail": 41.64,
+            "stock_quantity": 3,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 3",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 131,
+            "source_rows": [
+                131
+            ]
+        },
+        {
+            "article": "VA80-80B-1",
+            "article_key": "va8080b1",
+            "name": "VA80-80B-1 Адаптер моноблочный универсальный 80/80 для перехода на двухтрубную систему",
+            "name_key": "va8080b1aдaпtepmohoблoчhыйyhиbepcaльhый8080дляпepexoдahaдbyxtpyбhyюcиctemy",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 65.93,
+            "retail": 82.41,
+            "stock_quantity": 21,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 21",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 132,
+            "source_rows": [
+                132
+            ]
+        },
+        {
+            "article": "VA80-80LN (80/125)",
+            "article_key": "va8080ln80125",
+            "name": "VA80-80LN (80/125) Адаптер-переход с D80/125 на D80/80 конденсационный",
+            "name_key": "va8080ln80125aдaпtepпepexoдcd80125had8080kohдehcaциohhый",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 173.5,
+            "retail": 216.88,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 133,
+            "source_rows": [
+                133
+            ]
+        },
+        {
+            "article": "VA80-80LN",
+            "article_key": "va8080ln",
+            "name": "VA80-80LN Адаптер моноблочный переход с 60/100 на 80/80 конденсационный",
+            "name_key": "va8080lnaдaпtepmohoблoчhыйпepexoдc60100ha8080kohдehcaциohhый",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 242.9,
+            "retail": 303.63,
+            "stock_quantity": 6,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 6",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 134,
+            "source_rows": [
+                134
+            ]
+        },
+        {
+            "article": "W80-45LN",
+            "article_key": "w8045ln",
+            "name": "W80-45LN Отвод конденсационный угол 45 гр. Ø80 PROFLine",
+            "name_key": "w8045lnotboдkohдehcaциohhыйyгoл45гpø80profline",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 26.37,
+            "retail": 38.17,
+            "stock_quantity": 59,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 59",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 135,
+            "source_rows": [
+                135
+            ]
+        },
+        {
+            "article": "W80-90LN",
+            "article_key": "w8090ln",
+            "name": "W80-90LN Отвод конденсационный угол 90 гр. Ø80 PROFLine",
+            "name_key": "w8090lnotboдkohдehcaциohhыйyгoл90гpø80profline",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 29.5,
+            "retail": 38.17,
+            "stock_quantity": 21,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 21",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 136,
+            "source_rows": [
+                136
+            ]
+        },
+        {
+            "article": "Y-025M",
+            "article_key": "y025m",
+            "name": "Y-025M Удлинитель дымохода коаксикальный раструб 60/100 L 250",
+            "name_key": "y025myдлиhиteльдыmoxoдakoakcиkaльhыйpactpyб60100l250",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 19.43,
+            "retail": 26.03,
+            "stock_quantity": 18,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 18",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 137,
+            "source_rows": [
+                137
+            ]
+        },
+        {
+            "article": "Y-05M",
+            "article_key": "y05m",
+            "name": "Y-05M Удлинитель дымохода коаксикальный раструб 60/100 L 500",
+            "name_key": "y05myдлиhиteльдыmoxoдakoakcиkaльhыйpactpyб60100l500",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 27.76,
+            "retail": 34.7,
+            "stock_quantity": 9,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 9",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 138,
+            "source_rows": [
+                138
+            ]
+        },
+        {
+            "article": "Y-1M",
+            "article_key": "y1m",
+            "name": "Y-1 M Удлинитель дымохода коаксикальный раструб 60/100 L 1000",
+            "name_key": "y1myдлиhиteльдыmoxoдakoakcиkaльhыйpactpyб60100l1000",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 45.11,
+            "retail": 56.39,
+            "stock_quantity": 25,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 25",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 139,
+            "source_rows": [
+                139
+            ]
+        },
+        {
+            "article": "Y-2M/AL",
+            "article_key": "y2mal",
+            "name": "Y-2M/AL Удлинитель дымохода коакс. раструбн. 60/100 L 2000, РФ",
+            "name_key": "y2malyдлиhиteльдыmoxoдakoakcpactpyбh60100l2000",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 149.21,
+            "retail": 208.2,
+            "stock_quantity": 10,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 10",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 140,
+            "source_rows": [
+                140
+            ]
+        },
+        {
+            "article": "Y80-025",
+            "article_key": "y80025",
+            "name": "Y80-025 Удлинитель D80 L 250",
+            "name_key": "y80025yдлиhиteльd80l250",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 12.15,
+            "retail": 15.62,
+            "stock_quantity": 23,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 23",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 141,
+            "source_rows": [
+                141
+            ]
+        },
+        {
+            "article": "Y80-05",
+            "article_key": "y8005",
+            "name": "Y80-05 Удлинитель D 80 L 500 мм",
+            "name_key": "y8005yдлиhиteльd80l500mm",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 19.09,
+            "retail": 24.29,
+            "stock_quantity": 46,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 46",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 142,
+            "source_rows": [
+                142
+            ]
+        },
+        {
+            "article": "Y80-1",
+            "article_key": "y801",
+            "name": "Y80-1 Удлинитель D 80 L 1000 мм",
+            "name_key": "y801yдлиhиteльd80l1000mm",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 29.5,
+            "retail": 38.17,
+            "stock_quantity": 17,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 17",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 143,
+            "source_rows": [
+                143
+            ]
+        },
+        {
+            "article": "YK-025T",
+            "article_key": "yk025t",
+            "name": "YK-025T Удлинитель 250мм конденсационный 60/100",
+            "name_key": "yk025tyдлиhиteль250mmkohдehcaциohhый60100",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 41.64,
+            "retail": 52.05,
+            "stock_quantity": 2,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 2",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 144,
+            "source_rows": [
+                144
+            ]
+        },
+        {
+            "article": "YK-05T",
+            "article_key": "yk05t",
+            "name": "YK-05T Удлинитель 500 мм конденсационный 60/100",
+            "name_key": "yk05tyдлиhиteль500mmkohдehcaциohhый60100",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 62.46,
+            "retail": 78.08,
+            "stock_quantity": 14,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 14",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 145,
+            "source_rows": [
+                145
+            ]
+        },
+        {
+            "article": "YK80-01",
+            "article_key": "yk8001",
+            "name": "YK80-01 Удлинитель конденсационный д.80 L 1000",
+            "name_key": "yk8001yдлиhиteльkohдehcaциohhыйд80l1000",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 62.46,
+            "retail": 79.81,
+            "stock_quantity": 22,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 22",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 146,
+            "source_rows": [
+                146
+            ]
+        },
+        {
+            "article": "YK80-05",
+            "article_key": "yk8005",
+            "name": "YK80-05 Удлинитель конденсационный d80 L=500",
+            "name_key": "yk8005yдлиhиteльkohдehcaциohhыйd80l500",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 38.17,
+            "retail": 52.05,
+            "stock_quantity": 17,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 17",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 147,
+            "source_rows": [
+                147
+            ]
+        },
+        {
+            "article": "YK80-15",
+            "article_key": "yk8015",
+            "name": "YK80-15 Удлинитель конденсационный d80 L=1500",
+            "name_key": "yk8015yдлиhиteльkohдehcaциohhыйd80l1500",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Системы дымоудаления"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Системы дымоудаления",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 90.22,
+            "retail": 121.45,
+            "stock_quantity": 1,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 1",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/aksessuary/dymokhody.html",
+            "source_row": 148,
+            "source_rows": [
+                148
+            ]
+        },
+        {
+            "article": "V500R",
+            "article_key": "v500r",
+            "name": "Profline V500R (настенный) автоматич. стаб.(белый), Китай",
+            "name_key": "proflinev500rhactehhыйabtomatичctaббeлый",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Стабилизаторы напряжение"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Стабилизаторы напряжение",
+            "brand": "Profline",
+            "unit": "шт",
+            "wholesale": 109.31,
+            "retail": 135.33,
+            "stock_quantity": 625,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 625",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika/stabilizatory-napryazheniya.html",
+            "source_row": 150,
+            "source_rows": [
+                150
+            ]
+        },
+        {
+            "article": "09RF",
+            "article_key": "09rf",
+            "name": "09RF комнатный термостат",
+            "name_key": "09rfkomhathыйtepmoctat",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Терморегуляторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Терморегуляторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 163.09,
+            "retail": 235.96,
+            "stock_quantity": 117,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 117",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika/termoregulyatory.html",
+            "source_row": 152,
+            "source_rows": [
+                152
+            ]
+        },
+        {
+            "article": "HY4005 (T001)",
+            "article_key": "hy4005t001",
+            "name": "HY4005 (T001) Комнатный термостат",
+            "name_key": "hy4005t001komhathыйtepmoctat",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Терморегуляторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Терморегуляторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 48.58,
+            "retail": 69.4,
+            "stock_quantity": 7,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 7",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika/termoregulyatory.html",
+            "source_row": 153,
+            "source_rows": [
+                153
+            ]
+        },
+        {
+            "article": "i09RF",
+            "article_key": "i09rf",
+            "name": "i09RF комнатный термостат",
+            "name_key": "i09rfkomhathыйtepmoctat",
+            "category_path": [
+                "СТМ (ProfLine)",
+                "Терморегуляторы"
+            ],
+            "section": "СТМ (ProfLine)",
+            "category": "Терморегуляторы",
+            "brand": "PROFLine",
+            "unit": "шт",
+            "wholesale": 218.61,
+            "retail": 312.3,
+            "stock_quantity": 104,
+            "in_stock": true,
+            "stock_status": "in_stock",
+            "stock_text": "В наличии: 104",
+            "warehouse_name": "Евротерм · Машиностроителей, 9А",
+            "source_url": "https://euroterm.by/avtomatika-i-elektronika/termoregulyatory.html",
+            "source_row": 154,
+            "source_rows": [
+                154
+            ]
+        }
+    ]
+}
