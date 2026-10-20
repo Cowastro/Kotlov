@@ -16,6 +16,8 @@ class SyncEcokaminStovesCommandTest extends TestCase
         $featured = $reflection->getConstant('FEATURED_PRODUCTS')['18838'];
         $method = $reflection->getMethod('applyCommercialTerms');
 
+        self::assertSame('ООО «СанБизнесГруп»', $reflection->getConstant('SUPPLIER_NAME'));
+
         $item = $method->invoke(new SyncEcokaminStovesCommand(), $featured + ['in_stock' => true]);
 
         self::assertSame(149990.0, $item['price']);

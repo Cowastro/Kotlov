@@ -23,6 +23,7 @@ class SyncEcokaminStovesCommand extends Command
     protected $description = 'Scrape ecokamin.ru pechi-kaminy (кроме Invicta) and sync prices, cards, photos and attributes.';
 
     private const SUPPLIER_CODE    = 'ecokamin';
+    private const SUPPLIER_NAME    = 'ООО «СанБизнесГруп»';
     private const SYNC_KEY        = 'ecokamin_stoves';
     private const CATEGORY_ID     = 61;    // Печи → Печи-камины
     private const BRAND_ID        = 231;   // ЭкоКамин
@@ -119,7 +120,7 @@ class SyncEcokaminStovesCommand extends Command
 
         $now        = now();
         $supplierId = $this->ensureSupplier($now);
-        $syncId     = $this->ensureSupplierSync($now);
+        $syncId     = $this->ensureSupplierSync($now, $supplierId);
         $this->ensureBrand($now);
         $this->ensureInvictaBrand($now);
         $this->ensureCategory($now);
@@ -964,8 +965,9 @@ HTML;
 
         if ($existing) {
             DB::table('suppliers')->where('id', $existing->id)->update([
-                'name'       => 'EcoKamin',
+                'name'       => self::SUPPLIER_NAME,
                 'contact'    => self::SOURCE_URL,
+                'notes'      => 'Фактический поставщик и импортёр продукции ЭкоКамин — ООО «СанБизнесГруп». Сайт ecokamin.ru используется как источник карточек и розничных цен; это не закупочный прайс.',
                 'is_active'  => true,
                 'updated_at' => $now,
             ]);
@@ -975,26 +977,27 @@ HTML;
 
         return (int) DB::table('suppliers')->insertGetId([
             'code'          => self::SUPPLIER_CODE,
-            'name'          => 'EcoKamin',
+            'name'          => self::SUPPLIER_NAME,
             'currency'      => 'RUB',
             'currency_rate' => 1,
             'contact'       => self::SOURCE_URL,
-            'notes'         => 'Печи-камины ecokamin.ru (кроме Invicta). Перед боевым запуском задать курс RUB → BYN.',
+            'notes'         => 'Фактический поставщик и импортёр продукции ЭкоКамин — ООО «СанБизнесГруп». Сайт ecokamin.ru используется как источник карточек и розничных цен; это не закупочный прайс.',
             'is_active'     => true,
             'created_at'    => $now,
             'updated_at'    => $now,
         ]);
     }
 
-    private function ensureSupplierSync($now): ?int
+    private function ensureSupplierSync($now, int $supplierId): ?int
     {
         DB::table('supplier_syncs')->updateOrInsert(
             ['key' => self::SYNC_KEY],
             [
-                'name'            => 'EcoKamin',
+                'supplier_id'     => $supplierId,
+                'name'            => self::SUPPLIER_NAME,
                 'code'            => self::SUPPLIER_CODE,
-                'title'           => 'EcoKamin: печи-камины',
-                'description'     => 'Обновляет цены и карточки печей-каминов с EcoKamin, кроме Invicta.',
+                'title'           => 'СанБизнесГруп: ЭкоКамин — печи-камины',
+                'description'     => 'Обновляет карточки и розничные цены продукции ЭкоКамин с ecokamin.ru. Фактический поставщик и импортёр — ООО «СанБизнесГруп».',
                 'command'         => 'supplier:sync-ecokamin-stoves',
                 'source_url'      => self::SOURCE_URL,
                 'image_disk_path' => 'img/products/ecokamin',
