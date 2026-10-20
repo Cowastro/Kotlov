@@ -821,6 +821,14 @@ class ProductSourceEnricher
             }
         }
 
+        if ($this->isEurotermUrl($url)) {
+            $euroterm = $this->extractEurotermData($html, $url);
+            $parsed['description'] = $euroterm['description'] ?: $parsed['description'];
+            $parsed['short_description'] = $euroterm['short_description'] ?: $parsed['short_description'];
+            $parsed['specs'] = $euroterm['specs'] ?: $parsed['specs'];
+            $parsed['images'] = $euroterm['images'] ?: $parsed['images'];
+        }
+
         if ($this->isRusklimatUrl($url) && $this->isSupplierPromoDescription((string) $parsed['short_description'])) {
             $parsed['short_description'] = $this->sourceSummary((string) $parsed['description']);
         }
@@ -838,6 +846,73 @@ class ProductSourceEnricher
         $host = mb_strtolower((string) parse_url($url, PHP_URL_HOST));
 
         return $host === 'tenko.ua' || str_ends_with($host, '.tenko.ua');
+    }
+
+    private function isEurotermUrl(string $url): bool
+    {
+        $host = mb_strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return $host === 'euroterm.by' || $host === 'www.euroterm.by';
+    }
+
+    /**
+     * @return array{description:string,short_description:string,specs:array<int,array{key:string,value:string,unit:string}>,images:array<int,string>}
+     */
+    private function extractEurotermData(string $html, string $url): array
+    {
+        $dom = $this->dom($html);
+        $xpath = new \DOMXPath($dom);
+        $description = '';
+        $descriptionNode = $xpath->query(
+            '//*[contains(concat(" ", normalize-space(@class), " "), " product-description ")]'
+        )?->item(0);
+        if ($descriptionNode) {
+            $description = $this->cleanText($descriptionNode->textContent);
+        }
+
+        $specs = [];
+        $fields = $xpath->query(
+            '//*[contains(concat(" ", normalize-space(@class), " "), " product-fields ")]'
+            .'//*[contains(concat(" ", normalize-space(@class), " "), " product-field ")]'
+        );
+        foreach ($fields ?: [] as $field) {
+            $label = $xpath->query(
+                './/*[contains(concat(" ", normalize-space(@class), " "), " title ")]',
+                $field,
+            )?->item(0);
+            $value = $xpath->query(
+                './/*[contains(concat(" ", normalize-space(@class), " "), " value ")]',
+                $field,
+            )?->item(0);
+
+            if (! $label || ! $value) {
+                continue;
+            }
+
+            $key = $this->cleanText($label->textContent);
+            $specValue = $this->cleanText($value->textContent);
+            if ($key !== '' && $specValue !== '') {
+                $specs[] = ['key' => $key, 'value' => $specValue, 'unit' => ''];
+            }
+        }
+
+        $images = [];
+        $galleryLinks = $xpath->query(
+            '//*[contains(concat(" ", normalize-space(@class), " "), " fotorama ")]//a[@href]'
+        );
+        foreach ($galleryLinks ?: [] as $link) {
+            $href = trim((string) $link->attributes?->getNamedItem('href')?->nodeValue);
+            if ($href !== '') {
+                $images[] = $this->absoluteUrl($href, $url);
+            }
+        }
+
+        return [
+            'description' => $description,
+            'short_description' => $description !== '' ? Str::limit($description, 240, '') : '',
+            'specs' => $this->normalizeParsedSpecs($specs),
+            'images' => array_values(array_unique(array_filter($images))),
+        ];
     }
 
     /** @return array<int,array{key:string,value:string,unit:string}> */
