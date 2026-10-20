@@ -308,9 +308,6 @@ return new class extends Migration
         if (str_contains($lower, 'конденсат') || str_contains($lower, 'заглушка ревизии')) {
             return 'kondensatootvody';
         }
-        if (str_contains($lower, 'площадка') || str_contains($lower, 'хомут') || str_contains($lower, 'креплен')) {
-            return 'krepleniya-dymohod';
-        }
         if (str_contains($lower, 'зонт') || str_contains($lower, 'дефлектор')) {
             return 'zonty-deflektory';
         }
@@ -325,6 +322,13 @@ return new class extends Migration
         }
         if (str_contains($lower, 'труба')) {
             return $execution === 'Моно' ? 'truby-mono' : 'truby-sendvich';
+        }
+        // Many insulated elements are supplied "с хомутом". The clamp is
+        // part of the kit and must not turn a pipe, bend or tee into a mount.
+        if (str_contains($lower, 'площадка') || str_contains($lower, 'хомут')
+            || str_contains($lower, 'креплен') || str_contains($lower, 'кронштейн')
+            || str_contains($lower, 'опора')) {
+            return 'krepleniya-dymohod';
         }
 
         return 'prochie-dymohod';
