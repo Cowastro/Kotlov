@@ -252,6 +252,7 @@ class OrderItemEditingTest extends TestCase
         $suppliers = OrderForm::supplierOptions();
         $categories = OrderForm::categoryOptions($sanbusiness->id);
         $options = OrderForm::searchProductOptions('', $sanbusiness->id, $root->id);
+        $fallbackOptions = OrderForm::searchProductOptions('бак 200', $sanbusiness->id, $pumps->id);
 
         $this->assertSame('Санбизнесгруп', $suppliers[$sanbusiness->id]);
         $this->assertArrayHasKey($root->id, $categories);
@@ -263,6 +264,9 @@ class OrderItemEditingTest extends TestCase
         $this->assertStringContainsString('склад 7 шт.', $options[$tank->id]);
         $this->assertStringContainsString('закупка 300,00 BYN', $options[$tank->id]);
         $this->assertStringContainsString('розница 420,00 BYN', $options[$tank->id]);
+        $this->assertArrayHasKey($tank->id, $fallbackOptions);
+        $this->assertArrayNotHasKey($pump->id, $fallbackOptions);
+        $this->assertStringContainsString('другая категория: Мембранные баки', $fallbackOptions[$tank->id]);
     }
 
     private function product(Category $category, string $name, string $sku, float $price): Product

@@ -98,7 +98,7 @@ class OrderForm
                                         self::clearSelectedProduct($set);
                                     })
                                     ->helperText('Оставьте пустым, чтобы искать по всему каталогу.')
-                                    ->columnSpan(4),
+                                    ->columnSpan(6),
                                 Select::make('catalog_category_id')
                                     ->label('Категория')
                                     ->placeholder('Все категории')
@@ -111,9 +111,10 @@ class OrderForm
                                         self::clearSelectedProduct($set);
                                     })
                                     ->helperText('Список категорий учитывает выбранного поставщика.')
-                                    ->columnSpan(4),
+                                    ->columnSpan(6),
                                 Select::make('product_id')
-                                    ->label('Товар из каталога')
+                                    ->label('Найти и выбрать товар из каталога')
+                                    ->placeholder('Введите название, модель или артикул')
                                     ->searchable()
                                     ->getSearchResultsUsing(fn (string $search, Get $get): array => self::searchProductOptions(
                                         $search,
@@ -141,12 +142,14 @@ class OrderForm
                                             2,
                                         ));
                                     })
-                                    ->helperText('Можно искать по названию, модели или артикулу. Без текста покажем первые позиции по выбранным фильтрам.')
-                                    ->columnSpan(4),
+                                    ->helperText('Сначала ищем в выбранной категории. Если там пусто — покажем подходящие товары этого же поставщика из других категорий с пометкой.')
+                                    ->columnSpanFull(),
                                 TextInput::make('product_name')
-                                    ->label('Наименование')
+                                    ->label('Название выбранного товара')
                                     ->required()
                                     ->maxLength(255)
+                                    ->readOnly()
+                                    ->helperText('Заполняется автоматически из выбранной карточки товара.')
                                     ->columnSpan(8),
                                 TextInput::make('product_sku')
                                     ->label('Артикул')
@@ -259,10 +262,6 @@ class OrderForm
     private static function clearSelectedProduct(Set $set): void
     {
         $set('product_id', null);
-        $set('product_name', null);
-        $set('product_sku', null);
-        $set('price', 0);
-        $set('total', 0);
     }
 
     /** @return array<int, string> */
@@ -290,16 +289,41 @@ class OrderForm
             app(StorefrontProductSearch::class)->apply($query, $search, true);
         }
 
-        return $query
+        $products = $query
             ->orderByDesc('in_stock')
             ->orderByDesc('stock_qty')
             ->orderByDesc('is_featured')
             ->orderByDesc('rating')
             ->orderByDesc('views_count')
             ->limit(50)
-            ->get()
+            ->get();
+
+        $outsideSelectedCategory = false;
+
+        if ($products->isEmpty() && $search !== '' && $categoryId) {
+            $fallbackQuery = Product::query()
+                ->active()
+                ->notArchived()
+                ->withSupplierChannels()
+                ->with(['brand:id,name', 'category:id,name']);
+
+            self::applySupplierFilter($fallbackQuery, $supplierId);
+            app(StorefrontProductSearch::class)->apply($fallbackQuery, $search, true);
+
+            $products = $fallbackQuery
+                ->orderByDesc('in_stock')
+                ->orderByDesc('stock_qty')
+                ->orderByDesc('is_featured')
+                ->orderByDesc('rating')
+                ->orderByDesc('views_count')
+                ->limit(50)
+                ->get();
+            $outsideSelectedCategory = $products->isNotEmpty();
+        }
+
+        return $products
             ->mapWithKeys(fn (Product $product): array => [
-                $product->id => self::productOptionLabel($product, $supplierId),
+                $product->id => self::productOptionLabel($product, $supplierId, $outsideSelectedCategory),
             ])
             ->all();
     }
@@ -317,7 +341,11 @@ class OrderForm
         return $product ? self::productOptionLabel($product, $supplierId) : null;
     }
 
-    public static function productOptionLabel(Product $product, ?int $supplierId = null): string
+    public static function productOptionLabel(
+        Product $product,
+        ?int $supplierId = null,
+        bool $outsideSelectedCategory = false,
+    ): string
     {
         $price = (float) $product->price > 0
             ? number_format((float) $product->price, 2, ',', ' ').' BYN'
@@ -326,6 +354,7 @@ class OrderForm
         return implode(' · ', array_filter([
             $product->name,
             filled($product->sku) ? 'арт. '.$product->sku : null,
+            $outsideSelectedCategory ? 'другая категория: '.($product->category?->name ?: 'не указана') : null,
             $supplierId ? self::supplierOfferLabel($product, $supplierId) : null,
             'розница '.$price,
             $supplierId ? null : $product->publicAvailabilityLabel(),
