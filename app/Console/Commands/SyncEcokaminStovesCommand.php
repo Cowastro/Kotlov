@@ -14,6 +14,7 @@ class SyncEcokaminStovesCommand extends Command
         {--apply : Write changes to the database}
         {--dry-run : Preview without writing changes to the database}
         {--limit= : Limit number of products for testing}
+        {--featured-only : Sync only the explicitly configured featured products}
         {--no-images : Do not download product images}
         {--only-broken-images : Only replace existing products whose image paths are empty or missing on disk}
         {--enrich : Generate AI descriptions for products that have none (DeepSeek)}
@@ -34,6 +35,7 @@ class SyncEcokaminStovesCommand extends Command
             'bitrix_id'              => '18838',
             'article'                => 'КМS216',
             'article_normalized'     => 'КМS216',
+            'slug'                   => 'invicta-shaman-chugunnyy-kamin',
             'name'                   => 'Камин чугунный Invicta Shaman',
             'brand'                  => 'Invicta',
             'url'                    => 'https://www.ecokamin.ru/catalog/kaminy/chugunnyy_kamin_shaman/18838/',
@@ -42,7 +44,9 @@ class SyncEcokaminStovesCommand extends Command
             'listing_image'          => null,
             'dealer_discount_percent'=> 25.0,
             'stock_status'           => 'preorder',
-            'stock_text'             => 'Ожидается поступление первой партии на склад поставщика в Москве',
+            'stock_text'             => 'Доступен к заказу. Поступление первой партии ожидается на следующей неделе',
+            'is_new'                 => true,
+            'is_featured'            => true,
             'live_photos_url'         => 'https://cloud.mail.ru/public/b6qm/2Ua58bCkh',
         ],
     ];
@@ -305,6 +309,10 @@ class SyncEcokaminStovesCommand extends Command
 
     private function scrapeCatalog(): array
     {
+        if ((bool) $this->option('featured-only')) {
+            return [array_values(self::FEATURED_PRODUCTS), []];
+        }
+
         $items   = [];
         $skipped = [];
 
@@ -650,8 +658,8 @@ class SyncEcokaminStovesCommand extends Command
             'is_archived'       => false,
             'in_stock'          => ($item['in_stock'] ?? true) && $item['price'] !== null,
             'stock_qty'         => null,
-            'is_featured'       => false,
-            'is_new'            => false,
+            'is_featured'       => (bool) ($item['is_featured'] ?? false),
+            'is_new'            => (bool) ($item['is_new'] ?? false),
             'is_sale'           => $item['price_old_byn'] !== null,
             'sort_order'        => 0,
             'meta_title'        => $item['meta_title'] ?: $item['name'] . ' купить в %city%',
@@ -669,7 +677,7 @@ class SyncEcokaminStovesCommand extends Command
         }
 
         $payload['sku']        = $this->nextKotlovSku();
-        $payload['slug']       = $this->uniqueSlug($item['name']);
+        $payload['slug']       = $item['slug'] ?? $this->uniqueSlug($item['name']);
         $payload['created_at'] = $now;
 
         return (int) DB::table('products')->insertGetId($payload);
