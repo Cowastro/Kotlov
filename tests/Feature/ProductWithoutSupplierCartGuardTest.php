@@ -89,6 +89,33 @@ class ProductWithoutSupplierCartGuardTest extends TestCase
         $this->assertArrayHasKey($product->id, session('cart', []));
     }
 
+    public function test_unconfirmed_price_blocks_cart_even_with_an_active_supplier(): void
+    {
+        $product = $this->product();
+        $product->update(['requires_price_confirmation' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'price-hold-supplier',
+            'name' => 'Поставщик неподтверждённой цены',
+            'is_active' => true,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'PRICE-HOLD-1',
+            'price_byn' => 80,
+            'in_stock' => false,
+            'stock_status' => 'unknown',
+        ]);
+
+        $this->assertFalse($product->fresh()->canBeAddedToCart());
+
+        $this->postJson(route('cart.add'), ['product_id' => $product->id])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Товар сейчас недоступен для оформления заказа.');
+
+        $this->assertEmpty(session('cart', []));
+    }
+
     private function product(): Product
     {
         $category = Category::query()->create([

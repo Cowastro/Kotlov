@@ -74,7 +74,7 @@ class CartController extends Controller
 
         $canBeOrdered = $b2bOffer
             ? $product->is_active && ! $product->is_archived && $offerResolver->canOrder($b2bOffer)
-            : $product->canBeOrdered();
+            : $product->canBeAddedToCart();
 
         if (! $canBeOrdered) {
             if ($request->expectsJson()) {

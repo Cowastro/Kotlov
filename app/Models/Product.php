@@ -307,7 +307,9 @@ class Product extends Model
 
     public function canBeAddedToCart(): bool
     {
-        return $this->canBeOrdered() && $this->hasAssignedSupplier();
+        return ! $this->requires_price_confirmation
+            && $this->canBeOrdered()
+            && $this->hasAssignedSupplier();
     }
 
     public function requiresAvailabilityConfirmation(): bool
