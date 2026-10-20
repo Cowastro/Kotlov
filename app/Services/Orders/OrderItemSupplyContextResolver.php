@@ -25,12 +25,46 @@ class OrderItemSupplyContextResolver
             return $this->fromSnapshot($item);
         }
 
+        return $this->resolveCurrent($item);
+    }
+
+    /**
+     * Resolve availability from the latest imported database state while keeping
+     * the supplier/source that was captured with the order whenever possible.
+     *
+     * @return array<string, mixed>
+     */
+    public function resolveCurrent(OrderItem $item): array
+    {
+
         $item->loadMissing([
             'integrationProduct.source.supplier',
             'product.purchasePriceSources.supplier',
             'product.integrationProducts.source.supplier.latestChannelTransition',
             'product.supplierProducts.supplier.latestChannelTransition',
         ]);
+
+        if ($item->supply_captured_at && $item->supply_channel === 'integration') {
+            $offer = collect($item->product?->integrationProducts)
+                ->first(fn (IntegrationProduct $offer): bool => (int) $offer->integration_source_id === (int) $item->supply_integration_source_id);
+
+            if ($offer) {
+                return $this->fromIntegrationProduct($item, $offer, true);
+            }
+
+            return $this->missingCapturedSourceContext($item);
+        }
+
+        if ($item->supply_captured_at && $item->supply_channel === 'legacy') {
+            $offer = collect($item->product?->supplierProducts)
+                ->first(fn (SupplierProduct $offer): bool => (int) $offer->supplier_id === (int) $item->supply_supplier_id);
+
+            if ($offer) {
+                return $this->fromSupplierProduct($item, $offer, 1);
+            }
+
+            return $this->missingCapturedSourceContext($item);
+        }
 
         if ($item->integrationProduct) {
             return $this->fromIntegrationProduct($item, $item->integrationProduct, true);
@@ -229,6 +263,10 @@ class OrderItemSupplyContextResolver
             'price_tax_mode' => $offer->effectivePriceTaxMode(),
             'vat_rate' => $offer->effectiveVatRate(),
             'stock_quantity' => (float) $offer->stock_quantity,
+            'stock_updated_at' => $offer->stock_confirmed_at
+                ?? $offer->last_offer_seen_at
+                ?? $offer->last_seen_at
+                ?? $offer->updated_at,
             'stock_label' => (float) $offer->stock_quantity > 0
                 ? $offer->formattedStockQuantity()
                 : 'Сейчас нет в наличии',
@@ -256,6 +294,9 @@ class OrderItemSupplyContextResolver
             'price_tax_mode' => 'unknown',
             'vat_rate' => null,
             'stock_quantity' => $offer->stock_quantity !== null ? (float) $offer->stock_quantity : null,
+            'stock_updated_at' => $offer->last_stock_synced_at
+                ?? $offer->last_synced_at
+                ?? $offer->updated_at,
             'stock_label' => $this->legacyOfferAvailable($offer)
                 ? ($offer->stock_quantity !== null ? number_format((int) $offer->stock_quantity, 0, '.', ' ').' шт.' : 'Есть в наличии')
                 : 'Сейчас нет в наличии',
@@ -290,6 +331,7 @@ class OrderItemSupplyContextResolver
             'price_tax_mode' => $source->price_tax_mode,
             'vat_rate' => (float) $source->vat_rate,
             'stock_quantity' => null,
+            'stock_updated_at' => $source->confirmed_at,
             'stock_label' => 'Наличие уточняется по счёту',
             'is_available' => null,
             'candidate_count' => $candidateCount,
@@ -322,6 +364,7 @@ class OrderItemSupplyContextResolver
             'price_tax_mode' => $item->supply_price_tax_mode,
             'vat_rate' => $item->supply_vat_rate !== null ? (float) $item->supply_vat_rate : null,
             'stock_quantity' => $item->supply_stock_quantity !== null ? (float) $item->supply_stock_quantity : null,
+            'stock_updated_at' => $item->supply_captured_at,
             'stock_label' => $this->snapshotStockLabel($item),
             'is_available' => $item->supply_is_available,
             'candidate_count' => (int) $item->supply_candidate_count,
@@ -351,6 +394,32 @@ class OrderItemSupplyContextResolver
             : rtrim(rtrim(number_format($quantity, 3, '.', ' '), '0'), '.');
 
         return $formatted.' шт. при заказе';
+    }
+
+    /** @return array<string, mixed> */
+    private function missingCapturedSourceContext(OrderItem $item): array
+    {
+        return $this->pricedContext($item, (float) $item->supply_purchase_price, [
+            'status' => $item->supply_status ?? 'unresolved',
+            'route_label' => $item->supply_route_label ?? 'Поставщик не определён',
+            'supplier_id' => $item->supply_supplier_id,
+            'supplier_name' => $item->supply_supplier_name,
+            'supplier_contact' => $item->supply_supplier_contact,
+            'source_label' => $item->supply_source_label,
+            'integration_source_id' => $item->supply_integration_source_id,
+            'channel' => $item->supply_channel ?? 'unresolved',
+            'wholesale_price_label' => 'Зафиксировано при заказе',
+            'price_tax_mode' => $item->supply_price_tax_mode,
+            'vat_rate' => $item->supply_vat_rate !== null ? (float) $item->supply_vat_rate : null,
+            'stock_quantity' => null,
+            'stock_updated_at' => null,
+            'stock_label' => 'Позиция отсутствует в последнем обновлении',
+            'is_available' => false,
+            'candidate_count' => 0,
+            'is_explicit' => true,
+            'is_current_recommendation' => true,
+            'is_snapshot' => false,
+        ]);
     }
 
     /** @param array<string, mixed> $context

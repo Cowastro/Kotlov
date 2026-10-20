@@ -34,6 +34,7 @@ class OrderItem extends Model
         'supply_supplier_contact', 'supply_source_label', 'supply_purchase_price',
         'supply_price_tax_mode', 'supply_vat_rate', 'supply_stock_quantity',
         'supply_is_available', 'supply_candidate_count', 'supply_captured_at',
+        'current_availability', 'current_availability_checked_at', 'current_availability_checked_by',
         'fulfillment_route', 'fulfillment_supplier_id', 'fulfillment_supplier_name',
         'fulfillment_supplier_contact', 'fulfillment_purchase_price', 'fulfillment_confirmed_by',
         'fulfillment_confirmed_at', 'fulfillment_note',
@@ -48,6 +49,8 @@ class OrderItem extends Model
         'supply_is_available' => 'boolean',
         'supply_candidate_count' => 'integer',
         'supply_captured_at' => 'datetime',
+        'current_availability' => 'array',
+        'current_availability_checked_at' => 'datetime',
         'fulfillment_confirmed_at' => 'datetime',
         'fulfillment_purchase_price' => 'decimal:2',
     ];
@@ -150,6 +153,11 @@ class OrderItem extends Model
     public function fulfillmentConfirmedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'fulfillment_confirmed_by');
+    }
+
+    public function currentAvailabilityCheckedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'current_availability_checked_by');
     }
 
     public function fulfillmentHistory(): HasMany

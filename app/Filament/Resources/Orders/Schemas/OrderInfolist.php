@@ -12,13 +12,17 @@ use App\Models\OrderEconomicSnapshot;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
 use App\Models\SupplierOrderRequest;
+use App\Services\Orders\OrderItemAvailabilityChecker;
 use App\Services\Orders\OrderSettlementManager;
 use App\Support\AdminPhoneLinks;
+use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 
 class OrderInfolist
@@ -622,8 +626,57 @@ class OrderInfolist
                                 TextEntry::make('supply_stock_summary')
                                     ->label('Наличие')
                                     ->columnSpan(2)
-                                    ->state(fn ($record): string => $record->supplyContext()['stock_label'])
-                                    ->weight('bold'),
+                                    ->state(function (OrderItem $record): string {
+                                        $snapshot = $record->supplyContext()['stock_label'];
+                                        if (! $record->current_availability_checked_at) {
+                                            return $snapshot;
+                                        }
+
+                                        $current = (string) ($record->current_availability['stock_label'] ?? 'Неизвестно');
+                                        $current = preg_replace('/^Сейчас\s+/u', '', $current) ?: $current;
+                                        $current = mb_strtolower(mb_substr($current, 0, 1)).mb_substr($current, 1);
+
+                                        return $snapshot.' · сейчас: '.$current;
+                                    })
+                                    ->helperText(function (OrderItem $record): ?string {
+                                        if (! $record->current_availability_checked_at) {
+                                            return 'Актуальное наличие ещё не уточняли';
+                                        }
+
+                                        $sourceUpdatedAt = data_get($record->current_availability, 'source_updated_at');
+                                        $parts = [
+                                            'Проверено '.$record->current_availability_checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i'),
+                                            $record->currentAvailabilityCheckedBy?->name,
+                                            $sourceUpdatedAt ? 'данные склада от '.Carbon::parse($sourceUpdatedAt)->timezone('Europe/Minsk')->format('d.m.Y H:i') : null,
+                                        ];
+
+                                        return collect($parts)->filter()->implode(' · ');
+                                    })
+                                    ->color(fn (OrderItem $record): string => match (data_get($record->current_availability, 'is_available')) {
+                                        true => 'success',
+                                        false => 'danger',
+                                        default => 'gray',
+                                    })
+                                    ->weight('bold')
+                                    ->suffixAction(
+                                        Action::make('refreshCurrentAvailability')
+                                            ->label('Уточнить')
+                                            ->icon('heroicon-o-arrow-path')
+                                            ->color('info')
+                                            ->tooltip('Уточнить актуальное наличие по последнему обновлению базы')
+                                            ->action(function (OrderItem $record): void {
+                                                $check = app(OrderItemAvailabilityChecker::class)->check($record, auth()->user());
+
+                                                Notification::make()
+                                                    ->title('Актуальное наличие проверено')
+                                                    ->body(collect([
+                                                        $check['supplier_name'],
+                                                        $check['stock_label'],
+                                                    ])->filter()->implode(' · '))
+                                                    ->color($check['is_available'] === true ? 'success' : 'warning')
+                                                    ->send();
+                                            }),
+                                    ),
 
                                 TextEntry::make('fulfillment_result_summary')
                                     ->label('Итог исполнения')

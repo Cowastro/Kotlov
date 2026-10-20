@@ -194,6 +194,41 @@ class OrderSupplyRoutingTest extends TestCase
         $this->assertTrue($context['is_snapshot']);
     }
 
+    public function test_manager_can_refresh_current_availability_without_changing_order_snapshot(): void
+    {
+        $fixture = $this->fixture();
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+
+        IntegrationProduct::query()->where('external_id', 'route-onec-1')->firstOrFail()->update([
+            'stock_quantity' => 0,
+            'stock_confirmed_at' => now(),
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(ViewOrder::class, ['record' => $fixture['order']->id])
+            ->assertInfolistActionExists('items.0.supply_stock_summary', 'refreshCurrentAvailability')
+            ->callInfolistAction('items.0.supply_stock_summary', 'refreshCurrentAvailability')
+            ->assertNotified('Актуальное наличие проверено');
+
+        $item = $fixture['item']->fresh();
+        $check = $item->current_availability;
+
+        $this->assertFalse($check['is_available']);
+        $this->assertSame(0.0, (float) $check['stock_quantity']);
+        $this->assertSame('Сейчас нет в наличии', $check['stock_label']);
+        $this->assertSame(7.0, (float) $item->supply_stock_quantity);
+        $this->assertTrue($item->supply_is_available);
+        $this->assertFalse($item->current_availability['is_available']);
+        $this->assertSame($manager->id, $item->current_availability_checked_by);
+        $this->assertNotNull($item->current_availability_checked_at);
+
+        $this->actingAs($manager)
+            ->get(OrderResource::getUrl('view', ['record' => $fixture['order']], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('7 шт. при заказе · сейчас: нет в наличии')
+            ->assertSee('Уточнить актуальное наличие по последнему обновлению базы');
+    }
+
     public function test_current_order_recommendation_uses_imported_price_snapshot_not_later_source_rules(): void
     {
         $fixture = $this->fixture();

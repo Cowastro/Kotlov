@@ -45,6 +45,7 @@ class ViewOrder extends ViewRecord
             'items.product.integrationProducts.source.supplier',
             'items.integrationProduct.source.supplier',
             'items.fulfillmentConfirmedBy',
+            'items.currentAvailabilityCheckedBy',
             'items.fulfillmentSupplier.crmCounterparty.contactPoints',
             'fulfillmentHistory.item',
             'fulfillmentHistory.user',
