@@ -42,6 +42,7 @@ class SyncGazKotelBelCommand extends Command
     private const SUPPLIER_NAME = 'ГазКотелБел';
     private const SOURCE_URL    = 'https://gazkotelbel.com/';
     private const SYNC_KEY      = 'gazkotelbel_price';
+    private const SOURCE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ry8S1_DCHYuWgJ1uGHAgMhTLi9CfGEXpNj77oNHOo9Y/edit';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ry8S1_DCHYuWgJ1uGHAgMhTLi9CfGEXpNj77oNHOo9Y/export?format=csv';
     private const CACHE_PATH = 'supplier-cache/gazkotelbel-price.csv';
 
@@ -117,6 +118,7 @@ class SyncGazKotelBelCommand extends Command
         // Ensure supplier + sync records exist
         $this->supplierId = $this->ensureSupplier();
         $this->syncId     = $this->ensureSync();
+        $this->ensurePriceSource();
 
         $stats = ['matched' => 0, 'created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => 0];
         $now   = now();
@@ -164,6 +166,12 @@ class SyncGazKotelBelCommand extends Command
                 'last_run_at'  => $now,
                 'updated_at'   => $now,
             ]);
+        }
+        if (\Illuminate\Support\Facades\Schema::hasTable('supplier_sources')) {
+            DB::table('supplier_sources')
+                ->where('supplier_id', $this->supplierId)
+                ->where('name', 'Прайс и остатки ГазКотелБел')
+                ->update(['last_run_at' => $now, 'updated_at' => $now]);
         }
 
         $this->table(['metric', 'count'], array_map(
@@ -693,12 +701,37 @@ class SyncGazKotelBelCommand extends Command
         $now = now();
         DB::table('supplier_syncs')->updateOrInsert(
             ['key' => self::SYNC_KEY],
-            ['name' => self::SUPPLIER_NAME, 'code' => self::SUPPLIER_CODE,
+            ['supplier_id' => $this->supplierId,
+             'name' => self::SUPPLIER_NAME, 'code' => self::SUPPLIER_CODE,
              'title' => 'ГазКотелБел: цены и наличие',
              'command' => 'supplier:sync-gazkotelbel',
+             'source_url' => self::SOURCE_SHEET_URL,
              'last_run_at' => $now, 'updated_at' => $now, 'created_at' => $now]
         );
         return (int) DB::table('supplier_syncs')->where('key', self::SYNC_KEY)->value('id');
+    }
+
+    private function ensurePriceSource(): void
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasTable('supplier_sources')) {
+            return;
+        }
+
+        $now = now();
+        DB::table('supplier_sources')->updateOrInsert(
+            [
+                'supplier_id' => $this->supplierId,
+                'name' => 'Прайс и остатки ГазКотелБел',
+            ],
+            [
+                'type' => 'google_sheet',
+                'config' => json_encode(['url' => self::SOURCE_SHEET_URL], JSON_UNESCAPED_UNICODE),
+                'schedule_cron' => 'Ежедневно в 08:30',
+                'is_active' => true,
+                'updated_at' => $now,
+                'created_at' => $now,
+            ],
+        );
     }
 
     private function ensureBrand(string $name): int

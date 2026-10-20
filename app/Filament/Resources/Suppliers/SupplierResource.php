@@ -242,11 +242,18 @@ class SupplierResource extends Resource
                     ])->columns(4),
                     RepeatableEntry::make('syncs')->label('Автоматические обновления')->schema([
                         TextEntry::make('title')->label('Сценарий')->weight('bold'),
+                        TextEntry::make('source_url')
+                            ->label('Источник данных')
+                            ->state(fn (SupplierSync $record): string => filled($record->source_url) ? 'Открыть Google Таблицу' : 'Ссылка не указана')
+                            ->url(fn (SupplierSync $record): ?string => $record->source_url)
+                            ->openUrlInNewTab()
+                            ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                            ->color(fn (SupplierSync $record): string => filled($record->source_url) ? 'info' : 'gray'),
                         TextEntry::make('last_status')->label('Статус')->badge()
                             ->state(fn (SupplierSync $record): string => $record->statusLabel())
                             ->color(fn (SupplierSync $record): string => $record->statusColor()),
                         TextEntry::make('last_run_at')->label('Последний запуск')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Нет запусков'),
-                    ])->columns(3),
+                    ])->columns(4),
                 ]),
         ]);
     }
