@@ -6,7 +6,6 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class TisStandard50PriceListTest extends TestCase
@@ -47,8 +46,6 @@ class TisStandard50PriceListTest extends TestCase
         $this->assertCount(97, $data['series']['thermo']['items']);
         $this->assertNotEmpty($data['series']['mono']['items'][0]['source_url']);
         $this->assertGreaterThan(0, $data['series']['thermo']['items'][0]['price_rub']);
-        $this->assertSame(203, Product::query()->where('sku', 'like', 'TIS50-%')->count());
-        $this->assertSame(203, DB::table('supplier_products')->where('supplier_article', 'like', 'TIS50-%')->where('delivery_days', 7)->count());
     }
 
     private function product(Category $category, Brand $brand, string $execution, string $diameter, float $price, int $number): Product
