@@ -32,6 +32,60 @@ class SyncEcokaminStovesCommand extends Command
         'https://ecokamin.ru/catalog/kaminy/',
     ];
     private const FEATURED_PRODUCTS = [
+        '17944' => [
+            'bitrix_id'               => '17944',
+            'article'                 => 'KR206',
+            'article_normalized'      => 'KR206',
+            'slug'                    => 'kamin-ecokamin-rio-kr206',
+            'name'                    => 'Камин ЭкоКамин РИО KR206',
+            'brand'                   => 'ЭкоКамин',
+            'url'                     => 'https://www.ecokamin.ru/catalog/kaminy/kaminy_rio/17944/',
+            'price'                   => 219992.0,
+            'price_old'               => 274990.0,
+            'listing_image'           => null,
+            'dealer_discount_percent' => 25.0,
+            'stock_status'            => 'in_stock',
+            'stock_text'              => 'В наличии у поставщика',
+            'is_new'                  => true,
+            'is_featured'             => false,
+            'live_photos_url'         => null,
+        ],
+        '19383' => [
+            'bitrix_id'               => '19383',
+            'article'                 => 'KR221',
+            'article_normalized'      => 'KR221',
+            'slug'                    => 'kamin-ecokamin-rio-na-drovnike-kr221',
+            'name'                    => 'Камин ЭкоКамин РИО на дровнике KR221',
+            'brand'                   => 'ЭкоКамин',
+            'url'                     => 'https://www.ecokamin.ru/catalog/kaminy/kaminy_rio/19383/',
+            'price'                   => 219992.0,
+            'price_old'               => 274990.0,
+            'listing_image'           => null,
+            'dealer_discount_percent' => 25.0,
+            'stock_status'            => 'in_stock',
+            'stock_text'              => 'В наличии у поставщика',
+            'is_new'                  => true,
+            'is_featured'             => false,
+            'live_photos_url'         => null,
+        ],
+        '19407' => [
+            'bitrix_id'               => '19407',
+            'article'                 => 'KR224G',
+            'article_normalized'      => 'KR224G',
+            'slug'                    => 'kamin-ecokamin-rio-grafit-na-drovnike-kr224g',
+            'name'                    => 'Камин ЭкоКамин РИО графит на дровнике KR224G',
+            'brand'                   => 'ЭкоКамин',
+            'url'                     => 'https://www.ecokamin.ru/catalog/kaminy/kaminy_rio/19407/',
+            'price'                   => 219992.0,
+            'price_old'               => 274990.0,
+            'listing_image'           => null,
+            'dealer_discount_percent' => 25.0,
+            'stock_status'            => 'in_stock',
+            'stock_text'              => 'В наличии у поставщика',
+            'is_new'                  => true,
+            'is_featured'             => false,
+            'live_photos_url'         => null,
+        ],
         '18838' => [
             'bitrix_id'              => '18838',
             'article'                => 'КМS216',
@@ -482,6 +536,8 @@ class SyncEcokaminStovesCommand extends Command
             'meta_title'       => $this->cleanText($this->match('/<title>([\s\S]*?)<\/title>/u', $html) ?? ''),
             'meta_description' => $this->cleanText($this->match('/<meta name="description" content="([^"]*)"/u', $html) ?? ''),
             'images_remote'    => $this->extractImages($html),
+            'video_url'        => $this->extractVideoUrl($html),
+            'documents'        => $this->extractDocuments($html),
             'attributes'       => $this->parseDetailAttributes($html),
             'in_stock'         => $this->parseStock($html),
         ];
@@ -540,6 +596,50 @@ HTML;
             $item['attributes']['Производитель'] = 'ЭкоКамин, Россия';
         }
 
+        if (in_array(($item['bitrix_id'] ?? null), ['17944', '19383', '19407'], true)) {
+            $article = (string) ($item['article'] ?? '');
+            $hasWoodStore = in_array(($item['bitrix_id'] ?? null), ['19383', '19407'], true);
+            $isGraphite = ($item['bitrix_id'] ?? null) === '19407';
+            $finish = $isGraphite ? 'графитовом исполнении' : 'чёрном исполнении';
+            $base = $hasWoodStore ? 'со встроенным дровником' : 'на компактном основании без дровника';
+
+            $item['name'] = match ($item['bitrix_id']) {
+                '19383' => 'Камин ЭкоКамин РИО на дровнике KR221',
+                '19407' => 'Камин ЭкоКамин РИО графит на дровнике KR224G',
+                default => 'Камин ЭкоКамин РИО KR206',
+            };
+            $item['h1'] = $item['name'];
+            $item['short_description'] = "ЭкоКамин РИО {$article} — дровяной камин 7 кВт с высоким трёхсторонним остеклением, подовым горением и чугунной футеровкой. Модель выполнена {$base}.";
+            $item['content'] = <<<HTML
+<p><strong>{$item['name']}</strong> — современный отопительный камин с высоким трёхсторонним остеклением и панорамным обзором пламени. Модель выполнена {$base} и в {$finish}.</p>
+
+<p>Номинальная мощность 7 кВт. Топочная камера имеет чугунную футеровку, подовое горение, систему вторичного дожига и подачу воздуха на стекло. Предусмотрена подача воздуха извне через патрубок 150 мм.</p>
+
+<h3>Основные характеристики</h3>
+<ul>
+    <li>топливо — дрова;</li>
+    <li>тепловая мощность — 7 кВт;</li>
+    <li>остекление — трёхсторонняя стеклокерамика до 750 °C;</li>
+    <li>футеровка — чугун;</li>
+    <li>горение — подовое, с вторичным дожигом;</li>
+    <li>система «чистое стекло» — есть;</li>
+    <li>дымоход — верхний, диаметр 180 мм;</li>
+    <li>внешний воздух — патрубок 150 мм;</li>
+    <li>габариты — 577 × 1331 × 468 мм;</li>
+    <li>масса — 154 кг.</li>
+</ul>
+
+<p>Перед заказом специалисты KOTLOV.BY помогут проверить тепловую нагрузку помещения, параметры дымохода, приток воздуха, основание и безопасные расстояния до горючих конструкций.</p>
+HTML;
+            $item['meta_title'] = $item['name'] . ' 7 кВт купить в %city% | KOTLOV.BY';
+            $item['meta_description'] = "Купить {$item['name']} в Беларуси. 7 кВт, трёхстороннее стекло, чугунная футеровка, дымоход 180 мм. Цена, фото, видео и доставка KOTLOV.BY.";
+            $item['video_url'] = ($item['video_url'] ?? null) ?: 'https://www.youtube.com/watch?v=FJdwJ7EbNlo';
+            $item['attributes']['Производитель'] = 'ЭкоКамин, Россия';
+            $item['attributes']['Импортер в РБ'] = 'ООО «СанБизнесГруп»';
+            $item['attributes']['Цвет'] = $isGraphite ? 'Графит' : 'Чёрный';
+            $item['attributes']['Исполнение'] = $hasWoodStore ? 'Со встроенным дровником' : 'Без дровника';
+        }
+
         return $item;
     }
 
@@ -591,6 +691,33 @@ HTML;
         }
 
         return $this->cleanDescriptionHtml($block);
+    }
+
+    private function extractVideoUrl(string $html): ?string
+    {
+        if (preg_match('~youtube\.com/embed/([A-Za-z0-9_-]+)~u', $html, $match)) {
+            return 'https://www.youtube.com/watch?v=' . $match[1];
+        }
+
+        if (preg_match('~rutube\.ru/(?:play/)?embed/([A-Za-z0-9_-]+)~u', $html, $match)) {
+            return 'https://rutube.ru/video/' . $match[1] . '/';
+        }
+
+        return null;
+    }
+
+    private function extractDocuments(string $html): array
+    {
+        $documents = [];
+        preg_match_all('/<a[^>]+href="([^"]+\.pdf)"[^>]*>([\s\S]*?)<\/a>/iu', $html, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $url = $this->absoluteUrl($match[1]);
+            $label = $this->cleanText($match[2]) ?: 'Документ производителя (PDF)';
+            $documents[] = ['label' => $label, 'url' => $url];
+        }
+
+        return array_values(array_unique($documents, SORT_REGULAR));
     }
 
     private function parseStock(string $html): bool
@@ -674,7 +801,11 @@ HTML;
                                         ? json_encode($existingSpecs, JSON_UNESCAPED_UNICODE)
                                         : json_encode($attrs, JSON_UNESCAPED_UNICODE),
             'service_info'      => json_encode($this->serviceInfoFor($item), JSON_UNESCAPED_UNICODE),
-            'video_url'         => ($existingVideoUrl !== null && $existingVideoUrl !== '') ? $existingVideoUrl : null,
+            'documents'         => json_encode($item['documents'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            'video_url'         => ($existingVideoUrl !== null && $existingVideoUrl !== '')
+                                        ? $existingVideoUrl
+                                        : ($item['video_url'] ?? null),
+            'content_source_url'=> $item['url'] ?? null,
             'weight'            => $this->parseNumber($attrs['Вес'] ?? $attrs['Масса'] ?? null),
             'unit'              => 'шт',
             'warranty'          => $attrs['Гарантия'] ?? null,
