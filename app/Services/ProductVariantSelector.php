@@ -31,6 +31,10 @@ class ProductVariantSelector
 
     private function build(Product $product, bool $forAdmin): ?array
     {
+        if ($this->isTisStandard50($product)) {
+            return $this->buildTisStandard50($product, $forAdmin);
+        }
+
         if ($product->category?->slug !== 'membrannye-baki') {
             return null;
         }
@@ -84,6 +88,80 @@ class ProductVariantSelector
         return [
             'type' => 'volume',
             'title' => 'Выберите объём:',
+            'variants' => $variants,
+        ];
+    }
+
+    private function isTisStandard50(Product $product): bool
+    {
+        return data_get($product->specs, 'Серия') === 'ТиС «Стандарт 50»'
+            && filled(data_get($product->specs, 'Тип элемента'))
+            && filled(data_get($product->specs, 'Диаметр'));
+    }
+
+    private function buildTisStandard50(Product $product, bool $forAdmin): ?array
+    {
+        $product->loadMissing('brand');
+        $series = trim((string) data_get($product->specs, 'Серия'));
+        $execution = trim((string) data_get($product->specs, 'Исполнение'));
+        $element = trim((string) data_get($product->specs, 'Тип элемента'));
+
+        if ($series === '' || $execution === '' || $element === '') {
+            return null;
+        }
+
+        $variants = Product::query()
+            ->where('brand_id', $product->brand_id)
+            ->where(function ($query): void {
+                $query->where('sku', 'like', 'TIS50-%')
+                    ->orWhereHas('supplierProducts', fn ($supplierProducts) => $supplierProducts
+                        ->where('supplier_article', 'like', 'TIS50-%'));
+            })
+            ->when(! $forAdmin, fn ($query) => $query
+                ->where('variant_selector_excluded', false)
+                ->where('is_active', true)
+                ->where('is_archived', false)
+                ->where('price', '>', 0))
+            ->withSupplierChannels()
+            ->with(['category:id,name,slug', 'brand:id,name,slug'])
+            ->get()
+            ->map(function (Product $candidate) use ($series, $execution, $element, $product): ?array {
+                $specs = $candidate->specs ?: [];
+                if (trim((string) ($specs['Серия'] ?? '')) !== $series
+                    || trim((string) ($specs['Исполнение'] ?? '')) !== $execution
+                    || trim((string) ($specs['Тип элемента'] ?? '')) !== $element) {
+                    return null;
+                }
+
+                $diameter = trim((string) ($specs['Диаметр'] ?? ''));
+                if ($diameter === '') {
+                    return null;
+                }
+
+                return [
+                    'product' => $candidate,
+                    'value' => $diameter,
+                    'sort' => collect(explode('/', $diameter))->map(fn ($value) => (int) $value)->all(),
+                    'label' => 'Ø'.$diameter.' мм',
+                    'url' => url('/'.$candidate->category->slug.'/'.$candidate->slug),
+                    'availability_status' => $candidate->publicAvailabilityStatus(),
+                    'availability_label' => $candidate->publicAvailabilityLabel(),
+                    'is_current' => $candidate->is($product),
+                    'is_excluded' => (bool) $candidate->variant_selector_excluded,
+                ];
+            })
+            ->filter()
+            ->sortBy('sort')
+            ->unique('value')
+            ->values();
+
+        if ($variants->count() < 2) {
+            return null;
+        }
+
+        return [
+            'type' => 'diameter',
+            'title' => 'Выберите диаметр:',
             'variants' => $variants,
         ];
     }

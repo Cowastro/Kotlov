@@ -37,6 +37,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SupportChatController;
 use App\Http\Controllers\TaxpayerLookupController;
 use App\Http\Controllers\TelegramWebhookController;
+use App\Http\Controllers\TisStandard50PriceListController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Banner;
 use App\Models\BlogPost;
@@ -414,6 +415,10 @@ Route::get(BelomoGasMeterDesignations::CSV_URL, function () {
         fclose($out);
     }, 'belomo-kata-skat-oboznacheniya.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
 })->name('knowledge-base.belomo-designations.csv');
+Route::get('/dymohody/tis-standart-50', TisStandard50PriceListController::class)
+    ->name('chimneys.tis-standard-50');
+Route::get('/dymohody/tis-standart-50.csv', [TisStandard50PriceListController::class, 'csv'])
+    ->name('chimneys.tis-standard-50.csv');
 Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->middleware('public.form.protect:installer')->name('partners.apply-installer');
 Route::get('/suppliers', fn () => view('pages.suppliers'))->name('suppliers');
 Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->middleware('public.form.protect:supplier')->name('suppliers.apply');

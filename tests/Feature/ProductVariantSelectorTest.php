@@ -119,6 +119,30 @@ class ProductVariantSelectorTest extends TestCase
         $this->assertTrue($current->fresh()->variant_selector_excluded);
     }
 
+    public function test_tis_standard_50_cards_switch_between_diameters_of_the_same_element(): void
+    {
+        $category = Category::query()->updateOrCreate(['slug' => 'truby-mono'], [
+            'name' => 'Трубы одностенные',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $brand = Brand::query()->create([
+            'name' => 'Теплов и Сухов',
+            'slug' => 'teplov-i-suhov-selector-test',
+            'is_active' => true,
+        ]);
+        $current = $this->tisChimney($category, $brand, '115');
+        $second = $this->tisChimney($category, $brand, '150');
+        $this->tisChimney($category, $brand, '200', 'Труба моно L500 ТМ-Р (304-0.8)');
+
+        $selector = app(ProductVariantSelector::class)->forProduct($current);
+
+        $this->assertSame('diameter', $selector['type']);
+        $this->assertSame('Выберите диаметр:', $selector['title']);
+        $this->assertSame(['Ø115 мм', 'Ø150 мм'], $selector['variants']->pluck('label')->all());
+        $this->assertSame('/truby-mono/'.$second->slug, parse_url($selector['variants']->last()['url'], PHP_URL_PATH));
+    }
+
     private function tank(Category $category, Brand $brand, int $volume, string $availability, bool $inStock = false): Product
     {
         return Product::query()->create([
@@ -132,6 +156,27 @@ class ProductVariantSelectorTest extends TestCase
             'in_stock' => $inStock,
             'manual_stock_management' => true,
             'availability_status' => $availability,
+        ]);
+    }
+
+    private function tisChimney(Category $category, Brand $brand, string $diameter, string $element = 'Труба моно L1000 ТМ-Р (304-0.8)'): Product
+    {
+        return Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'ТиС Стандарт 50 '.$element.' D'.$diameter,
+            'slug' => 'tis-standard-50-'.str_replace('/', '-', $diameter).'-'.md5($element),
+            'sku' => 'TIS50-'.str_replace('/', '-', $diameter).'-'.substr(md5($element), 0, 5),
+            'price' => 100,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+            'specs' => [
+                'Серия' => 'ТиС «Стандарт 50»',
+                'Исполнение' => 'Моно',
+                'Тип элемента' => $element,
+                'Диаметр' => $diameter,
+            ],
         ]);
     }
 }

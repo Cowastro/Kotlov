@@ -52,6 +52,21 @@
         </div>
     </section>
 
+    @if (in_array($category->slug, ['dymohody', 'dymohody-mono', 'dymohody-sendvich'], true))
+        <section class="catalog-brand-note" aria-labelledby="tis-standard-50-title">
+            <div class="container">
+                <div class="catalog-brand-note__inner">
+                    <div>
+                        <span class="catalog-brand-note__eyebrow">Новая система дымоходов</span>
+                        <h2 id="tis-standard-50-title">ТиС «Стандарт 50»: Моно и Термо</h2>
+                        <p>Прайс по элементам и диаметрам, карточки AISI 304 и быстрый переход между типоразмерами. Поставка под заказ за 5–7 рабочих дней.</p>
+                    </div>
+                    <a href="{{ route('chimneys.tis-standard-50') }}" class="tf-btn btn-white btn-stroke">Открыть удобный прайс</a>
+                </div>
+            </div>
+        </section>
+    @endif
+
     @if ($category->slug === 'pelletnye-gorelki')
         @include('partials.pellet-burner-category-intro')
     @endif
