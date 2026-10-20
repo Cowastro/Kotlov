@@ -3,10 +3,12 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
+use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Models\CrmCounterparty;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Services\ProductVariantSelector;
 use App\Support\AdminPhoneLinks;
 use Carbon\Carbon;
 use Filament\Forms\Components\FileUpload;
@@ -91,6 +93,22 @@ class ProductForm
                         Placeholder::make('supplier_contacts_summary')
                             ->label('Контакты поставщика')
                             ->content(fn (?Product $record): HtmlString => self::supplierContactsHtml($record)),
+                    ]),
+
+                Section::make('Варианты модели на сайте')
+                    ->description('Автоматическая связь карточек одной серии. Для баков варианты определяются по бренду, модели и литражу.')
+                    ->columnSpanFull()
+                    ->visible(fn (?Product $record): bool => $record?->category?->slug === 'membrannye-baki')
+                    ->schema([
+                        Toggle::make('variant_selector_excluded')
+                            ->label('Не показывать эту карточку среди вариантов серии')
+                            ->helperText('Используйте, если система ошибочно объединила товар с другой моделью.')
+                            ->default(false),
+
+                        Placeholder::make('variant_selector_preview')
+                            ->label('Связанные карточки')
+                            ->content(fn (?Product $record): HtmlString => self::variantSelectorHtml($record))
+                            ->columnSpanFull(),
                     ]),
 
                 // ── Правая часть: статусы + цены (1/3 ширины) ──────────────
@@ -525,6 +543,42 @@ class ProductForm
         })->implode('<div style="height:8px"></div>');
 
         return new HtmlString($cards);
+    }
+
+    public static function variantSelectorHtml(?Product $record): HtmlString
+    {
+        if (! $record?->exists) {
+            return new HtmlString('<span style="color:#9ca3af">Сохраните товар, чтобы увидеть варианты.</span>');
+        }
+
+        $selector = app(ProductVariantSelector::class)->forAdmin($record);
+        if (! $selector) {
+            return new HtmlString('<span style="color:#9ca3af">Другие карточки этой серии пока не найдены.</span>');
+        }
+
+        $html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;">';
+        foreach ($selector['variants'] as $variant) {
+            /** @var Product $variantProduct */
+            $variantProduct = $variant['product'];
+            $border = $variant['is_current'] ? '#f59e0b' : '#3f3f46';
+            $status = $variant['is_excluded']
+                ? 'Исключён из выбора'
+                : ($variantProduct->is_active && ! $variantProduct->is_archived ? $variant['availability_label'] : 'Карточка выключена');
+            $statusColor = $variant['is_excluded'] ? '#f87171' : '#a1a1aa';
+            $url = ProductResource::getUrl('edit', ['record' => $variantProduct]);
+
+            $html .= '<a href="'.e($url).'" style="display:block;padding:12px;border:1px solid '.$border.';border-radius:9px;text-decoration:none;">'
+                .'<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;">'
+                .'<strong style="color:#fbbf24;font-size:14px;">'.e($variant['label']).'</strong>'
+                .($variant['is_current'] ? '<span style="font-size:11px;color:#fbbf24;">текущая</span>' : '')
+                .'</div>'
+                .'<div style="margin-top:5px;color:#e4e4e7;font-size:13px;line-height:1.35;">'.e($variantProduct->name).'</div>'
+                .'<div style="margin-top:7px;color:'.$statusColor.';font-size:12px;">'.e($status).' · '.e(number_format((float) $variantProduct->price, 2, '.', ' ')).' BYN</div>'
+                .'</a>';
+        }
+        $html .= '</div>';
+
+        return new HtmlString($html);
     }
 
     private static function findSupplierCounterparty(Supplier $supplier): ?CrmCounterparty

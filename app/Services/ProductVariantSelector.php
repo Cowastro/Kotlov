@@ -16,6 +16,21 @@ class ProductVariantSelector
      */
     public function forProduct(Product $product): ?array
     {
+        if ($product->variant_selector_excluded) {
+            return null;
+        }
+
+        return $this->build($product, false);
+    }
+
+    /** Same grouping as the storefront, including disabled/excluded cards for audit. */
+    public function forAdmin(Product $product): ?array
+    {
+        return $this->build($product, true);
+    }
+
+    private function build(Product $product, bool $forAdmin): ?array
+    {
         if ($product->category?->slug !== 'membrannye-baki') {
             return null;
         }
@@ -31,9 +46,11 @@ class ProductVariantSelector
         $variants = Product::query()
             ->where('category_id', $product->category_id)
             ->where('brand_id', $product->brand_id)
-            ->where('is_active', true)
-            ->where('is_archived', false)
-            ->where('price', '>', 0)
+            ->when(! $forAdmin, fn ($query) => $query
+                ->where('variant_selector_excluded', false)
+                ->where('is_active', true)
+                ->where('is_archived', false)
+                ->where('price', '>', 0))
             ->withSupplierChannels()
             ->with(['category:id,name,slug', 'brand:id,name,slug', 'allAttributeValues.attribute', 'allAttributeValues.option'])
             ->get()
@@ -52,6 +69,7 @@ class ProductVariantSelector
                     'availability_status' => $candidate->publicAvailabilityStatus(),
                     'availability_label' => $candidate->publicAvailabilityLabel(),
                     'is_current' => $candidate->is($product),
+                    'is_excluded' => (bool) $candidate->variant_selector_excluded,
                 ];
             })
             ->filter()

@@ -168,6 +168,17 @@ class ProductInfolist
                             ]),
                     ]),
 
+                Section::make('Варианты модели на сайте')
+                    ->description('Связанные карточки одной серии и их состояние.')
+                    ->columnSpanFull()
+                    ->visible(fn (Product $record): bool => $record->category?->slug === 'membrannye-baki')
+                    ->schema([
+                        TextEntry::make('variant_selector_preview')
+                            ->label('')
+                            ->state(fn (Product $record) => ProductForm::variantSelectorHtml($record))
+                            ->html(),
+                    ]),
+
                 Section::make('Описание')
                     ->columnSpan(8)
                     ->schema([

@@ -48,7 +48,7 @@ class Product extends Model
         'weight', 'unit', 'warranty',
         'is_active', 'is_archived', 'in_stock', 'availability_status', 'stock_qty',
         'requires_price_confirmation', 'manual_stock_management',
-        'is_featured', 'is_new', 'is_sale', 'sort_order',
+        'is_featured', 'is_new', 'is_sale', 'sort_order', 'variant_selector_excluded',
         'meta_title', 'meta_keywords', 'meta_description',
         'rating', 'reviews_count', 'views_count', 'popularity_score', 'popularity_updated_at',
     ];
@@ -67,6 +67,7 @@ class Product extends Model
         'is_featured' => 'boolean',
         'is_new' => 'boolean',
         'is_sale' => 'boolean',
+        'variant_selector_excluded' => 'boolean',
         'price' => 'decimal:2',
         'price_old' => 'decimal:2',
         'manual_purchase_price_byn' => 'decimal:2',

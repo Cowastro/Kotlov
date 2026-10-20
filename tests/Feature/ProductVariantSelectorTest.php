@@ -2,10 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Products\Pages\EditProduct;
+use App\Filament\Resources\Products\ProductResource;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\User;
+use App\Services\ProductVariantSelector;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class ProductVariantSelectorTest extends TestCase
@@ -53,6 +58,65 @@ class ProductVariantSelectorTest extends TestCase
             ->assertSee('is-in_stock', false);
 
         $this->assertSame(3, substr_count($response->getContent(), 'class="product-model-selector__option '));
+    }
+
+    public function test_excluded_product_remains_visible_in_admin_group_but_not_on_storefront(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Мембранные баки',
+            'slug' => 'membrannye-baki',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $brand = Brand::query()->create([
+            'name' => 'Wester',
+            'slug' => 'wester-selector-test',
+            'is_active' => true,
+        ]);
+
+        $current = $this->tank($category, $brand, 24, Product::AVAILABILITY_CHECK);
+        $excluded = $this->tank($category, $brand, 35, Product::AVAILABILITY_CHECK);
+        $excluded->update(['variant_selector_excluded' => true]);
+
+        $selector = app(ProductVariantSelector::class);
+
+        $this->assertNull($selector->forProduct($current));
+        $this->assertCount(2, $selector->forAdmin($current)['variants']);
+        $this->assertTrue($selector->forAdmin($current)['variants']->last()['is_excluded']);
+    }
+
+    public function test_admin_can_see_series_cards_and_exclude_the_current_product(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Мембранные баки',
+            'slug' => 'membrannye-baki',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $brand = Brand::query()->create([
+            'name' => 'Flamco Admin',
+            'slug' => 'flamco-admin-selector-test',
+            'is_active' => true,
+        ]);
+        $current = $this->tank($category, $brand, 25, Product::AVAILABILITY_CHECK);
+        $this->tank($category, $brand, 50, Product::AVAILABILITY_CHECK);
+
+        $this->actingAs($admin)
+            ->get(ProductResource::getUrl('edit', ['record' => $current], panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('Варианты модели на сайте')
+            ->assertSeeText('25 л')
+            ->assertSeeText('50 л')
+            ->assertSeeText('текущая');
+
+        Livewire::actingAs($admin)
+            ->test(EditProduct::class, ['record' => $current->getRouteKey()])
+            ->fillForm(['variant_selector_excluded' => true])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertTrue($current->fresh()->variant_selector_excluded);
     }
 
     private function tank(Category $category, Brand $brand, int $volume, string $availability, bool $inStock = false): Product
