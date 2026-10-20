@@ -141,6 +141,7 @@ class EurotermCatalog
             'Pragma' => 'no-cache',
             'Upgrade-Insecure-Requests' => '1',
         ])
+            ->withOptions(['verify' => resource_path('certificates/globalsign-root-r6.pem')])
             ->connectTimeout(10)
             ->timeout(45)
             ->retry(2, 700)

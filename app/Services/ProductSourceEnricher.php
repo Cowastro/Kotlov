@@ -694,7 +694,14 @@ class ProductSourceEnricher
 
     private function fetchHtml(string $url): string
     {
-        $response = Http::withHeaders($this->sourcePageRequestHeaders($url))
+        $request = Http::withHeaders($this->sourcePageRequestHeaders($url));
+        if ($this->isEurotermUrl($url)) {
+            $request = $request->withOptions([
+                'verify' => resource_path('certificates/globalsign-root-r6.pem'),
+            ]);
+        }
+
+        $response = $request
             ->connectTimeout(10)
             ->timeout(45)
             ->retry(2, 750)
