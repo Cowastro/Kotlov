@@ -672,6 +672,7 @@ class OrderInfolist
                                                     'purchase_price' => $record->fulfillment_purchase_price ?? $record->supply_purchase_price,
                                                     'availability_status' => $record->fulfillment_availability_status,
                                                     'request_reserve_now' => true,
+                                                    'reservation_quantity' => $record->quantity,
                                                     'reservation_recipient' => $supplier?->contactEmailAddresses()[0] ?? null,
                                                     'note' => null,
                                                 ];
@@ -715,10 +716,20 @@ class OrderInfolist
                                                     ->numeric()
                                                     ->minValue(0),
                                                 Checkbox::make('request_reserve_now')
-                                                    ->label(fn (OrderItem $record): string => 'Сразу отправить поставщику запрос наличия и резерва на '.$record->quantity.' шт.')
+                                                    ->label('Сразу отправить поставщику запрос наличия и резерва')
                                                     ->helperText('Письмо уйдёт с order@kotlov.by, а заявка и переписка сохранятся в заказе.')
                                                     ->visible(fn (Get $get): bool => in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
                                                     ->live(),
+                                                TextInput::make('reservation_quantity')
+                                                    ->label('Количество для закупки / резерва')
+                                                    ->numeric()
+                                                    ->integer()
+                                                    ->minValue(1)
+                                                    ->required(fn (Get $get): bool => (bool) $get('request_reserve_now')
+                                                        && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
+                                                    ->visible(fn (Get $get): bool => (bool) $get('request_reserve_now')
+                                                        && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
+                                                    ->helperText(fn (OrderItem $record): string => 'В заказе клиента '.$record->quantity.' шт. Можно запросить больше для пополнения склада.'),
                                                 TextInput::make('reservation_recipient')
                                                     ->label('Email поставщика')
                                                     ->email()
@@ -764,9 +775,23 @@ class OrderInfolist
                                                 if ($sendReserve) {
                                                     try {
                                                         $order = Order::query()->findOrFail($record->order_id);
+                                                        $reserveQuantity = max(1, (int) ($data['reservation_quantity'] ?? $record->quantity));
                                                         $request = app(SupplierOrderRequestBuilder::class)
                                                             ->buildDrafts($order, auth()->user(), $supplier->id, $data['fulfillment_route'])
                                                             ->firstOrFail();
+                                                        $requestItem = $request->items()->where('order_item_id', $record->id)->firstOrFail();
+                                                        $requestItem->forceFill([
+                                                            'quantity' => $reserveQuantity,
+                                                            'purchase_total' => $requestItem->purchase_price !== null
+                                                                ? (float) $requestItem->purchase_price * $reserveQuantity
+                                                                : null,
+                                                        ])->save();
+                                                        $request->load('items');
+                                                        $request->forceFill([
+                                                            'purchase_total' => $request->items->every(fn ($item): bool => $item->purchase_price !== null)
+                                                                ? $request->items->sum(fn ($item): float => (float) $item->purchase_total)
+                                                                : null,
+                                                        ])->save();
                                                         app(SupplierReservationMailService::class)->sendOrderRequest(
                                                             $request,
                                                             auth()->user(),
@@ -780,7 +805,9 @@ class OrderInfolist
                                                             'status_from' => $order->status,
                                                             'status_to' => $order->status,
                                                             'comment' => 'Запрос наличия и резерва отправлен поставщику '.$supplier->name
-                                                                .' · '.$record->product_name.' · '.$record->quantity.' шт. · '.$request->number,
+                                                                .' · '.$record->product_name.' · '.$reserveQuantity.' шт.'
+                                                                .($reserveQuantity !== (int) $record->quantity ? ' (в заказе клиента '.$record->quantity.' шт.)' : '')
+                                                                .' · '.$request->number,
                                                         ]);
                                                     } catch (\Throwable $exception) {
                                                         report($exception);
