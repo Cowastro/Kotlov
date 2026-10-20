@@ -75,6 +75,9 @@ class DomKotlovVenmaScraper
         }
 
         $priceRaw = $this->capture('~itemprop\s*=\s*["\']?price["\']?\s+content\s*=\s*["\']([^"\']+)~iu', $html);
+        if ($priceRaw === '') {
+            $priceRaw = $this->capture('~Цена:\s*<i\b[^>]*>\s*([\d\s.,]+)\s*</i>~iu', $html);
+        }
         $price = (float) str_replace(',', '.', preg_replace('/[^\d,.]+/u', '', $priceRaw) ?? '');
         if ($price <= 0) {
             return null;

@@ -68,6 +68,21 @@ HTML;
         $this->assertSame(9975.0, $card['retail_price']);
     }
 
+    public function test_it_reads_the_visible_supplier_price_when_microdata_is_missing(): void
+    {
+        $html = <<<'HTML'
+<h1>Пеллетная горелка Venma Comfort R58</h1>
+<b>Цена: <i>9975</i> руб.</b>
+<link itemprop=availability href='https://schema.org/InStock'>
+HTML;
+
+        $card = (new DomKotlovVenmaScraper())->parseProductHtml($html, 'https://domkotlov.by/r58');
+
+        $this->assertNotNull($card);
+        $this->assertSame(9975.0, $card['retail_price']);
+        $this->assertSame(8478.75, $card['purchase_price']);
+    }
+
     public function test_listing_keeps_only_unique_venma_product_links(): void
     {
         $html = <<<'HTML'
