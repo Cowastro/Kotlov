@@ -19,8 +19,11 @@ use App\Models\SupplierOrderRequest;
 use App\Services\Orders\OrderItemAvailabilityChecker;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderSettlementManager;
+use App\Services\Orders\SupplierOrderRequestBuilder;
+use App\Services\Orders\SupplierReservationMailService;
 use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -655,15 +658,21 @@ class OrderInfolist
                                             ->modalSubmitActionLabel('Подтвердить')
                                             ->fillForm(function (OrderItem $record): array {
                                                 $recommendedRoute = $record->supplyContext()['status'];
+                                                $supplierId = $record->fulfillment_supplier_id
+                                                    ?: data_get($record->current_availability, 'supplier_id')
+                                                    ?: $record->supply_supplier_id;
+                                                $supplier = $supplierId
+                                                    ? Supplier::query()->with('crmCounterparty.contactPoints')->find($supplierId)
+                                                    : null;
 
                                                 return [
                                                     'fulfillment_route' => $record->fulfillment_route
                                                         ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase'),
-                                                    'supplier_id' => $record->fulfillment_supplier_id
-                                                        ?: data_get($record->current_availability, 'supplier_id')
-                                                        ?: $record->supply_supplier_id,
+                                                    'supplier_id' => $supplierId,
                                                     'purchase_price' => $record->fulfillment_purchase_price ?? $record->supply_purchase_price,
                                                     'availability_status' => $record->fulfillment_availability_status,
+                                                    'request_reserve_now' => true,
+                                                    'reservation_recipient' => $supplier?->contactEmailAddresses()[0] ?? null,
                                                     'note' => null,
                                                 ];
                                             })
@@ -682,6 +691,13 @@ class OrderInfolist
                                                         ->all())
                                                     ->searchable()
                                                     ->required()
+                                                    ->live()
+                                                    ->afterStateUpdated(function ($state, Set $set): void {
+                                                        $supplier = $state
+                                                            ? Supplier::query()->with('crmCounterparty.contactPoints')->find($state)
+                                                            : null;
+                                                        $set('reservation_recipient', $supplier?->contactEmailAddresses()[0] ?? null);
+                                                    })
                                                     ->createOptionForm(self::newSupplierForm())
                                                     ->createOptionAction(fn (Action $action): Action => $action
                                                         ->label('Добавить поставщика')
@@ -698,6 +714,18 @@ class OrderInfolist
                                                     ->label('Подтверждённая входная цена за единицу, BYN')
                                                     ->numeric()
                                                     ->minValue(0),
+                                                Checkbox::make('request_reserve_now')
+                                                    ->label(fn (OrderItem $record): string => 'Сразу отправить поставщику запрос наличия и резерва на '.$record->quantity.' шт.')
+                                                    ->helperText('Письмо уйдёт с order@kotlov.by, а заявка и переписка сохранятся в заказе.')
+                                                    ->visible(fn (Get $get): bool => in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
+                                                    ->live(),
+                                                TextInput::make('reservation_recipient')
+                                                    ->label('Email поставщика')
+                                                    ->email()
+                                                    ->required(fn (Get $get): bool => (bool) $get('request_reserve_now')
+                                                        && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true))
+                                                    ->visible(fn (Get $get): bool => (bool) $get('request_reserve_now')
+                                                        && in_array($get('fulfillment_route'), ['supplier_purchase', 'direct_supplier'], true)),
                                                 Textarea::make('note')
                                                     ->label('Комментарий менеджера')
                                                     ->rows(3)
@@ -705,8 +733,23 @@ class OrderInfolist
                                             ])
                                             ->action(function (OrderItem $record, array $data): void {
                                                 $supplier = filled($data['supplier_id'] ?? null)
-                                                    ? Supplier::query()->findOrFail($data['supplier_id'])
+                                                    ? Supplier::query()->with('crmCounterparty.contactPoints')->findOrFail($data['supplier_id'])
                                                     : null;
+                                                $sendReserve = (bool) ($data['request_reserve_now'] ?? false)
+                                                    && in_array($data['fulfillment_route'], ['supplier_purchase', 'direct_supplier'], true);
+
+                                                if ($sendReserve) {
+                                                    $existing = $record->order->supplierOrderRequests()
+                                                        ->where('supplier_id', $supplier?->id)
+                                                        ->where('route', $data['fulfillment_route'])
+                                                        ->whereNotIn('status', ['draft', 'cancelled'])
+                                                        ->first();
+                                                    if ($existing) {
+                                                        throw \Illuminate\Validation\ValidationException::withMessages([
+                                                            'reservation_recipient' => 'Запрос этому поставщику уже отправляли: '.$existing->number.'.',
+                                                        ]);
+                                                    }
+                                                }
 
                                                 app(OrderItemFulfillmentManager::class)->confirm(
                                                     $record,
@@ -718,9 +761,42 @@ class OrderInfolist
                                                     $data['availability_status'],
                                                 );
 
+                                                if ($sendReserve) {
+                                                    try {
+                                                        $order = Order::query()->findOrFail($record->order_id);
+                                                        $request = app(SupplierOrderRequestBuilder::class)
+                                                            ->buildDrafts($order, auth()->user(), $supplier->id, $data['fulfillment_route'])
+                                                            ->firstOrFail();
+                                                        app(SupplierReservationMailService::class)->sendOrderRequest(
+                                                            $request,
+                                                            auth()->user(),
+                                                            (string) $data['reservation_recipient'],
+                                                            filled($data['note'] ?? null)
+                                                                ? $data['note']
+                                                                : 'Просим подтвердить актуальное наличие указанного количества и поставить товар в резерв.',
+                                                        );
+                                                        $order->statusHistory()->create([
+                                                            'user_id' => auth()->id(),
+                                                            'status_from' => $order->status,
+                                                            'status_to' => $order->status,
+                                                            'comment' => 'Запрос наличия и резерва отправлен поставщику '.$supplier->name
+                                                                .' · '.$record->product_name.' · '.$record->quantity.' шт. · '.$request->number,
+                                                        ]);
+                                                    } catch (\Throwable $exception) {
+                                                        report($exception);
+                                                        Notification::make()
+                                                            ->warning()
+                                                            ->title('Решение сохранено, но письмо не отправлено')
+                                                            ->body($exception->getMessage())
+                                                            ->send();
+
+                                                        return;
+                                                    }
+                                                }
+
                                                 Notification::make()
                                                     ->success()
-                                                    ->title('Поставщик и наличие подтверждены')
+                                                    ->title($sendReserve ? 'Поставщик подтверждён, запрос резерва отправлен' : 'Поставщик и наличие подтверждены')
                                                     ->body(($supplier?->name ?: 'Наш склад').' · '.OrderItem::FULFILLMENT_AVAILABILITY_STATUSES[$data['availability_status']])
                                                     ->send();
                                             }),
