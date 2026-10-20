@@ -96,7 +96,6 @@
                 <a href="/dymohody" class="tf-btn btn-fill">Все дымоходы</a>
                 <a href="{{ route('chimneys.tis-standard-30.csv') }}" class="tf-btn btn-white btn-stroke">Скачать прайс CSV</a>
                 <a href="/contacts" class="tf-btn btn-white btn-stroke">Помощь с комплектацией</a>
-                <a href="https://teplov.ru/catalog/dymokhodnye_sistemy/sistema_tis_standart_30/" class="tf-btn btn-white btn-stroke" target="_blank" rel="nofollow noopener">Источник характеристик</a>
             </div>
         </div>
     </section>
