@@ -396,6 +396,13 @@
                 if (qtyEl) qty = Math.max(1, parseInt(qtyEl.value, 10) || 1);
             }
 
+            var warehouseStockId = null;
+            var warehouseSelector = btn.dataset.warehouseSelect;
+            if (warehouseSelector) {
+                var warehouseEl = document.querySelector(warehouseSelector);
+                if (warehouseEl && warehouseEl.value) warehouseStockId = parseInt(warehouseEl.value, 10) || null;
+            }
+
             fetch('/cart/add', {
                 method: 'POST',
                 headers: {
@@ -403,9 +410,18 @@
                     'X-CSRF-TOKEN': csrf,
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ product_id: productId, quantity: qty }),
+                body: JSON.stringify({
+                    product_id: productId,
+                    quantity: qty,
+                    warehouse_stock_id: warehouseStockId,
+                }),
             })
-            .then(function (r) { return r.json(); })
+            .then(function (r) {
+                return r.json().then(function (data) {
+                    if (!r.ok) throw new Error(data.message || 'Не удалось добавить товар в корзину.');
+                    return data;
+                });
+            })
             .then(function (data) {
                 updateCartCount(data.count);
                 var cartCanvas = document.getElementById('shoppingCart');
@@ -416,8 +432,8 @@
                     loadMiniCart();
                 }
             })
-            .catch(function () {
-                loadMiniCart();
+            .catch(function (error) {
+                window.alert(error.message || 'Не удалось добавить товар в корзину.');
             })
             .finally(function () {
                 btn.style.opacity = '';

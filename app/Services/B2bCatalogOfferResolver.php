@@ -109,7 +109,17 @@ class B2bCatalogOfferResolver
             return $quantity >= 1 && $quantity <= 999;
         }
 
-        return $this->hasFreshStock($offer) && $quantity <= (float) $offer->stock_quantity;
+        if ($this->hasFreshStock($offer) && $quantity <= (float) $offer->stock_quantity) {
+            return true;
+        }
+
+        $warehouseStocks = $offer->product?->relationLoaded('warehouseStocks')
+            ? $offer->product->warehouseStocks
+            : $offer->product?->warehouseStocks()->available()->get();
+
+        return collect($warehouseStocks)->contains(
+            fn ($stock): bool => (float) $stock->available_quantity >= $quantity,
+        );
     }
 
     /** @return array{offer: IntegrationProduct, wholesale_price: float, retail_price: float, difference: float, difference_percent: float|null, vat_rate: float}|null */
@@ -147,7 +157,7 @@ class B2bCatalogOfferResolver
     private function loadPublishableOffers(Builder $query): Collection
     {
         return $query
-            ->with(['source', 'product.category'])
+            ->with(['source', 'product.category', 'product.warehouseStocks'])
             ->whereNotNull('product_id')
             ->where('match_status', 'matched')
             ->withUsablePrice()
@@ -157,7 +167,11 @@ class B2bCatalogOfferResolver
                 && $offer->source->hasPublishableB2bPrice()
                 && $offer->allowsB2bPublication()
                 && $offer->normalizedPriceByn() !== null
-                && ($this->isProcurementOffer($offer) || $this->hasFreshStock($offer))
+                && ($this->isProcurementOffer($offer)
+                    || $this->hasFreshStock($offer)
+                    || $offer->product?->warehouseStocks->contains(
+                        fn ($stock): bool => (float) $stock->available_quantity > 0,
+                    ))
                 && $this->sourceAllowsCategory($offer))
             ->values();
     }

@@ -40,17 +40,21 @@ class ManagerStorefrontProductContext
         }
 
         $product->loadMissing([
+            'brand:id,name,slug',
             'supplierProducts.supplier.crmCounterparty.contactPoints',
             'integrationProducts.source.supplier.crmCounterparty.contactPoints',
             'integrationProducts.source.latestSuccessfulCatalogExchangeRun',
+            'warehouseStocks.supplier.crmCounterparty.contactPoints',
         ]);
 
         $retailPrice = (float) $product->price > 0 ? (float) $product->price : null;
         $productNameKey = $this->productNameKey($product->name);
+        $isEcokamin = $product->brand?->slug === 'ecokamin'
+            || mb_strtolower((string) $product->brand?->name) === 'экокамин';
 
         $supplierOffers = $product->supplierProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->supplier?->name))
-            ->map(function ($offer) use ($retailPrice, $productNameKey): array {
+            ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin): array {
                 $quantity = $offer->stock_quantity;
                 $inStock = (float) $quantity > 0 || $offer->in_stock === true;
                 $purchasePrice = (float) $offer->price_byn > 0 ? (float) $offer->price_byn : null;
@@ -71,7 +75,7 @@ class ManagerStorefrontProductContext
                     'stock' => $quantity !== null
                         ? $this->formatQuantity((float) $quantity)
                         : ($inStock ? 'В наличии' : ($offer->stock_text ?: 'Нет в наличии')),
-                    'warehouse' => $offer->warehouse_name,
+                    'warehouse' => $this->warehouseLabel($offer->warehouse_name, $isEcokamin),
                     'delivery_days' => $offer->delivery_days,
                     'in_stock' => $inStock,
                     'is_fresh' => $offer->confirmsAvailability(),
@@ -81,7 +85,7 @@ class ManagerStorefrontProductContext
 
         $integrationOffers = $product->integrationProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->source?->supplier?->name))
-            ->map(function ($offer) use ($retailPrice, $productNameKey): array {
+            ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin): array {
                 $quantity = (float) $offer->stock_quantity;
                 $source = $offer->source;
                 $purchasePrice = $offer->normalizedPriceByn();
@@ -100,7 +104,10 @@ class ManagerStorefrontProductContext
                     'margin' => $this->margin($retailPrice, $purchasePrice),
                     'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
                     'stock' => $this->formatQuantity($quantity),
-                    'warehouse' => data_get($source?->settings, 'warehouse_label'),
+                    'warehouse' => $this->warehouseLabel(
+                        data_get($source?->settings, 'warehouse_label'),
+                        $isEcokamin,
+                    ),
                     'delivery_days' => null,
                     'in_stock' => $quantity > 0,
                     'is_fresh' => $offer->hasFreshPositiveStock(),
@@ -108,8 +115,34 @@ class ManagerStorefrontProductContext
                 ];
             });
 
+        $warehouseOffers = $product->warehouseStocks->map(function ($stock) use ($retailPrice): array {
+            $supplier = $stock->supplier;
+
+            return [
+                'supplier_key' => $this->supplierKey($supplier?->name),
+                'matches_product_name' => true,
+                'supplier' => $supplier?->name ?: 'ООО «СанБизнесГруп»',
+                'phones' => $supplier?->contactPhoneNumbers() ?? [],
+                'emails' => $supplier?->contactEmailAddresses() ?? [],
+                'contact' => $supplier?->contact,
+                'article' => $stock->external_article,
+                'supplier_product_name' => $stock->source_product_name,
+                'purchase_price' => null,
+                'retail_price' => $retailPrice,
+                'margin' => null,
+                'margin_percent' => null,
+                'stock' => $stock->formattedAvailableQuantity(),
+                'warehouse' => $stock->warehouse_name,
+                'delivery_days' => $stock->delivery_days,
+                'in_stock' => (float) $stock->available_quantity > 0,
+                'is_fresh' => true,
+                'updated_at' => $stock->as_of_date ?? $stock->last_synced_at,
+            ];
+        });
+
         return $supplierOffers
             ->concat($integrationOffers)
+            ->concat($warehouseOffers)
             ->sortBy([
                 ['matches_product_name', 'desc'],
                 ['is_fresh', 'desc'],
@@ -120,7 +153,7 @@ class ManagerStorefrontProductContext
             // (or have both a legacy and an integration offer). Managers need one
             // best current row per supplier, not repeated labels that consume the
             // compact card's two available slots.
-            ->unique('supplier_key')
+            ->unique(fn (array $offer): string => $offer['supplier_key'].'|'.mb_strtolower((string) ($offer['warehouse'] ?? '')))
             ->values();
     }
 
@@ -141,6 +174,16 @@ class ManagerStorefrontProductContext
         // These manufacturer catalogue links are not a separate sales supplier.
         // Keep their source data intact; SBG's real offers carry price and stock.
         return preg_replace('/[^\pL\pN]/u', '', mb_strtolower($name ?? '')) === 'тепловисухов';
+    }
+
+    private function warehouseLabel(?string $label, bool $isEcokamin): ?string
+    {
+        $label = trim((string) $label);
+        if ($isEcokamin && in_array(mb_strtolower($label), ['', 'основной', 'основной склад'], true)) {
+            return 'Склад Минск';
+        }
+
+        return $label !== '' ? $label : null;
     }
 
     private function formatQuantity(float $quantity): string

@@ -829,6 +829,15 @@ class OrderInfolist
                                             }),
                                     ),
 
+                                TextEntry::make('supply_warehouse_name')
+                                    ->label('Склад отгрузки')
+                                    ->columnSpan(2)
+                                    ->placeholder('Не выбран')
+                                    ->helperText(fn (OrderItem $record): ?string => $record->supply_delivery_days
+                                        ? 'Ориентировочная доставка: до '.$record->supply_delivery_days.' дней'
+                                        : null)
+                                    ->visible(fn (OrderItem $record): bool => filled($record->supply_warehouse_name)),
+
                                 TextEntry::make('supply_stock_summary')
                                     ->label('Наличие')
                                     ->columnSpan(2)

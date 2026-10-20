@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Coupon;
 use App\Models\Product;
+use App\Models\ProductWarehouseStock;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
@@ -36,11 +37,12 @@ class CartController extends Controller
         $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'quantity' => ['sometimes', 'integer', 'min:1', 'max:999'],
+            'warehouse_stock_id' => ['sometimes', 'nullable', 'integer', 'exists:product_warehouse_stocks,id'],
         ]);
 
         $product = Product::query()
             ->withSupplierChannels()
-            ->with('category:id,slug')
+            ->with(['category:id,slug', 'brand:id,slug,name', 'warehouseStocks'])
             ->findOrFail($request->product_id);
         $b2bOffer = $offerResolver->forProduct($product, $request->user());
 
@@ -84,7 +86,27 @@ class CartController extends Controller
 
         $qty = max(1, (int) $request->input('quantity', 1));
 
-        if ($b2bOffer && ! $offerResolver->canOrder($b2bOffer, $qty)) {
+        $warehouseStock = null;
+        if ($b2bOffer) {
+            $requestedWarehouseStockId = (int) $request->input('warehouse_stock_id', 0);
+            if ($requestedWarehouseStockId > 0) {
+                $warehouseStock = $product->warehouseStocks->firstWhere('id', $requestedWarehouseStockId);
+                if (! $warehouseStock || (float) $warehouseStock->available_quantity < $qty) {
+                    $message = 'На выбранном складе недостаточно товара. Выберите другой склад или уменьшите количество.';
+
+                    return $request->expectsJson()
+                        ? response()->json(['message' => $message], 422)
+                        : back()->with('error', $message);
+                }
+            } elseif (! $offerResolver->hasFreshStock($b2bOffer)) {
+                $warehouseStock = $product->warehouseStocks
+                    ->filter(fn ($stock): bool => (float) $stock->available_quantity >= $qty)
+                    ->sortBy('delivery_days')
+                    ->first();
+            }
+        }
+
+        if ($b2bOffer && ! $warehouseStock && ! $offerResolver->canOrder($b2bOffer, $qty)) {
             $message = 'Запрошенное количество превышает доступный остаток поставщика.';
 
             return $request->expectsJson()
@@ -106,6 +128,10 @@ class CartController extends Controller
             'price_tax_mode' => 'inclusive',
             'integration_product_id' => $b2bOffer->id,
             'source_name' => $b2bOffer->source?->name,
+            'warehouse_stock_id' => $warehouseStock?->id,
+            'warehouse_name' => $warehouseStock?->warehouse_name
+                ?: $this->b2bWarehouseLabel($product, $b2bOffer),
+            'warehouse_delivery_days' => $warehouseStock?->delivery_days,
         ] : [
             'pricing_type' => 'retail',
             'price_tax_mode' => null,
@@ -195,6 +221,19 @@ class CartController extends Controller
                         : back()->with('error', $message);
                 }
 
+                if ($warehouseStockId = (int) ($cart[$id]['warehouse_stock_id'] ?? 0)) {
+                    $warehouseStock = ProductWarehouseStock::query()->find($warehouseStockId);
+                    if (! $warehouseStock
+                        || (int) $warehouseStock->product_id !== $id
+                        || (float) $warehouseStock->available_quantity < $quantity) {
+                        $message = 'На выбранном складе больше нет нужного количества. Выберите склад заново.';
+
+                        return $request->expectsJson()
+                            ? response()->json(['message' => $message], 422)
+                            : back()->with('error', $message);
+                    }
+                }
+
                 $cart[$id]['price'] = $offerResolver->priceWithTax($offer);
             }
 
@@ -218,6 +257,16 @@ class CartController extends Controller
         }
 
         return back();
+    }
+
+    private function b2bWarehouseLabel(Product $product, $offer): string
+    {
+        $label = trim((string) data_get($offer?->source?->settings, 'warehouse_label'));
+        if (($product->brand?->slug === 'ecokamin') && in_array(mb_strtolower($label), ['', 'основной', 'основной склад'], true)) {
+            return 'Склад Минск';
+        }
+
+        return $label !== '' ? $label : 'Основной склад';
     }
 
     // ─────────────────────────────────────────

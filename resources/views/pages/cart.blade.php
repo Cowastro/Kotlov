@@ -77,6 +77,14 @@
                                                             Наличие и срок поставки подтвердит менеджер
                                                         </p>
                                                     @endif
+                                                    @if (($item['pricing_type'] ?? null) === 'b2b' && !empty($item['warehouse_name']))
+                                                        <p class="text-caption-01 mb-4">
+                                                            {{ $item['warehouse_name'] }}
+                                                            @if (!empty($item['warehouse_delivery_days']))
+                                                                · доставка до {{ $item['warehouse_delivery_days'] }} дней
+                                                            @endif
+                                                        </p>
+                                                    @endif
                                                     <form action="{{ route('cart.remove') }}" method="POST"
                                                         class="d-inline">
                                                         @csrf

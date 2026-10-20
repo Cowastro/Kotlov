@@ -248,6 +248,11 @@
                                     $showPreviewPrice = request()->boolean('admin-preview')
                                         && auth()->user()?->isManager()
                                         && (float) $product->price > 0;
+                                    $b2bWarehouseStocks = $b2bOffer
+                                        ? $product->warehouseStocks()->available()->orderBy('delivery_days')->get()
+                                        : collect();
+                                    $showMinskB2bWarehouse = $b2bOffer
+                                        && app(\App\Services\B2bCatalogOfferResolver::class)->hasFreshStock($b2bOffer);
                                 @endphp
 
                                 {{-- Цена --}}
@@ -304,6 +309,33 @@
                                 </div>
 
                                 @include('partials.manager-product-context', ['product' => $product])
+
+                                @if ($b2bOffer && ($showMinskB2bWarehouse || $b2bWarehouseStocks->isNotEmpty()))
+                                    <div class="mb-16">
+                                        <label for="b2b-warehouse-{{ $product->id }}" class="fw-semibold mb-6 d-block">
+                                            Склад отгрузки
+                                        </label>
+                                        <select id="b2b-warehouse-{{ $product->id }}" class="form-select b2b-warehouse-select">
+                                            @if ($showMinskB2bWarehouse)
+                                                <option value="">
+                                                    Склад Минск — {{ $b2bOffer->formattedStockQuantity() }}
+                                                </option>
+                                            @endif
+                                            @foreach ($b2bWarehouseStocks as $warehouseStock)
+                                                <option value="{{ $warehouseStock->id }}">
+                                                    {{ $warehouseStock->warehouse_name }} — {{ $warehouseStock->formattedAvailableQuantity() }}
+                                                    · доставка до {{ $warehouseStock->delivery_days }} дней
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @if ($b2bWarehouseStocks->isNotEmpty())
+                                            <p class="text-caption-01 cl-text-2 mt-4 mb-0">
+                                                Московский остаток показан за {{ optional($b2bWarehouseStocks->first()->as_of_date)->format('d.m.Y') }}.
+                                                Срок доставки в Минск — до 7 дней.
+                                            </p>
+                                        @endif
+                                    </div>
+                                @endif
 
                                 @if (!empty($product->promo_flags))
                                     <div class="d-flex flex-wrap gap-2 mb-12">
@@ -374,8 +406,13 @@
                                             <i class="icon icon-CheckCircle"></i>
                                             @if ($isProcurementOffer)
                                                 {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Под заказ') }}
+                                            @elseif (!$showMinskB2bWarehouse && $b2bWarehouseStocks->isNotEmpty())
+                                                {{ $b2bWarehouseStocks->first()->warehouse_name }}:
+                                                {{ $b2bWarehouseStocks->first()->formattedAvailableQuantity() }}
                                             @else
-                                                {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
+                                                {{ $product->brand?->slug === 'ecokamin'
+                                                    ? 'Склад Минск'
+                                                    : data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
                                                 {{ $b2bOffer->formattedStockQuantity() }}
                                             @endif
                                         </span>
@@ -440,7 +477,8 @@
                                             <a href="#shoppingCart"
                                                 class="tf-btn type-xl animate-btn w-100 btn-add-to-cart"
                                                 data-product-id="{{ $product->id }}"
-                                                data-qty-input=".product-main-qty">
+                                                data-qty-input=".product-main-qty"
+                                                @if ($b2bOffer) data-warehouse-select="#b2b-warehouse-{{ $product->id }}" @endif>
                                                 {{ $availabilityStatus === 'check' && ! $b2bOffer ? 'Заказать' : 'В корзину' }}
                                                 @if ($displayPrice > 0)
                                                     <span class="d-none d-sm-block d-md-none d-lg-block">&nbsp;—&nbsp;</span>
@@ -623,7 +661,8 @@
                     </div>
                     <a href="#shoppingCart"
                         class="tf-btn animate-btn btn-add-to-cart"
-                        data-product-id="{{ $product->id }}">
+                        data-product-id="{{ $product->id }}"
+                        @if ($b2bOffer) data-warehouse-select="#b2b-warehouse-{{ $product->id }}" @endif>
                         <span class="d-md-none">В корзину</span>
                         <span class="d-none d-md-inline">
                             В корзину

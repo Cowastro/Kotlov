@@ -13,6 +13,9 @@
     $b2bOffer = $b2bComparison['offer'] ?? null;
     $isB2bOffer = $b2bOffer !== null;
     $isProcurementOffer = $isB2bOffer && $b2bOffer->source?->isProcurementMode();
+    $b2bMoscowStock = $isB2bOffer && !app(\App\Services\B2bCatalogOfferResolver::class)->hasFreshStock($b2bOffer)
+        ? $b2bOffer->product?->warehouseStocks->first(fn ($stock) => (float) $stock->available_quantity > 0)
+        : null;
     $hasAssignedSupplier = method_exists($product, 'hasAssignedSupplier') && $product->hasAssignedSupplier();
     $canBuy = $isB2bOffer
         ? $hasAssignedSupplier && $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)
@@ -154,8 +157,11 @@
                     <i class="icon icon-CheckCircle"></i>
                     @if ($isProcurementOffer)
                         {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Под заказ') }}
+                    @elseif ($b2bMoscowStock)
+                        {{ $b2bMoscowStock->warehouse_name }}:
+                        {{ $b2bMoscowStock->formattedAvailableQuantity() }}
                     @else
-                        {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
+                        {{ $product->brand?->slug === 'ecokamin' ? 'Склад Минск' : data_get($b2bOffer->source?->settings, 'warehouse_label', 'Основной') }}:
                         {{ $b2bOffer->formattedStockQuantity() }}
                     @endif
                 </span>

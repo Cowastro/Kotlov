@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Brand;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\IntegrationWarehouse;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ProductWarehouseStock;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -132,6 +134,44 @@ class B2bCatalogPricingTest extends TestCase
             ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2])
             ->assertOk()
             ->assertJsonPath('subtotal', 368.76);
+    }
+
+    public function test_partner_can_choose_moscow_stock_when_minsk_offer_is_empty(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        $brand = Brand::query()->create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        $product->update(['brand_id' => $brand->id]);
+        $offer = IntegrationProduct::query()->where('product_id', $product->id)->firstOrFail();
+        $offer->update(['stock_quantity' => 0, 'stock_confirmed_at' => null]);
+        $moscow = ProductWarehouseStock::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $offer->source->supplier_id,
+            'warehouse_code' => 'ecokamin-moscow',
+            'warehouse_name' => 'Склад Москва',
+            'external_article' => $product->sku,
+            'available_quantity' => 4,
+            'delivery_days' => 7,
+            'as_of_date' => '2026-10-20',
+            'last_synced_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertSeeText('Склад Москва')
+            ->assertSeeText('доставка до 7 дней');
+
+        $this->actingAs($user)
+            ->postJson('/cart/add', [
+                'product_id' => $product->id,
+                'quantity' => 2,
+                'warehouse_stock_id' => $moscow->id,
+            ])
+            ->assertOk();
+
+        $this->assertSame($moscow->id, session('cart')[$product->id]['warehouse_stock_id']);
+        $this->assertSame('Склад Москва', session('cart')[$product->id]['warehouse_name']);
+        $this->assertSame(7, session('cart')[$product->id]['warehouse_delivery_days']);
     }
 
     public function test_public_product_page_shows_fresh_channel_quantity_instead_of_stale_summary(): void

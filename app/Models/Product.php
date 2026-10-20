@@ -888,6 +888,11 @@ class Product extends Model
         return $this->hasMany(IntegrationProduct::class);
     }
 
+    public function warehouseStocks(): HasMany
+    {
+        return $this->hasMany(ProductWarehouseStock::class);
+    }
+
     public function supplierMailThreads(): HasMany
     {
         return $this->hasMany(CrmMailThread::class);

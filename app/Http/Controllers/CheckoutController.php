@@ -7,6 +7,7 @@ use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductWarehouseStock;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
@@ -129,6 +130,18 @@ class CheckoutController extends Controller
                         'error',
                         'B2B-заказ не создан: одна из позиций потеряла привязку или больше недоступна в указанном количестве.'
                     );
+                }
+
+                if ($warehouseStockId = (int) ($item['warehouse_stock_id'] ?? 0)) {
+                    $warehouseStock = ProductWarehouseStock::query()->find($warehouseStockId);
+                    if (! $warehouseStock
+                        || (int) $warehouseStock->product_id !== (int) $item['id']
+                        || (float) $warehouseStock->available_quantity < (int) $item['quantity']) {
+                        return redirect()->route('cart')->with(
+                            'error',
+                            'B2B-заказ не создан: выбранный склад больше не располагает нужным количеством.'
+                        );
+                    }
                 }
 
                 $currentPrice = $offerResolver->priceWithTax($offer);
@@ -296,6 +309,9 @@ class CheckoutController extends Controller
                     'pricing_type' => $item['pricing_type'] ?? 'retail',
                     'price_tax_mode' => $item['price_tax_mode'] ?? null,
                     'integration_product_id' => $item['integration_product_id'] ?? null,
+                    'warehouse_stock_id' => $item['warehouse_stock_id'] ?? null,
+                    'supply_warehouse_name' => $item['warehouse_name'] ?? null,
+                    'supply_delivery_days' => $item['warehouse_delivery_days'] ?? null,
                 ]);
             }
 

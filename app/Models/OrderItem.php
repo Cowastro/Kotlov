@@ -35,10 +35,11 @@ class OrderItem extends Model
         'order_id', 'product_id',
         'product_name', 'product_sku',
         'price', 'quantity', 'total',
-        'pricing_type', 'price_tax_mode', 'integration_product_id',
+        'pricing_type', 'price_tax_mode', 'integration_product_id', 'warehouse_stock_id',
         'supply_status', 'supply_route_label', 'supply_supplier_id',
         'supply_integration_source_id', 'supply_channel', 'supply_supplier_name',
-        'supply_supplier_contact', 'supply_source_label', 'supply_purchase_price',
+        'supply_supplier_contact', 'supply_source_label', 'supply_warehouse_name',
+        'supply_delivery_days', 'supply_purchase_price',
         'supply_price_tax_mode', 'supply_vat_rate', 'supply_stock_quantity',
         'supply_is_available', 'supply_candidate_count', 'supply_captured_at',
         'current_availability', 'current_availability_checked_at', 'current_availability_checked_by',
@@ -146,6 +147,11 @@ class OrderItem extends Model
     public function integrationProduct(): BelongsTo
     {
         return $this->belongsTo(IntegrationProduct::class);
+    }
+
+    public function warehouseStock(): BelongsTo
+    {
+        return $this->belongsTo(ProductWarehouseStock::class);
     }
 
     public function fulfillmentSupplier(): BelongsTo
