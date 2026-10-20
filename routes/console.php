@@ -279,6 +279,15 @@ Schedule::command('supplier:sync-stank')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/stank-sync.log'));
 
+// VENMA pellet burners from Dom kotlov: storefront retail price stays equal
+// to the public source price; procurement is stored separately with 15% discount.
+Schedule::command('supplier:sync-domkotlov-venma --apply')
+    ->dailyAt('09:00')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(120)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/domkotlov-venma-sync.log'));
+
 // После всех основных прайсов страховка блокирует оформление товара, если
 // розница оказалась ниже закупки, маржа упала ниже минимума или цена выглядит
 // кратно завышенной. Цена не переписывается автоматически: менеджер видит

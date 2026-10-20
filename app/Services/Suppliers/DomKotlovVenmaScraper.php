@@ -1,0 +1,169 @@
+<?php
+
+namespace App\Services\Suppliers;
+
+use Illuminate\Support\Facades\Http;
+
+class DomKotlovVenmaScraper
+{
+    public const BASE_URL = 'https://domkotlov.by';
+
+    public const CATEGORY_URL = self::BASE_URL.'/katalog/pelletnye-gorelki';
+
+    /** @return list<string> */
+    public function discoverUrls(): array
+    {
+        return $this->parseListingHtml($this->fetch(self::CATEGORY_URL));
+    }
+
+    /** @return list<string> */
+    public function parseListingHtml(string $html): array
+    {
+        preg_match_all(
+            '~href\s*=\s*["\']([^"\']*pelletnaya-gorelka-venma[^"\']*)["\']~iu',
+            $html,
+            $matches,
+        );
+
+        return collect($matches[1] ?? [])
+            ->map(fn (string $url): string => $this->absoluteUrl(html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8')))
+            ->filter(fn (string $url): bool => str_starts_with($url, self::CATEGORY_URL.'/'))
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{
+     *   name:string,model:string,article:string,source_id:?string,url:string,
+     *   retail_price:float,purchase_price:float,in_stock:bool,stock_text:string,
+     *   short_description:?string,specs:array<string,string>,images:list<string>
+     * }|null
+     */
+    public function scrape(string $url): ?array
+    {
+        return $this->parseProductHtml($this->fetch($url), $url);
+    }
+
+    /** @return array<string, mixed>|null */
+    public function parseProductHtml(string $html, string $url): ?array
+    {
+        $name = $this->clean($this->capture('~<h1\b[^>]*>([\s\S]*?)</h1>~iu', $html));
+        if (! preg_match('/^Пеллетная горелка\s+Venma\s+Comfort\s+(R?\d+)$/iu', $name, $modelMatch)) {
+            return null;
+        }
+
+        $priceRaw = $this->capture('~itemprop\s*=\s*["\']?price["\']?\s+content\s*=\s*["\']([^"\']+)~iu', $html);
+        $price = (float) str_replace(',', '.', preg_replace('/[^\d,.]+/u', '', $priceRaw) ?? '');
+        if ($price <= 0) {
+            return null;
+        }
+
+        $availability = $this->capture('~itemprop\s*=\s*["\']?availability["\']?\s+href\s*=\s*["\']([^"\']+)~iu', $html);
+        $inStock = str_ends_with(mb_strtolower($availability), '/instock');
+        $sourceId = $this->capture('~itemprop\s*=\s*["\']?mpn["\']?\s+content\s*=\s*["\']([^"\']+)~iu', $html) ?: null;
+        $sourceSku = $this->capture('~itemprop\s*=\s*["\']?sku["\']?\s+content\s*=\s*["\']([^"\']+)~iu', $html);
+        $article = $sourceId ? 'VENMA-'.$sourceId : 'VENMA-'.mb_strtoupper($modelMatch[1]);
+
+        $description = null;
+        if (preg_match('~<div\s+itemprop\s*=\s*["\']?description["\']?[^>]*>([\s\S]*?)</div>~iu', $html, $descriptionMatch)) {
+            $description = $this->clean($descriptionMatch[1]) ?: null;
+        }
+
+        $specs = $this->specs($html);
+        $images = $this->images($html);
+
+        return [
+            'name' => $name,
+            'model' => mb_strtoupper($modelMatch[1]),
+            'article' => $article,
+            'source_id' => $sourceId,
+            'source_sku' => $sourceSku ?: null,
+            'url' => $url,
+            'retail_price' => round($price, 2),
+            'purchase_price' => round($price * 0.85, 2),
+            'in_stock' => $inStock,
+            'stock_text' => $inStock ? 'В наличии на domkotlov.by' : 'Нет в наличии на domkotlov.by',
+            'short_description' => $description,
+            'specs' => $specs,
+            'images' => $images,
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function specs(string $html): array
+    {
+        $marker = mb_stripos($html, 'Технические характеристики:');
+        if ($marker === false) {
+            return [];
+        }
+
+        $tail = mb_substr($html, $marker);
+        if (! preg_match('~<table\b[^>]*>([\s\S]*?)</table>~iu', $tail, $tableMatch)) {
+            return [];
+        }
+
+        preg_match_all('~<tr\b[^>]*>\s*<td\b[^>]*>([\s\S]*?)</td>\s*<td\b[^>]*>([\s\S]*?)</td>\s*</tr>~iu', $tableMatch[1], $rows, PREG_SET_ORDER);
+        $specs = [];
+        foreach ($rows as $row) {
+            $key = rtrim($this->clean($row[1]), ": \t\n\r\0\x0B");
+            $value = $this->clean($row[2]);
+            if ($key !== '' && $value !== '' && mb_strlen($key) <= 160) {
+                $specs[$key] = $value;
+            }
+        }
+
+        return $specs;
+    }
+
+    /** @return list<string> */
+    private function images(string $html): array
+    {
+        $end = mb_stripos($html, '<div itemprop=description');
+        $productBlock = $end !== false
+            ? mb_substr($html, 0, $end)
+            : $html;
+
+        preg_match_all('~<img\b[^>]*\b(?:src|data-src)\s*=\s*["\']([^"\']+)["\'][^>]*>~iu', $productBlock, $matches);
+
+        return collect($matches[1] ?? [])
+            ->filter(fn (string $url): bool => str_contains($url, '/images/product/') || str_contains($url, '/images/image/'))
+            ->map(fn (string $url): string => $this->absoluteUrl($url))
+            ->unique()
+            ->take(8)
+            ->values()
+            ->all();
+    }
+
+    private function fetch(string $url): string
+    {
+        return Http::withHeaders([
+            'User-Agent' => 'Mozilla/5.0 (compatible; KotlovCatalogBot/1.0)',
+            'Accept-Language' => 'ru-BY,ru;q=0.9,en;q=0.7',
+        ])->timeout(35)->retry(3, 500)->get($url)->throw()->body();
+    }
+
+    private function absoluteUrl(string $url): string
+    {
+        if (preg_match('~^https?://~i', $url)) {
+            return $url;
+        }
+
+        return self::BASE_URL.'/'.ltrim($url, '/');
+    }
+
+    private function capture(string $pattern, string $subject): string
+    {
+        return preg_match($pattern, $subject, $match)
+            ? html_entity_decode(trim($match[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8')
+            : '';
+    }
+
+    private function clean(string $value): string
+    {
+        $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+    }
+}
