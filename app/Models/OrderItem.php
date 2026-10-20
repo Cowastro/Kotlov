@@ -21,6 +21,13 @@ class OrderItem extends Model
         'direct_supplier' => 'Передать поставщику напрямую',
     ];
 
+    public const FULFILLMENT_AVAILABILITY_STATUSES = [
+        'available' => 'Наличие подтверждено',
+        'reserved' => 'Зарезервировано',
+        'ordered' => 'Заказано у поставщика',
+        'unavailable' => 'Нет в наличии',
+    ];
+
     /** @var array<string, mixed>|null */
     private ?array $supplyContextCache = null;
 
@@ -37,7 +44,7 @@ class OrderItem extends Model
         'current_availability', 'current_availability_checked_at', 'current_availability_checked_by',
         'fulfillment_route', 'fulfillment_supplier_id', 'fulfillment_supplier_name',
         'fulfillment_supplier_contact', 'fulfillment_purchase_price', 'fulfillment_confirmed_by',
-        'fulfillment_confirmed_at', 'fulfillment_note',
+        'fulfillment_availability_status', 'fulfillment_confirmed_at', 'fulfillment_note',
     ];
 
     protected $casts = [
@@ -86,6 +93,7 @@ class OrderItem extends Model
                 'fulfillment_supplier_name' => null,
                 'fulfillment_supplier_contact' => null,
                 'fulfillment_purchase_price' => null,
+                'fulfillment_availability_status' => null,
                 'fulfillment_confirmed_by' => null,
                 'fulfillment_confirmed_at' => null,
                 'fulfillment_note' => null,
@@ -177,6 +185,13 @@ class OrderItem extends Model
             : null;
     }
 
+    public function fulfillmentAvailabilityLabel(): ?string
+    {
+        return $this->fulfillment_availability_status
+            ? (self::FULFILLMENT_AVAILABILITY_STATUSES[$this->fulfillment_availability_status] ?? $this->fulfillment_availability_status)
+            : null;
+    }
+
     /** @return array<string, mixed> */
     public function supplyContext(): array
     {
@@ -190,7 +205,9 @@ class OrderItem extends Model
 
         return filled($current)
             ? $current
-            : ($this->fulfillment_supplier_contact ?: $this->supply_supplier_contact);
+            : ($this->fulfillment_supplier_contact
+                ?: data_get($this->current_availability, 'supplier_contact')
+                ?: $this->supply_supplier_contact);
     }
 
     public function publicProductUrl(bool $adminPreview = true): ?string

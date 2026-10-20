@@ -32,7 +32,7 @@
             @foreach($order->items as $item)
                 @php
                     $supplier = $item->fulfillmentSupplier ?: $item->supplySupplier;
-                    $supplierName = $item->fulfillment_supplier_name ?: $supplier?->name ?: $item->supply_supplier_name;
+                    $supplierName = $item->fulfillment_supplier_name ?: $supplier?->name ?: data_get($item->current_availability, 'supplier_name') ?: $item->supply_supplier_name;
                     $purchasePrice = $item->fulfillment_purchase_price ?? $item->supply_purchase_price;
                     $request = $item->supplierOrderRequestItem?->request;
                     $fulfillmentStatus = $request
@@ -40,6 +40,7 @@
                         : ($item->fulfillment_confirmed_at
                             ? ($item->fulfillmentRouteLabel() ?: 'Исполнение подтверждено')
                             : 'Ожидает решения менеджера');
+                    $availabilityDecision = $item->fulfillmentAvailabilityLabel();
                     $image = $item->product?->imageUrl();
                 @endphp
                 <article class="item">
@@ -51,7 +52,12 @@
                     <div><div class="cell-title">Розничная цена</div><div class="money">{{ number_format((float) $item->price, 2, ',', ' ') }} BYN</div><div class="small">Сумма {{ number_format((float) $item->total, 2, ',', ' ') }} BYN</div></div>
                     <div><div class="cell-title">Поставщик и закупка</div><strong>{{ $supplierName ?: ($item->fulfillment_route === 'own_stock' ? 'Наш склад' : 'не определён') }}</strong><div class="small">{{ $purchasePrice !== null ? number_format((float) $purchasePrice, 2, ',', ' ').' BYN' : 'Входная цена не указана' }}</div><div class="small">{!! nl2br(e($item->currentSupplyContact() ?: 'Контакты не указаны')) !!}</div></div>
                     <div><div class="cell-title">Наличие и статус</div>
-                        @if($item->supply_stock_quantity !== null)
+                        @if($availabilityDecision)
+                            <strong>{{ $availabilityDecision }}</strong>
+                            <div class="small">{{ $item->fulfillmentConfirmedBy?->name ?: 'Менеджер' }}@if($item->fulfillment_confirmed_at) · {{ $item->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}@endif</div>
+                        @elseif($item->fulfillment_confirmed_at)
+                            <strong>Исполнение подтверждено менеджером</strong>
+                        @elseif($item->supply_stock_quantity !== null)
                             <strong>{{ rtrim(rtrim(number_format((float) $item->supply_stock_quantity, 3, ',', ' '), '0'), ',') }} шт.</strong>
                         @elseif($item->supply_is_available === true)
                             <strong>В наличии</strong><div class="small">Количество не указано</div>

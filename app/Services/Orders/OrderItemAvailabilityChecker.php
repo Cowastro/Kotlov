@@ -4,6 +4,7 @@ namespace App\Services\Orders;
 
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use Carbon\CarbonInterface;
 
@@ -32,12 +33,25 @@ class OrderItemAvailabilityChecker
                 : 'Сейчас нет в наличии';
             $context['stock_updated_at'] = $item->product->updated_at;
             $context['source_label'] = 'Ручное наличие карточки';
+
+            if (! $context['supplier_id']) {
+                $supplier = Supplier::query()
+                    ->where('code', 'sanbusinessgroup')
+                    ->orWhere('name', 'like', '%СанБизнесГруп%')
+                    ->first();
+                $context['status'] = 'own_stock';
+                $context['route_label'] = 'Наш склад';
+                $context['supplier_id'] = $supplier?->id;
+                $context['supplier_name'] = $supplier?->name ?? 'ООО «СанБизнесГруп»';
+                $context['supplier_contact'] = $supplier?->contactSummary();
+            }
         }
 
         $check = [
             'status' => $context['status'],
             'supplier_id' => $context['supplier_id'],
             'supplier_name' => $context['supplier_name'],
+            'supplier_contact' => $context['supplier_contact'],
             'source_label' => $context['source_label'],
             'stock_quantity' => $context['stock_quantity'],
             'stock_label' => $context['stock_label'],

@@ -11,11 +11,16 @@ use App\Models\OrderAccountingRequest;
 use App\Models\OrderEconomicSnapshot;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
+use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
 use App\Services\Orders\OrderItemAvailabilityChecker;
+use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderSettlementManager;
 use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -619,9 +624,94 @@ class OrderInfolist
                                 TextEntry::make('supply_supplier')
                                     ->label('Поставщик')
                                     ->columnSpan(2)
-                                    ->state(fn ($record): ?string => $record->supplyContext()['supplier_name'])
+                                    ->state(fn (OrderItem $record): ?string => $record->fulfillment_supplier_name
+                                        ?: $record->fulfillmentSupplier?->name
+                                        ?: data_get($record->current_availability, 'supplier_name')
+                                        ?: $record->supplyContext()['supplier_name'])
                                     ->placeholder('Не определён')
-                                    ->weight('bold'),
+                                    ->helperText(function (OrderItem $record): ?string {
+                                        $recommended = data_get($record->current_availability, 'supplier_name')
+                                            ?: $record->supplyContext()['supplier_name'];
+                                        $assigned = $record->fulfillment_supplier_name ?: $record->fulfillmentSupplier?->name;
+
+                                        return $assigned && $recommended && $assigned !== $recommended
+                                            ? 'Рекомендация базы: '.$recommended
+                                            : null;
+                                    })
+                                    ->weight('bold')
+                                    ->suffixAction(
+                                        Action::make('assignItemSupplier')
+                                            ->label('Назначить')
+                                            ->icon('heroicon-o-arrows-right-left')
+                                            ->color('warning')
+                                            ->tooltip('Назначить или сменить фактического поставщика')
+                                            ->modalHeading(fn (OrderItem $record): string => 'Поставщик: '.$record->product_name)
+                                            ->modalDescription('Рекомендация из базы сохранится для сравнения. Здесь фиксируется фактический поставщик, наличие или резерв и решение менеджера.')
+                                            ->fillForm(function (OrderItem $record): array {
+                                                $recommendedRoute = $record->supplyContext()['status'];
+
+                                                return [
+                                                    'fulfillment_route' => $record->fulfillment_route
+                                                        ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase'),
+                                                    'supplier_id' => $record->fulfillment_supplier_id
+                                                        ?: data_get($record->current_availability, 'supplier_id')
+                                                        ?: $record->supply_supplier_id,
+                                                    'purchase_price' => $record->fulfillment_purchase_price ?? $record->supply_purchase_price,
+                                                    'availability_status' => $record->fulfillment_availability_status,
+                                                    'note' => null,
+                                                ];
+                                            })
+                                            ->schema([
+                                                Select::make('fulfillment_route')
+                                                    ->label('Как исполняем')
+                                                    ->options(OrderItem::FULFILLMENT_ROUTES)
+                                                    ->required()
+                                                    ->live(),
+                                                Select::make('supplier_id')
+                                                    ->label('Фактический поставщик')
+                                                    ->options(fn (): array => Supplier::query()
+                                                        ->where('is_active', true)
+                                                        ->orderBy('name')
+                                                        ->pluck('name', 'id')
+                                                        ->all())
+                                                    ->searchable()
+                                                    ->required()
+                                                    ->helperText('Можно выбрать любого активного поставщика, даже если товар первоначально был подобран у другого.'),
+                                                Select::make('availability_status')
+                                                    ->label('Решение по наличию')
+                                                    ->options(OrderItem::FULFILLMENT_AVAILABILITY_STATUSES)
+                                                    ->required(),
+                                                TextInput::make('purchase_price')
+                                                    ->label('Подтверждённая входная цена за единицу, BYN')
+                                                    ->numeric()
+                                                    ->minValue(0),
+                                                Textarea::make('note')
+                                                    ->label('Комментарий менеджера')
+                                                    ->rows(3)
+                                                    ->maxLength(2000),
+                                            ])
+                                            ->action(function (OrderItem $record, array $data): void {
+                                                $supplier = filled($data['supplier_id'] ?? null)
+                                                    ? Supplier::query()->findOrFail($data['supplier_id'])
+                                                    : null;
+
+                                                app(OrderItemFulfillmentManager::class)->confirm(
+                                                    $record,
+                                                    $data['fulfillment_route'],
+                                                    $supplier,
+                                                    auth()->user(),
+                                                    $data['note'] ?? null,
+                                                    filled($data['purchase_price'] ?? null) ? (float) $data['purchase_price'] : null,
+                                                    $data['availability_status'],
+                                                );
+
+                                                Notification::make()
+                                                    ->success()
+                                                    ->title('Поставщик и наличие подтверждены')
+                                                    ->body(($supplier?->name ?: 'Наш склад').' · '.OrderItem::FULFILLMENT_AVAILABILITY_STATUSES[$data['availability_status']])
+                                                    ->send();
+                                            }),
+                                    ),
 
                                 TextEntry::make('supply_stock_summary')
                                     ->label('Наличие')
@@ -693,6 +783,7 @@ class OrderInfolist
                                             $record->fulfillment_purchase_price !== null
                                                 ? 'вход '.$byn($record->fulfillment_purchase_price)
                                                 : 'входная цена не указана',
+                                            $record->fulfillmentAvailabilityLabel(),
                                             $record->fulfillment_confirmed_at
                                                 ? 'подтвердил '.($record->fulfillmentConfirmedBy?->name ?? 'система')
                                                     .' · '.$record->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i')

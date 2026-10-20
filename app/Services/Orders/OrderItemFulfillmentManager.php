@@ -18,6 +18,7 @@ class OrderItemFulfillmentManager
         ?User $user,
         ?string $note = null,
         ?float $purchasePrice = null,
+        ?string $availabilityStatus = null,
     ): OrderItem {
         if (! array_key_exists($route, OrderItem::FULFILLMENT_ROUTES)) {
             throw ValidationException::withMessages([
@@ -31,7 +32,13 @@ class OrderItemFulfillmentManager
             ]);
         }
 
-        return DB::transaction(function () use ($item, $route, $supplier, $user, $note, $purchasePrice): OrderItem {
+        if ($availabilityStatus !== null && ! array_key_exists($availabilityStatus, OrderItem::FULFILLMENT_AVAILABILITY_STATUSES)) {
+            throw ValidationException::withMessages([
+                'availability_status' => 'Выберите допустимый статус наличия.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($item, $route, $supplier, $user, $note, $purchasePrice, $availabilityStatus): OrderItem {
             $item = OrderItem::query()->lockForUpdate()->findOrFail($item->getKey());
             $previousRoute = $item->fulfillment_route;
             $previousSupplierId = $item->fulfillment_supplier_id;
@@ -53,6 +60,7 @@ class OrderItemFulfillmentManager
                 'fulfillment_purchase_price' => $route === 'own_stock'
                     ? ($purchasePrice ?? ($item->supply_purchase_price !== null ? (float) $item->supply_purchase_price : null))
                     : $confirmedPrice,
+                'fulfillment_availability_status' => $availabilityStatus,
                 'fulfillment_confirmed_by' => $user?->id,
                 'fulfillment_confirmed_at' => now(),
                 'fulfillment_note' => filled($note) ? trim($note) : null,
@@ -70,6 +78,7 @@ class OrderItemFulfillmentManager
                 'supplier_name' => $supplier?->name,
                 'supplier_contact' => $supplier?->contact,
                 'purchase_price' => $item->fulfillment_purchase_price,
+                'availability_status' => $availabilityStatus,
                 'note' => filled($note) ? trim($note) : null,
             ]);
 

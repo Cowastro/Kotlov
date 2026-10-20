@@ -43,10 +43,11 @@
         @foreach($order->items as $item)
             @php
                 $supplier = $item->fulfillmentSupplier ?: $item->supplySupplier;
-                $supplierName = $item->fulfillment_supplier_name ?: $supplier?->name ?: $item->supply_supplier_name;
+                $supplierName = $item->fulfillment_supplier_name ?: $supplier?->name ?: data_get($item->current_availability, 'supplier_name') ?: $item->supply_supplier_name;
                 $purchasePrice = $item->fulfillment_purchase_price ?? $item->supply_purchase_price;
                 $request = $item->supplierOrderRequestItem?->request;
                 $status = $request?->statusLabel() ?? ($item->fulfillment_confirmed_at ? ($item->fulfillmentRouteLabel() ?: 'Подтверждено') : 'Ожидает решения');
+                $availabilityDecision = $item->fulfillmentAvailabilityLabel();
             @endphp
             <tr>
                 <td><strong>{{ $item->product_name }}</strong><br><span class="muted">{{ $item->product_sku ?: 'без артикула' }}</span></td>
@@ -55,7 +56,7 @@
                 <td class="money">{{ number_format((float)$item->total, 2, ',', ' ') }} BYN</td>
                 <td>{{ $supplierName ?: ($item->fulfillment_route === 'own_stock' ? 'Наш склад' : 'не определён') }}</td>
                 <td class="money">{{ $purchasePrice !== null ? number_format((float)$purchasePrice, 2, ',', ' ').' BYN' : '—' }}</td>
-                <td>@if($item->supply_stock_quantity !== null){{ rtrim(rtrim(number_format((float)$item->supply_stock_quantity, 3, ',', ' '), '0'), ',') }} шт.@elseif($item->supply_is_available === true)В наличии@elseif($item->supply_is_available === false)Нет остатка@elseНеизвестно@endif</td>
+                <td>@if($availabilityDecision)<strong>{{ $availabilityDecision }}</strong>@if($item->fulfillment_confirmed_at)<br><span class="muted">{{ $item->fulfillmentConfirmedBy?->name ?: 'Менеджер' }} · {{ $item->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</span>@endif @elseif($item->fulfillment_confirmed_at)Исполнение подтверждено менеджером @elseif($item->supply_stock_quantity !== null){{ rtrim(rtrim(number_format((float)$item->supply_stock_quantity, 3, ',', ' '), '0'), ',') }} шт.@elseif($item->supply_is_available === true)В наличии@elseif($item->supply_is_available === false)Нет остатка@elseНеизвестно@endif</td>
                 <td>{!! nl2br(e($item->currentSupplyContact() ?: '—')) !!}</td>
                 <td><span class="status">{{ $status }}</span>@if($request?->supplier_response_note)<br>{{ $request->supplier_response_note }}@endif</td>
             </tr>

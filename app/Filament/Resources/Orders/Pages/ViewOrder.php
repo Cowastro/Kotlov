@@ -21,6 +21,7 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -29,6 +30,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Enums\Width;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class ViewOrder extends ViewRecord
@@ -105,10 +107,22 @@ class ViewOrder extends ViewRecord
                         ->label('Комментарий')
                         ->rows(3)
                         ->maxLength(2000),
+                    Select::make('availability_status')
+                        ->label('Решение по наличию всех позиций')
+                        ->options([
+                            'available' => 'Наличие подтверждено',
+                            'reserved' => 'Всё зарезервировано',
+                        ])
+                        ->required(),
+                    Checkbox::make('availability_confirmation')
+                        ->label('Подтверждаю: поставщики выбраны, наличие или резерв проверены по всем позициям')
+                        ->accepted()
+                        ->required(),
                 ])
                 ->modalSubmitActionLabel('Отправить')
                 ->action(function (array $data): void {
                     $user = auth()->user();
+                    $this->confirmAvailabilityBeforeShare($data['availability_status'], $data['note'] ?? null);
                     $portal = app(OrderPortal::class);
                     $portalLink = $portal->publish($this->record, $user);
                     $thread = app(SupplierRequestMailDraftService::class)->createOrderProcurementDraft(
@@ -260,8 +274,25 @@ class ViewOrder extends ViewRecord
                     ->icon('heroicon-o-qr-code')
                     ->color('primary')
                     ->visible(fn (): bool => ! $this->orderPortalIsComplete())
-                    ->action(function (): void {
+                    ->modalHeading('Создать ссылку на подтверждённый заказ')
+                    ->modalDescription('Перед публикацией менеджер обязан подтвердить поставщиков и наличие всех позиций.')
+                    ->schema([
+                        Select::make('availability_status')
+                            ->label('Решение по наличию всех позиций')
+                            ->options([
+                                'available' => 'Наличие подтверждено',
+                                'reserved' => 'Всё зарезервировано',
+                            ])
+                            ->required(),
+                        Checkbox::make('availability_confirmation')
+                            ->label('Подтверждаю: поставщики выбраны, наличие или резерв проверены по всем позициям')
+                            ->accepted()
+                            ->required(),
+                    ])
+                    ->modalSubmitActionLabel('Подтвердить и создать ссылку')
+                    ->action(function (array $data): void {
                         try {
+                            $this->confirmAvailabilityBeforeShare($data['availability_status']);
                             $portal = app(OrderPortal::class);
                             $link = $portal->publish($this->record, auth()->user());
                             Notification::make()
@@ -412,7 +443,12 @@ class ViewOrder extends ViewRecord
                             ->pluck('name', 'id')
                             ->all())
                         ->searchable()
-                        ->helperText('Обязателен для закупки и прямой передачи. Для нашего склада можно не выбирать.'),
+                        ->required()
+                        ->helperText('Обязателен для любой позиции, включая товар с нашего склада.'),
+                    Select::make('availability_status')
+                        ->label('Решение по наличию')
+                        ->options(OrderItem::FULFILLMENT_AVAILABILITY_STATUSES)
+                        ->required(),
                     TextInput::make('purchase_price')
                         ->label('Подтверждённая входная цена за единицу, BYN')
                         ->numeric()
@@ -436,6 +472,7 @@ class ViewOrder extends ViewRecord
                         auth()->user(),
                         $data['note'] ?? null,
                         filled($data['purchase_price'] ?? null) ? (float) $data['purchase_price'] : null,
+                        $data['availability_status'],
                     );
 
                     if ($this->record->status === 'new') {
@@ -903,6 +940,40 @@ class ViewOrder extends ViewRecord
             ?->fulfillmentSupplier;
 
         return $supplier?->contactEmailAddresses()[0] ?? null;
+    }
+
+    private function confirmAvailabilityBeforeShare(string $availabilityStatus, ?string $note = null): void
+    {
+        $this->record->load('items.fulfillmentSupplier');
+
+        $missing = $this->record->items->filter(function (OrderItem $item): bool {
+            if (blank($item->fulfillment_route)) {
+                return true;
+            }
+
+            return $item->fulfillment_supplier_id === null;
+        });
+
+        if ($missing->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'availability_confirmation' => 'Сначала назначьте фактического поставщика и маршрут для: '
+                    .$missing->pluck('product_name')->implode(', ').'.',
+            ]);
+        }
+
+        foreach ($this->record->items as $item) {
+            app(OrderItemFulfillmentManager::class)->confirm(
+                $item,
+                $item->fulfillment_route,
+                $item->fulfillmentSupplier,
+                auth()->user(),
+                collect(['Подтверждено перед отправкой заказа.', $note])->filter()->implode(' '),
+                $item->fulfillment_purchase_price !== null ? (float) $item->fulfillment_purchase_price : null,
+                $availabilityStatus,
+            );
+        }
+
+        $this->reloadRecord();
     }
 
     private function procurementEmailBody(string $portalUrl, ?string $note = null): string

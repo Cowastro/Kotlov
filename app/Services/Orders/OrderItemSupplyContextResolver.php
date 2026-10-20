@@ -214,10 +214,10 @@ class OrderItemSupplyContextResolver
     {
         return collect($item->product?->integrationProducts)
             ->filter(fn (IntegrationProduct $offer): bool => $offer->match_status === 'matched'
-                && $offer->normalizedPriceByn() !== null
                 && $offer->source?->is_active === true)
             ->sortBy([
                 fn (IntegrationProduct $offer): int => (float) $offer->stock_quantity > 0 ? 0 : 1,
+                fn (IntegrationProduct $offer): int => $offer->normalizedPriceByn() !== null ? 0 : 1,
                 fn (IntegrationProduct $offer): int => $offer->source?->code === 'onec' ? 0 : 1,
                 fn (IntegrationProduct $offer): float => $this->integrationWholesalePrice($offer),
             ])
@@ -228,11 +228,11 @@ class OrderItemSupplyContextResolver
     private function legacyOffers(OrderItem $item): Collection
     {
         return collect($item->product?->supplierProducts)
-            ->filter(fn (SupplierProduct $offer): bool => (float) $offer->price_byn > 0
-                && $offer->supplier?->is_active === true
+            ->filter(fn (SupplierProduct $offer): bool => $offer->supplier?->is_active === true
                 && $offer->supplier->usesLegacyChannel())
             ->sortBy([
                 fn (SupplierProduct $offer): int => $this->legacyOfferAvailable($offer) ? 0 : 1,
+                fn (SupplierProduct $offer): int => (float) $offer->price_byn > 0 ? 0 : 1,
                 fn (SupplierProduct $offer): float => (float) $offer->price_byn,
             ])
             ->values();

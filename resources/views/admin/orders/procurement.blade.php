@@ -65,8 +65,12 @@
         @foreach($order->items as $item)
             @php
                 $supplier = $item->fulfillmentSupplier ?: $item->supplySupplier;
-                $supplierName = $item->fulfillment_supplier_name ?: $supplier?->name ?: $item->supply_supplier_name;
+                $supplierName = $item->fulfillment_supplier_name
+                    ?: $supplier?->name
+                    ?: data_get($item->current_availability, 'supplier_name')
+                    ?: $item->supply_supplier_name;
                 $purchasePrice = $item->fulfillment_purchase_price ?? $item->supply_purchase_price;
+                $availabilityDecision = $item->fulfillmentAvailabilityLabel();
                 $request = $item->supplierOrderRequestItem?->request;
                 $status = $request
                     ? $request->statusLabel()
@@ -81,7 +85,20 @@
                 <td>{{ $supplierName ?: ($item->fulfillment_route === 'own_stock' ? 'Наш склад' : 'не определено') }}</td>
                 <td class="money">{{ $purchasePrice !== null ? number_format((float) $purchasePrice, 2, ',', ' ').' BYN' : '—' }}</td>
                 <td>
-                    @if($item->supply_stock_quantity !== null)
+                    @if($availabilityDecision)
+                        <strong>{{ $availabilityDecision }}</strong>
+                        @if($item->fulfillment_confirmed_at)
+                            <br><span class="muted">{{ $item->fulfillment_confirmed_at->format('d.m.Y H:i') }}</span>
+                        @endif
+                    @elseif($item->fulfillment_confirmed_at)
+                        Исполнение подтверждено менеджером
+                    @elseif(data_get($item->current_availability, 'stock_quantity') !== null)
+                        {{ rtrim(rtrim(number_format((float) data_get($item->current_availability, 'stock_quantity'), 3, ',', ' '), '0'), ',') }} шт.
+                    @elseif(data_get($item->current_availability, 'is_available') === true)
+                        В наличии, количество не указано
+                    @elseif(data_get($item->current_availability, 'is_available') === false)
+                        Нет в наличии по последней проверке
+                    @elseif($item->supply_stock_quantity !== null)
                         {{ rtrim(rtrim(number_format((float) $item->supply_stock_quantity, 3, ',', ' '), '0'), ',') }} шт.
                     @elseif($item->supply_is_available === true)
                         В наличии, количество не указано

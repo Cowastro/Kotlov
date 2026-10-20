@@ -10,7 +10,7 @@ class OrderItemFulfillmentHistory extends Model
     protected $fillable = [
         'order_item_id', 'user_id', 'previous_route', 'previous_supplier_id',
         'previous_supplier_name', 'previous_purchase_price', 'route', 'supplier_id',
-        'supplier_name', 'supplier_contact', 'purchase_price', 'note',
+        'supplier_name', 'supplier_contact', 'purchase_price', 'availability_status', 'note',
     ];
 
     protected $casts = [

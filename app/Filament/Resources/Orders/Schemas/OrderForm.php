@@ -6,7 +6,10 @@ use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\OrderItem;
+use App\Services\Orders\OrderItemSupplyContextResolver;
 use App\Services\StorefrontProductSearch;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -137,6 +140,11 @@ class OrderForm
                                         $set('product_name', $product->name);
                                         $set('product_sku', $product->sku);
                                         $set('price', (float) $product->price);
+                                        self::setSuggestedSupplier(
+                                            $product,
+                                            self::filterId($get('catalog_supplier_id')),
+                                            $set,
+                                        );
                                         $set('total', round(
                                             max(1, (int) $get('quantity')) * max(0, (float) $product->price),
                                             2,
@@ -144,6 +152,43 @@ class OrderForm
                                     })
                                     ->helperText('Сначала ищем в выбранной категории. Если там пусто — покажем подходящие товары этого же поставщика из других категорий с пометкой.')
                                     ->columnSpanFull(),
+                                Select::make('fulfillment_supplier_id')
+                                    ->label('Поставщик исполнения')
+                                    ->options(fn (): array => Supplier::query()
+                                        ->where('is_active', true)
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id')
+                                        ->all())
+                                    ->searchable()
+                                    ->preload()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateHydrated(function ($state, ?OrderItem $record, callable $set): void {
+                                        if (filled($state) || ! $record?->product) {
+                                            return;
+                                        }
+
+                                        self::setSuggestedSupplier(
+                                            $record->product,
+                                            $record->fulfillment_supplier_id
+                                                ?: data_get($record->current_availability, 'supplier_id')
+                                                ?: $record->supply_supplier_id,
+                                            $set,
+                                        );
+                                    })
+                                    ->afterStateUpdated(function ($state, callable $set): void {
+                                        $supplier = $state ? Supplier::query()->find($state) : null;
+                                        $set('fulfillment_supplier_name', $supplier?->name);
+                                        $set('fulfillment_supplier_contact', $supplier?->contactSummary());
+                                        $set('fulfillment_route', $supplier?->code === 'sanbusinessgroup'
+                                            ? 'own_stock'
+                                            : 'supplier_purchase');
+                                    })
+                                    ->helperText('Подставляется автоматически по карточке товара. При необходимости выберите другого поставщика.')
+                                    ->columnSpanFull(),
+                                Hidden::make('fulfillment_supplier_name'),
+                                Hidden::make('fulfillment_supplier_contact'),
+                                Hidden::make('fulfillment_route'),
                                 TextInput::make('product_name')
                                     ->label('Название выбранного товара')
                                     ->required()
@@ -262,6 +307,38 @@ class OrderForm
     private static function clearSelectedProduct(Set $set): void
     {
         $set('product_id', null);
+        $set('product_name', null);
+        $set('product_sku', null);
+        $set('fulfillment_supplier_id', null);
+        $set('fulfillment_supplier_name', null);
+        $set('fulfillment_supplier_contact', null);
+        $set('fulfillment_route', null);
+    }
+
+    private static function setSuggestedSupplier(Product $product, ?int $filteredSupplierId, callable $set): void
+    {
+        $supplierId = $filteredSupplierId;
+
+        if (! $supplierId) {
+            $item = new OrderItem(['product_id' => $product->id]);
+            $item->setRelation('product', $product);
+            $supplierId = (int) (app(OrderItemSupplyContextResolver::class)->resolveCurrent($item)['supplier_id'] ?? 0);
+        }
+
+        if (! $supplierId && $product->manual_stock_management) {
+            $supplierId = (int) (Supplier::query()
+                ->where('code', 'sanbusinessgroup')
+                ->orWhere('name', 'like', '%СанБизнесГруп%')
+                ->value('id') ?? 0);
+        }
+
+        $supplier = $supplierId > 0 ? Supplier::query()->find($supplierId) : null;
+        $set('fulfillment_supplier_id', $supplier?->id);
+        $set('fulfillment_supplier_name', $supplier?->name);
+        $set('fulfillment_supplier_contact', $supplier?->contactSummary());
+        $set('fulfillment_route', $supplier?->code === 'sanbusinessgroup'
+            ? 'own_stock'
+            : ($supplier ? 'supplier_purchase' : null));
     }
 
     /** @return array<int, string> */
