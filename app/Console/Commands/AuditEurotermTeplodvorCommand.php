@@ -69,6 +69,10 @@ class AuditEurotermTeplodvorCommand extends Command
             $stats['matched']++;
             $stats[$linked ? 'matched_linked' : 'matched_unlinked']++;
             $stats[$match['method'] === 'article' ? 'article_matches' : 'token_matches']++;
+            if (! $linked) {
+                $article = preg_replace('/[^\p{L}\p{N}._ -]+/u', '', (string) $offer->supplier_article) ?: 'no-article';
+                $this->line('candidate.euroterm_teplodvor.unlinked='.$article.'|'.$match['url']);
+            }
 
             if (! $this->option('verify-pages')) {
                 continue;
