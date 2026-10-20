@@ -29,6 +29,23 @@ class SyncEcokaminStovesCommand extends Command
     private const EXTRA_SECTIONS  = [
         'https://ecokamin.ru/catalog/kaminy/',
     ];
+    private const FEATURED_PRODUCTS = [
+        '18838' => [
+            'bitrix_id'              => '18838',
+            'article'                => 'КМS216',
+            'article_normalized'     => 'КМS216',
+            'name'                   => 'Камин чугунный ШАМАН',
+            'brand'                  => 'ЭкоКамин',
+            'url'                    => 'https://www.ecokamin.ru/catalog/kaminy/chugunnyy_kamin_shaman/18838/',
+            'price'                  => 149990.0,
+            'price_old'              => null,
+            'listing_image'          => null,
+            'dealer_discount_percent'=> 25.0,
+            'stock_status'           => 'preorder',
+            'stock_text'             => 'Ожидается поступление первой партии на склад поставщика в Москве',
+            'live_photos_url'         => 'https://cloud.mail.ru/public/b6qm/2Ua58bCkh',
+        ],
+    ];
     private const BASE_URL        = 'https://ecokamin.ru/';
     private const MAX_PAGES       = 15;
 
@@ -120,8 +137,10 @@ class SyncEcokaminStovesCommand extends Command
                 $merged           = array_merge($item, $detail);
                 $merged['article']    = $detail['article'] ?: $item['article'];
                 $merged['attributes'] = $detail['attributes'] ?? [];
+                $merged = $this->applyCommercialTerms($merged);
                 $merged['price_byn']     = CurrencyPriceConverter::convertToByn($merged['price'], $this->supplierCurrency, $this->supplierRate);
                 $merged['price_old_byn'] = CurrencyPriceConverter::convertToByn($merged['price_old'], $this->supplierCurrency, $this->supplierRate);
+                $merged['purchase_price_byn'] = CurrencyPriceConverter::convertToByn($merged['purchase_price'], $this->supplierCurrency, $this->supplierRate);
 
                 $product = $this->findProduct($merged, $supplierId);
                 $isNew   = ! $product;
@@ -294,6 +313,16 @@ class SyncEcokaminStovesCommand extends Command
             $this->scrapeSection($sectionUrl, $items, $skipped);
         }
 
+        foreach (self::FEATURED_PRODUCTS as $bitrixId => $featured) {
+            $existing = $items[$bitrixId] ?? [];
+            $items[$bitrixId] = array_merge($featured, $existing, [
+                'dealer_discount_percent' => $featured['dealer_discount_percent'],
+                'stock_status' => $featured['stock_status'],
+                'stock_text' => $featured['stock_text'],
+                'live_photos_url' => $featured['live_photos_url'],
+            ]);
+        }
+
         return [array_values($items), array_values($skipped)];
     }
 
@@ -431,7 +460,10 @@ class SyncEcokaminStovesCommand extends Command
     {
         $html = $this->fetch($url);
 
-        return [
+        $price = $this->match('/<div class="price"\s+data-currency="[A-Z]+"\s+data-value="([\d.]+)"/u', $html);
+        $priceOld = $this->match('/<div class="price discount"\s+data-currency="[A-Z]+"\s+data-value="([\d.]+)"/u', $html);
+
+        $detail = [
             'h1'               => $this->cleanText($this->match('/<h1[^>]*>([\s\S]*?)<\/h1>/u', $html) ?? '') ?: null,
             'article'          => $this->normalizeSupplierArticle($this->match('/class="article__value">([^<]+)</u', $html) ?? ''),
             'content'          => $this->extractDescriptionHtml($html),
@@ -441,6 +473,32 @@ class SyncEcokaminStovesCommand extends Command
             'attributes'       => $this->parseDetailAttributes($html),
             'in_stock'         => $this->parseStock($html),
         ];
+
+        // Keep the listing price when an older product page has no machine-readable price.
+        if ($price !== null) {
+            $detail['price'] = round((float) $price, 2);
+            $detail['price_old'] = $priceOld !== null && (float) $priceOld > (float) $price
+                ? round((float) $priceOld, 2)
+                : null;
+        }
+
+        return $detail;
+    }
+
+    private function applyCommercialTerms(array $item): array
+    {
+        $retailPrice = isset($item['price']) ? (float) $item['price'] : null;
+        $discount = max(0.0, min(100.0, (float) ($item['dealer_discount_percent'] ?? 0)));
+
+        $item['purchase_price'] = $retailPrice !== null
+            ? round($retailPrice * (1 - $discount / 100), 2)
+            : null;
+
+        if (($item['stock_status'] ?? null) === 'preorder') {
+            $item['in_stock'] = false;
+        }
+
+        return $item;
     }
 
     private function parseDetailAttributes(string $html): array
@@ -622,11 +680,14 @@ class SyncEcokaminStovesCommand extends Command
                 'supplier_name'     => $item['name'],
                 'source_url'        => $item['url'],
                 'source_wp_id'      => $item['bitrix_id'] ?? null,
-                'price'             => $item['price'],
+                'price'             => $item['purchase_price'] ?? $item['price'],
                 'currency'          => $this->supplierCurrency,
                 'currency_rate'     => $this->supplierRate,
-                'price_byn'         => $item['price_byn'] ?? null,
+                'price_byn'         => $item['purchase_price_byn'] ?? $item['price_byn'] ?? null,
                 'in_stock'          => ($item['in_stock'] ?? true) && $item['price'] !== null,
+                'stock_status'      => $item['stock_status'] ?? (($item['in_stock'] ?? true) ? 'in_stock' : 'out_of_stock'),
+                'stock_text'        => $item['stock_text'] ?? null,
+                'last_stock_synced_at' => $now,
                 'match_status'      => 'matched',
                 'match_confidence'  => 'auto_name',
                 'raw'               => json_encode([
@@ -634,6 +695,9 @@ class SyncEcokaminStovesCommand extends Command
                     'brand'          => $item['brand'] ?? null,
                     'attributes'     => $item['attributes'] ?? [],
                     'images_remote'  => $item['images_remote'] ?? [],
+                    'retail_price'   => $item['price'] ?? null,
+                    'dealer_discount_percent' => $item['dealer_discount_percent'] ?? null,
+                    'live_photos_url'=> $item['live_photos_url'] ?? null,
                 ], JSON_UNESCAPED_UNICODE),
                 'last_synced_at'   => $now,
                 'created_at'       => $now,
