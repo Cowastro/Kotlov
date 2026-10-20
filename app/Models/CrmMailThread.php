@@ -272,20 +272,49 @@ class CrmMailThread extends Model
 
     public function markAsSpam(): void
     {
-        $this->forceFill([
-            'status' => 'spam',
-            'unread_count' => 0,
-            'handled_at' => now(),
-        ])->save();
+        DB::transaction(function (): void {
+            $threads = static::query()
+                ->where('mailbox_id', $this->mailbox_id)
+                ->where('participant_email', mb_strtolower(trim((string) $this->participant_email)));
+            $threadIds = (clone $threads)->pluck('id');
 
-        $this->messages()->where('direction', 'incoming')->update(['is_read' => true]);
+            $threads->update([
+                'status' => 'spam',
+                'unread_count' => 0,
+                'handled_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            CrmMailMessage::query()
+                ->whereIn('thread_id', $threadIds)
+                ->where('direction', 'incoming')
+                ->update(['is_read' => true]);
+        });
+
+        $this->refresh();
     }
 
     public function restoreFromSpam(): void
     {
-        $this->forceFill([
-            'status' => 'waiting_manager',
-            'handled_at' => null,
-        ])->save();
+        static::query()
+            ->where('mailbox_id', $this->mailbox_id)
+            ->where('participant_email', mb_strtolower(trim((string) $this->participant_email)))
+            ->where('status', 'spam')
+            ->update([
+                'status' => 'waiting_manager',
+                'handled_at' => null,
+                'updated_at' => now(),
+            ]);
+
+        $this->refresh();
+    }
+
+    public static function senderIsBlocked(int $mailboxId, string $email): bool
+    {
+        return static::query()
+            ->where('mailbox_id', $mailboxId)
+            ->where('participant_email', mb_strtolower(trim($email)))
+            ->where('status', 'spam')
+            ->exists();
     }
 }

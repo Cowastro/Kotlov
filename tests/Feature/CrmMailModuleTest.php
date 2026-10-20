@@ -167,17 +167,29 @@ class CrmMailModuleTest extends TestCase
             'status' => 'new',
             'unread_count' => 2,
         ]);
+        $newerThread = CrmMailThread::create([
+            'mailbox_id' => $mailbox->id,
+            'thread_key' => hash('sha256', 'spam@example.com|another advertising subject'),
+            'participant_email' => 'spam@example.com',
+            'status' => 'new',
+            'unread_count' => 1,
+        ]);
 
         $thread->markAsSpam();
 
         $this->assertSame('spam', $thread->fresh()->status);
         $this->assertSame(0, $thread->fresh()->unread_count);
         $this->assertNotNull($thread->fresh()->handled_at);
+        $this->assertSame('spam', $newerThread->fresh()->status);
+        $this->assertSame(0, $newerThread->fresh()->unread_count);
+        $this->assertTrue(CrmMailThread::senderIsBlocked($mailbox->id, 'SPAM@example.com'));
 
         $thread->restoreFromSpam();
 
         $this->assertSame('waiting_manager', $thread->fresh()->status);
         $this->assertNull($thread->fresh()->handled_at);
+        $this->assertSame('waiting_manager', $newerThread->fresh()->status);
+        $this->assertFalse(CrmMailThread::senderIsBlocked($mailbox->id, 'spam@example.com'));
     }
 
     public function test_incoming_activity_cannot_restore_a_spam_thread_to_work(): void

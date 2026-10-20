@@ -90,7 +90,7 @@ class ImapMailboxSynchronizer
                     ->orderByDesc('updated_at')
                     ->orderByDesc('id')
                     ->first();
-                $isBlockedSender = $latestSenderThread?->status === 'spam';
+                $isBlockedSender = CrmMailThread::senderIsBlocked($mailbox->id, $fromEmail);
 
                 if ($isBlockedSender) {
                     $counterparty = $latestSenderThread->counterparty;
