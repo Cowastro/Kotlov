@@ -72,6 +72,9 @@ class EnrichEurotermCatalogCommand extends Command
             'images_saved' => 0,
             'specs_found' => 0,
             'content_found' => 0,
+            'crawl_errors' => 0,
+            'preview_errors' => 0,
+            'write_errors' => 0,
             'errors' => 0,
         ];
 
@@ -88,10 +91,12 @@ class EnrichEurotermCatalogCommand extends Command
                 continue;
             }
 
+            $phase = 'crawl';
             try {
                 if (! isset($indexes[$categoryUrl])) {
                     $indexes[$categoryUrl] = $catalog->crawl($categoryUrl);
                 }
+                $phase = 'match';
                 $match = $catalog->match($row, $indexes[$categoryUrl]);
                 $card = $match['card'];
                 if (! $card) {
@@ -104,6 +109,7 @@ class EnrichEurotermCatalogCommand extends Command
                     $stats['existing_cards']++;
                 }
 
+                $phase = 'preview';
                 $parsed = $enricher->preview($card['url']);
                 $usable = $parsed['images'] !== []
                     && ($parsed['specs'] !== [] || trim((string) $parsed['description']) !== '');
@@ -112,6 +118,7 @@ class EnrichEurotermCatalogCommand extends Command
                     continue;
                 }
 
+                $phase = 'write';
                 if ($apply) {
                     $product = DB::transaction(function () use ($offer, $row, $card, $match, $product, $supplier, $create): ?Product {
                         $product ??= $create ? $this->createProduct($row, $card, $supplier) : null;
@@ -169,6 +176,12 @@ class EnrichEurotermCatalogCommand extends Command
                 }
             } catch (\Throwable $exception) {
                 $stats['errors']++;
+                $errorKey = match ($phase) {
+                    'crawl', 'match' => 'crawl_errors',
+                    'preview' => 'preview_errors',
+                    default => 'write_errors',
+                };
+                $stats[$errorKey]++;
                 report($exception);
             }
 
