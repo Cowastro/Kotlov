@@ -37,13 +37,13 @@ class EnrichEurotermCatalogCommand extends Command
         }
 
         try {
-            return $this->run($catalog, $enricher);
+            return $this->executeEnrichment($catalog, $enricher);
         } finally {
             $lock->release();
         }
     }
 
-    private function run(EurotermCatalog $catalog, ProductSourceEnricher $enricher): int
+    private function executeEnrichment(EurotermCatalog $catalog, ProductSourceEnricher $enricher): int
     {
         $apply = (bool) $this->option('apply');
         $create = (bool) $this->option('create');
