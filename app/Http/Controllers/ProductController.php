@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Services\HeatPumpProductPresenter;
 use App\Services\ProductPopularityService;
+use App\Services\ProductVariantSelector;
 use App\Services\SeoMetadataBuilder;
 use Illuminate\Support\Facades\Log;
 
@@ -106,6 +107,7 @@ class ProductController extends Controller
         app(ProductPopularityService::class)->recordView($product, request());
 
         $reviews = $product->reviews;
+        $variantSelector = app(ProductVariantSelector::class)->forProduct($product);
 
         // SEO
         $sharedCityIn = view()->shared('cityIn');
@@ -352,7 +354,8 @@ class ProductController extends Controller
             'robots',
             'heatPumpGuides',
             'heatPumpProfile',
-            'kotlovHeatPumpModels'
+            'kotlovHeatPumpModels',
+            'variantSelector'
         ));
     }
 }

@@ -52,4 +52,14 @@ class MembraneTankVolumeNormalizerTest extends TestCase
             ['Объем бака' => '50 л'],
         ));
     }
+
+    public function test_it_reads_key_value_specs_used_by_product_cards(): void
+    {
+        $normalizer = new MembraneTankVolumeNormalizer;
+
+        $this->assertSame(80, $normalizer->extract(
+            'Расширительный бак модель R',
+            [['key' => 'Объём бака', 'value' => '80 л']],
+        ));
+    }
 }

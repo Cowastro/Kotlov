@@ -81,8 +81,8 @@ class MembraneTankVolumeNormalizer
         $flattened = [];
 
         foreach ($specs as $key => $value) {
-            if (is_array($value) && isset($value['name'], $value['value'])) {
-                $flattened[(string) $value['name']] = $value['value'];
+            if (is_array($value) && isset($value['value']) && (isset($value['name']) || isset($value['key']))) {
+                $flattened[(string) ($value['name'] ?? $value['key'])] = $value['value'];
 
                 continue;
             }

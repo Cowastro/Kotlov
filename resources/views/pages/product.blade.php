@@ -338,6 +338,26 @@
                                     </p>
                                 @endif
 
+                                @if ($variantSelector)
+                                    <div class="product-model-selector mb-16" aria-label="{{ $variantSelector['title'] }}">
+                                        <p class="product-model-selector__title">{{ $variantSelector['title'] }}</p>
+                                        <div class="product-model-selector__options">
+                                            @foreach ($variantSelector['variants'] as $variant)
+                                                <a
+                                                    href="{{ $variant['url'] }}"
+                                                    class="product-model-selector__option {{ $variant['is_current'] ? 'is-current' : '' }}"
+                                                    @if ($variant['is_current']) aria-current="page" @endif
+                                                    title="{{ $variant['label'] }} — {{ $variant['availability_label'] }}"
+                                                >
+                                                    <span class="product-model-selector__status is-{{ $variant['availability_status'] }}" aria-hidden="true"></span>
+                                                    {{ $variant['label'] }}
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                        <p class="product-model-selector__hint">Зелёная точка — в наличии, жёлтая — доступно к заказу.</p>
+                                    </div>
+                                @endif
+
                                 {{-- Наличие --}}
                                 <div class="product-stock mb-12">
                                     @if ($product->is_archived)
@@ -1154,6 +1174,57 @@
 <link rel="stylesheet" href="{{ asset('css/product-description-faq.css') }}">
 @endif
 <style>
+.product-model-selector__title {
+    margin: 0 0 8px;
+    color: var(--main);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.product-model-selector__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.product-model-selector__option {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 7px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--main);
+    font-weight: 600;
+    line-height: 1;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.product-model-selector__option:hover,
+.product-model-selector__option.is-current {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+    color: var(--primary);
+}
+
+.product-model-selector__status {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #dc3545;
+}
+
+.product-model-selector__status.is-in_stock { background: #22a447; }
+.product-model-selector__status.is-check { background: #d99a00; }
+
+.product-model-selector__hint {
+    margin: 7px 0 0;
+    color: var(--text-2);
+    font-size: 12px;
+}
+
 @media (max-width: 767px) {
     .hotta-product-gallery .tf-product-media-main {
         aspect-ratio: 1 / 1;
