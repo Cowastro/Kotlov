@@ -211,6 +211,16 @@ class HandleRedirects
 
     private function shouldSkip(string $path): bool
     {
+        // These are current storefront tools nested below the chimney category,
+        // not legacy category/product paths. Let their explicit routes handle
+        // them instead of collapsing them back to /dymohody.
+        if (in_array($path, [
+            '/dymohody/tis-standart-50',
+            '/dymohody/tis-standart-50.csv',
+        ], true)) {
+            return true;
+        }
+
         // Пропускаем admin, api, assets и livewire
         $prefixes = ['/admin', '/api', '/livewire', '/_debugbar', '/up'];
 

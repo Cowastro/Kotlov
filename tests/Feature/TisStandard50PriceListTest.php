@@ -15,6 +15,7 @@ class TisStandard50PriceListTest extends TestCase
 
     public function test_price_list_groups_products_by_system_element_and_diameter(): void
     {
+        Category::query()->updateOrCreate(['slug' => 'dymohody'], ['name' => 'Дымоходы', 'parent_id' => 0, 'is_active' => true]);
         $mono = Category::query()->updateOrCreate(['slug' => 'truby-mono'], ['name' => 'Трубы Моно', 'parent_id' => 0, 'is_active' => true]);
         $thermo = Category::query()->updateOrCreate(['slug' => 'truby-sendvich'], ['name' => 'Трубы Термо', 'parent_id' => 0, 'is_active' => true]);
         $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-test', 'is_active' => true]);
