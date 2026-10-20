@@ -34,8 +34,8 @@ class SyncEcokaminStovesCommand extends Command
             'bitrix_id'              => '18838',
             'article'                => 'КМS216',
             'article_normalized'     => 'КМS216',
-            'name'                   => 'Камин чугунный ШАМАН',
-            'brand'                  => 'ЭкоКамин',
+            'name'                   => 'Камин чугунный Invicta Shaman',
+            'brand'                  => 'Invicta',
             'url'                    => 'https://www.ecokamin.ru/catalog/kaminy/chugunnyy_kamin_shaman/18838/',
             'price'                  => 149990.0,
             'price_old'              => null,
@@ -58,6 +58,8 @@ class SyncEcokaminStovesCommand extends Command
 
     private string $supplierCurrency = 'RUB';
     private float  $supplierRate     = 1.0;
+    /** @var array<string, int> */
+    private array $brandIds = [];
 
     public function handle(): int
     {
@@ -115,6 +117,7 @@ class SyncEcokaminStovesCommand extends Command
         $supplierId = $this->ensureSupplier($now);
         $syncId     = $this->ensureSupplierSync($now);
         $this->ensureBrand($now);
+        $this->ensureInvictaBrand($now);
         $this->ensureCategory($now);
 
         $stats = [
@@ -498,6 +501,13 @@ class SyncEcokaminStovesCommand extends Command
             $item['in_stock'] = false;
         }
 
+        if (($item['bitrix_id'] ?? null) === '18838' && ($item['brand'] ?? null) === 'Invicta') {
+            $item['h1'] = $item['name'];
+            $item['meta_title'] = 'Invicta Shaman — купить чугунный камин в %city%';
+            $item['meta_description'] = 'Чугунный камин Invicta Shaman 14 кВт: цена, характеристики, доставка по Беларуси.';
+            $item['attributes']['Производитель'] = 'Invicta';
+        }
+
         return $item;
     }
 
@@ -612,7 +622,7 @@ class SyncEcokaminStovesCommand extends Command
 
         $payload = [
             'category_id'       => self::CATEGORY_ID,
-            'brand_id'          => self::BRAND_ID,
+            'brand_id'          => $this->brandIds[$item['brand'] ?? ''] ?? self::BRAND_ID,
             'supplier_id'       => null,
             'name'              => $item['name'],
             'h1'                => $item['h1'] ?: $item['name'],
@@ -631,7 +641,7 @@ class SyncEcokaminStovesCommand extends Command
             'specs'             => $hasSpecs
                                         ? json_encode($existingSpecs, JSON_UNESCAPED_UNICODE)
                                         : json_encode($attrs, JSON_UNESCAPED_UNICODE),
-            'service_info'      => json_encode(self::SERVICE_INFO, JSON_UNESCAPED_UNICODE),
+            'service_info'      => json_encode($this->serviceInfoFor($item), JSON_UNESCAPED_UNICODE),
             'video_url'         => ($existingVideoUrl !== null && $existingVideoUrl !== '') ? $existingVideoUrl : null,
             'weight'            => $this->parseNumber($attrs['Вес'] ?? $attrs['Масса'] ?? null),
             'unit'              => 'шт',
@@ -645,7 +655,7 @@ class SyncEcokaminStovesCommand extends Command
             'is_sale'           => $item['price_old_byn'] !== null,
             'sort_order'        => 0,
             'meta_title'        => $item['meta_title'] ?: $item['name'] . ' купить в %city%',
-            'meta_keywords'     => 'печь-камин, ЭкоКамин, ' . $item['name'],
+            'meta_keywords'     => 'печь-камин, ' . ($item['brand'] ?? 'ЭкоКамин') . ', ' . $item['name'],
             'meta_description'  => $item['meta_description'] ?: $item['name'],
             'rating'            => 0,
             'reviews_count'     => 0,
@@ -980,6 +990,32 @@ class SyncEcokaminStovesCommand extends Command
                 'created_at' => $now,
             ]
         );
+
+        $this->brandIds['ЭкоКамин'] = self::BRAND_ID;
+    }
+
+    private function ensureInvictaBrand($now): void
+    {
+        $brandId = DB::table('brands')->where('name', 'Invicta')->value('id');
+
+        if (! $brandId) {
+            $brandId = DB::table('brands')->insertGetId([
+                'name'       => 'Invicta',
+                'slug'       => 'invicta',
+                'h1'         => 'Invicta',
+                'country'    => 'Франция',
+                'is_active'  => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        } else {
+            DB::table('brands')->where('id', $brandId)->update([
+                'is_active' => true,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $this->brandIds['Invicta'] = (int) $brandId;
     }
 
     private function ensureCategory($now): void
@@ -1014,6 +1050,18 @@ class SyncEcokaminStovesCommand extends Command
             'Диаметр дымохода, мм'  => 'Диаметр дымохода',
             default                  => $name,
         };
+    }
+
+    private function serviceInfoFor(array $item): array
+    {
+        if (($item['brand'] ?? null) !== 'Invicta') {
+            return self::SERVICE_INFO;
+        }
+
+        return array_merge(self::SERVICE_INFO, [
+            'Производитель' => 'Invicta',
+            'Гарантия' => $item['attributes']['Гарантия производителя'] ?? 'уточняется',
+        ]);
     }
 
     private function normalizeProductName(string $name): string
