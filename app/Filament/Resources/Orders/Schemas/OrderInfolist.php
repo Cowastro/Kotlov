@@ -717,6 +717,10 @@ class OrderInfolist
                                     ->label('Наличие')
                                     ->columnSpan(2)
                                     ->state(function (OrderItem $record): string {
+                                        if ($record->fulfillment_availability_status) {
+                                            return $record->fulfillmentAvailabilityLabel() ?? 'Решение менеджера зафиксировано';
+                                        }
+
                                         $snapshot = $record->supplyContext()['stock_label'];
                                         if (! $record->current_availability_checked_at) {
                                             return $snapshot;
@@ -729,6 +733,25 @@ class OrderInfolist
                                         return $snapshot.' · сейчас: '.$current;
                                     })
                                     ->helperText(function (OrderItem $record): ?string {
+                                        if ($record->fulfillment_availability_status) {
+                                            $current = $record->current_availability_checked_at
+                                                ? (string) data_get($record->current_availability, 'stock_label', 'Неизвестно')
+                                                : null;
+                                            $sourceUpdatedAt = data_get($record->current_availability, 'source_updated_at');
+
+                                            return collect([
+                                                $record->fulfillment_confirmed_at
+                                                    ? 'Подтвердил '.($record->fulfillmentConfirmedBy?->name ?? 'система')
+                                                        .' · '.$record->fulfillment_confirmed_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
+                                                    : 'Решение менеджера зафиксировано',
+                                                $current ? 'По актуальной базе: '.$current : null,
+                                                $record->current_availability_checked_at
+                                                    ? 'проверено '.$record->current_availability_checked_at->timezone('Europe/Minsk')->format('d.m.Y H:i')
+                                                    : null,
+                                                $sourceUpdatedAt ? 'данные склада от '.Carbon::parse($sourceUpdatedAt)->timezone('Europe/Minsk')->format('d.m.Y H:i') : null,
+                                            ])->filter()->implode(' · ');
+                                        }
+
                                         if (! $record->current_availability_checked_at) {
                                             return 'Актуальное наличие ещё не уточняли';
                                         }
@@ -742,11 +765,18 @@ class OrderInfolist
 
                                         return collect($parts)->filter()->implode(' · ');
                                     })
-                                    ->color(fn (OrderItem $record): string => match (data_get($record->current_availability, 'is_available')) {
-                                        true => 'success',
-                                        false => 'danger',
-                                        default => 'gray',
-                                    })
+                                    ->color(fn (OrderItem $record): string => $record->fulfillment_availability_status
+                                        ? match ($record->fulfillment_availability_status) {
+                                            'available', 'reserved' => 'success',
+                                            'ordered' => 'info',
+                                            'unavailable' => 'danger',
+                                            default => 'gray',
+                                        }
+                                        : match (data_get($record->current_availability, 'is_available')) {
+                                            true => 'success',
+                                            false => 'danger',
+                                            default => 'gray',
+                                        })
                                     ->weight('bold')
                                     ->suffixAction(
                                         Action::make('refreshCurrentAvailability')
