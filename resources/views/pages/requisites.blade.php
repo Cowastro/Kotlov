@@ -18,16 +18,18 @@
     .requisites-button:hover { color:#18191c; background:#ffc928; }
     .requisites-button--ghost { border-color:#575a60; color:#fff; background:transparent; }
     .requisites-button--ghost:hover { border-color:#fff; color:#fff; background:#303238; }
-    .requisites-card { padding:10px 28px; background:#fff; border:1px solid var(--rq-line); border-radius:20px; box-shadow:0 10px 30px rgba(16,18,22,.04); }
-    .requisites-section { padding:24px 0; border-bottom:1px solid var(--rq-line); }
+    .requisites-card { padding:4px 28px; background:#fff; border:1px solid var(--rq-line); border-radius:20px; box-shadow:0 10px 30px rgba(16,18,22,.04); }
+    .requisites-section { padding:22px 0; border-bottom:1px solid var(--rq-line); }
     .requisites-section:last-child { border-bottom:0; }
-    .requisites-section h2 { margin:0 0 16px; font-size:19px; }
-    .requisites-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px 32px; }
-    .requisites-field { position:relative; min-width:0; padding:13px 48px 13px 0; }
+    .requisites-section h2 { margin:0 0 14px; font-size:19px; }
+    .requisites-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:18px 44px; }
+    .requisites-field { min-width:0; }
     .requisites-field--wide { grid-column:1 / -1; }
-    .requisites-label { display:block; margin-bottom:5px; color:var(--rq-muted); font-size:12px; }
-    .requisites-value { display:block; color:var(--rq-ink); font-size:15px; font-weight:600; overflow-wrap:anywhere; }
-    .requisites-copy { position:absolute; top:16px; right:0; width:36px; height:36px; padding:0; border:1px solid var(--rq-line); border-radius:9px; color:#5f646c; background:var(--rq-soft); cursor:pointer; font-size:17px; }
+    .requisites-label { display:block; margin-bottom:5px; color:var(--rq-muted); font-size:12px; line-height:1.35; }
+    .requisites-field-line { display:flex; align-items:center; gap:8px; min-width:0; }
+    .requisites-value { color:var(--rq-ink); font-size:15px; font-weight:600; line-height:1.45; overflow-wrap:anywhere; }
+    .requisites-copy { display:inline-grid; place-items:center; flex:0 0 30px; width:30px; height:30px; padding:0; border:1px solid var(--rq-line); border-radius:8px; color:#666b73; background:var(--rq-soft); cursor:pointer; }
+    .requisites-copy svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.7; }
     .requisites-copy:hover { color:#111; border-color:#b8bcc3; }
     .requisites-note { display:flex; gap:12px; align-items:flex-start; margin-top:18px; padding:16px 18px; border-radius:13px; color:#5d6269; background:#fff8de; font-size:13px; line-height:1.5; }
     .requisites-note strong { color:#24262a; }
@@ -38,8 +40,9 @@
         .requisites-hero { display:block; padding:24px; }
         .requisites-actions { margin-top:22px; }
         .requisites-actions .requisites-button { flex:1 1 150px; }
-        .requisites-card { padding:6px 20px; }
-        .requisites-grid { grid-template-columns:1fr; gap:4px; }
+        .requisites-card { padding:2px 20px; }
+        .requisites-section { padding:20px 0; }
+        .requisites-grid { grid-template-columns:1fr; gap:16px; }
         .requisites-field--wide { grid-column:auto; }
     }
     @media print {
@@ -101,8 +104,12 @@
                     @foreach (['Полное наименование', 'Краткое наименование', 'УНП', 'ОКПО', 'Директор'] as $label)
                         <div class="requisites-field {{ $label === 'Полное наименование' ? 'requisites-field--wide' : '' }}">
                             <span class="requisites-label">{{ $label }}</span>
-                            <span class="requisites-value">{{ $rows[$label] }}</span>
-                            <button type="button" class="requisites-copy" data-copy="{{ $rows[$label] }}" aria-label="Скопировать: {{ $label }}" title="Скопировать">⧉</button>
+                            <div class="requisites-field-line">
+                                <span class="requisites-value">{{ $rows[$label] }}</span>
+                                <button type="button" class="requisites-copy" data-copy="{{ $rows[$label] }}" aria-label="Скопировать: {{ $label }}" title="Скопировать">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>
+                                </button>
+                            </div>
                         </div>
                     @endforeach
                 </div>
@@ -114,8 +121,12 @@
                     @foreach (['Расчётный счёт (IBAN)', 'Банк', 'BIC / SWIFT'] as $label)
                         <div class="requisites-field {{ $label === 'Банк' ? 'requisites-field--wide' : '' }}">
                             <span class="requisites-label">{{ $label }}</span>
-                            <span class="requisites-value">{{ $rows[$label] }}</span>
-                            <button type="button" class="requisites-copy" data-copy="{{ $rows[$label] }}" aria-label="Скопировать: {{ $label }}" title="Скопировать">⧉</button>
+                            <div class="requisites-field-line">
+                                <span class="requisites-value">{{ $rows[$label] }}</span>
+                                <button type="button" class="requisites-copy" data-copy="{{ $rows[$label] }}" aria-label="Скопировать: {{ $label }}" title="Скопировать">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>
+                                </button>
+                            </div>
                         </div>
                     @endforeach
                 </div>
@@ -127,8 +138,12 @@
                     @foreach (['Юридический адрес', 'Адрес склада', 'Телефоны', 'Email', 'Сайт'] as $label)
                         <div class="requisites-field {{ str_contains($label, 'адрес') || $label === 'Адрес склада' ? 'requisites-field--wide' : '' }}">
                             <span class="requisites-label">{{ $label }}</span>
-                            <span class="requisites-value">{{ $rows[$label] }}</span>
-                            <button type="button" class="requisites-copy" data-copy="{{ $rows[$label] }}" aria-label="Скопировать: {{ $label }}" title="Скопировать">⧉</button>
+                            <div class="requisites-field-line">
+                                <span class="requisites-value">{{ $rows[$label] }}</span>
+                                <button type="button" class="requisites-copy" data-copy="{{ $rows[$label] }}" aria-label="Скопировать: {{ $label }}" title="Скопировать">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg>
+                                </button>
+                            </div>
                         </div>
                     @endforeach
                 </div>
