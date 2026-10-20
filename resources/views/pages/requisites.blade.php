@@ -88,7 +88,8 @@
         'Телефоны' => implode(', ', $company['phones']),
         'Email' => $company['email'],
         'Сайт' => $company['website'],
-        'Директор' => $company['director'],
+        'Представитель' => $company['representative'],
+        'Основание полномочий' => $company['authority_basis'],
     ];
     $copyText = collect($rows)->map(fn ($value, $label) => $label . ': ' . $value)->implode("\n");
 @endphp
@@ -114,7 +115,7 @@
             <div class="requisites-section">
                 <h2>Организация</h2>
                 <div class="requisites-grid">
-                    @foreach (['Полное наименование', 'Краткое наименование', 'УНП', 'ОКПО', 'Директор'] as $label)
+                    @foreach (['Полное наименование', 'Краткое наименование', 'УНП', 'ОКПО', 'Представитель', 'Основание полномочий'] as $label)
                         <div class="requisites-field {{ $label === 'Полное наименование' ? 'requisites-field--wide' : '' }}">
                             <span class="requisites-label">{{ $label }}</span>
                             <div class="requisites-field-line">

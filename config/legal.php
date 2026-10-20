@@ -15,6 +15,8 @@ return [
         'email' => 'info@kotlov.by',
         'website' => 'https://kotlov.by',
         'director' => 'Д.В. Синкевич',
+        'representative' => 'Заместитель директора Д.В. Синкевич',
+        'authority_basis' => 'Доверенность № 1СД от 05.01.2026',
     ],
 
     'seller' => [
