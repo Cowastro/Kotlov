@@ -18,10 +18,10 @@ class SendOrderConfirmationToCustomer implements ShouldQueue
 
     public function handle(NewOrderCreated $event): void
     {
-        $order = $event->order->loadMissing('items');
-        $recipient = mb_strtolower(trim((string) $order->customer_email));
+        $order = $event->order->loadMissing(['items', 'user']);
+        $recipient = mb_strtolower(trim((string) $order->user?->email));
 
-        if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+        if (! $order->user_id || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             return;
         }
 

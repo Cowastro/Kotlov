@@ -16,10 +16,10 @@
                 <p class="text-body-1 cl-text-2">
                     Ваш заказ принят. Мы свяжемся с вами в ближайшее время.
                 </p>
-                @if ($order->customer_email)
-                    <p class="text-caption-01 cl-text-3">Подтверждение отправлено на {{ $order->customer_email }}.</p>
+                @if ($order->user_id && $order->user?->email)
+                    <p class="text-caption-01 cl-text-3">Подтверждение отправлено на email вашего аккаунта: {{ $order->user->email }}.</p>
                 @else
-                    <p class="text-caption-01 cl-text-3">Email не был указан — менеджер подтвердит заказ по телефону.</p>
+                    <p class="text-caption-01 cl-text-3">Заказ оформлен без регистрации — менеджер подтвердит его по телефону.</p>
                 @endif
             </div>
         </div>

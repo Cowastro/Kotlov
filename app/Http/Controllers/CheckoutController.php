@@ -344,7 +344,7 @@ class CheckoutController extends Controller
     public function success(string $number)
     {
         $order = Order::where('number', $number)
-            ->with('items')
+            ->with(['items', 'user'])
             ->firstOrFail();
 
         // Только владелец или незалогиненный (по номеру = тайный URL)

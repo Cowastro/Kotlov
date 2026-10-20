@@ -19,7 +19,7 @@ class SendOrderCustomerConfirmationCommand extends Command
     {
         $order = Order::query()
             ->where('number', (string) $this->argument('number'))
-            ->with('items')
+            ->with(['items', 'user'])
             ->first();
 
         if (! $order) {
@@ -28,15 +28,15 @@ class SendOrderCustomerConfirmationCommand extends Command
             return self::FAILURE;
         }
 
-        $recipient = mb_strtolower(trim((string) $order->customer_email));
-        if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
-            $this->components->warn('order_found=1 customer_email_valid=0 sent=0');
+        $recipient = mb_strtolower(trim((string) $order->user?->email));
+        if (! $order->user_id || ! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            $this->components->warn('order_found=1 registered_customer=0 account_email_valid=0 sent=0');
 
             return self::FAILURE;
         }
 
         if (! $this->option('apply')) {
-            $this->components->info('order_found=1 customer_email_valid=1 sent=0 mode=dry-run');
+            $this->components->info('order_found=1 registered_customer=1 account_email_valid=1 sent=0 mode=dry-run');
 
             return self::SUCCESS;
         }
@@ -45,7 +45,7 @@ class SendOrderCustomerConfirmationCommand extends Command
             ->to($recipient)
             ->send(new OrderPlacedMail($order));
 
-        $this->components->info('order_found=1 customer_email_valid=1 sent=1 mode=apply');
+        $this->components->info('order_found=1 registered_customer=1 account_email_valid=1 sent=1 mode=apply');
 
         return self::SUCCESS;
     }
