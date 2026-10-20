@@ -12,6 +12,8 @@ use App\Models\OrderEconomicSnapshot;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderItem;
 use App\Models\Supplier;
+use App\Services\Crm\BelarusTaxpayerRegistry;
+use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
 use App\Models\SupplierOrderRequest;
 use App\Services\Orders\OrderItemAvailabilityChecker;
 use App\Services\Orders\OrderItemFulfillmentManager;
@@ -26,6 +28,8 @@ use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
@@ -676,6 +680,13 @@ class OrderInfolist
                                                         ->all())
                                                     ->searchable()
                                                     ->required()
+                                                    ->createOptionForm(self::newSupplierForm())
+                                                    ->createOptionAction(fn (Action $action): Action => $action
+                                                        ->label('Добавить поставщика')
+                                                        ->modalHeading('Новый поставщик по УНП')
+                                                        ->modalDescription('Найдите реквизиты в CRM / 1С и реестре МНС, проверьте их и сохраните. Новый поставщик сразу выберется для позиции.')
+                                                        ->modalSubmitActionLabel('Создать и выбрать'))
+                                                    ->createOptionUsing(fn (array $data): int => self::createSupplier($data))
                                                     ->helperText('Можно выбрать любого активного поставщика, даже если товар первоначально был подобран у другого.'),
                                                 Select::make('availability_status')
                                                     ->label('Решение по наличию')
@@ -1097,6 +1108,131 @@ class OrderInfolist
                     ]),
 
             ]);
+    }
+
+    /** @return array<int, mixed> */
+    private static function newSupplierForm(): array
+    {
+        return [
+            TextInput::make('unp')
+                ->label('УНП')
+                ->placeholder('9 цифр')
+                ->required()
+                ->length(9)
+                ->rule('regex:/^\d{9}$/')
+                ->suffixAction(
+                    Action::make('lookupSupplierByUnp')
+                        ->label('Подобрать реквизиты')
+                        ->icon('heroicon-o-magnifying-glass')
+                        ->color('info')
+                        ->tooltip('Найти в CRM / 1С и реестре МНС по УНП')
+                        ->action(function (Get $get, Set $set): void {
+                            $lookup = app(BelarusTaxpayerRegistry::class)->lookup((string) $get('unp'));
+
+                            if (! $lookup) {
+                                Notification::make()
+                                    ->warning()
+                                    ->title('Реквизиты не найдены')
+                                    ->body('Проверьте УНП. Для белорусской организации требуется 9 цифр.')
+                                    ->send();
+
+                                return;
+                            }
+
+                            $set('lookup_source', $lookup['source'] ?? null);
+                            $set('name', $lookup['short_name'] ?? $lookup['legal_name'] ?? null);
+                            $set('legal_name', $lookup['legal_name'] ?? null);
+                            $set('address', $lookup['address'] ?? null);
+                            $set('email', $lookup['email'] ?? null);
+                            $set('phone', $lookup['phone'] ?? null);
+                            $set('registered_at', $lookup['registered_at'] ?? null);
+
+                            Notification::make()
+                                ->success()
+                                ->title('Реквизиты подобраны')
+                                ->body((string) ($lookup['source'] ?? 'База контрагентов'))
+                                ->send();
+                        }),
+                ),
+            TextInput::make('lookup_source')
+                ->label('Источник реквизитов')
+                ->readOnly()
+                ->dehydrated(false)
+                ->placeholder('Нажмите значок поиска возле УНП'),
+            TextInput::make('name')
+                ->label('Название поставщика')
+                ->required()
+                ->maxLength(255),
+            TextInput::make('legal_name')
+                ->label('Полное юридическое название')
+                ->required()
+                ->maxLength(255)
+                ->columnSpanFull(),
+            Textarea::make('address')
+                ->label('Юридический адрес')
+                ->rows(2)
+                ->columnSpanFull(),
+            TextInput::make('email')
+                ->label('Email')
+                ->email()
+                ->maxLength(255),
+            TextInput::make('phone')
+                ->label('Телефон')
+                ->tel()
+                ->maxLength(64),
+            TextInput::make('contact_name')
+                ->label('Контактное лицо')
+                ->maxLength(255),
+            TextInput::make('registered_at')
+                ->hidden(),
+        ];
+    }
+
+    private static function createSupplier(array $data): int
+    {
+        $saved = app(CrmCounterpartyFromTaxpayerLookup::class)->upsert([
+            'unp' => $data['unp'],
+            'short_name' => $data['name'],
+            'legal_name' => $data['legal_name'],
+            'address' => $data['address'] ?? null,
+            'email' => $data['email'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'registered_at' => $data['registered_at'] ?? null,
+        ], auth()->id(), $data['contact_name'] ?? null);
+
+        $counterparty = $saved['counterparty'];
+        $counterparty->forceFill([
+            'classification' => 'supplier',
+            'business_unit' => 'wholesale',
+            'status' => 'active',
+        ])->save();
+
+        $code = 'supplier-'.preg_replace('/\D+/', '', (string) $data['unp']);
+        $supplier = Supplier::query()->where('crm_counterparty_id', $counterparty->id)->first()
+            ?? Supplier::query()->where('code', $code)->first()
+            ?? new Supplier;
+        $contact = collect([$data['phone'] ?? null, $data['email'] ?? null])->filter()->implode(' · ');
+
+        $supplier->fill([
+            'crm_counterparty_id' => $counterparty->id,
+            'code' => $supplier->code ?: $code,
+            'name' => trim((string) $data['name']),
+            'contact' => $contact !== '' ? $contact : $supplier->contact,
+            'is_active' => true,
+        ]);
+        if (! $supplier->exists) {
+            $supplier->currency = 'BYN';
+            $supplier->currency_rate = 1;
+        }
+        $supplier->save();
+
+        Notification::make()
+            ->success()
+            ->title($saved['created'] ? 'Поставщик создан' : 'Поставщик связан с карточкой CRM')
+            ->body($supplier->name.' · УНП '.$data['unp'])
+            ->send();
+
+        return (int) $supplier->getKey();
     }
 
     private static function contactLinks(?string $contact): HtmlString|string
