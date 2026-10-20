@@ -32,7 +32,7 @@ class SendOrderCustomerConfirmationCommand extends Command
         if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             $this->components->warn('order_found=1 customer_email_valid=0 sent=0');
 
-            return self::SUCCESS;
+            return self::FAILURE;
         }
 
         if (! $this->option('apply')) {
