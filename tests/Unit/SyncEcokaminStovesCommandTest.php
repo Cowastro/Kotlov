@@ -25,7 +25,9 @@ class SyncEcokaminStovesCommandTest extends TestCase
         self::assertSame('Камин чугунный ЭкоКамин ШАМАН', $item['name']);
         self::assertSame('Камин чугунный ЭкоКамин ШАМАН', $item['h1']);
         self::assertSame('ЭкоКамин, Россия', $item['attributes']['Производитель']);
-        self::assertStringContainsString('аналог легендарного Invicta Shaman', $item['short_description']);
+        self::assertStringContainsString('легендарного Invicta Shaman', $item['short_description']);
+        self::assertStringContainsString('самостоятельная модель', mb_strtolower($item['content']));
+        self::assertStringNotContainsString('товар бренда Invicta', $item['content']);
         self::assertFalse($item['in_stock']);
         self::assertSame('preorder', $item['stock_status']);
         self::assertSame('https://cloud.mail.ru/public/b6qm/2Ua58bCkh', $item['live_photos_url']);
