@@ -133,7 +133,7 @@ class EurotermCatalog
 
     private function fetch(string $url): string
     {
-        return Http::withHeaders([
+        $response = Http::withHeaders([
             'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
             'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language' => 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -144,9 +144,13 @@ class EurotermCatalog
             ->connectTimeout(10)
             ->timeout(45)
             ->retry(2, 700)
-            ->get($url)
-            ->throw()
-            ->body();
+            ->get($url);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('Euroterm catalog returned an unsuccessful response.', $response->status());
+        }
+
+        return $response->body();
     }
 
     /** @return array<int,string> */

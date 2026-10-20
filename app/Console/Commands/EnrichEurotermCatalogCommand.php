@@ -75,6 +75,10 @@ class EnrichEurotermCatalogCommand extends Command
             'crawl_errors' => 0,
             'preview_errors' => 0,
             'write_errors' => 0,
+            'http_403_errors' => 0,
+            'http_429_errors' => 0,
+            'http_5xx_errors' => 0,
+            'connection_errors' => 0,
             'errors' => 0,
         ];
 
@@ -182,6 +186,16 @@ class EnrichEurotermCatalogCommand extends Command
                     default => 'write_errors',
                 };
                 $stats[$errorKey]++;
+                $status = (int) $exception->getCode();
+                if ($status === 403) {
+                    $stats['http_403_errors']++;
+                } elseif ($status === 429) {
+                    $stats['http_429_errors']++;
+                } elseif ($status >= 500 && $status <= 599) {
+                    $stats['http_5xx_errors']++;
+                } elseif ($exception instanceof \Illuminate\Http\Client\ConnectionException) {
+                    $stats['connection_errors']++;
+                }
                 report($exception);
             }
 
