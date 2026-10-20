@@ -25,6 +25,13 @@
                     </div>
             @endif
                 <div class="manager-product-context__meta">
+                    @if (count($offer['locations'] ?? []) > 1)
+                        @foreach ($offer['locations'] as $location)
+                            <span class="manager-product-context__wide">
+                                {{ $location['warehouse'] ?: 'Склад не указан' }}: {{ $location['stock'] }}{{ $location['in_stock'] && ! $location['is_fresh'] ? ' · требуется проверка' : '' }}
+                            </span>
+                        @endforeach
+                    @endif
                     @if ($offer['supplier_product_name'] && $offer['supplier_product_name'] !== $product->name)
                         <span class="manager-product-context__wide">У поставщика: {{ $offer['supplier_product_name'] }}</span>
                     @endif
@@ -40,7 +47,7 @@
                     @if ($offer['margin'] !== null)
                         <span>Маржа: {{ number_format($offer['margin'], 2, '.', ' ') }} BYN{{ $offer['margin_percent'] !== null ? ' · '.number_format($offer['margin_percent'], 1, '.', ' ').'%' : '' }}</span>
                     @endif
-                    @if ($offer['warehouse'])
+                    @if ($offer['warehouse'] && count($offer['locations'] ?? []) <= 1)
                         <span>Склад: {{ $offer['warehouse'] }}</span>
                     @endif
                     @if ($offer['delivery_days'])

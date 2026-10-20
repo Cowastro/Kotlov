@@ -30,7 +30,8 @@ class ManagerStorefrontProductContext
      *     delivery_days: ?int,
      *     in_stock: bool,
      *     is_fresh: bool,
-     *     updated_at: mixed
+     *     updated_at: mixed,
+     *     locations: list<array{warehouse:?string,stock:string,in_stock:bool,is_fresh:bool,updated_at:mixed}>
      * }>
      */
     public function offers(Product $product, ?User $user): Collection
@@ -75,6 +76,7 @@ class ManagerStorefrontProductContext
                     'stock' => $quantity !== null
                         ? $this->formatQuantity((float) $quantity)
                         : ($inStock ? 'В наличии' : ($offer->stock_text ?: 'Нет в наличии')),
+                    'stock_quantity' => $quantity !== null ? (float) $quantity : null,
                     'warehouse' => $this->warehouseLabel($offer->warehouse_name, $isEcokamin),
                     'delivery_days' => $offer->delivery_days,
                     'in_stock' => $inStock,
@@ -104,6 +106,7 @@ class ManagerStorefrontProductContext
                     'margin' => $this->margin($retailPrice, $purchasePrice),
                     'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
                     'stock' => $this->formatQuantity($quantity),
+                    'stock_quantity' => $quantity,
                     'warehouse' => $this->warehouseLabel(
                         data_get($source?->settings, 'warehouse_label'),
                         $isEcokamin,
@@ -132,6 +135,7 @@ class ManagerStorefrontProductContext
                 'margin' => null,
                 'margin_percent' => null,
                 'stock' => $stock->formattedAvailableQuantity(),
+                'stock_quantity' => (float) $stock->available_quantity,
                 'warehouse' => $stock->warehouse_name,
                 'delivery_days' => $stock->delivery_days,
                 'in_stock' => (float) $stock->available_quantity > 0,
@@ -149,12 +153,55 @@ class ManagerStorefrontProductContext
                 ['in_stock', 'desc'],
                 ['purchase_price', 'asc'],
             ])
-            // A product can retain several historical links to the same supplier
-            // (or have both a legacy and an integration offer). Managers need one
-            // best current row per supplier, not repeated labels that consume the
-            // compact card's two available slots.
-            ->unique(fn (array $offer): string => $offer['supplier_key'].'|'.mb_strtolower((string) ($offer['warehouse'] ?? '')))
+            // One supplier may expose several warehouses or retain historical
+            // links. Keep the supplier once and preserve its warehouse breakdown
+            // inside that single offer instead of repeating the same name.
+            ->groupBy('supplier_key')
+            ->map(fn (Collection $offers): array => $this->mergeSupplierOffers($offers))
             ->values();
+    }
+
+    /** @param Collection<int, array<string, mixed>> $offers */
+    private function mergeSupplierOffers(Collection $offers): array
+    {
+        $best = $offers->first();
+        $locations = $offers
+            ->unique(fn (array $offer): string => mb_strtolower((string) ($offer['warehouse'] ?? '')))
+            ->map(fn (array $offer): array => [
+                'warehouse' => $offer['warehouse'],
+                'stock' => $offer['stock'],
+                'stock_quantity' => $offer['stock_quantity'],
+                'in_stock' => $offer['in_stock'],
+                'is_fresh' => $offer['is_fresh'],
+                'updated_at' => $offer['updated_at'],
+            ])
+            ->values();
+
+        $best['phones'] = $offers->pluck('phones')->flatten()->filter()->unique()->values()->all();
+        $best['emails'] = $offers->pluck('emails')->flatten()->filter()->unique()->values()->all();
+        $best['locations'] = $locations->all();
+
+        if ($locations->count() === 1) {
+            return $best;
+        }
+
+        $best['warehouse'] = null;
+        $best['in_stock'] = $locations->contains(fn (array $location): bool => $location['in_stock']);
+        $best['is_fresh'] = $locations->contains(
+            fn (array $location): bool => $location['in_stock'] && $location['is_fresh'],
+        );
+        $best['updated_at'] = $locations->pluck('updated_at')->filter()->sortDesc()->first();
+
+        $freshQuantity = $locations
+            ->filter(fn (array $location): bool => $location['in_stock'] && $location['is_fresh'])
+            ->sum(fn (array $location): float => max(0, (float) ($location['stock_quantity'] ?? 0)));
+        $warehouseCount = $locations->count();
+        $warehouseLabel = $warehouseCount.' '.($warehouseCount === 2 ? 'склада' : 'складов');
+        $best['stock'] = $freshQuantity > 0
+            ? $this->formatQuantity($freshQuantity).' · '.$warehouseLabel
+            : ($best['in_stock'] ? 'В наличии · '.$warehouseLabel : 'Нет в наличии');
+
+        return $best;
     }
 
     private function supplierKey(?string $name): string

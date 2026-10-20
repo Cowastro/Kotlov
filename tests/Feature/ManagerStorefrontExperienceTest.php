@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductWarehouseStock;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
@@ -123,6 +125,43 @@ class ManagerStorefrontExperienceTest extends TestCase
         $this->assertCount(1, $offers);
         $this->assertSame('SECRET-123', $offers->first()['article']);
         $this->assertSame('7 шт.', $offers->first()['stock']);
+    }
+
+    public function test_one_supplier_with_two_warehouses_is_rendered_once(): void
+    {
+        [$product, $offer] = $this->makeProductWithSupplierOffer();
+        $brand = Brand::create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        $product->update(['brand_id' => $brand->id]);
+        $offer->supplier->update(['name' => 'ООО «СанБизнесГруп»']);
+
+        ProductWarehouseStock::create([
+            'product_id' => $product->id,
+            'supplier_id' => $offer->supplier_id,
+            'warehouse_code' => 'ecokamin-moscow',
+            'warehouse_name' => 'Склад Москва',
+            'external_article' => 'SECRET-123',
+            'source_product_name' => $product->name,
+            'total_quantity' => 4,
+            'available_quantity' => 4,
+            'delivery_days' => 7,
+            'as_of_date' => now()->toDateString(),
+            'last_synced_at' => now(),
+        ]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $this->actingAs($manager);
+
+        $offers = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager);
+
+        $this->assertCount(1, $offers);
+        $this->assertSame('4 шт. · 2 склада', $offers->first()['stock']);
+        $this->assertSame(['Склад Москва', 'Склад Минск'], collect($offers->first()['locations'])->pluck('warehouse')->all());
+        $html = $this->view('partials.manager-product-context', [
+            'product' => $product->fresh(),
+            'compact' => true,
+        ])->render();
+        $this->assertSame(1, substr_count($html, 'ООО «СанБизнесГруп»'));
+        $this->assertStringContainsString('Склад Москва: 4 шт.', $html);
+        $this->assertStringContainsString('Склад Минск: 7 шт.', $html);
     }
 
     public function test_internal_supplier_markup_is_not_rendered_for_guests(): void
