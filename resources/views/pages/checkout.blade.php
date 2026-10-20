@@ -99,10 +99,11 @@
                                     </div>
 
                                     <fieldset class="tf-field">
-                                        <label class="tf-lable fw-medium">Email</label>
+                                        <label class="tf-lable fw-medium">Email для подтверждения заказа</label>
                                         <input type="email" name="customer_email"
                                             value="{{ old('customer_email', $user->email ?? '') }}"
                                             placeholder="example@mail.by">
+                                        <div class="text-caption-01 cl-text-3 mt-4">Если оставить поле пустым, подтверждение придёт только через звонок менеджера.</div>
                                     </fieldset>
 
                                 </div>
