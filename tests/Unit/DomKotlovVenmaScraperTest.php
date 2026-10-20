@@ -53,6 +53,21 @@ HTML;
         $this->assertFalse($card['in_stock']);
     }
 
+    public function test_it_accepts_a_supplier_title_with_a_power_suffix(): void
+    {
+        $html = <<<'HTML'
+<h1>Пеллетная горелка Venma Comfort R58 (40–58 кВт)</h1>
+<link itemprop=availability href='https://schema.org/InStock'>
+<meta itemprop=price content="9975">
+HTML;
+
+        $card = (new DomKotlovVenmaScraper())->parseProductHtml($html, 'https://domkotlov.by/r58');
+
+        $this->assertNotNull($card);
+        $this->assertSame('R58', $card['model']);
+        $this->assertSame(9975.0, $card['retail_price']);
+    }
+
     public function test_listing_keeps_only_unique_venma_product_links(): void
     {
         $html = <<<'HTML'

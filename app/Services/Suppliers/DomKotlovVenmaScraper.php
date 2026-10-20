@@ -70,7 +70,7 @@ class DomKotlovVenmaScraper
     public function parseProductHtml(string $html, string $url): ?array
     {
         $name = $this->clean($this->capture('~<h1\b[^>]*>([\s\S]*?)</h1>~iu', $html));
-        if (! preg_match('/^Пеллетная горелка\s+Venma\s+Comfort\s+(R?\d+)$/iu', $name, $modelMatch)) {
+        if (! preg_match('/^Пеллетная горелка\s+Venma\s+Comfort\s+(R?\d+)(?:\b|\s|\()/iu', $name, $modelMatch)) {
             return null;
         }
 
