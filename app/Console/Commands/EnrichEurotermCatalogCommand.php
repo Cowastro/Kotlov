@@ -79,6 +79,10 @@ class EnrichEurotermCatalogCommand extends Command
             'http_429_errors' => 0,
             'http_5xx_errors' => 0,
             'connection_errors' => 0,
+            'tls_errors' => 0,
+            'dns_errors' => 0,
+            'timeout_errors' => 0,
+            'other_connection_errors' => 0,
             'errors' => 0,
         ];
 
@@ -195,6 +199,16 @@ class EnrichEurotermCatalogCommand extends Command
                     $stats['http_5xx_errors']++;
                 } elseif ($exception instanceof \Illuminate\Http\Client\ConnectionException) {
                     $stats['connection_errors']++;
+                    $message = mb_strtolower($exception->getMessage());
+                    if (str_contains($message, 'certificate') || str_contains($message, 'ssl') || str_contains($message, 'curl error 60')) {
+                        $stats['tls_errors']++;
+                    } elseif (str_contains($message, 'resolve host') || str_contains($message, 'curl error 6')) {
+                        $stats['dns_errors']++;
+                    } elseif (str_contains($message, 'timed out') || str_contains($message, 'curl error 28')) {
+                        $stats['timeout_errors']++;
+                    } else {
+                        $stats['other_connection_errors']++;
+                    }
                 }
                 report($exception);
             }
