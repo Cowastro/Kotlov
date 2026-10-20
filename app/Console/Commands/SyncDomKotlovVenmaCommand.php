@@ -62,7 +62,7 @@ class SyncDomKotlovVenmaCommand extends Command
         $seenArticles = [];
         $touchedProductIds = [];
         $rows = [];
-        $stats = ['scanned' => 0, 'valid' => 0, 'in_stock' => 0, 'created' => 0, 'updated' => 0, 'invalid' => 0, 'errors' => 0, 'missing_marked_unavailable' => 0];
+        $stats = ['scanned' => 0, 'valid' => 0, 'in_stock' => 0, 'created' => 0, 'updated' => 0, 'linked_existing' => 0, 'invalid' => 0, 'errors' => 0, 'missing_marked_unavailable' => 0];
 
         foreach ($urls as $url) {
             try {
@@ -109,6 +109,13 @@ class SyncDomKotlovVenmaCommand extends Command
             }
         }
 
+        if ($apply && $brand && $supplier) {
+            $sync = $this->ensureSync($supplier);
+            $linkedProductIds = $this->linkExistingVenmaProducts($brand, $supplier, $sync);
+            $stats['linked_existing'] = count($linkedProductIds);
+            $touchedProductIds = [...$touchedProductIds, ...$linkedProductIds];
+        }
+
         // Only a complete, error-free catalogue scan may conclude that a
         // previously known card disappeared. A limited/manual check or a
         // partial network failure must never hide the other VENMA offers.
@@ -133,12 +140,15 @@ class SyncDomKotlovVenmaCommand extends Command
                 $stats['missing_marked_unavailable']++;
             }
 
-            app(SupplierProductAvailabilityService::class)->refreshMany(array_values(array_unique($touchedProductIds)));
             $this->ensureSync($supplier)->update([
                 'last_run_at' => now(),
                 'last_status' => $stats['errors'] === 0 ? 'updated' : 'failed',
                 'last_exit_code' => $stats['errors'] === 0 ? self::SUCCESS : self::FAILURE,
             ]);
+        }
+
+        if ($apply && $touchedProductIds !== []) {
+            app(SupplierProductAvailabilityService::class)->refreshMany(array_values(array_unique($touchedProductIds)));
         }
 
         $this->table(['Действие', 'Модель', 'Розница BYN', 'Закупка −15% BYN', 'Наличие'], $rows);
@@ -294,6 +304,63 @@ class SyncDomKotlovVenmaCommand extends Command
 
             return $product->fresh();
         });
+    }
+
+    /** @return list<int> */
+    private function linkExistingVenmaProducts(Brand $brand, Supplier $supplier, SupplierSync $sync): array
+    {
+        $productIds = [];
+
+        Product::query()
+            ->where('brand_id', $brand->id)
+            ->whereDoesntHave('supplierProducts', fn ($query) => $query->where('supplier_id', $supplier->id))
+            ->orderBy('id')
+            ->each(function (Product $product) use ($supplier, $sync, &$productIds): void {
+                preg_match('/\bCOMFORT\s+(R?\d+)\b/iu', $product->name, $modelMatch);
+                $model = mb_strtoupper($modelMatch[1] ?? '');
+                $power = (int) preg_replace('/\D+/', '', $model);
+                $inStock = $power > 0 && $power <= 100;
+                $purchasePrice = (float) $product->price > 0
+                    ? round((float) $product->price * 0.85, 2)
+                    : null;
+                $article = 'VENMA-CATALOG-'.$product->id;
+
+                SupplierProduct::query()->updateOrCreate(
+                    ['supplier_id' => $supplier->id, 'supplier_article' => $article],
+                    [
+                        'supplier_sync_id' => $sync->id,
+                        'product_id' => $product->id,
+                        'product_sku' => $product->sku,
+                        'supplier_article_normalized' => mb_strtolower($article),
+                        'supplier_article_compact' => preg_replace('/[^A-Z0-9]+/', '', $article),
+                        'supplier_name' => $product->name,
+                        'source_url' => DomKotlovVenmaScraper::CATEGORY_URL,
+                        'price' => $purchasePrice,
+                        'currency' => 'BYN',
+                        'currency_rate' => 1,
+                        'price_byn' => $purchasePrice,
+                        'in_stock' => $inStock,
+                        'stock_quantity' => null,
+                        'stock_status' => $inStock ? 'available_without_quantity' : 'preorder',
+                        'stock_text' => $inStock ? 'В наличии на складе поставщика' : 'Под заказ у поставщика',
+                        'warehouse_name' => 'Дом котлов',
+                        'last_stock_synced_at' => now(),
+                        'match_status' => 'matched',
+                        'match_confidence' => 'supplier_scope',
+                        'raw' => [
+                            'catalog' => 'domkotlov_venma',
+                            'model' => $model,
+                            'partner_discount_percent' => 15,
+                            'link_reason' => 'VENMA supplier confirmed for the full brand assortment',
+                        ],
+                        'last_synced_at' => now(),
+                    ],
+                );
+
+                $productIds[] = $product->id;
+            });
+
+        return $productIds;
     }
 
     private function description(array $card): string
