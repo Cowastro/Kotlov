@@ -94,12 +94,14 @@ class SearchController extends Controller
         $search->applyCategory($categories, $q);
         $categories = $categories
             ->whereHas('products', fn ($products) => $products->active()->notArchived())
-            ->select('id', 'name', 'slug')
+            ->select('id', 'name', 'slug', 'parent_id')
+            ->with('parent:id,name')
             ->limit(3)
             ->get()
             ->map(fn ($c) => [
                 'type' => 'category',
                 'name' => $c->name,
+                'context' => $c->parent?->name,
                 'url' => '/'.$c->slug,
             ]);
 

@@ -567,7 +567,10 @@
                         if (item.type === 'category') {
                             return '<a href="' + item.url + '" class="suggest-item suggest-category">' +
                                 '<i class="icon icon-FolderOpen me-8"></i>' +
-                                '<span>' + item.name + '</span>' +
+                                '<span class="suggest-category__text">' +
+                                    '<span>' + item.name + '</span>' +
+                                    (item.context ? '<small>' + item.context + '</small>' : '') +
+                                '</span>' +
                                 '</a>';
                         }
                         return '<a href="' + item.url + '" class="suggest-item suggest-product">' +

@@ -13,6 +13,31 @@ class StorefrontProductSearchTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_category_suggestions_explain_identical_names_with_their_parent_section(): void
+    {
+        $boilers = Category::create(['name' => 'Котлы', 'slug' => 'search-boilers-parent', 'parent_id' => 0, 'is_active' => true]);
+        $waterHeaters = Category::create(['name' => 'Водонагреватели', 'slug' => 'search-heaters-parent', 'parent_id' => 0, 'is_active' => true]);
+        $boilerGas = Category::create(['name' => 'Газовые', 'slug' => 'search-boiler-gas', 'parent_id' => $boilers->id, 'is_active' => true]);
+        $heaterGas = Category::create(['name' => 'Газовые', 'slug' => 'search-heater-gas', 'parent_id' => $waterHeaters->id, 'is_active' => true]);
+
+        foreach ([$boilerGas, $heaterGas] as $index => $category) {
+            Product::create([
+                'category_id' => $category->id,
+                'name' => 'Газовый товар '.($index + 1),
+                'slug' => 'gas-category-context-'.($index + 1),
+                'sku' => 'GAS-CONTEXT-'.($index + 1),
+                'price' => 100 + $index,
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+        }
+
+        $this->getJson('/search/suggest?q=газовые')
+            ->assertOk()
+            ->assertJsonFragment(['type' => 'category', 'name' => 'Газовые', 'context' => 'Котлы'])
+            ->assertJsonFragment(['type' => 'category', 'name' => 'Газовые', 'context' => 'Водонагреватели']);
+    }
+
     public function test_gas_meter_search_ignores_word_order_and_understands_word_forms(): void
     {
         $category = Category::create([
