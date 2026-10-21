@@ -39,6 +39,12 @@ class DiagnoseWebHealthCommand extends Command
         if ($symbol !== null) {
             $this->line('audit.web_health.symbol='.$symbol);
         }
+        if (preg_match('/[\\\\\/]vendor[\\\\\/]([A-Za-z0-9_.-]+)[\\\\\/]([A-Za-z0-9_.-]+)/', $error, $package) === 1) {
+            $this->line('audit.web_health.package='.$package[1].'-'.$package[2]);
+        }
+        if (preg_match('/ at [^\r\n:]+[\\\\\/]([A-Za-z0-9_.-]+\.php):(\d+)/', $error, $source) === 1) {
+            $this->line('audit.web_health.source='.$source[1].'-'.$source[2]);
+        }
         $this->line('metric.web_health.log_present=1');
         $this->line('metric.web_health.error_found=1');
 
@@ -67,6 +73,10 @@ class DiagnoseWebHealthCommand extends Command
     /** @return array{0: string, 1: string|null} */
     private function classify(string $error): array
     {
+        if (preg_match('/[\"\']exception[\"\']\s*:\s*[\"\']\[object\] \(([A-Za-z0-9_\\\\]+)\(/', $error, $matches) === 1) {
+            return ['exception_class', $matches[1]];
+        }
+
         $patterns = [
             'missing_class' => '/Class [\"\']([A-Za-z0-9_\\\\]+)[\"\'] not found/',
             'missing_target' => '/Target class \[([A-Za-z0-9_\\\\]+)\] does not exist/',

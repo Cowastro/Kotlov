@@ -449,7 +449,7 @@ jobs:
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "system:diagnose-web-health" ]]; then
             echo "safe_web_health_metrics_begin"
-            grep -E '^audit\.web_health\.(signature|symbol)=[a-zA-Z0-9_\\:-]+$' "$detail_log" || true
+            grep -E '^audit\.web_health\.(signature|symbol|package|source)=[a-zA-Z0-9_.\\:-]+$' "$detail_log" || true
             grep -E '^metric\.web_health\.[a-z_]+=[0-9]+$' "$detail_log" || true
             echo "safe_web_health_metrics_end"
           fi
