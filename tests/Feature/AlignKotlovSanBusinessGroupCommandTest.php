@@ -20,6 +20,10 @@ class AlignKotlovSanBusinessGroupCommandTest extends TestCase
         $existingKotlovBrandIds = Brand::query()
             ->whereRaw('UPPER(name) LIKE ?', ['KOTLOV%'])
             ->pluck('id');
+        $existingKotlovProductIds = Product::query()
+            ->whereIn('brand_id', $existingKotlovBrandIds)
+            ->pluck('id');
+        SupplierProduct::query()->whereIn('product_id', $existingKotlovProductIds)->delete();
         Product::query()->whereIn('brand_id', $existingKotlovBrandIds)->delete();
         Brand::query()->whereIn('id', $existingKotlovBrandIds)->delete();
         $category = Category::query()->create([
