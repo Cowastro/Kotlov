@@ -1,5 +1,7 @@
 @php
-    $onlineDiscountExcludedProduct = isset($product)
+    // Only the product page itself (see online-order-promo).
+    $onlineDiscountExcludedProduct = request()->route()?->getActionName() === \App\Http\Controllers\ProductController::class.'@show'
+        && isset($product)
         && $product instanceof \App\Models\Product
         && ! $product->qualifiesForOnlineOrderDiscount();
 @endphp
