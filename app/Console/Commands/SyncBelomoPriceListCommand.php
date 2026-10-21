@@ -308,17 +308,31 @@ class SyncBelomoPriceListCommand extends Command
     private function upsertSupplierProduct(int $supplierId, int $syncId, object $product, array $row, $now): void
     {
         $compact = mb_strtolower(preg_replace('/[^\pL\pN]+/u', '', $row['article']) ?? '');
-        DB::table('supplier_products')->updateOrInsert(['supplier_id' => $supplierId, 'supplier_article' => $row['article']], [
+        $identity = ['supplier_id' => $supplierId, 'supplier_article' => $row['article']];
+        $existing = DB::table('supplier_products')->where($identity)->first();
+        $payload = [
             'supplier_sync_id' => $syncId, 'product_id' => $product->id, 'product_sku' => $product->sku,
             'supplier_article_normalized' => mb_strtolower($row['article']), 'supplier_article_compact' => $compact,
             'supplier_name' => $row['name'], 'price' => $row['partner_price_byn'], 'currency' => 'BYN', 'currency_rate' => 1,
-            'price_byn' => $row['partner_price_byn'], 'in_stock' => false, 'stock_quantity' => null,
-            'stock_status' => 'preorder', 'stock_text' => 'Закупка у производителя · наличие и срок по запросу',
-            'warehouse_name' => 'ООО «СанБизнесГруп»',
+            'price_byn' => $row['partner_price_byn'], 'warehouse_name' => 'ООО «СанБизнесГруп»',
             'match_status' => 'matched', 'match_confidence' => '100',
             'raw' => json_encode(['manufacturer' => 'БелОМО', 'procurement_source' => 'БелОМО', 'supplier' => 'ООО «СанБизнесГруп»', 'vat_included' => false, 'price_column' => 'до 10 шт', 'effective_date' => '2026-09-15'], JSON_UNESCAPED_UNICODE),
-            'last_synced_at' => $now, 'created_at' => $now, 'updated_at' => $now,
-        ]);
+            'last_synced_at' => $now, 'updated_at' => $now,
+        ];
+
+        if ($existing) {
+            // The BelOMO file is a purchase-price source. It must never erase
+            // real SanBusinessGroup stock populated by 1C or a warehouse feed.
+            DB::table('supplier_products')->where('id', $existing->id)->update($payload);
+
+            return;
+        }
+
+        DB::table('supplier_products')->insert(array_merge($identity, $payload, [
+            'in_stock' => false, 'stock_quantity' => null,
+            'stock_status' => 'preorder', 'stock_text' => 'Закупка у производителя · наличие и срок по запросу',
+            'created_at' => $now,
+        ]));
     }
 
     private function upsertPartnerOffer(int $sourceId, object $product, array $row, $now): void
