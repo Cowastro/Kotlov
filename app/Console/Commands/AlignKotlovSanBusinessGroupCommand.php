@@ -30,26 +30,27 @@ class AlignKotlovSanBusinessGroupCommand extends Command
                 ->orWhere('name', 'like', '%СанБизнесГруп%'))
             ->orderByRaw("CASE WHEN code = 'sanbusinessgroup' THEN 0 ELSE 1 END")
             ->first();
-        $brand = DB::table('brands')
+        $brands = DB::table('brands')
             ->where(fn ($query) => $query
                 ->whereIn('slug', ['kotlov', 'kotlov-by'])
-                ->orWhereIn('name', ['KOTLOV', 'KOTLOV.BY', 'Kotlov', 'Kotlov.by']))
+                ->orWhereRaw('UPPER(name) LIKE ?', ['KOTLOV%']))
             ->orderByRaw("CASE WHEN slug = 'kotlov' THEN 0 WHEN name = 'KOTLOV' THEN 1 ELSE 2 END")
-            ->first();
+            ->get();
 
         if (! $supplier) {
             $this->error('ООО «СанБизнесГруп» не найден в справочнике поставщиков.');
 
             return self::FAILURE;
         }
-        if (! $brand) {
-            $this->error('Бренд KOTLOV не найден.');
+        if ($brands->isEmpty()) {
+            $this->error('Бренды семейства KOTLOV не найдены.');
 
             return self::FAILURE;
         }
 
+        $brandIds = $brands->pluck('id')->map(fn ($id): int => (int) $id)->values();
         $products = DB::table('products')
-            ->where('brand_id', $brand->id)
+            ->whereIn('brand_id', $brandIds)
             ->get(['id', 'sku', 'name', 'is_active', 'is_archived', 'price', 'availability_status', 'requires_price_confirmation']);
         $linkedProductIds = DB::table('supplier_products')
             ->where('supplier_id', $supplier->id)
@@ -62,7 +63,8 @@ class AlignKotlovSanBusinessGroupCommand extends Command
             && (float) $product->price > 0);
 
         $metrics = [
-            'brand_id' => (int) $brand->id,
+            'brand_id' => (int) $brands->first()->id,
+            'brand_count' => $brands->count(),
             'supplier_id' => (int) $supplier->id,
             'brand_products' => $products->count(),
             'existing_supplier_links' => $linkedProductIds->count(),
@@ -74,16 +76,18 @@ class AlignKotlovSanBusinessGroupCommand extends Command
         ];
 
         if ($apply) {
-            DB::transaction(function () use ($supplier, $brand, $products, $eligible, &$metrics): void {
+            DB::transaction(function () use ($supplier, $brands, $products, $eligible, &$metrics): void {
                 $now = now();
                 DB::table('suppliers')->where('id', $supplier->id)->update([
                     'is_active' => true,
                     'updated_at' => $now,
                 ]);
-                DB::table('brand_supplier')->updateOrInsert(
-                    ['brand_id' => $brand->id, 'supplier_id' => $supplier->id],
-                    ['created_at' => $now, 'updated_at' => $now],
-                );
+                foreach ($brands as $brand) {
+                    DB::table('brand_supplier')->updateOrInsert(
+                        ['brand_id' => $brand->id, 'supplier_id' => $supplier->id],
+                        ['created_at' => $now, 'updated_at' => $now],
+                    );
+                }
 
                 foreach ($products as $product) {
                     $existing = DB::table('supplier_products')
@@ -158,7 +162,7 @@ class AlignKotlovSanBusinessGroupCommand extends Command
         }
 
         $metrics['operational_products'] = Product::query()
-            ->where('brand_id', $brand->id)
+            ->whereIn('brand_id', $brandIds)
             ->where('is_active', true)
             ->where('is_archived', false)
             ->with([

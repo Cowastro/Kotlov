@@ -17,6 +17,11 @@ class AlignKotlovSanBusinessGroupCommandTest extends TestCase
     public function test_it_links_kotlov_to_sanbusinessgroup_and_releases_only_priced_active_cards(): void
     {
         Product::query()->update(['is_active' => false]);
+        $existingKotlovBrandIds = Brand::query()
+            ->whereRaw('UPPER(name) LIKE ?', ['KOTLOV%'])
+            ->pluck('id');
+        Product::query()->whereIn('brand_id', $existingKotlovBrandIds)->delete();
+        Brand::query()->whereIn('id', $existingKotlovBrandIds)->delete();
         $category = Category::query()->create([
             'name' => 'Категория KOTLOV',
             'slug' => 'kotlov-alignment-category',
@@ -27,6 +32,10 @@ class AlignKotlovSanBusinessGroupCommandTest extends TestCase
             ['slug' => 'kotlov'],
             ['name' => 'KOTLOV', 'is_active' => true],
         );
+        $heatPumpBrand = Brand::query()->updateOrCreate(
+            ['slug' => 'kotlov-ge'],
+            ['name' => 'KOTLOV GE', 'is_active' => true],
+        );
         $supplier = Supplier::query()->updateOrCreate(
             ['code' => 'sanbusinessgroup'],
             ['name' => 'ООО «СанБизнесГруп»', 'is_active' => false],
@@ -34,6 +43,7 @@ class AlignKotlovSanBusinessGroupCommandTest extends TestCase
         $priced = $this->product($category->id, $brand->id, 'KOTLOV-PRICED', 250, true, false);
         $withoutPrice = $this->product($category->id, $brand->id, 'KOTLOV-NO-PRICE', 0, true, false);
         $archived = $this->product($category->id, $brand->id, 'KOTLOV-ARCHIVED', 300, true, true);
+        $heatPump = $this->product($category->id, $heatPumpBrand->id, 'KOTLOV-GE-FLM30', 8500, true, false);
 
         SupplierProduct::query()->create([
             'supplier_id' => $supplier->id,
@@ -45,25 +55,30 @@ class AlignKotlovSanBusinessGroupCommandTest extends TestCase
 
         $this->artisan('supplier:align-kotlov-sbg')
             ->expectsOutputToContain('metric.status=dry_run')
-            ->expectsOutputToContain('metric.brand_products=3')
-            ->expectsOutputToContain('metric.supplier_links_to_create=2')
-            ->expectsOutputToContain('metric.price_holds_to_release=1')
+            ->expectsOutputToContain('metric.brand_count=2')
+            ->expectsOutputToContain('metric.brand_products=4')
+            ->expectsOutputToContain('metric.supplier_links_to_create=3')
+            ->expectsOutputToContain('metric.price_holds_to_release=2')
             ->assertSuccessful();
         $this->assertTrue($priced->fresh()->requires_price_confirmation);
         $this->assertSame(1, SupplierProduct::query()->where('supplier_id', $supplier->id)->count());
 
         $this->artisan('supplier:align-kotlov-sbg', ['--apply' => true])
             ->expectsOutputToContain('metric.status=applied')
-            ->expectsOutputToContain('metric.links_written=3')
-            ->expectsOutputToContain('metric.products_released=1')
-            ->expectsOutputToContain('metric.operational_products=2')
+            ->expectsOutputToContain('metric.links_written=4')
+            ->expectsOutputToContain('metric.products_released=2')
+            ->expectsOutputToContain('metric.operational_products=3')
             ->assertSuccessful();
 
         $this->assertDatabaseHas('brand_supplier', [
             'brand_id' => $brand->id,
             'supplier_id' => $supplier->id,
         ]);
-        $this->assertSame(3, SupplierProduct::query()->where('supplier_id', $supplier->id)->count());
+        $this->assertDatabaseHas('brand_supplier', [
+            'brand_id' => $heatPumpBrand->id,
+            'supplier_id' => $supplier->id,
+        ]);
+        $this->assertSame(4, SupplierProduct::query()->where('supplier_id', $supplier->id)->count());
         $this->assertSame(1, SupplierProduct::query()
             ->where('supplier_id', $supplier->id)
             ->where('product_id', $priced->id)
@@ -73,6 +88,9 @@ class AlignKotlovSanBusinessGroupCommandTest extends TestCase
         $this->assertTrue($priced->fresh()->canBeAddedToCart());
         $this->assertTrue($withoutPrice->fresh()->requires_price_confirmation);
         $this->assertTrue($archived->fresh()->requires_price_confirmation);
+        $this->assertFalse($heatPump->fresh()->requires_price_confirmation);
+        $this->assertSame(Product::AVAILABILITY_CHECK, $heatPump->fresh()->availability_status);
+        $this->assertTrue($heatPump->fresh()->canBeAddedToCart());
         $this->assertTrue($supplier->fresh()->is_active);
     }
 
