@@ -30,6 +30,7 @@ class SyncTskNasosyCommand extends Command
         {--limit= : Process only the first N data rows}
         {--stock-file= : Local CSV/XLSX path (skips Google Sheet download)}
         {--sheet-url= : Override the default Google Sheet URL}
+        {--category-id= : Restrict matching, updates and missing-row deactivation to one product category}
         {--in-stock-only : Create products only for rows «в наличии» (skip preorder/out)}
         {--create-new : Create products for rows with no match}';
 
@@ -90,6 +91,7 @@ class SyncTskNasosyCommand extends Command
         $apply     = (bool) $this->option('apply') && ! $this->option('dry-run');
         $createNew = (bool) $this->option('create-new');
         $limit     = $this->option('limit') !== null ? (int) $this->option('limit') : null;
+        $categoryId = $this->option('category-id') !== null ? (int) $this->option('category-id') : null;
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: database will be updated.</>'
@@ -130,10 +132,40 @@ class SyncTskNasosyCommand extends Command
 
         $this->buildIndex();
         $classified = array_map(fn ($r) => $this->classify($r), $rows);
+        if ($categoryId !== null) {
+            if ($categoryId <= 0 || ! DB::table('categories')->where('id', $categoryId)->exists()) {
+                $this->error("Unknown --category-id={$categoryId}.");
+                return self::FAILURE;
+            }
+            $classified = $this->scopeRowsToCategory($classified, $categoryId);
+            $this->info(sprintf('Category scope %d: %d price rows', $categoryId, count($classified)));
+        }
 
         return $apply
-            ? $this->applyChanges($classified, $createNew)
+            ? $this->applyChanges($classified, $createNew, $categoryId)
             : $this->showDryRun($classified);
+    }
+
+    private function scopeRowsToCategory(array $rows, int $categoryId): array
+    {
+        $matchedIds = array_values(array_unique(array_filter(array_map(
+            fn ($row) => $row['matched_product_id'] ?? null,
+            $rows
+        ))));
+        $allowedIds = $matchedIds === [] ? [] : DB::table('products')
+            ->where('category_id', $categoryId)
+            ->whereIn('id', $matchedIds)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->flip()
+            ->all();
+
+        return array_values(array_filter($rows, function (array $row) use ($categoryId, $allowedIds): bool {
+            $matchedId = $row['matched_product_id'] ?? null;
+            return $matchedId !== null
+                ? isset($allowedIds[(int) $matchedId])
+                : (int) ($row['resolved_category_id'] ?? 0) === $categoryId;
+        }));
     }
 
     // ── Workbook download: per-tab CSV crawl (light, no XLSX) ─────────────────────
@@ -551,7 +583,7 @@ class SyncTskNasosyCommand extends Command
 
     // ── Apply ───────────────────────────────────────────────────────────────────
 
-    private function applyChanges(array $rows, bool $createNew): int
+    private function applyChanges(array $rows, bool $createNew, ?int $categoryId = null): int
     {
         $now = now();
         $sid = $this->ensureSupplier($now);
@@ -596,7 +628,7 @@ class SyncTskNasosyCommand extends Command
 
         // Mark supplier links absent for products no longer in the price (do NOT delete).
         $present = array_filter(array_map(fn ($r) => $r['norm_article'], $rows));
-        $touchedProductIds = array_merge($touchedProductIds, $this->deactivateMissing($sid, $present, $now));
+        $touchedProductIds = array_merge($touchedProductIds, $this->deactivateMissing($sid, $present, $now, $categoryId));
         app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
 
         $this->newLine();
@@ -716,11 +748,15 @@ class SyncTskNasosyCommand extends Command
     }
 
     /** @return array<int, int> */
-    private function deactivateMissing(int $sid, array $presentArticles, $now): array
+    private function deactivateMissing(int $sid, array $presentArticles, $now, ?int $categoryId = null): array
     {
         $present = array_values(array_unique($presentArticles));
         $query = DB::table('supplier_products')
             ->where('supplier_id', $sid)
+            ->when($categoryId !== null, fn ($q) => $q->whereIn(
+                'product_id',
+                DB::table('products')->select('id')->where('category_id', $categoryId)
+            ))
             ->when($present !== [], fn ($q) => $q->whereNotIn('supplier_article', $present));
         $productIds = $query->clone()->whereNotNull('product_id')->pluck('product_id')->map(fn ($id) => (int) $id)->all();
         $query->update(['in_stock' => false, 'stock_status' => 'out_of_stock', 'updated_at' => $now]);
