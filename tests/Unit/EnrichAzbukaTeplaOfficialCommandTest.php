@@ -77,7 +77,7 @@ class EnrichAzbukaTeplaOfficialCommandTest extends TestCase
         );
         $this->assertSame(
             ['https://www.teplodvor.ru/img.php?id_image=12966'],
-            $method->invoke($command, 'Ariston', 'FAST R Display 10', '')
+            $method->invoke($command, 'Ariston', 'FAST R Displey 10', '')
         );
         $this->assertSame(
             ['https://www.teplodvor.ru/img.php?id_image=11852'],

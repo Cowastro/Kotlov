@@ -123,6 +123,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
     {
         $brandKey = mb_strtolower(trim($brand));
         $text = trim($model.' '.$name);
+        $slug = Str::slug($text);
         $ascii = Str::upper(str_replace([' ', '-', '_', '.', '/', 'М'], '', $text));
         $ascii = strtr($ascii, ['А' => 'A', 'В' => 'B', 'С' => 'C', 'Е' => 'E', 'Н' => 'H', 'К' => 'K', 'О' => 'O', 'Р' => 'P', 'Т' => 'T', 'Х' => 'X']);
 
@@ -203,8 +204,8 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             return match (true) {
                 str_contains($ascii, 'CLASXC35') => 'https://www.ariston.com/en-eg/products/boilers-eg/sottocat-boiler-eg/clas-xc/',
                 str_contains($ascii, 'CLASXCSYSTEM24') => 'https://www.teplodvor.ru/ariston-clas-xc-system-24-ff.html',
-                str_contains($ascii, 'FASTRDISPLAY10') => 'https://www.teplodvor.ru/ariston-fast-r-display-10l-ng.html',
-                str_contains($ascii, 'FASTRDISPLAY14') => 'https://www.teplodvor.ru/ariston-fast-r-display-14l-ng.html',
+                str_contains($ascii, 'FASTRDISPLAY10'), str_contains($ascii, 'FASTRDISPLEY10') => 'https://www.teplodvor.ru/ariston-fast-r-display-10l-ng.html',
+                str_contains($ascii, 'FASTRDISPLAY14'), str_contains($ascii, 'FASTRDISPLEY14') => 'https://www.teplodvor.ru/ariston-fast-r-display-14l-ng.html',
                 str_contains($ascii, 'DGI10LCFSUPERLUX') => 'https://titan-prof.ru/catalog/vodosnabzhenie/vodonagrevateli/protochnye_gazovye_vodonagrevateli/gazovyy_protochnyy_vodonagrevatel_superlux_dgi_10l_cf_ng_3632014.html',
                 default => null,
             };
@@ -242,11 +243,11 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             return 'https://ipro-gsm.ru/internet-magazin-2/product/kotelok';
         }
 
-        if ($brandKey === 'tecline' && str_contains($ascii, 'ПЛЕНКА')) {
+        if ($brandKey === 'tecline' && str_contains($slug, 'plenka')) {
             return 'https://azbukatepla.by/shop/truby-i-armatura/pe-rt-polietilen/plenka-folga-dlya-teplogo-pola-tecline';
         }
 
-        if ($brandKey === 'tec line' && str_contains($ascii, 'ДАТЧИКБОЙЛЕРА')) {
+        if ($brandKey === 'tec line' && str_contains($slug, 'datchik-boilera')) {
             return 'https://azbukatepla.by/shop/kotly-otopleniya/elektricheskie-kotly/datchik-temperatury-boylera-tecline';
         }
 
@@ -279,7 +280,9 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
     private function officialImages(string $brand, string $model, string $name): array
     {
         $brandKey = mb_strtolower(trim($brand));
-        $ascii = Str::upper(str_replace([' ', '-', '_', '.', '/', 'М'], '', trim($model.' '.$name)));
+        $text = trim($model.' '.$name);
+        $slug = Str::slug($text);
+        $ascii = Str::upper(str_replace([' ', '-', '_', '.', '/', 'М'], '', $text));
         $ascii = strtr($ascii, ['А' => 'A', 'В' => 'B', 'С' => 'C', 'Е' => 'E', 'Н' => 'H', 'К' => 'K', 'О' => 'O', 'Р' => 'P', 'Т' => 'T', 'Х' => 'X']);
 
         if ($brandKey === 'valfex') {
@@ -322,7 +325,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             return match (true) {
                 str_contains($ascii, 'CLASXC35') => ['https://www.vestatrade.ru/image/cache/catalog/product/Ariston/Kotli/CLASXC-1000x1000.jpg'],
                 str_contains($ascii, 'DGI10LCFSUPERLUX') => ['https://titan-prof.ru/upload/iblock/d31/0njvxtxoqw7o9kb18636h10snfidiwbg.jpg'],
-                str_contains($ascii, 'FASTRDISPLAY10'), str_contains($ascii, 'FASTRDISPLAY14') => ['https://www.teplodvor.ru/img.php?id_image=12966'],
+                str_contains($ascii, 'FASTRDISPLAY10'), str_contains($ascii, 'FASTRDISPLAY14'), str_contains($ascii, 'FASTRDISPLEY10'), str_contains($ascii, 'FASTRDISPLEY14') => ['https://www.teplodvor.ru/img.php?id_image=12966'],
                 default => [],
             };
         }
@@ -335,11 +338,11 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             return ['https://cdn.zwei.gmbh/files/heat-store.de/media/0d/3a/6c/1787301916/Mainfloor_Heizrohr_PE_RT_Alu_PE_RT_rot-6a88101c5f881.jpg'];
         }
 
-        if ($brandKey === 'tecline' && str_contains($ascii, 'ПЛЕНКА')) {
+        if ($brandKey === 'tecline' && str_contains($slug, 'plenka')) {
             return ['https://azbukatepla.by/wp-content/uploads/2018/02/folga-dlya-teplogo-pola-Polsha.png'];
         }
 
-        if ($brandKey === 'tec line' && str_contains($ascii, 'ДАТЧИКБОЙЛЕРА')) {
+        if ($brandKey === 'tec line' && str_contains($slug, 'datchik-boilera')) {
             return ['https://azbukatepla.by/wp-content/uploads/2023/11/Datchik-temperatury-boylera-TECLine.png'];
         }
 
