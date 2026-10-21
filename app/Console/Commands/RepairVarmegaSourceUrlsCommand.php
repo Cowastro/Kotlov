@@ -605,7 +605,7 @@ class RepairVarmegaSourceUrlsCommand extends Command
         $path = is_string($path) ? trim($path, '/') : '';
 
         if (str_starts_with($path, 'product/kollektory-i-komplektuyushchie')) {
-            return 'raspredelitelnye-kollektory';
+            return 'grebenki';
         }
 
         return '';
@@ -624,12 +624,6 @@ class RepairVarmegaSourceUrlsCommand extends Command
                 'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
                 'type' => 'catalog',
                 'sort_order' => 185,
-            ],
-            'raspredelitelnye-kollektory' => [
-                'name' => 'Распределительные коллекторы',
-                'parent_slug' => 'komplektuyushhie-dlya-otopleniya',
-                'type' => 'catalog',
-                'sort_order' => 180,
             ],
         ];
 
