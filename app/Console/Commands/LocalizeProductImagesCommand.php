@@ -30,7 +30,8 @@ class LocalizeProductImagesCommand extends Command
         }
 
         $products = Product::query()
-            ->orderable()
+            ->active()
+            ->notArchived()
             ->when($brand !== '', fn ($query) => $query->whereHas(
                 'brand',
                 fn ($brandQuery) => $brandQuery->whereRaw('LOWER(name) = ?', [mb_strtolower($brand)])

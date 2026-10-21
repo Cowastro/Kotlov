@@ -35,10 +35,10 @@ class LocalizeProductImagesCommandTest extends TestCase
                 'name' => 'Viessmann Test Boiler',
                 'slug' => 'viessmann-test-boiler',
                 'sku' => 'VIESSMANN-TEST',
-                'price' => 100,
+                'price' => 0,
                 'is_active' => true,
                 'is_archived' => false,
-                'requires_price_confirmation' => false,
+                'requires_price_confirmation' => true,
                 'images' => [
                     'https://images.example.test/boiler.png',
                     'img/products/existing/local.jpg',
