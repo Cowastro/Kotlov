@@ -332,8 +332,8 @@
 
                                 {{-- Кнопка сброса --}}
                                 @php
-                                    $hasActiveCatalogFilters = count(request()->except('sort', 'page')) > 0;
-                                    $resetCatalogUrl = url()->current();
+                                    $hasActiveCatalogFilters = count(request()->except('sort', 'page', 'brand_sort')) > 0;
+                                    $resetCatalogUrl = url()->current() . (request('brand_sort') === 'alpha' ? '?brand_sort=alpha' : '');
                                 @endphp
                                 @if ($hasActiveCatalogFilters)
                                     <a href="{{ $resetCatalogUrl }}" class="tf-btn btn-outline w-100 mt-8">
@@ -514,8 +514,12 @@
                                 из {{ $products->total() }} товаров
                             </div>
                             @php
-                                $hasActiveCatalogFilters = $hasActiveCatalogFilters ?? count(request()->except('sort', 'page', 'brand')) > 0;
-                                $resetCatalogUrl = $resetCatalogUrl ?? (url()->current() . (request('brand') ? '?' . http_build_query(['brand' => (int) request('brand')]) : ''));
+                                $hasActiveCatalogFilters = $hasActiveCatalogFilters ?? count(request()->except('sort', 'page', 'brand', 'brand_sort')) > 0;
+                                $resetCatalogParameters = array_filter([
+                                    'brand' => request('brand') ? (int) request('brand') : null,
+                                    'brand_sort' => request('brand_sort') === 'alpha' ? 'alpha' : null,
+                                ]);
+                                $resetCatalogUrl = $resetCatalogUrl ?? (url()->current() . ($resetCatalogParameters ? '?' . http_build_query($resetCatalogParameters) : ''));
                             @endphp
                             @if ($hasActiveCatalogFilters)
                                 <div class="br-line type-vertical"></div>

@@ -38,4 +38,22 @@ class CatalogBrandFilterVisibilityTest extends TestCase
 
         $this->assertMatchesRegularExpression('/id="brand-all"[\s\S]*?checked/', $html);
     }
+
+    public function test_manufacturers_can_be_sorted_alphabetically(): void
+    {
+        request()->merge(['brand_sort' => 'alpha']);
+        $brands = collect([
+            (object) ['id' => 1, 'name' => 'Zeta', 'products_count' => 100],
+            (object) ['id' => 2, 'name' => 'Alpha', 'products_count' => 1],
+            (object) ['id' => 3, 'name' => 'Beta', 'products_count' => 50],
+        ]);
+
+        $html = view('partials.catalog-brand-filter', compact('brands'))->render();
+
+        $this->assertStringContainsString('Сортировка:', $html);
+        $this->assertStringContainsString("applyFilter('brand_sort', 'alpha')", $html);
+        $this->assertLessThan(strpos($html, 'Beta'), strpos($html, 'Alpha'));
+        $this->assertLessThan(strpos($html, 'Zeta'), strpos($html, 'Beta'));
+        $this->assertMatchesRegularExpression('/>\s*А–Я\s*<\/button>/', $html);
+    }
 }

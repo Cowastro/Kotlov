@@ -1,7 +1,10 @@
 @if ($brands->isNotEmpty())
     @php
         $selectedBrandId = request('brand') ? (int) request('brand') : null;
-        $sortedBrands = $brands->sortByDesc('products_count');
+        $brandSort = request('brand_sort') === 'alpha' ? 'alpha' : 'popular';
+        $sortedBrands = $brandSort === 'alpha'
+            ? $brands->sortBy(fn ($brand) => mb_strtolower($brand->name), SORT_NATURAL)
+            : $brands->sortByDesc('products_count');
         $brandsTop = $sortedBrands->take(10);
         $brandsRest = $sortedBrands->skip(10);
         $activeBrandInRest = $selectedBrandId
@@ -16,6 +19,23 @@
             <span class="icon icon-CaretDown"></span>
         </div>
         <div id="brands" class="collapse show">
+            <div class="d-flex align-items-center gap-12 mb-12 text-caption-01">
+                <span class="cl-text-2">Сортировка:</span>
+                <button type="button"
+                    class="{{ $brandSort === 'popular' ? 'fw-semibold text-primary' : 'cl-text-2' }}"
+                    style="border:0;background:none;padding:0;cursor:pointer;"
+                    aria-pressed="{{ $brandSort === 'popular' ? 'true' : 'false' }}"
+                    onclick="applyFilter('brand_sort', '')">
+                    Популярные
+                </button>
+                <button type="button"
+                    class="{{ $brandSort === 'alpha' ? 'fw-semibold text-primary' : 'cl-text-2' }}"
+                    style="border:0;background:none;padding:0;cursor:pointer;"
+                    aria-pressed="{{ $brandSort === 'alpha' ? 'true' : 'false' }}"
+                    onclick="applyFilter('brand_sort', 'alpha')">
+                    А–Я
+                </button>
+            </div>
             <ul class="collapse-body filter-group-check" id="brands-list">
                 <li class="list-item">
                     <input type="radio" name="brand" class="tf-check style-2"
