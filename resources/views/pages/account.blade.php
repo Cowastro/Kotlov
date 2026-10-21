@@ -130,10 +130,11 @@
                             @php
                                 // Правильные статусы из Order::STATUSES
                                 $orderStatusMap = [
-                                    'new'        => ['label' => 'Новый',        'class' => 'stt-pending'],
-                                    'confirmed'  => ['label' => 'Подтверждён',  'class' => 'stt-processing'],
-                                    'processing' => ['label' => 'В обработке',  'class' => 'stt-processing'],
-                                    'shipped'    => ['label' => 'Отправлен',    'class' => 'stt-processing'],
+                                    'new'        => ['label' => 'Заказ получен',        'class' => 'stt-pending'],
+                                    'checking'   => ['label' => 'Проверяем наличие',    'class' => 'stt-pending'],
+                                    'confirmed'  => ['label' => 'Наличие подтверждено', 'class' => 'stt-processing'],
+                                    'processing' => ['label' => 'Заказ исполняется',    'class' => 'stt-processing'],
+                                    'shipped'    => ['label' => 'Передан в доставку',   'class' => 'stt-processing'],
                                     'delivered'  => ['label' => 'Доставлен',    'class' => 'stt-completed'],
                                     'cancelled'  => ['label' => 'Отменён',      'class' => 'stt-cancelled'],
                                 ];
@@ -160,13 +161,30 @@
                                                 @php $st = $orderStatusMap[$order->status] ?? ['label' => $order->status, 'class' => '']; @endphp
                                                 <tr class="tb-order-item">
                                                     <td class="tb-order_code fw-medium">
-                                                        <p class="mb-0">{{ $order->number }}</p>
+                                                        <p class="mb-0">
+                                                            @if ($order->customerDetailsAreAvailable())
+                                                                <a href="{{ route('account.orders.show', $order) }}" class="link fw-medium">
+                                                                    {{ $order->number }}
+                                                                </a>
+                                                            @else
+                                                                {{ $order->number }}
+                                                            @endif
+                                                        </p>
                                                         <p class="text-caption-01 cl-text-3 mb-0">
                                                             {{ $order->created_at?->format('d.m.Y') }}
                                                         </p>
                                                         <p class="text-caption-01 cl-text-3 mb-0">
                                                             {{ $paymentLabels[$order->payment_type] ?? $order->payment_type }}
                                                         </p>
+                                                        @if ($order->customerDetailsAreAvailable())
+                                                            <a href="{{ route('account.orders.show', $order) }}" class="text-caption-01 link mt-4 d-inline-block">
+                                                                Открыть заказ
+                                                            </a>
+                                                        @else
+                                                            <p class="text-caption-01 cl-text-3 mt-4 mb-0">
+                                                                Ссылка появится после проверки наличия
+                                                            </p>
+                                                        @endif
                                                     </td>
                                                     <td>
                                                         @if ($order->items && $order->items->count())
@@ -198,6 +216,9 @@
                                                         <div class="tb-order_status text-label {{ $st['class'] }}">
                                                             {{ $st['label'] }}
                                                         </div>
+                                                        <p class="text-caption-01 cl-text-3 mt-4 mb-0">
+                                                            {{ $order->paymentStatusLabel() }}
+                                                        </p>
                                                     </td>
                                                 </tr>
                                             @endforeach

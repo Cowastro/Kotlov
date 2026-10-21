@@ -56,6 +56,7 @@ class Order extends Model
         'delivery_type', 'delivery_region', 'delivery_city',
         'delivery_address', 'delivery_price', 'planned_delivery_date',
         'payment_type', 'payment_status',
+        'availability_confirmed_at', 'availability_confirmed_by', 'customer_notified_at',
         'coupon_code', 'discount',
         'subtotal', 'total',
         'comment', 'admin_comment',
@@ -76,22 +77,25 @@ class Order extends Model
         'archived_at' => 'datetime',
         'corrected_at' => 'datetime',
         'procurement_sent_at' => 'datetime',
+        'availability_confirmed_at' => 'datetime',
+        'customer_notified_at' => 'datetime',
     ];
 
     // Статусы для отображения
     public const STATUSES = [
-        'new' => 'Новый',
-        'confirmed' => 'Подтверждён',
-        'processing' => 'В обработке',
-        'shipped' => 'Отправлен',
+        'new' => 'Получен',
+        'checking' => 'Проверка наличия',
+        'confirmed' => 'Наличие подтверждено',
+        'processing' => 'В исполнении',
+        'shipped' => 'Передан в доставку',
         'delivered' => 'Доставлен',
         'cancelled' => 'Отменён',
     ];
 
     /** Этапы, которые менеджер может зафиксировать вручную до полноценного обмена с 1С. */
     public const MANUAL_WORKFLOW_STATUSES = [
-        'confirmed' => 'Подтверждён',
-        'processing' => 'В обработке / создан в учётной системе',
+        'checking' => 'Проверка наличия',
+        'processing' => 'В исполнении / создан в учётной системе',
         'shipped' => 'Передан в доставку',
         'delivered' => 'Доставлен клиенту',
         'cancelled' => 'Отменён',
@@ -188,8 +192,11 @@ class Order extends Model
     public function workflowNextStep(): string
     {
         return match ($this->status) {
-            'new' => 'Принять заказ в работу и связаться с клиентом.',
-            'confirmed' => 'Подтвердить исполнение всех позиций и перевести заказ в обработку.',
+            'new' => 'Принять заказ и начать проверку наличия.',
+            'checking' => 'Проверить наличие и способ исполнения каждой позиции.',
+            'confirmed' => $this->payment_status === 'paid' || $this->isPaymentOnReceipt()
+                ? 'Передать подтверждённый заказ в исполнение.'
+                : 'Подготовить и отправить клиенту ссылку на оплату.',
             'processing' => 'Закупить или собрать товар, затем передать в доставку.',
             'shipped' => 'Контролировать доставку и отметить получение клиентом.',
             'delivered' => 'Заказ выполнен. Проверить оплату и взаиморасчёты.',
@@ -201,8 +208,11 @@ class Order extends Model
     public function workflowDestination(): string
     {
         return match ($this->status) {
-            'new' => 'Ответственному менеджеру',
-            'confirmed' => 'В обработку / закупку',
+            'new' => 'На проверку наличия',
+            'checking' => 'К подтверждению наличия',
+            'confirmed' => $this->payment_status === 'paid' || $this->isPaymentOnReceipt()
+                ? 'В исполнение / закупку'
+                : 'К оплате клиентом',
             'processing' => 'В доставку',
             'shipped' => 'На контроль получения',
             'delivered' => 'На финансовое закрытие',
@@ -251,9 +261,31 @@ class Order extends Model
 
     public function canBeClosedAsIrrelevant(): bool
     {
-        return in_array($this->status, ['new', 'confirmed', 'processing'], true)
+        return in_array($this->status, ['new', 'checking', 'confirmed', 'processing'], true)
             && $this->payment_status !== 'paid'
             && $this->archived_at === null;
+    }
+
+    public function hasConfirmedFulfillmentForAllItems(): bool
+    {
+        if ($this->relationLoaded('items')) {
+            return $this->items->isNotEmpty()
+                && $this->items->every(fn (OrderItem $item): bool => filled($item->fulfillment_confirmed_at));
+        }
+
+        return $this->items()->exists()
+            && ! $this->items()->whereNull('fulfillment_confirmed_at')->exists();
+    }
+
+    public function customerDetailsAreAvailable(): bool
+    {
+        return $this->availability_confirmed_at !== null
+            && in_array($this->status, ['confirmed', 'processing', 'shipped', 'delivered', 'cancelled'], true);
+    }
+
+    public function availabilityConfirmedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'availability_confirmed_by');
     }
 
     public function markIrrelevant(string $reason, ?string $reasonType = null): bool

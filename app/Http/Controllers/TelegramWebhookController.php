@@ -57,12 +57,17 @@ class TelegramWebhookController extends Controller
             ? User::where('telegram_username', $telegramLogin)->first()
             : null;
 
-        // Назначаем ответственного, меняем статус new → processing
-        $order->updateQuietly([
+        // Назначаем ответственного. Взять заказ — значит начать проверку,
+        // а не подтвердить наличие и не передать его в исполнение.
+        $attributes = [
             'assigned_to' => $username,
             'manager_id'  => $crmUser?->id,
-            'status'      => $order->status === 'new' ? 'processing' : $order->status,
-        ]);
+        ];
+        if ($order->status === 'new') {
+            $order->transitionTo('checking', 'Заказ принят через Telegram. Начата проверка наличия.', $attributes);
+        } else {
+            $order->forceFill($attributes)->save();
+        }
 
         // Отвечаем на callback
         $tg->answerCallbackQuery($callbackId, "✅ Вы взяли заказ {$order->number}");

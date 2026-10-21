@@ -11,6 +11,7 @@ use App\Models\SupplierOrderRequest;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use App\Services\Integrations\OneCOrderQueue;
+use App\Services\Orders\OrderAvailabilityConfirmation;
 use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\OrderPortal;
@@ -404,11 +405,38 @@ class ViewOrder extends ViewRecord
                 ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
                 ->visible(fn (): bool => $this->record->status === 'new')
                 ->requiresConfirmation()
-                ->modalHeading('Принять заказ в работу?')
-                ->modalDescription('Вы станете ответственным менеджером. Действие сохранится в истории статусов.')
-                ->action(fn () => $this->transitionOrder('confirmed', 'Заказ принят в работу.')),
+                ->modalHeading('Начать проверку наличия?')
+                ->modalDescription('Вы станете ответственным менеджером. Заказ перейдёт на этап проверки наличия, но ещё не будет считаться подтверждённым.')
+                ->action(fn () => $this->transitionOrder('checking', 'Заказ принят. Начата проверка наличия.')),
+            Action::make('confirmAvailability')
+                ->label('Подтвердить наличие')
+                ->icon('heroicon-o-check-badge')
+                ->color('success')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
+                ->visible(fn (): bool => $this->record->status === 'checking')
+                ->disabled(fn (): bool => ! $this->record->hasConfirmedFulfillmentForAllItems())
+                ->tooltip(fn (): ?string => ! $this->record->hasConfirmedFulfillmentForAllItems()
+                    ? 'Сначала подтвердите наличие и способ исполнения каждой позиции.'
+                    : null)
+                ->requiresConfirmation()
+                ->modalHeading('Подтвердить заказ клиенту?')
+                ->modalDescription('Заказ станет доступен клиенту в личном кабинете. Клиенту будет отправлено уведомление со ссылкой на заказ. Оплата WEBPAY на этом этапе ещё не запускается.')
+                ->action(function (): void {
+                    $result = app(OrderAvailabilityConfirmation::class)
+                        ->confirmAndNotify($this->record, auth()->user());
+
+                    $this->reloadRecord();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Наличие подтверждено')
+                        ->body($result['notified']
+                            ? 'Клиенту отправлено уведомление со ссылкой на заказ.'
+                            : 'Заказ доступен в личном кабинете. Уведомление не отправлено: нет привязанного клиента или корректного email.')
+                        ->send();
+                }),
             Action::make('startProcessing')
-                ->label('Передать в обработку')
+                ->label('Передать в исполнение')
                 ->icon('heroicon-o-arrow-path')
                 ->color('primary')
                 ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
@@ -507,7 +535,7 @@ class ViewOrder extends ViewRecord
                     );
 
                     if ($this->record->status === 'new') {
-                        $this->record->transitionTo('confirmed', 'Заказ принят автоматически при подтверждении исполнения.', $this->managerAttributes());
+                        $this->record->transitionTo('checking', 'Заказ принят автоматически при начале проверки исполнения.', $this->managerAttributes());
                     }
 
                     $this->reloadRecord();
@@ -1003,6 +1031,10 @@ class ViewOrder extends ViewRecord
                 $availabilityStatus,
             );
         }
+
+        $this->record->refresh()->load('items');
+        app(OrderAvailabilityConfirmation::class)
+            ->confirmAndNotify($this->record, auth()->user());
 
         $this->reloadRecord();
     }

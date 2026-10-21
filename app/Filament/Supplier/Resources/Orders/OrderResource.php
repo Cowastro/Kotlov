@@ -43,7 +43,7 @@ class OrderResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getEloquentQuery()->whereIn('status', ['new', 'confirmed', 'processing'])->count();
+        $count = static::getEloquentQuery()->whereIn('status', ['new', 'checking', 'confirmed', 'processing'])->count();
 
         return $count > 0 ? (string) $count : null;
     }

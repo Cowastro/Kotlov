@@ -63,7 +63,7 @@ class SupplierIntegrationSummary
                 ->open()
                 ->count(),
             'active_orders' => (clone $orders)
-                ->whereIn('status', ['new', 'confirmed', 'processing'])
+                ->whereIn('status', ['new', 'checking', 'confirmed', 'processing'])
                 ->count(),
             'pending_order_deliveries' => (clone $deliveries)
                 ->where('status', OrderIntegrationDelivery::STATUS_PENDING)

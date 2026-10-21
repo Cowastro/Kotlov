@@ -28,8 +28,8 @@ class ListOrders extends ListRecords
 
         return [
             'active' => Tab::make('Требуют работы')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', ['new', 'confirmed', 'processing']))
-                ->badge($query()->whereIn('status', ['new', 'confirmed', 'processing'])->count())
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', ['new', 'checking', 'confirmed', 'processing']))
+                ->badge($query()->whereIn('status', ['new', 'checking', 'confirmed', 'processing'])->count())
                 ->badgeColor('warning'),
             'all' => Tab::make('Все')->badge($query()->count()),
             'shipped' => Tab::make('Отправлены')

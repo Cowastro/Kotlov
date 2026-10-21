@@ -365,7 +365,7 @@ class OrderSupplyRoutingTest extends TestCase
         );
     }
 
-    public function test_first_fulfillment_confirmation_accepts_order_assigns_manager_and_disables_repeat(): void
+    public function test_first_fulfillment_confirmation_starts_availability_check_and_does_not_confirm_the_order(): void
     {
         $fixture = $this->fixture();
         $manager = User::factory()->create([
@@ -383,19 +383,53 @@ class OrderSupplyRoutingTest extends TestCase
                 'fulfillment_route' => 'supplier_purchase',
                 'supplier_id' => $supplier->id,
                 'purchase_price' => 96,
+                'availability_status' => 'available',
             ])
             ->assertHasNoActionErrors()
             ->assertActionDisabled('confirmFulfillment');
 
         $order = $fixture['order']->fresh();
-        $this->assertSame('confirmed', $order->status);
+        $this->assertSame('checking', $order->status);
         $this->assertSame($manager->id, $order->manager_id);
-        $this->assertSame('Подтверждён', $order->status_label);
-        $this->assertSame('В обработку / закупку', $order->workflowDestination());
+        $this->assertSame('Проверка наличия', $order->status_label);
+        $this->assertSame('К подтверждению наличия', $order->workflowDestination());
         $this->assertDatabaseHas('order_status_history', [
             'order_id' => $order->id,
             'user_id' => $manager->id,
             'status_from' => 'new',
+            'status_to' => 'checking',
+        ]);
+    }
+
+    public function test_manager_explicitly_confirms_order_only_after_all_items_are_confirmed(): void
+    {
+        $fixture = $this->fixture();
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail();
+
+        $fixture['order']->transitionTo('checking', 'Начата проверка наличия.');
+
+        Livewire::actingAs($manager)
+            ->test(ViewOrder::class, ['record' => $fixture['order']->id])
+            ->assertActionDisabled('confirmAvailability')
+            ->callAction('confirmFulfillment', [
+                'order_item_id' => $fixture['item']->id,
+                'fulfillment_route' => 'supplier_purchase',
+                'supplier_id' => $supplier->id,
+                'purchase_price' => 96,
+                'availability_status' => 'available',
+            ])
+            ->assertHasNoActionErrors()
+            ->assertActionEnabled('confirmAvailability')
+            ->callAction('confirmAvailability')
+            ->assertHasNoActionErrors();
+
+        $order = $fixture['order']->fresh();
+        $this->assertSame('confirmed', $order->status);
+        $this->assertSame('Наличие подтверждено', $order->status_label);
+        $this->assertDatabaseHas('order_status_history', [
+            'order_id' => $order->id,
+            'status_from' => 'checking',
             'status_to' => 'confirmed',
         ]);
     }

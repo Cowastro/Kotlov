@@ -3,6 +3,7 @@
 use App\Http\Controllers\A1CallRecordingController;
 use App\Http\Controllers\A1TelephonyWebhookController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AccountOrderController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BrandController;
@@ -671,6 +672,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 // ===== Личный кабинет =====
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'index'])->name('account');
+    Route::get('/account/orders/{order}', [AccountOrderController::class, 'show'])->name('account.orders.show');
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile');
     Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password');
     Route::post('/account/b2b-request', [AccountController::class, 'b2bRequest'])->name('account.b2b-request');

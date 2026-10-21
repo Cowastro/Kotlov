@@ -12,8 +12,9 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Integrations\OneCOrderQueue;
-use App\Services\Orders\OrderSettlementManager;
+use App\Services\Orders\OrderAvailabilityConfirmation;
 use App\Services\Orders\OrderPortal;
+use App\Services\Orders\OrderSettlementManager;
 use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -70,14 +71,12 @@ class OrdersTable
         ];
 
         $statusLabelOverrides = [
-            'new' => 'Новый',
-            'confirmed' => 'Подтверждён',
-            'processing' => 'В обработке',
-            'waiting_payment' => 'Ожидает оплаты',
-            'paid' => 'Оплачен',
-            'shipped' => 'Отправлен',
+            'new' => 'Получен',
+            'checking' => 'Проверка наличия',
+            'confirmed' => 'Наличие подтверждено',
+            'processing' => 'В исполнении',
+            'shipped' => 'Передан в доставку',
             'delivered' => 'Доставлен',
-            'completed' => 'Выполнен',
             'cancelled' => 'Отменен',
         ];
 
@@ -90,7 +89,7 @@ class OrdersTable
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->withSum('items', 'quantity')
                 ->with([
-                    'items:id,order_id,product_id,integration_product_id,warehouse_stock_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_warehouse_name,supply_delivery_days,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price',
+                    'items:id,order_id,product_id,integration_product_id,warehouse_stock_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_warehouse_name,supply_delivery_days,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price,fulfillment_confirmed_at',
                     'items.fulfillmentSupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
                     'items.fulfillmentSupplier.crmCounterparty.contactPoints',
                     'items.supplySupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
@@ -292,6 +291,7 @@ class OrdersTable
                     ->badge()
                     ->color(fn (?string $state, Order $record) => $record->isArchivedAsIrrelevant() ? 'gray' : match ($state) {
                         'new' => 'info',
+                        'checking' => 'warning',
                         'confirmed' => 'success',
                         'processing' => 'warning',
                         'waiting_payment' => 'warning',
@@ -304,6 +304,7 @@ class OrdersTable
                     })
                     ->icon(fn (?string $state, Order $record) => $record->isArchivedAsIrrelevant() ? 'heroicon-o-archive-box' : match ($state) {
                         'new' => 'heroicon-o-sparkles',
+                        'checking' => 'heroicon-o-magnifying-glass',
                         'confirmed' => 'heroicon-o-check',
                         'processing' => 'heroicon-o-arrow-path',
                         'waiting_payment' => 'heroicon-o-clock',
@@ -580,9 +581,29 @@ class OrdersTable
                         ->icon('heroicon-o-check')
                         ->color('warning')
                         ->visible(fn ($record) => $record->status === 'new')
-                        ->action(fn (Order $record) => $record->transitionTo('confirmed', 'Заказ принят в работу.')),
+                        ->action(fn (Order $record) => $record->transitionTo('checking', 'Заказ принят. Начата проверка наличия.')),
+                    Action::make('confirmAvailability')
+                        ->label('Подтвердить наличие')
+                        ->icon('heroicon-o-check-badge')
+                        ->color('success')
+                        ->visible(fn (Order $record): bool => $record->status === 'checking')
+                        ->disabled(fn (Order $record): bool => ! $record->hasConfirmedFulfillmentForAllItems())
+                        ->requiresConfirmation()
+                        ->modalDescription('Все позиции должны иметь подтверждённое наличие и способ исполнения. После подтверждения клиент получит ссылку на заказ в личном кабинете.')
+                        ->action(function (Order $record): void {
+                            $result = app(OrderAvailabilityConfirmation::class)
+                                ->confirmAndNotify($record, auth()->user());
+
+                            Notification::make()
+                                ->success()
+                                ->title('Наличие подтверждено')
+                                ->body($result['notified']
+                                    ? 'Клиенту отправлено уведомление со ссылкой на заказ.'
+                                    : 'Заказ доступен в личном кабинете. Уведомление не отправлено: нет привязанного клиента или корректного email.')
+                                ->send();
+                        }),
                     Action::make('processing')
-                        ->label('Передать в обработку')
+                        ->label('Передать в исполнение')
                         ->icon('heroicon-o-arrow-path')
                         ->color('primary')
                         ->visible(fn ($record) => $record->status === 'confirmed')
@@ -624,7 +645,7 @@ class OrdersTable
                         ->label('Неактуальна')
                         ->icon('heroicon-o-archive-box')
                         ->color('gray')
-                        ->visible(fn (Order $record): bool => $record->status === 'new' && $record->payment_status !== 'paid')
+                        ->visible(fn (Order $record): bool => $record->canBeClosedAsIrrelevant())
                         ->form([
                             Textarea::make('reason')
                                 ->label('Почему заявка неактуальна')
