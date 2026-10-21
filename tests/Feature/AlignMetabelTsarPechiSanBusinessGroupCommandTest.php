@@ -87,6 +87,8 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
         $this->assertDatabaseHas('brand_supplier', ['brand_id' => $meta->id, 'supplier_id' => $sbg->id]);
         $this->assertDatabaseHas('brand_supplier', ['brand_id' => $tsar->id, 'supplier_id' => $sbg->id]);
         $this->assertTrue($sbg->fresh()->is_active);
+        // A specifically verified online price-list link remains operational
+        // alongside 1C. Generic stale legacy links are still rejected.
         $this->assertTrue($metaProduct->fresh()->hasAssignedSupplier());
         $this->assertTrue($tsarProduct->fresh()->hasAssignedSupplier());
     }
