@@ -16,12 +16,12 @@ use App\Models\Category;
 use App\Models\MarketResearchReport;
 use App\Models\Product;
 use App\Models\Supplier;
-use App\Support\AdminPhoneLinks;
 use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\Market\MarketPriceIndicator;
 use App\Services\Market\MarketWebResearchService;
+use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -864,11 +864,26 @@ class ProductsTable
     {
         return $query->where(fn (Builder $query): Builder => $query
             ->whereHas('supplierProducts', fn (Builder $supplierProducts): Builder => $supplierProducts
-                ->where('supplier_id', $supplierId))
+                ->where('supplier_id', $supplierId)
+                ->whereHas('supplier', fn (Builder $supplier): Builder => $supplier->where('is_active', true))
+                ->where(fn (Builder $links): Builder => $links
+                    ->where('match_confidence', 'manual_price_list')
+                    ->orWhere(fn (Builder $official): Builder => $official
+                        ->where('match_confidence', 'official_source')
+                        ->where('price_byn', '>', 0))
+                    ->orWhereHas('supplier', fn (Builder $supplier): Builder => $supplier
+                        ->whereDoesntHave('latestChannelTransition', fn (Builder $transition): Builder => $transition
+                            ->where('status', 'legacy_disabled')))))
             ->orWhereHas('integrationProducts', fn (Builder $integrationProducts): Builder => $integrationProducts
                 ->where('match_status', 'matched')
                 ->whereHas('source', fn (Builder $source): Builder => $source
-                    ->where('supplier_id', $supplierId))));
+                    ->where('supplier_id', $supplierId)
+                    ->where('is_active', true)
+                    ->whereHas('supplier', fn (Builder $supplier): Builder => $supplier->where('is_active', true))))
+            ->orWhereHas('purchasePriceSources', fn (Builder $sources): Builder => $sources
+                ->where('supplier_id', $supplierId)
+                ->usable()
+                ->whereHas('supplier', fn (Builder $supplier): Builder => $supplier->where('is_active', true))));
     }
 
     private static function sourceEnrichmentForm(bool $includePreviewToggle): array
@@ -1016,8 +1031,12 @@ class ProductsTable
             ->filter()
             ->toBase();
 
-        if ($integrationItems->isEmpty() && $record->supplierProducts->isNotEmpty()) {
-            $channels->push('Старый канал');
+        if ($record->operationalSupplierProducts()->isNotEmpty()) {
+            $channels->push('Прайс поставщика');
+        }
+
+        if ($record->usablePurchasePriceSources()->isNotEmpty()) {
+            $channels->push('Подтверждённый документ');
         }
 
         if ($channels->isEmpty() && (float) $record->manual_purchase_price_byn > 0) {
@@ -1029,18 +1048,10 @@ class ProductsTable
 
     private static function wholesalePrice(object $record): ?float
     {
-        $confirmed = $record->purchasePriceSources
-            ->filter(fn ($source): bool => $source->isUsable())
-            ->sortByDesc(fn ($source): int => $source->confirmed_at?->getTimestamp() ?? 0)
-            ->first();
-        if ($confirmed) {
-            return (float) $confirmed->price_byn;
-        }
-
-        $integrationItems = self::activeIntegrationItems($record);
-        $prices = ($integrationItems->isNotEmpty()
-            ? $integrationItems->map(fn ($item): ?float => $item->normalizedPriceByn())
-            : $record->supplierProducts->pluck('price_byn'))
+        $prices = $record->usablePurchasePriceSources()->pluck('price_byn')
+            ->concat(self::activeIntegrationItems($record)
+                ->map(fn ($item): ?float => $item->normalizedPriceByn()))
+            ->concat($record->operationalSupplierProducts()->pluck('price_byn'))
             ->map(fn ($price): float => (float) $price)
             ->filter(fn (float $price): bool => $price > 0);
 
@@ -1055,25 +1066,28 @@ class ProductsTable
 
     private static function supplierStock(object $record): ?int
     {
-        $integrationItems = self::activeIntegrationItems($record);
-        $stockItems = $integrationItems->isNotEmpty()
-            ? $integrationItems->filter(fn ($item): bool => $item->stock_quantity !== null)
-            : $record->supplierProducts->filter(fn ($item): bool => $item->stock_quantity !== null);
+        $bySupplier = collect();
 
-        return $stockItems->isEmpty()
-            ? null
-            : (int) $stockItems->sum(fn ($item): float => (float) $item->stock_quantity);
+        $record->operationalSupplierProducts()
+            ->filter(fn ($item): bool => $item->stock_quantity !== null)
+            ->each(function ($item) use ($bySupplier): void {
+                $supplierId = (int) $item->supplier_id;
+                $bySupplier->put($supplierId, max((float) ($bySupplier->get($supplierId) ?? 0), (float) $item->stock_quantity));
+            });
+
+        self::activeIntegrationItems($record)
+            ->filter(fn ($item): bool => $item->stock_quantity !== null)
+            ->each(function ($item) use ($bySupplier): void {
+                $supplierId = (int) $item->source->supplier_id;
+                $bySupplier->put($supplierId, max((float) ($bySupplier->get($supplierId) ?? 0), (float) $item->stock_quantity));
+            });
+
+        return $bySupplier->isEmpty() ? null : (int) $bySupplier->sum();
     }
 
     private static function supplierNames(object $record): string
     {
-        $integrationItems = self::activeIntegrationItems($record);
-        $names = $integrationItems->isNotEmpty()
-            ? $integrationItems->map(fn ($item): ?string => $item->source?->supplier?->name
-                ?: $item->source?->partnerName())
-            : $record->supplierProducts->map(fn ($item): ?string => $item->supplier?->name);
-
-        return $names->filter()->unique()->implode(', ') ?: '—';
+        return $record->operationalSuppliers()->pluck('name')->filter()->implode(', ') ?: '—';
     }
 
     private static function supplierContacts(object $record): ?HtmlString
@@ -1105,12 +1119,7 @@ class ProductsTable
     /** @return Collection<int, Supplier> */
     private static function productSuppliers(object $record): Collection
     {
-        $integrationItems = self::activeIntegrationItems($record);
-        $suppliers = $integrationItems->isNotEmpty()
-            ? $integrationItems->map(fn ($item): ?Supplier => $item->source?->supplier)
-            : $record->supplierProducts->map(fn ($item): ?Supplier => $item->supplier);
-
-        return new Collection($suppliers->filter()->unique('id')->values()->all());
+        return new Collection($record->operationalSuppliers()->all());
     }
 
     private static function availabilityStatus(Product $record): string
@@ -1235,9 +1244,7 @@ class ProductsTable
 
     private static function activeIntegrationItems(object $record): Collection
     {
-        return $record->integrationProducts
-            ->filter(fn ($item): bool => $item->match_status === 'matched'
-                && $item->source?->is_active === true);
+        return new Collection($record->operationalIntegrationProducts()->all());
     }
 
     private static function availabilityDescription(Product $record): string

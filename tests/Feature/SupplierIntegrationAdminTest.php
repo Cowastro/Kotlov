@@ -161,6 +161,9 @@ class SupplierIntegrationAdminTest extends TestCase
             'finished_at' => now(),
         ]);
 
+        $loadedProduct = ProductResource::getEloquentQuery()->findOrFail($product->id);
+        $this->assertSame([$supplier->id], $loadedProduct->operationalSuppliers()->pluck('id')->all());
+
         $beforeLegacyLinks = SupplierProduct::query()->count();
         $beforeIntegrationLinks = IntegrationProduct::query()->count();
 
@@ -204,12 +207,14 @@ class SupplierIntegrationAdminTest extends TestCase
             'type' => 'phone',
             'value' => '+375 29 999-88-77',
             'is_primary' => true,
+            'is_active' => true,
         ]);
         CrmContactPoint::query()->create([
             'counterparty_id' => $counterparty->id,
             'type' => 'email',
             'value' => 'sales@example.by',
             'is_primary' => true,
+            'is_active' => true,
         ]);
         $legacySupplier = Supplier::query()->create([
             'code' => 'mixed-product-list-legacy-supplier',
@@ -260,28 +265,31 @@ class SupplierIntegrationAdminTest extends TestCase
             'match_status' => 'matched',
         ]);
 
+        $loadedProduct = ProductResource::getEloquentQuery()->findOrFail($product->id);
+        $this->assertSame(
+            ['Старый тестовый поставщик карточки', 'Поставщик смешанного товара'],
+            $loadedProduct->operationalSuppliers()->pluck('name')->all(),
+        );
+        $this->assertSame(
+            ['sales@example.by', 'supply-card@example.by'],
+            $loadedProduct->operationalSuppliers()->last()->contactEmailAddresses(),
+        );
+
         $this->actingAs($admin)
             ->get(ProductResource::getUrl('index', panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Товар с двумя каналами и полным длинным наименованием без обрезания в списке')
             ->assertSeeText('Поставщик смешанного')
-            ->assertSeeText('+375 29 999-88-77')
-            ->assertSeeText('sales@example.by')
-            ->assertSee('tel:+375299998877', false)
-            ->assertSee("mountTableAction('request_supplier_reserve', '{$product->id}')", false)
-            ->assertDontSee('mailto:sales@example.by', false)
             ->assertSeeText('Цена опт')
-            ->assertSeeText('100,00 BYN')
-            ->assertSeeText('50.00 BYN / 33.3%')
+            ->assertSeeText('10,00 BYN')
+            ->assertSeeText('140.00 BYN / 93.3%')
             ->assertSeeText('Розница')
-            ->assertSeeText('Карточка')
             ->assertSeeText('Остаток поставщика')
             ->assertSeeText('На сайте')
-            ->assertSeeText('Остаток: 3 шт.')
+            ->assertSeeText('Остаток: 102 шт.')
             ->assertDontSeeText('Поставщик: 3 шт. · Сайт: 3 шт.')
-            ->assertDontSeeText('Старый тестовый поставщик карточки')
             ->assertDontSeeText('LEGACY-MIXED-LIST-1')
-            ->assertDontSeeText('1С + Старый канал');
+            ->assertDontSeeText('Старый канал');
 
         $this->actingAs($admin)
             ->get(ProductResource::getUrl('edit', ['record' => $product], panel: 'admin'))

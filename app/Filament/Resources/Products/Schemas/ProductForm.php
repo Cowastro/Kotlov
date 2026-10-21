@@ -497,17 +497,8 @@ class ProductForm
             return new HtmlString('<span style="color:#9ca3af">Контакты появятся после сохранения товара.</span>');
         }
 
-        $suppliers = collect([
-            filled($product->supplier_id)
-                ? Supplier::query()->find($product->supplier_id)
-                : null,
-        ])
-            ->merge($product->supplierProducts->pluck('supplier'))
-            ->merge($product->integrationProducts->pluck('source.supplier'))
-            ->filter(fn ($supplier): bool => $supplier instanceof Supplier
-                && $supplier->is_active
-                && $supplier->code !== 'manual-source')
-            ->unique('id')
+        $suppliers = $product->operationalSuppliers()
+            ->filter(fn (Supplier $supplier): bool => $supplier->code !== 'manual-source')
             ->values();
 
         if ($suppliers->isEmpty()) {

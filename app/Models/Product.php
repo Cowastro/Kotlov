@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Collection;
 
 class Product extends Model
 {
@@ -261,55 +262,63 @@ class Product extends Model
      */
     public function hasAssignedSupplier(): bool
     {
-        $hasLegacySupplier = $this->relationLoaded('supplierProducts')
-            ? $this->supplierProducts->contains(
-                fn (SupplierProduct $item): bool => $item->supplier?->is_active === true
-                    && ($item->match_confidence === 'manual_price_list'
-                        || ($item->match_confidence === 'official_source' && (float) $item->price_byn > 0)
-                        || $item->supplier->usesLegacyChannel())
-            )
-            : $this->supplierProducts()
-                ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true))
-                ->where(fn ($links) => $links
-                    ->where('match_confidence', 'manual_price_list')
-                    ->orWhere(fn ($verifiedSource) => $verifiedSource
-                        ->where('match_confidence', 'official_source')
-                        ->where('price_byn', '>', 0))
-                    ->orWhereHas('supplier', fn ($supplier) => $supplier
-                        ->whereDoesntHave('latestChannelTransition', fn ($transition) => $transition
-                            ->where('status', SupplierChannelTransition::STATUS_LEGACY_DISABLED))))
-                ->exists();
+        return $this->operationalSuppliers()->isNotEmpty();
+    }
 
-        if ($hasLegacySupplier) {
-            return true;
-        }
+    /** @return Collection<int, SupplierProduct> */
+    public function operationalSupplierProducts(): Collection
+    {
+        $items = $this->relationLoaded('supplierProducts')
+            ? $this->supplierProducts
+            : $this->supplierProducts()->with(['supplier.latestChannelTransition'])->get();
 
-        $hasIntegrationSupplier = $this->relationLoaded('integrationProducts')
-            ? $this->integrationProducts->contains(
-                fn (IntegrationProduct $item): bool => $item->match_status === 'matched'
-                    && $item->source?->is_active === true
-                    && $item->source?->supplier?->is_active === true
-            )
-            : $this->integrationProducts()
-                ->where('match_status', 'matched')
-                ->whereHas('source', fn ($source) => $source
-                    ->where('is_active', true)
-                    ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true)))
-                ->exists();
+        return $items
+            ->filter(fn (SupplierProduct $item): bool => $item->supplier?->is_active === true
+                && ($item->match_confidence === 'manual_price_list'
+                    || ($item->match_confidence === 'official_source' && (float) $item->price_byn > 0)
+                    || $item->supplier->usesLegacyChannel()))
+            ->values();
+    }
 
-        if ($hasIntegrationSupplier) {
-            return true;
-        }
+    /** @return Collection<int, IntegrationProduct> */
+    public function operationalIntegrationProducts(): Collection
+    {
+        $items = $this->relationLoaded('integrationProducts')
+            ? $this->integrationProducts
+            : $this->integrationProducts()->with(['source.supplier'])->get();
 
-        return $this->relationLoaded('purchasePriceSources')
-            ? $this->purchasePriceSources->contains(
-                fn (ProductPurchasePriceSource $source): bool => $source->isUsable()
-                    && $source->supplier?->is_active === true
-            )
-            : $this->purchasePriceSources()
-                ->usable()
-                ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true))
-                ->exists();
+        return $items
+            ->filter(fn (IntegrationProduct $item): bool => $item->match_status === 'matched'
+                && $item->source?->is_active === true
+                && $item->source?->supplier?->is_active === true)
+            ->values();
+    }
+
+    /** @return Collection<int, ProductPurchasePriceSource> */
+    public function usablePurchasePriceSources(): Collection
+    {
+        $sources = $this->relationLoaded('purchasePriceSources')
+            ? $this->purchasePriceSources
+            : $this->purchasePriceSources()->with('supplier')->get();
+
+        return $sources
+            ->filter(fn (ProductPurchasePriceSource $source): bool => $source->isUsable()
+                && $source->supplier?->is_active === true)
+            ->values();
+    }
+
+    /** @return Collection<int, Supplier> */
+    public function operationalSuppliers(): Collection
+    {
+        return $this->usablePurchasePriceSources()
+            ->map(fn (ProductPurchasePriceSource $source): ?Supplier => $source->supplier)
+            ->concat($this->operationalSupplierProducts()
+                ->map(fn (SupplierProduct $item): ?Supplier => $item->supplier))
+            ->concat($this->operationalIntegrationProducts()
+                ->map(fn (IntegrationProduct $item): ?Supplier => $item->source?->supplier))
+            ->filter()
+            ->unique('id')
+            ->values();
     }
 
     public function canBeAddedToCart(): bool
@@ -746,7 +755,7 @@ class Product extends Model
         // The mass safety hold sets this flag for every unlinked price, so an
         // old popular card can no longer outrank a verified catalogue offer.
         return $query->orderByRaw(
-            "CASE WHEN {$requiresConfirmation} = 0 AND ".$query->getModel()->qualifyColumn('price')." > 0 THEN 0 ELSE 1 END"
+            "CASE WHEN {$requiresConfirmation} = 0 AND ".$query->getModel()->qualifyColumn('price').' > 0 THEN 0 ELSE 1 END'
         );
     }
 
