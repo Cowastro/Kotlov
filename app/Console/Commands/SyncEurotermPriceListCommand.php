@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\CrmContactPoint;
+use App\Models\CrmCounterparty;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -9,6 +11,7 @@ use App\Models\SupplierSource;
 use App\Models\SupplierSync;
 use App\Services\SupplierProductAvailabilityService;
 use App\Services\Suppliers\EurotermPriceList;
+use App\Services\Telephony\PhoneNumber;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -68,6 +71,8 @@ class SyncEurotermPriceListCommand extends Command
                     'retail_updated' => 0,
                     'price_confirmation_cleared' => 0,
                     'missing_zeroed' => 0,
+                    'supplier_email_contacts' => 0,
+                    'supplier_phone_contacts' => 0,
                 ];
                 $touched = [];
                 $articleKeys = collect($classified)->pluck('article_key')->all();
@@ -162,6 +167,11 @@ class SyncEurotermPriceListCommand extends Command
                     'last_status' => 'updated',
                     'last_exit_code' => 0,
                 ])->save();
+                $supplier->load('crmCounterparty.contactPoints');
+                $stats['supplier_email_contacts'] = $supplier->crmCounterparty?->contactPoints
+                    ->where('is_active', true)->where('type', 'email')->count() ?? 0;
+                $stats['supplier_phone_contacts'] = $supplier->crmCounterparty?->contactPoints
+                    ->where('is_active', true)->where('type', 'phone')->count() ?? 0;
 
                 return $stats;
             });
@@ -279,13 +289,61 @@ class SyncEurotermPriceListCommand extends Command
     /** @return array{0:Supplier,1:SupplierSource,2:SupplierSync} */
     private function ensureSupplier(?Supplier $supplier, array $payload): array
     {
+        $email = 'tce@euroterm.by';
+        $phone = '+375 (17) 241-11-42';
         $supplier ??= new Supplier;
+        $company = $supplier->crmCounterparty
+            ?: CrmCounterparty::query()
+                ->whereHas('contactPoints', fn ($query) => $query
+                    ->where('type', 'email')
+                    ->where('normalized_value', $email))
+                ->where('type', 'organization')
+                ->first()
+            ?: CrmCounterparty::query()->firstOrCreate([
+                'type' => 'organization',
+                'legal_name' => 'ООО «Евротерм»',
+            ], [
+                'name' => 'Евротерм',
+                'classification' => 'supplier',
+                'business_unit' => 'wholesale',
+                'status' => 'active',
+                'source' => 'manual',
+                'website' => EurotermPriceList::WEBSITE,
+            ]);
+        $company->forceFill([
+            'classification' => 'supplier',
+            'status' => 'active',
+            'website' => $company->website ?: EurotermPriceList::WEBSITE,
+        ])->save();
+
+        foreach ([
+            ['type' => 'email', 'value' => $email, 'normalized' => $email, 'label' => 'Отдел продаж'],
+            ['type' => 'phone', 'value' => $phone, 'normalized' => PhoneNumber::normalize($phone), 'label' => 'Офис'],
+        ] as $contact) {
+            CrmContactPoint::query()->updateOrCreate([
+                'counterparty_id' => $company->id,
+                'type' => $contact['type'],
+                'normalized_value' => $contact['normalized'],
+            ], [
+                'value' => $contact['value'],
+                'label' => $contact['label'],
+                'is_primary' => true,
+                'is_active' => true,
+            ]);
+        }
+
         $supplier->forceFill([
+            'crm_counterparty_id' => $company->id,
             'code' => 'euroterm',
             'name' => 'ООО «Евротерм»',
             'currency' => 'BYN',
             'currency_rate' => 1,
-            'contact' => 'https://euroterm.by/ · +375 (17) 241-11-42 · tce@euroterm.by',
+            'contact' => EurotermPriceList::WEBSITE.' · '.$phone.' · '.$email,
+            'communication_channels' => [
+                'website' => EurotermPriceList::WEBSITE,
+                'phone' => $phone,
+                'email' => $email,
+            ],
             'notes' => 'Оптовая цена, РРЦ с НДС и фактический остаток обновляются по полному прайсу Евротерм.',
             'is_active' => true,
         ])->save();
