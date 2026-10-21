@@ -140,6 +140,16 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             );
         }
 
+        if ($brandKey === 'valfex' && preg_match('/VCP25(40|60)G(130|180)/', $ascii, $match)) {
+            $lengthSuffix = $match[2] === '130' ? '-130' : '';
+
+            return sprintf('https://www.teplodvor.ru/valfex-vcp-25-%sg%s.html', $match[1], $lengthSuffix);
+        }
+
+        if ($brandKey === 'valfex' && str_contains($ascii, '10305016200')) {
+            return 'https://valfex.ru/catalog/truby-metalloplastikovye/truba-metalloplastikovaya-pe-xb-al-pe-xb-2/';
+        }
+
         if ($brandKey === 'salus') {
             return match (true) {
                 str_contains($ascii, 'ERT20RF') => 'https://saluscontrols.com/global/product/ert20tx-wireless-electronic-surface-mounted-thermostat-non-programmable/',
@@ -151,6 +161,18 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
         }
 
         if ($brandKey === 'barberi') {
+            if (preg_match('/V13025005[AB]R/', $ascii)) {
+                return 'https://www.barberi.it/ww/ru/produktsiya/b1-thermostatic-mixing-valves/anti-condensation-thermostatic-mixing-valves/V135R';
+            }
+            if (preg_match('/V14025005[AB]R/', $ascii)) {
+                return 'https://www.barberi.it/ww/ru/produktsiya/b1-thermostatic-mixing-valves/anti-condensation-thermostatic-mixing-valves/V145R';
+            }
+            if (str_contains($ascii, 'V13M2500')) {
+                return 'https://www.barberi.it/ww/en/products/b1-thermostatic-mixing-valves/anti-condensation-thermostatic-mixing-valves/V13';
+            }
+            if (str_contains($ascii, 'V1402500') || str_contains($ascii, 'V14M3200')) {
+                return 'https://www.barberi.it/ww/en/products/b1-thermostatic-mixing-valves/anti-condensation-thermostatic-mixing-valves/V14';
+            }
             if (str_contains($ascii, '27B040N4P3') || str_contains($ascii, '27B040N4T3')) {
                 return 'https://www.barberi.it/ww/ru/produktsiya/b3-regulating-groups-and-heating-components/recessed-regulating-groups/recessed-regulating-groups-bdhb/27BN';
             }
@@ -164,6 +186,62 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
                     }
                 }
             }
+        }
+
+        if ($brandKey === 'vaillant') {
+            return match (true) {
+                str_contains($ascii, 'VU65655') => 'https://www.vaillant.com/en/products/ecotec-plus-vc--5-5/',
+                str_contains($ascii, 'VRC720') => 'https://www.vaillant.com/en/products/sensocomfort/',
+                str_contains($ascii, 'VR71'), str_contains($ascii, 'VR92') => 'https://professional.vaillant.co.uk/for-installers/products/sensocomfort-sensocomfort-rf-149888.html',
+                default => null,
+            };
+        }
+
+        if ($brandKey === 'ariston') {
+            return match (true) {
+                str_contains($ascii, 'CLASXC35') => 'https://www.ariston.com/en-eg/products/boilers-eg/sottocat-boiler-eg/clas-xc/',
+                str_contains($ascii, 'CLASXCSYSTEM24') => 'https://www.teplodvor.ru/ariston-clas-xc-system-24-ff.html',
+                str_contains($ascii, 'FASTRDISPLAY10') => 'https://www.teplodvor.ru/ariston-fast-r-display-10l-ng.html',
+                str_contains($ascii, 'FASTRDISPLAY14') => 'https://www.teplodvor.ru/ariston-fast-r-display-14l-ng.html',
+                str_contains($ascii, 'DGI10LCFSUPERLUX') => 'https://titan-prof.ru/catalog/vodosnabzhenie/vodonagrevateli/protochnye_gazovye_vodonagrevateli/gazovyy_protochnyy_vodonagrevatel_superlux_dgi_10l_cf_ng_3632014.html',
+                default => null,
+            };
+        }
+
+        if ($brandKey === 'fondital' && str_contains($ascii, 'MINORKACTFS24')) {
+            return 'https://www.fondital.com/ww/en/minorca-ctfs-cu';
+        }
+
+        if ($brandKey === 'protherm' && (str_contains($ascii, 'LYNX24') || str_contains($ascii, 'РЫСЬ24'))) {
+            return 'https://www.teplodvor.ru/protherm-rys-hk24.html';
+        }
+
+        if ($brandKey === 'sanha') {
+            return match (true) {
+                str_contains($ascii, '12305016') || str_contains($ascii, '16X2200') => 'https://www.sanha.com/en/MultiFit-Flex-pipe-furled/12300016',
+                str_contains($ascii, '12305020') || str_contains($ascii, '20X2100') => 'https://www.sanha.com/en/MultiFit-Flex-pipe-furled/12300020',
+                default => null,
+            };
+        }
+
+        if ($brandKey === 'maincor') {
+            return match (true) {
+                str_contains($ascii, '4160021300') || str_contains($ascii, '300M') => 'https://www.klimaworld.com/products/maincor-mfl-pe-rt-al-pe-rt-16x2-0-300m-ring-rot',
+                str_contains($ascii, '4160021500') || str_contains($ascii, '500M') => 'https://www.wolf-online-shop.de/Maincor-MFL-PE-RT-AL-PE-RT-16x2-0-500m-Ring-rot%3A%3A57719.html',
+                default => null,
+            };
+        }
+
+        if ($brandKey === 'afriso' && str_contains($ascii, '4261600')) {
+            return 'https://afriso.pl/katalog-produktow-afriso/i-2-03-b-przewodowy-system-sterowania-ogrzewaniem-plaszczyznowym-cositherm-basic/4261600-termostat-pokojowy-ta3';
+        }
+
+        if ($brandKey === 'ипро' && str_contains($ascii, 'КОТЕЛОК')) {
+            return 'https://ipro-gsm.ru/internet-magazin-2/product/kotelok';
+        }
+
+        if ($brandKey === 'tecline' && str_contains($ascii, 'ПЛЕНКА')) {
+            return 'https://azbukatepla.by/shop/truby-i-armatura/pe-rt-polietilen/plenka-folga-dlya-teplogo-pola-tecline';
         }
 
         if ($brandKey === 'kospel') {
@@ -211,6 +289,24 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             return match (true) {
                 str_contains($ascii, 'ERT20RF') => ['https://saluscontrols.com/global/wp-content/uploads/sites/3/2024/03/ERT20RF_003-1.png'],
                 str_contains($ascii, 'RT310') => ['https://saluscontrols.com/global/wp-content/uploads/sites/3/2024/03/RT310_002.png'],
+                default => [],
+            };
+        }
+
+        if ($brandKey === 'barberi') {
+            return match (true) {
+                preg_match('/V13025005[AB]R/', $ascii) === 1 => ['https://www.barberi.it/media/immagini/V13.5R.png'],
+                preg_match('/V14025005[AB]R/', $ascii) === 1 => ['https://www.barberi.it/media/immagini/V14.5R.png'],
+                str_contains($ascii, 'V13M2500') => ['https://www.barberi.it/media/immagini/V13.png'],
+                str_contains($ascii, 'V1402500'), str_contains($ascii, 'V14M3200') => ['https://www.barberi.it/media/immagini/V14.png'],
+                default => [],
+            };
+        }
+
+        if ($brandKey === 'vaillant') {
+            return match (true) {
+                str_contains($ascii, 'VU65655') => ['https://waaminioprodfc9546ee.blob.core.windows.net/b2c-products/WHBC23-912676_01.png'],
+                str_contains($ascii, 'VRC720') => ['https://waaminioprodfc9546ee.blob.core.windows.net/b2c-products/CONTROL23-912563_01.png'],
                 default => [],
             };
         }
