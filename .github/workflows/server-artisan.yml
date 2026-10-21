@@ -285,7 +285,7 @@ jobs:
                 exit 1
               fi
               echo "deploy.stage=composer"
-              COMPOSER_ALLOW_SUPERUSER=1 "$composer_bin" install \
+              COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_DISCARD_CHANGES=1 "$composer_bin" install \
                 --no-dev \
                 --no-interaction \
                 --no-scripts \
