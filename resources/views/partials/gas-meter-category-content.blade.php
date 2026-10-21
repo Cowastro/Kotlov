@@ -36,6 +36,11 @@
                 <a href="/brands/belomo">Счетчики БелОМО</a>
                 <a href="{{ \App\Support\Catalog\BelomoGasMeterDesignations::PAGE_URL }}">Расшифровка обозначений КАТА и СКАТ</a>
             </article>
+            <article class="gas-meter-guide__type">
+                <h3>Не знаете, какой нужен?</h3>
+                <p>Отметьте плиту, колонку или котёл, сторону входа газа и расстояние между патрубками — подборщик объяснит результат простыми словами.</p>
+                <a href="{{ \App\Support\Catalog\GasMeterSelectionGuide::PAGE_URL }}">Открыть подборщик счётчика</a>
+            </article>
         </div>
 
         <div class="gas-meter-guide__note">

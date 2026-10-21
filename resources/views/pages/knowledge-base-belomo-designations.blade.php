@@ -74,7 +74,8 @@
                     и какой вариант исполнения указать в заказе.
                 </p>
                 <div class="bm-doc__actions">
-                    <a class="bm-doc__btn bm-doc__btn--dark" href="{{ Belomo::PDF_URL }}" target="_blank" rel="noopener">Скачать PDF производителя</a>
+                    <a class="bm-doc__btn bm-doc__btn--dark" href="{{ \App\Support\Catalog\GasMeterSelectionGuide::PAGE_URL }}">Подобрать счётчик</a>
+                    <a class="bm-doc__btn" href="{{ Belomo::PDF_URL }}" target="_blank" rel="noopener">Скачать PDF производителя</a>
                     <a class="bm-doc__btn" href="{{ Belomo::CSV_URL }}">Скачать таблицу (Excel/CSV)</a>
                     <a class="bm-doc__btn" href="/brands/belomo">Счетчики БелОМО в каталоге</a>
                 </div>

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Support\Catalog\BelomoGasMeterDesignations;
+use App\Support\Catalog\GasMeterSelectionGuide;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -26,6 +27,17 @@ final class KnowledgeBase
     public static function items(): Collection
     {
         return collect([
+            [
+                'slug' => 'kak-podobrat-schetchik-gaza',
+                'url' => GasMeterSelectionGuide::PAGE_URL,
+                'title' => 'Как подобрать газовый счётчик: простая инструкция и подборщик',
+                'category' => 'tekhnicheskaya-informatsiya',
+                'date' => '2026-10-21',
+                'image' => '/img/products/elicon/8072-23-1.png',
+                'excerpt' => 'Понятный подбор по расходу приборов, направлению газа, монтажной длине и месту установки. Калькулятор предложит подходящий типоразмер и модели.',
+                'tags' => ['Счетчики газа', 'Подбор оборудования', 'БелОМО', 'Для дома'],
+                'downloads' => [],
+            ],
             [
                 'slug' => 'belomo-kata-skat-oboznacheniya',
                 'url' => BelomoGasMeterDesignations::PAGE_URL,

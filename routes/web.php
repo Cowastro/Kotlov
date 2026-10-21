@@ -50,6 +50,7 @@ use App\Models\Product;
 use App\Rules\NoHtmlOrLinks;
 use App\Rules\PhoneNotSpam;
 use App\Support\Catalog\BelomoGasMeterDesignations;
+use App\Support\Catalog\GasMeterSelectionGuide;
 use App\Support\KnowledgeBase;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -390,6 +391,44 @@ Route::get(KnowledgeBase::URL, fn (Request $request) => view('pages.knowledge-ba
     'categories' => KnowledgeBase::categories(),
     'tags' => KnowledgeBase::tags(),
 ]))->name('knowledge-base');
+Route::get(GasMeterSelectionGuide::PAGE_URL, function () {
+    $products = Product::query()
+        ->active()
+        ->notArchived()
+        ->whereHas('category', fn ($query) => $query->where('slug', 'schetchiki-gaza'))
+        ->whereHas('brand', fn ($query) => $query->where('slug', 'belomo'))
+        ->withSupplierChannels()
+        ->with(['category', 'brand'])
+        ->get();
+
+    $matchedProductIds = collect();
+    $stockModels = collect(GasMeterSelectionGuide::selectorModels())->map(function (array $model) use ($products, $matchedProductIds): array {
+        $product = $products->first(fn (Product $candidate) => GasMeterSelectionGuide::productMatchesModel($candidate, $model));
+        if (! $product) {
+            return $model;
+        }
+
+        $matchedProductIds->push($product->id);
+        $catalog = GasMeterSelectionGuide::selectorProduct($product, true);
+
+        return array_replace($model, $catalog ?? [], [
+            'article' => $model['article'],
+            'stock_program' => true,
+        ]);
+    });
+
+    $orderModels = $products
+        ->reject(fn (Product $product) => $matchedProductIds->contains($product->id))
+        ->map(fn (Product $product) => GasMeterSelectionGuide::selectorProduct($product, false))
+        ->filter()
+        ->values();
+
+    return view('pages.knowledge-base-gas-meter-selection', [
+        'sizes' => GasMeterSelectionGuide::SIZES,
+        'families' => GasMeterSelectionGuide::selectorFamilies(),
+        'models' => $stockModels->concat($orderModels)->values()->all(),
+    ]);
+})->name('knowledge-base.gas-meter-selection');
 Route::permanentRedirect(BelomoGasMeterDesignations::LEGACY_PAGE_URL, BelomoGasMeterDesignations::PAGE_URL);
 Route::permanentRedirect(BelomoGasMeterDesignations::LEGACY_PAGE_URL . '.csv', BelomoGasMeterDesignations::CSV_URL);
 Route::get(BelomoGasMeterDesignations::PAGE_URL, fn () => view('pages.knowledge-base-belomo-designations', [

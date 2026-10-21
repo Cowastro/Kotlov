@@ -371,6 +371,21 @@
                                     </p>
                                 @endif
 
+                                @if ($gasMeterGuide)
+                                    <aside class="gas-meter-fit mb-16" aria-label="Подсказка по выбору газового счётчика">
+                                        <p class="gas-meter-fit__eyebrow">Подойдёт ли вам</p>
+                                        <p class="gas-meter-fit__title">{{ $gasMeterGuide['size'] }} — {{ $gasMeterGuide['purpose'] }}</p>
+                                        <ul>
+                                            @foreach ($gasMeterGuide['facts'] as $fact)
+                                                <li>{{ $fact }}</li>
+                                            @endforeach
+                                        </ul>
+                                        <a href="{{ $gasMeterGuide['article_url'] }}" class="link fw-semibold">
+                                            Подобрать счётчик в простой программе →
+                                        </a>
+                                    </aside>
+                                @endif
+
                                 @if ($variantSelector)
                                     <div class="product-model-selector mb-16" aria-label="{{ $variantSelector['title'] }}">
                                         <p class="product-model-selector__title">{{ $variantSelector['title'] }}</p>
@@ -1276,6 +1291,23 @@
     color: var(--text-2);
     font-size: 12px;
 }
+
+.gas-meter-fit {
+    padding: 15px 16px;
+    border: 1px solid #dfe6dd;
+    border-radius: 12px;
+    background: #f7faf6;
+}
+.gas-meter-fit__eyebrow {
+    margin: 0 0 3px;
+    color: #27833f;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.gas-meter-fit__title { margin: 0 0 8px; font-weight: 650; line-height: 1.35; }
+.gas-meter-fit ul { display: grid; gap: 4px; margin: 0 0 9px; padding-left: 18px; color: var(--text-2); font-size: 13px; }
 
 @media (max-width: 767px) {
     .hotta-product-gallery .tf-product-media-main {

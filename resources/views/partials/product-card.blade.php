@@ -50,6 +50,7 @@
     $heatPumpMeta = method_exists($product, 'heatPumpCatalogMeta')
         ? $product->heatPumpCatalogMeta()
         : null;
+    $gasMeterMeta = \App\Support\Catalog\GasMeterSelectionGuide::forProduct($product);
 @endphp
 
 <div class="card-product product-style_stroke{{ ! $canBuy ? ' card-product--consultation' : '' }}">
@@ -88,7 +89,7 @@
                     data-name="{{ $product->name }}"
                     data-price="{{ $price }}"
                     data-category="{{ $product->category->name ?? '' }}"
-                    data-description="{{ Str::limit(strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.'), 240) }}"
+                    data-description="{{ Str::limit($gasMeterMeta ? ($gasMeterMeta['size'].' — '.$gasMeterMeta['purpose'].'. '.implode('. ', $gasMeterMeta['facts'])) : strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.'), 240) }}"
                     data-image="{{ $product->image_url }}"
                     data-images='@json($quickViewImages)'
                     data-url="{{ $productUrl }}"
@@ -151,6 +152,15 @@
                 </div>
                 <p>{{ $heatPumpMeta['purpose'] }}</p>
             </div>
+        @endif
+
+        @if ($gasMeterMeta)
+            <p class="text-caption-01 cl-text-2 mb-2">
+                <strong>{{ $gasMeterMeta['size'] }}</strong> · до {{ rtrim(rtrim(number_format($gasMeterMeta['max_flow'], 1, ',', ''), '0'), ',') }} м³/ч
+                @if ($gasMeterMeta['direction']) · {{ $gasMeterMeta['direction'] }} @endif
+                @if ($gasMeterMeta['length']) · L={{ $gasMeterMeta['length'] }} мм @endif
+            </p>
+            <p class="text-caption-01 cl-text-2 mb-6">{{ \Illuminate\Support\Str::ucfirst($gasMeterMeta['purpose']) }}.</p>
         @endif
 
         @if ($product->rating > 0)

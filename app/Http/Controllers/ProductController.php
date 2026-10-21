@@ -10,6 +10,7 @@ use App\Services\HeatPumpProductPresenter;
 use App\Services\ProductPopularityService;
 use App\Services\ProductVariantSelector;
 use App\Services\SeoMetadataBuilder;
+use App\Support\Catalog\GasMeterSelectionGuide;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
@@ -108,6 +109,7 @@ class ProductController extends Controller
 
         $reviews = $product->reviews;
         $variantSelector = app(ProductVariantSelector::class)->forProduct($product);
+        $gasMeterGuide = GasMeterSelectionGuide::forProduct($product);
 
         // SEO
         $sharedCityIn = view()->shared('cityIn');
@@ -355,7 +357,8 @@ class ProductController extends Controller
             'heatPumpGuides',
             'heatPumpProfile',
             'kotlovHeatPumpModels',
-            'variantSelector'
+            'variantSelector',
+            'gasMeterGuide'
         ));
     }
 }
