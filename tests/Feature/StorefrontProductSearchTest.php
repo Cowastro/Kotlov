@@ -13,6 +13,51 @@ class StorefrontProductSearchTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_gas_meter_search_ignores_word_order_and_understands_word_forms(): void
+    {
+        $category = Category::create([
+            'name' => 'Счетчики газа',
+            'slug' => 'search-gas-meters',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $meter = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Счетчик газа ультразвуковой СКАТ G4',
+            'slug' => 'skat-g4-smart-search',
+            'sku' => 'SKAT-G4-SEARCH',
+            'price' => 470,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $boiler = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Газовый котел контрольный',
+            'slug' => 'gas-boiler-search-control',
+            'sku' => 'GAS-BOILER-SEARCH',
+            'price' => 1000,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $search = app(StorefrontProductSearch::class);
+
+        foreach (['газовый счетчик', 'счетчик газовый', 'газовые счетчики', 'газовый счётчик'] as $term) {
+            $matches = $search->apply(Product::query(), $term)->pluck('id');
+            $this->assertTrue($matches->contains($meter->id), $term);
+            $this->assertFalse($matches->contains($boiler->id), $term);
+        }
+
+        $this->getJson('/search/suggest?'.http_build_query(['q' => 'газовый счетчик']))
+            ->assertOk()
+            ->assertJsonFragment(['type' => 'category', 'name' => 'Счетчики газа'])
+            ->assertJsonFragment(['type' => 'product', 'name' => $meter->name]);
+
+        $this->get('/search?'.http_build_query(['q' => 'газовый счетчик']))
+            ->assertOk()
+            ->assertSee($meter->name)
+            ->assertDontSee($boiler->name);
+    }
+
     public function test_hydraulic_separator_synonyms_and_brand_order_work_in_suggestions_and_search(): void
     {
         $category = Category::create(['name' => 'Разделители', 'slug' => 'search-separators', 'parent_id' => 0, 'is_active' => true]);

@@ -90,14 +90,9 @@ class SearchController extends Controller
             ]);
 
         // Категории
-        $categories = Category::where('is_active', true)
-            ->where(function ($query) use ($search, $q): void {
-                foreach ($search->variants($q) as $variant) {
-                    foreach ($search->caseVariants($variant) as $caseVariant) {
-                        $query->orWhere('name', 'like', '%'.$caseVariant.'%');
-                    }
-                }
-            })
+        $categories = Category::where('is_active', true);
+        $search->applyCategory($categories, $q);
+        $categories = $categories
             ->whereHas('products', fn ($products) => $products->active()->notArchived())
             ->select('id', 'name', 'slug')
             ->limit(3)

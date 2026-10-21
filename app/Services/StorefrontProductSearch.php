@@ -8,6 +8,48 @@ class StorefrontProductSearch
 {
     private const MAX_TOKENS = 8;
 
+    /**
+     * Common catalogue word forms that cannot be matched by merely changing
+     * the word order. Values are deliberately short search stems, but remain
+     * domain-specific enough not to broaden the result set arbitrarily.
+     *
+     * @var array<string, list<string>>
+     */
+    private const DOMAIN_TOKEN_ALIASES = [
+        'газ' => ['газ'],
+        'газа' => ['газ'],
+        'газу' => ['газ'],
+        'газом' => ['газ'],
+        'газовый' => ['газ'],
+        'газовая' => ['газ'],
+        'газовое' => ['газ'],
+        'газовые' => ['газ'],
+        'газового' => ['газ'],
+        'газовой' => ['газ'],
+        'газовых' => ['газ'],
+        'счетчик' => ['счетчик', 'счётчик'],
+        'счётчик' => ['счетчик', 'счётчик'],
+        'счетчики' => ['счетчик', 'счётчик'],
+        'счётчики' => ['счетчик', 'счётчик'],
+        'счетчика' => ['счетчик', 'счётчик'],
+        'счётчика' => ['счетчик', 'счётчик'],
+        'счетчиков' => ['счетчик', 'счётчик'],
+        'счётчиков' => ['счетчик', 'счётчик'],
+        'котел' => ['котел', 'котёл'],
+        'котёл' => ['котел', 'котёл'],
+        'котла' => ['котел', 'котёл'],
+        'котлы' => ['котел', 'котёл'],
+        'котельный' => ['котел', 'котёл'],
+        'котельная' => ['котел', 'котёл'],
+        'отопительный' => ['отоплен'],
+        'отопительная' => ['отоплен'],
+        'отопительные' => ['отоплен'],
+        'отопления' => ['отоплен'],
+        'дымоходный' => ['дымоход'],
+        'дымоходные' => ['дымоход'],
+        'дымохода' => ['дымоход'],
+    ];
+
     public function apply(Builder $query, string $search, bool $includeInternal = false): Builder
     {
         $tokens = array_slice($this->tokens($search), 0, self::MAX_TOKENS);
@@ -32,6 +74,41 @@ class StorefrontProductSearch
                                     $phrase->where(function (Builder $fields) use ($word, $includeInternal): void {
                                         foreach ($this->caseVariants($word) as $caseVariant) {
                                             $this->addTermMatches($fields, $caseVariant, $includeInternal, true);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    }
+
+    public function applyCategory(Builder $query, string $search): Builder
+    {
+        $tokens = array_slice($this->tokens($search), 0, self::MAX_TOKENS);
+
+        if ($tokens === []) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $matches) use ($search, $tokens): void {
+            foreach ($this->variants($search) as $variant) {
+                foreach ($this->caseVariants($variant) as $caseVariant) {
+                    $matches->orWhere('name', 'like', '%'.$caseVariant.'%');
+                }
+            }
+
+            $matches->orWhere(function (Builder $allTokens) use ($tokens): void {
+                foreach ($tokens as $alternatives) {
+                    $allTokens->where(function (Builder $tokenMatch) use ($alternatives): void {
+                        foreach ($alternatives as $alternative) {
+                            $tokenMatch->orWhere(function (Builder $phrase) use ($alternative): void {
+                                foreach (explode(' ', $alternative) as $word) {
+                                    $phrase->where(function (Builder $wordMatch) use ($word): void {
+                                        foreach ($this->caseVariants($word) as $caseVariant) {
+                                            $wordMatch->orWhere('name', 'like', '%'.$caseVariant.'%');
                                         }
                                     });
                                 }
@@ -101,6 +178,16 @@ class StorefrontProductSearch
         }
         if (preg_match('/^гидрострел\S*$/u', $value)) {
             $variants[] = 'гидравлический разделитель';
+        }
+
+        foreach (self::DOMAIN_TOKEN_ALIASES[$value] ?? [] as $alias) {
+            $variants[] = $alias;
+        }
+
+        if (str_contains($value, 'ё')) {
+            $variants[] = str_replace('ё', 'е', $value);
+        } elseif (str_contains($value, 'е')) {
+            $variants[] = str_replace('е', 'ё', $value);
         }
 
         return array_values(array_unique(array_filter($variants, fn (?string $variant): bool => filled($variant))));
