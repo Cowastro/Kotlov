@@ -595,7 +595,7 @@ class SyncThermokraftCommand extends Command
      * «Котел Tenko Економ 4,5_220» and «Электрический котел Tenko ЭКОНОМ (КЕ)
      * 4,5 кВт 220В» get the same key. Returns '' when no number is present.
      */
-    private function modelKey(string $name, string $brand = ''): string
+    public function modelKey(string $name, string $brand = ''): string
     {
         $text = mb_strtolower(str_replace(['ё', 'Ё'], 'е', $name));
         // Latin look-alikes inside Cyrillic words («Cтандарт»).

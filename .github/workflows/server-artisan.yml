@@ -374,6 +374,11 @@ jobs:
             grep -E '^metric\.sbg_merge\.[a-z_]+=[0-9]+$' "$detail_log" || true
             echo "safe_sbg_merge_metrics_end"
           fi
+          if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:publish-tenko-thermokraft" ]]; then
+            echo "safe_tenko_metrics_begin"
+            grep -E '^metric\.tenko\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            echo "safe_tenko_metrics_end"
+          fi
           if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:publish-zubr-teplonositeli" ]]; then
             echo "safe_zubr_metrics_begin"
             grep -E '^metric\.zubr\.[a-z_]+=[0-9]+$' "$detail_log" || true
