@@ -44,6 +44,7 @@ class OrganizePumpAccessoriesCommand extends Command
             'category_exists' => $target ? 1 : 0,
             'category_created' => 0,
             'moved' => 0,
+            'parent_meta_updated' => 0,
             'errors' => 0,
         ];
 
@@ -57,6 +58,15 @@ class OrganizePumpAccessoriesCommand extends Command
 
         if ($apply) {
             DB::transaction(function () use ($parent, &$target, $candidates, &$stats): void {
+                DB::table('categories')->where('id', $parent->id)->update([
+                    'name' => 'Водоснабжение',
+                    'h1' => 'Насосы и оборудование для водоснабжения',
+                    'meta_title' => 'Насосы и оборудование для водоснабжения купить в Минске | KOTLOV.BY',
+                    'meta_description' => 'Насосы, насосные станции и комплектующие для систем водоснабжения. Подбор, заказ и доставка по Беларуси.',
+                    'updated_at' => now(),
+                ]);
+                $stats['parent_meta_updated'] = 1;
+
                 if (! $target) {
                     $targetId = DB::table('categories')->insertGetId([
                         'parent_id' => $parent->id,
