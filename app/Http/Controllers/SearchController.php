@@ -78,7 +78,7 @@ class SearchController extends Controller
             ->select('id', 'name', 'slug', 'sku', 'images', 'price', 'requires_price_confirmation', 'category_id')
             ->with('category:id,slug')
             ->orderByDesc('rating')
-            ->limit(6)
+            ->limit($search->isHeatingElementQuery($q) ? 10 : 6)
             ->get()
             ->map(fn ($p) => [
                 'type' => 'product',

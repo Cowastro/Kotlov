@@ -145,4 +145,62 @@ class StorefrontProductSearchTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['type' => 'category', 'name' => 'Камины']);
     }
+
+    public function test_heating_element_search_does_not_treat_sten_boilers_as_tens(): void
+    {
+        $heatingElements = Category::create([
+            'name' => 'Электрические ТЭНы для отопления',
+            'slug' => 'elektricheskie-teny-dlya-otopleniya',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $boilers = Category::create([
+            'name' => 'Электрические котлы',
+            'slug' => 'search-sten-electric-boilers',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $sten = Brand::create(['name' => 'СТЭН', 'slug' => 'sten-search-test', 'is_active' => true]);
+
+        $heaterNames = [];
+        foreach (range(3, 10) as $power) {
+            $name = "СТЭН ТЭНБ {$power} кВт";
+            $heaterNames[] = $name;
+            Product::create([
+                'category_id' => $heatingElements->id,
+                'brand_id' => $sten->id,
+                'name' => $name,
+                'slug' => "sten-tenb-{$power}-search",
+                'sku' => "STEN-TEN-{$power}",
+                'price' => 100 + $power,
+                'rating' => 1,
+                'is_active' => true,
+                'is_archived' => false,
+            ]);
+        }
+        $boiler = Product::create([
+            'category_id' => $boilers->id,
+            'brand_id' => $sten->id,
+            'name' => 'СТЭН Котел ЭКО 5',
+            'slug' => 'sten-boiler-search-control',
+            'sku' => 'STEN-BOILER-SEARCH',
+            'price' => 1000,
+            'rating' => 5,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $matches = app(StorefrontProductSearch::class)->apply(Product::query(), 'ТЭН')->pluck('id');
+        $this->assertCount(8, $matches);
+        $this->assertFalse($matches->contains($boiler->id));
+
+        $suggestions = $this->getJson('/search/suggest?q='.urlencode('ТЭН'))
+            ->assertOk()
+            ->json();
+        $suggestedProducts = collect($suggestions)->where('type', 'product')->pluck('name');
+
+        $this->assertCount(8, $suggestedProducts);
+        $this->assertEqualsCanonicalizing($heaterNames, $suggestedProducts->all());
+        $this->assertNotContains($boiler->name, $suggestedProducts->all());
+    }
 }

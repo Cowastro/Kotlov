@@ -53,21 +53,34 @@ class StorefrontProductSearch
     public function apply(Builder $query, string $search, bool $includeInternal = false): Builder
     {
         $tokens = array_slice($this->tokens($search), 0, self::MAX_TOKENS);
+        $heatingElementQuery = $this->isHeatingElementQuery($search);
 
         if ($tokens === []) {
             return $query;
         }
 
-        return $query->where(function (Builder $matches) use ($search, $tokens, $includeInternal): void {
-            foreach ($this->variants($search) as $variant) {
-                foreach ($this->caseVariants($variant) as $caseVariant) {
-                    $this->addTermMatches($matches, $caseVariant, $includeInternal);
+        return $query->where(function (Builder $matches) use ($search, $tokens, $includeInternal, $heatingElementQuery): void {
+            // A substring search for «ТЭН» also matches the manufacturer name «СТЭН».
+            // For heating-element queries the token branch below deliberately uses
+            // the dedicated catalogue category instead of a raw substring match.
+            if (! $heatingElementQuery) {
+                foreach ($this->variants($search) as $variant) {
+                    foreach ($this->caseVariants($variant) as $caseVariant) {
+                        $this->addTermMatches($matches, $caseVariant, $includeInternal);
+                    }
                 }
             }
 
             $matches->orWhere(function (Builder $allTokens) use ($tokens, $includeInternal): void {
                 foreach ($tokens as $alternatives) {
                     $allTokens->where(function (Builder $tokenMatch) use ($alternatives, $includeInternal): void {
+                        if ($this->isHeatingElementToken($alternatives)) {
+                            $tokenMatch->whereHas('category', fn (Builder $category) => $category
+                                ->where('slug', 'elektricheskie-teny-dlya-otopleniya'));
+
+                            return;
+                        }
+
                         foreach ($alternatives as $alternative) {
                             $tokenMatch->orWhere(function (Builder $phrase) use ($alternative, $includeInternal): void {
                                 foreach (explode(' ', $alternative) as $word) {
@@ -83,6 +96,13 @@ class StorefrontProductSearch
                 }
             });
         });
+    }
+
+    public function isHeatingElementQuery(string $search): bool
+    {
+        $tokens = preg_split('/[^\pL\pN]+/u', $this->normalize($search), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return count(array_intersect($tokens, ['тэн', 'тэны', 'тэна', 'тэнов'])) > 0;
     }
 
     public function applyCategory(Builder $query, string $search): Builder
@@ -147,6 +167,18 @@ class StorefrontProductSearch
                 ->orWhereHas('source', fn (Builder $source) => $source
                     ->where('name', 'like', $like)
                     ->orWhereHas('supplier', fn (Builder $supplier) => $supplier->where('name', 'like', $like))));
+    }
+
+    /** @param list<string> $alternatives */
+    private function isHeatingElementToken(array $alternatives): bool
+    {
+        foreach ($alternatives as $alternative) {
+            if (in_array($this->normalize($alternative), ['тэн', 'тэны', 'тэна', 'тэнов'], true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
