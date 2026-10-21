@@ -54,6 +54,30 @@ class SyncThermokraftCommand extends Command
     /** Brands the business does not take from Thermokraft (S-TANK, Auraton come from other channels). */
     private const EXCLUDED_BRANDS = ['S-TANK', 'AURATON'];
 
+    /**
+     * Price rows whose catalogue card is named too differently for the automatic
+     * match (sheet name => product slug). Cards created by
+     * catalog:publish-thermokraft-price-cards are added from its data file.
+     * FAKEL 20 is the old sheet name of FAKEL 21 (same RRP; the series has no 20 kW model).
+     */
+    private const CARD_ALIASES = [
+        'Котел твердотопливный FAKEL 10 кВт' => 'kotel-otopitelnyiy-fakel-fakel-10-kvt',
+        'Котел твердотопливный FAKEL 15 кВт' => 'kotel-otopitelnyiy-fakel-fakel-15-kvt',
+        'Котел твердотопливный FAKEL 20 кВт' => 'kotel-otopitelnyiy-fakel-fakel-21-kvt',
+        'Котел твердотопливный FAKEL 21 кВт' => 'kotel-otopitelnyiy-fakel-fakel-21-kvt',
+        'Котел Greolit DEEP PLUS 20 кВт без автоматики' => 'greolit-kotel-greolit-deep-plus-20-kvt-bez-avtomatiki',
+        'Котел Greolit DEEP PLUS 20 кВт с автоматикой' => 'greolit-kotel-greolit-deep-plus-20-kvt-s-avtomatikoi',
+        'Котел Greolit DEEP PLUS 30 кВт без автоматики' => 'greolit-kotel-greolit-deep-plus-30-kvt-bez-avtomatiki',
+        'Котел Greolit DEEP PLUS 30 кВт с автоматикой' => 'greolit-kotel-greolit-deep-plus-30-kvt-s-avtomatikoi',
+        'Котел Greolit DEEP PLUS 40 кВт без автоматики' => 'greolit-kotel-greolit-deep-plus-40-kvt-bez-avtomatiki',
+        'Котел Greolit DEEP PLUS 40 кВт с автоматикой' => 'greolit-kotel-greolit-deep-plus-40-kvt-s-avtomatikoi',
+        // The PROFI section of the price is «с автоматикой».
+        'Котел Greolit PROFI 50 кВт' => 'greolit-kotel-greolit-profi-50-kvt-s-avtomatikoi',
+        'Котел Greolit PROFI 60 кВт' => 'greolit-kotel-greolit-profi-60-kvt-s-avtomatikoi',
+        'Котел Greolit PROFI 70 кВт' => 'greolit-kotel-greolit-profi-70-kvt-s-avtomatikoi',
+        'Переходник КВ-ПГ 1 (Каракан)' => 'sten-perexodnik-kv-pg-1-dlia-prisoedineniia-kotlov-s-kruglymi-vertikalnymi-dymoxodami-k-kirpicnym-dymovym-trubam',
+    ];
+
     /** @var array<string,bool> */
     private array $seenArticles = [];
 
@@ -165,46 +189,54 @@ class SyncThermokraftCommand extends Command
                 continue;
             }
 
-            $wholesale = $this->money($cells[4] ?? '');
-            $retail = $this->money($cells[5] ?? '');
-            if ($wholesale === null && $retail === null) {
-                continue;
+            // Greolit lists «без автоматики / с автоматикой» in one row as «X/Y» prices: one row per variant.
+            $variants = [[$name, $cells[4] ?? '', $cells[5] ?? '']];
+            $split = '#^\s*([\d\s.,]+?)\s*/\s*([\d\s.,]+?)\s*$#u';
+            if (preg_match($split, $cells[4] ?? '', $w) === 1 && preg_match($split, $cells[5] ?? '', $r) === 1) {
+                $variants = [[$name.' без автоматики', $w[1], $r[1]], [$name.' с автоматикой', $w[2], $r[2]]];
             }
-            $validPrice = ! ($wholesale !== null && $retail !== null && $retail + 0.005 < $wholesale);
+            foreach ($variants as [$name, $wholesaleCell, $retailCell]) {
+                $wholesale = $this->money($wholesaleCell);
+                $retail = $this->money($retailCell);
+                if ($wholesale === null && $retail === null) {
+                    continue;
+                }
+                $validPrice = ! ($wholesale !== null && $retail !== null && $retail + 0.005 < $wholesale);
 
-            $stockText = $cells[6] ?? '';
-            $article = $cells[1] ?? '';
-            $barcode = preg_replace('/\D+/', '', $cells[2] ?? '') ?: '';
-            $identity = $article !== '' ? $article : ($barcode !== '' ? $barcode : $brand.'-'.$this->shortHash($name));
-            $dedupe = $this->key($identity);
-            // The «Общее» tab repeats rows of the other tabs, sometimes without an article.
-            $nameDedupe = 'name:'.$brand.':'.$this->nameKey($name);
-            if ($dedupe === '' || isset($this->seenArticles[$dedupe]) || isset($this->seenArticles[$nameDedupe])) {
-                continue;
+                $stockText = $cells[6] ?? '';
+                $article = $cells[1] ?? '';
+                $barcode = preg_replace('/\D+/', '', $cells[2] ?? '') ?: '';
+                $identity = $article !== '' ? $article : ($barcode !== '' ? $barcode : $brand.'-'.$this->shortHash($name));
+                $dedupe = $this->key($identity);
+                // The «Общее» tab repeats rows of the other tabs, sometimes without an article.
+                $nameDedupe = 'name:'.$brand.':'.$this->nameKey($name);
+                if ($dedupe === '' || isset($this->seenArticles[$dedupe]) || isset($this->seenArticles[$nameDedupe])) {
+                    continue;
+                }
+                $this->seenArticles[$dedupe] = true;
+                $this->seenArticles[$nameDedupe] = true;
+
+                $quantity = $this->stockQuantity($stockText);
+                $rows[] = [
+                    'gid' => $gid,
+                    'sheet_row' => $rowNumber,
+                    'kind' => $kind,
+                    'name' => $name,
+                    'brand' => $brand,
+                    'article' => $identity,
+                    'article_key' => $dedupe,
+                    'barcode' => $barcode,
+                    'wholesale' => $wholesale,
+                    'retail' => $retail,
+                    'valid_price' => $validPrice,
+                    'stock_text' => $stockText,
+                    'stock_quantity' => $quantity,
+                    'in_stock' => $quantity !== null && $quantity > 0,
+                    'warranty' => $cells[7] ?? '',
+                    'country' => $cells[9] ?? '',
+                    'description' => $this->clean(($cells[10] ?? '').' '.($cells[12] ?? '')),
+                ];
             }
-            $this->seenArticles[$dedupe] = true;
-            $this->seenArticles[$nameDedupe] = true;
-
-            $quantity = $this->stockQuantity($stockText);
-            $rows[] = [
-                'gid' => $gid,
-                'sheet_row' => $rowNumber,
-                'kind' => $kind,
-                'name' => $name,
-                'brand' => $brand,
-                'article' => $identity,
-                'article_key' => $dedupe,
-                'barcode' => $barcode,
-                'wholesale' => $wholesale,
-                'retail' => $retail,
-                'valid_price' => $validPrice,
-                'stock_text' => $stockText,
-                'stock_quantity' => $quantity,
-                'in_stock' => $quantity !== null && $quantity > 0,
-                'warranty' => $cells[7] ?? '',
-                'country' => $cells[9] ?? '',
-                'description' => $this->clean(($cells[10] ?? '').' '.($cells[12] ?? '')),
-            ];
         }
         fclose($handle);
 
@@ -223,6 +255,10 @@ class SyncThermokraftCommand extends Command
         $byName = [];
         $byModel = [];
         $linkedElsewhere = $links->pluck('supplier_article_normalized', 'product_id');
+        $aliases = [];
+        foreach ($this->cardAliases() as $sheetName => $slug) {
+            $aliases[$this->nameKey($sheetName)] = $slug;
+        }
         foreach ($products as $product) {
             $modelKey = $this->modelKey($product->name, (string) $product->brand?->name);
             if ($modelKey !== '') {
@@ -245,6 +281,13 @@ class SyncThermokraftCommand extends Command
 
             $productId = (int) ($links->get($row['article_key'])?->product_id ?? 0);
             $reason = $productId ? 'supplier_article' : null;
+            if ($productId === 0 && ($aliasSlug = $aliases[$this->nameKey($row['name'])] ?? null)) {
+                $aliased = $products->firstWhere('slug', $aliasSlug);
+                if ($aliased) {
+                    $productId = (int) $aliased->id;
+                    $reason = 'card_alias';
+                }
+            }
             if ($row['brand'] === 'REGLER PRO' && $this->isStandardReglerController($row['name'])) {
                 $canonical = $products->firstWhere('slug', 'kontroller-kotla-regler-wi-fi-nasos-co-1-ventiliator');
                 if ($canonical) {
@@ -484,6 +527,20 @@ class SyncThermokraftCommand extends Command
             'meta_title' => $name.' — купить в Минске и Беларуси | KOTLOV',
             'meta_description' => Str::limit($name.'. Цена, наличие, характеристики и доставка по Беларуси.', 155, ''),
         ]);
+    }
+
+    /** @return array<string,string> sheet name => product slug */
+    private function cardAliases(): array
+    {
+        $aliases = self::CARD_ALIASES;
+        $file = resource_path(PublishThermokraftPriceCardsCommand::DATA_FILE);
+        if (is_file($file)) {
+            foreach (json_decode((string) file_get_contents($file), true) ?: [] as $item) {
+                $aliases[$item['sheet_name']] = $item['slug'];
+            }
+        }
+
+        return $aliases;
     }
 
     /** Public diagnostics only: tab gid, sheet row, product id and storefront slug. */

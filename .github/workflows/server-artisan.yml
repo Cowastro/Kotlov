@@ -379,6 +379,12 @@ jobs:
             grep -E '^metric\.tenko\.[a-z_]+=[0-9]+$' "$detail_log" || true
             echo "safe_tenko_metrics_end"
           fi
+          if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:publish-thermokraft-price-cards" ]]; then
+            echo "safe_thermokraft_cards_metrics_begin"
+            grep -E '^metric\.thermokraft_cards\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.thermokraft_cards\.item=[0-9]+:[a-z_]+:[a-z0-9-]*:[a-z0-9-]+:[a-z0-9._(),-]*$' "$detail_log" || true
+            echo "safe_thermokraft_cards_metrics_end"
+          fi
           if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:publish-zubr-teplonositeli" ]]; then
             echo "safe_zubr_metrics_begin"
             grep -E '^metric\.zubr\.[a-z_]+=[0-9]+$' "$detail_log" || true

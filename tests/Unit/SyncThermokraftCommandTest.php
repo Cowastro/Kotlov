@@ -103,6 +103,22 @@ class SyncThermokraftCommandTest extends TestCase
     }
 
     #[Test]
+    public function it_splits_a_with_and_without_automation_price_into_two_rows(): void
+    {
+        $csv = implode("\n", [
+            'Наименование,Артикул,Штрихкод,,Опт,РРЦ,Количество,Гарантия,Бренд,Страна,Описание',
+            'Котел UNIVAT Deep 20 кВт,,,,2705/3210,3260/3868,1,60,UNIVAT,Беларусь,',
+        ]);
+
+        $rows = $this->parse($csv, '2059074837', 'boiler');
+
+        $this->assertSame(['Котел UNIVAT Deep 20 кВт без автоматики', 'Котел UNIVAT Deep 20 кВт с автоматикой'], array_column($rows, 'name'));
+        $this->assertSame([2705.0, 3210.0], array_column($rows, 'wholesale'));
+        $this->assertSame([3260.0, 3868.0], array_column($rows, 'retail'));
+        $this->assertNotSame($rows[0]['article_key'], $rows[1]['article_key']);
+    }
+
+    #[Test]
     public function it_builds_the_same_model_key_for_sheet_rows_and_catalogue_names(): void
     {
         $command = new SyncThermokraftCommand;
