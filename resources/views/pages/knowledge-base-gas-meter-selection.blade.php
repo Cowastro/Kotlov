@@ -59,7 +59,8 @@
                     <div class="gm-step">
                         <h2>2. Уточните подключение</h2>
                         <div class="gm-fields">
-                            <div class="gm-field"><label for="gm-flow">Точный общий расход, м³/ч</label><input id="gm-flow" type="number" min="0" max="50" step="0.01" placeholder="если известен" data-gm-flow></div>
+                            <div class="gm-field"><label for="gm-range">Примерный диапазон расхода</label><select id="gm-range" data-gm-range><option value="">Не знаю — выберу приборы выше</option><option value="2.5">До 2,5 м³/ч — обычно только плита</option><option value="4">До 4 м³/ч — плита или колонка</option><option value="6">До 6 м³/ч — котёл и плита</option><option value="10">До 10 м³/ч — несколько приборов</option></select></div>
+                            <div class="gm-field"><label for="gm-flow">Точный расход — только если знаете</label><input id="gm-flow" type="number" min="0" max="50" step="0.01" placeholder="Можно не заполнять" data-gm-flow></div>
                             <div class="gm-field"><label for="gm-direction">Газ входит</label><select id="gm-direction" data-gm-direction><option value="">Не знаю</option><option value="left">Слева</option><option value="right">Справа</option></select></div>
                             <div class="gm-field"><label for="gm-length">Межосевое расстояние</label><select id="gm-length" data-gm-length><option value="">Не знаю</option><option value="110">110 мм</option><option value="200">200 мм</option><option value="250">250 мм</option></select></div>
                             <div class="gm-field"><label for="gm-place">Место установки</label><select id="gm-place" data-gm-place><option value="warm">Отапливаемое помещение</option><option value="cold">Холодное помещение или улица</option></select></div>
@@ -70,8 +71,8 @@
                 </div>
 
                 <aside class="gm-panel gm-result" aria-live="polite">
-                    <div class="gm-result__empty" data-gm-empty><div><span>↗</span><strong>Здесь появится результат</strong><p>Сначала отметьте приборы или введите точный расход.</p></div></div>
-                    <div hidden data-gm-output><div class="gm-result__summary"><small>Суммарный расход</small><strong data-gm-total></strong><span data-gm-size></span><em data-gm-family-count></em></div><div class="gm-result__models" data-gm-models></div><p class="gm-result__warning" data-gm-warning></p></div>
+                    <div class="gm-result__empty" data-gm-empty><div><span>↗</span><strong>Здесь появится результат</strong><p>Отметьте приборы выше или выберите понятный диапазон расхода.</p></div></div>
+                    <div hidden data-gm-output><div class="gm-result__summary"><small data-gm-total-label>Суммарный расход</small><strong data-gm-total></strong><span data-gm-size></span><em data-gm-family-count></em></div><div class="gm-result__models" data-gm-models></div><p class="gm-result__warning" data-gm-warning></p></div>
                 </aside>
             </div>
 
@@ -135,9 +136,13 @@
 
     root.querySelector('[data-gm-calculate]').addEventListener('click', function () {
         var exact = parseFloat(root.querySelector('[data-gm-flow]').value.replace(',', '.'));
-        var total = Number.isFinite(exact) && exact > 0 ? exact : Array.from(root.querySelectorAll('[data-gm-appliance]:checked')).reduce(function (sum, item) { return sum + Number(item.value); }, 0);
+        var range = parseFloat(root.querySelector('[data-gm-range]').value);
+        var applianceTotal = Array.from(root.querySelectorAll('[data-gm-appliance]:checked')).reduce(function (sum, item) { return sum + Number(item.value); }, 0);
+        var usesExact = Number.isFinite(exact) && exact > 0;
+        var usesRange = !usesExact && Number.isFinite(range) && range > 0;
+        var total = usesExact ? exact : (usesRange ? range : applianceTotal);
         if (!total) {
-            root.querySelector('[data-gm-flow]').focus();
+            root.querySelector('[data-gm-range]').focus();
             return;
         }
 
@@ -145,7 +150,8 @@
         var output = root.querySelector('[data-gm-output]');
         root.querySelector('[data-gm-empty]').hidden = true;
         output.hidden = false;
-        root.querySelector('[data-gm-total]').textContent = format(total) + ' м³/ч';
+        root.querySelector('[data-gm-total-label]').textContent = usesRange ? 'Выбранный диапазон' : 'Примерный суммарный расход';
+        root.querySelector('[data-gm-total]').textContent = (usesRange ? 'до ' : '') + format(total) + ' м³/ч';
 
         if (!target) {
             root.querySelector('[data-gm-size]').textContent = 'Нужен класс выше G6 — требуется инженерный подбор.';
@@ -158,13 +164,24 @@
         var length = root.querySelector('[data-gm-length]').value;
         var technology = root.querySelector('[data-gm-tech]').value;
         var cold = root.querySelector('[data-gm-place]').value === 'cold';
-        var nearLimit = total > target.max * .9;
-        var matches = models.filter(function (model) {
+        var nearLimit = !usesRange && total > target.max * .9;
+        var exactMatches = models.filter(function (model) {
             return model.size === target.size
                 && (!direction || model.technology === 'ultrasonic' || model.direction === direction)
                 && (!length || model.technology === 'ultrasonic' || model.length === Number(length))
                 && (!technology || model.technology === technology);
-        }).sort(function (a, b) {
+        });
+        var approximate = exactMatches.length === 0;
+        var matches = (approximate ? models.filter(function (model) {
+            return model.size === target.size && (!technology || model.technology === technology);
+        }) : exactMatches).sort(function (a, b) {
+            var score = function (model) {
+                return (direction && model.direction === direction ? 4 : 0)
+                    + (length && model.length === Number(length) ? 4 : 0)
+                    + (technology && model.technology === technology ? 3 : 0)
+                    + (cold && model.thermal ? 2 : 0);
+            };
+            if (approximate && score(a) !== score(b)) return score(b) - score(a);
             if (Boolean(a.stock_program) !== Boolean(b.stock_program)) return a.stock_program ? -1 : 1;
             if (cold && Boolean(a.thermal) !== Boolean(b.thermal)) return a.thermal ? -1 : 1;
             if (Boolean(a.buyable) !== Boolean(b.buyable)) return a.buyable ? -1 : 1;
@@ -175,25 +192,27 @@
         root.querySelector('[data-gm-size]').textContent = 'Предварительно подходит ' + target.size + ' (до ' + format(target.max) + ' м³/ч).';
         var familyCount = new Set(matches.map(function (model) { return model.family_key; })).size;
         root.querySelector('[data-gm-family-count]').textContent = familyCount
-            ? 'Подходящих типов из программы: ' + familyCount + '. Ниже — точные исполнения.'
+            ? (approximate ? 'Показываем ближайшие модели по расходу. Параметры подключения нужно уточнить.' : 'Подходящих типов из программы: ' + familyCount + '. Ниже — точные исполнения.')
             : 'Точного исполнения в программе не найдено.';
         var list = root.querySelector('[data-gm-models]');
         list.innerHTML = '';
         matches.slice(0, 6).forEach(function (model, index) {
             var card = document.createElement('article');
             card.className = 'gm-result__model' + (index === 0 ? ' gm-result__model--best' : '');
-            card.innerHTML = (index === 0 ? '<span class="gm-result__badge">' + (model.stock_program ? 'Рекомендуем со склада' : 'Рекомендуем под заказ') + '</span>' : (model.stock_program ? '<span class="gm-result__badge">Складская программа</span>' : '<span class="gm-result__badge" style="background:#777">Под заказ</span>'))
+            var differences = [];
+            if (approximate && direction && model.technology !== 'ultrasonic' && model.direction !== direction) differences.push('сторону входа газа');
+            if (approximate && length && model.technology !== 'ultrasonic' && model.length !== Number(length)) differences.push('межосевое расстояние');
+            card.innerHTML = (index === 0 ? '<span class="gm-result__badge">' + (approximate ? 'Примерно подходит по расходу' : (model.stock_program ? 'Рекомендуем со склада' : 'Рекомендуем под заказ')) + '</span>' : (model.stock_program ? '<span class="gm-result__badge">Складская программа</span>' : '<span class="gm-result__badge" style="background:#777">Под заказ</span>'))
                 + '<div class="gm-result__family">Тип: ' + escapeHtml(model.family_label) + '</div>'
                 + '<strong>' + escapeHtml(model.name) + '</strong>'
                 + '<p>Артикул ' + escapeHtml(model.article) + ' · ' + escapeHtml(model.technology_label) + ' · ' + escapeHtml(model.direction_label) + (model.length ? ' · L=' + model.length + ' мм' : '') + (model.thermal ? ' · термокомпенсация' : '') + '</p>'
+                + (approximate ? '<p><strong>Предварительный вариант.</strong> ' + (differences.length ? 'Нужно уточнить ' + escapeHtml(differences.join(' и ')) + '.' : 'Сверьте подключение перед заказом.') + '</p>' : '')
                 + '<div class="gm-result__commercial"><span>' + escapeHtml(model.availability_label) + '</span><b>' + escapeHtml(model.price_label) + '</b></div>'
                 + '<a href="' + escapeHtml(model.url) + '">' + (model.buyable ? 'Выбрать и купить' : 'Открыть модель') + ' →</a>'
                 + (model.technical_url ? '<a class="gm-result__tech" href="' + escapeHtml(model.technical_url) + '">Проверить обозначение КАТА/СКАТ</a>' : '');
             list.appendChild(card);
         });
-        if (!matches.length) {
-            list.innerHTML = '<article class="gm-result__model"><strong>Точного сочетания среди основных моделей не найдено</strong><p>Измените неизвестный параметр на «Не знаю» или отправьте данные менеджеру для проверки исполнения.</p><a href="/schetchiki-gaza">Открыть весь каталог →</a></article>';
-        }
+        if (!matches.length) list.innerHTML = '<article class="gm-result__model"><strong>Для этого диапазона нужна модель под заказ</strong><p>Покажем доступные исполнения в каталоге, а подключение можно уточнить перед оформлением.</p><a href="/schetchiki-gaza">Открыть весь каталог →</a></article>';
         var warnings = [];
         if (nearLimit) warnings.push('Расход близок к пределу ' + target.size + ': проверьте паспортные значения, возможно потребуется следующий класс.');
         if (!direction) warnings.push('Если выбираете диафрагменный счётчик, посмотрите на старом приборе или трубе, с какой стороны входит газ.');

@@ -41,4 +41,14 @@ class GasMeterSelectionPageTest extends TestCase
             strpos($template, 'gas-meter-selector-cta-title'),
         );
     }
+
+    public function test_selector_allows_an_estimated_flow_range_and_fallback_models(): void
+    {
+        $template = file_get_contents(resource_path('views/pages/knowledge-base-gas-meter-selection.blade.php'));
+
+        $this->assertStringContainsString('Примерный диапазон расхода', $template);
+        $this->assertStringContainsString('До 6 м³/ч — котёл и плита', $template);
+        $this->assertStringContainsString('Примерно подходит по расходу', $template);
+        $this->assertStringContainsString('Показываем ближайшие модели по расходу', $template);
+    }
 }
