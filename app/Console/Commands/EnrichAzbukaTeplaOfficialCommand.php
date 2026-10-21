@@ -123,6 +123,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
         $brandKey = mb_strtolower(trim($brand));
         $text = trim($model.' '.$name);
         $ascii = Str::upper(str_replace([' ', '-', '_', '.', '/', 'М'], '', $text));
+        $ascii = strtr($ascii, ['А' => 'A', 'В' => 'B', 'С' => 'C', 'Е' => 'E', 'Н' => 'H', 'К' => 'K', 'О' => 'O', 'Р' => 'P', 'Т' => 'T', 'Х' => 'X']);
 
         if ($brandKey === 'auraton') {
             foreach (['aquila-set', 'auriga', 'cetus', 'libra-set', 'tucana-set'] as $slug) {
@@ -227,7 +228,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
         if ($brandKey === 'maincor') {
             return match (true) {
                 str_contains($ascii, '4160021300') || str_contains($ascii, '300M') => 'https://www.klimaworld.com/products/maincor-mfl-pe-rt-al-pe-rt-16x2-0-300m-ring-rot',
-                str_contains($ascii, '4160021500') || str_contains($ascii, '500M') => 'https://www.wolf-online-shop.de/Maincor-MFL-PE-RT-AL-PE-RT-16x2-0-500m-Ring-rot%3A%3A57719.html',
+                str_contains($ascii, '4160021500') || str_contains($ascii, '500M') => 'https://www.heat-store.de/maincor-mainfloor-fussbodenheizung-heizrohr-pe-rt-alu-pe-rt-16-x-2-0-500-m.html',
                 default => null,
             };
         }
@@ -242,6 +243,10 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
 
         if ($brandKey === 'tecline' && str_contains($ascii, 'ПЛЕНКА')) {
             return 'https://azbukatepla.by/shop/truby-i-armatura/pe-rt-polietilen/plenka-folga-dlya-teplogo-pola-tecline';
+        }
+
+        if ($brandKey === 'tec line' && str_contains($ascii, 'ДАТЧИКБОЙЛЕРА')) {
+            return 'https://azbukatepla.by/shop/kotly-otopleniya/elektricheskie-kotly/datchik-temperatury-boylera-tecline';
         }
 
         if ($brandKey === 'kospel') {
@@ -274,12 +279,13 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
     {
         $brandKey = mb_strtolower(trim($brand));
         $ascii = Str::upper(str_replace([' ', '-', '_', '.', '/', 'М'], '', trim($model.' '.$name)));
+        $ascii = strtr($ascii, ['А' => 'A', 'В' => 'B', 'С' => 'C', 'Е' => 'E', 'Н' => 'H', 'К' => 'K', 'О' => 'O', 'Р' => 'P', 'Т' => 'T', 'Х' => 'X']);
 
         if ($brandKey === 'valfex') {
             return match (true) {
                 str_contains($ascii, 'ALPHA2540130') => ['https://valfex.ru/upload/iblock/dad/VF.AL.25.40.130.jpg'],
-                str_contains($ascii, 'ALPHA2580') => ['https://valfex.ru/upload/iblock/534/tsirkulyatsionnyy_energoeffektivnyy_nasos_valfex_alpha_25_80.jpg'],
-                str_contains($ascii, 'ALPHA2560') => ['https://valfex.ru/upload/iblock/e03/tsirkulyatsionnyy_energoeffektivnyy_nasos_valfex_alpha_25_60.jpg'],
+                str_contains($ascii, 'ALPHA2580') => ['https://valfex.ru/upload/iblock/f61/VF.AL.25.80.180.jpg'],
+                str_contains($ascii, 'ALPHA2560') => ['https://valfex.ru/upload/iblock/2b7/40_-60.jpg'],
                 str_contains($ascii, 'ALPHA2540') => ['https://valfex.ru/upload/iblock/754/40_-60.jpg'],
                 default => [],
             };
@@ -309,6 +315,31 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
                 str_contains($ascii, 'VRC720') => ['https://waaminioprodfc9546ee.blob.core.windows.net/b2c-products/CONTROL23-912563_01.png'],
                 default => [],
             };
+        }
+
+        if ($brandKey === 'ariston') {
+            return match (true) {
+                str_contains($ascii, 'CLASXC35') => ['https://www.vestatrade.ru/image/cache/catalog/product/Ariston/Kotli/CLASXC-1000x1000.jpg'],
+                str_contains($ascii, 'DGI10LCFSUPERLUX') => ['https://titan-prof.ru/upload/iblock/d31/0njvxtxoqw7o9kb18636h10snfidiwbg.jpg'],
+                str_contains($ascii, 'FASTRDISPLAY10'), str_contains($ascii, 'FASTRDISPLAY14') => ['https://www.teplodvor.ru/img.php?id_image=12966'],
+                default => [],
+            };
+        }
+
+        if ($brandKey === 'protherm' && (str_contains($ascii, 'LYNX24') || str_contains($ascii, 'РЫСЬ24'))) {
+            return ['https://www.teplodvor.ru/img.php?id_image=11852'];
+        }
+
+        if ($brandKey === 'maincor' && (str_contains($ascii, '4160021500') || str_contains($ascii, '500M'))) {
+            return ['https://cdn.zwei.gmbh/files/heat-store.de/media/0d/3a/6c/1787301916/Mainfloor_Heizrohr_PE_RT_Alu_PE_RT_rot-6a88101c5f881.jpg'];
+        }
+
+        if ($brandKey === 'tecline' && str_contains($ascii, 'ПЛЕНКА')) {
+            return ['https://azbukatepla.by/wp-content/uploads/2018/02/folga-dlya-teplogo-pola-Polsha.png'];
+        }
+
+        if ($brandKey === 'tec line' && str_contains($ascii, 'ДАТЧИКБОЙЛЕРА')) {
+            return ['https://azbukatepla.by/wp-content/uploads/2023/11/Datchik-temperatury-boylera-TECLine.png'];
         }
 
         return [];

@@ -46,10 +46,11 @@ class EnrichAzbukaTeplaOfficialCommandTest extends TestCase
             ['Fondital', 'MINORKA CTFS 24', 'https://www.fondital.com/ww/en/minorca-ctfs-cu'],
             ['Protherm', 'Lynx 24', 'https://www.teplodvor.ru/protherm-rys-hk24.html'],
             ['SANHA', '12305016 MultiFit-Flex 16x2 200m', 'https://www.sanha.com/en/MultiFit-Flex-pipe-furled/12300016'],
-            ['Maincor', '4160021500 16x2 500m', 'https://www.wolf-online-shop.de/Maincor-MFL-PE-RT-AL-PE-RT-16x2-0-500m-Ring-rot%3A%3A57719.html'],
+            ['Maincor', '4160021500 16x2 500m', 'https://www.heat-store.de/maincor-mainfloor-fussbodenheizung-heizrohr-pe-rt-alu-pe-rt-16-x-2-0-500-m.html'],
             ['AFRISO', '4261600', 'https://afriso.pl/katalog-produktow-afriso/i-2-03-b-przewodowy-system-sterowania-ogrzewaniem-plaszczyznowym-cositherm-basic/4261600-termostat-pokojowy-ta3'],
             ['ИПРО', 'КотелОК', 'https://ipro-gsm.ru/internet-magazin-2/product/kotelok'],
             ['TECLine', 'Пленка TECline', 'https://azbukatepla.by/shop/truby-i-armatura/pe-rt-polietilen/plenka-folga-dlya-teplogo-pola-tecline'],
+            ['TEC Line', 'Датчик бойлера TECLine', 'https://azbukatepla.by/shop/kotly-otopleniya/elektricheskie-kotly/datchik-temperatury-boylera-tecline'],
             ['Kospel', 'SWK-120 TERMO TOP', 'https://kospel.pl/wymienniki-i-zasobniki-cwu/swk-termo-top.html'],
             ['Kospel', 'SW-251 TERMO MAX', 'https://kospel.pl/wymienniki-i-zasobniki-cwu/sw-i-swz-termo-max.html'],
             ['Kospel', 'WP Thermo Hit 140', 'https://kospel.pl/wymienniki-i-zasobniki-cwu/wpw.html'],
@@ -63,12 +64,16 @@ class EnrichAzbukaTeplaOfficialCommandTest extends TestCase
         $method = new ReflectionMethod($command, 'officialImages');
 
         $this->assertSame(
-            ['https://valfex.ru/upload/iblock/e03/tsirkulyatsionnyy_energoeffektivnyy_nasos_valfex_alpha_25_60.jpg'],
+            ['https://valfex.ru/upload/iblock/2b7/40_-60.jpg'],
             $method->invoke($command, 'Valfex', 'ALPHA 25-60 180', '')
         );
         $this->assertSame(
             ['https://saluscontrols.com/global/wp-content/uploads/sites/3/2024/03/RT310_002.png'],
             $method->invoke($command, 'SALUS', 'RT310', '')
+        );
+        $this->assertSame(
+            ['https://www.barberi.it/media/immagini/V13.5R.png'],
+            $method->invoke($command, 'Barberi', 'V13025005 АR', '')
         );
     }
 }
