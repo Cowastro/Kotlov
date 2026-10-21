@@ -30,8 +30,14 @@ class StorefrontProductSearchTest extends TestCase
             'is_active' => true,
             'is_archived' => false,
         ]);
+        $boilerCategory = Category::create([
+            'name' => 'Газовые котлы',
+            'slug' => 'search-gas-boilers',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
         $boiler = Product::create([
-            'category_id' => $category->id,
+            'category_id' => $boilerCategory->id,
             'name' => 'Газовый котел контрольный',
             'slug' => 'gas-boiler-search-control',
             'sku' => 'GAS-BOILER-SEARCH',
