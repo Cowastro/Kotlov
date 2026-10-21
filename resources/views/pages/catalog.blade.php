@@ -19,7 +19,9 @@
 @if ($category->slug === 'schetchiki-gaza')
     @push('styles')
         <style>
+            .gas-meter-selector-cta{margin-top:24px}.gas-meter-selector-cta__inner{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:30px;align-items:center;padding:28px 32px;border-radius:22px;background:linear-gradient(135deg,#151515 0%,#292929 100%);color:#fff;box-shadow:0 18px 45px rgba(0,0,0,.12)}.gas-meter-selector-cta__eyebrow{display:block;margin-bottom:6px;color:#ff696d;font-size:12px;font-weight:750;letter-spacing:.06em;text-transform:uppercase}.gas-meter-selector-cta h2{margin:0 0 8px;color:#fff;font-size:clamp(24px,3vw,34px);line-height:1.12}.gas-meter-selector-cta p{max-width:760px;margin:0;color:rgba(255,255,255,.72);font-size:14px;line-height:1.55}.gas-meter-selector-cta__facts{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}.gas-meter-selector-cta__facts span{padding:6px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);font-size:12px}.gas-meter-selector-cta__actions{display:flex;min-width:270px;flex-direction:column;gap:9px}.gas-meter-selector-cta__button{display:flex;align-items:center;justify-content:center;min-height:52px;padding:12px 22px;border-radius:999px;background:#df4145;color:#fff;font-weight:750;line-height:1.2;text-align:center}.gas-meter-selector-cta__button:hover{background:#c93438;color:#fff}.gas-meter-selector-cta__all{color:rgba(255,255,255,.78);font-size:13px;text-align:center;text-decoration:underline;text-underline-offset:4px}.gas-meter-selector-cta__all:hover{color:#fff}
             .gas-meter-guide{padding-top:12px;padding-bottom:72px}.gas-meter-guide__lead{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:28px;padding:32px;border:1px solid var(--line);border-radius:22px;background:var(--bg)}.gas-meter-guide__lead h2{margin:0 0 14px;font-size:clamp(27px,3vw,40px);line-height:1.12}.gas-meter-guide__lead p{margin:0;color:var(--text-2);line-height:1.65}.gas-meter-guide__checklist{display:grid;gap:10px;margin:0;padding:0;list-style:none}.gas-meter-guide__checklist li{padding:13px 15px;border-radius:12px;background:#fff;font-size:14px}.gas-meter-guide__checklist strong{display:block;margin-bottom:2px}.gas-meter-guide__types{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:24px}.gas-meter-guide__type{padding:22px;border:1px solid var(--line);border-radius:16px;background:#fff}.gas-meter-guide__type h3{margin:0 0 8px;font-size:19px}.gas-meter-guide__type p{margin:0;color:var(--text-2);font-size:14px;line-height:1.55}.gas-meter-guide__type a{display:inline-block;margin-top:13px;color:#111;font-weight:650;text-decoration:underline;text-underline-offset:4px}.gas-meter-guide__faq{margin-top:44px}.gas-meter-guide__faq h2{margin-bottom:18px}.gas-meter-guide__faq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.gas-meter-guide__faq details{padding:19px 21px;border:1px solid var(--line);border-radius:14px;background:#fff}.gas-meter-guide__faq summary{cursor:pointer;font-weight:650;list-style:none}.gas-meter-guide__faq summary::-webkit-details-marker{display:none}.gas-meter-guide__faq p{margin:11px 0 0;color:var(--text-2);line-height:1.55}.gas-meter-guide__note{margin-top:20px;padding:16px 18px;border-left:3px solid #111;background:#f7f7f7;color:var(--text-2);font-size:13px;line-height:1.55}@media(max-width:767px){.gas-meter-guide{padding-bottom:48px}.gas-meter-guide__lead{grid-template-columns:1fr;padding:23px}.gas-meter-guide__types,.gas-meter-guide__faq-grid{grid-template-columns:1fr}}
+            @media(max-width:767px){.gas-meter-selector-cta{margin-top:16px}.gas-meter-selector-cta__inner{grid-template-columns:1fr;gap:20px;padding:23px 20px}.gas-meter-selector-cta__facts{display:none}.gas-meter-selector-cta__actions{min-width:0}.gas-meter-selector-cta__button{width:100%}}
         </style>
     @endpush
 @endif
@@ -51,6 +53,29 @@
             </div>
         </div>
     </section>
+
+    @if ($category->slug === 'schetchiki-gaza')
+        <section class="gas-meter-selector-cta" aria-labelledby="gas-meter-selector-cta-title">
+            <div class="container">
+                <div class="gas-meter-selector-cta__inner">
+                    <div>
+                        <span class="gas-meter-selector-cta__eyebrow">Быстрый подбор БелОМО</span>
+                        <h2 id="gas-meter-selector-cta-title">Не знаете, какой счётчик выбрать?</h2>
+                        <p>Ответьте на несколько простых вопросов. Подборщик учтёт расход, направление газа, расстояние между патрубками и место установки, затем покажет подходящую модель, цену и наличие.</p>
+                        <div class="gas-meter-selector-cta__facts" aria-hidden="true">
+                            <span>Плита, колонка или котёл</span>
+                            <span>Левый или правый</span>
+                            <span>110, 200 или 250 мм</span>
+                        </div>
+                    </div>
+                    <div class="gas-meter-selector-cta__actions">
+                        <a class="gas-meter-selector-cta__button" href="{{ \App\Support\Catalog\GasMeterSelectionGuide::PAGE_URL }}">Подобрать счётчик за 1 минуту</a>
+                        <a class="gas-meter-selector-cta__all" href="#catalog-products">Или посмотреть все счётчики</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
 
     @if (in_array($category->slug, ['dymohody', 'dymohody-mono', 'dymohody-sendvich'], true))
         <section class="catalog-brand-note" aria-labelledby="tis-standard-title">

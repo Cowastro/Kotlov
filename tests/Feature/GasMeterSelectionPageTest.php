@@ -28,4 +28,17 @@ class GasMeterSelectionPageTest extends TestCase
             ->assertSee('data-gm-picker', false)
             ->assertSee('/schetchiki-gaza', false);
     }
+
+    public function test_gas_meter_category_promotes_fast_selector_above_products(): void
+    {
+        $template = file_get_contents(resource_path('views/pages/catalog.blade.php'));
+
+        $this->assertStringContainsString('Не знаете, какой счётчик выбрать?', $template);
+        $this->assertStringContainsString('Подобрать счётчик за 1 минуту', $template);
+        $this->assertStringContainsString('GasMeterSelectionGuide::PAGE_URL', $template);
+        $this->assertLessThan(
+            strpos($template, 'id="catalog-products"'),
+            strpos($template, 'gas-meter-selector-cta-title'),
+        );
+    }
 }
