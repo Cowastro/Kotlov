@@ -6,6 +6,18 @@
     color: var(--primary) !important;
 }
 
+/* The desktop header searches across the whole catalogue; a static label is
+   clearer than the category selector that was rarely used. */
+.form_search-product .quick-search-label {
+    flex: 0 0 auto;
+    color: var(--main);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    white-space: nowrap;
+    cursor: text;
+}
+
 /* Онлайн-цена: выгода показывается там, где покупатель принимает решение. */
 .online-order-cart-note,
 .online-order-mini-note {
