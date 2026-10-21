@@ -484,15 +484,48 @@ body {
 .suggest-product .suggest-name {
     font-size: 14px;
     flex: 1;
-    white-space: nowrap;
+    display: -webkit-box;
     overflow: hidden;
-    text-overflow: ellipsis;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.3;
+}
+.suggest-product__image {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: #fff;
+}
+.suggest-product__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.suggest-product__body {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 .suggest-product .suggest-price {
     font-size: 13px;
     white-space: nowrap;
     color: var(--color-primary, #e02020);
     font-weight: 600;
+}
+@media (max-width: 575px) {
+    .suggest-product__body {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
 }
 
 /* Dropdown автодополнения поиска */

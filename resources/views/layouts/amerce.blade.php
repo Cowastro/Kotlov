@@ -574,8 +574,11 @@
                                 '</a>';
                         }
                         return '<a href="' + item.url + '" class="suggest-item suggest-product">' +
-                            '<span class="suggest-name">' + item.name + '</span>' +
-                            '<span class="suggest-price cl-text-2">' + item.price + '</span>' +
+                            '<span class="suggest-product__image"><img src="' + item.image + '" alt="" loading="lazy"></span>' +
+                            '<span class="suggest-product__body">' +
+                                '<span class="suggest-name">' + item.name + '</span>' +
+                                '<span class="suggest-price cl-text-2">' + item.price + '</span>' +
+                            '</span>' +
                             '</a>';
                     }).join('');
                     suggest.innerHTML = html;

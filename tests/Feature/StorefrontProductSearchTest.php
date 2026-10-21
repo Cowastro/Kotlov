@@ -51,6 +51,7 @@ class StorefrontProductSearchTest extends TestCase
             'name' => 'Счетчик газа ультразвуковой СКАТ G4',
             'slug' => 'skat-g4-smart-search',
             'sku' => 'SKAT-G4-SEARCH',
+            'images' => ['img/products/search-meter.jpg'],
             'price' => 470,
             'is_active' => true,
             'is_archived' => false,
@@ -78,10 +79,10 @@ class StorefrontProductSearchTest extends TestCase
             $this->assertFalse($matches->contains($boiler->id), $term);
         }
 
-        $this->getJson('/search/suggest?'.http_build_query(['q' => 'газовый счетчик']))
-            ->assertOk()
+        $suggestions = $this->getJson('/search/suggest?'.http_build_query(['q' => 'газовый счетчик']));
+        $suggestions->assertOk()
             ->assertJsonFragment(['type' => 'category', 'name' => 'Счетчики газа'])
-            ->assertJsonFragment(['type' => 'product', 'name' => $meter->name]);
+            ->assertJsonFragment(['type' => 'product', 'name' => $meter->name, 'image' => $meter->image_url]);
 
         $this->get('/search?'.http_build_query(['q' => 'газовый счетчик']))
             ->assertOk()
