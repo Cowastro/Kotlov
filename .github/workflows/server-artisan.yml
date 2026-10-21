@@ -277,19 +277,24 @@ jobs:
 
               # Fast-forward only: refuse divergent history and never create a
               # merge commit on the production checkout.
+              echo "deploy.stage=git"
               git pull --ff-only origin main
               composer_bin="$(command -v composer || true)"
               if [[ -z "$composer_bin" ]]; then
                 echo "::error::Deployment stopped: Composer is not installed on the server."
                 exit 1
               fi
+              echo "deploy.stage=composer"
               COMPOSER_ALLOW_SUPERUSER=1 "$composer_bin" install \
                 --no-dev \
                 --no-interaction \
                 --prefer-dist \
                 --optimize-autoloader
+              echo "deploy.stage=migrate"
               "$PHP_BIN" artisan migrate --force
+              echo "deploy.stage=optimize"
               "$PHP_BIN" artisan optimize:clear
+              echo "deploy.stage=complete"
                 ;;
               deploy-recover)
                 git merge --abort || true
@@ -316,6 +321,7 @@ jobs:
             echo "git_failure_lines=$(grep -Eic '(^|[[:space:]])(fatal:|error:)|git.*(failed|failure)' "$detail_log" || true)"
             echo "composer_failure_lines=$(grep -Eic 'composer.*(error|failed|failure)|requirements could not be resolved' "$detail_log" || true)"
             echo "migration_failure_lines=$(grep -Eic 'SQLSTATE|migration.*(failed|failure)|QueryException' "$detail_log" || true)"
+            grep -E '^deploy\.stage=(git|composer|migrate|optimize|complete)$' "$detail_log" || true
             echo "safe_deploy_diagnostic_end"
           fi
           if [[ "$TASK" == "verify-commercial-pdf" ]]; then
