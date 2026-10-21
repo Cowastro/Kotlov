@@ -288,8 +288,11 @@ jobs:
               COMPOSER_ALLOW_SUPERUSER=1 "$composer_bin" install \
                 --no-dev \
                 --no-interaction \
+                --no-scripts \
                 --prefer-dist \
                 --optimize-autoloader
+              echo "deploy.stage=package-discover"
+              "$PHP_BIN" artisan package:discover --ansi
               echo "deploy.stage=migrate"
               "$PHP_BIN" artisan migrate --force
               echo "deploy.stage=optimize"
@@ -326,7 +329,7 @@ jobs:
             echo "platform_failure_lines=$(grep -Eic 'requires php|platform requirements|does not satisfy that requirement' "$detail_log" || true)"
             echo "script_failure_lines=$(grep -Eic 'script .* returned with error|post-autoload-dump|post-update-cmd|could not open input file' "$detail_log" || true)"
             echo "memory_failure_lines=$(grep -Eic 'allowed memory size|out of memory|memory exhausted' "$detail_log" || true)"
-            grep -E '^deploy\.stage=(git|composer|migrate|optimize|complete)$' "$detail_log" || true
+            grep -E '^deploy\.stage=(git|composer|package-discover|migrate|optimize|complete)$' "$detail_log" || true
             echo "safe_deploy_diagnostic_end"
           fi
           if [[ "$TASK" == "verify-commercial-pdf" ]]; then
