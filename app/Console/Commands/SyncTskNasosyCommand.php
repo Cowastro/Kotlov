@@ -719,9 +719,18 @@ class SyncTskNasosyCommand extends Command
             'updated_at'   => $now,
         ];
 
-        // Prefer updating the existing link for this product (e.g. created by the
-        // aqualider scraper with a different supplier_article) — one row per product.
-        $existing = DB::table('supplier_products')->where('supplier_id', $sid)->where('product_id', $pid)->value('id');
+        // The supplier article is the unique external identity. Prefer its row
+        // before a product-level fallback; otherwise changing an older product
+        // link to an article that already exists can violate the supplier/article
+        // unique index.
+        $existing = DB::table('supplier_products')
+            ->where('supplier_id', $sid)
+            ->where('supplier_article', $r['norm_article'])
+            ->value('id');
+        $existing ??= DB::table('supplier_products')
+            ->where('supplier_id', $sid)
+            ->where('product_id', $pid)
+            ->value('id');
         if ($existing) {
             DB::table('supplier_products')->where('id', $existing)->update($payload);
             return;
