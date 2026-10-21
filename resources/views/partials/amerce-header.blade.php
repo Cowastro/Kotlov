@@ -368,7 +368,7 @@
 
             <div class="col-center">
                 <form action="/search" method="get" class="form_search-product style-2 radius-8" autocomplete="off">
-                    <label for="header-search-input" class="quick-search-label">Быстрый поиск</label>
+                    <label for="header-search-input" class="quick-search-label">Умный поиск</label>
                     <span class="br-line type-vertical"></span>
                     <fieldset class="fieldset-search" style="position:relative;flex:1;">
                         <input class="ipt" type="text" name="q" id="header-search-input"
