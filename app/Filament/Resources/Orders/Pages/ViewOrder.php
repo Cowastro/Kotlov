@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
 use App\Models\Order;
 use App\Models\OrderAccountingRequest;
 use App\Models\OrderItem;
@@ -430,6 +431,8 @@ class ViewOrder extends ViewRecord
                             ->send();
                     }
                 }),
+            FindOrderItemAnalogAction::make()
+                ->extraAttributes(['class' => 'order-view-action order-view-action--primary']),
             ActionGroup::make([
                 Action::make('confirmFulfillment')
                 ->label('Подтвердить исполнение')
@@ -827,9 +830,15 @@ class ViewOrder extends ViewRecord
                         ->title('Заказ закрыт и перемещён в архив')
                         ->send();
                 }),
+            EditAction::make('correctOrder')
+                ->label('Корректировать заказ')
+                ->icon('heroicon-o-pencil-square')
+                ->visible(fn (): bool => in_array($this->record->status, ['new', 'checking'], true))
+                ->extraAttributes(['class' => 'order-view-action order-view-action--edit']),
             EditAction::make()
                 ->label('Редактировать заказ')
                 ->icon('heroicon-o-pencil-square')
+                ->visible(fn (): bool => ! in_array($this->record->status, ['new', 'checking'], true))
                 ->extraAttributes(['class' => 'order-view-action order-view-action--edit']),
             ])
                 ->label('Управление')

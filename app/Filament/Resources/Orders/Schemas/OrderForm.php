@@ -77,7 +77,7 @@ class OrderForm
                     ]),
 
                 Section::make('Состав заказа')
-                    ->description('Чтобы заменить товар, удалите старую строку и добавьте новую. Название, артикул и текущая цена подставятся из каталога, но их можно уточнить вручную.')
+                    ->description('Аналог: выберите другой товар в существующей строке. Добавление: нажмите «Добавить позицию». Удаление: нажмите значок корзины у ненужной строки. После корректировки сохраните заказ и заново подтвердите изменённые позиции.')
                     ->icon('heroicon-o-shopping-cart')
                     ->columnSpanFull()
                     ->schema([
@@ -161,7 +161,6 @@ class OrderForm
                                         ->all())
                                     ->searchable()
                                     ->preload()
-                                    ->required()
                                     ->live()
                                     ->afterStateHydrated(function ($state, ?OrderItem $record, callable $set): void {
                                         if (filled($state) || ! $record?->product) {
@@ -184,7 +183,7 @@ class OrderForm
                                             ? 'own_stock'
                                             : 'supplier_purchase');
                                     })
-                                    ->helperText('Подставляется автоматически по карточке товара. При необходимости выберите другого поставщика.')
+                                    ->helperText('Если поставщик уже понятен, выберите его сейчас. Окончательно способ исполнения и поставщик фиксируются при подтверждении позиции.')
                                     ->columnSpanFull(),
                                 Hidden::make('fulfillment_supplier_name'),
                                 Hidden::make('fulfillment_supplier_contact'),

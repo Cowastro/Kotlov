@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Tables;
 
 use App\Filament\Exports\OrderExporter;
+use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
 use App\Filament\Resources\Orders\Actions\RequestOrderSupplierReserveAction;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Order;
@@ -592,6 +593,7 @@ class OrdersTable
                                 ->send();
                         }
                     }),
+                FindOrderItemAnalogAction::make(),
                 ViewAction::make(),
                 ActionGroup::make([
                     RequestOrderSupplierReserveAction::make(),
@@ -621,7 +623,13 @@ class OrdersTable
                         ->modalHeading('Отметить заявку неактуальной')
                         ->modalDescription('Заказ не удаляется: он перейдёт в статус «Отменён», а причина и автор сохранятся в истории.')
                         ->action(fn (Order $record, array $data) => $record->markIrrelevant($data['reason'])),
-                    EditAction::make(),
+                    EditAction::make('correctOrder')
+                        ->label('Корректировать заказ')
+                        ->icon('heroicon-o-pencil-square')
+                        ->visible(fn (Order $record): bool => in_array($record->status, ['new', 'checking'], true)),
+                    EditAction::make()
+                        ->label('Редактировать заказ')
+                        ->visible(fn (Order $record): bool => ! in_array($record->status, ['new', 'checking'], true)),
                 ]),
             ])
             ->checkIfRecordIsSelectableUsing(fn (Order $record): bool => $record->status === 'new'

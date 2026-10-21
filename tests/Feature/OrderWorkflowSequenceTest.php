@@ -90,15 +90,28 @@ class OrderWorkflowSequenceTest extends TestCase
         $new = $this->order('new');
         $checking = $this->order('checking');
         $processing = $this->order('processing');
+        OrderItem::query()->create([
+            'order_id' => $new->id,
+            'product_name' => 'Товар без поставщика',
+            'price' => 100,
+            'quantity' => 1,
+            'total' => 100,
+        ]);
 
         $this->actingAs($manager);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         Livewire::test(ListOrders::class)
             ->assertTableActionHasLabel('advanceWorkflow', 'Проверить наличие', $new)
+            ->assertTableActionHasLabel('correctOrder', 'Корректировать заказ', $new)
+            ->assertTableActionVisible('correctOrder', $new)
+            ->assertTableActionVisible('findAnalog', $new)
             ->assertTableActionHasLabel('advanceWorkflow', 'Подтвердить наличие', $checking)
             ->assertTableActionDisabled('advanceWorkflow', $checking)
+            ->assertTableActionVisible('correctOrder', $checking)
             ->assertTableActionHasLabel('advanceWorkflow', 'Передать в доставку', $processing)
+            ->assertTableActionHidden('correctOrder', $processing)
+            ->assertTableActionHidden('findAnalog', $processing)
             ->assertTableActionDoesNotExist('confirmed', record: $new)
             ->assertTableActionDoesNotExist('confirmAvailability', record: $new)
             ->assertTableActionDoesNotExist('processing', record: $new)

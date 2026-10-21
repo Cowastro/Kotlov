@@ -339,6 +339,8 @@ class OrderSupplyRoutingTest extends TestCase
 
         foreach ([
             'advanceWorkflow' => 'order-view-action--primary',
+            'findAnalog' => 'order-view-action--primary',
+            'correctOrder' => 'order-view-action--edit',
             'confirmFulfillment' => 'order-view-action--primary',
             'confirmSettlement' => 'order-view-action--primary',
             'closeAsIrrelevant' => 'order-view-action--danger',
