@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -215,6 +216,25 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
 
             Cache::forget('home:data');
             Cache::forget('home:data:v4');
+        }
+
+        foreach (['metabel' => $metaBrand, 'tsar' => $tsarBrand] as $key => $brand) {
+            $products = $brand
+                ? Product::query()
+                    ->where('brand_id', $brand->id)
+                    ->where('is_active', true)
+                    ->where('is_archived', false)
+                    ->with([
+                        'supplierProducts.supplier.latestChannelTransition',
+                        'integrationProducts.source.supplier',
+                        'purchasePriceSources.supplier',
+                    ])
+                    ->get()
+                : collect();
+            $metrics[$key.'_active_products'] = $products->count();
+            $metrics[$key.'_operational_products'] = $products->filter(
+                fn (Product $product): bool => $product->hasAssignedSupplier()
+            )->count();
         }
 
         $this->line('metric.status='.($apply ? 'applied' : 'dry_run'));
