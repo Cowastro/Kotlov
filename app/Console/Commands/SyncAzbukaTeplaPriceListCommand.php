@@ -62,6 +62,7 @@ class SyncAzbukaTeplaPriceListCommand extends Command
                     'descriptions_filled' => 0,
                     'specs_filled' => 0,
                     'unblocked' => 0,
+                    'duplicates_archived' => 0,
                     'stock_to_confirm' => 0,
                 ];
                 $touched = [];
@@ -82,6 +83,25 @@ class SyncAzbukaTeplaPriceListCommand extends Command
                     }
                     if (! $product) {
                         continue;
+                    }
+
+                    $previousLink = SupplierProduct::query()
+                        ->where('supplier_id', $supplier->id)
+                        ->where('supplier_article_normalized', $row['article_key'])
+                        ->first();
+                    if ($previousLink?->product_id && (int) $previousLink->product_id !== (int) $product->id) {
+                        $duplicate = Product::query()->find($previousLink->product_id);
+                        if ($duplicate
+                            && (int) $duplicate->supplier_id === (int) $supplier->id
+                            && Str::startsWith((string) $duplicate->sku, 'KOTLOV-')
+                            && $duplicate->name === $this->productName($row)) {
+                            $duplicate->forceFill([
+                                'is_active' => false,
+                                'is_archived' => true,
+                                'requires_price_confirmation' => true,
+                            ])->save();
+                            $stats['duplicates_archived']++;
+                        }
                     }
 
                     $wasBlocked = ! $product->is_active || $product->is_archived || $product->requires_price_confirmation;
@@ -181,7 +201,7 @@ class SyncAzbukaTeplaPriceListCommand extends Command
     private function classify(array $rows, AzbukaTeplaPriceList $parser, ?Supplier $supplier): array
     {
         $products = Product::query()->with('brand:id,name')->get([
-            'id', 'brand_id', 'name', 'sku', 'specs', 'is_archived', 'requires_price_confirmation', 'price',
+            'id', 'brand_id', 'supplier_id', 'name', 'sku', 'specs', 'is_archived', 'requires_price_confirmation', 'price',
         ]);
         $existing = $supplier
             ? $supplier->supplierProducts()->whereNotNull('product_id')->get()->keyBy('supplier_article_normalized')
@@ -195,7 +215,14 @@ class SyncAzbukaTeplaPriceListCommand extends Command
         foreach ($rows as &$row) {
             $ids = [];
             $reason = 'unmatched';
-            if ($link = $existing->get($row['article_key'])) {
+            $familyMatches = $this->knownFamilyMatches($products, $row, $parser, $supplier);
+            if (count($familyMatches) === 1) {
+                $ids = $familyMatches;
+                $reason = 'exact_brand_family_model';
+            } elseif (count($familyMatches) > 1) {
+                $ids = $familyMatches;
+                $reason = 'ambiguous';
+            } elseif ($link = $existing->get($row['article_key'])) {
                 $ids = [(int) $link->product_id];
                 $reason = 'existing_supplier_link';
             } else {
@@ -234,6 +261,40 @@ class SyncAzbukaTeplaPriceListCommand extends Command
         unset($row);
 
         return $rows;
+    }
+
+    /** @return array<int,int> */
+    private function knownFamilyMatches($products, array $row, AzbukaTeplaPriceList $parser, ?Supplier $supplier): array
+    {
+        if ($parser->key($row['brand']) !== 'protherm'
+            || ! preg_match('/^(\d+)\s*скат$/ui', trim((string) $row['model']), $match)) {
+            return [];
+        }
+
+        $power = preg_quote($match[1], '/');
+        $matches = $products->filter(function (Product $product) use ($parser, $power): bool {
+            if ($parser->key($product->brand?->name) !== 'protherm') {
+                return false;
+            }
+            $haystack = mb_strtolower($product->name.' '.json_encode($product->specs, JSON_UNESCAPED_UNICODE));
+            if (! str_contains($haystack, 'скат') && ! str_contains($haystack, 'ray')) {
+                return false;
+            }
+
+            return (bool) preg_match(
+                '/(?:скат|ray)[^\d]{0,12}'.$power.'(?!\d)|(?<!\d)'.$power.'[^\d]{0,8}(?:скат|ray)/ui',
+                $haystack
+            );
+        });
+
+        if ($supplier) {
+            $canonical = $matches->filter(fn (Product $product): bool => (int) $product->supplier_id !== (int) $supplier->id);
+            if ($canonical->isNotEmpty()) {
+                $matches = $canonical;
+            }
+        }
+
+        return $matches->pluck('id')->map(fn ($id): int => (int) $id)->unique()->values()->all();
     }
 
     private function createProduct(array $row, Supplier $supplier): ?Product
@@ -431,6 +492,7 @@ class SyncAzbukaTeplaPriceListCommand extends Command
             'price_pairs' => count($rows),
             'source_review' => $payload['review_rows'],
             'matched_existing' => collect($rows)->whereNotNull('product_id')->count(),
+            'known_family_matches' => $counts->get('exact_brand_family_model', 0),
             'would_create' => collect($rows)->whereNull('product_id')->where('match_reason', 'unmatched')->count(),
             'ambiguous_catalog' => $counts->get('ambiguous', 0),
             'stock_to_confirm' => count($rows),

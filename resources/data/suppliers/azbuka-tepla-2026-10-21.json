@@ -5,8 +5,8 @@
   "retail_source_url": "https://docs.google.com/spreadsheets/d/1dXDdXhq26L9WtWxjac5kyzpKZXu0RjlQAQntHtWCS_k/edit?gid=2045946143#gid=2045946143",
   "partner_source_file": "Азбука Тепла с 20 октября 2026.xlsm",
   "retail_rows": 260,
-  "matched_rows": 219,
-  "review_rows": 41,
+  "matched_rows": 220,
+  "review_rows": 40,
   "rows": [
     {
       "source_row": 2,
@@ -439,6 +439,22 @@
       "partner_description": "Электрический котел 2-12кВт (2 ТЭНов по 6 кВт), 5 лет гарантии",
       "partner_sheet": "Protherm",
       "partner_row": 29
+    },
+    {
+      "source_row": 31,
+      "brand": "Protherm",
+      "description": "котел электрический",
+      "model": "14 Скат",
+      "rrp_eur": null,
+      "retail_byn": 3550,
+      "purchase_byn": 2911,
+      "partner_wholesale_byn": 3017.5,
+      "partner_retail_byn": 3550,
+      "partner_name": "RAY 14 KE/14  Настенный электрический котел, Protherm",
+      "partner_model": "14КE Скат (RAY) c Wilo Para",
+      "partner_description": "Электрический котел 2,3-14кВт (2 ТЭНов по 7 кВт), 5 лет гарантии",
+      "partner_sheet": "Protherm",
+      "partner_row": 30
     },
     {
       "source_row": 32,
@@ -3514,15 +3530,6 @@
     }
   ],
   "review": [
-    {
-      "source_row": 31,
-      "brand": "Protherm",
-      "description": "котел электрический",
-      "model": "14 Скат",
-      "rrp_eur": null,
-      "retail_byn": 3550,
-      "reason": "ambiguous_partner_match"
-    },
     {
       "source_row": 169,
       "brand": "Maincor",

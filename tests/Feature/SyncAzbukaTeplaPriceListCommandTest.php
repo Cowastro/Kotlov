@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -115,6 +116,87 @@ class SyncAzbukaTeplaPriceListCommandTest extends TestCase
             'price_byn' => 108.68,
             'stock_text' => 'Уточнить наличие',
         ]);
+    }
+
+    public function test_it_relinks_protherm_skat_to_the_existing_card_and_archives_import_duplicate(): void
+    {
+        $category = Category::query()->create(['name' => 'Электрические котлы', 'slug' => 'elektricheskie']);
+        $brand = Brand::query()->create(['name' => 'Protherm', 'slug' => 'protherm']);
+        $supplier = Supplier::query()->create([
+            'code' => 'azbuka-tepla',
+            'name' => 'Азбука Тепла',
+            'is_active' => true,
+        ]);
+        $canonical = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Электрический котел Protherm Скат 14К (Ray)',
+            'slug' => 'protherm-skat-14k-ray',
+            'sku' => 'PROTHERM-SKAT-14',
+            'price' => 1,
+            'is_active' => true,
+            'is_archived' => false,
+            'requires_price_confirmation' => true,
+        ]);
+        foreach ([12, 18] as $power) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'brand_id' => $brand->id,
+                'name' => "Электрический котел Protherm Скат {$power}К (Ray)",
+                'slug' => "protherm-skat-{$power}k-ray",
+                'sku' => "PROTHERM-SKAT-{$power}",
+                'price' => 1,
+                'is_active' => true,
+                'is_archived' => false,
+                'requires_price_confirmation' => true,
+            ]);
+        }
+        $duplicate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'supplier_id' => $supplier->id,
+            'name' => 'Электрический котел Protherm 14 Скат',
+            'slug' => 'elektricheskiy-kotel-protherm-14-skat',
+            'sku' => 'KOTLOV-099999',
+            'price' => 3550,
+            'is_active' => true,
+            'is_archived' => false,
+            'requires_price_confirmation' => false,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $duplicate->id,
+            'product_sku' => $duplicate->sku,
+            'supplier_article' => 'Protherm 14 Скат',
+            'supplier_article_normalized' => 'protherm14ckat',
+            'match_status' => 'matched',
+        ]);
+
+        $path = $this->snapshot([[
+            'source_row' => 31,
+            'brand' => 'Protherm',
+            'description' => 'котел электрический',
+            'model' => '14 Скат',
+            'retail_byn' => 3550,
+            'purchase_byn' => 2911,
+            'partner_name' => 'RAY 14 KE/14 Настенный электрический котел, Protherm',
+            'partner_description' => 'Электрический котел 2,3-14 кВт',
+        ]]);
+
+        $this->artisan('supplier:sync-azbuka-tepla', ['file' => $path, '--apply' => true])
+            ->expectsOutputToContain('metric.azbuka_tepla.duplicates_archived=1')
+            ->assertSuccessful();
+
+        $this->assertDatabaseHas('supplier_products', [
+            'supplier_id' => $supplier->id,
+            'product_id' => $canonical->id,
+            'supplier_article_normalized' => 'protherm14ckat',
+            'price_byn' => 2911,
+        ]);
+        $this->assertSame(3550.0, (float) $canonical->fresh()->price);
+        $this->assertFalse($canonical->fresh()->requires_price_confirmation);
+        $this->assertFalse($duplicate->fresh()->is_active);
+        $this->assertTrue($duplicate->fresh()->is_archived);
     }
 
     /** @param array<int,array<string,mixed>> $rows */

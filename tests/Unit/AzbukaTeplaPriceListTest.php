@@ -14,11 +14,16 @@ class AzbukaTeplaPriceListTest extends TestCase
         );
 
         $this->assertSame(260, $payload['retail_rows']);
-        $this->assertSame(219, $payload['matched_rows']);
-        $this->assertSame(41, $payload['review_rows']);
-        $this->assertCount(219, $payload['rows']);
-        $this->assertCount(41, $payload['review']);
-        $this->assertCount(219, array_unique(array_column($payload['rows'], 'article_key')));
+        $this->assertSame(220, $payload['matched_rows']);
+        $this->assertSame(40, $payload['review_rows']);
+        $this->assertCount(220, $payload['rows']);
+        $this->assertCount(40, $payload['review']);
+        $this->assertCount(220, array_unique(array_column($payload['rows'], 'article_key')));
+
+        $skat14 = collect($payload['rows'])->firstWhere('article_key', 'protherm14ckat');
+        $this->assertNotNull($skat14);
+        $this->assertSame(3550.0, $skat14['retail_byn']);
+        $this->assertSame(2911.0, $skat14['purchase_byn']);
 
         foreach ($payload['rows'] as $row) {
             $this->assertGreaterThan(0, $row['purchase_byn']);
