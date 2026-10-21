@@ -879,6 +879,7 @@ class CatalogController extends Controller
         $definitions = [
             [
                 'title' => 'Газовое оборудование и безопасность',
+                'icon' => 'icon-ShieldCheck',
                 'description' => 'Счётчики газа, контроль загазованности, газовые шланги и регуляторы давления.',
                 'slugs' => [
                     'schetchiki-gaza',
@@ -889,6 +890,7 @@ class CatalogController extends Controller
             ],
             [
                 'title' => 'Обвязка котельной и арматура',
+                'icon' => 'icon-GitDiff',
                 'description' => 'Гидравлическая обвязка, распределение теплоносителя, защитная, радиаторная и смесительная арматура.',
                 'slugs' => [
                     'gidravlicheskie-razdeliteli-i-kollektory',
@@ -904,6 +906,7 @@ class CatalogController extends Controller
             ],
             [
                 'title' => 'Автоматика, питание и контроль',
+                'icon' => 'icon-Devices',
                 'description' => 'Управление отоплением, датчики и оборудование для стабильного электропитания.',
                 'slugs' => [
                     'regulyatory',
@@ -915,6 +918,7 @@ class CatalogController extends Controller
             ],
             [
                 'title' => 'Баки, теплоносители и фильтрация',
+                'icon' => 'icon-Package',
                 'description' => 'Мембранные баки, жидкости для систем отопления и фильтры.',
                 'slugs' => [
                     'membrannye-baki',
@@ -924,6 +928,7 @@ class CatalogController extends Controller
             ],
             [
                 'title' => 'Монтаж и подключение',
+                'icon' => 'icon-PuzzlePiece',
                 'description' => 'Готовые комплекты, подводка, воздуховоды и инструмент для монтажа.',
                 'slugs' => [
                     'komplekty-podklyucheniya',
@@ -935,6 +940,7 @@ class CatalogController extends Controller
             ],
             [
                 'title' => 'Нагрев и солнечные системы',
+                'icon' => 'icon-Sparkle',
                 'description' => 'Электрические ТЭНы и оборудование для использования солнечной энергии.',
                 'slugs' => [
                     'elektricheskie-teny-dlya-otopleniya',
@@ -969,6 +975,7 @@ class CatalogController extends Controller
 
             return [
                 'title' => $group['title'],
+                'icon' => $group['icon'],
                 'description' => $group['description'],
                 'items' => $items,
             ];

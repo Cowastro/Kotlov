@@ -35,6 +35,10 @@ class HeatingAccessoriesNavigationGroupsTest extends TestCase
             ->assertSee('Баки, теплоносители и фильтрация')
             ->assertSee('Монтаж и подключение')
             ->assertSee('Нагрев и солнечные системы')
+            ->assertSee('Быстрый выбор комплектующих')
+            ->assertSee('id="accessories-nav-search"', false)
+            ->assertSee('data-accessories-group', false)
+            ->assertSee('data-accessories-item', false)
             ->assertSee('href="/schetchiki-gaza"', false)
             ->assertSee('href="/gidravlicheskie-razdeliteli-i-kollektory"', false);
     }
