@@ -32,7 +32,7 @@
                         <fieldset style="position:relative;flex:1;">
                             <input type="text" name="q" id="searchpage-search-input"
                                 value="{{ $q }}"
-                                placeholder="{{ auth()->user()?->is_active && auth()->user()?->isManager() ? 'Название, артикул или поставщик...' : 'Котёл, печь, камин, дымоход...' }}"
+                                placeholder="Товар, артикул или категория"
                                 autofocus required autocomplete="off">
                             <div id="searchpage-search-suggest" class="search-suggest-dropdown"></div>
                         </fieldset>
@@ -42,7 +42,7 @@
                     </form>
                     <p class="text-caption-01 cl-text-3 mb-10">
                         @if (auth()->user()?->is_active && auth()->user()?->isManager())
-                            Поиск также работает по артикулу, названию товара и имени поставщика.
+                            Поиск работает по названию товара, артикулу и категории.
                         @else
                             Можно вводить бренды русскими или латиницей, например Fenix или Феникс.
                         @endif

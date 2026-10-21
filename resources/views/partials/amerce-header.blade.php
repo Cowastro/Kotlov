@@ -372,7 +372,7 @@
                     <span class="br-line type-vertical"></span>
                     <fieldset class="fieldset-search" style="position:relative;flex:1;">
                         <input class="ipt" type="text" name="q" id="header-search-input"
-                            placeholder="{{ auth()->user()?->is_active && auth()->user()?->isManager() ? 'Товар, артикул или поставщик' : 'Поиск по каталогу' }}" autocomplete="off">
+                            placeholder="Товар, артикул или категория" autocomplete="off">
                         <button type="submit" class="btn-action">
                             <i class="icon icon-MagnifyingGlass"></i>
                         </button>
