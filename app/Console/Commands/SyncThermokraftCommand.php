@@ -212,7 +212,13 @@ class SyncThermokraftCommand extends Command
         $products = Product::query()->where('is_archived', false)->with('brand:id,name')->get(['id', 'sku', 'name', 'slug', 'brand_id']);
         $bySku = [];
         $byName = [];
+        $byModel = [];
+        $linkedElsewhere = $links->pluck('supplier_article_normalized', 'product_id');
         foreach ($products as $product) {
+            $modelKey = $this->modelKey($product->name);
+            if ($modelKey !== '') {
+                $byModel[$this->brandKey(($product->brand?->name ?? '').' '.$product->name)][$modelKey][] = $product;
+            }
             $bySku[$this->key((string) $product->sku)][] = $product;
             $byName[$this->nameKey(($product->brand?->name ?? '').' '.$product->name)][] = $product;
             $byName[$this->nameKey($product->name)][] = $product;
@@ -248,6 +254,21 @@ class SyncThermokraftCommand extends Command
                 if ($productId === 0 && $key !== '' && $candidates->count() === 1) {
                     $productId = (int) $candidates->first()->id;
                     $reason = 'exact_name';
+                }
+            }
+            if ($productId === 0 && ($modelKey = $this->modelKey($row['name'])) !== '') {
+                // Same brand, same series/power/voltage/model code: link only a unique, unclaimed card.
+                $candidates = collect($byModel[$this->brandKey($row['brand'].' '.$row['name'])][$modelKey] ?? [])
+                    ->unique('id')
+                    ->reject(fn (Product $product): bool => isset($linkedElsewhere[$product->id])
+                        && $linkedElsewhere[$product->id] !== $row['article_key'])
+                    ->values();
+                if ($candidates->count() === 1) {
+                    $productId = (int) $candidates->first()->id;
+                    $reason = 'model_key';
+                } elseif ($candidates->count() > 1) {
+                    $reason = 'ambiguous_model';
+                    $counts['ambiguous'] = ($counts['ambiguous'] ?? 0) + 1;
                 }
             }
             $row['product_id'] = $productId ?: null;
@@ -525,6 +546,61 @@ class SyncThermokraftCommand extends Command
         $value = preg_replace('/\b(univat|tenko|стэн|sten|regler\s*pro)\b/u', ' ', $value) ?? $value;
 
         return trim(preg_replace('/[^a-zа-я0-9]+/u', ' ', $value) ?? '');
+    }
+
+    /** Brand family of a sheet row or a catalogue card. */
+    private function brandKey(string $text): string
+    {
+        $text = mb_strtolower(str_replace('ё', 'е', $text));
+
+        return match (true) {
+            str_contains($text, 'univat') => 'univat',
+            str_contains($text, 'tenko') || str_contains($text, 'тенко') => 'tenko',
+            str_contains($text, 'стэн') || preg_match('/sten/u', $text) === 1 || str_contains($text, 'каракан') => 'sten',
+            str_contains($text, 'с-тэнк') || str_contains($text, 's-tank') || str_contains($text, 's tank') => 's-tank',
+            str_contains($text, 'regler') => 'regler',
+            default => preg_replace('/[^a-zа-я0-9]+/u', '', explode(' ', trim($text))[0] ?? '') ?? '',
+        };
+    }
+
+    /**
+     * Series, power, voltage and model code without marketing words, so that
+     * «Котел Tenko Економ 4,5_220» and «Электрический котел Tenko ЭКОНОМ (КЕ)
+     * 4,5 кВт 220В» get the same key. Returns '' when no number is present.
+     */
+    private function modelKey(string $name): string
+    {
+        $text = mb_strtolower(str_replace(['ё', 'Ё'], 'е', $name));
+        // Latin look-alikes inside Cyrillic words («Cтандарт»).
+        $text = preg_replace_callback('/\S+/u', function (array $m): string {
+            return preg_match('/\p{Cyrillic}/u', $m[0]) === 1
+                ? strtr($m[0], ['a' => 'а', 'c' => 'с', 'e' => 'е', 'o' => 'о', 'p' => 'р', 'x' => 'х', 'k' => 'к', 'm' => 'м', 't' => 'т', 'h' => 'н', 'b' => 'в', 'y' => 'у'])
+                : $m[0];
+        }, $text) ?? $text;
+        $text = str_replace(['економ', 'плюс'], ['эконом', 'plus'], $text);
+        $text = preg_replace('/(\d),(\d)/u', '$1.$2', $text) ?? $text;
+        $text = preg_replace('/(\d)(квт|в)(?!\p{L})/u', '$1 $2', $text) ?? $text;
+        $text = preg_replace('/[«»"“”()\[\],;:+_\/\-–]+/u', ' ', $text) ?? $text;
+        $stop = ['котел', 'электрический', 'электрокотел', 'твердотопливный', 'квт', 'в', 'с', 'со', 'и', 'для', 'насосом',
+            'grundfos', 'расширительным', 'баком', 'ке', 'кем', 'нке', 'univat', 'tenko', 'стэн', 'sten', 'regler',
+            'двухконтурный', 'терракот', 'с-тэнк', 's', 'tank'];
+        $tokens = [];
+        foreach (preg_split('/\s+/u', trim($text)) ?: [] as $token) {
+            if ($token === '' || in_array($token, $stop, true)) {
+                continue;
+            }
+            if (preg_match('/^\d+(?:\.\d+)?$/', $token) === 1) {
+                $token = rtrim(rtrim($token, '0'), '.') === '' ? $token : (str_contains($token, '.') ? rtrim(rtrim($token, '0'), '.') : $token);
+            }
+            $tokens[$token] = true;
+        }
+        if (! preg_grep('/\d/', array_keys($tokens))) {
+            return '';
+        }
+        $keys = array_keys($tokens);
+        sort($keys, SORT_STRING);
+
+        return implode(' ', $keys);
     }
 
     private function shortHash(string $value): string
