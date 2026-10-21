@@ -75,7 +75,21 @@
 
     .orders-workspace .fi-ta-text:not(.fi-inline),
     .orders-workspace .fi-ta-icon {
-        padding: 0.75rem 0.625rem;
+        padding: 0.6rem 0.5rem;
+    }
+
+    .orders-workspace .fi-ta-actions {
+        gap: 0.25rem;
+        white-space: nowrap;
+    }
+
+    .orders-workspace .fi-ta-actions .fi-btn {
+        padding-inline: 0.55rem;
+    }
+
+    .orders-workspace .fi-ta-cell-responsible .fi-ta-text-item-label,
+    .orders-workspace .fi-ta-cell-management-attention .fi-ta-text-item-label {
+        line-height: 1.1rem;
     }
 
     .orders-workspace .fi-ta-cell-onec-sync-state,

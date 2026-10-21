@@ -362,17 +362,14 @@ class OrdersTable
                     ])
                     ->size(IconSize::Large)
                     ->alignCenter()
-                    ->width('56px'),
+                    ->width('56px')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('management_attention')
                     ->label('Контроль')
-                    ->state(fn (Order $record): string => self::attentionLabel($record))
-                    ->description(fn (Order $record): string => $record->managementSummary()['problem_count'] > 0
-                        ? 'Откройте заказ и устраните указанные причины'
-                        : 'Критичных сигналов нет')
-                    ->tooltip(fn (Order $record): string => $record->managementSummary()['problems']
-                        ->pluck('label')
-                        ->implode("\n") ?: 'Критичных сигналов нет')
+                    ->state(fn (Order $record): string => self::compactAttentionLabel($record))
+                    ->description(fn (Order $record): string => '1С · '.$record->onecSyncLabel())
+                    ->tooltip(fn (Order $record): string => self::attentionTooltip($record))
                     ->badge()
                     ->color(fn (Order $record): string => match ($record->managementSummary()['severity']) {
                         'critical' => 'danger',
@@ -384,7 +381,7 @@ class OrdersTable
                         'warning' => 'heroicon-o-eye',
                         default => 'heroicon-o-check-circle',
                     })
-                    ->width('220px')
+                    ->width('140px')
                     ->grow(false)
                     ->wrap(),
 
@@ -408,21 +405,22 @@ class OrdersTable
                             $parts[] = 'Без маршрута: '.$summary['unresolved_count'];
                         }
 
-                        $status = $parts !== [] ? implode(' · ', $parts) : null;
+                        $parts[] = 'Резерв: '.self::supplierReserveStatus($record);
+                        $status = implode(' · ', $parts);
                         $contacts = self::orderSupplierContacts($record);
 
                         if ($contacts && $status) {
                             return new HtmlString($contacts.'<br><span class="text-gray-500">'.e($status).'</span>');
                         }
 
-                        return $contacts ? new HtmlString($contacts) : ($status ?? '');
+                        return $contacts ? new HtmlString($contacts) : $status;
                     })
                     ->color(fn (Order $record): string => match (true) {
                         $record->supplierOrderRequests->contains('status', 'rejected') => 'danger',
                         $record->supplySummary()['unresolved_count'] > 0 => 'danger',
                         default => 'success',
                     })
-                    ->width('190px')
+                    ->width('170px')
                     ->grow(false)
                     ->wrap(),
 
@@ -435,17 +433,18 @@ class OrdersTable
                     ->icon(fn (Order $record): string => self::supplierReserveIcon($record))
                     ->width('150px')
                     ->grow(false)
-                    ->wrap(),
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('responsible')
-                    ->label('Ответственный')
+                    ->label('Менеджер')
                     ->icon('heroicon-o-user-circle')
                     ->placeholder('—')
-                    ->getStateUsing(fn ($record) => $record->manager
-                        ? $record->manager->name.($record->assigned_to ? ' ('.$record->assigned_to.')' : '')
-                        : ($record->assigned_to ?? null))
-                    ->width('170px')
+                    ->getStateUsing(fn (Order $record): ?string => self::compactResponsible($record))
+                    ->tooltip(fn (Order $record): ?string => self::responsibleName($record))
+                    ->width('110px')
                     ->grow(false)
+                    ->wrap()
                     ->searchable(query: fn (Builder $query, string $search) => $query
                         ->where('assigned_to', 'like', "%{$search}%")
                         ->orWhereHas('manager', fn ($q) => $q->where('name', 'like', "%{$search}%"))),
@@ -467,7 +466,7 @@ class OrdersTable
                         ])->filter()->implode(' '))
                         ->filter()
                         ->implode("\n"))
-                    ->width('250px')
+                    ->width('220px')
                     ->grow(false)
                     ->wrap()
                     ->searchable(query: function (Builder $query, string $search): Builder {
@@ -565,13 +564,15 @@ class OrdersTable
             ])
             ->recordActions([
                 Action::make('advanceWorkflow')
-                    ->label(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['label'] ?? 'Следующий этап')
+                    ->label(fn (Order $record): string => self::compactWorkflowLabel($record))
                     ->icon(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['icon'] ?? 'heroicon-o-arrow-right')
                     ->color(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['color'] ?? 'gray')
                     ->button()
                     ->visible(fn (Order $record): bool => app(OrderWorkflow::class)->step($record) !== null)
                     ->disabled(fn (Order $record): bool => app(OrderWorkflow::class)->blocker($record) !== null)
-                    ->tooltip(fn (Order $record): ?string => app(OrderWorkflow::class)->blocker($record))
+                    ->tooltip(fn (Order $record): ?string => app(OrderWorkflow::class)->blocker($record)
+                        ?? app(OrderWorkflow::class)->step($record)['label']
+                        ?? null)
                     ->requiresConfirmation()
                     ->modalHeading(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['heading'] ?? 'Перейти к следующему этапу?')
                     ->modalDescription(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['description'] ?? '')
@@ -593,8 +594,13 @@ class OrdersTable
                                 ->send();
                         }
                     }),
-                FindOrderItemAnalogAction::make(),
-                ViewAction::make(),
+                FindOrderItemAnalogAction::make()
+                    ->iconButton()
+                    ->tooltip('Подобрать аналог'),
+                ViewAction::make()
+                    ->label('Открыть заказ')
+                    ->iconButton()
+                    ->tooltip('Открыть заказ'),
                 ActionGroup::make([
                     RequestOrderSupplierReserveAction::make(),
                     Action::make('openOrderOnline')
@@ -794,7 +800,7 @@ class OrdersTable
                 .'</details>';
         }
 
-        return '<div style="width:250px;max-width:250px;overflow-wrap:anywhere">'.$html.'</div>';
+        return '<div style="width:220px;max-width:220px;overflow-wrap:anywhere">'.$html.'</div>';
     }
 
     private static function productLinks(OrderItem $item): string
@@ -870,18 +876,73 @@ class OrdersTable
             : rtrim(rtrim(number_format($stock, 3, ',', ' '), '0'), ',');
     }
 
-    private static function attentionLabel(Order $order): string
+    private static function compactAttentionLabel(Order $order): string
     {
         $summary = $order->managementSummary();
-        $labels = $summary['problems']->pluck('label')->filter()->values();
-        if ($labels->isEmpty()) {
-            return 'Готов к работе';
+
+        return $summary['problem_count'] > 0
+            ? 'Проблем: '.$summary['problem_count']
+            : 'Готов';
+    }
+
+    private static function attentionTooltip(Order $order): string
+    {
+        $problems = $order->managementSummary()['problems']
+            ->pluck('label')
+            ->filter()
+            ->implode("\n");
+
+        return collect([
+            $problems ?: 'Критичных сигналов нет',
+            '1С: '.$order->onecSyncLabel(),
+            $order->onecSyncDescription(),
+        ])->filter()->implode("\n");
+    }
+
+    private static function responsibleName(Order $order): ?string
+    {
+        $manager = trim((string) $order->manager?->name);
+        $legacy = trim((string) $order->assigned_to);
+
+        if ($manager === '') {
+            return $legacy !== '' ? $legacy : null;
         }
 
-        $label = $labels->take(2)->implode(' · ');
-        $remaining = $labels->count() - 2;
+        $normalizedLegacy = ltrim($legacy, '@');
+        if ($normalizedLegacy === '' || mb_strtolower($normalizedLegacy) === mb_strtolower($manager)) {
+            return $manager;
+        }
 
-        return $remaining > 0 ? $label.' · ещё '.$remaining : $label;
+        return $manager.' · '.$legacy;
+    }
+
+    private static function compactResponsible(Order $order): ?string
+    {
+        $name = self::responsibleName($order);
+        if (! $name) {
+            return null;
+        }
+
+        $primary = trim(explode('·', $name, 2)[0]);
+        $parts = preg_split('/\s+/u', $primary, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if (count($parts) < 2) {
+            return mb_strimwidth($primary, 0, 16, '…');
+        }
+
+        return $parts[0].' '.mb_substr($parts[1], 0, 1).'.';
+    }
+
+    private static function compactWorkflowLabel(Order $order): string
+    {
+        return match ($order->status) {
+            'new' => 'Проверить',
+            'checking' => 'Подтвердить',
+            'confirmed' => 'В работу',
+            'processing' => 'В доставку',
+            'shipped' => 'Доставлен',
+            default => app(OrderWorkflow::class)->step($order)['label'] ?? 'Далее',
+        };
     }
 
     private static function orderSupplierContacts(Order $order): ?string

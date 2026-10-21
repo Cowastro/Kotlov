@@ -102,14 +102,14 @@ class OrderWorkflowSequenceTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         Livewire::test(ListOrders::class)
-            ->assertTableActionHasLabel('advanceWorkflow', 'Проверить наличие', $new)
+            ->assertTableActionHasLabel('advanceWorkflow', 'Проверить', $new)
             ->assertTableActionHasLabel('correctOrder', 'Корректировать заказ', $new)
             ->assertTableActionVisible('correctOrder', $new)
             ->assertTableActionVisible('findAnalog', $new)
-            ->assertTableActionHasLabel('advanceWorkflow', 'Подтвердить наличие', $checking)
+            ->assertTableActionHasLabel('advanceWorkflow', 'Подтвердить', $checking)
             ->assertTableActionDisabled('advanceWorkflow', $checking)
             ->assertTableActionVisible('correctOrder', $checking)
-            ->assertTableActionHasLabel('advanceWorkflow', 'Передать в доставку', $processing)
+            ->assertTableActionHasLabel('advanceWorkflow', 'В доставку', $processing)
             ->assertTableActionHidden('correctOrder', $processing)
             ->assertTableActionHidden('findAnalog', $processing)
             ->assertTableActionDoesNotExist('confirmed', record: $new)
