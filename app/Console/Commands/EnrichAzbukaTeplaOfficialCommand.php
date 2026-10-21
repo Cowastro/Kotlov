@@ -14,6 +14,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
         {--apply : Write images, characteristics and content}
         {--brand= : Process one brand}
         {--all-linked : Include older linked products; default is products created today}
+        {--force : Re-enrich cards that already have local images and at least three characteristics}
         {--limit=0 : Maximum products, 0 means all}
         {--sleep=500 : Delay between source requests in milliseconds}';
 
@@ -31,7 +32,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             ->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')
             ->where('s.code', 'azbuka-tepla')
             ->where('p.is_archived', false)
-            ->select(['sp.id as supplier_product_id', 'sp.raw', 'p.id', 'p.name', 'p.images', 'p.content', 'b.name as brand'])
+            ->select(['sp.id as supplier_product_id', 'sp.raw', 'p.id', 'p.name', 'p.images', 'p.specs', 'p.content', 'b.name as brand'])
             ->orderBy('p.id');
 
         if (! $this->option('all-linked')) {
@@ -47,6 +48,10 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
         $stats = ['scanned' => 0, 'mapped' => 0, 'enriched' => 0, 'images' => 0, 'specs' => 0, 'unmapped' => 0, 'errors' => 0];
 
         foreach ($query->get()->unique('id') as $row) {
+            if (! $this->option('force') && $this->hasCompleteSourceData($row->images, $row->specs)) {
+                continue;
+            }
+
             $stats['scanned']++;
             $raw = $this->decodeRaw($row->raw);
             $model = trim((string) ($raw['model'] ?? $raw['partner_model'] ?? ''));
@@ -79,7 +84,9 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
                     'require_images_for_ai' => true,
                 ]);
 
-                $stats['images'] += (int) ($result['images_saved'] ?? $result['images_found'] ?? 0);
+                $stats['images'] += (int) ($apply
+                    ? ($result['images_saved'] ?? 0)
+                    : ($result['images_found'] ?? 0));
                 $stats['specs'] += (int) ($result['specs_found'] ?? 0);
                 if ($apply && ($result['updated_fields'] ?? []) !== []) {
                     DB::table('supplier_products')->where('id', (int) $row->supplier_product_id)->update([
@@ -161,5 +168,11 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
         $decoded = json_decode((string) $raw, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    private function hasCompleteSourceData(mixed $images, mixed $specs): bool
+    {
+        return count($this->decodeRaw($images)) > 0
+            && count($this->decodeRaw($specs)) >= 3;
     }
 }
