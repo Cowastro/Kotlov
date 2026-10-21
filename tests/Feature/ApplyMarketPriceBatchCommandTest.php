@@ -158,6 +158,8 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
 
     public function test_reviewed_price_corrections_apply_explicit_market_prices_and_release_holds(): void
     {
+        // Observations expire after 168 h: pin the clock to the batch date.
+        CarbonImmutable::setTestNow('2026-10-18 18:00:00');
         User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $category = Category::query()->create([
             'name' => 'Исправление проверенных цен',
@@ -1318,6 +1320,8 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
 
     public function test_thirty_first_catalog_zero_price_batch_prices_only_models_with_three_independent_offers(): void
     {
+        // Observations expire after 168 h: pin the clock to the batch date.
+        CarbonImmutable::setTestNow('2026-10-14 12:00:00');
         User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $category = Category::query()->create([
             'name' => 'Тест тридцать первого пакета нулевых цен каталога',
@@ -1384,6 +1388,8 @@ class ApplyMarketPriceBatchCommandTest extends TestCase
 
     public function test_thirty_second_catalog_zero_price_batch_prices_only_three_independently_confirmed_models(): void
     {
+        // Observations expire after 168 h: pin the clock to the batch date.
+        CarbonImmutable::setTestNow('2026-10-14 12:00:00');
         User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $category = Category::query()->create([
             'name' => 'Тест тридцать второго пакета нулевых цен каталога',

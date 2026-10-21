@@ -48,10 +48,10 @@ class GasMeterSelectionPageTest extends TestCase
 
         $this->assertStringContainsString('Примерный диапазон расхода', $template);
         $this->assertStringContainsString('До 6 м³/ч — котёл и плита', $template);
-        $this->assertStringContainsString('Примерно подходит по расходу', $template);
+        $this->assertStringContainsString('Предварительный вариант.', $template);
         $this->assertStringContainsString('Показываем ближайшие модели по расходу', $template);
         $this->assertStringContainsString('СГМН-1-1-1-G4', $template);
-        $this->assertStringContainsString('Популярный G4 · левый · L=250', $template);
+        $this->assertStringContainsString('Популярный G4 · под заказ', $template);
     }
 
     public function test_selector_explains_thermal_compensation_and_contains_all_g4_executions(): void
@@ -75,7 +75,8 @@ class GasMeterSelectionPageTest extends TestCase
         $response->assertOk()
             ->assertSeeText('всю линейку из прямого прайса БелОМО')
             ->assertSeeText('До 16 м³/ч — повышенный расход по проекту')
-            ->assertSeeText('Нужен класс выше G10 — требуется инженерный подбор.')
+            // JS string: assertSeeText would strip it after the script's "<=" comparison.
+            ->assertSee('Нужен класс выше G10 — требуется инженерный подбор.', false)
             ->assertSee('8349.00.00.000-17', false)
             ->assertSee('Запросить цену и срок', false)
             ->assertSee('btn-product-availability-request', false);

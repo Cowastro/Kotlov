@@ -25,6 +25,8 @@ class ConfirmedPurchasePriceSourceTest extends TestCase
 
     public function test_supplier_invoice_becomes_the_purchase_price_source_for_margin_and_readiness(): void
     {
+        // The invoice below is valid 15–20.10.2026: pin the clock inside that window.
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-16 12:00:00'));
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $product = $this->product(['requires_price_confirmation' => true]);
         $counterparty = CrmCounterparty::query()->create([

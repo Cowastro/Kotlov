@@ -124,7 +124,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'slug' => 'mono-pipes',
             'parent_id' => 0,
         ]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $brand = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         $template = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -284,7 +284,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'update_stock' => true,
         ]);
         $category = Category::query()->create(['name' => 'Крепления и монтаж', 'slug' => 'chimney-mounts', 'parent_id' => 0]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $brand = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         $template = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -395,7 +395,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         ]);
         $category = Category::query()->create(['name' => 'Переходы и адаптеры', 'slug' => 'chimney-adapters', 'parent_id' => 0]);
         $ferrum = Brand::query()->create(['name' => 'Ferrum', 'slug' => 'ferrum']);
-        $teplov = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $teplov = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         $template = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $ferrum->id,
@@ -448,7 +448,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
         ]);
         $category = Category::query()->create(['name' => 'Переходы и адаптеры', 'slug' => 'chimney-adapters', 'parent_id' => 0]);
         $ferrum = Brand::query()->create(['name' => 'Ferrum', 'slug' => 'ferrum']);
-        $teplov = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $teplov = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         $template = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $ferrum->id,
@@ -500,7 +500,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'update_stock' => true,
         ]);
         $category = Category::query()->create(['name' => 'Теплосъёмники', 'slug' => 'heat-exchangers', 'parent_id' => 0]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $brand = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         $template = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -566,7 +566,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'update_stock' => true,
         ]);
         $category = Category::query()->create(['name' => 'Крепления и монтаж', 'slug' => 'chimney-mounting', 'parent_id' => 0]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $brand = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         $template = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -628,7 +628,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'update_stock' => true,
         ]);
         $category = Category::query()->create(['name' => 'Зонты и дефлекторы', 'slug' => 'chimney-caps', 'parent_id' => 0]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $brand = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         $template = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -692,7 +692,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'update_stock' => true,
         ]);
         $category = Category::query()->create(['name' => 'Зонты и дефлекторы', 'slug' => 'chimney-caps-120', 'parent_id' => 0]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $brand = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         $template = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -4480,7 +4480,7 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'name' => 'Тройники моно',
             'parent_id' => 0,
         ]);
-        $brand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $brand = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         $wrongCandidate = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -6881,11 +6881,8 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'name' => 'Крепления и монтаж',
             'parent_id' => 0,
         ]);
-        $brand = Brand::query()->create([
-            'name' => 'Теплов и Сухов',
-            'slug' => 'teplov-i-suhov',
-            'country' => 'Россия',
-        ]);
+        $brand = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов',
+            'country' => 'Россия']);
         $product = Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -7626,10 +7623,7 @@ XML;
             'parent_id' => 0,
             'is_active' => true,
         ]);
-        $brand = Brand::query()->create([
-            'name' => 'Теплов и Сухов',
-            'slug' => 'teplov-i-suhov',
-        ]);
+        $brand = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         Product::query()->create([
             'category_id' => $category->id,
             'brand_id' => $brand->id,
@@ -9220,9 +9214,8 @@ XML;
             'is_active' => true,
             'update_stock' => true,
         ]);
-        $category = Category::query()->create([
+        $category = Category::query()->updateOrCreate(['slug' => 'pelletnye-gorelki'], [
             'name' => 'Пеллетные горелки',
-            'slug' => 'pelletnye-gorelki',
             'parent_id' => 0,
         ]);
         $products = collect([
@@ -9242,7 +9235,7 @@ XML;
                 'stock_qty' => 1,
                 'images' => ['img/products/kotlov-xo/ceramic-pro-100.jpg'],
             ],
-        ])->map(fn (array $data): Product => Product::query()->create($data + [
+        ])->map(fn (array $data): Product => Product::query()->updateOrCreate(['slug' => $data['slug']], $data + [
             'category_id' => $category->id,
             'brand_id' => null,
             'short_description' => 'Актуальная карточка распродажи.',
@@ -9394,9 +9387,8 @@ XML;
             'is_active' => true,
             'update_stock' => true,
         ]);
-        $category = Category::query()->create([
+        $category = Category::query()->updateOrCreate(['slug' => 'pelletnye-gorelki'], [
             'name' => 'Пеллетные горелки',
-            'slug' => 'pelletnye-gorelki',
             'parent_id' => 0,
         ]);
         $definitions = [
@@ -9405,7 +9397,7 @@ XML;
             'УТ-00009442' => ['84c4e9c0-f533-11f0-8ad0-1c1b0d1de7c2', 'Горелка пеллетная Потапыч', 'Пеллетная горелка для печи Потапыч', 'pelletnaya-gorelka-dlya-pechi-potapyich', 165],
         ];
         $products = collect($definitions)->mapWithKeys(function (array $row, string $code) use ($category): array {
-            return [$code => Product::query()->create([
+            return [$code => Product::query()->updateOrCreate(['slug' => $row[3]], [
                 'category_id' => $category->id,
                 'sku' => 'TEST-'.$code,
                 'name' => $row[2],

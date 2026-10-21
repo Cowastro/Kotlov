@@ -280,6 +280,7 @@ return new class extends Migration
         return (int) DB::table('brands')->insertGetId([
             'name' => 'Теплов и Сухов',
             'slug' => 'teplov-i-suhov',
+            'country' => 'Россия',
             'is_active' => true,
             'created_at' => $now,
             'updated_at' => $now,

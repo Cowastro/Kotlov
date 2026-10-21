@@ -14,9 +14,14 @@ class EcokaminWarehouseStockImporter
     /** @return array{matched:int,unmatched:int,zeroed:int,unmatched_items:list<array{article:string,name:string}>} */
     public function importPayload(array $payload): array
     {
+        // Two supplier records describe СанБизнесГруп: «ecokamin» owns the
+        // EcoKamin channels, «sanbusinessgroup» the 1C catalogue. Pick the
+        // EcoKamin one first so the warehouse always lands on the same record.
         $supplier = Supplier::query()
             ->whereIn('code', ['ecokamin', 'sanbusinessgroup'])
             ->orWhere('name', 'like', '%СанБизнесГруп%')
+            ->orderByRaw("CASE code WHEN 'ecokamin' THEN 0 WHEN 'sanbusinessgroup' THEN 1 ELSE 2 END")
+            ->orderBy('id')
             ->first();
         $brand = Brand::query()
             ->where('slug', 'ecokamin')
@@ -46,6 +51,12 @@ class EcokaminWarehouseStockImporter
             $warehouseName, $deliveryDays, $asOfDate, $sourceFile,
             &$matchedProductIds, &$unmatched
         ): void {
+            // Earlier runs could pick the duplicate supplier record; keep one row per warehouse.
+            ProductWarehouseStock::query()
+                ->where('warehouse_code', $warehouseCode)
+                ->where('supplier_id', '!=', $supplier->id)
+                ->delete();
+
             foreach ((array) ($payload['items'] ?? []) as $item) {
                 $article = trim((string) ($item['article'] ?? ''));
                 $name = trim((string) ($item['name'] ?? ''));

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductWarehouseStock;
 use App\Models\Supplier;
 use App\Services\EcokaminWarehouseStockImporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,6 +123,48 @@ class EcokaminWarehouseStockImportTest extends TestCase
         $this->assertDatabaseHas('product_warehouse_stocks', [
             'product_id' => $product->id,
             'available_quantity' => 0,
+        ]);
+    }
+
+    public function test_import_prefers_the_ecokamin_supplier_record_and_drops_rows_of_the_duplicate(): void
+    {
+        $category = Category::create(['name' => 'Камины', 'slug' => 'kaminy']);
+        $brand = Brand::create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        $onec = Supplier::query()->updateOrCreate(
+            ['code' => 'sanbusinessgroup'],
+            ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true],
+        );
+        $ecokamin = Supplier::query()->updateOrCreate(
+            ['code' => 'ecokamin'],
+            ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true],
+        );
+        $product = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Камин ПРАГА',
+            'slug' => 'kamin-praga-duplicate-supplier',
+            'sku' => 'KP100',
+            'price' => 100,
+            'is_active' => true,
+        ]);
+        ProductWarehouseStock::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $onec->id,
+            'warehouse_code' => 'ecokamin-moscow',
+            'warehouse_name' => 'Склад Москва',
+            'available_quantity' => 9,
+        ]);
+
+        app(EcokaminWarehouseStockImporter::class)->importPayload([
+            'warehouse_code' => 'ecokamin-moscow',
+            'items' => [['article' => 'KP100', 'name' => 'Камин ПРАГА', 'total' => 3, 'available' => 3]],
+        ]);
+
+        $this->assertSame(1, ProductWarehouseStock::query()->where('warehouse_code', 'ecokamin-moscow')->count());
+        $this->assertDatabaseHas('product_warehouse_stocks', [
+            'product_id' => $product->id,
+            'supplier_id' => $ecokamin->id,
+            'available_quantity' => 3,
         ]);
     }
 }

@@ -11,7 +11,7 @@ class StoveOfficialTechnicalSpecCatalogTest extends TestCase
     {
         $entries = (new StoveOfficialTechnicalSpecCatalog)->entries();
 
-        $this->assertCount(33, $entries);
+        $this->assertCount(36, $entries);
 
         foreach ($entries as $entry) {
             $keys = collect($entry['specs'])->pluck('key');
