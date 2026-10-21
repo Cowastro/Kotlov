@@ -90,6 +90,17 @@ class PublishTenkoThermokraftCommand extends Command
         $broken = Product::query()->whereIn('brand_id', $duplicateBrandIds->concat([$brand->id]))->get(['id', 'name', 'images', 'category_id', 'brand_id'])
             ->filter(fn (Product $p) => collect($p->images ?: [])->contains(fn ($img) => collect(self::BROKEN_IMAGE_HOSTS)->contains(fn ($host) => str_contains((string) $img, $host))));
 
+        // Legacy TENKO cards that the Thermokraft price now confirms but that stayed switched off.
+        $hiddenOffered = Product::query()
+            ->where(fn ($q) => $q->where('brand_id', $brand->id)->orWhere('name', 'like', '%tenko%'))
+            ->where('is_active', false)
+            ->where('is_archived', false)
+            ->where('price', '>', 0)
+            ->whereHas('supplierProducts', fn ($q) => $q->whereHas('supplier', fn ($s) => $s->where('code', 'thermokraft')->where('is_active', true)));
+        $this->line('metric.tenko.brand_products_active='.Product::query()->where('brand_id', $brand->id)->where('is_active', true)->count());
+        $this->line('metric.tenko.brand_products_inactive='.Product::query()->where('brand_id', $brand->id)->where('is_active', false)->count());
+        $this->line('metric.tenko.name_tenko_other_brand='.Product::query()->where('name', 'like', '%tenko%')->where(fn ($q) => $q->whereNull('brand_id')->orWhere('brand_id', '!=', $brand->id))->count());
+        $this->line('metric.tenko.hidden_with_thermokraft_offer='.(clone $hiddenOffered)->count());
         $this->line('metric.tenko.planned_items='.count($items));
         $this->line('metric.tenko.to_create='.collect($plan)->whereNull('existing')->count());
         $this->line('metric.tenko.already_present='.collect($plan)->whereNotNull('existing')->count());
@@ -107,8 +118,9 @@ class PublishTenkoThermokraftCommand extends Command
             return self::SUCCESS;
         }
 
-        $stats = DB::transaction(function () use ($brand, $duplicateBrandIds, $unbranded, $plan, $categories, $broken): array {
-            $stats = ['moved_to_brand' => 0, 'deactivated_duplicate_brands' => 0, 'created' => 0, 'images_repaired' => 0];
+        $stats = DB::transaction(function () use ($brand, $duplicateBrandIds, $unbranded, $plan, $categories, $broken, $hiddenOffered): array {
+            $stats = ['moved_to_brand' => 0, 'deactivated_duplicate_brands' => 0, 'created' => 0, 'images_repaired' => 0, 'reactivated' => 0];
+            $stats['reactivated'] = (clone $hiddenOffered)->update(['is_active' => true, 'updated_at' => now()]);
             if ($duplicateBrandIds->isNotEmpty()) {
                 $stats['moved_to_brand'] += Product::query()->whereIn('brand_id', $duplicateBrandIds)->update(['brand_id' => $brand->id, 'updated_at' => now()]);
                 foreach (DB::table('brand_supplier')->whereIn('brand_id', $duplicateBrandIds)->get() as $pivot) {

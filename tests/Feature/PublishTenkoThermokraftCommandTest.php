@@ -32,6 +32,12 @@ class PublishTenkoThermokraftCommandTest extends TestCase
             'name' => 'ТЭН трубчатый 7500 Вт/220В крепление гайка латунная 1,5" L=370мм', 'slug' => 'donor-ten',
             'images' => ['/img/products/tenko/tenko-heater-g114.jpg'],
         ]);
+        $hidden = Product::query()->create([
+            'category_id' => $boilers->id, 'brand_id' => $brand->id, 'is_active' => false, 'price' => 869,
+            'name' => 'Электрический котел Tenko ЭКОНОМ (КЕ) 4,5 кВт 220В', 'slug' => 'hidden-tenko-ekonom-45',
+        ]);
+        $thermokraft = \App\Models\Supplier::query()->updateOrCreate(['code' => 'thermokraft'], ['name' => 'ООО «ТЕРМОКРАФТ»', 'is_active' => true]);
+        \App\Models\SupplierProduct::query()->create(['supplier_id' => $thermokraft->id, 'product_id' => $hidden->id, 'supplier_article' => 'KE45', 'price_byn' => 724.5]);
         $before = Product::query()->count();
 
         $this->artisan('catalog:publish-tenko-thermokraft')
@@ -46,6 +52,7 @@ class PublishTenkoThermokraftCommandTest extends TestCase
         $this->assertSame($before + 38, Product::query()->count());
         $this->assertSame($brand->id, $legacy->fresh()->brand_id);
         $this->assertFalse($duplicate->fresh()->is_active);
+        $this->assertTrue($hidden->fresh()->is_active);
         $this->assertSame(['/img/products/tenko/tenko-heater-g114.jpg'], $broken->fresh()->images);
         $this->assertSame('img/brands/tenko.png', $brand->fresh()->logo);
 
