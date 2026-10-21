@@ -394,8 +394,8 @@ class CartController extends Controller
                 : back()->with('success', 'Промокод удалён.');
         }
 
-        $subtotal = $this->calcSubtotal($this->getItems());
-        $coupon = $this->couponService->quote($code, $subtotal);
+        $items = $this->getItems();
+        $coupon = $this->couponService->quoteForCart($code, $items);
 
         if (! $coupon['valid']) {
             session()->forget('cart_coupon');
@@ -468,15 +468,22 @@ class CartController extends Controller
     private function couponQuote(float $subtotal): array
     {
         $code = session('cart_coupon');
+        $items = $this->getItems();
+        $eligibleOnlineSubtotal = $this->couponService->onlineOrderDiscountSubtotal($items);
+
+        if ($this->couponService->isOnlineOrderDiscountCode($code) && $eligibleOnlineSubtotal <= 0) {
+            session()->forget('cart_coupon');
+            $code = null;
+        }
 
         // Покупателю не нужно запоминать промокод: для обычной розничной
         // корзины онлайн-скидка подключается при первом расчёте автоматически.
         // Партнёрская B2B-цена уже является специальной и не суммируется с ней.
-        if (! $code && $subtotal > 0 && $this->isRetailCart()) {
+        if (! $code && $subtotal > 0 && $eligibleOnlineSubtotal > 0 && $this->isRetailCart()) {
             $code = (string) config('shop.online_order_discount.code', 'ONLINE3');
         }
 
-        $quote = $this->couponService->quote($code, $subtotal);
+        $quote = $this->couponService->quoteForCart($code, $items);
 
         if ($code && ! $quote['valid']) {
             session()->forget('cart_coupon');

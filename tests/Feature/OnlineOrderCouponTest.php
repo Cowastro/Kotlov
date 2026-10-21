@@ -64,6 +64,52 @@ class OnlineOrderCouponTest extends TestCase
         $response->assertSessionHas('cart_coupon', 'ONLINE3');
     }
 
+    public function test_heat_pump_is_excluded_from_the_online_discount(): void
+    {
+        $product = $this->orderableHeatPump();
+
+        $response = $this
+            ->withHeader('User-Agent', 'Mozilla/5.0')
+            ->postJson(route('cart.add'), [
+                'product_id' => $product->id,
+                'quantity' => 1,
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'discount' => 0,
+                'total' => 21300,
+            ]);
+        $response->assertSessionMissing('cart_coupon');
+        $this->assertFalse($product->qualifiesForOnlineOrderDiscount());
+    }
+
+    public function test_mixed_cart_discounts_regular_goods_but_not_the_heat_pump(): void
+    {
+        $regular = $this->orderableProduct();
+        $heatPump = $this->orderableHeatPump();
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0')->postJson(route('cart.add'), [
+            'product_id' => $regular->id,
+            'quantity' => 1,
+        ])->assertOk();
+
+        $response = $this->withHeader('User-Agent', 'Mozilla/5.0')->postJson(route('cart.add'), [
+            'product_id' => $heatPump->id,
+            'quantity' => 1,
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'subtotal' => 21500,
+                'discount' => 6,
+                'total' => 21494,
+            ]);
+        $response->assertSessionHas('cart_coupon', 'ONLINE3');
+    }
+
     public function test_unknown_coupon_is_rejected_and_removed_from_session(): void
     {
         $response = $this
@@ -112,6 +158,46 @@ class OnlineOrderCouponTest extends TestCase
         $this->assertSame('6.00', $order->discount);
         $this->assertSame('194.00', $order->total);
         $this->assertSame(1, Coupon::query()->where('code', 'ONLINE3')->value('uses_count'));
+        Event::assertDispatched(NewOrderCreated::class);
+    }
+
+    public function test_checkout_does_not_apply_online3_to_a_heat_pump(): void
+    {
+        Event::fake([NewOrderCreated::class]);
+        $product = $this->orderableHeatPump();
+
+        $response = $this
+            ->withHeader('User-Agent', 'Mozilla/5.0')
+            ->withSession([
+                'cart' => [
+                    $product->id => [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'slug' => $product->slug,
+                        'sku' => $product->sku,
+                        'price' => 21300,
+                        'quantity' => 1,
+                        'category_slug' => 'teplovyie-nasosyi',
+                        'pricing_type' => 'retail',
+                    ],
+                ],
+                'cart_coupon' => 'ONLINE3',
+                'order_token' => 'heat-pump-no-online3-checkout',
+            ])
+            ->post(route('checkout.store'), [
+                'order_token' => 'heat-pump-no-online3-checkout',
+                'customer_name' => 'Покупатель',
+                'customer_phone' => '+375291112233',
+                'delivery_type' => 'pickup',
+                'payment_type' => 'cash',
+            ]);
+
+        $order = Order::query()->latest('id')->firstOrFail();
+
+        $response->assertRedirect(route('checkout.success', $order->number));
+        $this->assertNull($order->coupon_code);
+        $this->assertSame('0.00', $order->discount);
+        $this->assertSame('21300.00', $order->total);
         Event::assertDispatched(NewOrderCreated::class);
     }
 
@@ -177,5 +263,40 @@ class OnlineOrderCouponTest extends TestCase
         ]);
 
         return $product;
+    }
+
+    private function orderableHeatPump(): Product
+    {
+        $category = Category::query()->firstOrCreate([
+            'slug' => 'teplovyie-nasosyi',
+        ], [
+            'name' => 'Тепловые насосы',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Тепловой насос KOTLOV GE FLM80-250',
+            'slug' => 'online-order-heat-pump',
+            'sku' => 'HEAT-PUMP-NO-ONLINE3',
+            'price' => 21300,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+            'requires_price_confirmation' => false,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'heat-pump-online-discount-test',
+            'name' => 'Поставщик тепловых насосов',
+            'is_active' => true,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'HEAT-PUMP-NO-ONLINE3',
+            'in_stock' => false,
+            'stock_status' => 'preorder',
+        ]);
+
+        return $product->load('category');
     }
 }

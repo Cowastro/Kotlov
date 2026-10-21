@@ -246,7 +246,7 @@
                                     $displayAvailabilityStatus = $b2bOffer ? $availabilityStatus : $product->publicAvailabilityStatus();
                                     $displayPrice = $b2bComparison['wholesale_price'] ?? (float) $product->price;
                                     $onlineDiscountPercent = (float) config('shop.online_order_discount.percent', 3);
-                                    $onlinePrice = ! $b2bOffer && $canBuy && (float) $product->price > 0
+                                    $onlinePrice = ! $b2bOffer && $canBuy && $product->qualifiesForOnlineOrderDiscount() && (float) $product->price > 0
                                         ? round((float) $product->price * (1 - $onlineDiscountPercent / 100), 2)
                                         : null;
                                     $onlineSaving = $onlinePrice !== null ? round((float) $product->price - $onlinePrice, 2) : null;

@@ -53,7 +53,13 @@ class CheckoutController extends Controller
         }
 
         $subtotal = $this->calcSubtotal($cart);
-        $coupon = $couponService->quote(session('cart_coupon'), $subtotal);
+        $couponCode = session('cart_coupon');
+        if ($couponService->isOnlineOrderDiscountCode($couponCode)
+            && $couponService->onlineOrderDiscountSubtotal($cart) <= 0) {
+            session()->forget('cart_coupon');
+            $couponCode = null;
+        }
+        $coupon = $couponService->quoteForCart($couponCode, $cart);
         if (session('cart_coupon') && ! $coupon['valid']) {
             session()->forget('cart_coupon');
         }
@@ -234,7 +240,13 @@ class CheckoutController extends Controller
         }
 
         $subtotal = $this->calcSubtotal($cart);
-        $coupon = $couponService->quote(session('cart_coupon'), $subtotal);
+        $couponCode = session('cart_coupon');
+        if ($couponService->isOnlineOrderDiscountCode($couponCode)
+            && $couponService->onlineOrderDiscountSubtotal($cart) <= 0) {
+            session()->forget('cart_coupon');
+            $couponCode = null;
+        }
+        $coupon = $couponService->quoteForCart($couponCode, $cart);
         if (session('cart_coupon') && ! $coupon['valid']) {
             session()->forget('cart_coupon');
 
@@ -245,7 +257,7 @@ class CheckoutController extends Controller
         }
         $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
 
-        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon, $invoiceCompany, $checkoutInvoices) {
+        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon, $invoiceCompany, $checkoutInvoices, $couponService) {
 
             $lockedCoupon = null;
             if ($coupon['code']) {
@@ -259,8 +271,11 @@ class CheckoutController extends Controller
                 }
             }
 
+            $discountBase = $lockedCoupon && $couponService->isOnlineOrderDiscountCode($lockedCoupon->code)
+                ? $couponService->onlineOrderDiscountSubtotal($cart)
+                : $subtotal;
             $discount = $lockedCoupon
-                ? min($subtotal, round($lockedCoupon->calculateDiscount($subtotal), 2))
+                ? min($discountBase, round($lockedCoupon->calculateDiscount($discountBase), 2))
                 : 0.0;
             $total = round($subtotal - $discount + $deliveryPrice, 2);
 

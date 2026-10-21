@@ -473,6 +473,14 @@ class Product extends Model
         return $this->is_sale && in_array($this->slug, self::PUBLIC_SALE_SLUGS, true);
     }
 
+    public function qualifiesForOnlineOrderDiscount(): bool
+    {
+        $categorySlug = $this->category?->slug;
+        $excluded = (array) config('shop.online_order_discount.excluded_category_slugs', []);
+
+        return ! in_array($categorySlug, $excluded, true);
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);

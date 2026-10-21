@@ -26,7 +26,7 @@
         && ! $product->requires_price_confirmation
         && $hasAssignedSupplier;
     $onlineDiscountPercent = (float) config('shop.online_order_discount.percent', 3);
-    $onlinePrice = ! $isB2bOffer && $canBuy && $hasVerifiedPublicPrice
+    $onlinePrice = ! $isB2bOffer && $canBuy && $product->qualifiesForOnlineOrderDiscount() && $hasVerifiedPublicPrice
         ? round((float) $product->price * (1 - $onlineDiscountPercent / 100), 2)
         : null;
     $onlineSaving = $onlinePrice !== null ? round((float) $product->price - $onlinePrice, 2) : null;

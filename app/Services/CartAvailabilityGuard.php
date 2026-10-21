@@ -27,6 +27,7 @@ class CartAvailabilityGuard
 
         $products = Product::query()
             ->withSupplierChannels()
+            ->with('category:id,slug')
             ->whereIn('id', $retailIds)
             ->get()
             ->keyBy('id');
@@ -49,6 +50,7 @@ class CartAvailabilityGuard
             }
 
             $cart[$key]['requires_availability_confirmation'] = $product->requiresAvailabilityConfirmation();
+            $cart[$key]['category_slug'] = $product->category?->slug ?? 'catalog';
 
             $currentPrice = round((float) $product->price, 2);
             if (abs((float) ($item['price'] ?? 0) - $currentPrice) >= 0.01) {

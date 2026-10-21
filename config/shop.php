@@ -6,6 +6,9 @@ return [
     'online_order_discount' => [
         'code' => 'ONLINE3',
         'percent' => 3,
+        'excluded_category_slugs' => [
+            'teplovyie-nasosyi',
+        ],
     ],
 
     // Операционные пороги для очереди менеджера.
