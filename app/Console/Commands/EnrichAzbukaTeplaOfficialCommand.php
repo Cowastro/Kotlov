@@ -69,7 +69,13 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             }
 
             try {
-                $result = $enricher->enrich($product, $sourceUrl, [
+                $parsed = $enricher->preview($sourceUrl);
+                $verifiedImages = $this->officialImages((string) $row->brand, $model, (string) $row->name);
+                if ($verifiedImages !== []) {
+                    $parsed['images'] = array_values(array_unique(array_merge($verifiedImages, $parsed['images'] ?? [])));
+                }
+
+                $result = $enricher->enrichFromParsed($product, $sourceUrl, $parsed, [
                     'preview_only' => ! $apply,
                     'replace_images' => false,
                     'update_images' => true,
@@ -136,6 +142,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
 
         if ($brandKey === 'salus') {
             return match (true) {
+                str_contains($ascii, 'ERT20RF') => 'https://saluscontrols.com/global/product/ert20tx-wireless-electronic-surface-mounted-thermostat-non-programmable/',
                 str_contains($ascii, 'RT310') => 'https://saluscontrols.com/global/product/rt310-wired-non-programmable-thermostat/',
                 str_contains($ascii, 'RT510') => 'https://saluscontrols.com/global/product/rt510-wired-electronic-thermostat-programmable/',
                 str_contains($ascii, '091FLV2') => 'https://saluscontrols.com/global/product/091flv2-wired-electronic-thermostat-programmable/',
@@ -182,6 +189,33 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
         }
 
         return null;
+    }
+
+    /** @return array<int,string> */
+    private function officialImages(string $brand, string $model, string $name): array
+    {
+        $brandKey = mb_strtolower(trim($brand));
+        $ascii = Str::upper(str_replace([' ', '-', '_', '.', '/', 'М'], '', trim($model.' '.$name)));
+
+        if ($brandKey === 'valfex') {
+            return match (true) {
+                str_contains($ascii, 'ALPHA2540130') => ['https://valfex.ru/upload/iblock/dad/VF.AL.25.40.130.jpg'],
+                str_contains($ascii, 'ALPHA2580') => ['https://valfex.ru/upload/iblock/534/tsirkulyatsionnyy_energoeffektivnyy_nasos_valfex_alpha_25_80.jpg'],
+                str_contains($ascii, 'ALPHA2560') => ['https://valfex.ru/upload/iblock/e03/tsirkulyatsionnyy_energoeffektivnyy_nasos_valfex_alpha_25_60.jpg'],
+                str_contains($ascii, 'ALPHA2540') => ['https://valfex.ru/upload/iblock/754/40_-60.jpg'],
+                default => [],
+            };
+        }
+
+        if ($brandKey === 'salus') {
+            return match (true) {
+                str_contains($ascii, 'ERT20RF') => ['https://saluscontrols.com/global/wp-content/uploads/sites/3/2024/03/ERT20RF_003-1.png'],
+                str_contains($ascii, 'RT310') => ['https://saluscontrols.com/global/wp-content/uploads/sites/3/2024/03/RT310_002.png'],
+                default => [],
+            };
+        }
+
+        return [];
     }
 
     private function decodeRaw(mixed $raw): array
