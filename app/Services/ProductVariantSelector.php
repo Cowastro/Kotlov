@@ -35,6 +35,10 @@ class ProductVariantSelector
             return $this->buildTisStandard($product, $forAdmin);
         }
 
+        if ($this->isPackagedFluid($product)) {
+            return $this->buildPackagedFluid($product, $forAdmin);
+        }
+
         if ($product->category?->slug !== 'membrannye-baki') {
             return null;
         }
@@ -179,6 +183,94 @@ class ProductVariantSelector
             'title' => 'Выберите диаметр:',
             'variants' => $variants,
         ];
+    }
+
+    /**
+     * Heat-transfer fluids sold in several canister sizes of one exact model
+     * (e.g. «ZUBR -30» 10 кг / 20 кг) carry «Модель» and «Фасовка» specs.
+     */
+    private function isPackagedFluid(Product $product): bool
+    {
+        return $product->category?->slug === 'teplonositeli'
+            && $this->specValue($product, 'Модель') !== ''
+            && $this->packageKilograms($this->specValue($product, 'Фасовка')) !== null;
+    }
+
+    private function buildPackagedFluid(Product $product, bool $forAdmin): ?array
+    {
+        $model = $this->specValue($product, 'Модель');
+
+        $variants = Product::query()
+            ->where('category_id', $product->category_id)
+            ->where('brand_id', $product->brand_id)
+            ->when(! $forAdmin, fn ($query) => $query
+                ->where('variant_selector_excluded', false)
+                ->where('is_active', true)
+                ->where('is_archived', false)
+                ->where('price', '>', 0))
+            ->withSupplierChannels()
+            ->with(['category:id,name,slug', 'brand:id,name,slug'])
+            ->get()
+            ->map(function (Product $candidate) use ($model, $product): ?array {
+                if ($this->specValue($candidate, 'Модель') !== $model) {
+                    return null;
+                }
+
+                $kilograms = $this->packageKilograms($this->specValue($candidate, 'Фасовка'));
+                if ($kilograms === null) {
+                    return null;
+                }
+
+                return [
+                    'product' => $candidate,
+                    'value' => $kilograms,
+                    'label' => rtrim(rtrim(number_format($kilograms, 1, ',', ''), '0'), ',').' кг',
+                    'url' => url('/'.$candidate->category->slug.'/'.$candidate->slug),
+                    'availability_status' => $candidate->publicAvailabilityStatus(),
+                    'availability_label' => $candidate->publicAvailabilityLabel(),
+                    'is_current' => $candidate->is($product),
+                    'is_excluded' => (bool) $candidate->variant_selector_excluded,
+                ];
+            })
+            ->filter()
+            ->sortBy('value')
+            ->unique('value')
+            ->values();
+
+        if ($variants->count() < 2) {
+            return null;
+        }
+
+        return [
+            'type' => 'package',
+            'title' => 'Выберите фасовку:',
+            'variants' => $variants,
+        ];
+    }
+
+    private function specValue(Product $product, string $key): string
+    {
+        foreach ($product->specs ?: [] as $specKey => $spec) {
+            if (is_array($spec) && trim((string) ($spec['key'] ?? '')) === $key) {
+                return trim((string) ($spec['value'] ?? ''));
+            }
+            if (is_string($specKey) && trim($specKey) === $key && is_scalar($spec)) {
+                return trim((string) $spec);
+            }
+        }
+
+        return '';
+    }
+
+    private function packageKilograms(string $value): ?float
+    {
+        if (! preg_match('/^(\d+(?:[.,]\d+)?)\s*кг(?!\pL)/u', $value, $match)) {
+            return null;
+        }
+
+        $kilograms = (float) str_replace(',', '.', $match[1]);
+
+        return $kilograms > 0 ? $kilograms : null;
     }
 
     public function familyKey(Product $product, int $volume): ?string
