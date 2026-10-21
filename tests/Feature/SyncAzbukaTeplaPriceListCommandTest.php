@@ -172,18 +172,35 @@ class SyncAzbukaTeplaPriceListCommandTest extends TestCase
             'match_status' => 'matched',
         ]);
 
-        $path = $this->snapshot([[
-            'source_row' => 31,
-            'brand' => 'Protherm',
-            'description' => 'котел электрический',
-            'model' => '14 Скат',
-            'retail_byn' => 3550,
-            'purchase_byn' => 2911,
-            'partner_name' => 'RAY 14 KE/14 Настенный электрический котел, Protherm',
-            'partner_description' => 'Электрический котел 2,3-14 кВт',
-        ]]);
+        $path = $this->snapshot([
+            [
+                'source_row' => 31,
+                'brand' => 'Protherm',
+                'description' => 'котел электрический',
+                'model' => '14 Скат',
+                'retail_byn' => 3550,
+                'purchase_byn' => 2911,
+                'partner_name' => 'RAY 14 KE/14 Настенный электрический котел, Protherm',
+                'partner_description' => 'Электрический котел 2,3-14 кВт',
+            ],
+            [
+                'source_row' => 2,
+                'brand' => 'Vaillant',
+                'description' => 'котел газовый',
+                'model' => 'VUW TEST',
+                'retail_byn' => 4000,
+                'purchase_byn' => 3200,
+                'partner_name' => 'Контрольная позиция',
+                'partner_description' => 'Не должна обрабатываться узким запуском',
+            ],
+        ]);
 
-        $this->artisan('supplier:sync-azbuka-tepla', ['file' => $path, '--apply' => true])
+        $this->artisan('supplier:sync-azbuka-tepla', [
+            'file' => $path,
+            '--apply' => true,
+            '--only-protherm-skat' => true,
+        ])
+            ->expectsOutputToContain('metric.azbuka_tepla.selected_rows=1')
             ->expectsOutputToContain('metric.azbuka_tepla.duplicates_archived=1')
             ->assertSuccessful();
 
@@ -197,6 +214,7 @@ class SyncAzbukaTeplaPriceListCommandTest extends TestCase
         $this->assertFalse($canonical->fresh()->requires_price_confirmation);
         $this->assertFalse($duplicate->fresh()->is_active);
         $this->assertTrue($duplicate->fresh()->is_archived);
+        $this->assertDatabaseMissing('products', ['name' => 'Газовый котел Vaillant VUW TEST']);
     }
 
     /** @param array<int,array<string,mixed>> $rows */

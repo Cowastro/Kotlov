@@ -22,6 +22,7 @@ class SyncAzbukaTeplaPriceListCommand extends Command
         {file=resources/data/suppliers/azbuka-tepla-2026-10-21.json : Нормализованный снимок розницы и Опт VIP}
         {--apply : Записать изменения}
         {--dry-run : Только показать результат}
+        {--only-protherm-skat : Обработать только линейку Protherm Скат}
         {--skip-create : Не создавать отсутствующие карточки}';
 
     protected $description = 'Азбука Тепла: связать РРЦ и Опт VIP, оставив остаток на уточнение.';
@@ -38,10 +39,15 @@ class SyncAzbukaTeplaPriceListCommand extends Command
         try {
             $path = $this->absolutePath((string) $this->argument('file'));
             $payload = $parser->load($path);
+            $rows = $payload['rows'];
+            if ($this->option('only-protherm-skat')) {
+                $rows = collect($rows)->filter(fn (array $row): bool => $this->isProthermSkatRow($row, $parser))
+                    ->values()->all();
+            }
             $supplier = Supplier::query()->where('code', 'azbuka-tepla')
                 ->orWhereRaw('LOWER(name) LIKE ?', ['%азбука тепла%'])
                 ->first();
-            $classified = $this->classify($payload['rows'], $parser, $supplier);
+            $classified = $this->classify($rows, $parser, $supplier);
             $this->metrics($payload, $classified);
 
             if (! $this->option('apply') || $this->option('dry-run')) {
@@ -266,7 +272,7 @@ class SyncAzbukaTeplaPriceListCommand extends Command
     /** @return array<int,int> */
     private function knownFamilyMatches($products, array $row, AzbukaTeplaPriceList $parser, ?Supplier $supplier): array
     {
-        if ($parser->key($row['brand']) !== 'protherm'
+        if (! $this->isProthermSkatRow($row, $parser)
             || ! preg_match('/^(\d+)\s*скат$/ui', trim((string) $row['model']), $match)) {
             return [];
         }
@@ -295,6 +301,12 @@ class SyncAzbukaTeplaPriceListCommand extends Command
         }
 
         return $matches->pluck('id')->map(fn ($id): int => (int) $id)->unique()->values()->all();
+    }
+
+    private function isProthermSkatRow(array $row, AzbukaTeplaPriceList $parser): bool
+    {
+        return $parser->key($row['brand'] ?? null) === 'protherm'
+            && preg_match('/^\d+\s*скат$/ui', trim((string) ($row['model'] ?? ''))) === 1;
     }
 
     private function createProduct(array $row, Supplier $supplier): ?Product
@@ -491,6 +503,7 @@ class SyncAzbukaTeplaPriceListCommand extends Command
             'source_rows' => $payload['retail_rows'],
             'price_pairs' => count($rows),
             'source_review' => $payload['review_rows'],
+            'selected_rows' => count($rows),
             'matched_existing' => collect($rows)->whereNotNull('product_id')->count(),
             'known_family_matches' => $counts->get('exact_brand_family_model', 0),
             'would_create' => collect($rows)->whereNull('product_id')->where('match_reason', 'unmatched')->count(),
