@@ -26,6 +26,7 @@ class NormalizeGasMeterSupplyTest extends TestCase
             'slug' => 'test-kata-g4-3',
             'sku' => 'KOTLOV-TEST-KATA',
             'price' => 470.88,
+            'meta_title' => 'Счетчик газа ультразвуковой КАТА G4-3 - Интернет-магазин "Эликон"',
             'content' => 'Актуализировано по каталогу elicon.by, категория счетчиков.',
             'short_description' => 'Артикул поставщика Эликон: 8348000000008.',
             'meta_keywords' => 'счетчик газа, БелОМО, Эликон, 8348000000008',
@@ -69,6 +70,8 @@ class NormalizeGasMeterSupplyTest extends TestCase
 
         $migration = require database_path('migrations/2026_10_21_120000_remove_elicon_from_gas_meters_and_normalize_warehouse.php');
         $migration->up();
+        $seoMigration = require database_path('migrations/2026_10_21_121000_remove_elicon_from_gas_meter_seo_titles.php');
+        $seoMigration->up();
 
         $this->assertDatabaseMissing('supplier_products', [
             'supplier_id' => $elicon->id,
@@ -90,6 +93,7 @@ class NormalizeGasMeterSupplyTest extends TestCase
             $product->fresh()->content,
             $product->fresh()->short_description,
             $product->fresh()->meta_keywords,
+            $product->fresh()->meta_title,
             json_encode($product->fresh()->specs, JSON_UNESCAPED_UNICODE),
         ]));
         $this->assertSame('G4', $product->fresh()->specs['g_size']);
