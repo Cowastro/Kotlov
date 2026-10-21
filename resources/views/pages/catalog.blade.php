@@ -16,7 +16,7 @@
     @endpush
 @endif
 
-@if ($category->slug === 'schetchiki-gaza')
+@if (in_array($category->slug, ['schetchiki-gaza', 'teplonositeli'], true))
     @push('styles')
         <style>
             .gas-meter-selector-cta{margin-top:24px}.gas-meter-selector-cta__inner{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:30px;align-items:center;padding:28px 32px;border-radius:22px;background:linear-gradient(135deg,#151515 0%,#292929 100%);color:#fff;box-shadow:0 18px 45px rgba(0,0,0,.12)}.gas-meter-selector-cta__eyebrow{display:block;margin-bottom:6px;color:#ff696d;font-size:12px;font-weight:750;letter-spacing:.06em;text-transform:uppercase}.gas-meter-selector-cta h2{margin:0 0 8px;color:#fff;font-size:clamp(24px,3vw,34px);line-height:1.12}.gas-meter-selector-cta p{max-width:760px;margin:0;color:rgba(255,255,255,.72);font-size:14px;line-height:1.55}.gas-meter-selector-cta__facts{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}.gas-meter-selector-cta__facts span{padding:6px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.9);font-size:12px}.gas-meter-selector-cta__actions{display:flex;min-width:270px;flex-direction:column;gap:9px}.gas-meter-selector-cta__button{display:flex;align-items:center;justify-content:center;min-height:52px;padding:12px 22px;border-radius:999px;background:#df4145;color:#fff;font-weight:750;line-height:1.2;text-align:center}.gas-meter-selector-cta__button:hover{background:#c93438;color:#fff}.gas-meter-selector-cta__all{color:rgba(255,255,255,.78);font-size:13px;text-align:center;text-decoration:underline;text-underline-offset:4px}.gas-meter-selector-cta__all:hover{color:#fff}
@@ -564,6 +564,10 @@
 
     @if ($category->slug === 'schetchiki-gaza' && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort']))
         @include('partials.gas-meter-category-content', ['faq' => $gasMeterFaq ?? collect()])
+    @endif
+
+    @if ($category->slug === 'teplonositeli' && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort']))
+        @include('partials.heat-transfer-fluid-category-content', ['faq' => $heatFluidFaq ?? collect()])
     @endif
 
     {{-- Secondary partner CTA belongs after products and useful category content. --}}
