@@ -32,7 +32,10 @@ class MoveVarmegaBoilerProductsToManifoldsMigrationTest extends TestCase
             'parent_id' => 0,
             'is_active' => true,
         ]);
-        $varmega = Brand::query()->where('slug', 'varmega')->firstOrFail();
+        $varmega = Brand::query()->firstOrCreate(
+            ['slug' => 'varmega'],
+            ['name' => 'Varmega', 'is_active' => true],
+        );
         $otherBrand = Brand::query()->create(['name' => 'Другой бренд', 'slug' => 'other-brand']);
 
         $misplaced = $this->product($boilers, $varmega, 'Varmega VM15403');
