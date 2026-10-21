@@ -175,6 +175,12 @@
         var matches = (approximate ? models.filter(function (model) {
             return model.size === target.size && (!technology || model.technology === technology);
         }) : exactMatches).sort(function (a, b) {
+            var isSgmnG4 = function (model) { return String(model.name || '').toUpperCase().includes('СГМН-1-1-1-G4'); };
+            var sgmnFitsRequest = target.size === 'G4'
+                && (!technology || technology === 'diaphragm')
+                && (!direction || direction === 'left')
+                && (!length || length === '250');
+            if (sgmnFitsRequest && isSgmnG4(a) !== isSgmnG4(b)) return isSgmnG4(a) ? -1 : 1;
             var score = function (model) {
                 return (direction && model.direction === direction ? 4 : 0)
                     + (length && model.length === Number(length) ? 4 : 0)
@@ -199,10 +205,11 @@
         matches.slice(0, 6).forEach(function (model, index) {
             var card = document.createElement('article');
             card.className = 'gm-result__model' + (index === 0 ? ' gm-result__model--best' : '');
+            var isSgmnG4 = String(model.name || '').toUpperCase().includes('СГМН-1-1-1-G4');
             var differences = [];
             if (approximate && direction && model.technology !== 'ultrasonic' && model.direction !== direction) differences.push('сторону входа газа');
             if (approximate && length && model.technology !== 'ultrasonic' && model.length !== Number(length)) differences.push('межосевое расстояние');
-            card.innerHTML = (index === 0 ? '<span class="gm-result__badge">' + (approximate ? 'Примерно подходит по расходу' : (model.stock_program ? 'Рекомендуем со склада' : 'Рекомендуем под заказ')) + '</span>' : (model.stock_program ? '<span class="gm-result__badge">Складская программа</span>' : '<span class="gm-result__badge" style="background:#777">Под заказ</span>'))
+            card.innerHTML = (isSgmnG4 ? '<span class="gm-result__badge">Популярный G4 · левый · L=250</span>' : (index === 0 ? '<span class="gm-result__badge">' + (approximate ? 'Примерно подходит по расходу' : (model.stock_program ? 'Рекомендуем со склада' : 'Рекомендуем под заказ')) + '</span>' : (model.stock_program ? '<span class="gm-result__badge">Складская программа</span>' : '<span class="gm-result__badge" style="background:#777">Под заказ</span>')))
                 + '<div class="gm-result__family">Тип: ' + escapeHtml(model.family_label) + '</div>'
                 + '<strong>' + escapeHtml(model.name) + '</strong>'
                 + '<p>Артикул ' + escapeHtml(model.article) + ' · ' + escapeHtml(model.technology_label) + ' · ' + escapeHtml(model.direction_label) + (model.length ? ' · L=' + model.length + ' мм' : '') + (model.thermal ? ' · термокомпенсация' : '') + '</p>'

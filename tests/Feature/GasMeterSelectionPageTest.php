@@ -50,5 +50,7 @@ class GasMeterSelectionPageTest extends TestCase
         $this->assertStringContainsString('До 6 м³/ч — котёл и плита', $template);
         $this->assertStringContainsString('Примерно подходит по расходу', $template);
         $this->assertStringContainsString('Показываем ближайшие модели по расходу', $template);
+        $this->assertStringContainsString('СГМН-1-1-1-G4', $template);
+        $this->assertStringContainsString('Популярный G4 · левый · L=250', $template);
     }
 }
