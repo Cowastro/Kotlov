@@ -30,7 +30,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
         $tsar = Brand::query()->updateOrCreate(['slug' => 'tsar-pechi'], ['name' => 'Царь-Печи', 'is_active' => true]);
         $sbg = Supplier::query()->updateOrCreate(
             ['code' => 'sanbusinessgroup'],
-            ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true],
+            ['name' => 'ООО «СанБизнесГруп»', 'is_active' => false],
         );
         $legacy = Supplier::query()->updateOrCreate(
             ['code' => 'metabel'],
@@ -86,6 +86,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
         $this->assertDatabaseMissing('supplier_products', ['supplier_id' => $legacy->id]);
         $this->assertDatabaseHas('brand_supplier', ['brand_id' => $meta->id, 'supplier_id' => $sbg->id]);
         $this->assertDatabaseHas('brand_supplier', ['brand_id' => $tsar->id, 'supplier_id' => $sbg->id]);
+        $this->assertTrue($sbg->fresh()->is_active);
         $this->assertTrue($metaProduct->fresh()->hasAssignedSupplier());
         $this->assertTrue($tsarProduct->fresh()->hasAssignedSupplier());
     }

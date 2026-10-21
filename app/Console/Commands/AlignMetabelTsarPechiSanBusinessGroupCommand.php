@@ -60,6 +60,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
         $legacyMetaSupplier = DB::table('suppliers')->where('code', 'metabel')->first();
 
         $metrics = [
+            'sbg_active' => (bool) $sbg->is_active ? 1 : 0,
             'metabel_products' => $metaBrand ? DB::table('products')->where('brand_id', $metaBrand->id)->count() : 0,
             'metabel_links_to_move' => 0,
             'metabel_links_to_verify' => 0,
@@ -111,6 +112,10 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
         if ($apply) {
             DB::transaction(function () use ($sbg, $metaBrand, $tsarBrand, $legacyMetaSupplier, $metaLinks, $tsarProducts, &$metrics): void {
                 $now = now();
+                DB::table('suppliers')->where('id', $sbg->id)->update([
+                    'is_active' => true,
+                    'updated_at' => $now,
+                ]);
 
                 foreach ([$metaBrand, $tsarBrand] as $brand) {
                     if ($brand) {
