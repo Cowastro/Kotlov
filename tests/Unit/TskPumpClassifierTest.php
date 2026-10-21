@@ -25,6 +25,9 @@ class TskPumpClassifierTest extends TestCase
             ['Насос дренажный WQ 8-8', 'drenajnyie'],
             ['Циркуляционный насос UPC 25-40', 'tsirkulyatsionnyie'],
             ['Гидроаккумулятор 50 л', 'membrannyie-baki'],
+            ['Блок управления насосом ТУРБИПРЕСС 1,5 кВт', 'komplektuyushchie-dlya-nasosov'],
+            ['UNIPUMP Рукав напорный (65мм; 50м)', 'komplektuyushchie-dlya-nasosov'],
+            ['Манометр UNIPUMP (радиальный)', 'komplektuyushchie-dlya-nasosov'],
             ['Консоль JY1000', null],
             ['Шланг напорный', null],
         ];

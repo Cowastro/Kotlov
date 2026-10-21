@@ -65,6 +65,7 @@ class SyncTskNasosyCommand extends Command
         'poverhnostnyie' => 249,
         'nasosnyie-stantsii' => 251,
         'skvajinnye-nasosy' => 272,
+        'komplektuyushchie-dlya-nasosov' => 246,
         'vodosnabzhenie' => 246,
     ];
 

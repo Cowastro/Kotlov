@@ -24,6 +24,7 @@ class RepairTskPumpCategoriesCommand extends Command
         'poverhnostnyie' => 249,
         'nasosnyie-stantsii' => 251,
         'skvajinnye-nasosy' => 272,
+        'komplektuyushchie-dlya-nasosov' => 0,
     ];
 
     public function handle(): int
@@ -138,7 +139,7 @@ class RepairTskPumpCategoriesCommand extends Command
         $ids = [];
         foreach (self::CATEGORY_FALLBACKS as $slug => $fallback) {
             $id = DB::table('categories')->where('slug', $slug)->value('id');
-            if ($id === null && DB::table('categories')->where('id', $fallback)->exists()) {
+            if ($id === null && $fallback > 0 && DB::table('categories')->where('id', $fallback)->exists()) {
                 $id = $fallback;
             }
             if ($id !== null) {

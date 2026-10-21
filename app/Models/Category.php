@@ -154,6 +154,7 @@ class Category extends Model
             'nasosnyie-stantsii' => 'img/popular/nasosy.jpg',
             'nasosy-povysheniya-davleniya' => 'img/popular/nasosy.jpg',
             'nasosy-dlya-kolodtsa' => 'img/popular/nasosy.jpg',
+            'komplektuyushchie-dlya-nasosov' => 'img/popular/nasosy.jpg',
             'fekalnye-nasosy' => 'img/popular/nasosy.jpg',
             'kanalizatsionnye-nasosy' => 'img/popular/nasosy.jpg',
             'klimat' => 'img/popular/air.jpg',

@@ -16,6 +16,17 @@ final class TskPumpClassifier
             return null;
         }
 
+        if (self::containsAny($value, [
+            'блок управления', 'манометр', 'реле давления', 'датчик сухого хода',
+            'рукав напорный', 'муфта для шланга', 'соединительная муфта',
+            'автоматическая трубная муфта', 'соединитель камлок', 'хомут для шланга',
+            'скважинный адаптер', 'крышка скважины', 'оголовок скважинный',
+            'зажим для троса', 'трос из нержавеющей', 'трехвыводной штуцер',
+            'пятивыводной штуцер', 'обратный клапан', 'кабель для насоса',
+        ])) {
+            return 'komplektuyushchie-dlya-nasosov';
+        }
+
         // Tanks are present in the same price book, but are not pumps.
         if (self::containsAny($value, ['гидроаккум', 'мембранн', 'расширительн'])) {
             return 'membrannyie-baki';
@@ -66,6 +77,7 @@ final class TskPumpClassifier
     public static function typeLabel(string $name): ?string
     {
         return match (self::categorySlug($name)) {
+            'komplektuyushchie-dlya-nasosov' => 'Комплектующие для насосов',
             'membrannyie-baki' => 'Мембранный бак',
             'drenajnyie' => 'Дренажный или канализационный насос',
             'tsirkulyatsionnyie' => 'Циркуляционный насос',
