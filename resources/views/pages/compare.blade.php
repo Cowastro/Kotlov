@@ -98,7 +98,7 @@
                                 <td class="compare-col compare-title">Цена</td>
                                 @foreach ($products as $product)
                                     <td class="compare-col compare-value">
-                                        @if ($product->price > 0)
+                                        @if ($product->hasVerifiedPublicPrice())
                                             <span class="text-primary fw-semibold">
                                                 {{ number_format($product->price, 2, '.', ' ') }} BYN
                                             </span>
@@ -124,7 +124,9 @@
                                 <td class="compare-col compare-title">Наличие</td>
                                 @foreach ($products as $product)
                                     <td class="compare-col compare-value">
-                                        @if ($product->in_stock)
+                                        @if (! $product->hasAssignedSupplier())
+                                            <span class="cl-text-3">Уточняйте наличие</span>
+                                        @elseif ($product->in_stock)
                                             <span class="text-success">В наличии</span>
                                         @else
                                             <span class="cl-text-3">Под заказ</span>

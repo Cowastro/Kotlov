@@ -37,17 +37,20 @@
                             $placeholder = asset('img/products/product-placeholder.jpg');
                             $imageUrl  = $product->image_url;
                             $imageUrl2 = $product->imageUrl(1);
-                            $price    = $product->price > 0
+                            $hasAssignedSupplier = $product->hasAssignedSupplier();
+                            $hasVerifiedPublicPrice = (float) $product->price > 0
+                                && ! $product->requires_price_confirmation
+                                && $hasAssignedSupplier;
+                            $price = $hasVerifiedPublicPrice
                                 ? number_format($product->price, 2, '.', ' ') . ' BYN'
                                 : 'Цена по запросу';
                             $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
-                            $priceOld = ($isPublicSale && $product->price_old && $product->price_old > $product->price)
+                            $priceOld = ($hasVerifiedPublicPrice && $isPublicSale && $product->price_old && $product->price_old > $product->price)
                                 ? number_format($product->price_old, 2, '.', ' ') . ' BYN'
                                 : null;
                             $productUrl = '/' . ($product->category->slug ?? 'catalog') . '/' . $product->slug;
                             $wishlistB2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)
                                 ->forProduct($product, auth()->user());
-                            $hasAssignedSupplier = $product->hasAssignedSupplier();
                             $canBuy = $wishlistB2bOffer
                                 ? $hasAssignedSupplier && $product->is_active && ! $product->is_archived && (float) $wishlistB2bOffer->stock_quantity >= 1
                                 : $product->canBeAddedToCart();

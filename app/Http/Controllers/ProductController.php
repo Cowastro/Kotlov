@@ -179,7 +179,7 @@ class ProductController extends Controller
         if (mb_strlen(trim($brandName)) >= 2) {
             $schema['brand'] = ['@type' => 'Brand', 'name' => $brandName];
         }
-        if ($product->price && ! $product->is_archived) {
+        if ($product->hasVerifiedPublicPrice() && ! $product->is_archived) {
             $availability = match ($product->publicAvailabilityStatus()) {
                 Product::AVAILABILITY_IN_STOCK => 'https://schema.org/InStock',
                 Product::AVAILABILITY_CHECK => 'https://schema.org/LimitedAvailability',

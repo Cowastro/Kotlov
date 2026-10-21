@@ -31,7 +31,9 @@ class ProductWithoutSupplierCartGuardTest extends TestCase
         $this->assertEmpty(session('cart', []));
 
         $this->view('partials.product-card', ['product' => $product->load('category')])
-            ->assertSee('Наличие по запросу')
+            ->assertSee('Уточняйте наличие')
+            ->assertSee('Цена по запросу')
+            ->assertDontSee('100.00 BYN')
             ->assertSee('Уточнить наличие')
             ->assertDontSee('btn-add-to-cart', false);
     }

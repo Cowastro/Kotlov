@@ -140,7 +140,7 @@ class Product extends Model
     public function publicAvailabilityLabel(): string
     {
         if (! $this->hasAssignedSupplier()) {
-            return 'Наличие по запросу';
+            return 'Уточняйте наличие';
         }
 
         $status = $this->publicAvailabilityStatus();
@@ -309,6 +309,13 @@ class Product extends Model
     {
         return ! $this->requires_price_confirmation
             && $this->canBeOrdered()
+            && $this->hasAssignedSupplier();
+    }
+
+    public function hasVerifiedPublicPrice(): bool
+    {
+        return (float) $this->price > 0
+            && ! $this->requires_price_confirmation
             && $this->hasAssignedSupplier();
     }
 

@@ -20,10 +20,13 @@
         : (method_exists($product, 'canBeAddedToCart') ? $product->canBeAddedToCart() : false);
     $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
     $isWishlisted = in_array((int) $product->id, $wishlistProductIds ?? [], true);
+    $hasVerifiedPublicPrice = (float) $product->price > 0
+        && ! $product->requires_price_confirmation
+        && $hasAssignedSupplier;
 
     $price = $isB2bOffer
         ? number_format($b2bComparison['wholesale_price'], 2, '.', ' ') . ' BYN'
-        : ((float) $product->price > 0
+        : ($hasVerifiedPublicPrice
             ? number_format((float) $product->price, 2, '.', ' ') . ' BYN'
             : ($availabilityStatus === 'out_of_stock' ? 'Нет в наличии' : 'Цена по запросу'));
 

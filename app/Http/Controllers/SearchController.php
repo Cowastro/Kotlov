@@ -75,7 +75,7 @@ class SearchController extends Controller
             ->notArchived();
         $search->apply($products, $q, $includeInternal);
         $products = $products
-            ->select('id', 'name', 'slug', 'price', 'category_id')
+            ->select('id', 'name', 'slug', 'price', 'requires_price_confirmation', 'category_id')
             ->with('category:id,slug')
             ->orderByDesc('rating')
             ->limit(6)
@@ -84,7 +84,7 @@ class SearchController extends Controller
                 'type' => 'product',
                 'name' => $p->name,
                 'url' => '/'.($p->category->slug ?? 'catalog').'/'.$p->slug,
-                'price' => $p->price > 0
+                'price' => $p->hasVerifiedPublicPrice()
                     ? number_format($p->price, 2, '.', ' ').' BYN'
                     : 'Цена по запросу',
             ]);
