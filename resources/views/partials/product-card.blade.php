@@ -23,6 +23,11 @@
     $hasVerifiedPublicPrice = (float) $product->price > 0
         && ! $product->requires_price_confirmation
         && $hasAssignedSupplier;
+    $onlineDiscountPercent = (float) config('shop.online_order_discount.percent', 3);
+    $onlinePrice = ! $isB2bOffer && $canBuy && $hasVerifiedPublicPrice
+        ? round((float) $product->price * (1 - $onlineDiscountPercent / 100), 2)
+        : null;
+    $onlineSaving = $onlinePrice !== null ? round((float) $product->price - $onlinePrice, 2) : null;
 
     $price = $isB2bOffer
         ? number_format($b2bComparison['wholesale_price'], 2, '.', ' ') . ' BYN'
@@ -88,6 +93,8 @@
                     data-product-id="{{ $product->id }}"
                     data-name="{{ $product->name }}"
                     data-price="{{ $price }}"
+                    data-online-price="{{ $onlinePrice !== null ? number_format($onlinePrice, 2, '.', ' ').' BYN' : '' }}"
+                    data-online-saving="{{ $onlineSaving !== null ? number_format($onlineSaving, 2, '.', ' ').' BYN' : '' }}"
                     data-category="{{ $product->category->name ?? '' }}"
                     data-description="{{ Str::limit($gasMeterMeta ? ($gasMeterMeta['size'].' — '.$gasMeterMeta['purpose'].'. '.implode('. ', $gasMeterMeta['facts'])) : strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.'), 240) }}"
                     data-image="{{ $product->image_url }}"
@@ -191,6 +198,10 @@
                 </span>
             @endif
         </div>
+
+        @if ($onlinePrice !== null)
+            <p class="online-order-card-price">Онлайн: {{ number_format($onlinePrice, 2, '.', ' ') }} BYN · экономия {{ number_format($onlineSaving, 2, '.', ' ') }} BYN</p>
+        @endif
 
         @if ($isB2bOffer)
             <p class="text-caption-01 cl-text-2 mb-0">

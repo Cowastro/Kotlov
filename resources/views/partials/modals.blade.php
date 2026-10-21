@@ -532,6 +532,10 @@
                     <div class="product-infor-price mb-12">
                         <h4 class="price-on-sale" id="quickView-price">0.00 BYN</h4>
                     </div>
+                    <div class="online-order-price mb-12 d-none" id="quickView-online-price">
+                        <strong></strong>
+                        <span></span>
+                    </div>
                     <p class="product-infor-desc cl-text-2 mb-12" id="quickView-desc">Описание товара</p>
                 </div>
                 <div class="br-line"></div>
@@ -636,13 +640,14 @@
                         </div>
                         <div class="tf-mini-cart-tool-btn btn-add-gift">
                             <i class="icon icon-SealPercent"></i>
-                            <div class="lh-24">Купон</div>
+                            <div class="lh-24">Другой купон</div>
                         </div>
                     </div>
                     <div class="tf-mini-cart-bottom-wrap">
                         <div class="tf-mini-cart-total">
+                            <p class="online-order-mini-note mb-10" id="mini-cart-online-note" style="display:none;">Онлайн-скидка −3% применяется автоматически</p>
                             <p class="d-flex justify-content-between mb-8" id="mini-cart-discount-row" style="display:none!important;">
-                                <span>Скидка <strong id="mini-cart-coupon-code"></strong></span>
+                                <span>Скидка за онлайн-заказ</span>
                                 <strong id="mini-cart-discount"></strong>
                             </p>
                             <h5 class="text-total d-flex align-content-center justify-content-between">
@@ -744,9 +749,6 @@
                                     placeholder="Введите промокод">
                             </fieldset>
                         </div>
-                        <button type="button" class="tf-btn btn-stroke w-100 mb-12" data-apply-online3>
-                            Применить ONLINE3 — скидка 3%
-                        </button>
                         <div class="tf-cart-tool-btns">
                             <button class="subscribe-button tf-btn animate-btn" type="submit">
                                 Применить

@@ -468,12 +468,31 @@ class CartController extends Controller
     private function couponQuote(float $subtotal): array
     {
         $code = session('cart_coupon');
+
+        // Покупателю не нужно запоминать промокод: для обычной розничной
+        // корзины онлайн-скидка подключается при первом расчёте автоматически.
+        // Партнёрская B2B-цена уже является специальной и не суммируется с ней.
+        if (! $code && $subtotal > 0 && $this->isRetailCart()) {
+            $code = (string) config('shop.online_order_discount.code', 'ONLINE3');
+        }
+
         $quote = $this->couponService->quote($code, $subtotal);
 
         if ($code && ! $quote['valid']) {
             session()->forget('cart_coupon');
+        } elseif ($quote['valid'] && session('cart_coupon') !== $quote['code']) {
+            session(['cart_coupon' => $quote['code']]);
         }
 
         return $quote;
+    }
+
+    private function isRetailCart(): bool
+    {
+        $items = $this->getItems();
+
+        return $items !== [] && collect($items)->every(
+            fn (array $item): bool => ($item['pricing_type'] ?? 'retail') !== 'b2b'
+        );
     }
 }

@@ -9,6 +9,8 @@
             var productId = button.dataset.productId || "";
             var name = button.dataset.name || "";
             var price = button.dataset.price || "";
+            var onlinePrice = button.dataset.onlinePrice || "";
+            var onlineSaving = button.dataset.onlineSaving || "";
             var category = button.dataset.category || "";
             var description = button.dataset.description || "";
             var image = button.dataset.image || "/img/products/product-placeholder.jpg";
@@ -29,6 +31,10 @@
 
             $("#quickView-name").text(name);
             $("#quickView-price").text(price);
+            $("#quickView-online-price")
+                .toggleClass("d-none", !onlinePrice)
+                .find("strong").text(onlinePrice ? "Онлайн-цена: " + onlinePrice : "");
+            $("#quickView-online-price span").text(onlineSaving ? "Экономия " + onlineSaving + ". Скидка применится автоматически." : "");
             $("#quickView-category").text(category);
             $("#quickView-desc").text(description);
             $("#quickView-detail-link").attr("href", url);

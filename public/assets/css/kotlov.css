@@ -6,6 +6,34 @@
     color: var(--primary) !important;
 }
 
+/* Онлайн-цена: выгода показывается там, где покупатель принимает решение. */
+.online-order-cart-note,
+.online-order-mini-note {
+    border-radius: 12px;
+    background: #f0f8f1;
+    color: #1d6f34;
+}
+.online-order-cart-note { padding: 14px 16px; }
+.online-order-cart-note strong { display: block; }
+.online-order-mini-note { padding: 9px 11px; font-size: 12px; font-weight: 650; }
+.online-order-price { margin-top: 8px; padding: 11px 13px; border-radius: 12px; background: #f0f8f1; color: #195e2d; }
+.online-order-price strong { display: block; font-size: 17px; }
+.online-order-price span { display: block; margin-top: 2px; font-size: 12px; }
+.online-order-card-price { margin: 3px 0 0; color: #1d6f34; font-size: 12px; font-weight: 650; line-height: 1.35; }
+.online-order-reminder { position: fixed; z-index: 999; left: 50%; bottom: 24px; width: min(430px, calc(100vw - 32px)); padding: 20px 54px 20px 20px; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: #151515; color: #fff; box-shadow: 0 18px 55px rgba(0,0,0,.28); opacity: 0; transform: translate(-50%,18px); transition: opacity .25s ease, transform .25s ease; }
+.online-order-reminder.is-visible { opacity: 1; transform: translate(-50%,0); }
+.online-order-reminder__close { position: absolute; top: 9px; right: 12px; border: 0; background: transparent; color: #aaa; font-size: 26px; line-height: 1; }
+.online-order-reminder__eyebrow { display: block; margin-bottom: 5px; color: #ff6b70; font-size: 12px; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; }
+.online-order-reminder strong { display: block; font-size: 19px; }
+.online-order-reminder p { margin: 7px 0 14px; color: #d4d4d4; font-size: 13px; line-height: 1.45; }
+.online-order-reminder .tf-btn { min-height: 42px; background: #fff; color: #151515; }
+.online-order-reminder .tf-btn:hover { background: #df4145; color: #fff; }
+
+@media (max-width: 575px) {
+    .online-order-reminder { bottom: 88px; padding: 17px 46px 17px 17px; }
+    .online-order-reminder strong { font-size: 17px; }
+}
+
 .tf-product-extra-link .wishlist-toggle[aria-busy="true"] {
     pointer-events: none;
     opacity: 0.65;

@@ -181,14 +181,12 @@
                                     </div>
                                 </div>
 
-                                <form action="{{ route('cart.coupon') }}" method="POST" class="mb-20" id="online3-cart-form">
-                                    @csrf
-                                    <input type="hidden" name="coupon" value="ONLINE3">
-                                    <button type="submit" class="tf-btn btn-stroke w-100">
-                                        {{ $coupon['code'] === 'ONLINE3' ? 'ONLINE3 применён — скидка 3%' : 'Применить ONLINE3 и получить −3%' }}
-                                    </button>
-                                    <p class="text-caption-01 cl-text-2 mt-8 mb-0">За самостоятельное оформление заказа на сайте.</p>
-                                </form>
+                                @if ($coupon['code'] === config('shop.online_order_discount.code', 'ONLINE3'))
+                                    <div class="online-order-cart-note mb-20">
+                                        <strong>Онлайн-скидка применена автоматически</strong>
+                                        <p class="text-caption-01 cl-text-2 mt-4 mb-0">Вы оформляете заказ через корзину — поэтому цена ниже на 3%. Ничего вводить не нужно.</p>
+                                    </div>
+                                @endif
 
                                 <div class="br-line mb-16"></div>
 

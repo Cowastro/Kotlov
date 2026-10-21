@@ -245,6 +245,11 @@
                                         : $product->publicAvailabilityLabel();
                                     $displayAvailabilityStatus = $b2bOffer ? $availabilityStatus : $product->publicAvailabilityStatus();
                                     $displayPrice = $b2bComparison['wholesale_price'] ?? (float) $product->price;
+                                    $onlineDiscountPercent = (float) config('shop.online_order_discount.percent', 3);
+                                    $onlinePrice = ! $b2bOffer && $canBuy && (float) $product->price > 0
+                                        ? round((float) $product->price * (1 - $onlineDiscountPercent / 100), 2)
+                                        : null;
+                                    $onlineSaving = $onlinePrice !== null ? round((float) $product->price - $onlinePrice, 2) : null;
                                     $showPreviewPrice = request()->boolean('admin-preview')
                                         && auth()->user()?->isManager()
                                         && (float) $product->price > 0;
@@ -307,6 +312,13 @@
                                         <h4 class="price-on-sale text-primary">Цену уточняйте</h4>
                                     @endif
                                 </div>
+
+                                @if ($onlinePrice !== null)
+                                    <div class="online-order-price mb-16">
+                                        <strong>Онлайн-цена: {{ number_format($onlinePrice, 2, '.', ' ') }} BYN</strong>
+                                        <span>Экономия {{ number_format($onlineSaving, 2, '.', ' ') }} BYN. Скидка применится в корзине автоматически.</span>
+                                    </div>
+                                @endif
 
                                 @include('partials.manager-product-context', ['product' => $product])
 

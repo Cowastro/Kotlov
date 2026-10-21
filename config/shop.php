@@ -2,6 +2,12 @@
 
 return [
 
+    // Публичная выгода за самостоятельное оформление через корзину.
+    'online_order_discount' => [
+        'code' => 'ONLINE3',
+        'percent' => 3,
+    ],
+
     // Операционные пороги для очереди менеджера.
     'order_management' => [
         'minimum_margin_percent' => 10,

@@ -146,6 +146,7 @@
     @include('partials.footer')
     @include('partials.modals')
     @include('partials.ai-product-selector')
+    @include('partials.online-order-reminder')
 
     <script src="{{ asset('assets/js/plugin/jquery.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/bootstrap.min.js') }}"></script>
@@ -268,9 +269,11 @@
             var discountRow = document.getElementById('mini-cart-discount-row');
             var discountEl = document.getElementById('mini-cart-discount');
             var couponCodeEl = document.getElementById('mini-cart-coupon-code');
+            var onlineNote = document.getElementById('mini-cart-online-note');
             if (discountRow) discountRow.style.setProperty('display', parseFloat(data.discount) > 0 ? 'flex' : 'none', 'important');
             if (discountEl) discountEl.textContent = '−' + parseFloat(data.discount).toFixed(2) + ' BYN';
             if (couponCodeEl) couponCodeEl.textContent = data.coupon || '';
+            if (onlineNote) onlineNote.style.display = data.coupon === @json(config('shop.online_order_discount.code', 'ONLINE3')) ? '' : 'none';
         }
 
         // Загрузить данные корзины и отрисовать
@@ -360,16 +363,6 @@
             }
             if (title) title.textContent = 'Уточнить наличие';
             if (description) description.textContent = 'Оставьте контакты — менеджер проверит поставщика, наличие и срок поставки.';
-        });
-
-        document.addEventListener('click', function (e) {
-            var button = e.target.closest('[data-apply-online3]');
-            if (!button) return;
-            var form = button.closest('form');
-            var input = form ? form.querySelector('[name="coupon"]') : null;
-            if (!form || !input) return;
-            input.value = 'ONLINE3';
-            form.requestSubmit();
         });
 
         // Клик «В корзину» — перехватываем, добавляем через AJAX, потом открываем корзину

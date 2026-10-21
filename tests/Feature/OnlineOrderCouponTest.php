@@ -44,6 +44,26 @@ class OnlineOrderCouponTest extends TestCase
         $response->assertSessionHas('cart_coupon', 'ONLINE3');
     }
 
+    public function test_online_discount_is_applied_automatically_when_retail_product_is_added(): void
+    {
+        $product = $this->orderableProduct();
+
+        $response = $this
+            ->withHeader('User-Agent', 'Mozilla/5.0')
+            ->postJson(route('cart.add'), [
+                'product_id' => $product->id,
+                'quantity' => 1,
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'discount' => 6,
+                'total' => 194,
+            ]);
+        $response->assertSessionHas('cart_coupon', 'ONLINE3');
+    }
+
     public function test_unknown_coupon_is_rejected_and_removed_from_session(): void
     {
         $response = $this
@@ -99,10 +119,35 @@ class OnlineOrderCouponTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('−3% за самостоятельный заказ онлайн')
-            ->assertSee('ONLINE3')
-            ->assertSee('без ожидания ответа менеджера')
+            ->assertSee('Онлайн-цена ниже на 3%')
+            ->assertSee('скидка применится автоматически')
+            ->assertSee('Заказы принимаются 24/7')
+            ->assertDontSee('Скопировать промокод')
             ->assertDontSee('болтовн', false);
+    }
+
+    public function test_cart_explains_automatic_discount_without_requiring_the_code(): void
+    {
+        $product = $this->orderableProduct();
+
+        $this->withSession([
+            'cart' => [
+                $product->id => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'sku' => $product->sku,
+                    'price' => 200,
+                    'quantity' => 1,
+                    'category_slug' => $product->category->slug,
+                    'pricing_type' => 'retail',
+                ],
+            ],
+        ])->get(route('cart'))
+            ->assertOk()
+            ->assertSee('Онлайн-скидка применена автоматически')
+            ->assertSee('Ничего вводить не нужно')
+            ->assertDontSee('Применить ONLINE3');
     }
 
     private function orderableProduct(): Product
