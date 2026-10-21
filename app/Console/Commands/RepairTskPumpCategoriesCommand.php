@@ -46,7 +46,7 @@ class RepairTskPumpCategoriesCommand extends Command
             ->where('p.is_archived', false)
             ->orderBy('p.id')
             ->select([
-                'p.id', 'p.name', 'p.category_id', 'p.content', 'p.short_description',
+                'p.id', 'p.name', 'p.slug', 'p.category_id', 'p.content', 'p.short_description',
                 'sp.supplier_name', 'sp.supplier_article', 'c.slug as current_category_slug',
             ]);
 
@@ -97,6 +97,15 @@ class RepairTskPumpCategoriesCommand extends Command
                 $stats['unchanged']++;
                 continue;
             }
+
+            $this->line(sprintf(
+                'audit.tsk_repair.product=%d:%s:%s:%s:%d',
+                (int) $row->id,
+                preg_replace('/[^a-z0-9._-]/', '', (string) $row->slug),
+                preg_replace('/[^a-z0-9_-]/', '', (string) $row->current_category_slug),
+                str_replace('-', '_', $targetSlug),
+                isset($update['content']) ? 1 : 0,
+            ));
 
             if (! $apply) {
                 continue;
