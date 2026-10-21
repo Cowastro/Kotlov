@@ -125,6 +125,8 @@ class MergeSanBusinessGroupSuppliersCommand extends Command
                     ->where(fn ($q) => $q->whereNull('price_byn')->orWhere('price_byn', '<=', 0))->count()
                 : 0,
             'rub_links' => (clone $links)->where('currency', 'RUB')->count(),
+            'target_rub_links_before' => DB::table('supplier_products')->where('supplier_id', $target->id)->where('currency', 'RUB')->count(),
+            'target_links_before' => DB::table('supplier_products')->where('supplier_id', $target->id)->count(),
             'links_without_ecokamin_url' => (clone $links)->where(fn ($q) => $q->whereNull('source_url')->orWhere('source_url', 'not like', '%ecokamin.ru%'))->count(),
         ];
 

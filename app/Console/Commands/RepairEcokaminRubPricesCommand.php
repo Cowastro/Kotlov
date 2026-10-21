@@ -27,7 +27,7 @@ class RepairEcokaminRubPricesCommand extends Command
             return self::FAILURE;
         }
 
-        // Only the rouble links that came from ecokamin.ru: the same supplier
+        // Only the rouble (EcoKamin) links: the same supplier
         // also owns the BYN 1С catalogue, which must not be repriced here.
         $currency = EcokaminChannel::CURRENCY;
         $rate = $this->resolveRate($currency);
@@ -36,7 +36,6 @@ class RepairEcokaminRubPricesCommand extends Command
             ->join('products as p', 'p.id', '=', 'sp.product_id')
             ->where('sp.supplier_id', $supplierId)
             ->where('sp.currency', $currency)
-            ->where('sp.source_url', 'like', '%ecokamin.ru%')
             ->whereNotNull('sp.product_id')
             ->where('sp.price', '>', 0)
             ->select([

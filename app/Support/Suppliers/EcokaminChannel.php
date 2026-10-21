@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Http;
 /**
  * EcoKamin products are supplied by ООО «СанБизнесГруп» (supplier code
  * «sanbusinessgroup»); cards and RUB prices come from ecokamin.ru. The same
- * supplier also owns the whole 1С catalogue, so EcoKamin tooling must only
- * touch the links that came from ecokamin.ru.
+ * supplier also owns the whole BYN 1С catalogue, so EcoKamin tooling only
+ * touches the rouble links (not all of them carry an ecokamin.ru URL).
  */
 final class EcokaminChannel
 {
@@ -26,12 +26,12 @@ final class EcokaminChannel
         return $id ? (int) $id : null;
     }
 
-    /** supplier_products rows that came from ecokamin.ru. */
+    /** EcoKamin supplier_products rows: the supplier's only rouble links. */
     public static function links(int $supplierId): Builder
     {
         return DB::table('supplier_products')
             ->where('supplier_id', $supplierId)
-            ->where('source_url', 'like', '%ecokamin.ru%');
+            ->where('currency', self::CURRENCY);
     }
 
     /** Official NBRB rate (BYN per 1 RUB); falls back to the last stored EcoKamin rate. */
@@ -50,7 +50,7 @@ final class EcokaminChannel
 
         $supplierId = self::supplierId();
         $stored = $supplierId
-            ? self::links($supplierId)->where('currency', self::CURRENCY)->where('currency_rate', '>', 0)
+            ? self::links($supplierId)->where('currency_rate', '>', 0)
                 ->orderByDesc('updated_at')->value('currency_rate')
             : null;
         if (! $stored) {
