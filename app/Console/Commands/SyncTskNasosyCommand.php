@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\SupplierProductAvailabilityService;
+use App\Support\Catalog\TskPumpClassifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -56,35 +57,23 @@ class SyncTskNasosyCommand extends Command
         'status'       => 16, // Наличие в Минске
     ];
 
-    /** name/model keyword → KOTLOV category_id (checked in order). */
-    private const CATEGORY_MAP = [
-        'гидроаккум'    => 89,
-        'мембранн'      => 89,
-        'расширительн'  => 89,
-        'фекаль'       => 265,
-        'дренаж'       => 265,
-        'канализац'    => 265,
-        'fekamax'      => 265,
-        'wq'           => 265, // WELLMIX WQ — погружные дренажно-фекальные
-        'эцв'          => 272, // скважинные
-        'скважин'      => 272,
-        'eco maxi'     => 272,
-        'циркуляц'     => 60,
-        'nmt'          => 60,  // IMP/WELLMIX циркуляционные
-        'насосная станция' => 251,
-        'станци'       => 251,
-        'повышения давления' => 60,
-        'насос'        => 272, // generic pump
+    /** Stable fallbacks for installations that have not yet seeded the slugs. */
+    private const CATEGORY_FALLBACKS = [
+        'membrannyie-baki' => 89,
+        'drenajnyie' => 265,
+        'tsirkulyatsionnyie' => 60,
+        'poverhnostnyie' => 249,
+        'nasosnyie-stantsii' => 251,
+        'skvajinnye-nasosy' => 272,
+        'vodosnabzhenie' => 246,
     ];
-
-    /** Default category when nothing matches (so every priced row is created). */
-    private const DEFAULT_CATEGORY = 272;
 
     private array $indexBySupplierArticle = [];
     private array $indexBySku = [];
     private array $indexByBrandModel = [];
     private array $brandById = [];
     private array $brandByName = [];
+    private array $categoryIdBySlug = [];
 
     public function handle(): int
     {
@@ -490,13 +479,15 @@ class SyncTskNasosyCommand extends Command
 
     private function resolveCategory(string $name): int
     {
-        $low = mb_strtolower($name);
-        foreach (self::CATEGORY_MAP as $kw => $cat) {
-            if (str_contains($low, $kw)) {
-                return $cat;
-            }
+        $slug = TskPumpClassifier::categorySlug($name) ?? 'vodosnabzhenie';
+
+        if (! array_key_exists($slug, $this->categoryIdBySlug)) {
+            $this->categoryIdBySlug[$slug] = (int) (DB::table('categories')
+                ->where('slug', $slug)
+                ->value('id') ?? self::CATEGORY_FALLBACKS[$slug] ?? self::CATEGORY_FALLBACKS['vodosnabzhenie']);
         }
-        return self::DEFAULT_CATEGORY;
+
+        return $this->categoryIdBySlug[$slug];
     }
 
     // ── Dry-run report (step 12) ──────────────────────────────────────────────────

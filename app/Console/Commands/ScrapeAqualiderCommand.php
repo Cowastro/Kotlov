@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Console\Commands\Concerns\ScrapesAqualiderCard;
+use App\Support\Catalog\TskPumpClassifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -47,6 +48,10 @@ class ScrapeAqualiderCommand extends Command
         'gidroakkumulyatory' => ['/c/gidroakkumulyatory', 89],
         'rasshiritelnye-baki' => ['/c/rasshiritelnye-baki', 89],
         'baki-gvs'          => ['/c/rasshiritelnye-baki-dlya-sistem-gvs', 89],
+        'poverhnostnye'     => ['/c/poverhnostnye-nasosy', 249],
+        'skvazhinnye'       => ['/c/skvazhinnye-nasosy', 272],
+        'drenazhnye'        => ['/c/drenazhnye-nasosy', 265],
+        'motopompy'         => ['/c/motopompy', 249],
     ];
 
     /**
@@ -142,7 +147,7 @@ class ScrapeAqualiderCommand extends Command
         $d = $this->parseCard($html, $url);
         $this->stats['parsed']++;
 
-        $catId = $this->resolveCategory($d['breadcrumb'], $defaultCat);
+        $catId = $this->resolveCategory($d['name'].' '.$d['breadcrumb'], $defaultCat);
 
         $this->line(sprintf('<fg=cyan>%s</> %s | бренд:%s | цена:%s | specs:%d | cat:%d',
             $d['article'], mb_substr($d['name'], 0, 44), $d['brand'] ?: '—',
@@ -180,6 +185,14 @@ class ScrapeAqualiderCommand extends Command
 
     private function resolveCategory(string $breadcrumb, int $default): int
     {
+        $slug = TskPumpClassifier::categorySlug($breadcrumb);
+        if ($slug !== null) {
+            $resolved = DB::table('categories')->where('slug', $slug)->value('id');
+            if ($resolved !== null) {
+                return (int) $resolved;
+            }
+        }
+
         $low = mb_strtolower($breadcrumb);
         foreach (self::CATEGORY_MAP as $kw => $cat) {
             if (str_contains($low, $kw)) {
