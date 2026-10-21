@@ -29,6 +29,11 @@ class EnrichAzbukaTeplaOfficialCommandTest extends TestCase
             ['SALUS', 'RT310', 'https://saluscontrols.com/global/product/rt310-wired-non-programmable-thermostat/'],
             ['Barberi', '46002000MB', 'https://www.barberi.it/ww/ru/produktsiya/b2-rotary-mixing-valves-and-actuators/3-way-mixing-valves/460'],
             ['Barberi', 'V07M250 AA L2', 'https://www.barberi.it/ww/en/products/b1-thermostatic-mixing-valves/thermostatic-mixing-valves-l-comfort/V07AAL2'],
+            ['Barberi', '27B040N4P3', 'https://www.barberi.it/ww/ru/produktsiya/b3-regulating-groups-and-heating-components/recessed-regulating-groups/recessed-regulating-groups-bdhb/27BN'],
+            ['Kospel', 'SWK-120 TERMO TOP', 'https://kospel.pl/wymienniki-i-zasobniki-cwu/swk-termo-top.html'],
+            ['Kospel', 'SW-251 TERMO MAX', 'https://kospel.pl/wymienniki-i-zasobniki-cwu/sw-i-swz-termo-max.html'],
+            ['Kospel', 'WP Thermo Hit 140', 'https://kospel.pl/wymienniki-i-zasobniki-cwu/wp-i-wpw.html'],
+            ['TESY', '301395', 'https://tesy.com/products/combined-and-indirectly-heated-water-tanks/domestic-hot-water-tanks-without-with-one-heat-exchanger-with-two-heat-exchangers-eec-b-c/domestic-hot-water-tanks-class-b-c-with-one-heat-exchanger/?product=ev-15s-500-75'],
         ];
     }
 }

@@ -144,6 +144,9 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
         }
 
         if ($brandKey === 'barberi') {
+            if (str_contains($ascii, '27B040N4P3') || str_contains($ascii, '27B040N4T3')) {
+                return 'https://www.barberi.it/ww/ru/produktsiya/b3-regulating-groups-and-heating-components/recessed-regulating-groups/recessed-regulating-groups-bdhb/27BN';
+            }
             if (preg_match('/(?:^|[^0-9])(460|461)[0-9A-Z]+/', $ascii)) {
                 return 'https://www.barberi.it/ww/ru/produktsiya/b2-rotary-mixing-valves-and-actuators/3-way-mixing-valves/460';
             }
@@ -154,6 +157,28 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
                     }
                 }
             }
+        }
+
+        if ($brandKey === 'kospel') {
+            if (preg_match('/SWK(?:120|140)/', $ascii)) {
+                return 'https://kospel.pl/wymienniki-i-zasobniki-cwu/swk-termo-top.html';
+            }
+            if (preg_match('/SW(?:120|251|301)/', $ascii)) {
+                return 'https://kospel.pl/wymienniki-i-zasobniki-cwu/sw-i-swz-termo-max.html';
+            }
+            if (preg_match('/WP(?:100|120|140)/', $ascii)) {
+                return 'https://kospel.pl/wymienniki-i-zasobniki-cwu/wp-i-wpw.html';
+            }
+        }
+
+        if ($brandKey === 'tesy') {
+            return match (true) {
+                str_contains($ascii, '301391') => 'https://tesy.com/products/combined-and-indirectly-heated-water-tanks/domestic-hot-water-tanks-without-with-one-heat-exchanger-with-two-heat-exchangers-eec-b-c/domestic-hot-water-tanks-class-b-c-with-two-heat-exchangers/?product=ev-10-7s2-300-65',
+                str_contains($ascii, '301394') => 'https://tesy.com/products/combined-and-indirectly-heated-water-tanks/domestic-hot-water-tanks-without-with-one-heat-exchanger-with-two-heat-exchangers-eec-b-c/domestic-hot-water-tanks-class-b-c-with-one-heat-exchanger/?product=ev-12s-300-65',
+                str_contains($ascii, '301395') => 'https://tesy.com/products/combined-and-indirectly-heated-water-tanks/domestic-hot-water-tanks-without-with-one-heat-exchanger-with-two-heat-exchangers-eec-b-c/domestic-hot-water-tanks-class-b-c-with-one-heat-exchanger/?product=ev-15s-500-75',
+                str_contains($ascii, '301396') => 'https://tesy.com/products/combined-and-indirectly-heated-water-tanks/domestic-hot-water-tanks-without-with-one-heat-exchanger-with-two-heat-exchangers-eec-b-c/domestic-hot-water-tanks-class-b-c-with-two-heat-exchangers/?product=ev-15-7s2-500-75',
+                default => null,
+            };
         }
 
         return null;
