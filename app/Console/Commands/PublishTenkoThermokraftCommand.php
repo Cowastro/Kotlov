@@ -144,9 +144,9 @@ class PublishTenkoThermokraftCommand extends Command
                     ->where('brand_id', $brand->id)->where('category_id', $product->category_id)->where('id', '!=', $product->id)
                     ->where('name', 'like', '%'.(preg_match('/гайка латунная ([0-9 ,\/]+")/u', $product->name, $m) ? $m[1] : 'ТЭН').'%')
                     ->get(['id', 'images'])
-                    ->first(fn (Product $p) => collect($p->images ?: [])->contains(fn ($img) => str_starts_with((string) $img, '/img/')));
+                    ->first(fn (Product $p) => collect($p->images ?: [])->contains(fn ($img) => str_starts_with(ltrim((string) $img, '/'), 'img/')));
                 if ($donor) {
-                    $local = collect($donor->images)->first(fn ($img) => str_starts_with((string) $img, '/img/'));
+                    $local = collect($donor->images)->first(fn ($img) => str_starts_with(ltrim((string) $img, '/'), 'img/'));
                     $product->forceFill(['images' => [$local]])->save();
                     $stats['images_repaired']++;
                 }
