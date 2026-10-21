@@ -383,7 +383,7 @@ class SyncAzbukaTeplaPriceListCommand extends Command
 
     private function createProduct(array $row, Supplier $supplier): ?Product
     {
-        $category = $this->categoryFor($row['description']);
+        $category = $this->categoryFor($row);
         if (! $category) {
             return null;
         }
@@ -422,10 +422,19 @@ class SyncAzbukaTeplaPriceListCommand extends Command
         return $product;
     }
 
-    private function categoryFor(string $description): ?Category
+    /** @param array<string,mixed> $row */
+    private function categoryFor(array $row): ?Category
     {
+        $description = (string) ($row['description'] ?? '');
         $value = mb_strtolower($description);
+        $productText = mb_strtolower(trim(implode(' ', [
+            $description,
+            (string) ($row['partner_name'] ?? ''),
+            (string) ($row['partner_description'] ?? ''),
+        ])));
         $slugs = match (true) {
+            str_contains($productText, 'термостатический элемент') => ['komplektuyushhie-dlya-otopleniya'],
+            str_contains($value, 'трехход'), str_contains($value, 'трёхход') => ['smesitelnye-klapany-i-uzly', 'smesitelnaya-armatura'],
             str_contains($value, 'котел газ') => ['gazovye', 'gazovye-kotly'],
             str_contains($value, 'котел электр') => ['elektricheskie', 'elektricheskie-kotly'],
             str_contains($value, 'бойлер косвен') => ['kosvennye', 'vodonagrevateli-kosvennogo-nagreva'],
@@ -518,13 +527,19 @@ class SyncAzbukaTeplaPriceListCommand extends Command
 
     private function productName(array $row): string
     {
-        $prefix = match (mb_strtolower($row['description'])) {
-            'котел газовый' => 'Газовый котел',
-            'котел электрический' => 'Электрический котел',
-            'бойлер косвенного нагрева' => 'Бойлер косвенного нагрева',
-            'термостат комнатный' => 'Комнатный термостат',
-            'насос' => 'Насос',
-            'труба' => 'Труба',
+        $productText = mb_strtolower(trim(implode(' ', [
+            (string) ($row['description'] ?? ''),
+            (string) ($row['partner_name'] ?? ''),
+            (string) ($row['partner_description'] ?? ''),
+        ])));
+        $prefix = match (true) {
+            str_contains($productText, 'термостатический элемент'), str_contains($productText, 'термоэлемент') => 'Термостатический элемент',
+            mb_strtolower($row['description']) === 'котел газовый' => 'Газовый котел',
+            mb_strtolower($row['description']) === 'котел электрический' => 'Электрический котел',
+            mb_strtolower($row['description']) === 'бойлер косвенного нагрева' => 'Бойлер косвенного нагрева',
+            mb_strtolower($row['description']) === 'термостат комнатный' => 'Комнатный термостат',
+            mb_strtolower($row['description']) === 'насос' => 'Насос',
+            mb_strtolower($row['description']) === 'труба' => 'Труба',
             default => Str::ucfirst($row['description']),
         };
 

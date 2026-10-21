@@ -118,6 +118,52 @@ class SyncAzbukaTeplaPriceListCommandTest extends TestCase
         ]);
     }
 
+    public function test_it_places_three_way_valves_and_replacement_elements_in_correct_categories(): void
+    {
+        $valves = Category::query()->create([
+            'name' => 'Смесительные клапаны и узлы',
+            'slug' => 'smesitelnye-klapany-i-uzly',
+        ]);
+        $parts = Category::query()->create([
+            'name' => 'Комплектующие для отопления',
+            'slug' => 'komplektuyushhie-dlya-otopleniya',
+        ]);
+        $path = $this->snapshot([
+            [
+                'source_row' => 157,
+                'brand' => 'Barberi',
+                'description' => 'Трехходовой клапан',
+                'model' => 'V07M25N BB L2',
+                'retail_byn' => 414,
+                'purchase_byn' => 289.8,
+                'partner_name' => 'V07M25NBBL2 Термостатический смесительный клапан G1M',
+                'partner_description' => 'Термостатический клапан для ГВС 35-60',
+            ],
+            [
+                'source_row' => 168,
+                'brand' => 'Barberi',
+                'description' => 'Трехходовой клапан',
+                'model' => 'V14025005 AR',
+                'retail_byn' => 86,
+                'purchase_byn' => 60.375,
+                'partner_name' => 'V14025005AR Термостатический элемент для противоконденсатного клапана',
+                'partner_description' => 'Дополнительный термоэлемент для замены 45 гр.',
+            ],
+        ]);
+
+        $this->artisan('supplier:sync-azbuka-tepla', ['file' => $path, '--apply' => true])
+            ->assertSuccessful();
+
+        $this->assertSame(
+            $valves->id,
+            Product::query()->where('name', 'Трехходовой клапан Barberi V07M25N BB L2')->value('category_id')
+        );
+        $this->assertSame(
+            $parts->id,
+            Product::query()->where('name', 'Термостатический элемент Barberi V14025005 AR')->value('category_id')
+        );
+    }
+
     public function test_it_relinks_protherm_skat_to_the_existing_card_and_archives_import_duplicate(): void
     {
         $category = Category::query()->create(['name' => 'Электрические котлы', 'slug' => 'elektricheskie']);
