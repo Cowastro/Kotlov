@@ -65,6 +65,7 @@
                             <div class="gm-field"><label for="gm-length">Межосевое расстояние</label><select id="gm-length" data-gm-length><option value="">Не знаю</option><option value="110">110 мм</option><option value="200">200 мм</option><option value="250">250 мм</option></select></div>
                             <div class="gm-field"><label for="gm-place">Место установки</label><select id="gm-place" data-gm-place><option value="warm">Отапливаемое помещение</option><option value="cold">Холодное помещение или улица</option></select></div>
                             <div class="gm-field"><label for="gm-tech">Какой тип предпочитаете?</label><select id="gm-tech" data-gm-tech><option value="">Показать оба варианта</option><option value="diaphragm">Обычный диафрагменный</option><option value="ultrasonic">Современный ультразвуковой</option></select></div>
+                            <div class="gm-field"><label for="gm-thermal">Нужен термокомпенсатор?</label><select id="gm-thermal" data-gm-thermal><option value="">Не знаю — показать оба варианта</option><option value="yes">Да, с термокомпенсатором</option><option value="no">Нет, без термокомпенсатора</option></select></div>
                         </div>
                     </div>
                     <button type="button" class="gm-calculate" data-gm-calculate>Подобрать счётчик</button>
@@ -163,17 +164,21 @@
         var direction = root.querySelector('[data-gm-direction]').value;
         var length = root.querySelector('[data-gm-length]').value;
         var technology = root.querySelector('[data-gm-tech]').value;
+        var thermal = root.querySelector('[data-gm-thermal]').value;
         var cold = root.querySelector('[data-gm-place]').value === 'cold';
         var nearLimit = !usesRange && total > target.max * .9;
         var exactMatches = models.filter(function (model) {
             return model.size === target.size
                 && (!direction || model.technology === 'ultrasonic' || model.direction === direction)
                 && (!length || model.technology === 'ultrasonic' || model.length === Number(length))
-                && (!technology || model.technology === technology);
+                && (!technology || model.technology === technology)
+                && (!thermal || Boolean(model.thermal) === (thermal === 'yes'));
         });
         var approximate = exactMatches.length === 0;
         var matches = (approximate ? models.filter(function (model) {
-            return model.size === target.size && (!technology || model.technology === technology);
+            return model.size === target.size
+                && (!technology || model.technology === technology)
+                && (!thermal || Boolean(model.thermal) === (thermal === 'yes'));
         }) : exactMatches).sort(function (a, b) {
             var isSgmnG4 = function (model) { return String(model.name || '').toUpperCase().includes('СГМН-1-1-1-G4'); };
             var sgmnFitsRequest = target.size === 'G4'
@@ -185,6 +190,7 @@
                 return (direction && model.direction === direction ? 4 : 0)
                     + (length && model.length === Number(length) ? 4 : 0)
                     + (technology && model.technology === technology ? 3 : 0)
+                    + (thermal && Boolean(model.thermal) === (thermal === 'yes') ? 5 : 0)
                     + (cold && model.thermal ? 2 : 0);
             };
             if (approximate && score(a) !== score(b)) return score(b) - score(a);
@@ -212,7 +218,7 @@
             card.innerHTML = (isSgmnG4 ? '<span class="gm-result__badge">Популярный G4 · левый · L=250</span>' : (index === 0 ? '<span class="gm-result__badge">' + (approximate ? 'Примерно подходит по расходу' : (model.stock_program ? 'Рекомендуем со склада' : 'Рекомендуем под заказ')) + '</span>' : (model.stock_program ? '<span class="gm-result__badge">Складская программа</span>' : '<span class="gm-result__badge" style="background:#777">Под заказ</span>')))
                 + '<div class="gm-result__family">Тип: ' + escapeHtml(model.family_label) + '</div>'
                 + '<strong>' + escapeHtml(model.name) + '</strong>'
-                + '<p>Артикул ' + escapeHtml(model.article) + ' · ' + escapeHtml(model.technology_label) + ' · ' + escapeHtml(model.direction_label) + (model.length ? ' · L=' + model.length + ' мм' : '') + (model.thermal ? ' · термокомпенсация' : '') + '</p>'
+                + '<p>Артикул ' + escapeHtml(model.article_label || model.article) + ' · ' + escapeHtml(model.technology_label) + ' · ' + escapeHtml(model.direction_label) + (model.length ? ' · L=' + model.length + ' мм' : '') + (model.thermal ? ' · с термокомпенсатором' : ' · без термокомпенсатора') + '</p>'
                 + (approximate ? '<p><strong>Предварительный вариант.</strong> ' + (differences.length ? 'Нужно уточнить ' + escapeHtml(differences.join(' и ')) + '.' : 'Сверьте подключение перед заказом.') + '</p>' : '')
                 + '<div class="gm-result__commercial"><span>' + escapeHtml(model.availability_label) + '</span><b>' + escapeHtml(model.price_label) + '</b></div>'
                 + '<a href="' + escapeHtml(model.url) + '">' + (model.buyable ? 'Выбрать и купить' : 'Открыть модель') + ' →</a>'
@@ -224,6 +230,8 @@
         if (nearLimit) warnings.push('Расход близок к пределу ' + target.size + ': проверьте паспортные значения, возможно потребуется следующий класс.');
         if (!direction) warnings.push('Если выбираете диафрагменный счётчик, посмотрите на старом приборе или трубе, с какой стороны входит газ.');
         if (!length) warnings.push('Для замены измерьте расстояние между центрами патрубков.');
+        if (!thermal) warnings.push('Термокомпенсатор нужен, если по проекту требуется учитывать изменение объёма газа при перепадах температуры. Если не уверены — покажите паспорт старого счётчика специалисту.');
+        if (cold && thermal === 'no') warnings.push('Для холодного места вариант без термокомпенсатора выбирайте только после проверки паспорта и проекта.');
         if (cold) warnings.push('Для холодного места обязательно сверьте допустимую температуру конкретного исполнения с паспортом и проектом.');
         warnings.push('Перед заказом сверьте резьбу и разрешённое исполнение с проектом газоснабжения.');
         root.querySelector('[data-gm-warning]').textContent = warnings.join(' ');
