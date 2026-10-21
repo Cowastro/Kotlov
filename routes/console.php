@@ -147,7 +147,7 @@ Schedule::command('supplier:sync-maitek-group --apply --sync-retail-prices')
 
 // Термокрафт: live-прайс UNIVAT и ТЭНов TENKO/СТЭН. Новые карточки
 // создаются только в первом проверенном ручном запуске; cron обновляет связи.
-Schedule::command('supplier:sync-thermokraft --apply --sync-retail-prices')
+Schedule::command('supplier:sync-thermokraft --apply --all-sheets --sync-retail-prices')
     ->hourlyAt(15)
     ->timezone($supplierSyncTimezone)
     ->withoutOverlapping(30)

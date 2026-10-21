@@ -397,9 +397,16 @@ class SyncThermokraftCommand extends Command
                         $stats['archived_duplicates']++;
                     }
                 }
-                if ($this->option('sync-retail-prices') && $row['retail'] !== null && abs((float) $product->price - $row['retail']) > 0.005) {
-                    $product->forceFill(['price' => $row['retail']])->save();
-                    $stats['retail_updated']++;
+                if ($this->option('sync-retail-prices') && $row['retail'] !== null) {
+                    if (abs((float) $product->price - $row['retail']) > 0.005) {
+                        $product->forceFill(['price' => $row['retail']])->save();
+                        $stats['retail_updated']++;
+                    }
+                    // The supplier RRP confirms the price: release a legacy «price on request» hold.
+                    if ($product->requires_price_confirmation) {
+                        $product->forceFill(['requires_price_confirmation' => false])->save();
+                        $stats['price_holds_released'] = ($stats['price_holds_released'] ?? 0) + 1;
+                    }
                 }
                 if ($product->brand_id) {
                     $supplier->brands()->syncWithoutDetaching([$product->brand_id]);
