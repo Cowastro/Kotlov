@@ -321,6 +321,11 @@ jobs:
             echo "git_failure_lines=$(grep -Eic '(^|[[:space:]])(fatal:|error:)|git.*(failed|failure)' "$detail_log" || true)"
             echo "composer_failure_lines=$(grep -Eic 'composer.*(error|failed|failure)|requirements could not be resolved' "$detail_log" || true)"
             echo "migration_failure_lines=$(grep -Eic 'SQLSTATE|migration.*(failed|failure)|QueryException' "$detail_log" || true)"
+            echo "permission_failure_lines=$(grep -Eic 'permission denied|operation not permitted|not writable|cannot write' "$detail_log" || true)"
+            echo "network_failure_lines=$(grep -Eic 'curl error|connection timed out|could not resolve|could not authenticate|network' "$detail_log" || true)"
+            echo "platform_failure_lines=$(grep -Eic 'requires php|platform requirements|does not satisfy that requirement' "$detail_log" || true)"
+            echo "script_failure_lines=$(grep -Eic 'script .* returned with error|post-autoload-dump|post-update-cmd|could not open input file' "$detail_log" || true)"
+            echo "memory_failure_lines=$(grep -Eic 'allowed memory size|out of memory|memory exhausted' "$detail_log" || true)"
             grep -E '^deploy\.stage=(git|composer|migrate|optimize|complete)$' "$detail_log" || true
             echo "safe_deploy_diagnostic_end"
           fi
