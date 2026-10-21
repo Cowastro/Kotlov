@@ -74,4 +74,55 @@ class AuditUnlinkedProductsCommandTest extends TestCase
         $this->assertStringContainsString($unlinked->name, $csv);
         $this->assertStringNotContainsString($linked->name, $csv);
     }
+
+    public function test_operational_audit_includes_non_operational_supplier_links_with_diagnostics(): void
+    {
+        $brand = Brand::query()->create(['name' => 'Auraton', 'slug' => 'auraton']);
+        $category = Category::query()->create(['name' => 'Термостаты', 'slug' => 'termostaty']);
+        $product = Product::query()->create([
+            'brand_id' => $brand->id,
+            'category_id' => $category->id,
+            'name' => 'Терморегулятор Auraton Test',
+            'slug' => 'auraton-test',
+            'sku' => 'AURATON-TEST',
+            'price' => 100,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => false,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'auraton-test-supplier',
+            'name' => 'Auraton Test Supplier',
+            'currency' => 'BYN',
+            'is_active' => false,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'AURATON-TEST',
+            'supplier_name' => $product->name,
+            'price_byn' => 80,
+            'match_confidence' => 'legacy_unverified',
+        ]);
+        $product->load([
+            'supplierProducts.supplier.latestChannelTransition',
+            'integrationProducts.source.supplier',
+            'purchasePriceSources.supplier',
+        ]);
+        $this->assertFalse($product->hasAssignedSupplier());
+
+        $path = storage_path('framework/testing/unlinked-operational-products.csv');
+        $this->artisan('catalog:audit-unlinked-products', [
+            '--output' => $path,
+            '--active-only' => true,
+            '--operational-only' => true,
+            '--brand' => 'Auraton',
+        ])->assertSuccessful();
+
+        $csv = file_get_contents($path);
+        $this->assertStringContainsString($product->name, $csv);
+        $this->assertStringContainsString($supplier->name, $csv);
+        $this->assertStringContainsString('confidence=legacy_unverified', $csv);
+    }
 }

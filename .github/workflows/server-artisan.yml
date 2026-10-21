@@ -217,6 +217,7 @@ jobs:
               audit-unlinked-products)
                 "$PHP_BIN" artisan catalog:audit-unlinked-products \
                   --active-only \
+                  --operational-only \
                   --output=storage/app/reports/catalog/unlinked-products.csv
                 ;;
               audit-price-integrity)
