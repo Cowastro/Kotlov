@@ -69,8 +69,28 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             }
 
             try {
-                $parsed = $enricher->preview($sourceUrl);
                 $verifiedImages = $this->officialImages((string) $row->brand, $model, (string) $row->name);
+                try {
+                    $parsed = $enricher->preview($sourceUrl);
+                } catch (\Throwable $sourceError) {
+                    if ($verifiedImages === []) {
+                        throw $sourceError;
+                    }
+
+                    // A verified product image can still be stored when the
+                    // supplier page is temporarily unavailable. No guessed
+                    // characteristics or copy are generated in this fallback.
+                    $parsed = [
+                        'title' => '',
+                        'description' => '',
+                        'short_description' => '',
+                        'specs' => [],
+                        'service_info' => [],
+                        'documents' => [],
+                        'video_url' => '',
+                        'images' => $verifiedImages,
+                    ];
+                }
                 if ($verifiedImages !== []) {
                     $parsed['images'] = array_values(array_unique(array_merge($verifiedImages, $parsed['images'] ?? [])));
                 }
