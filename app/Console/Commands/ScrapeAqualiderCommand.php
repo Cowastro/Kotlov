@@ -43,7 +43,10 @@ class ScrapeAqualiderCommand extends Command
         'otoplenie'         => ['/catalog/komplektuyushchie_dlya_sistem_otopleniya/', 195],
         'vodosnabzhenie'    => ['/catalog/komplektuyushchie_dlya_sistem_vodosnabzheniya/', 195],
         'armatura'          => ['/catalog/zapornaya_i_reguliruyushchaya_armatura/', 195],
-        'baki'              => ['/catalog/membrannye_baki_dlya_vody/', 89],
+        'baki'              => ['/c/membrannye-baki-dlya-vody', 89],
+        'gidroakkumulyatory' => ['/c/gidroakkumulyatory', 89],
+        'rasshiritelnye-baki' => ['/c/rasshiritelnye-baki', 89],
+        'baki-gvs'          => ['/c/rasshiritelnye-baki-dlya-sistem-gvs', 89],
     ];
 
     /**
@@ -74,7 +77,7 @@ class ScrapeAqualiderCommand extends Command
         $key = (string) $this->option('category');
         if (isset(self::CATEGORIES[$key])) {
             [$path, $defaultCat] = self::CATEGORIES[$key];
-        } elseif (str_starts_with($key, '/catalog/')) {
+        } elseif (str_starts_with($key, '/catalog/') || str_starts_with($key, '/c/')) {
             $path = $key;
             $defaultCat = 272;
         } else {
@@ -102,6 +105,9 @@ class ScrapeAqualiderCommand extends Command
 
         $this->newLine();
         $this->table(['metric', 'count'], array_map(fn ($k, $v) => [$k, $v], array_keys($this->stats), array_values($this->stats)));
+        foreach ($this->stats as $name => $value) {
+            $this->line("metric.tsk_scrape.{$name}={$value}");
+        }
         return self::SUCCESS;
     }
 
@@ -109,13 +115,15 @@ class ScrapeAqualiderCommand extends Command
     {
         $links = [];
         for ($p = 1; $p <= max(1, $maxPages); $p++) {
-            $url = self::BASE . $path . ($p > 1 ? "?PAGEN_1={$p}" : '');
+            $pageParam = str_starts_with($path, '/c/') ? 'page' : 'PAGEN_1';
+            $url = self::BASE . $path . ($p > 1 ? "?{$pageParam}={$p}" : '');
             $html = $this->fetchCard($url);
             if ($html === null) {
                 break;
             }
-            // Product links: the category path + /{numericId}/ (may be deeper subcats).
-            if (preg_match_all('#href="(/catalog/[a-z0-9_/\-]*?/\d+/)"#i', $html, $m)) {
+            // The current catalogue uses /p/{slug}; keep the old Bitrix pattern
+            // as a fallback so the importer survives a staged site migration.
+            if (preg_match_all('#href="((?:/p/[a-z0-9_\-/]+|/catalog/[a-z0-9_/\-]*?/\d+/))"#i', $html, $m)) {
                 foreach ($m[1] as $href) {
                     $links[self::BASE . $href] = true;
                 }

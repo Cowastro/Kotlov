@@ -57,6 +57,9 @@ class SyncTskNasosyCommand extends Command
 
     /** name/model keyword → KOTLOV category_id (checked in order). */
     private const CATEGORY_MAP = [
+        'гидроаккум'    => 89,
+        'мембранн'      => 89,
+        'расширительн'  => 89,
         'фекаль'       => 265,
         'дренаж'       => 265,
         'канализац'    => 265,
@@ -539,6 +542,10 @@ class SyncTskNasosyCommand extends Command
 
         $this->newLine();
         $this->line('Запусти с <fg=green>--apply</> (и <fg=green>--create-new</> для новых).');
+        $this->line('metric.tsk_sync.rows=' . count($rows));
+        $this->line('metric.tsk_sync.matched=' . ($actions['matched'] ?? 0));
+        $this->line('metric.tsk_sync.create_candidates=' . ($actions['create_candidate'] ?? 0));
+        $this->line('metric.tsk_sync.skipped=' . $skipped);
         return self::SUCCESS;
     }
 
@@ -594,6 +601,9 @@ class SyncTskNasosyCommand extends Command
 
         $this->newLine();
         $this->table(['метрика', 'кол-во'], array_map(fn ($k, $v) => [$k, $v], array_keys($stats), array_values($stats)));
+        foreach ($stats as $name => $value) {
+            $this->line("metric.tsk_sync.{$name}={$value}");
+        }
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 

@@ -33,7 +33,9 @@ trait ScrapesAqualiderCard
      */
     protected function parseCard(string $html, string $url): array
     {
-        $name = $this->metaTag($html, 'og:title');
+        $schema = $this->productSchema($html);
+
+        $name = trim((string) ($schema['name'] ?? '')) ?: $this->metaTag($html, 'og:title');
         $name = trim(preg_replace('/\s*купить.*$/iu', '', $name) ?? $name);
 
         $specs = [];
@@ -49,37 +51,73 @@ trait ScrapesAqualiderCard
             }
         }
 
-        $brand = $specs['Бренд'] ?? '';
+        // Current aqualider.by cards use a semantic <dl><dt>/<dd> list.
+        // Keep the Bitrix parser above as a fallback for legacy pages.
+        if (preg_match_all('#<dt[^>]*>(.*?)</dt>\s*<dd[^>]*>(.*?)</dd>#isu', $html, $pairs, PREG_SET_ORDER)) {
+            foreach ($pairs as $pair) {
+                $k = $this->htmlText($pair[1]);
+                $v = $this->htmlText($pair[2]);
+                if ($k === 'Бренд' && $v === '' && preg_match('/(?:title|alt)="([^"]+)"/iu', $pair[2], $brandMatch)) {
+                    $v = $this->cleanParsedText($brandMatch[1]);
+                }
+                if ($k !== '' && $v !== '' && mb_strlen($k) <= 80 && ! isset($specs[$k])) {
+                    $specs[$k] = $v;
+                }
+            }
+        }
+
+        $schemaBrand = is_array($schema['brand'] ?? null)
+            ? (string) ($schema['brand']['name'] ?? '')
+            : (string) ($schema['brand'] ?? '');
+        $brand = trim($schemaBrand) ?: ($specs['Бренд'] ?? '');
         unset($specs['Бренд']);
 
-        $article = '';
-        if (preg_match('/Артикул:\s*<\/span>\s*<[^>]*>\s*([0-9A-Za-zА-Яа-я\-\/.]+)/u', $html, $a)
-            || preg_match('/Артикул:[^0-9A-Za-z]*([0-9]{4,})/u', $html, $a)) {
+        $article = trim((string) ($schema['sku'] ?? ''));
+        if ($article === '' && (preg_match('/class="tr-buybox__art"[^>]*>\s*Артикул:\s*<b[^>]*>\s*([^<]+)/iu', $html, $a)
+            || preg_match('/Артикул:\s*<\/span>\s*<[^>]*>\s*([0-9A-Za-zА-Яа-я\-\/.]+)/u', $html, $a)
+            || preg_match('/Артикул:[^0-9A-Za-z]*([0-9]{4,})/u', $html, $a))) {
             $article = trim($a[1]);
         }
         if ($article === '' && preg_match('#/(\d+)/?$#', $url, $idm)) {
             $article = 'AQ-' . $idm[1];
         }
 
-        $price = null;
-        if (preg_match('/itemprop="price"\s+content="([0-9.]+)"/', $html, $pm)) {
+        $offers = is_array($schema['offers'] ?? null) ? $schema['offers'] : [];
+        $price = isset($offers['price']) && is_numeric($offers['price']) ? (float) $offers['price'] : null;
+        if ($price === null && preg_match('/itemprop="price"\s+content="([0-9.]+)"/', $html, $pm)) {
             $price = (float) $pm[1];
+        } elseif ($price === null && preg_match('/tr-buybox__sum[^>]*>.*?<b[^>]*>\s*([0-9\s.,]+)/su', $html, $pm)) {
+            $price = (float) str_replace([' ', "\u{A0}", ','], ['', '', '.'], trim($pm[1]));
         }
 
-        $image = $this->metaTag($html, 'og:image') ?: null;
-        $images = $this->extractGallery($html, $image);
+        $schemaImages = $schema['image'] ?? [];
+        $schemaImages = is_string($schemaImages) ? [$schemaImages] : (is_array($schemaImages) ? $schemaImages : []);
+        $image = ($schemaImages[0] ?? null) ?: ($this->metaTag($html, 'og:image') ?: null);
+        $images = array_values(array_unique(array_merge($schemaImages, $this->extractGallery($html, $image))));
 
         $crumbs = [];
         if (preg_match_all('/breadcrumbs__item-name[^>]*>([^<]+)</u', $html, $bm)) {
             $crumbs = array_map('trim', $bm[1]);
         }
+        if ($crumbs === [] && preg_match('/<nav[^>]+class="[^"]*aq-crumbs[^"]*"[^>]*>(.*?)<\/nav>/isu', $html, $crumbNav)) {
+            preg_match_all('#<(?:a|span)[^>]*>(.*?)</(?:a|span)>#isu', $crumbNav[1], $crumbMatches);
+            $crumbs = array_values(array_filter(array_map(fn ($v) => $this->htmlText($v), $crumbMatches[1] ?? [])));
+        }
         $breadcrumb = implode(' / ', $crumbs);
 
-        $desc = $this->metaTag($html, 'og:description');
+        $desc = trim((string) ($schema['description'] ?? '')) ?: $this->metaTag($html, 'og:description');
 
         // Availability from the site (Достаточно/Мало/Нет/Под заказ).
         $stockText = ''; $stockStatus = 'unknown'; $inStock = false;
-        if (preg_match('/(Нет в наличии|Под заказ|Достаточно|Мало|В наличии)/u', $html, $sm)) {
+        $schemaAvailability = (string) ($offers['availability'] ?? '');
+        if (str_contains($schemaAvailability, 'InStock')) {
+            $stockText = 'В наличии';
+            $stockStatus = 'in_stock';
+            $inStock = true;
+        } elseif (str_contains($schemaAvailability, 'OutOfStock')) {
+            $stockText = 'Нет в наличии';
+            $stockStatus = 'out_of_stock';
+        } elseif (preg_match('/(Нет в наличии|Под заказ(?:\s+\d+[\-–]\d+\s*(?:дн|нед|мес)\.?)?|Достаточно|Мало|В наличии)/u', $html, $sm)) {
             $stockText = $sm[1];
             $l = mb_strtolower($sm[1]);
             if (str_contains($l, 'нет')) {
@@ -95,6 +133,32 @@ trait ScrapesAqualiderCard
 
         return compact('name', 'brand', 'article', 'price', 'specs', 'image', 'images', 'breadcrumb', 'desc',
             'stockText', 'stockStatus', 'inStock');
+    }
+
+    /** @return array<string,mixed> */
+    protected function productSchema(string $html): array
+    {
+        if (! preg_match_all('#<script[^>]+type="application/ld\+json"[^>]*>(.*?)</script>#isu', $html, $matches)) {
+            return [];
+        }
+        foreach ($matches[1] as $json) {
+            $decoded = json_decode(html_entity_decode($json, ENT_QUOTES | ENT_HTML5, 'UTF-8'), true);
+            if (is_array($decoded) && ($decoded['@type'] ?? null) === 'Product') {
+                return $decoded;
+            }
+        }
+        return [];
+    }
+
+    protected function htmlText(string $html): string
+    {
+        return $this->cleanParsedText(strip_tags($html));
+    }
+
+    protected function cleanParsedText(string $value): string
+    {
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
     }
 
     /**
@@ -117,6 +181,13 @@ trait ScrapesAqualiderCard
 
         if ($primary !== null && $primary !== '') {
             $urls[$abs($primary)] = true;
+        }
+
+        // Current storefront product gallery.
+        if (preg_match_all('#aq-gallery__slide[^>]*>\s*<img[^>]+src="([^"]+)"#isu', $html, $gallery)) {
+            foreach ($gallery[1] as $url) {
+                $urls[$abs($url)] = true;
+            }
         }
 
         // resize_cache detail copies (≥400×400) → originals
