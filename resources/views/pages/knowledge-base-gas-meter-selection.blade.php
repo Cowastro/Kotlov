@@ -42,7 +42,7 @@
 
     <section class="gm-guide flat-spacing">
         <div class="container">
-            <p class="gm-guide__intro">В программе восемь понятных типов счётчиков БелОМО и точные исполнения с разным направлением, монтажной длиной и наличием термокомпенсатора. Отметьте приборы и параметры подключения: подборщик сначала определит подходящий тип, затем покажет конкретный артикул, цену и наличие. Исполнения вне складской программы будут отмечены как варианты под заказ.</p>
+            <p class="gm-guide__intro">Подбор работает по всей линейке БелОМО из прямого прайса производителя. Сначала показываем подходящие модели в наличии, затем остальные точные исполнения под заказ. Для заказной позиции можно сразу отправить запрос цены и срока поставки.</p>
 
             <div class="gm-picker" data-gm-picker>
                 <div class="gm-panel">
@@ -59,7 +59,7 @@
                     <div class="gm-step">
                         <h2>2. Уточните подключение</h2>
                         <div class="gm-fields">
-                            <div class="gm-field"><label for="gm-range">Примерный диапазон расхода</label><select id="gm-range" data-gm-range><option value="">Не знаю — выберу приборы выше</option><option value="2.5">До 2,5 м³/ч — обычно только плита</option><option value="4">До 4 м³/ч — плита или колонка</option><option value="6">До 6 м³/ч — котёл и плита</option><option value="10">До 10 м³/ч — несколько приборов</option></select></div>
+                            <div class="gm-field"><label for="gm-range">Примерный диапазон расхода</label><select id="gm-range" data-gm-range><option value="">Не знаю — выберу приборы выше</option><option value="2.5">До 2,5 м³/ч — обычно только плита</option><option value="4">До 4 м³/ч — плита или колонка</option><option value="6">До 6 м³/ч — котёл и плита</option><option value="10">До 10 м³/ч — несколько приборов</option><option value="16">До 16 м³/ч — повышенный расход по проекту</option></select></div>
                             <div class="gm-field"><label for="gm-flow">Точный расход — только если знаете</label><input id="gm-flow" type="number" min="0" max="50" step="0.01" placeholder="Можно не заполнять" data-gm-flow></div>
                             <div class="gm-field"><label for="gm-direction">Газ входит</label><select id="gm-direction" data-gm-direction><option value="">Не знаю</option><option value="left">Слева</option><option value="right">Справа</option></select></div>
                             <div class="gm-field"><label for="gm-length">Межосевое расстояние</label><select id="gm-length" data-gm-length><option value="">Не знаю</option><option value="110">110 мм</option><option value="200">200 мм</option><option value="250">250 мм</option></select></div>
@@ -78,8 +78,8 @@
             </div>
 
             <section class="gm-section">
-                <h2>{{ count($families) }} типов БелОМО в основной программе</h2>
-                <p class="gm-section__lead">Покупатель выбирает тип по расходу и технологии. Подборщик сам переводит этот выбор в точный артикул с нужным направлением и монтажной длиной.</p>
+                <h2>{{ count($families) }} серий БелОМО в полном подборе</h2>
+                <p class="gm-section__lead">Подборщик использует всю линейку из прямого прайса БелОМО и переводит параметры покупателя в точный артикул. Наличие всегда получает первый приоритет.</p>
                 <div class="gm-family-grid">
                     @foreach ($families as $family)
                         <article class="gm-family-card">
@@ -126,7 +126,7 @@
     var models = @json($models, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     var limits = [
         { size: 'G1,6', max: 2.5 }, { size: 'G2,5', max: 4 },
-        { size: 'G4', max: 6 }, { size: 'G6', max: 10 }
+        { size: 'G4', max: 6 }, { size: 'G6', max: 10 }, { size: 'G10', max: 16 }
     ];
     var format = function (value) { return value.toLocaleString('ru-RU', { maximumFractionDigits: 2 }); };
     var escapeHtml = function (value) {
@@ -193,8 +193,9 @@
                     + (thermal && Boolean(model.thermal) === (thermal === 'yes') ? 5 : 0)
                     + (cold && model.thermal ? 2 : 0);
             };
+            if (Boolean(a.stock_priority) !== Boolean(b.stock_priority)) return a.stock_priority ? -1 : 1;
             if (approximate && score(a) !== score(b)) return score(b) - score(a);
-            if (Boolean(a.stock_program) !== Boolean(b.stock_program)) return a.stock_program ? -1 : 1;
+            if (Boolean(a.request_only) !== Boolean(b.request_only)) return a.request_only ? 1 : -1;
             if (cold && Boolean(a.thermal) !== Boolean(b.thermal)) return a.thermal ? -1 : 1;
             if (Boolean(a.buyable) !== Boolean(b.buyable)) return a.buyable ? -1 : 1;
             if ((a.availability_status === 'in_stock') !== (b.availability_status === 'in_stock')) return a.availability_status === 'in_stock' ? -1 : 1;
@@ -204,24 +205,26 @@
         root.querySelector('[data-gm-size]').textContent = 'Предварительно подходит ' + target.size + ' (до ' + format(target.max) + ' м³/ч).';
         var familyCount = new Set(matches.map(function (model) { return model.family_key; })).size;
         root.querySelector('[data-gm-family-count]').textContent = familyCount
-            ? (approximate ? 'Показываем ближайшие модели по расходу. Параметры подключения нужно уточнить.' : 'Подходящих типов из программы: ' + familyCount + '. Ниже — точные исполнения.')
+            ? (approximate ? 'Показываем ближайшие модели по расходу. В наличии идут первыми, остальные доступны под заказ.' : 'Подходящих серий: ' + familyCount + '. В наличии идут первыми, затем вся линейка под заказ.')
             : 'Точного исполнения в программе не найдено.';
         var list = root.querySelector('[data-gm-models]');
         list.innerHTML = '';
-        matches.slice(0, 6).forEach(function (model, index) {
+        matches.forEach(function (model, index) {
             var card = document.createElement('article');
             card.className = 'gm-result__model' + (index === 0 ? ' gm-result__model--best' : '');
             var isSgmnG4 = String(model.name || '').toUpperCase().includes('СГМН-1-1-1-G4');
             var differences = [];
             if (approximate && direction && model.technology !== 'ultrasonic' && model.direction !== direction) differences.push('сторону входа газа');
             if (approximate && length && model.technology !== 'ultrasonic' && model.length !== Number(length)) differences.push('межосевое расстояние');
-            card.innerHTML = (isSgmnG4 ? '<span class="gm-result__badge">Популярный G4 · левый · L=250</span>' : (index === 0 ? '<span class="gm-result__badge">' + (approximate ? 'Примерно подходит по расходу' : (model.stock_program ? 'Рекомендуем со склада' : 'Рекомендуем под заказ')) + '</span>' : (model.stock_program ? '<span class="gm-result__badge">Складская программа</span>' : '<span class="gm-result__badge" style="background:#777">Под заказ</span>')))
+            card.innerHTML = (model.stock_priority ? '<span class="gm-result__badge">В наличии · показываем первым</span>' : (isSgmnG4 ? '<span class="gm-result__badge" style="background:#777">Популярный G4 · под заказ</span>' : '<span class="gm-result__badge" style="background:#777">Под заказ</span>'))
                 + '<div class="gm-result__family">Тип: ' + escapeHtml(model.family_label) + '</div>'
                 + '<strong>' + escapeHtml(model.name) + '</strong>'
                 + '<p>Артикул ' + escapeHtml(model.article_label || model.article) + ' · ' + escapeHtml(model.technology_label) + ' · ' + escapeHtml(model.direction_label) + (model.length ? ' · L=' + model.length + ' мм' : '') + (model.thermal ? ' · с термокомпенсатором' : ' · без термокомпенсатора') + '</p>'
                 + (approximate ? '<p><strong>Предварительный вариант.</strong> ' + (differences.length ? 'Нужно уточнить ' + escapeHtml(differences.join(' и ')) + '.' : 'Сверьте подключение перед заказом.') + '</p>' : '')
                 + '<div class="gm-result__commercial"><span>' + escapeHtml(model.availability_label) + '</span><b>' + escapeHtml(model.price_label) + '</b></div>'
-                + '<a href="' + escapeHtml(model.url) + '">' + (model.buyable ? 'Выбрать и купить' : 'Открыть модель') + ' →</a>'
+                + (model.request_only
+                    ? '<a href="#ask" data-bs-toggle="modal" class="btn-product-availability-request" data-product-id="' + escapeHtml(model.product_id || '') + '" data-product-name="' + escapeHtml(model.name + ' · артикул ' + (model.article_label || model.article)) + '" data-product-url="' + escapeHtml(window.location.href) + '">Запросить цену и срок →</a>'
+                    : '<a href="' + escapeHtml(model.url) + '">Выбрать и купить →</a>')
                 + (model.technical_url ? '<a class="gm-result__tech" href="' + escapeHtml(model.technical_url) + '">Проверить обозначение КАТА/СКАТ</a>' : '');
             list.appendChild(card);
         });

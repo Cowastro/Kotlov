@@ -21,7 +21,7 @@ class GasMeterSelectionPageTest extends TestCase
         $this->get(GasMeterSelectionGuide::PAGE_URL)
             ->assertOk()
             ->assertSeeText('Как подобрать газовый счётчик без сложных терминов')
-            ->assertSeeText('восемь понятных типов счётчиков БелОМО')
+            ->assertSeeText('всей линейке БелОМО')
             ->assertSeeText('Подобрать счётчик')
             ->assertSeeText('СГД-3Т-1-1-G4')
             ->assertSee('belomo-kata-skat-oboznacheniya#variants', false)
@@ -66,5 +66,21 @@ class GasMeterSelectionPageTest extends TestCase
             ->assertSee('8181.00.00.000-21', false)
             ->assertSee('8336.00.00.000-06', false)
             ->assertSee('8336.00.00.000-07', false);
+    }
+
+    public function test_selector_uses_full_belomo_lineup_and_requests_order_only_models(): void
+    {
+        $response = $this->get(GasMeterSelectionGuide::PAGE_URL);
+
+        $response->assertOk()
+            ->assertSeeText('всю линейку из прямого прайса БелОМО')
+            ->assertSeeText('До 16 м³/ч — повышенный расход по проекту')
+            ->assertSee('8349.00.00.000-17', false)
+            ->assertSee('Запросить цену и срок', false)
+            ->assertSee('btn-product-availability-request', false);
+
+        $template = file_get_contents(resource_path('views/pages/knowledge-base-gas-meter-selection.blade.php'));
+        $this->assertStringNotContainsString('matches.slice(0, 6)', $template);
+        $this->assertStringContainsString('model.stock_priority', $template);
     }
 }

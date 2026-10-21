@@ -51,7 +51,7 @@ use App\Models\Product;
 use App\Rules\NoHtmlOrLinks;
 use App\Rules\PhoneNotSpam;
 use App\Support\Catalog\BelomoGasMeterDesignations;
-use App\Support\Catalog\BelomoG4ThermalModels;
+use App\Support\Catalog\BelomoSelectorLineup;
 use App\Support\Catalog\GasMeterSelectionGuide;
 use App\Support\KnowledgeBase;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -403,51 +403,20 @@ Route::get(GasMeterSelectionGuide::PAGE_URL, function () {
         ->with(['category', 'brand'])
         ->get();
 
-    $selectorModels = collect(GasMeterSelectionGuide::selectorModels())
-        ->keyBy('article')
-        ->replace(collect(BelomoG4ThermalModels::all())->keyBy('article'))
-        ->values();
-    $matchedProductIds = collect();
-    $stockModels = $selectorModels->map(function (array $model) use ($products, $matchedProductIds): array {
-        $product = $products->first(fn (Product $candidate) => GasMeterSelectionGuide::productMatchesModel($candidate, $model));
+    $selectorModels = collect(BelomoSelectorLineup::models());
+    $stockModels = $selectorModels->map(function (array $model) use ($products): array {
+        $product = $products->first(fn (Product $candidate) => BelomoSelectorLineup::matchesProduct($candidate, $model));
         if (! $product) {
             return $model;
         }
 
-        $matchedProductIds->push($product->id);
-        $stockProgram = (bool) ($model['stock_program'] ?? true);
-        $catalog = GasMeterSelectionGuide::selectorProduct($product, $stockProgram);
-
-        return array_replace($model, $catalog ?? [], [
-            'article' => $model['article'],
-            'article_label' => $model['article_label'] ?? $model['article'],
-            'direction' => $model['direction'],
-            'direction_label' => $model['direction_label'],
-            'length' => $model['length'],
-            'thermal' => $model['thermal'],
-            'family_key' => $model['family_key'],
-            'family_label' => $model['family_label'],
-            'stock_program' => $stockProgram,
-        ]);
+        return BelomoSelectorLineup::attachProduct($model, $product);
     });
 
-    $orderModels = $products
-        ->reject(fn (Product $product) => $matchedProductIds->contains($product->id))
-        ->map(fn (Product $product) => GasMeterSelectionGuide::selectorProduct($product, false))
-        ->filter()
-        ->values();
-
-    $families = collect(GasMeterSelectionGuide::selectorFamilies())
-        ->map(function (array $family) use ($selectorModels): array {
-            $family['executions'] = $selectorModels->where('family_key', $family['key'])->count();
-
-            return $family;
-        });
-
     return view('pages.knowledge-base-gas-meter-selection', [
-        'sizes' => GasMeterSelectionGuide::SIZES,
-        'families' => $families,
-        'models' => $stockModels->concat($orderModels)->values()->all(),
+        'sizes' => BelomoSelectorLineup::sizes(),
+        'families' => BelomoSelectorLineup::families($selectorModels->all()),
+        'models' => $stockModels->values()->all(),
     ]);
 })->name('knowledge-base.gas-meter-selection');
 Route::permanentRedirect(BelomoGasMeterDesignations::LEGACY_PAGE_URL, BelomoGasMeterDesignations::PAGE_URL);
