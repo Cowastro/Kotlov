@@ -325,6 +325,7 @@ class SyncThermokraftCommand extends Command
                     $reason = 'model_key';
                 } elseif ($candidates->count() > 1) {
                     $reason = 'ambiguous_model';
+                    $row['candidates'] = $candidates->pluck('id')->all();
                     $counts['ambiguous'] = ($counts['ambiguous'] ?? 0) + 1;
                 }
             }
@@ -562,6 +563,21 @@ class SyncThermokraftCommand extends Command
                 $productId ? (string) ($slugs[$productId] ?? '') : '',
                 (string) ($row['match_reason'] ?? 'none'),
             ));
+            // Duplicate cards behind an ambiguous row: what is needed to pick the one to keep.
+            foreach (Product::query()->whereIn('id', $row['candidates'] ?? [])->withCount('supplierProducts')->get() as $candidate) {
+                $this->line(sprintf(
+                    'audit.thermokraft.candidate=%s:%d:%d:%s:%d:%d:%d:%d:%d',
+                    $row['gid'],
+                    $row['sheet_row'],
+                    $candidate->id,
+                    $candidate->slug,
+                    (int) $candidate->is_active,
+                    (int) round((float) $candidate->price),
+                    count($candidate->images ?: []),
+                    count($candidate->specs ?: []),
+                    $candidate->supplier_products_count,
+                ));
+            }
         }
     }
 

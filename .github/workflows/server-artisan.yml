@@ -479,6 +479,7 @@ jobs:
             grep -E '^metric\.thermokraft\.[a-z_]+=[0-9-]+$' "$detail_log" || true
             # Public catalogue identifiers only: tab gid, sheet row, product id and storefront slug.
             grep -E '^audit\.thermokraft\.row=[0-9]+:[0-9]+:[0-9]+:[a-z0-9._(),-]*:[a-z_]+$' "$detail_log" || true
+            grep -E '^audit\.thermokraft\.candidate=[0-9]+:[0-9]+:[0-9]+:[a-z0-9._(),-]+(:[0-9]+){5}$' "$detail_log" || true
             echo "safe_thermokraft_metrics_end"
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:enrich-thermokraft-official" ]]; then
