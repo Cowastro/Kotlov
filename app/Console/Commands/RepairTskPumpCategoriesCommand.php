@@ -162,7 +162,12 @@ class RepairTskPumpCategoriesCommand extends Command
 
         $text = mb_strtolower(strip_tags((string) $row->content.' '.(string) $row->short_description));
 
-        return $text === '' || str_contains($text, 'скважин') || str_contains($text, 'погружн');
+        return $text === ''
+            || str_contains($text, 'скважинный насос')
+            || str_contains($text, 'скважинного насоса')
+            || str_contains($text, 'погружной насос')
+            || str_contains($text, 'погружного насоса')
+            || str_contains($text, 'место монтажа в скважине');
     }
 
     /** @return array{content:string,short:string,meta:string} */
