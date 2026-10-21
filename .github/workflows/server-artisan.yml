@@ -338,6 +338,14 @@ jobs:
                   -e 's#[A-Za-z0-9_-]{24,}#<redacted>#g' \
                   -e 's#^#safe_deploy_error=#' \
               || true
+            grep -B 8 -A 2 -F 'Install of symfony/polyfill-php80 failed' "$detail_log" \
+              | sed -E \
+                  -e 's#https?://[^[:space:]]+#<url>#g' \
+                  -e 's#(^|[[:space:]])/[^[:space:]]+#\\1<path>#g' \
+                  -e 's#[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+#<email>#g' \
+                  -e 's#[A-Za-z0-9_-]{24,}#<redacted>#g' \
+                  -e 's#^#safe_composer_context=#' \
+              || true
             grep -E '^deploy\.stage=(git|composer|package-discover|migrate|optimize|complete)$' "$detail_log" || true
             echo "safe_deploy_diagnostic_end"
           fi
