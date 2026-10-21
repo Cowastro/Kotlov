@@ -171,10 +171,13 @@ class SyncThermokraftCommand extends Command
             $barcode = preg_replace('/\D+/', '', $cells[2] ?? '') ?: '';
             $identity = $article !== '' ? $article : ($barcode !== '' ? $barcode : $brand.'-'.$this->shortHash($name));
             $dedupe = $this->key($identity);
-            if ($dedupe === '' || isset($this->seenArticles[$dedupe])) {
+            // The «Общее» tab repeats rows of the other tabs, sometimes without an article.
+            $nameDedupe = 'name:'.$brand.':'.$this->nameKey($name);
+            if ($dedupe === '' || isset($this->seenArticles[$dedupe]) || isset($this->seenArticles[$nameDedupe])) {
                 continue;
             }
             $this->seenArticles[$dedupe] = true;
+            $this->seenArticles[$nameDedupe] = true;
 
             $quantity = $this->stockQuantity($stockText);
             $rows[] = [
@@ -583,7 +586,8 @@ class SyncThermokraftCommand extends Command
         $text = preg_replace('/[«»"“”()\[\],;:+_\/\-–]+/u', ' ', $text) ?? $text;
         $stop = ['котел', 'электрический', 'электрокотел', 'твердотопливный', 'квт', 'в', 'с', 'со', 'и', 'для', 'насосом',
             'grundfos', 'расширительным', 'баком', 'ке', 'кем', 'нке', 'univat', 'tenko', 'стэн', 'sten', 'regler',
-            'двухконтурный', 'терракот', 'с-тэнк', 's', 'tank'];
+            'двухконтурный', 'терракот', 'с-тэнк', 's', 'tank', 'тэнк', 'бак', 'косвенного', 'косвенный', 'нагрева', 'буферная',
+            'емкость', 'водонагреватель', 'литров', 'л', 'регулятор', 'тяги', 'термостат', 'комнатный'];
         $tokens = [];
         foreach (preg_split('/\s+/u', trim($text)) ?: [] as $token) {
             if ($token === '' || in_array($token, $stop, true)) {
@@ -592,6 +596,8 @@ class SyncThermokraftCommand extends Command
             if (preg_match('/^\d+(?:\.\d+)?$/', $token) === 1) {
                 $token = rtrim(rtrim($token, '0'), '.') === '' ? $token : (str_contains($token, '.') ? rtrim(rtrim($token, '0'), '.') : $token);
             }
+            // One alphabet for look-alike letters: «ЕТ-1000» (Cyrillic) = «ET-1000» (Latin).
+            $token = strtr($token, ['а' => 'a', 'в' => 'b', 'е' => 'e', 'к' => 'k', 'м' => 'm', 'н' => 'h', 'о' => 'o', 'р' => 'p', 'с' => 'c', 'т' => 't', 'у' => 'y', 'х' => 'x']);
             $tokens[$token] = true;
         }
         if (! preg_grep('/\d/', array_keys($tokens))) {
