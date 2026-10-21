@@ -6,7 +6,9 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\IntegrationSource;
 use App\Models\SupplierProduct;
+use App\Models\SupplierChannelTransition;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -34,6 +36,20 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
             ['code' => 'metabel'],
             ['name' => 'Мета-Бел', 'is_active' => true],
         );
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $sbg->id,
+            'code' => 'sbg-brand-alignment-source',
+            'name' => '1С СанБизнесГруп — тест',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        SupplierChannelTransition::query()->create([
+            'supplier_id' => $sbg->id,
+            'integration_source_id' => $source->id,
+            'status' => SupplierChannelTransition::STATUS_LEGACY_DISABLED,
+            'snapshot' => [],
+            'legacy_disabled_at' => now(),
+        ]);
 
         $metaProduct = $this->product($category->id, $meta->id, 15001, 'META-TEST');
         $tsarProduct = $this->product($category->id, $tsar->id, 9906, 'TSAR-TEST');

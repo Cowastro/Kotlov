@@ -62,6 +62,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
         $metrics = [
             'metabel_products' => $metaBrand ? DB::table('products')->where('brand_id', $metaBrand->id)->count() : 0,
             'metabel_links_to_move' => 0,
+            'metabel_links_to_verify' => 0,
             'tsar_verified_products' => 0,
             'tsar_links_to_create' => 0,
             'brand_links_to_create' => 0,
@@ -77,6 +78,14 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
                 ->select('supplier_products.*')
                 ->get();
             $metrics['metabel_links_to_move'] = $metaLinks->count();
+        }
+        if ($metaBrand) {
+            $metrics['metabel_links_to_verify'] = DB::table('supplier_products')
+                ->join('products', 'products.id', '=', 'supplier_products.product_id')
+                ->where('products.brand_id', $metaBrand->id)
+                ->where('supplier_products.supplier_id', $sbg->id)
+                ->where('supplier_products.match_confidence', '!=', 'manual_price_list')
+                ->count();
         }
 
         $tsarProducts = $tsarBrand
@@ -126,6 +135,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
                     $payload = (array) $link;
                     unset($payload['id'], $payload['supplier_id'], $payload['created_at']);
                     $payload['updated_at'] = $now;
+                    $payload['match_confidence'] = 'manual_price_list';
 
                     DB::table('supplier_products')->updateOrInsert(
                         ['supplier_id' => $sbg->id, 'supplier_article' => $link->supplier_article],
@@ -133,6 +143,17 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
                     );
                     DB::table('supplier_products')->where('id', $link->id)->delete();
                     $metrics['links_written']++;
+                }
+
+                if ($metaBrand) {
+                    $metaProductIds = DB::table('products')->where('brand_id', $metaBrand->id)->pluck('id');
+                    DB::table('supplier_products')
+                        ->where('supplier_id', $sbg->id)
+                        ->whereIn('product_id', $metaProductIds)
+                        ->update([
+                            'match_confidence' => 'manual_price_list',
+                            'updated_at' => $now,
+                        ]);
                 }
 
                 foreach ($tsarProducts as $product) {

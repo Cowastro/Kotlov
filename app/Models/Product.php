@@ -264,13 +264,16 @@ class Product extends Model
         $hasLegacySupplier = $this->relationLoaded('supplierProducts')
             ? $this->supplierProducts->contains(
                 fn (SupplierProduct $item): bool => $item->supplier?->is_active === true
-                    && $item->supplier->usesLegacyChannel()
+                    && ($item->match_confidence === 'manual_price_list'
+                        || $item->supplier->usesLegacyChannel())
             )
             : $this->supplierProducts()
-                ->whereHas('supplier', fn ($supplier) => $supplier
-                    ->where('is_active', true)
-                    ->whereDoesntHave('latestChannelTransition', fn ($transition) => $transition
-                        ->where('status', SupplierChannelTransition::STATUS_LEGACY_DISABLED)))
+                ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true))
+                ->where(fn ($links) => $links
+                    ->where('match_confidence', 'manual_price_list')
+                    ->orWhereHas('supplier', fn ($supplier) => $supplier
+                        ->whereDoesntHave('latestChannelTransition', fn ($transition) => $transition
+                            ->where('status', SupplierChannelTransition::STATUS_LEGACY_DISABLED))))
                 ->exists();
 
         if ($hasLegacySupplier) {
@@ -398,7 +401,7 @@ class Product extends Model
     public function scopeWithSupplierChannels($query)
     {
         return $query->with([
-            'supplierProducts:id,product_id,supplier_id,supplier_article,supplier_name,price_byn,in_stock,stock_status,stock_quantity,stock_text,warehouse_name,delivery_days,last_stock_synced_at,last_synced_at,updated_at',
+            'supplierProducts:id,product_id,supplier_id,supplier_article,supplier_name,price_byn,in_stock,stock_status,stock_quantity,stock_text,warehouse_name,delivery_days,match_confidence,last_stock_synced_at,last_synced_at,updated_at',
             'supplierProducts.supplier:id,crm_counterparty_id,code,name,contact,is_active',
             'supplierProducts.supplier.crmCounterparty.contactPoints',
             'supplierProducts.supplier.latestChannelTransition',
