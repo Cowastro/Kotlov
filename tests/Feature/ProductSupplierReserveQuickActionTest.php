@@ -79,6 +79,54 @@ class ProductSupplierReserveQuickActionTest extends TestCase
             ]);
     }
 
+    public function test_supplier_reserve_uses_email_channel_when_crm_email_is_missing(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'reserve-channel-supplier',
+            'name' => 'Термостудия',
+            'communication_channels' => [[
+                'type' => 'email',
+                'name' => 'Резервная почта',
+                'value' => 'info@teplo.by',
+            ]],
+            'is_active' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Товары с резервной почтой',
+            'slug' => 'reserve-channel-products',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Товар Термостудии',
+            'slug' => 'reserve-channel-product',
+            'sku' => 'RESERVE-CHANNEL-001',
+            'price' => 435,
+            'currency' => 'BYN',
+            'is_active' => true,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'SUP-CHANNEL-001',
+            'price_byn' => 435,
+            'stock_quantity' => 1,
+        ]);
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(ListProducts::class)
+            ->mountTableAction('request_supplier_reserve', $product)
+            ->assertTableActionDataSet([
+                'supplier_id' => $supplier->id,
+                'recipient' => 'info@teplo.by',
+                'quantity' => 1,
+            ]);
+    }
+
     public function test_product_table_summarizes_all_reserve_requests_and_links_to_history(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);

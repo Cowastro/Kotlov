@@ -73,19 +73,33 @@ class Supplier extends Model
         $emails = $this->crmCounterparty?->contactPoints
             ->where('is_active', true)
             ->where('type', 'email')
+            ->sortByDesc('is_primary')
             ->pluck('value')
             ->filter()
             ->unique()
             ->values()
             ->all() ?? [];
 
-        if ($emails !== []) {
-            return $emails;
-        }
+        $channelEmails = collect($this->communication_channels ?? [])
+            ->flatMap(function ($channel, $key): array {
+                if (is_string($key) && in_array(mb_strtolower($key), ['email', 'mail'], true)) {
+                    return is_array($channel) ? $channel : [$channel];
+                }
+
+                if (is_array($channel) && in_array(mb_strtolower((string) ($channel['type'] ?? '')), ['email', 'mail'], true)) {
+                    return [$channel['value'] ?? null];
+                }
+
+                return [];
+            })
+            ->filter(fn ($value): bool => filter_var(trim((string) $value), FILTER_VALIDATE_EMAIL) !== false)
+            ->map(fn ($value): string => trim((string) $value))
+            ->values()
+            ->all();
 
         preg_match_all('/[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/iu', (string) $this->contact, $matches);
 
-        return collect($matches[0] ?? [])
+        return collect([...$emails, ...$channelEmails, ...($matches[0] ?? [])])
             ->map(fn (string $email): string => trim($email))
             ->filter()
             ->unique()
