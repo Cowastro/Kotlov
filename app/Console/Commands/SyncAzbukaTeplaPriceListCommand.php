@@ -23,6 +23,7 @@ class SyncAzbukaTeplaPriceListCommand extends Command
         {--apply : Записать изменения}
         {--dry-run : Только показать результат}
         {--only-protherm-skat : Обработать только линейку Protherm Скат}
+        {--only-viessmann : Обработать только позиции Viessmann}
         {--skip-create : Не создавать отсутствующие карточки}';
 
     protected $description = 'Азбука Тепла: связать РРЦ и Опт VIP, оставив остаток на уточнение.';
@@ -40,8 +41,17 @@ class SyncAzbukaTeplaPriceListCommand extends Command
             $path = $this->absolutePath((string) $this->argument('file'));
             $payload = $parser->load($path);
             $rows = $payload['rows'];
+            if ($this->option('only-protherm-skat') && $this->option('only-viessmann')) {
+                $this->error('Выберите только один узкий режим синхронизации.');
+
+                return self::FAILURE;
+            }
             if ($this->option('only-protherm-skat')) {
                 $rows = collect($rows)->filter(fn (array $row): bool => $this->isProthermSkatRow($row, $parser))
+                    ->values()->all();
+            }
+            if ($this->option('only-viessmann')) {
+                $rows = collect($rows)->filter(fn (array $row): bool => $this->isViessmannRow($row, $parser))
                     ->values()->all();
             }
             $supplier = Supplier::query()->where('code', 'azbuka-tepla')
@@ -207,7 +217,7 @@ class SyncAzbukaTeplaPriceListCommand extends Command
     private function classify(array $rows, AzbukaTeplaPriceList $parser, ?Supplier $supplier): array
     {
         $products = Product::query()->with('brand:id,name')->get([
-            'id', 'brand_id', 'supplier_id', 'name', 'sku', 'specs', 'is_archived', 'requires_price_confirmation', 'price',
+            'id', 'brand_id', 'supplier_id', 'name', 'sku', 'images', 'content', 'specs', 'is_archived', 'requires_price_confirmation', 'price',
         ]);
         $existing = $supplier
             ? $supplier->supplierProducts()->whereNotNull('product_id')->get()->keyBy('supplier_article_normalized')
@@ -272,6 +282,10 @@ class SyncAzbukaTeplaPriceListCommand extends Command
     /** @return array<int,int> */
     private function knownFamilyMatches($products, array $row, AzbukaTeplaPriceList $parser, ?Supplier $supplier): array
     {
+        if ($this->isViessmannRow($row, $parser)) {
+            return $this->knownViessmannMatches($products, $row, $parser, $supplier);
+        }
+
         if (! $this->isProthermSkatRow($row, $parser)
             || ! preg_match('/^(\d+)\s*скат$/ui', trim((string) $row['model']), $match)) {
             return [];
@@ -303,10 +317,68 @@ class SyncAzbukaTeplaPriceListCommand extends Command
         return $matches->pluck('id')->map(fn ($id): int => (int) $id)->unique()->values()->all();
     }
 
+    /** @return array<int,int> */
+    private function knownViessmannMatches($products, array $row, AzbukaTeplaPriceList $parser, ?Supplier $supplier): array
+    {
+        $source = trim(($row['partner_model'] ?? '').' '.($row['model'] ?? ''));
+        if (! preg_match('/\b(A1HB|A1JB|B1HF)\D{0,8}(\d{2})\b/ui', $source, $match)) {
+            return [];
+        }
+
+        $family = mb_strtoupper($match[1]);
+        $power = preg_quote($match[2], '/');
+        $matches = $products->filter(function (Product $product) use ($parser, $family, $power): bool {
+            if ($parser->key($product->brand?->name) !== 'viessmann') {
+                return false;
+            }
+            $haystack = mb_strtoupper($product->name.' '.json_encode($product->specs, JSON_UNESCAPED_UNICODE));
+
+            return (bool) preg_match('/\b'.preg_quote($family, '/').'\D{0,8}'.$power.'(?!\d)/u', $haystack);
+        });
+
+        if ($supplier) {
+            $canonical = $matches->filter(fn (Product $product): bool => (int) $product->supplier_id !== (int) $supplier->id);
+            if ($canonical->isNotEmpty()) {
+                $matches = $canonical;
+            }
+        }
+        if ($matches->count() <= 1) {
+            return $matches->pluck('id')->map(fn ($id): int => (int) $id)->values()->all();
+        }
+
+        $scored = $matches->mapWithKeys(fn (Product $product): array => [
+            $product->id => $this->viessmannCardScore($product),
+        ]);
+        $best = $scored->max();
+        $ids = $scored->filter(fn (int $score): bool => $score === $best)->keys();
+
+        return $ids->map(fn ($id): int => (int) $id)->values()->all();
+    }
+
+    private function viessmannCardScore(Product $product): int
+    {
+        $images = is_array($product->images) ? $product->images : [];
+        $firstImage = trim((string) ($images[0] ?? ''));
+        $localImage = $firstImage !== ''
+            && ! str_starts_with($firstImage, 'http://')
+            && ! str_starts_with($firstImage, 'https://');
+        $specCount = is_array($product->specs) ? count($product->specs) : 0;
+        $contentLength = mb_strlen(trim(strip_tags((string) $product->content)));
+
+        return ($localImage ? 100000 : ($firstImage !== '' ? 50000 : 0))
+            + min($specCount, 100) * 100
+            + min($contentLength, 5000);
+    }
+
     private function isProthermSkatRow(array $row, AzbukaTeplaPriceList $parser): bool
     {
         return $parser->key($row['brand'] ?? null) === 'protherm'
             && preg_match('/^\d+\s*скат$/ui', trim((string) ($row['model'] ?? ''))) === 1;
+    }
+
+    private function isViessmannRow(array $row, AzbukaTeplaPriceList $parser): bool
+    {
+        return $parser->key($row['brand'] ?? null) === 'viessmann';
     }
 
     private function createProduct(array $row, Supplier $supplier): ?Product

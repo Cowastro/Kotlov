@@ -217,6 +217,102 @@ class SyncAzbukaTeplaPriceListCommandTest extends TestCase
         $this->assertDatabaseMissing('products', ['name' => 'Газовый котел Vaillant VUW TEST']);
     }
 
+    public function test_it_relinks_viessmann_to_the_rich_local_card_and_archives_import_duplicate(): void
+    {
+        $category = Category::query()->create(['name' => 'Газовые котлы', 'slug' => 'gazovye-viessmann-test']);
+        $brand = Brand::query()->create(['name' => 'Viessmann', 'slug' => 'viessmann']);
+        $supplier = Supplier::query()->create([
+            'code' => 'azbuka-tepla',
+            'name' => 'Азбука Тепла',
+            'is_active' => true,
+        ]);
+        $canonical = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Газовый котел Viessmann Vitopend 100 A1JB 24 turbo двухконтурный',
+            'slug' => 'viessmann-vitopend-100-a1jb-24-canonical',
+            'sku' => 'VIESSMANN-A1JB-24',
+            'price' => 1,
+            'is_active' => true,
+            'is_archived' => false,
+            'requires_price_confirmation' => true,
+            'images' => ['img/products/viessmann/a1jb-24.jpg'],
+            'content' => '<p>Полное описание котла Viessmann.</p>',
+            'specs' => [
+                ['name' => 'Модель', 'value' => 'A1JB 24'],
+                ['name' => 'Мощность', 'value' => '24 кВт'],
+            ],
+        ]);
+        $duplicate = Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'supplier_id' => $supplier->id,
+            'name' => 'Газовый котел Viessmann VITOPEND 100 A1JB 23',
+            'slug' => 'gazovyi-kotel-viessmann-vitopend-100-a1jb-23-test',
+            'sku' => 'KOTLOV-099998',
+            'price' => 3390,
+            'is_active' => true,
+            'is_archived' => false,
+            'requires_price_confirmation' => false,
+            'images' => [],
+            'content' => null,
+            'specs' => [],
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $duplicate->id,
+            'product_sku' => $duplicate->sku,
+            'supplier_article' => 'Viessmann VITOPEND 100 A1JB 23',
+            'supplier_article_normalized' => 'viessmannvitopend100a1jb23',
+            'match_status' => 'matched',
+        ]);
+
+        $path = $this->snapshot([
+            [
+                'source_row' => 18,
+                'brand' => 'Viessmann',
+                'description' => 'котел газовый',
+                'model' => 'VITOPEND 100 A1JB 23',
+                'retail_byn' => 3390,
+                'purchase_byn' => 2779.8,
+                'partner_model' => 'A1JB24',
+                'partner_name' => 'Viessmann Vitopend 100-W A1JB 24 кВт',
+                'partner_description' => 'Двухконтурный газовый котел',
+            ],
+            [
+                'source_row' => 2,
+                'brand' => 'Vaillant',
+                'description' => 'котел газовый',
+                'model' => 'VUW TEST',
+                'retail_byn' => 4000,
+                'purchase_byn' => 3200,
+                'partner_name' => 'Контрольная позиция',
+                'partner_description' => 'Не должна обрабатываться узким запуском',
+            ],
+        ]);
+
+        $this->artisan('supplier:sync-azbuka-tepla', [
+            'file' => $path,
+            '--apply' => true,
+            '--only-viessmann' => true,
+        ])
+            ->expectsOutputToContain('metric.azbuka_tepla.selected_rows=1')
+            ->expectsOutputToContain('metric.azbuka_tepla.duplicates_archived=1')
+            ->assertSuccessful();
+
+        $this->assertDatabaseHas('supplier_products', [
+            'supplier_id' => $supplier->id,
+            'product_id' => $canonical->id,
+            'supplier_article_normalized' => 'viessmannvitopend100a1jb23',
+            'price_byn' => 2779.8,
+        ]);
+        $this->assertSame(3390.0, (float) $canonical->fresh()->price);
+        $this->assertFalse($canonical->fresh()->requires_price_confirmation);
+        $this->assertFalse($duplicate->fresh()->is_active);
+        $this->assertTrue($duplicate->fresh()->is_archived);
+        $this->assertDatabaseMissing('products', ['name' => 'Газовый котел Vaillant VUW TEST']);
+    }
+
     /** @param array<int,array<string,mixed>> $rows */
     private function snapshot(array $rows): string
     {
