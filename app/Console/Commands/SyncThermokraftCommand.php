@@ -224,7 +224,7 @@ class SyncThermokraftCommand extends Command
         $byModel = [];
         $linkedElsewhere = $links->pluck('supplier_article_normalized', 'product_id');
         foreach ($products as $product) {
-            $modelKey = $this->modelKey($product->name);
+            $modelKey = $this->modelKey($product->name, (string) $product->brand?->name);
             if ($modelKey !== '') {
                 $byModel[$this->brandKey(($product->brand?->name ?? '').' '.$product->name)][$modelKey][] = $product;
             }
@@ -265,7 +265,7 @@ class SyncThermokraftCommand extends Command
                     $reason = 'exact_name';
                 }
             }
-            if ($productId === 0 && ($modelKey = $this->modelKey($row['name'])) !== '') {
+            if ($productId === 0 && ($modelKey = $this->modelKey($row['name'], $row['brand'])) !== '') {
                 // Same brand, same series/power/voltage/model code: link only a unique, unclaimed card.
                 $candidates = collect($byModel[$this->brandKey($row['brand'].' '.$row['name'])][$modelKey] ?? [])
                     ->unique('id')
@@ -588,7 +588,7 @@ class SyncThermokraftCommand extends Command
      * «Котел Tenko Економ 4,5_220» and «Электрический котел Tenko ЭКОНОМ (КЕ)
      * 4,5 кВт 220В» get the same key. Returns '' when no number is present.
      */
-    private function modelKey(string $name): string
+    private function modelKey(string $name, string $brand = ''): string
     {
         $text = mb_strtolower(str_replace(['ё', 'Ё'], 'е', $name));
         // Latin look-alikes inside Cyrillic words («Cтандарт»).
@@ -605,6 +605,8 @@ class SyncThermokraftCommand extends Command
             'grundfos', 'расширительным', 'баком', 'ке', 'кем', 'нке', 'univat', 'tenko', 'стэн', 'sten', 'regler',
             'двухконтурный', 'терракот', 'с-тэнк', 's', 'tank', 'тэнк', 'бак', 'косвенного', 'косвенный', 'нагрева', 'буферная',
             'емкость', 'водонагреватель', 'литров', 'л', 'регулятор', 'тяги', 'термостат', 'комнатный'];
+        // The catalogue repeats the brand in the name («Котел Теплоприбор КС-Т-12,5»), the price does not.
+        $stop = array_merge($stop, preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower(str_replace('ё', 'е', $brand))) ?: []);
         $tokens = [];
         foreach (preg_split('/\s+/u', trim($text)) ?: [] as $token) {
             if ($token === '' || in_array($token, $stop, true)) {
