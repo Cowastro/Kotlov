@@ -86,7 +86,7 @@ class SearchController extends Controller
                 'url' => '/'.($p->category->slug ?? 'catalog').'/'.$p->slug,
                 'price' => $p->hasVerifiedPublicPrice()
                     ? number_format($p->price, 2, '.', ' ').' BYN'
-                    : 'Цена по запросу',
+                    : 'Цену уточняйте',
             ]);
 
         // Категории

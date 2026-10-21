@@ -43,7 +43,7 @@
                                 && $hasAssignedSupplier;
                             $price = $hasVerifiedPublicPrice
                                 ? number_format($product->price, 2, '.', ' ') . ' BYN'
-                                : 'Цена по запросу';
+                                : 'Цену уточняйте';
                             $isPublicSale = method_exists($product, 'isPublicSale') ? $product->isPublicSale() : false;
                             $priceOld = ($hasVerifiedPublicPrice && $isPublicSale && $product->price_old && $product->price_old > $product->price)
                                 ? number_format($product->price_old, 2, '.', ' ') . ' BYN'

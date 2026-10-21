@@ -678,7 +678,7 @@ class Product extends Model
         $integrationFreshAfter = now()->subMinutes(15);
         $oneCFreshAfter = now()->subMinutes(IntegrationSource::ONE_C_STOCK_MIN_VALIDITY_MINUTES);
 
-        return $query->orderByRaw(
+        $query->orderByRaw(
             "CASE WHEN {$requiresConfirmation} = 0
                 AND ({$availability} IS NULL OR {$availability} != ?)
                 AND (
@@ -732,6 +732,14 @@ class Product extends Model
                 $oneCFreshAfter,
                 $oneCFreshAfter,
             ]
+        );
+
+        // Products with an approved retail price stay ahead of consultation
+        // cards even when neither item currently has a confirmed stock count.
+        // The mass safety hold sets this flag for every unlinked price, so an
+        // old popular card can no longer outrank a verified catalogue offer.
+        return $query->orderByRaw(
+            "CASE WHEN {$requiresConfirmation} = 0 AND ".$query->getModel()->qualifyColumn('price')." > 0 THEN 0 ELSE 1 END"
         );
     }
 

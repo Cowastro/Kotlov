@@ -32,7 +32,7 @@ class ProductWithoutSupplierCartGuardTest extends TestCase
 
         $this->view('partials.product-card', ['product' => $product->load('category')])
             ->assertSee('Уточняйте наличие')
-            ->assertSee('Цена по запросу')
+            ->assertSee('Цену уточняйте')
             ->assertDontSee('100.00 BYN')
             ->assertSee('Уточнить наличие')
             ->assertDontSee('btn-add-to-cart', false);

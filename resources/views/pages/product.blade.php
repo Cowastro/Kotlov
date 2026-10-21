@@ -304,7 +304,7 @@
                                             </span>
                                         @endif
                                     @else
-                                        <h4 class="price-on-sale text-primary">Цена по запросу</h4>
+                                        <h4 class="price-on-sale text-primary">Цену уточняйте</h4>
                                     @endif
                                 </div>
 

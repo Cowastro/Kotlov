@@ -30,7 +30,7 @@
         ? number_format($b2bComparison['wholesale_price'], 2, '.', ' ') . ' BYN'
         : ($hasVerifiedPublicPrice
             ? number_format((float) $product->price, 2, '.', ' ') . ' BYN'
-            : ($availabilityStatus === 'out_of_stock' ? 'Нет в наличии' : 'Цена по запросу'));
+            : ($availabilityStatus === 'out_of_stock' ? 'Нет в наличии' : 'Цену уточняйте'));
     $priceOld = (! $isB2bOffer && $canBuy && $isPublicSale && $product->price_old && $product->price_old > $product->price)
         ? number_format($product->price_old, 2, '.', ' ') . ' BYN'
         : null;
