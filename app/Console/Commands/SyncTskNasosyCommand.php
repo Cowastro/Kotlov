@@ -588,7 +588,10 @@ class SyncTskNasosyCommand extends Command
         $now = now();
         $sid = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
-        $stats = array_fill_keys(['matched', 'created', 'updated', 'brand_missing', 'category_missing', 'skipped', 'errors'], 0);
+        $stats = array_fill_keys([
+            'matched', 'created', 'updated', 'brand_missing', 'category_missing', 'skipped', 'errors',
+            'errors_supplier_link', 'errors_product_update', 'errors_duplicate', 'errors_data',
+        ], 0);
         $touchedProductIds = [];
 
         foreach ($rows as $r) {
@@ -600,12 +603,14 @@ class SyncTskNasosyCommand extends Command
                 $stats['skipped']++;
                 continue;
             }
+            $stage = 'supplier_link';
             try {
                 if ($r['matched_product_id'] !== null) {
                     $pid = (int) $r['matched_product_id'];
                     $this->upsertSupplierProduct($r, $pid, (string) $r['matched_sku'], $sid, $syncId, $now);
                     $touchedProductIds[] = $pid;
                     $stats['matched']++;
+                    $stage = 'product_update';
                     if ($this->updateProductRetailAndStock($r, $pid, $now)) {
                         $stats['updated']++;
                     }
@@ -622,6 +627,15 @@ class SyncTskNasosyCommand extends Command
                 }
             } catch (\Throwable $e) {
                 $stats['errors']++;
+                $stats['errors_' . $stage]++;
+                $sqlState = $e instanceof \Illuminate\Database\QueryException
+                    ? (string) ($e->errorInfo[0] ?? '')
+                    : '';
+                if ($sqlState === '23000') {
+                    $stats['errors_duplicate']++;
+                } elseif (str_starts_with($sqlState, '22')) {
+                    $stats['errors_data']++;
+                }
                 $this->warn("[error] {$r['article']}: " . $e->getMessage());
             }
         }
@@ -687,7 +701,7 @@ class SyncTskNasosyCommand extends Command
             'supplier_sync_id' => $syncId,
             'product_id'   => $pid,
             'product_sku'  => $sku,
-            'supplier_name' => trim($r['brand'] . ' ' . $r['name']),
+            'supplier_name' => Str::limit(trim($r['brand'] . ' ' . $r['name']), 255, ''),
             'source_url'   => self::SOURCE_URL,
             'price'        => $r['price'],          // Опт1 — закупка
             'currency'     => 'BYN',
