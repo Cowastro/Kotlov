@@ -103,4 +103,20 @@ class PublishZubrHeatTransferFluidsCommandTest extends TestCase
             ->assertSee('/teplonositeli/teplonositel-zubr-65-etilenglikol-20-kg', false)
             ->assertSeeText('Как разбавить ZUBR -65');
     }
+
+    public function test_category_page_shows_selection_guide_and_faq_schema(): void
+    {
+        $this->category();
+        $this->artisan('catalog:publish-zubr-teplonositeli --apply')->assertSuccessful();
+
+        $this->get('/teplonositeli')
+            ->assertOk()
+            ->assertSeeText('Как выбрать теплоноситель для отопления')
+            ->assertSeeText('Сколько теплоносителя покупать')
+            ->assertSeeText('Вопросы о выборе теплоносителя')
+            ->assertSee('"@type":"FAQPage"', false)
+            ->assertSee('<title>Теплоноситель для отопления: цены, купить', false);
+
+        $this->get('/teplonositeli?page=2')->assertDontSeeText('Как выбрать теплоноситель для отопления');
+    }
 }

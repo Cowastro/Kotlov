@@ -142,6 +142,13 @@ class SeoMetadataBuilder
             );
         }
 
+        if ($slug === 'teplonositeli') {
+            return $this->title(
+                null,
+                'Теплоноситель для отопления: цены, купить ' . $cityIn . ' | KOTLOV'
+            );
+        }
+
         if ($slug === 'tverdotoplivnye') {
             return $this->title(
                 null,
