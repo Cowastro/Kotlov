@@ -830,6 +830,35 @@ class ViewOrder extends ViewRecord
                         ->title('Заказ закрыт и перемещён в архив')
                         ->send();
                 }),
+            Action::make('closeAfterDeliveryRefusal')
+                ->label('Отказ при доставке')
+                ->icon('heroicon-o-truck')
+                ->color('danger')
+                ->extraAttributes(['class' => 'order-view-action order-view-action--danger'])
+                ->visible(fn (): bool => $this->record->canBeClosedAfterDeliveryRefusal())
+                ->modalHeading('Клиент отказался принять заказ?')
+                ->modalDescription('Заказ получит статус «Отменён» и попадёт в архив. Причина, сотрудник и время сохранятся в истории.')
+                ->schema([
+                    Textarea::make('reason')
+                        ->label('Причина отказа при доставке')
+                        ->placeholder('Например: клиент отказался принимать товар при получении.')
+                        ->rows(3)
+                        ->minLength(3)
+                        ->maxLength(1000)
+                        ->required(),
+                ])
+                ->requiresConfirmation()
+                ->modalSubmitActionLabel('Зафиксировать отказ')
+                ->action(function (array $data): void {
+                    $this->record->markDeliveryRefused($data['reason']);
+                    $this->reloadRecord();
+
+                    Notification::make()
+                        ->success()
+                        ->title('Отказ при доставке сохранён')
+                        ->body('Заказ отменён и перемещён в архив.')
+                        ->send();
+                }),
             EditAction::make('correctOrder')
                 ->label('Корректировать заказ')
                 ->icon('heroicon-o-pencil-square')
@@ -915,7 +944,8 @@ class ViewOrder extends ViewRecord
                 return true;
             }
 
-            return $item->fulfillment_supplier_id === null;
+            return in_array($item->fulfillment_route, ['supplier_purchase', 'direct_supplier'], true)
+                && $item->fulfillment_supplier_id === null;
         });
 
         if ($missing->isNotEmpty()) {

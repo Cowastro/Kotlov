@@ -65,6 +65,34 @@ class OrderClosureWorkflowTest extends TestCase
         $this->assertFalse($shipped->canBeClosedAsIrrelevant());
     }
 
+    public function test_manager_can_record_customer_refusal_after_order_was_shipped(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $order = $this->order('shipped');
+
+        Livewire::actingAs($manager)
+            ->test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionVisible('closeAfterDeliveryRefusal')
+            ->callAction('closeAfterDeliveryRefusal', [
+                'reason' => 'Клиент отказался принимать товар при получении',
+            ])
+            ->assertHasNoActionErrors();
+
+        $order->refresh();
+
+        $this->assertSame('cancelled', $order->status);
+        $this->assertSame(
+            'Отказ при доставке: Клиент отказался принимать товар при получении',
+            $order->archive_reason,
+        );
+        $this->assertSame($manager->id, $order->archived_by);
+    }
+
+    public function test_paid_shipped_order_cannot_be_closed_as_delivery_refusal(): void
+    {
+        $this->assertFalse($this->order('shipped', 'paid')->canBeClosedAfterDeliveryRefusal());
+    }
+
     public function test_manager_comment_is_signed_with_logged_in_employee_and_time(): void
     {
         $manager = User::factory()->create([

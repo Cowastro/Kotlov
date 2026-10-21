@@ -95,6 +95,7 @@ class Order extends Model
     /** Причины закрытия заказа без удаления истории. */
     public const CLOSURE_REASONS = [
         'customer_refusal' => 'Отказ клиента',
+        'delivery_refusal' => 'Отказ при доставке',
         'irrelevant' => 'Заявка больше не актуальна',
         'unreachable' => 'Не удалось связаться',
         'duplicate' => 'Дубль заказа',
@@ -251,6 +252,34 @@ class Order extends Model
         return in_array($this->status, ['new', 'checking', 'confirmed', 'processing'], true)
             && $this->payment_status !== 'paid'
             && $this->archived_at === null;
+    }
+
+    public function canBeClosedAfterDeliveryRefusal(): bool
+    {
+        return $this->status === 'shipped'
+            && $this->payment_status !== 'paid'
+            && $this->archived_at === null;
+    }
+
+    public function markDeliveryRefused(string $reason): bool
+    {
+        if (! $this->canBeClosedAfterDeliveryRefusal()) {
+            return false;
+        }
+
+        $reason = 'Отказ при доставке: '.trim($reason);
+        $timezone = config('app.display_timezone', 'Europe/Minsk');
+        $note = '['.now()->timezone($timezone)->format('d.m.Y H:i').'] '.$reason;
+        $adminComment = filled($this->admin_comment)
+            ? rtrim($this->admin_comment)."\n\n".$note
+            : $note;
+
+        return $this->transitionTo('cancelled', $reason, [
+            'admin_comment' => $adminComment,
+            'archived_at' => now(),
+            'archived_by' => Auth::id(),
+            'archive_reason' => $reason,
+        ]);
     }
 
     public function hasConfirmedFulfillmentForAllItems(): bool

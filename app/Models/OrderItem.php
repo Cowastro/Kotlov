@@ -84,15 +84,25 @@ class OrderItem extends Model
                 return;
             }
 
+            // The order editor can replace the product and explicitly select a
+            // supplier for the new line in the same save. Preserve that new
+            // routing choice while still invalidating the old confirmation.
+            $hasReplacementRouting = $item->isDirty('fulfillment_supplier_id')
+                || $item->isDirty('fulfillment_route');
+            $replacementRoute = $hasReplacementRouting ? $item->fulfillment_route : null;
+            $replacementSupplierId = $hasReplacementRouting ? $item->fulfillment_supplier_id : null;
+            $replacementSupplierName = $hasReplacementRouting ? $item->fulfillment_supplier_name : null;
+            $replacementSupplierContact = $hasReplacementRouting ? $item->fulfillment_supplier_contact : null;
+
             // A fulfillment decision and supplier snapshot belong to the old
             // product. Never carry them over when a manager replaces a line.
             $item->forceFill([
                 'integration_product_id' => null,
                 'supply_captured_at' => null,
-                'fulfillment_route' => null,
-                'fulfillment_supplier_id' => null,
-                'fulfillment_supplier_name' => null,
-                'fulfillment_supplier_contact' => null,
+                'fulfillment_route' => $replacementRoute,
+                'fulfillment_supplier_id' => $replacementSupplierId,
+                'fulfillment_supplier_name' => $replacementSupplierName,
+                'fulfillment_supplier_contact' => $replacementSupplierContact,
                 'fulfillment_purchase_price' => null,
                 'fulfillment_availability_status' => null,
                 'fulfillment_confirmed_by' => null,

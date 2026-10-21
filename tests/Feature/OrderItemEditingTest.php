@@ -152,6 +152,63 @@ class OrderItemEditingTest extends TestCase
         $this->assertNotNull($item->supply_captured_at);
     }
 
+    public function test_replacing_a_product_preserves_new_supplier_selected_in_same_save(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Комплектующие поставщика',
+            'slug' => 'replacement-supplier-components',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $oldProduct = $this->product($category, 'Старый товар поставщика', 'OLD-SUPPLIER', 100);
+        $newProduct = $this->product($category, 'Новый товар поставщика', 'NEW-SUPPLIER', 200);
+        $supplier = Supplier::query()->create([
+            'code' => 'replacement-supplier',
+            'name' => 'Новый поставщик',
+            'is_active' => true,
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORD-EDIT-SUPPLIER',
+            'status' => 'checking',
+            'customer_name' => 'Клиент',
+            'customer_phone' => '+375291111113',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 100,
+            'total' => 100,
+        ]);
+        $item = $order->items()->create([
+            'product_id' => $oldProduct->id,
+            'product_name' => $oldProduct->name,
+            'product_sku' => $oldProduct->sku,
+            'price' => 100,
+            'quantity' => 1,
+            'total' => 100,
+        ]);
+        $item->forceFill([
+            'fulfillment_route' => 'own_stock',
+            'fulfillment_confirmed_at' => now(),
+        ])->save();
+
+        $item->forceFill([
+            'product_id' => $newProduct->id,
+            'product_name' => $newProduct->name,
+            'product_sku' => $newProduct->sku,
+            'price' => 200,
+            'fulfillment_route' => 'supplier_purchase',
+            'fulfillment_supplier_id' => $supplier->id,
+            'fulfillment_supplier_name' => $supplier->name,
+        ])->save();
+
+        $item->refresh();
+
+        $this->assertSame($supplier->id, $item->fulfillment_supplier_id);
+        $this->assertSame($supplier->name, $item->fulfillment_supplier_name);
+        $this->assertSame('supplier_purchase', $item->fulfillment_route);
+        $this->assertNull($item->fulfillment_confirmed_at);
+    }
+
     public function test_order_product_picker_uses_storefront_search_and_shows_retail_price_and_stock(): void
     {
         $category = Category::query()->create([

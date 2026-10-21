@@ -57,6 +57,34 @@ class EditOrder extends EditRecord
 
                     $this->redirect(static::getResource()::getUrl('view', ['record' => $this->record]));
                 }),
+            Action::make('closeAfterDeliveryRefusal')
+                ->label('Отказ при доставке')
+                ->icon('heroicon-o-truck')
+                ->color('danger')
+                ->visible(fn (): bool => $this->record->canBeClosedAfterDeliveryRefusal())
+                ->modalHeading('Клиент отказался принять заказ?')
+                ->modalDescription('Заказ получит статус «Отменён» и попадёт в архив. Причина, сотрудник и время сохранятся в истории.')
+                ->schema([
+                    Textarea::make('reason')
+                        ->label('Причина отказа при доставке')
+                        ->placeholder('Например: клиент отказался принимать товар при получении.')
+                        ->rows(3)
+                        ->minLength(3)
+                        ->maxLength(1000)
+                        ->required(),
+                ])
+                ->requiresConfirmation()
+                ->modalSubmitActionLabel('Зафиксировать отказ')
+                ->action(function (array $data): void {
+                    $this->record->markDeliveryRefused($data['reason']);
+
+                    Notification::make()
+                        ->success()
+                        ->title('Отказ при доставке сохранён')
+                        ->send();
+
+                    $this->redirect(static::getResource()::getUrl('view', ['record' => $this->record]));
+                }),
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Mail\OrderAvailabilityConfirmedMail;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -9,6 +10,7 @@ use App\Models\User;
 use App\Services\Orders\OrderAvailabilityConfirmation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AccountOrderAvailabilityTest extends TestCase
@@ -99,6 +101,25 @@ class AccountOrderAvailabilityTest extends TestCase
             ->assertOk()
             ->assertSeeText('Ссылка появится после проверки наличия')
             ->assertDontSee(route('account.orders.show', $order), false);
+    }
+
+    public function test_manager_can_publish_confirmed_own_stock_order_without_external_supplier(): void
+    {
+        Mail::fake();
+
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $order = $this->createOrder($manager, ['status' => 'checking']);
+        $this->createConfirmedItem($order);
+
+        Livewire::actingAs($manager)
+            ->test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->callAction('publishOrderOnline', [
+                'availability_status' => 'available',
+                'availability_confirmation' => true,
+            ])
+            ->assertHasNoActionErrors();
+
+        $this->assertTrue($order->portalLinks()->exists());
     }
 
     private function createOrder(User $customer, array $attributes = []): Order
