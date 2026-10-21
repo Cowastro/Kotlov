@@ -28,6 +28,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
         ]);
         $meta = Brand::query()->updateOrCreate(['slug' => 'metabel'], ['name' => 'Мета-Бел', 'is_active' => true]);
         $tsar = Brand::query()->updateOrCreate(['slug' => 'tsar-pechi'], ['name' => 'Царь-Печи', 'is_active' => true]);
+        $teplov = Brand::query()->updateOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов', 'is_active' => true]);
         $sbg = Supplier::query()->updateOrCreate(
             ['code' => 'sanbusinessgroup'],
             ['name' => 'ООО «СанБизнесГруп»', 'is_active' => false],
@@ -53,6 +54,8 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
 
         $metaProduct = $this->product($category->id, $meta->id, 15001, 'META-TEST');
         $tsarProduct = $this->product($category->id, $tsar->id, 9906, 'TSAR-TEST');
+        $teplovProduct = $this->product($category->id, $teplov->id, 15002, 'TIS-OFFICIAL');
+        $teplovWithoutPrice = $this->product($category->id, $teplov->id, 15003, 'TIS-NO-PRICE');
         SupplierProduct::query()->create([
             'supplier_id' => $legacy->id,
             'product_id' => $metaProduct->id,
@@ -61,12 +64,37 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
             'price_byn' => 500,
             'match_status' => 'matched',
         ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $sbg->id,
+            'product_id' => $teplovProduct->id,
+            'product_sku' => $teplovProduct->sku,
+            'supplier_article' => 'TIS-OFFICIAL',
+            'price_byn' => 200,
+            'match_status' => 'matched',
+            'match_confidence' => 'official_source',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $sbg->id,
+            'product_id' => $teplovWithoutPrice->id,
+            'product_sku' => $teplovWithoutPrice->sku,
+            'supplier_article' => 'TIS-NO-PRICE',
+            'price_byn' => null,
+            'match_status' => 'matched',
+            'match_confidence' => 'official_source',
+        ]);
 
         $this->artisan('supplier:align-metabel-tsarpechi-sbg')
             ->expectsOutputToContain('metric.metabel_links_to_move=1')
             ->expectsOutputToContain('metric.tsar_links_to_create=1')
             ->assertSuccessful();
-        $this->assertDatabaseMissing('supplier_products', ['supplier_id' => $sbg->id]);
+        $this->assertDatabaseMissing('supplier_products', [
+            'supplier_id' => $sbg->id,
+            'product_id' => $metaProduct->id,
+        ]);
+        $this->assertDatabaseMissing('supplier_products', [
+            'supplier_id' => $sbg->id,
+            'product_id' => $tsarProduct->id,
+        ]);
 
         $this->artisan('supplier:align-metabel-tsarpechi-sbg', ['--apply' => true])
             ->expectsOutputToContain('metric.status=applied')
@@ -86,11 +114,14 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
         $this->assertDatabaseMissing('supplier_products', ['supplier_id' => $legacy->id]);
         $this->assertDatabaseHas('brand_supplier', ['brand_id' => $meta->id, 'supplier_id' => $sbg->id]);
         $this->assertDatabaseHas('brand_supplier', ['brand_id' => $tsar->id, 'supplier_id' => $sbg->id]);
+        $this->assertDatabaseHas('brand_supplier', ['brand_id' => $teplov->id, 'supplier_id' => $sbg->id]);
         $this->assertTrue($sbg->fresh()->is_active);
         // A specifically verified online price-list link remains operational
         // alongside 1C. Generic stale legacy links are still rejected.
         $this->assertTrue($metaProduct->fresh()->hasAssignedSupplier());
         $this->assertTrue($tsarProduct->fresh()->hasAssignedSupplier());
+        $this->assertTrue($teplovProduct->fresh()->hasAssignedSupplier());
+        $this->assertFalse($teplovWithoutPrice->fresh()->hasAssignedSupplier());
     }
 
     private function product(int $categoryId, int $brandId, int $id, string $sku): Product

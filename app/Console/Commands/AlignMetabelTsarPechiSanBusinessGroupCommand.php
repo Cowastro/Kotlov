@@ -13,7 +13,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
     protected $signature = 'supplier:align-metabel-tsarpechi-sbg
         {--apply : Persist the verified supplier links}';
 
-    protected $description = 'Assign verified Meta-Bel and Tsar-Pechi catalogue routes to ООО «СанБизнесГруп».';
+    protected $description = 'Assign verified Meta-Bel, Tsar-Pechi and Teplov & Sukhov catalogue routes to ООО «СанБизнесГруп».';
 
     /** Products matched manually to the SanBusinessGroup Tsar-Pechi retail price list. */
     private const TSAR_VERIFIED_PRODUCT_IDS = [
@@ -57,6 +57,12 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
                 ->where('slug', 'tsar-pechi')
                 ->orWhereIn('name', ['Царь-Печи', 'Царь Печи']))
             ->orderByRaw("CASE WHEN slug = 'tsar-pechi' THEN 0 ELSE 1 END")
+            ->first();
+        $teplovBrand = DB::table('brands')
+            ->where(fn ($query) => $query
+                ->where('slug', 'teplov-i-suhov')
+                ->orWhere('name', 'Теплов и Сухов'))
+            ->orderByRaw("CASE WHEN slug = 'teplov-i-suhov' THEN 0 ELSE 1 END")
             ->first();
         $legacyMetaSupplier = DB::table('suppliers')->where('code', 'metabel')->first();
 
@@ -104,21 +110,21 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
                 ->exists();
         })->count();
 
-        foreach ([$metaBrand, $tsarBrand] as $brand) {
+        foreach ([$metaBrand, $tsarBrand, $teplovBrand] as $brand) {
             if ($brand && ! DB::table('brand_supplier')->where('brand_id', $brand->id)->where('supplier_id', $sbg->id)->exists()) {
                 $metrics['brand_links_to_create']++;
             }
         }
 
         if ($apply) {
-            DB::transaction(function () use ($sbg, $metaBrand, $tsarBrand, $legacyMetaSupplier, $metaLinks, $tsarProducts, &$metrics): void {
+            DB::transaction(function () use ($sbg, $metaBrand, $tsarBrand, $teplovBrand, $legacyMetaSupplier, $metaLinks, $tsarProducts, &$metrics): void {
                 $now = now();
                 DB::table('suppliers')->where('id', $sbg->id)->update([
                     'is_active' => true,
                     'updated_at' => $now,
                 ]);
 
-                foreach ([$metaBrand, $tsarBrand] as $brand) {
+                foreach ([$metaBrand, $tsarBrand, $teplovBrand] as $brand) {
                     if ($brand) {
                         DB::table('brand_supplier')->updateOrInsert(
                             ['brand_id' => $brand->id, 'supplier_id' => $sbg->id],
@@ -218,7 +224,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
             Cache::forget('home:data:v4');
         }
 
-        foreach (['metabel' => $metaBrand, 'tsar' => $tsarBrand] as $key => $brand) {
+        foreach (['metabel' => $metaBrand, 'tsar' => $tsarBrand, 'teplov_suhov' => $teplovBrand] as $key => $brand) {
             $products = $brand
                 ? Product::query()
                     ->where('brand_id', $brand->id)

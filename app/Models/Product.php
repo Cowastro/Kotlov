@@ -265,12 +265,16 @@ class Product extends Model
             ? $this->supplierProducts->contains(
                 fn (SupplierProduct $item): bool => $item->supplier?->is_active === true
                     && ($item->match_confidence === 'manual_price_list'
+                        || ($item->match_confidence === 'official_source' && (float) $item->price_byn > 0)
                         || $item->supplier->usesLegacyChannel())
             )
             : $this->supplierProducts()
                 ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true))
                 ->where(fn ($links) => $links
                     ->where('match_confidence', 'manual_price_list')
+                    ->orWhere(fn ($verifiedSource) => $verifiedSource
+                        ->where('match_confidence', 'official_source')
+                        ->where('price_byn', '>', 0))
                     ->orWhereHas('supplier', fn ($supplier) => $supplier
                         ->whereDoesntHave('latestChannelTransition', fn ($transition) => $transition
                             ->where('status', SupplierChannelTransition::STATUS_LEGACY_DISABLED))))
