@@ -11,6 +11,7 @@ use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\ManagerStorefrontProductContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ManagerStorefrontExperienceTest extends TestCase
@@ -39,10 +40,19 @@ class ManagerStorefrontExperienceTest extends TestCase
         $this->assertDatabaseHas('supplier_products', ['id' => $legacyOffer->id, 'supplier_id' => $manufacturer->id]);
     }
 
-    public function test_belomo_correction_separates_supplier_from_receiving_warehouse_without_changing_prices_or_stock(): void
+    public function test_belomo_procurement_is_routed_through_sanbusinessgroup_without_changing_prices_or_stock(): void
     {
         [$product, $offer] = $this->makeProductWithSupplierOffer();
-        $db = \Illuminate\Support\Facades\DB::class;
+        $db = DB::class;
+        $belomo = Supplier::firstOrCreate(
+            ['code' => 'belomo'],
+            ['name' => 'БелОМО', 'currency' => 'BYN', 'currency_rate' => 1, 'is_active' => true],
+        );
+        $offer->update(['supplier_id' => $belomo->id]);
+        $sbg = Supplier::firstOrCreate(
+            ['code' => 'sanbusinessgroup'],
+            ['name' => 'ООО «СанБизнесГруп»', 'currency' => 'BYN', 'currency_rate' => 1, 'is_active' => true],
+        );
         $syncId = $db::table('supplier_syncs')->insertGetId([
             'key' => 'belomo_static_pricelist', 'name' => 'СанБизнесГруп',
             'code' => 'sanbusinessgroup', 'title' => 'Прайс БелОМО',
@@ -56,24 +66,27 @@ class ManagerStorefrontExperienceTest extends TestCase
             'settings' => json_encode(['procurement_mode' => true, 'vat_rate' => 20]),
         ]);
 
-        $migration = require database_path('migrations/2026_10_17_220000_correct_belomo_supplier_and_receiving_warehouse.php');
+        $brand = Brand::firstOrCreate(['slug' => 'belomo'], ['name' => 'БелОМО']);
+        $product->update(['brand_id' => $brand->id]);
+
+        $migration = require database_path('migrations/2026_10_21_230000_route_belomo_products_through_sanbusinessgroup.php');
         $migration->up();
         $migration->up();
 
         $offer->refresh();
-        $this->assertSame('belomo', $offer->supplier->code);
-        $this->assertSame('СанБизнесГруп · ожидается поступление', $offer->warehouse_name);
+        $this->assertSame('sanbusinessgroup', $offer->supplier->code);
+        $this->assertSame('ООО «СанБизнесГруп»', $offer->warehouse_name);
         foreach (['price', 'price_byn', 'stock_quantity', 'in_stock', 'last_stock_synced_at', 'last_synced_at'] as $field) {
             $this->assertEquals($before->$field, $offer->$field);
         }
         $this->assertSame(10.0, (float) $product->fresh()->price);
         $source = $db::table('integration_sources')->where('code', 'belomo_wholesale')->first();
-        $this->assertEquals($offer->supplier_id, $source->supplier_id);
+        $this->assertEquals($sbg->id, $source->supplier_id);
         $this->assertTrue(json_decode($source->settings, true)['procurement_mode']);
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $context = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager)->first();
-        $this->assertSame('БелОМО', $context['supplier']);
-        $this->assertSame('СанБизнесГруп · ожидается поступление', $context['warehouse']);
+        $this->assertSame('ООО «СанБизнесГруп»', $context['supplier']);
+        $this->assertSame('ООО «СанБизнесГруп»', $context['warehouse']);
     }
 
     public function test_internal_supplier_context_is_only_available_to_active_managers(): void

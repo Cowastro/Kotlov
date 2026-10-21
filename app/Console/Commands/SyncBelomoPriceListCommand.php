@@ -23,7 +23,7 @@ class SyncBelomoPriceListCommand extends Command
 
     protected $description = 'Import the BelOMO wholesale price list and calculate retail with VAT and a 20% markup.';
 
-    private const SUPPLIER_CODE = 'belomo';
+    private const SUPPLIER_CODE = 'sanbusinessgroup';
 
     private const SYNC_KEY = 'belomo_static_pricelist';
 
@@ -42,7 +42,7 @@ class SyncBelomoPriceListCommand extends Command
         $quality = $this->qualityMetrics($classified);
         $quality['artifact_extra'] = count($artifacts);
 
-        $this->line($apply ? 'APPLY: прайс будет привязан к поставщику БелОМО; склад поступления — СанБизнесГруп.' : 'DRY RUN: база не изменяется.');
+        $this->line($apply ? 'APPLY: закупочный прайс БелОМО будет привязан к поставщику и складу ООО «СанБизнесГруп».' : 'DRY RUN: база не изменяется.');
         $this->line('metric.belomo.price_rows='.count($rows));
         $this->line('metric.belomo.matched='.$counts->get('matched', 0));
         $this->line('metric.belomo.create='.$counts->get('create', 0));
@@ -242,19 +242,19 @@ class SyncBelomoPriceListCommand extends Command
     private function ensureSupplier($now): int
     {
         $existing = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
-        $priceListNote = 'Прайс БелОМО от 15.09.2026 используется для закупочных цен счетчиков; розница рассчитывается как цена без НДС + НДС 20% + наценка 20%.';
+        $priceListNote = 'БелОМО — производитель и источник закупочного прайса счетчиков. Поставщик и склад для заказов — ООО «СанБизнесГруп». Розница рассчитывается как цена без НДС + НДС 20% + наценка 20%.';
         if ($existing) {
             $notes = trim((string) $existing->notes);
             if (! str_contains($notes, $priceListNote)) {
                 $notes = trim($notes.' '.$priceListNote);
             }
             DB::table('suppliers')->where('id', $existing->id)->update([
-                'name' => 'БелОМО', 'currency' => 'BYN', 'currency_rate' => 1,
+                'name' => 'ООО «СанБизнесГруп»', 'currency' => 'BYN', 'currency_rate' => 1,
                 'notes' => $notes, 'is_active' => true, 'updated_at' => $now,
             ]);
         } else {
             DB::table('suppliers')->insert([
-                'code' => self::SUPPLIER_CODE, 'name' => 'БелОМО',
+                'code' => self::SUPPLIER_CODE, 'name' => 'ООО «СанБизнесГруп»',
                 'currency' => 'BYN', 'currency_rate' => 1, 'notes' => $priceListNote,
                 'is_active' => true, 'created_at' => $now, 'updated_at' => $now,
             ]);
@@ -274,8 +274,9 @@ class SyncBelomoPriceListCommand extends Command
     private function ensureSync($now): int
     {
         DB::table('supplier_syncs')->updateOrInsert(['key' => self::SYNC_KEY], [
-            'name' => 'БелОМО', 'code' => self::SUPPLIER_CODE, 'title' => 'БелОМО: оптовый прайс счетчиков',
-            'description' => 'Статический закупочный прайс без НДС; первая ценовая колонка до 10 шт. Розница рассчитывается с НДС и наценкой 20%.',
+            'supplier_id' => DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id'),
+            'name' => 'ООО «СанБизнесГруп»', 'code' => self::SUPPLIER_CODE, 'title' => 'СанБизнесГруп: закупочный прайс БелОМО',
+            'description' => 'БелОМО — производитель и источник закупочной цены. Операционный поставщик и склад — ООО «СанБизнесГруп».',
             'command' => 'supplier:sync-belomo-pricelist', 'is_active' => true,
             'created_at' => $now, 'updated_at' => $now,
         ]);
@@ -287,14 +288,15 @@ class SyncBelomoPriceListCommand extends Command
     {
         $categoryId = $this->categoryId();
         DB::table('integration_sources')->updateOrInsert(['code' => 'belomo_wholesale'], [
-            'supplier_id' => $supplierId, 'name' => 'БелОМО · оптовые счетчики', 'driver' => 'static_pricelist',
+            'supplier_id' => $supplierId, 'name' => 'СанБизнесГруп · закупочный прайс БелОМО', 'driver' => 'static_pricelist',
             'price_currency' => 'BYN', 'price_currency_rate' => 1, 'is_active' => true,
             'create_products' => false, 'update_prices' => true, 'update_stock' => false,
             'settings' => json_encode([
                 'price_tax_mode' => 'exclusive', 'vat_rate' => 20, 'b2b_enabled' => true,
                 'b2b_price_role' => 'sale',
-                'b2b_category_ids' => [$categoryId], 'partner_name' => 'БелОМО',
-                'procurement_mode' => true, 'warehouse_label' => 'СанБизнесГруп',
+                'b2b_category_ids' => [$categoryId], 'partner_name' => 'ООО «СанБизнесГруп»',
+                'manufacturer' => 'БелОМО', 'procurement_source' => 'БелОМО',
+                'procurement_mode' => true, 'warehouse_label' => 'ООО «СанБизнесГруп»',
                 'stock_validity_minutes' => 525600,
             ], JSON_UNESCAPED_UNICODE),
             'created_at' => $now, 'updated_at' => $now,
@@ -312,9 +314,9 @@ class SyncBelomoPriceListCommand extends Command
             'supplier_name' => $row['name'], 'price' => $row['partner_price_byn'], 'currency' => 'BYN', 'currency_rate' => 1,
             'price_byn' => $row['partner_price_byn'], 'in_stock' => false, 'stock_quantity' => null,
             'stock_status' => 'preorder', 'stock_text' => 'Закупка у производителя · наличие и срок по запросу',
-            'warehouse_name' => 'СанБизнесГруп',
+            'warehouse_name' => 'ООО «СанБизнесГруп»',
             'match_status' => 'matched', 'match_confidence' => '100',
-            'raw' => json_encode(['vat_included' => false, 'price_column' => 'до 10 шт', 'effective_date' => '2026-09-15'], JSON_UNESCAPED_UNICODE),
+            'raw' => json_encode(['manufacturer' => 'БелОМО', 'procurement_source' => 'БелОМО', 'supplier' => 'ООО «СанБизнесГруп»', 'vat_included' => false, 'price_column' => 'до 10 шт', 'effective_date' => '2026-09-15'], JSON_UNESCAPED_UNICODE),
             'last_synced_at' => $now, 'created_at' => $now, 'updated_at' => $now,
         ]);
     }
@@ -327,7 +329,7 @@ class SyncBelomoPriceListCommand extends Command
             'price_currency' => 'BYN', 'price_currency_rate' => 1, 'price_tax_mode' => 'exclusive', 'price_vat_rate' => 20,
             'price_byn' => $this->priceWithVat($row['partner_price_byn']), 'stock_quantity' => 0,
             'match_status' => 'matched', 'match_method' => 'belomo_article', 'match_confidence' => 1,
-            'payload' => json_encode(['procurement_mode' => true, 'vat_included' => false, 'source_document' => 'Цены БелОМО.pdf'], JSON_UNESCAPED_UNICODE),
+            'payload' => json_encode(['manufacturer' => 'БелОМО', 'procurement_source' => 'БелОМО', 'supplier' => 'ООО «СанБизнесГруп»', 'procurement_mode' => true, 'vat_included' => false, 'source_document' => 'Цены БелОМО.pdf'], JSON_UNESCAPED_UNICODE),
             'matched_at' => $now, 'last_seen_at' => $now, 'last_offer_seen_at' => $now,
             'created_at' => $now, 'updated_at' => $now,
         ]);
@@ -620,7 +622,7 @@ class SyncBelomoPriceListCommand extends Command
                 }
                 if ($row['description_changed']) {
                     $update['short_description'] = $row['name'].'. Поставка под заказ через ООО «СанБизнесГруп»; наличие и срок подтверждает менеджер.';
-                    $update['content'] = '<p>'.$row['name'].' производства БелОМО. Поставщик — БелОМО; склад поступления — ООО «СанБизнесГруп». Наличие, срок поставки и комплектацию подтвердит менеджер перед оформлением.</p><p>Изображение показывает соответствующую серию счетчика; точное исполнение определяется артикулом производителя.</p>';
+                    $update['content'] = '<p>'.$row['name'].' производства БелОМО. Поставщик и склад — ООО «СанБизнесГруп». Наличие, срок поставки и комплектацию подтвердит менеджер перед оформлением.</p><p>Изображение показывает соответствующую серию счетчика; точное исполнение определяется артикулом производителя.</p>';
                     $update['meta_title'] = $row['name'].' купить в %city%';
                     $update['meta_description'] = $row['name'].' БелОМО — цена с НДС, поставка под заказ.';
                 }
