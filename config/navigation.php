@@ -140,6 +140,7 @@ return [
                     ['name' => 'Электрические',    'url' => '/electric'],
                     ['name' => 'Косвенного нагрева','url' => '/kosvennye'],
                     ['name' => 'Комбинированные',  'url' => '/kombinirovannye'],
+                    ['name' => 'Буферные ёмкости', 'url' => '/bufernye-emkosti'],
                     ['name' => 'Газовые колонки',  'url' => '/vodogreynaya-kolonka'],
                 ],
             ],
@@ -276,6 +277,7 @@ return [
             'cta' => [
                 ['name' => 'Электрические →',        'url' => '/electric'],
                 ['name' => 'Косвенного нагрева →',   'url' => '/kosvennye'],
+                ['name' => 'Буферные ёмкости →',     'url' => '/bufernye-emkosti'],
                 ['name' => 'Все водонагреватели →',  'url' => '/vodonagrevateli'],
             ],
         ],

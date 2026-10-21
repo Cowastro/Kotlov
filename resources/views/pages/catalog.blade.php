@@ -26,6 +26,14 @@
     @endpush
 @endif
 
+@if ($category->slug === 'komplektuyushhie-dlya-otopleniya')
+    @push('styles')
+        <style>
+            .catalog-nav-groups{display:grid;gap:28px;margin-bottom:36px}.catalog-nav-group{padding:24px;border:1px solid var(--line);border-radius:20px;background:#fff}.catalog-nav-group__head{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;margin-bottom:17px}.catalog-nav-group__head h2{margin:0;font-size:22px;line-height:1.2}.catalog-nav-group__head p{max-width:650px;margin:0;color:var(--text-2);font-size:13px;line-height:1.5;text-align:right}.catalog-nav-group .subcat-list{margin-bottom:0!important}@media(max-width:767px){.catalog-nav-groups{gap:16px;margin:0 -4px 28px}.catalog-nav-group{padding:18px 14px;border-radius:16px}.catalog-nav-group__head{align-items:flex-start;flex-direction:column;gap:6px;margin-bottom:13px}.catalog-nav-group__head h2{font-size:19px}.catalog-nav-group__head p{text-align:left}.catalog-nav-group .row{gap:8px}.catalog-nav-group .category-v05{min-height:74px}}
+        </style>
+    @endpush
+@endif
+
 @section('content')
 <main id="wrapper">
 
@@ -342,7 +350,36 @@
                 <div class="col-xl-9">
 
                     {{-- Подкатегории (category-v05) — только без активного фильтра --}}
-                    @if ($subcategories->count() > 0 && !request('subcategory'))
+                    @if (($catalogNavigationGroups ?? collect())->isNotEmpty() && !request('subcategory'))
+                        <div class="catalog-nav-groups" aria-label="Разделы комплектующих для отопления">
+                            @foreach ($catalogNavigationGroups as $group)
+                                <section class="catalog-nav-group" aria-labelledby="catalog-nav-group-{{ $loop->index }}">
+                                    <div class="catalog-nav-group__head">
+                                        <h2 id="catalog-nav-group-{{ $loop->index }}">{{ $group['title'] }}</h2>
+                                        <p>{{ $group['description'] }}</p>
+                                    </div>
+                                    <div class="row g-0 g-md-12 subcat-list">
+                                        @foreach ($group['items'] as $sub)
+                                            @php
+                                                $icon = \App\Support\CategoryIconResolver::resolve($sub->slug, $sub->name);
+                                            @endphp
+                                            <div class="col-12 col-md-6 col-xl-4">
+                                                <a href="/{{ $sub->slug }}{{ request('brand') ? '?brand=' . (int) request('brand') : '' }}"
+                                                   class="category-v05 subcat-tile h-100 text-decoration-none">
+                                                    <span class="cate-icon"><i class="icon {{ $icon }}"></i></span>
+                                                    <span class="subcat-tile__text">
+                                                        <span class="cate_name h6 fw-medium d-block">{{ $sub->name }}</span>
+                                                        <span class="cate_quantity text-caption-01">{{ $sub->products_count }} товаров</span>
+                                                    </span>
+                                                    <span class="subcat-tile__arrow d-md-none" aria-hidden="true"><i class="icon icon-CaretRight"></i></span>
+                                                </a>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </section>
+                            @endforeach
+                        </div>
+                    @elseif ($subcategories->count() > 0 && !request('subcategory'))
                         <div class="row g-0 g-md-12 mb-32 subcat-list">
                             @foreach ($subcategories as $i => $sub)
                                 @php

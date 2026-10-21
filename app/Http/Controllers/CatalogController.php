@@ -776,6 +776,11 @@ class CatalogController extends Controller
         };
 
         $catalogSpotlight = null;
+        $catalogNavigationGroups = collect();
+
+        if ($category->slug === 'komplektuyushhie-dlya-otopleniya') {
+            $catalogNavigationGroups = $this->heatingAccessoriesNavigationGroups($selectedBrandId);
+        }
         if ($category->slug === 'dymohody') {
             $teplovBrand = $brands->firstWhere('slug', 'teplov-i-suhov');
 
@@ -864,8 +869,110 @@ class CatalogController extends Controller
             'pelletComparisonProducts',
             'installerRecruitment',
             'catalogIntro',
-            'catalogSpotlight'
+            'catalogSpotlight',
+            'catalogNavigationGroups'
         ));
+    }
+
+    private function heatingAccessoriesNavigationGroups(?int $selectedBrandId): Collection
+    {
+        $definitions = [
+            [
+                'title' => 'Газовое оборудование и безопасность',
+                'description' => 'Счётчики газа, контроль загазованности, газовые шланги и регуляторы давления.',
+                'slugs' => [
+                    'schetchiki-gaza',
+                    'signalizatory-zagazovannosti',
+                    'gazovye-shlangi',
+                    'regulyatoryi-davleniya-gaza',
+                ],
+            ],
+            [
+                'title' => 'Обвязка котельной и арматура',
+                'description' => 'Гидравлическая обвязка, распределение теплоносителя, защитная, радиаторная и смесительная арматура.',
+                'slugs' => [
+                    'gidravlicheskie-razdeliteli-i-kollektory',
+                    'grebenki',
+                    'gruppy-bystrogo-montazha-kotelnyx',
+                    'montajnyie-komplektyi',
+                    'predokhranitelnaya-i-reguliruyushchaya-armatura',
+                    'radiatornaya-armatura',
+                    'smesitelnaya-armatura',
+                    'smesitelnye-klapany-i-uzly',
+                    'kollektornye-shkafy',
+                ],
+            ],
+            [
+                'title' => 'Автоматика, питание и контроль',
+                'description' => 'Управление отоплением, датчики и оборудование для стабильного электропитания.',
+                'slugs' => [
+                    'regulyatory',
+                    'datchiki',
+                    'stabilizatory-napryazheniya',
+                    'istochniki-besperebojnogo-pitaniya',
+                    'avtotransformatory-latr',
+                ],
+            ],
+            [
+                'title' => 'Баки, теплоносители и фильтрация',
+                'description' => 'Мембранные баки, жидкости для систем отопления и фильтры.',
+                'slugs' => [
+                    'membrannye-baki',
+                    'teplonositeli',
+                    'filtry',
+                ],
+            ],
+            [
+                'title' => 'Монтаж и подключение',
+                'description' => 'Готовые комплекты, подводка, воздуховоды и инструмент для монтажа.',
+                'slugs' => [
+                    'komplekty-podklyucheniya',
+                    'gibkaya-podvodka-dlya-vody',
+                    'zhestkaya-podvodka-dlya-vody',
+                    'gibkie-vozduhovody',
+                    'instrumenty-dlya-montazha',
+                ],
+            ],
+            [
+                'title' => 'Нагрев и солнечные системы',
+                'description' => 'Электрические ТЭНы и оборудование для использования солнечной энергии.',
+                'slugs' => [
+                    'elektricheskie-teny-dlya-otopleniya',
+                    'solnechnye-kollektory',
+                ],
+            ],
+        ];
+
+        $slugs = collect($definitions)->pluck('slugs')->flatten()->unique()->values();
+        $categories = Category::query()
+            ->whereIn('slug', $slugs)
+            ->where('is_active', true)
+            ->get()
+            ->keyBy('slug');
+
+        return collect($definitions)->map(function (array $group) use ($categories, $selectedBrandId): array {
+            $items = collect($group['slugs'])->map(function (string $slug) use ($categories, $selectedBrandId) {
+                $subcategory = $categories->get($slug);
+                if (! $subcategory) {
+                    return null;
+                }
+
+                $ids = $this->collectCategoryAndDescendantIds($subcategory->id);
+                $subcategory->products_count = Product::query()
+                    ->orderable()
+                    ->whereIn('category_id', $ids)
+                    ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
+                    ->count();
+
+                return $subcategory->products_count > 0 ? $subcategory : null;
+            })->filter()->values();
+
+            return [
+                'title' => $group['title'],
+                'description' => $group['description'],
+                'items' => $items,
+            ];
+        })->filter(fn (array $group): bool => $group['items']->isNotEmpty())->values();
     }
 
     private function heatFluidFaqItems(): Collection
