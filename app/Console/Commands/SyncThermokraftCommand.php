@@ -22,7 +22,9 @@ class SyncThermokraftCommand extends Command
         {--create-new : Create missing catalogue cards}
         {--sync-retail-prices : Copy the source RRP to product.price}
         {--sheet-url= : Override the Google Sheet URL}
-        {--limit= : Process only the first N rows}';
+        {--limit= : Process only the first N rows}
+        {--all-sheets : Read every price tab and brand, not only electric boilers, heaters and ReglerPro}
+        {--audit : Print one public line per row: tab, sheet row, matched product id/slug and reason}';
 
     protected $description = 'Термокрафт: UNIVAT and TENKO/СТЭН prices, stock and missing products from the live Google Sheet.';
 
@@ -35,6 +37,22 @@ class SyncThermokraftCommand extends Command
     private const HEATERS_GID = '1999481119';
 
     private const AUTOMATION_GID = '494936167';
+
+    /** Every price tab of the live sheet (gid => kind) used with --all-sheets. */
+    private const ALL_TABS = [
+        '2059074837' => 'boiler',
+        '1879571452' => 'solid_fuel',
+        '515875811' => 'tank',
+        '1999481119' => 'heater',
+        '494936167' => 'automation',
+        '1001839439' => 'pump',
+        '422325648' => 'convector',
+        '1002190126' => 'expansion_tank',
+        '407379358' => 'general',
+    ];
+
+    /** @var array<string,bool> */
+    private array $seenArticles = [];
 
     private const REGLER_SOURCE_URL = 'https://regler.pro/reglerproelite';
 
@@ -59,6 +77,9 @@ class SyncThermokraftCommand extends Command
 
             [$classified, $counts] = $this->classify($rows);
             $this->metrics($counts);
+            if ($this->option('audit')) {
+                $this->audit($classified);
+            }
 
             if (! $this->option('apply') || $this->option('dry-run')) {
                 return self::SUCCESS;
@@ -95,7 +116,10 @@ class SyncThermokraftCommand extends Command
         }
 
         $rows = [];
-        foreach ([self::ELECTRIC_GID => 'boiler', self::HEATERS_GID => 'heater', self::AUTOMATION_GID => 'automation'] as $gid => $kind) {
+        $tabs = $this->option('all-sheets')
+            ? self::ALL_TABS
+            : [self::ELECTRIC_GID => 'boiler', self::HEATERS_GID => 'heater', self::AUTOMATION_GID => 'automation'];
+        foreach ($tabs as $gid => $kind) {
             $csv = $this->fetch("https://docs.google.com/spreadsheets/d/{$sheetId}/export?format=csv&gid={$gid}");
             foreach ($this->parseCsv($csv, $gid, $kind) as $row) {
                 $rows[] = $row;
@@ -112,24 +136,26 @@ class SyncThermokraftCommand extends Command
         fwrite($handle, $csv);
         rewind($handle);
         $rows = [];
-        $seen = [];
         $rowNumber = 0;
+        // parseCsv is also called without console input (unit tests).
+        $allSheets = $this->input?->hasOption('all-sheets') && (bool) $this->option('all-sheets');
 
         while (($cells = fgetcsv($handle, 0, ',')) !== false) {
             $rowNumber++;
             $cells = array_map(fn ($value) => $this->clean((string) $value), $cells);
             $name = $cells[0] ?? '';
             $brand = $this->brand($cells[8] ?? '', $name);
-            if ($name === '' || ! in_array($brand, ['UNIVAT', 'TENKO', 'СТЭН', 'REGLER PRO'], true)) {
+            if ($name === '' || $brand === '' || (! $allSheets && ! in_array($brand, ['UNIVAT', 'TENKO', 'СТЭН', 'REGLER PRO'], true))) {
                 continue;
             }
-            if ($kind === 'boiler' && ! in_array($brand, ['UNIVAT', 'СТЭН'], true)) {
-                continue;
-            }
-            if ($kind === 'heater' && ! in_array($brand, ['TENKO', 'СТЭН'], true)) {
-                continue;
-            }
-            if ($kind === 'automation' && $brand !== 'REGLER PRO') {
+            $allowed = match (true) {
+                $allSheets => true,
+                $kind === 'boiler' => in_array($brand, ['UNIVAT', 'СТЭН'], true),
+                $kind === 'heater' => in_array($brand, ['TENKO', 'СТЭН'], true),
+                $kind === 'automation' => $brand === 'REGLER PRO',
+                default => true,
+            };
+            if (! $allowed) {
                 continue;
             }
 
@@ -145,10 +171,10 @@ class SyncThermokraftCommand extends Command
             $barcode = preg_replace('/\D+/', '', $cells[2] ?? '') ?: '';
             $identity = $article !== '' ? $article : ($barcode !== '' ? $barcode : $brand.'-'.$this->shortHash($name));
             $dedupe = $this->key($identity);
-            if ($dedupe === '' || isset($seen[$dedupe])) {
+            if ($dedupe === '' || isset($this->seenArticles[$dedupe])) {
                 continue;
             }
-            $seen[$dedupe] = true;
+            $this->seenArticles[$dedupe] = true;
 
             $quantity = $this->stockQuantity($stockText);
             $rows[] = [
@@ -233,8 +259,9 @@ class SyncThermokraftCommand extends Command
                 'TENKO' => 'tenko',
                 'СТЭН' => 'sten',
                 'REGLER PRO' => 'regler_pro',
+                default => 'other_brands',
             };
-            $counts[$brandMetric]++;
+            $counts[$brandMetric] = ($counts[$brandMetric] ?? 0) + 1;
         }
         unset($row);
 
@@ -411,6 +438,23 @@ class SyncThermokraftCommand extends Command
         ]);
     }
 
+    /** Public diagnostics only: tab gid, sheet row, product id and storefront slug. */
+    private function audit(array $rows): void
+    {
+        $slugs = Product::query()->whereIn('id', array_filter(array_column($rows, 'product_id')))->pluck('slug', 'id');
+        foreach ($rows as $row) {
+            $productId = (int) ($row['product_id'] ?? 0);
+            $this->line(sprintf(
+                'audit.thermokraft.row=%s:%d:%d:%s:%s',
+                $row['gid'],
+                $row['sheet_row'],
+                $productId,
+                $productId ? (string) ($slugs[$productId] ?? '') : '',
+                (string) ($row['match_reason'] ?? 'none'),
+            ));
+        }
+    }
+
     private function metrics(array $counts): void
     {
         foreach ($counts as $key => $value) {
@@ -438,7 +482,9 @@ class SyncThermokraftCommand extends Command
             str_contains($text, 'TENKO') => 'TENKO',
             str_contains($text, 'СТЭН') || str_contains($text, 'STEN') => 'СТЭН',
             str_contains($text, 'REGLER') => 'REGLER PRO',
-            default => trim($raw),
+            str_contains($text, 'С-ТЭНК') || str_contains($text, 'S-TANK') => 'S-TANK',
+            str_contains(mb_strtoupper($raw), 'ИПРО') => 'ИПРо',
+            default => preg_replace('/^[\s"\'«»]+|[\s"\'«»]+$/u', '', $raw) ?? trim($raw),
         };
     }
 
