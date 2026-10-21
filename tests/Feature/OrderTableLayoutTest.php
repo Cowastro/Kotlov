@@ -44,6 +44,6 @@ class OrderTableLayoutTest extends TestCase
             ->assertOk()
             ->assertSeeText('Показать ещё 2 товара')
             ->assertSee('overscroll-behavior-inline: contain;', false)
-            ->assertSee('width:250px;max-width:250px;overflow-wrap:anywhere', false);
+            ->assertSee('width:220px;max-width:220px;overflow-wrap:anywhere', false);
     }
 }

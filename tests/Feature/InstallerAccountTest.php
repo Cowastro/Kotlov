@@ -7,20 +7,30 @@ use App\Models\InstallerWork;
 use App\Models\User;
 use App\Http\Controllers\InstallerAccountController;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class InstallerAccountTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->withoutMiddleware(\App\Http\Middleware\HandleRedirects::class);
+
+        // The minimal schema below is only for the in-memory sqlite run; on a
+        // shared MySQL test database dropping «users» would break later tests.
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            return;
+        }
 
         Schema::disableForeignKeyConstraints();
 

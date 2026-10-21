@@ -28,6 +28,7 @@ use App\Services\Integrations\IntegrationOperationsSummary;
 use App\Services\Integrations\IntegrationProductMatchAdvisor;
 use App\Services\Integrations\IntegrationProductMatchDecision;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -37,6 +38,9 @@ use Tests\TestCase;
 
 class OneCExchangeTest extends TestCase
 {
+    // setUp wipes catalogue tables; on a shared MySQL database that must roll back.
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();

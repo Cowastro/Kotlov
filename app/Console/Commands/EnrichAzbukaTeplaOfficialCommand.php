@@ -260,7 +260,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             return 'https://afriso.pl/katalog-produktow-afriso/i-2-03-b-przewodowy-system-sterowania-ogrzewaniem-plaszczyznowym-cositherm-basic/4261600-termostat-pokojowy-ta3';
         }
 
-        if ($brandKey === 'ипро' && str_contains($ascii, 'КОТЕЛОК')) {
+        if ($brandKey === 'ипро' && str_contains($textLower, 'котелок')) {
             return 'https://ipro-gsm.ru/internet-magazin-2/product/kotelok';
         }
 

@@ -6,15 +6,24 @@ use App\Http\Middleware\ProtectPublicForm;
 use App\Models\InstallerApplication;
 use App\Services\InstallerApplicationTelegramNotifier;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Mockery;
 use Tests\TestCase;
 
 class InstallerRecruitmentTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Rebuild the table only on the in-memory sqlite run; MySQL keeps the migrated one.
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            return;
+        }
 
         Schema::dropIfExists('installer_applications');
         Schema::create('installer_applications', function (Blueprint $table) {

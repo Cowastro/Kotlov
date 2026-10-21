@@ -63,7 +63,8 @@ class OrderEconomicSnapshotTest extends TestCase
         $snapshot = $order->placedEconomicSnapshot()->firstOrFail();
 
         $response->assertRedirect(route('checkout.success', $order->number));
-        $this->assertSame(OrderEconomicSnapshot::STATUS_INCOMPLETE, $snapshot->status);
+        // The confirmed-stock supplier is known; only its purchase price is missing.
+        $this->assertSame(OrderEconomicSnapshot::STATUS_MISSING_PRICE, $snapshot->status);
         $this->assertSame('150.00', $snapshot->goods_sale_total);
         $this->assertSame('0.00', $snapshot->known_purchase_total);
         $this->assertNull($snapshot->purchase_total);
@@ -73,7 +74,7 @@ class OrderEconomicSnapshotTest extends TestCase
         $this->assertNull($snapshot->marketplace_commission);
         $this->assertNull($snapshot->net_profit);
         $this->assertSame(1, $snapshot->missing_purchase_price_count);
-        $this->assertSame(1, $snapshot->missing_supplier_count);
+        $this->assertSame(0, $snapshot->missing_supplier_count);
         Event::assertDispatched(NewOrderCreated::class);
     }
 

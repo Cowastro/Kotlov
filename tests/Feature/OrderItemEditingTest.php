@@ -172,6 +172,9 @@ class OrderItemEditingTest extends TestCase
             'in_stock' => true,
             'stock_qty' => 3,
         ]);
+        // Public availability is shown only for products with an assigned supplier.
+        $supplier = Supplier::query()->create(['code' => 'order-picker-stock', 'name' => 'Поставщик бака', 'is_active' => true]);
+        SupplierProduct::query()->create(['supplier_id' => $supplier->id, 'product_id' => $product->id, 'supplier_article' => 'PICKER-V300', 'price_byn' => 900, 'match_confidence' => 'manual_price_list']);
 
         $options = OrderForm::searchProductOptions('бак 300 расширительный');
 

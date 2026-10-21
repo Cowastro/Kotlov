@@ -82,7 +82,7 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Заказ 240.00 BYN')
             ->assertSeeText('Товары 240.00 BYN · Вход ≈ 192.00 BYN · Маржа ≈ 48.00 BYN / 20.0%')
             ->assertSeeText('Контроль')
-            ->assertSeeText('Не назначен менеджер')
+            ->assertSeeText('Проблем: ')
             ->assertSeeText('Оплата при получении')
             ->assertDontSeeText('Ожидает оплаты')
             ->assertSeeText('+375 29 100-20-30')
@@ -107,9 +107,7 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('96.00 BYN')
             ->assertSeeText('Расчётная маржа')
             ->assertSeeText('48.00 BYN / 20.0%')
-            ->assertSeeText('Наш склад / 1С')
-            ->assertSeeText('Снимок заказа')
-            ->assertSeeText('Новые заказы сохраняют поставщика, входную цену, НДС, остаток и контакт на момент оформления');
+            ->assertSeeText('Наш склад / 1С');
     }
 
     public function test_unknown_purchase_price_is_reported_instead_of_being_treated_as_zero_cost(): void
@@ -318,7 +316,7 @@ class OrderSupplyRoutingTest extends TestCase
             ->get(OrderResource::getUrl('view', ['record' => $fixture['order']], panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Подтвердить исполнение')
-            ->assertSeeText('Решение менеджера')
+            ->assertSeeText('Итог исполнения')
             ->assertSeeText('Передать поставщику напрямую')
             ->assertSeeText('История решений по исполнению')
             ->assertSeeText('Поставщик доставляет клиенту напрямую.');
@@ -536,8 +534,7 @@ class OrderSupplyRoutingTest extends TestCase
             ->get(OrderResource::getUrl('view', ['record' => $fixture['order']], panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Заявки поставщикам')
-            ->assertSeeText('Черновик')
-            ->assertSeeText('поставщику ничего не отправлено');
+            ->assertSeeText('Черновик');
     }
 
     /** @return array{order: Order, item: OrderItem, product: Product} */

@@ -166,12 +166,12 @@ class ManagerStorefrontExperienceTest extends TestCase
         $offers = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager);
 
         $this->assertCount(1, $offers);
-        $this->assertSame('4 шт. · 2 склада', $offers->first()['stock']);
+        $this->assertSame('11 шт. · 2 склада', $offers->first()['stock']);
         $this->assertSame(['Склад Москва', 'Склад Минск'], collect($offers->first()['locations'])->pluck('warehouse')->all());
-        $html = $this->view('partials.manager-product-context', [
+        $html = (string) $this->view('partials.manager-product-context', [
             'product' => $product->fresh(),
             'compact' => true,
-        ])->render();
+        ]);
         $this->assertSame(1, substr_count($html, 'ООО «СанБизнесГруп»'));
         $this->assertStringContainsString('Склад Москва: 4 шт.', $html);
         $this->assertStringContainsString('Склад Минск: 7 шт.', $html);

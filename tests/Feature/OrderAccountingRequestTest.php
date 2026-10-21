@@ -94,7 +94,7 @@ class OrderAccountingRequestTest extends TestCase
             ->get(OrderResource::getUrl('view', ['record' => $order], panel: 'admin'))
             ->assertOk()
             ->assertSeeText('Передать счёт в бухгалтерию')
-            ->assertSeeText('Бухгалтерия · оплата поставщикам')
+            ->assertSeeText('История счетов и переписки с бухгалтерией')
             ->assertSeeText('Передано в бухгалтерию')
             ->assertSeeText('buh-sbg@yandex.ru')
             ->assertSeeText('913.00 BYN')

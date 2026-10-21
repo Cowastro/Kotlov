@@ -267,7 +267,7 @@ class IntegrationIssueAdminTest extends TestCase
             ->assertSeeText('Труба дымохода D150')
             ->assertSeeText('Фактически привязан')
             ->assertSeeText('Привязан')
-            ->assertSeeText('1С: 3 шт. · Сайт: В наличии · остаток 8 шт.');
+            ->assertSeeText('1С: 3 шт. · Сайт: Доступно к заказу · остаток 8 шт.');
     }
 
     public function test_admin_can_create_and_publish_a_product_when_issue_has_no_candidates(): void

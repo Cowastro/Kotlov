@@ -118,9 +118,9 @@ class OrderClosureWorkflowTest extends TestCase
 
         Livewire::actingAs($manager)
             ->test(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->assertActionVisible('viewProductOnSite')
-            ->assertSee('Посмотреть на сайте')
-            ->assertSee('Посмотреть');
+            // Since 19.10 each order line links to its own storefront card.
+            ->assertSee('Открыть товар на сайте')
+            ->assertSee(url('/dveri-test/testovaya-dver'), false);
 
         $item = $order->items()->firstOrFail();
 

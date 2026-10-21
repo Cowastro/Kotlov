@@ -395,6 +395,6 @@ class SyncEurotermPriceListCommand extends Command
 
     private function absolutePath(string $path): string
     {
-        return preg_match('~^[A-Za-z]:[\\\\/]~', $path) ? $path : base_path($path);
+        return preg_match('~^(?:[A-Za-z]:[\\\\/]|/)~', $path) ? $path : base_path($path);
     }
 }

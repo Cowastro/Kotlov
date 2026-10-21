@@ -201,7 +201,7 @@ class ImportEcokaminWarehouseStockCommand extends Command
 
     private function resolvePath(string $path): string
     {
-        if (preg_match('~^[A-Za-z]:[\\\\/]~', $path)) {
+        if (preg_match('~^(?:[A-Za-z]:[\\\\/]|/)~', $path)) {
             return $path;
         }
 
