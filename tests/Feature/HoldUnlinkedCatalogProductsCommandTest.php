@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -22,7 +23,12 @@ class HoldUnlinkedCatalogProductsCommandTest extends TestCase
             'parent_id' => 0,
             'is_active' => true,
         ]);
-        $unlinked = $this->product($category->id, 'UNLINKED-HOLD');
+        $brand = Brand::query()->create([
+            'name' => 'Тестовый бренд',
+            'slug' => 'test-unlinked-brand',
+            'is_active' => true,
+        ]);
+        $unlinked = $this->product($category->id, 'UNLINKED-HOLD', $brand->id);
         $linked = $this->product($category->id, 'LINKED-SAFE');
         $supplier = Supplier::query()->create([
             'code' => 'linked-safe-supplier',
@@ -36,10 +42,12 @@ class HoldUnlinkedCatalogProductsCommandTest extends TestCase
             'price_byn' => 80,
         ]);
 
-        $this->artisan('catalog:hold-unlinked-products')
+        $this->artisan('catalog:hold-unlinked-products', ['--brand-summary' => true])
             ->expectsOutputToContain('metric.status=dry_run')
             ->expectsOutputToContain('metric.active_products_without_supplier=1')
             ->expectsOutputToContain('metric.products_updated=0')
+            ->expectsOutputToContain('brand_unlinked.1=Тестовый бренд|1')
+            ->expectsOutputToContain('metric.unlinked_brands=1')
             ->assertSuccessful();
         $this->assertFalse($unlinked->fresh()->requires_price_confirmation);
 
@@ -61,10 +69,11 @@ class HoldUnlinkedCatalogProductsCommandTest extends TestCase
         $this->assertTrue($linked->hasVerifiedPublicPrice());
     }
 
-    private function product(int $categoryId, string $sku): Product
+    private function product(int $categoryId, string $sku, ?int $brandId = null): Product
     {
         return Product::query()->create([
             'category_id' => $categoryId,
+            'brand_id' => $brandId,
             'name' => 'Товар '.$sku,
             'slug' => mb_strtolower($sku),
             'sku' => $sku,

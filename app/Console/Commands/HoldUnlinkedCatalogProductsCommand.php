@@ -8,13 +8,16 @@ use Illuminate\Console\Command;
 class HoldUnlinkedCatalogProductsCommand extends Command
 {
     protected $signature = 'catalog:hold-unlinked-products
-        {--apply : Hide unverified public prices and put products on availability request}';
+        {--apply : Hide unverified public prices and put products on availability request}
+        {--brand-summary : Print an aggregate brand ranking without product or price data}
+        {--brand-limit=100 : Maximum number of brands in the aggregate ranking}';
 
     protected $description = 'Put active products without an operational supplier or price source on a safe consultation hold.';
 
     public function handle(): int
     {
         $candidateIds = [];
+        $brandCounts = [];
         $metrics = [
             'active_products_without_supplier' => 0,
             'with_stored_price' => 0,
@@ -28,18 +31,21 @@ class HoldUnlinkedCatalogProductsCommand extends Command
             ->where('is_active', true)
             ->where('is_archived', false)
             ->with([
+                'brand:id,name',
                 'supplierProducts.supplier.latestChannelTransition',
                 'integrationProducts.source.supplier',
                 'purchasePriceSources.supplier',
             ])
             ->orderBy('id')
-            ->chunkById(250, function ($products) use (&$candidateIds, &$metrics): void {
+            ->chunkById(250, function ($products) use (&$candidateIds, &$metrics, &$brandCounts): void {
                 foreach ($products as $product) {
                     if ($product->hasAssignedSupplier()) {
                         continue;
                     }
 
                     $candidateIds[] = (int) $product->id;
+                    $brand = trim((string) ($product->brand?->name ?? '')) ?: 'Без бренда';
+                    $brandCounts[$brand] = ($brandCounts[$brand] ?? 0) + 1;
                     $metrics['active_products_without_supplier']++;
                     $metrics['with_stored_price'] += (float) $product->price > 0 ? 1 : 0;
                     $metrics['already_held'] += $product->requires_price_confirmation ? 1 : 0;
@@ -70,6 +76,19 @@ class HoldUnlinkedCatalogProductsCommand extends Command
         $this->line('metric.status='.($this->option('apply') ? 'applied' : 'dry_run'));
         foreach ($metrics as $name => $value) {
             $this->line("metric.{$name}={$value}");
+        }
+
+        if ((bool) $this->option('brand-summary')) {
+            arsort($brandCounts, SORT_NUMERIC);
+            $limit = max(1, min(500, (int) $this->option('brand-limit')));
+            $rank = 0;
+
+            foreach (array_slice($brandCounts, 0, $limit, true) as $brand => $count) {
+                $rank++;
+                $this->line("brand_unlinked.{$rank}={$brand}|{$count}");
+            }
+
+            $this->line('metric.unlinked_brands='.count($brandCounts));
         }
 
         return self::SUCCESS;
