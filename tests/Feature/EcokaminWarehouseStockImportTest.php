@@ -21,7 +21,7 @@ class EcokaminWarehouseStockImportTest extends TestCase
         $ecokamin = Brand::create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
         $otherBrand = Brand::create(['name' => 'Другой', 'slug' => 'other-brand']);
         $supplier = Supplier::query()->updateOrCreate(
-            ['code' => 'ecokamin'],
+            ['code' => 'sanbusinessgroup'],
             ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true],
         );
         $product = Product::create([
@@ -82,7 +82,7 @@ class EcokaminWarehouseStockImportTest extends TestCase
         $category = Category::create(['name' => 'Камины', 'slug' => 'kaminy']);
         $brand = Brand::create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
         Supplier::query()->updateOrCreate(
-            ['code' => 'ecokamin'],
+            ['code' => 'sanbusinessgroup'],
             ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true],
         );
         $product = Product::create([
@@ -126,16 +126,16 @@ class EcokaminWarehouseStockImportTest extends TestCase
         ]);
     }
 
-    public function test_import_prefers_the_ecokamin_supplier_record_and_drops_rows_of_the_duplicate(): void
+    public function test_import_uses_sanbusinessgroup_and_drops_rows_of_the_retired_duplicate(): void
     {
         $category = Category::create(['name' => 'Камины', 'slug' => 'kaminy']);
         $brand = Brand::create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
-        $onec = Supplier::query()->updateOrCreate(
-            ['code' => 'sanbusinessgroup'],
-            ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true],
+        $retired = Supplier::query()->updateOrCreate(
+            ['code' => 'ecokamin-merged-into-sanbusinessgroup'],
+            ['name' => 'ЭкоКамин (объединён)', 'is_active' => false],
         );
-        $ecokamin = Supplier::query()->updateOrCreate(
-            ['code' => 'ecokamin'],
+        $sbg = Supplier::query()->updateOrCreate(
+            ['code' => 'sanbusinessgroup'],
             ['name' => 'ООО «СанБизнесГруп»', 'is_active' => true],
         );
         $product = Product::create([
@@ -149,7 +149,7 @@ class EcokaminWarehouseStockImportTest extends TestCase
         ]);
         ProductWarehouseStock::query()->create([
             'product_id' => $product->id,
-            'supplier_id' => $onec->id,
+            'supplier_id' => $retired->id,
             'warehouse_code' => 'ecokamin-moscow',
             'warehouse_name' => 'Склад Москва',
             'available_quantity' => 9,
@@ -163,7 +163,7 @@ class EcokaminWarehouseStockImportTest extends TestCase
         $this->assertSame(1, ProductWarehouseStock::query()->where('warehouse_code', 'ecokamin-moscow')->count());
         $this->assertDatabaseHas('product_warehouse_stocks', [
             'product_id' => $product->id,
-            'supplier_id' => $ecokamin->id,
+            'supplier_id' => $sbg->id,
             'available_quantity' => 3,
         ]);
     }

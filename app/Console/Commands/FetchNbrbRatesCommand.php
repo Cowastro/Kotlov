@@ -53,6 +53,11 @@ class FetchNbrbRatesCommand extends Command
             return 1;
         }
 
+        // Строки в валюте, отличной от валюты карточки поставщика (например,
+        // рублёвые цены ecokamin.ru у BYN-поставщика СанБизнесГруп): обновляем
+        // только курс и price_byn, розничную цену товара не трогаем.
+        $this->refreshForeignRows($rates, $dryRun);
+
         // 2. Найти поставщиков с валютой != BYN
         $suppliers = Supplier::whereIn('currency', array_keys($rates))->get();
 
@@ -126,6 +131,33 @@ class FetchNbrbRatesCommand extends Command
         }
 
         return 0;
+    }
+
+    /** @param array<string, float> $rates */
+    private function refreshForeignRows(array $rates, bool $dryRun): void
+    {
+        foreach ($rates as $currency => $rate) {
+            $rows = DB::table('supplier_products as sp')
+                ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
+                ->where('sp.currency', $currency)
+                ->where('s.currency', '!=', $currency)
+                ->where(fn ($query) => $query->whereNull('sp.currency_rate')->orWhereRaw('ABS(sp.currency_rate - ?) > 0.0001', [$rate]));
+            $count = (clone $rows)->count();
+            if ($count === 0) {
+                continue;
+            }
+            $this->line(sprintf('  Строки %s у поставщиков в другой валюте: %d → курс %.4f', $currency, $count, $rate));
+            if ($dryRun) {
+                continue;
+            }
+            foreach ((clone $rows)->pluck('sp.id')->chunk(500) as $ids) {
+                DB::table('supplier_products')->whereIn('id', $ids->all())->update([
+                    'currency_rate' => $rate,
+                    'price_byn' => DB::raw('ROUND(price * '.(float) $rate.', 2)'),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
     }
 
     private function fetchRate(string $currency): ?float

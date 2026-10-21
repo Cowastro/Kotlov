@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Services\AiContentEnricher;
 use App\Services\Pricing\CurrencyPriceConverter;
 use Illuminate\Console\Command;
+use App\Support\Suppliers\EcokaminChannel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -22,7 +23,7 @@ class SyncEcokaminStovesCommand extends Command
 
     protected $description = 'Scrape ecokamin.ru pechi-kaminy (кроме Invicta) and sync prices, cards, photos and attributes.';
 
-    private const SUPPLIER_CODE    = 'ecokamin';
+    private const SUPPLIER_CODE    = EcokaminChannel::SUPPLIER_CODE;
     private const SUPPLIER_NAME    = 'ООО «СанБизнесГруп»';
     private const SYNC_KEY        = 'ecokamin_stoves';
     private const CATEGORY_ID     = 61;    // Печи → Печи-камины
@@ -862,7 +863,7 @@ HTML;
                 'stock_text'        => $item['stock_text'] ?? null,
                 'last_stock_synced_at' => $now,
                 'match_status'      => 'matched',
-                'match_confidence'  => 'auto_name',
+                'match_confidence'  => 'official_source',
                 'raw'               => json_encode([
                     'bitrix_id'      => $item['bitrix_id'] ?? null,
                     'brand'          => $item['brand'] ?? null,
@@ -1092,31 +1093,13 @@ HTML;
 
     private function ensureSupplier($now): int
     {
-        $existing = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
-
-        if ($existing) {
-            DB::table('suppliers')->where('id', $existing->id)->update([
-                'name'       => self::SUPPLIER_NAME,
-                'contact'    => self::SOURCE_URL,
-                'notes'      => 'Фактический поставщик и импортёр продукции ЭкоКамин — ООО «СанБизнесГруп». Сайт ecokamin.ru используется как источник карточек и розничных цен; это не закупочный прайс.',
-                'is_active'  => true,
-                'updated_at' => $now,
-            ]);
-
-            return (int) $existing->id;
+        // EcoKamin is supplied by СанБизнесГруп; its card is owned by the 1С setup.
+        $supplierId = EcokaminChannel::supplierId();
+        if (! $supplierId) {
+            throw new \RuntimeException('Поставщик sanbusinessgroup не найден.');
         }
 
-        return (int) DB::table('suppliers')->insertGetId([
-            'code'          => self::SUPPLIER_CODE,
-            'name'          => self::SUPPLIER_NAME,
-            'currency'      => 'RUB',
-            'currency_rate' => 1,
-            'contact'       => self::SOURCE_URL,
-            'notes'         => 'Фактический поставщик и импортёр продукции ЭкоКамин — ООО «СанБизнесГруп». Сайт ecokamin.ru используется как источник карточек и розничных цен; это не закупочный прайс.',
-            'is_active'     => true,
-            'created_at'    => $now,
-            'updated_at'    => $now,
-        ]);
+        return $supplierId;
     }
 
     private function ensureSupplierSync($now, int $supplierId): ?int
@@ -1193,10 +1176,9 @@ HTML;
 
     private function loadSupplierCurrency(): void
     {
-        $supplier = DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->first();
-
-        $this->supplierCurrency = CurrencyPriceConverter::normalizeCurrency($supplier->currency ?? 'RUB');
-        $this->supplierRate     = CurrencyPriceConverter::rateFor($this->supplierCurrency, $supplier->currency_rate ?? 1);
+        // ecokamin.ru prices are in roubles; the supplier card itself is BYN.
+        $this->supplierCurrency = EcokaminChannel::CURRENCY;
+        $this->supplierRate = EcokaminChannel::rubRate();
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────

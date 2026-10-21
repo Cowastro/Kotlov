@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Services\Pricing\CurrencyPriceConverter;
 use Illuminate\Console\Command;
+use App\Support\Suppliers\EcokaminChannel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
@@ -18,24 +19,24 @@ class RepairEcokaminRubPricesCommand extends Command
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
-        $supplier = DB::table('suppliers')->where('code', 'ecokamin')->first();
+        $supplierId = EcokaminChannel::supplierId();
 
-        if (! $supplier) {
-            $this->error('Supplier ecokamin not found.');
+        if (! $supplierId) {
+            $this->error('Supplier sanbusinessgroup not found.');
 
             return self::FAILURE;
         }
 
-        $currency = CurrencyPriceConverter::normalizeCurrency($supplier->currency ?? 'RUB');
+        // Only the rouble links that came from ecokamin.ru: the same supplier
+        // also owns the BYN 1С catalogue, which must not be repriced here.
+        $currency = EcokaminChannel::CURRENCY;
         $rate = $this->resolveRate($currency);
-
-        if ($currency !== 'RUB') {
-            $this->warn(sprintf('Supplier ecokamin currency is %s, expected RUB. Continuing with configured rate.', $currency));
-        }
 
         $rows = DB::table('supplier_products as sp')
             ->join('products as p', 'p.id', '=', 'sp.product_id')
-            ->where('sp.supplier_id', $supplier->id)
+            ->where('sp.supplier_id', $supplierId)
+            ->where('sp.currency', $currency)
+            ->where('sp.source_url', 'like', '%ecokamin.ru%')
             ->whereNotNull('sp.product_id')
             ->where('sp.price', '>', 0)
             ->select([
@@ -60,13 +61,6 @@ class RepairEcokaminRubPricesCommand extends Command
         $clearedOld = 0;
         $preview = [];
         $now = now();
-
-        if ($apply) {
-            DB::table('suppliers')->where('id', $supplier->id)->update([
-                'currency_rate' => $rate,
-                'updated_at' => $now,
-            ]);
-        }
 
         foreach ($rows as $row) {
             $newPrice = CurrencyPriceConverter::convertToByn($row->supplier_price, $currency, $rate);

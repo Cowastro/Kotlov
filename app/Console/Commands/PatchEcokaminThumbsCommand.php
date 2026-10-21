@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Support\Suppliers\EcokaminChannel;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,14 +28,14 @@ class PatchEcokaminThumbsCommand extends Command
         $apply = (bool) $this->option('apply');
         $maxSize = (int) $this->option('max-size');
 
-        $supplierId = DB::table('suppliers')->where('code', 'ecokamin')->value('id');
+        $supplierId = EcokaminChannel::supplierId();
         if (! $supplierId) {
-            $this->error('Поставщик ecokamin не найден.');
+            $this->error('Поставщик sanbusinessgroup не найден.');
             return self::FAILURE;
         }
 
-        $productIds = DB::table('supplier_products')
-            ->where('supplier_id', $supplierId)
+        // Only EcoKamin cards: the supplier also owns the whole 1С catalogue.
+        $productIds = EcokaminChannel::links($supplierId)
             ->whereNotNull('product_id')
             ->pluck('product_id');
 

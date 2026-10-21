@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Product;
 use App\Models\ProductWarehouseStock;
 use App\Models\Supplier;
+use App\Support\Suppliers\EcokaminChannel;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -14,15 +15,9 @@ class EcokaminWarehouseStockImporter
     /** @return array{matched:int,unmatched:int,zeroed:int,unmatched_items:list<array{article:string,name:string}>} */
     public function importPayload(array $payload): array
     {
-        // Two supplier records describe СанБизнесГруп: «ecokamin» owns the
-        // EcoKamin channels, «sanbusinessgroup» the 1C catalogue. Pick the
-        // EcoKamin one first so the warehouse always lands on the same record.
-        $supplier = Supplier::query()
-            ->whereIn('code', ['ecokamin', 'sanbusinessgroup'])
-            ->orWhere('name', 'like', '%СанБизнесГруп%')
-            ->orderByRaw("CASE code WHEN 'ecokamin' THEN 0 WHEN 'sanbusinessgroup' THEN 1 ELSE 2 END")
-            ->orderBy('id')
-            ->first();
+        // EcoKamin is supplied by СанБизнесГруп (code «sanbusinessgroup»).
+        $supplierId = EcokaminChannel::supplierId();
+        $supplier = $supplierId ? Supplier::query()->find($supplierId) : null;
         $brand = Brand::query()
             ->where('slug', 'ecokamin')
             ->orWhere('name', 'like', '%ЭкоКамин%')
@@ -51,7 +46,7 @@ class EcokaminWarehouseStockImporter
             $warehouseName, $deliveryDays, $asOfDate, $sourceFile,
             &$matchedProductIds, &$unmatched
         ): void {
-            // Earlier runs could pick the duplicate supplier record; keep one row per warehouse.
+            // Rows written for a retired duplicate supplier record must not double the stock.
             ProductWarehouseStock::query()
                 ->where('warehouse_code', $warehouseCode)
                 ->where('supplier_id', '!=', $supplier->id)
