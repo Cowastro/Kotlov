@@ -143,6 +143,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
     {
         $brandKey = mb_strtolower(trim($brand));
         $text = trim($model.' '.$name);
+        $textLower = mb_strtolower($text);
         $slug = Str::slug($text);
         $ascii = Str::upper(str_replace([' ', '-', '_', '.', '/', 'М'], '', $text));
         $ascii = strtr($ascii, ['А' => 'A', 'В' => 'B', 'С' => 'C', 'Е' => 'E', 'Н' => 'H', 'К' => 'K', 'О' => 'O', 'Р' => 'P', 'Т' => 'T', 'Х' => 'X']);
@@ -267,7 +268,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             return 'https://azbukatepla.by/shop/truby-i-armatura/pe-rt-polietilen/plenka-folga-dlya-teplogo-pola-tecline';
         }
 
-        if ($brandKey === 'tec line' && str_contains($slug, 'datchik-boilera')) {
+        if ($brandKey === 'tec line' && str_contains($textLower, 'датчик бойлера')) {
             return 'https://azbukatepla.by/shop/kotly-otopleniya/elektricheskie-kotly/datchik-temperatury-boylera-tecline';
         }
 
@@ -301,6 +302,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
     {
         $brandKey = mb_strtolower(trim($brand));
         $text = trim($model.' '.$name);
+        $textLower = mb_strtolower($text);
         $slug = Str::slug($text);
         $ascii = Str::upper(str_replace([' ', '-', '_', '.', '/', 'М'], '', $text));
         $ascii = strtr($ascii, ['А' => 'A', 'В' => 'B', 'С' => 'C', 'Е' => 'E', 'Н' => 'H', 'К' => 'K', 'О' => 'O', 'Р' => 'P', 'Т' => 'T', 'Х' => 'X']);
@@ -362,7 +364,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
             return ['https://azbukatepla.by/wp-content/uploads/2018/02/folga-dlya-teplogo-pola-Polsha.png'];
         }
 
-        if ($brandKey === 'tec line' && str_contains($slug, 'datchik-boilera')) {
+        if ($brandKey === 'tec line' && str_contains($textLower, 'датчик бойлера')) {
             return ['https://azbukatepla.by/wp-content/uploads/2023/11/Datchik-temperatury-boylera-TECLine.png'];
         }
 
