@@ -85,7 +85,8 @@ class HoldUnlinkedCatalogProductsCommand extends Command
 
             foreach (array_slice($brandCounts, 0, $limit, true) as $brand => $count) {
                 $rank++;
-                $this->line("brand_unlinked.{$rank}={$brand}|{$count}");
+                $safeBrand = trim((string) preg_replace('/[\x00-\x1F\x7F|]+/u', ' ', $brand));
+                $this->line("brand_unlinked.{$rank}={$safeBrand}|{$count}");
             }
 
             $this->line('metric.unlinked_brands='.count($brandCounts));
