@@ -32,7 +32,7 @@ class EnrichAzbukaTeplaOfficialCommandTest extends TestCase
             ['Barberi', '27B040N4P3', 'https://www.barberi.it/ww/ru/produktsiya/b3-regulating-groups-and-heating-components/recessed-regulating-groups/recessed-regulating-groups-bdhb/27BN'],
             ['Kospel', 'SWK-120 TERMO TOP', 'https://kospel.pl/wymienniki-i-zasobniki-cwu/swk-termo-top.html'],
             ['Kospel', 'SW-251 TERMO MAX', 'https://kospel.pl/wymienniki-i-zasobniki-cwu/sw-i-swz-termo-max.html'],
-            ['Kospel', 'WP Thermo Hit 140', 'https://kospel.pl/wymienniki-i-zasobniki-cwu/wp-i-wpw.html'],
+            ['Kospel', 'WP Thermo Hit 140', 'https://kospel.pl/wymienniki-i-zasobniki-cwu/wpw.html'],
             ['TESY', '301395', 'https://tesy.com/products/combined-and-indirectly-heated-water-tanks/domestic-hot-water-tanks-without-with-one-heat-exchanger-with-two-heat-exchangers-eec-b-c/domestic-hot-water-tanks-class-b-c-with-one-heat-exchanger/?product=ev-15s-500-75'],
         ];
     }

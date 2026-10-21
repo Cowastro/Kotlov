@@ -167,7 +167,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
                 return 'https://kospel.pl/wymienniki-i-zasobniki-cwu/sw-i-swz-termo-max.html';
             }
             if (preg_match('/WP.*(?:100|120|140)/', $ascii)) {
-                return 'https://kospel.pl/wymienniki-i-zasobniki-cwu/wp-i-wpw.html';
+                return 'https://kospel.pl/wymienniki-i-zasobniki-cwu/wpw.html';
             }
         }
 
