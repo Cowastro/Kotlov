@@ -63,6 +63,54 @@ class SupplierChannelAvailabilityRuleTest extends TestCase
         $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->fresh()->effectiveAvailabilityStatus());
     }
 
+    public function test_unpriced_supplier_catalog_link_does_not_hide_confirmed_one_c_stock(): void
+    {
+        $product = $this->product('TIS-SBG-OVERLAP', true);
+        $supplier = Supplier::query()->updateOrCreate([
+            'code' => 'sanbusinessgroup',
+        ], [
+            'name' => 'ООО «СанБизнесГруп»',
+            'is_active' => true,
+        ]);
+
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'TIS-NO-PRICE',
+            'price_byn' => null,
+            'in_stock' => false,
+            'stock_quantity' => null,
+            'match_status' => 'matched',
+            'match_confidence' => 'official_source',
+        ]);
+
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'onec-sanbusinessgroup-overlap',
+            'name' => '1С СанБизнесГруп',
+            'driver' => 'commerceml',
+            'is_active' => true,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'onec-tis-sbg-overlap',
+            'name' => 'Позиция Теплов и Сухов на складе СанБизнесГруп',
+            'price_byn' => 80,
+            'stock_quantity' => 3,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'matched',
+        ]);
+
+        $product = $product->fresh();
+
+        $this->assertTrue($product->hasAssignedSupplier());
+        $this->assertTrue($product->hasVerifiedPublicPrice());
+        $this->assertSame(Product::AVAILABILITY_IN_STOCK, $product->effectiveAvailabilityStatus());
+        $this->assertSame(3.0, $product->confirmedStockQuantity());
+        $this->assertTrue($product->canBeAddedToCart());
+    }
+
     public function test_disabled_product_is_out_of_stock_even_when_supplier_has_stock(): void
     {
         $product = $this->product('DISABLED-LINK', false);
