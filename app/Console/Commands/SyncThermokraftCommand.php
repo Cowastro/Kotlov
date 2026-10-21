@@ -75,6 +75,11 @@ class SyncThermokraftCommand extends Command
         'Котел Greolit PROFI 50 кВт' => 'greolit-kotel-greolit-profi-50-kvt-s-avtomatikoi',
         'Котел Greolit PROFI 60 кВт' => 'greolit-kotel-greolit-profi-60-kvt-s-avtomatikoi',
         'Котел Greolit PROFI 70 кВт' => 'greolit-kotel-greolit-profi-70-kvt-s-avtomatikoi',
+        // The price names the importer (SKIPFIRE LIMITED), the catalogue the brand AV Engineering.
+        'AVE-Titan-RS25-40-130, A&P' => 'nasos-tsirkulyatsionnyiy-av-engineering-ave-titan-rs25-40-130',
+        'AVE-Titan-RS25-40-180, A&P' => 'nasos-tsirkulyatsionnyiy-av-engineering-ave-titan-rs25-40-180',
+        'AVE-Titan-RS25-60-130, A&P' => 'nasos-tsirkulyatsionnyiy-av-engineering-ave-titan-rs25-60-130',
+        'AVE-Titan-RS25-60-180, A&P' => 'nasos-tsirkulyatsionnyiy-av-engineering-ave-titan-rs25-60-180',
         'Переходник КВ-ПГ 1 (Каракан)' => 'sten-perexodnik-kv-pg-1-dlia-prisoedineniia-kotlov-s-kruglymi-vertikalnymi-dymoxodami-k-kirpicnym-dymovym-trubam',
     ];
 

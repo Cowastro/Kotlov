@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 /**
  * Cards for the Thermokraft live price rows that kotlov.by had no card for:
  * Термокрафт boilers and stoves, ИПРо GSM modules, room thermostats,
- * Thermagent fluids, circulation pumps and Reflex expansion tanks.
+ * Thermagent fluids, Pumpman and Wilo pumps and Reflex expansion tanks.
  * Data: resources/data/suppliers/thermokraft-price-cards.json — retail =
  * Thermokraft RRP, technical data and photos from the Onliner catalogue
  * (descriptions written for kotlov.by). supplier:sync-thermokraft links each
@@ -36,7 +36,6 @@ class PublishThermokraftPriceCardsCommand extends Command
         'cewal' => ['slugs' => ['cewal'], 'names' => ['cewal'], 'slug' => 'cewal'],
         'imit' => ['slugs' => ['imit'], 'names' => ['imit'], 'slug' => 'imit'],
         'thermagent' => ['slugs' => ['thermagent', 'termagent'], 'names' => ['thermagent', 'термагент'], 'slug' => 'thermagent'],
-        'ave' => ['slugs' => ['av-engineering', 'avengineering', 'ave'], 'names' => ['av engineering', 'av-engineering', 'ave'], 'slug' => 'av-engineering'],
         'pumpman' => ['slugs' => ['pumpman'], 'names' => ['pumpman'], 'slug' => 'pumpman'],
         'reflex' => ['slugs' => ['reflex', 'reflex-winkelmann'], 'names' => ['reflex', 'reflex winkelmann'], 'slug' => 'reflex'],
         'wilo' => ['slugs' => ['wilo'], 'names' => ['wilo'], 'slug' => 'wilo'],
