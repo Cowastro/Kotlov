@@ -564,8 +564,12 @@ class SyncMaitekGroupCommand extends Command
             return $this->categoryBySlug['komplektuyushhie-dlya-otopleniya'] ?? null;
         }
 
-        if (str_contains($name, 'тэн') || str_contains($name, 'электр')) {
-            return $this->categoryBySlug['elektricheskie'] ?? $this->categoryBySlug['elektricheskie-teny-dlya-otopleniya'] ?? null;
+        if (preg_match('/(?:^|[^\\pL])(?:тэн|тнбр)/u', $name) === 1) {
+            return $this->categoryBySlug['elektricheskie-teny-dlya-otopleniya'] ?? null;
+        }
+
+        if (str_contains($name, 'электр')) {
+            return $this->categoryBySlug['elektricheskie'] ?? null;
         }
 
         if (str_contains($name, 'печь')) {
