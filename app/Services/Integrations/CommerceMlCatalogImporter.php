@@ -571,7 +571,10 @@ class CommerceMlCatalogImporter
                 ->concat(collect($this->reviewedSupplierArticleIndex[$item->source?->matchingSupplierCode()][$identifier] ?? [])
                     ->map(fn (int $id): array => ['product_id' => $id, 'method' => "{$kind}_to_reviewed_mapping"]))
                 ->all();
-        })->unique('product_id')->values();
+        })->filter(fn (array $match): bool => $this->candidateBelongsToSource(
+            $this->products->get($match['product_id']),
+            $item,
+        ))->unique('product_id')->values();
 
         if ($exactMatches->count() === 1) {
             $match = $exactMatches->first();
@@ -605,7 +608,10 @@ class CommerceMlCatalogImporter
             return $this->unmatched();
         }
 
-        $exactNameIds = collect($this->nameIndex[$normalizedName] ?? [])->unique()->values();
+        $exactNameIds = collect($this->nameIndex[$normalizedName] ?? [])
+            ->filter(fn (int $id): bool => $this->candidateBelongsToSource($this->products->get($id), $item))
+            ->unique()
+            ->values();
         if ($exactNameIds->count() === 1) {
             return $this->suggested($this->products->get($exactNameIds->first()), 'exact_name', 0.9);
         }
@@ -620,6 +626,7 @@ class CommerceMlCatalogImporter
         $candidates = $candidateIds
             ->map(fn (int $id): ?Product => $this->products->get($id))
             ->filter()
+            ->filter(fn (Product $product): bool => $this->candidateBelongsToSource($product, $item))
             ->filter(fn (Product $product): bool => $this->hasCompatibleDimensions(
                 (string) $item->name,
                 (string) $product->name,
@@ -663,7 +670,7 @@ class CommerceMlCatalogImporter
 
     private function prepareIndexes(): void
     {
-        $this->products = Product::query()->get(['id', 'sku', 'name'])->keyBy('id');
+        $this->products = Product::query()->get(['id', 'sku', 'name', 'supplier_id'])->keyBy('id');
         $this->skuIndex = [];
         $this->supplierArticleIndex = [];
         $this->reviewedSupplierArticleIndex = [];
@@ -714,6 +721,22 @@ class CommerceMlCatalogImporter
         } catch (Throwable) {
             // Legacy manual mappings are optional in a minimal installation.
         }
+    }
+
+    private function candidateBelongsToSource(?Product $product, IntegrationProduct $item): bool
+    {
+        if (! $product) {
+            return false;
+        }
+
+        if (! str_starts_with(mb_strtoupper((string) $product->sku), 'EUROTERM-')) {
+            return true;
+        }
+
+        $source = $item->source;
+
+        return $source?->supplier?->code === 'euroterm'
+            || $source?->code === 'euroterm';
     }
 
     /** @return array<int, string> */
