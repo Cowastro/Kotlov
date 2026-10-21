@@ -75,6 +75,7 @@ class GasMeterSelectionPageTest extends TestCase
         $response->assertOk()
             ->assertSeeText('всю линейку из прямого прайса БелОМО')
             ->assertSeeText('До 16 м³/ч — повышенный расход по проекту')
+            ->assertSeeText('Нужен класс выше G10 — требуется инженерный подбор.')
             ->assertSee('8349.00.00.000-17', false)
             ->assertSee('Запросить цену и срок', false)
             ->assertSee('btn-product-availability-request', false);

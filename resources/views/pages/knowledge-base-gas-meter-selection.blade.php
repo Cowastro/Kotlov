@@ -155,9 +155,9 @@
         root.querySelector('[data-gm-total]').textContent = (usesRange ? 'до ' : '') + format(total) + ' м³/ч';
 
         if (!target) {
-            root.querySelector('[data-gm-size]').textContent = 'Нужен класс выше G6 — требуется инженерный подбор.';
+            root.querySelector('[data-gm-size]').textContent = 'Нужен класс выше G10 — требуется инженерный подбор.';
             root.querySelector('[data-gm-models]').innerHTML = '';
-            root.querySelector('[data-gm-warning]').textContent = 'При расходе свыше 10 м³/ч обратитесь к специалисту: важны давление, диаметр трубы и проект.';
+            root.querySelector('[data-gm-warning]').textContent = 'При расходе свыше 16 м³/ч обратитесь к специалисту: важны давление, диаметр трубы и проект.';
             return;
         }
 
