@@ -53,4 +53,18 @@ class GasMeterSelectionPageTest extends TestCase
         $this->assertStringContainsString('СГМН-1-1-1-G4', $template);
         $this->assertStringContainsString('Популярный G4 · левый · L=250', $template);
     }
+
+    public function test_selector_explains_thermal_compensation_and_contains_all_g4_executions(): void
+    {
+        $response = $this->get(GasMeterSelectionGuide::PAGE_URL);
+
+        $response->assertOk()
+            ->assertSeeText('Нужен термокомпенсатор?')
+            ->assertSeeText('Да, с термокомпенсатором')
+            ->assertSeeText('Нет, без термокомпенсатора')
+            ->assertSee('8181.00.00.000-20', false)
+            ->assertSee('8181.00.00.000-21', false)
+            ->assertSee('8336.00.00.000-06', false)
+            ->assertSee('8336.00.00.000-07', false);
+    }
 }
