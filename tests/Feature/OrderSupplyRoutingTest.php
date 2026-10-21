@@ -338,10 +338,9 @@ class OrderSupplyRoutingTest extends TestCase
         );
 
         foreach ([
-            'acceptOrder' => 'order-view-action--primary',
+            'advanceWorkflow' => 'order-view-action--primary',
             'confirmFulfillment' => 'order-view-action--primary',
             'confirmSettlement' => 'order-view-action--primary',
-            'changeWorkflowStatus' => 'order-view-action--manual',
             'closeAsIrrelevant' => 'order-view-action--danger',
             'edit' => 'order-view-action--edit',
         ] as $actionName => $cssClass) {
@@ -411,7 +410,7 @@ class OrderSupplyRoutingTest extends TestCase
 
         Livewire::actingAs($manager)
             ->test(ViewOrder::class, ['record' => $fixture['order']->id])
-            ->assertActionDisabled('confirmAvailability')
+            ->assertActionDisabled('advanceWorkflow')
             ->callAction('confirmFulfillment', [
                 'order_item_id' => $fixture['item']->id,
                 'fulfillment_route' => 'supplier_purchase',
@@ -420,8 +419,9 @@ class OrderSupplyRoutingTest extends TestCase
                 'availability_status' => 'available',
             ])
             ->assertHasNoActionErrors()
-            ->assertActionEnabled('confirmAvailability')
-            ->callAction('confirmAvailability')
+            ->assertActionEnabled('advanceWorkflow')
+            ->assertActionHasLabel('advanceWorkflow', 'Подтвердить наличие')
+            ->callAction('advanceWorkflow')
             ->assertHasNoActionErrors();
 
         $order = $fixture['order']->fresh();

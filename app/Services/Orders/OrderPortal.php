@@ -144,8 +144,8 @@ class OrderPortal
             $eventDetails = [];
 
             if ($action === 'accept_delivery') {
-                if (! in_array($order->status, ['confirmed', 'processing'], true)) {
-                    throw new RuntimeException('Передать в доставку можно только подтверждённый заказ или заказ в обработке.');
+                if ($order->status !== 'processing') {
+                    throw new RuntimeException('Передать в доставку можно только заказ на этапе «В исполнении».');
                 }
                 $label = 'Принят в доставку';
                 $order->transitionTo('shipped', 'Онлайн-заказ: '.$actor.' — '.$label.'.');

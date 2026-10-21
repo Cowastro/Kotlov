@@ -11,10 +11,9 @@ use App\Models\OrderPortalLink;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Services\Integrations\OneCOrderQueue;
-use App\Services\Orders\OrderAvailabilityConfirmation;
 use App\Services\Orders\OrderPortal;
 use App\Services\Orders\OrderSettlementManager;
+use App\Services\Orders\OrderWorkflow;
 use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -564,6 +563,35 @@ class OrdersTable
                         ->when($data['created_until'] ?? null, fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date))),
             ])
             ->recordActions([
+                Action::make('advanceWorkflow')
+                    ->label(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['label'] ?? 'Следующий этап')
+                    ->icon(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['icon'] ?? 'heroicon-o-arrow-right')
+                    ->color(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['color'] ?? 'gray')
+                    ->button()
+                    ->visible(fn (Order $record): bool => app(OrderWorkflow::class)->step($record) !== null)
+                    ->disabled(fn (Order $record): bool => app(OrderWorkflow::class)->blocker($record) !== null)
+                    ->tooltip(fn (Order $record): ?string => app(OrderWorkflow::class)->blocker($record))
+                    ->requiresConfirmation()
+                    ->modalHeading(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['heading'] ?? 'Перейти к следующему этапу?')
+                    ->modalDescription(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['description'] ?? '')
+                    ->modalSubmitActionLabel(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['submit'] ?? 'Продолжить')
+                    ->action(function (Order $record): void {
+                        try {
+                            $result = app(OrderWorkflow::class)->advance($record, auth()->user());
+
+                            Notification::make()
+                                ->success()
+                                ->title($result['title'])
+                                ->body($result['body'])
+                                ->send();
+                        } catch (\Throwable $exception) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Не удалось перейти к следующему этапу')
+                                ->body($exception->getMessage())
+                                ->send();
+                        }
+                    }),
                 ViewAction::make(),
                 ActionGroup::make([
                     RequestOrderSupplierReserveAction::make(),
@@ -576,71 +604,6 @@ class OrdersTable
                             ? app(OrderPortal::class)->url($link)
                             : null)
                         ->openUrlInNewTab(),
-                    Action::make('confirmed')
-                        ->label('Принять заказ')
-                        ->icon('heroicon-o-check')
-                        ->color('warning')
-                        ->visible(fn ($record) => $record->status === 'new')
-                        ->action(fn (Order $record) => $record->transitionTo('checking', 'Заказ принят. Начата проверка наличия.')),
-                    Action::make('confirmAvailability')
-                        ->label('Подтвердить наличие')
-                        ->icon('heroicon-o-check-badge')
-                        ->color('success')
-                        ->visible(fn (Order $record): bool => $record->status === 'checking')
-                        ->disabled(fn (Order $record): bool => ! $record->hasConfirmedFulfillmentForAllItems())
-                        ->requiresConfirmation()
-                        ->modalDescription('Все позиции должны иметь подтверждённое наличие и способ исполнения. После подтверждения клиент получит ссылку на заказ в личном кабинете.')
-                        ->action(function (Order $record): void {
-                            $result = app(OrderAvailabilityConfirmation::class)
-                                ->confirmAndNotify($record, auth()->user());
-
-                            Notification::make()
-                                ->success()
-                                ->title('Наличие подтверждено')
-                                ->body($result['notified']
-                                    ? 'Клиенту отправлено уведомление со ссылкой на заказ.'
-                                    : 'Заказ доступен в личном кабинете. Уведомление не отправлено: нет привязанного клиента или корректного email.')
-                                ->send();
-                        }),
-                    Action::make('processing')
-                        ->label('Передать в исполнение')
-                        ->icon('heroicon-o-arrow-path')
-                        ->color('primary')
-                        ->visible(fn ($record) => $record->status === 'confirmed')
-                        ->disabled(fn (Order $record): bool => $record->items()
-                            ->whereNull('fulfillment_confirmed_at')->exists())
-                        ->requiresConfirmation()
-                        ->modalHeading('Передать заказ в очередь 1С?')
-                        ->modalDescription('Заказ будет выгружен в центральную 1С при следующем обмене.')
-                        ->action(function (Order $record): void {
-                            try {
-                                app(OneCOrderQueue::class)->queue($record, auth()->user(), [
-                                    'manager_id' => $record->manager_id ?: auth()->id(),
-                                    'assigned_to' => $record->assigned_to ?: '@'.(auth()->user()?->telegram_username ?: auth()->user()?->name),
-                                ]);
-
-                                Notification::make()->success()
-                                    ->title('Заказ поставлен в очередь 1С')
-                                    ->send();
-                            } catch (\Throwable $exception) {
-                                Notification::make()->danger()
-                                    ->title('Не удалось передать заказ')
-                                    ->body($exception->getMessage())
-                                    ->send();
-                            }
-                        }),
-                    Action::make('shipped')
-                        ->label('Отправлен')
-                        ->icon('heroicon-o-truck')
-                        ->color('primary')
-                        ->visible(fn ($record) => $record->status === 'processing')
-                        ->action(fn (Order $record) => $record->transitionTo('shipped', 'Заказ передан в доставку.')),
-                    Action::make('delivered')
-                        ->label('Доставлен')
-                        ->icon('heroicon-o-check-circle')
-                        ->color('success')
-                        ->visible(fn ($record) => $record->status === 'shipped')
-                        ->action(fn (Order $record) => $record->transitionTo('delivered', 'Клиент получил заказ.')),
                     Action::make('markIrrelevant')
                         ->label('Неактуальна')
                         ->icon('heroicon-o-archive-box')

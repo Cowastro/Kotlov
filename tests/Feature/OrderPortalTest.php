@@ -94,6 +94,8 @@ class OrderPortalTest extends TestCase
             ->assertSee('Одной позиции нет в наличии, ожидаем поступление.')
             ->assertSee(today()->addDays(3)->format('d.m.Y'));
 
+        $order->transitionTo('processing', 'Заказ передан в исполнение перед доставкой.');
+
         $this->post(route('order-portal.action', $link->token_encrypted), [
             'actor' => 'Анна, офис',
             'workflow_action' => 'accept_delivery',
@@ -126,6 +128,26 @@ class OrderPortalTest extends TestCase
             'type' => 'order_action',
         ]);
         $this->get($portal->url($link))->assertGone();
+    }
+
+    public function test_office_cannot_skip_execution_and_send_a_confirmed_order_straight_to_delivery(): void
+    {
+        [$order, $manager] = $this->order();
+        $portal = app(OrderPortal::class);
+        $link = $portal->publish($order, $manager);
+
+        $this->get($portal->url($link))
+            ->assertOk()
+            ->assertDontSee('Принять в доставку');
+
+        $this->post(route('order-portal.action', $link->token_encrypted), [
+            'actor' => 'Анна, офис',
+            'workflow_action' => 'accept_delivery',
+        ])->assertSessionHasErrors([
+            'workflow_action' => 'Передать в доставку можно только заказ на этапе «В исполнении».',
+        ]);
+
+        $this->assertSame('confirmed', $order->fresh()->status);
     }
 
     public function test_logged_in_employee_is_used_as_actor_without_typing_a_name(): void

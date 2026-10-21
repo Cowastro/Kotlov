@@ -10,11 +10,11 @@ use App\Models\Supplier;
 use App\Models\SupplierOrderRequest;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
-use App\Services\Integrations\OneCOrderQueue;
 use App\Services\Orders\OrderAvailabilityConfirmation;
 use App\Services\Orders\OrderItemFulfillmentManager;
-use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\OrderPortal;
+use App\Services\Orders\OrderSettlementManager;
+use App\Services\Orders\OrderWorkflow;
 use App\Services\Orders\SupplierOrderRequestBuilder;
 use App\Services\Orders\SupplierOrderRequestWorkflow;
 use App\Services\Orders\SupplierReservationMailService;
@@ -398,74 +398,38 @@ class ViewOrder extends ViewRecord
                 ->icon('heroicon-o-globe-alt')
                 ->color('gray')
                 ->button(),
-            Action::make('acceptOrder')
-                ->label('Принять заказ')
-                ->icon('heroicon-o-hand-raised')
-                ->color('success')
+            Action::make('advanceWorkflow')
+                ->label(fn (): string => app(OrderWorkflow::class)->step($this->record)['label'] ?? 'Следующий этап')
+                ->icon(fn (): string => app(OrderWorkflow::class)->step($this->record)['icon'] ?? 'heroicon-o-arrow-right')
+                ->color(fn (): string => app(OrderWorkflow::class)->step($this->record)['color'] ?? 'gray')
                 ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
-                ->visible(fn (): bool => $this->record->status === 'new')
+                ->visible(fn (): bool => app(OrderWorkflow::class)->step($this->record) !== null)
+                ->disabled(fn (): bool => app(OrderWorkflow::class)->blocker($this->record) !== null)
+                ->tooltip(fn (): ?string => app(OrderWorkflow::class)->blocker($this->record))
                 ->requiresConfirmation()
-                ->modalHeading('Начать проверку наличия?')
-                ->modalDescription('Вы станете ответственным менеджером. Заказ перейдёт на этап проверки наличия, но ещё не будет считаться подтверждённым.')
-                ->action(fn () => $this->transitionOrder('checking', 'Заказ принят. Начата проверка наличия.')),
-            Action::make('confirmAvailability')
-                ->label('Подтвердить наличие')
-                ->icon('heroicon-o-check-badge')
-                ->color('success')
-                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
-                ->visible(fn (): bool => $this->record->status === 'checking')
-                ->disabled(fn (): bool => ! $this->record->hasConfirmedFulfillmentForAllItems())
-                ->tooltip(fn (): ?string => ! $this->record->hasConfirmedFulfillmentForAllItems()
-                    ? 'Сначала подтвердите наличие и способ исполнения каждой позиции.'
-                    : null)
-                ->requiresConfirmation()
-                ->modalHeading('Подтвердить заказ клиенту?')
-                ->modalDescription('Заказ станет доступен клиенту в личном кабинете. Клиенту будет отправлено уведомление со ссылкой на заказ. Оплата WEBPAY на этом этапе ещё не запускается.')
+                ->modalHeading(fn (): string => app(OrderWorkflow::class)->step($this->record)['heading'] ?? 'Перейти к следующему этапу?')
+                ->modalDescription(fn (): string => app(OrderWorkflow::class)->step($this->record)['description'] ?? '')
+                ->modalSubmitActionLabel(fn (): string => app(OrderWorkflow::class)->step($this->record)['submit'] ?? 'Продолжить')
                 ->action(function (): void {
-                    $result = app(OrderAvailabilityConfirmation::class)
-                        ->confirmAndNotify($this->record, auth()->user());
+                    try {
+                        $result = app(OrderWorkflow::class)->advance($this->record, auth()->user());
+                        $this->reloadRecord();
 
-                    $this->reloadRecord();
+                        Notification::make()
+                            ->success()
+                            ->title($result['title'])
+                            ->body($result['body'])
+                            ->send();
+                    } catch (\Throwable $exception) {
+                        $this->reloadRecord();
 
-                    Notification::make()
-                        ->success()
-                        ->title('Наличие подтверждено')
-                        ->body($result['notified']
-                            ? 'Клиенту отправлено уведомление со ссылкой на заказ.'
-                            : 'Заказ доступен в личном кабинете. Уведомление не отправлено: нет привязанного клиента или корректного email.')
-                        ->send();
+                        Notification::make()
+                            ->danger()
+                            ->title('Не удалось перейти к следующему этапу')
+                            ->body($exception->getMessage())
+                            ->send();
+                    }
                 }),
-            Action::make('startProcessing')
-                ->label('Передать в исполнение')
-                ->icon('heroicon-o-arrow-path')
-                ->color('primary')
-                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
-                ->visible(fn (): bool => $this->record->status === 'confirmed')
-                ->disabled(fn (): bool => $this->record->items->contains(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at)))
-                ->tooltip(fn (): ?string => $this->record->items->contains(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at))
-                    ? 'Сначала подтвердите исполнение всех позиций.'
-                    : null)
-                ->requiresConfirmation()
-                ->modalHeading('Передать заказ в очередь 1С?')
-                ->modalDescription('Заказ будет доступен центральной 1С при следующем обмене. Повторная передача после получения 1С будет заблокирована.')
-                ->modalSubmitActionLabel('Передать в 1С')
-                ->action(fn () => $this->queueForOneC()),
-            Action::make('markShipped')
-                ->label('Передать в доставку')
-                ->icon('heroicon-o-truck')
-                ->color('primary')
-                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
-                ->visible(fn (): bool => $this->record->status === 'processing')
-                ->requiresConfirmation()
-                ->action(fn () => $this->transitionOrder('shipped', 'Заказ передан в доставку.')),
-            Action::make('markDelivered')
-                ->label('Отметить доставленным')
-                ->icon('heroicon-o-check-circle')
-                ->color('success')
-                ->extraAttributes(['class' => 'order-view-action order-view-action--primary'])
-                ->visible(fn (): bool => $this->record->status === 'shipped')
-                ->requiresConfirmation()
-                ->action(fn () => $this->transitionOrder('delivered', 'Клиент получил заказ.')),
             ActionGroup::make([
                 Action::make('confirmFulfillment')
                 ->label('Подтвердить исполнение')
@@ -831,38 +795,6 @@ class ViewOrder extends ViewRecord
 
                     Notification::make()->success()->title('Комментарий добавлен')->send();
                 }),
-                Action::make('changeWorkflowStatus')
-                ->label('Изменить этап вручную')
-                ->icon('heroicon-o-arrows-right-left')
-                ->color('gray')
-                ->extraAttributes(['class' => 'order-view-action order-view-action--primary order-view-action--manual'])
-                ->visible(fn (): bool => $this->record->archived_at === null)
-                ->modalHeading('Изменить этап заказа вручную')
-                ->modalDescription('Используйте этот режим, если действие уже выполнено вне сайта, например заказ создан вручную в 1С. Автор, время и комментарий сохранятся в истории.')
-                ->schema([
-                    Select::make('status')
-                        ->label('Новый этап')
-                        ->options(fn (): array => collect(Order::MANUAL_WORKFLOW_STATUSES)
-                            ->except($this->record->status)
-                            ->all())
-                        ->native(false)
-                        ->required(),
-                    Textarea::make('comment')
-                        ->label('Что было сделано')
-                        ->placeholder('Например: Заказ клиента №123 создан вручную в 1С и передан на комплектацию.')
-                        ->helperText('Комментарий увидят другие менеджеры в истории заказа.')
-                        ->rows(3)
-                        ->minLength(3)
-                        ->maxLength(2000)
-                        ->required(),
-                ])
-                ->modalSubmitActionLabel('Сохранить этап')
-                ->action(function (array $data): void {
-                    $this->transitionOrder(
-                        $data['status'],
-                        'Ручная фиксация: '.trim($data['comment']),
-                    );
-                }),
             Action::make('closeAsIrrelevant')
                 ->label('Отказ / неактуален')
                 ->icon('heroicon-o-no-symbol')
@@ -905,42 +837,6 @@ class ViewOrder extends ViewRecord
                 ->color('gray')
                 ->button(),
         ];
-    }
-
-    private function transitionOrder(string $status, string $comment): void
-    {
-        $this->record->transitionTo($status, $comment, $this->managerAttributes());
-        $this->reloadRecord();
-
-        Notification::make()
-            ->success()
-            ->title('Статус: '.(Order::STATUSES[$status] ?? $status))
-            ->body($this->record->workflowNextStep())
-            ->send();
-    }
-
-    private function queueForOneC(): void
-    {
-        try {
-            app(OneCOrderQueue::class)->queue(
-                $this->record,
-                auth()->user(),
-                $this->managerAttributes(),
-            );
-            $this->reloadRecord();
-
-            Notification::make()
-                ->success()
-                ->title('Заказ поставлен в очередь 1С')
-                ->body('При следующем обмене 1С создаст документ «Заказ клиента».')
-                ->send();
-        } catch (Throwable $exception) {
-            Notification::make()
-                ->danger()
-                ->title('Не удалось передать заказ')
-                ->body($exception->getMessage())
-                ->send();
-        }
     }
 
     /** @return array<string, mixed> */

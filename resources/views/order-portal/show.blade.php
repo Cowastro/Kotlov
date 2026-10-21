@@ -106,7 +106,7 @@
                         <form method="post" action="{{ route('order-portal.action', $link->token_encrypted) }}">
                             @csrf
                             @unless($employee)<input type="text" name="actor" value="{{ old('actor', $actor) }}" placeholder="Имя сотрудника" maxlength="100" required>@endunless
-                            @if(in_array($order->status, ['confirmed', 'processing'], true))
+                            @if($order->status === 'processing')
                                 <button class="button" type="submit" name="workflow_action" value="accept_delivery">Принять в доставку</button>
                             @elseif($order->status === 'shipped')
                                 <button class="button success" type="submit" name="workflow_action" value="delivered_paid">Доставлен и оплачен</button>

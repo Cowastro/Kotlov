@@ -92,15 +92,6 @@ class Order extends Model
         'cancelled' => 'Отменён',
     ];
 
-    /** Этапы, которые менеджер может зафиксировать вручную до полноценного обмена с 1С. */
-    public const MANUAL_WORKFLOW_STATUSES = [
-        'checking' => 'Проверка наличия',
-        'processing' => 'В исполнении / создан в учётной системе',
-        'shipped' => 'Передан в доставку',
-        'delivered' => 'Доставлен клиенту',
-        'cancelled' => 'Отменён',
-    ];
-
     /** Причины закрытия заказа без удаления истории. */
     public const CLOSURE_REASONS = [
         'customer_refusal' => 'Отказ клиента',
@@ -194,9 +185,7 @@ class Order extends Model
         return match ($this->status) {
             'new' => 'Принять заказ и начать проверку наличия.',
             'checking' => 'Проверить наличие и способ исполнения каждой позиции.',
-            'confirmed' => $this->payment_status === 'paid' || $this->isPaymentOnReceipt()
-                ? 'Передать подтверждённый заказ в исполнение.'
-                : 'Подготовить и отправить клиенту ссылку на оплату.',
+            'confirmed' => 'Передать подтверждённый заказ в исполнение.',
             'processing' => 'Закупить или собрать товар, затем передать в доставку.',
             'shipped' => 'Контролировать доставку и отметить получение клиентом.',
             'delivered' => 'Заказ выполнен. Проверить оплату и взаиморасчёты.',
@@ -210,9 +199,7 @@ class Order extends Model
         return match ($this->status) {
             'new' => 'На проверку наличия',
             'checking' => 'К подтверждению наличия',
-            'confirmed' => $this->payment_status === 'paid' || $this->isPaymentOnReceipt()
-                ? 'В исполнение / закупку'
-                : 'К оплате клиентом',
+            'confirmed' => 'В исполнение / закупку',
             'processing' => 'В доставку',
             'shipped' => 'На контроль получения',
             'delivered' => 'На финансовое закрытие',

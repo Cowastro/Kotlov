@@ -30,6 +30,7 @@ class ListOrders extends ListRecords
     {
         $colors = [
             'new' => 'info',
+            'checking' => 'warning',
             'confirmed' => 'success',
             'processing' => 'warning',
             'shipped' => 'primary',
