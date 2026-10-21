@@ -77,6 +77,7 @@ class EnrichAzbukaTeplaOfficialCommand extends Command
 
                 $result = $enricher->enrichFromParsed($product, $sourceUrl, $parsed, [
                     'preview_only' => ! $apply,
+                    'verified_images' => $verifiedImages,
                     'replace_images' => false,
                     'update_images' => true,
                     'update_specs' => true,

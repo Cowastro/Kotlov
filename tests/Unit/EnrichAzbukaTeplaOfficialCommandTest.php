@@ -75,5 +75,21 @@ class EnrichAzbukaTeplaOfficialCommandTest extends TestCase
             ['https://www.barberi.it/media/immagini/V13.5R.png'],
             $method->invoke($command, 'Barberi', 'V13025005 АR', '')
         );
+        $this->assertSame(
+            ['https://www.teplodvor.ru/img.php?id_image=12966'],
+            $method->invoke($command, 'Ariston', 'FAST R Display 10', '')
+        );
+        $this->assertSame(
+            ['https://www.teplodvor.ru/img.php?id_image=11852'],
+            $method->invoke($command, 'Protherm', 'Lynx 24', '')
+        );
+        $this->assertSame(
+            ['https://azbukatepla.by/wp-content/uploads/2018/02/folga-dlya-teplogo-pola-Polsha.png'],
+            $method->invoke($command, 'TECLine', 'Пленка TECline', '')
+        );
+        $this->assertSame(
+            ['https://azbukatepla.by/wp-content/uploads/2023/11/Datchik-temperatury-boylera-TECLine.png'],
+            $method->invoke($command, 'TEC Line', 'Датчик бойлера TECLine', '')
+        );
     }
 }

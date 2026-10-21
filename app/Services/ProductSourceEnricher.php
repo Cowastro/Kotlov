@@ -50,6 +50,13 @@ class ProductSourceEnricher
         }
 
         $parsed = $this->normalizeParsedData($parsed, $this->sourceImageLimit($sourceUrl));
+        $verifiedImages = array_values(array_filter(array_map(
+            fn ($url) => $this->normalizeUrlForValidation((string) $url),
+            (array) ($options['verified_images'] ?? [])
+        )));
+        if ($verifiedImages !== []) {
+            $parsed['images'] = array_values(array_unique(array_merge($verifiedImages, $parsed['images'])));
+        }
         $parsed = $this->adaptParsedDataForProduct($parsed, $product, $sourceUrl);
         if (($options['prefer_resize_cache_images'] ?? false) === true) {
             $parsed['images'] = $this->preferResizeCacheImages($parsed['images']);
@@ -96,7 +103,8 @@ class ProductSourceEnricher
                         $parsed['images'],
                         $product,
                         $sourceUrl,
-                        (bool) ($options['prefer_resize_cache_images'] ?? false)
+                        (bool) ($options['prefer_resize_cache_images'] ?? false),
+                        $verifiedImages
                     );
                 }
                 $stats['images_saved'] = count($downloaded);
@@ -2599,7 +2607,13 @@ class ProductSourceEnricher
         return array_values(array_filter(array_unique($urls)));
     }
 
-    private function downloadImages(array $urls, Product $product, string $sourceUrl = '', bool $preferResizeCacheImages = false): array
+    private function downloadImages(
+        array $urls,
+        Product $product,
+        string $sourceUrl = '',
+        bool $preferResizeCacheImages = false,
+        array $verifiedUrls = []
+    ): array
     {
         $dir = public_path(self::IMAGE_DIR);
         if (! is_dir($dir)) {
@@ -2610,8 +2624,14 @@ class ProductSourceEnricher
         $candidateUrls = $preferResizeCacheImages
             ? $this->preferResizeCacheImages($urls)
             : $this->expandedImageCandidates($urls);
+        $verifiedUrls = array_values(array_filter(array_unique($verifiedUrls), fn ($url) => filter_var($url, FILTER_VALIDATE_URL)));
+        $candidateUrls = array_values(array_diff($candidateUrls, $verifiedUrls));
         $imageContextUrl = $sourceUrl ?: (string) ($candidateUrls[0] ?? '');
         usort($candidateUrls, fn (string $left, string $right): int => $this->imageScore($right, $imageContextUrl) <=> $this->imageScore($left, $imageContextUrl));
+        // Curated URLs are tied to an exact supplier product. Keep them first and
+        // allow extensionless endpoints; the response is still validated below
+        // by MIME type, decoded dimensions and minimum pixel area.
+        $candidateUrls = array_values(array_unique(array_merge($verifiedUrls, $candidateUrls)));
 
         foreach ($candidateUrls as $url) {
             try {
