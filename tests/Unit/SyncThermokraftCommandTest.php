@@ -85,4 +85,44 @@ class SyncThermokraftCommandTest extends TestCase
 
         return $method->invoke(new SyncThermokraftCommand, $csv, $gid, $kind);
     }
+
+    #[Test]
+    public function it_skips_brands_not_taken_from_thermokraft(): void
+    {
+        $csv = implode("
+", [
+            'Наименование,Артикул,Штрихкод,,Опт,РРЦ,Количество,Гарантия,Бренд,Страна,Описание',
+            'ЕТ-1000,1.2004,,,900,1100,1,12,С-ТЭНК,Беларусь,',
+            'Термостат Auraton 200,,,,90,120,3,24,Auraton,Польша,',
+            'Котел "Каракан" 20ТЭГ-3,,,,1216,1520,0,24,СТЭН,Россия,',
+        ]);
+
+        $rows = $this->parse($csv, '1879571452', 'solid_fuel');
+
+        $this->assertSame(['СТЭН'], array_column($rows, 'brand'));
+    }
+
+    #[Test]
+    public function it_builds_the_same_model_key_for_sheet_rows_and_catalogue_names(): void
+    {
+        $command = new SyncThermokraftCommand;
+        $key = new ReflectionMethod($command, 'modelKey');
+
+        $this->assertSame(
+            $key->invoke($command, 'Котел Tenko Економ 4,5_220'),
+            $key->invoke($command, 'Электрический котел Tenko ЭКОНОМ (КЕ) 4,5 кВт 220В'),
+        );
+        $this->assertSame(
+            $key->invoke($command, 'Котел Tenko Cтандарт 7,5_220'),
+            $key->invoke($command, 'Электрический котел Tenko Стандарт 7.5 кВт 220В (с насосом Grundfos)'),
+        );
+        $this->assertNotSame(
+            $key->invoke($command, 'Котел "Каракан" 20ТЭГВ-3 (двухконтурный)'),
+            $key->invoke($command, 'Твердотопливный котел Каракан 20ТЭГ 3'),
+        );
+        $this->assertNotSame(
+            $key->invoke($command, 'Котел Tenko Премиум Плюс 7,5_220'),
+            $key->invoke($command, 'Электрический котел Tenko Премиум 7.5 кВт 220В (с насосом Grundfos)'),
+        );
+    }
 }

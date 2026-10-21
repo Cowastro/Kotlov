@@ -51,6 +51,9 @@ class SyncThermokraftCommand extends Command
         '407379358' => 'general',
     ];
 
+    /** Brands the business does not take from Thermokraft (S-TANK, Auraton come from other channels). */
+    private const EXCLUDED_BRANDS = ['S-TANK', 'AURATON'];
+
     /** @var array<string,bool> */
     private array $seenArticles = [];
 
@@ -145,6 +148,9 @@ class SyncThermokraftCommand extends Command
             $cells = array_map(fn ($value) => $this->clean((string) $value), $cells);
             $name = $cells[0] ?? '';
             $brand = $this->brand($cells[8] ?? '', $name);
+            if (in_array(mb_strtoupper($brand), self::EXCLUDED_BRANDS, true)) {
+                continue;
+            }
             if ($name === '' || $brand === '' || (! $allSheets && ! in_array($brand, ['UNIVAT', 'TENKO', 'СТЭН', 'REGLER PRO'], true))) {
                 continue;
             }
@@ -404,6 +410,17 @@ class SyncThermokraftCommand extends Command
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->warn($row['name'].': '.$e->getMessage());
+            }
+        }
+
+        // Brands excluded from this supplier must not keep stale Thermokraft offers.
+        $stats['excluded_removed'] = 0;
+        foreach (SupplierProduct::query()->where('supplier_id', $supplier->id)->get() as $link) {
+            $brand = mb_strtoupper($this->brand((string) data_get($link->raw, 'brand', ''), (string) $link->supplier_name));
+            if (in_array($brand, self::EXCLUDED_BRANDS, true)) {
+                $touched[] = (int) $link->product_id;
+                $link->delete();
+                $stats['excluded_removed']++;
             }
         }
 
