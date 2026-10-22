@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Cache;
  */
 final class EcokaminPromotion
 {
-    public const CACHE_KEY = 'ecokamin-promotion:showcase:v1';
+    public const CACHE_KEY = 'ecokamin-promotion:showcase:v2';
 
     private const SERIES = ['дельта', 'рио', 'мюнхен', 'мадрид', 'крит', 'прага', 'эклипс', 'родос', 'три стекла'];
 
@@ -29,11 +29,11 @@ final class EcokaminPromotion
         return now()->lt(self::endsAt());
     }
 
-    /** @return array{all: Collection<int, Product>, hits: Collection<int, Product>, maxDiscount: int, from: array{delta: ?float, kaminy: ?float}} */
+    /** @return array{all: Collection<int, Product>, hits: Collection<int, Product>, deltaHits: Collection<int, Product>, maxDiscount: int, deltaMaxDiscount: int, from: array{delta: ?float, kaminy: ?float}} */
     public static function showcase(): array
     {
         if (! self::isRunning()) {
-            return ['all' => collect(), 'hits' => collect(), 'maxDiscount' => 0, 'from' => ['delta' => null, 'kaminy' => null]];
+            return ['all' => collect(), 'hits' => collect(), 'deltaHits' => collect(), 'maxDiscount' => 0, 'deltaMaxDiscount' => 0, 'from' => ['delta' => null, 'kaminy' => null]];
         }
 
         return Cache::remember(self::CACHE_KEY, 600, function (): array {
@@ -55,10 +55,20 @@ final class EcokaminPromotion
                 ->unique('id')
                 ->values();
             $isDelta = fn (Product $product): bool => str_contains(mb_strtolower($product->name), 'дельта');
+            $delta = $all->filter($isDelta);
+            // One Дельта per width (700, 800, 1000…), photos first, cheapest first.
+            $deltaHits = $delta
+                ->sortBy(fn (Product $product): string => (count($product->imagePaths()) > 0 ? '0' : '1').str_pad((string) (int) $product->price, 9, '0', STR_PAD_LEFT))
+                ->unique(fn (Product $product): string => preg_match('/дельта\s*(\d{3,4})/iu', $product->name, $m) ? $m[1] : (string) $product->id)
+                ->sortBy(fn (Product $product): int => (int) (preg_match('/дельта\s*(\d{3,4})/iu', $product->name, $m) ? $m[1] : 9999))
+                ->take(3)
+                ->values();
 
             return [
                 'all' => $all,
                 'hits' => $hits,
+                'deltaHits' => $deltaHits,
+                'deltaMaxDiscount' => (int) $delta->max(fn (Product $product): int => (int) $product->discount_percent),
                 'maxDiscount' => (int) $all->max(fn (Product $product): int => (int) $product->discount_percent),
                 'from' => [
                     'delta' => $all->filter($isDelta)->min('price'),

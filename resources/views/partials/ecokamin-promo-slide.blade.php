@@ -9,14 +9,20 @@
         return mb_strtoupper(mb_substr($name, 0, 1)).mb_substr($name, 1);
     };
     $ecoEnds = \Carbon\CarbonImmutable::parse(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::ENDS_AT, 'Europe/Minsk');
+    $ecoDelta = ($ecokaminPromoVariant ?? 'all') === 'delta';
 @endphp
 <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden eco-promo-slide">
     <div class="eco-promo-slide__glow" aria-hidden="true"></div>
     <div class="eco-promo-slide__layout">
         <div class="eco-promo-slide__copy">
             <span class="eco-promo-slide__eyebrow">Акция производителя ЭкоКамин</span>
+            @if($ecoDelta)
+            <h2>Топки Дельта<br><span>−{{ $ecokaminPromoMaxDiscount }}%</span></h2>
+            <p>Все каминные топки ЭкоКамин Дельта — фронтальные, угловые и трёхсторонние, с подовым горением и вертикальной ламелью — по акционным ценам производителя.</p>
+            @else
             <h2>Камины и топки<br><span>до −{{ $ecokaminPromoMaxDiscount }}%</span></h2>
             <p>Топки Дельта, камины Мадрид, Рио, Крит, Мюнхен, Прага и Эклипс по акционным ценам производителя. Таких цен больше не будет.</p>
+            @endif
             <div class="eco-promo-slide__timer" data-eco-countdown="{{ $ecoEnds->toIso8601String() }}" aria-label="До конца акции">
                 <span><b data-unit="d">–</b><small>дней</small></span>
                 <span><b data-unit="h">–</b><small>часов</small></span>
@@ -24,11 +30,16 @@
                 <em>до {{ $ecoEnds->format('d.m') }}</em>
             </div>
             <div class="eco-promo-slide__actions">
+                @if($ecoDelta)
+                <a href="{{ route('promotions.ecokamin') }}#delta" class="tf-btn animate-btn eco-promo-slide__cta">Все топки Дельта</a>
+                <a href="{{ route('promotions.ecokamin') }}#kaminy" class="eco-promo-slide__more">Камины по акции</a>
+                @else
                 <a href="{{ route('promotions.ecokamin') }}" class="tf-btn animate-btn eco-promo-slide__cta">Все товары акции</a>
                 <a href="{{ route('promotions.ecokamin') }}#delta" class="eco-promo-slide__more">Топки Дельта −20%</a>
+                @endif
             </div>
         </div>
-        <div class="eco-promo-slide__products" aria-label="Хиты акции ЭкоКамин">
+        <div class="eco-promo-slide__products" aria-label="{{ $ecoDelta ? 'Топки Дельта по акции' : 'Хиты акции ЭкоКамин' }}">
             @foreach($ecokaminPromoHits->take(3) as $hit)
             <a href="/{{ $hit->category->slug }}/{{ $hit->slug }}" class="eco-promo-slide__product">
                 <span class="eco-promo-slide__offer">−{{ $hit->discount_percent }}%</span>

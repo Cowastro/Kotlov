@@ -847,12 +847,15 @@ class CatalogController extends Controller
         $ecokaminPromo = in_array($category->slug, ['kaminy', 'pechi-kaminy', 'topki'], true) || $category->parent?->slug === 'kaminy'
             ? \App\Support\Promotions\EcokaminPromotion::showcase()
             : null;
-        $ecokaminPromoHits = $ecokaminPromo['hits'] ?? collect();
-        $ecokaminPromoMaxDiscount = $ecokaminPromo['maxDiscount'] ?? 0;
+        // В разделе топок — вариант баннера про топки Дельта.
+        $ecokaminPromoVariant = $ecokaminPromo && ($category->slug === 'topki' || $category->parent?->slug === 'topki') ? 'delta' : 'all';
+        $ecokaminPromoHits = $ecokaminPromo[$ecokaminPromoVariant === 'delta' ? 'deltaHits' : 'hits'] ?? collect();
+        $ecokaminPromoMaxDiscount = $ecokaminPromo[$ecokaminPromoVariant === 'delta' ? 'deltaMaxDiscount' : 'maxDiscount'] ?? 0;
 
         return view('pages.catalog', compact(
             'ecokaminPromoHits',
             'ecokaminPromoMaxDiscount',
+            'ecokaminPromoVariant',
             'category',
             'subcategories',
             'brands',
