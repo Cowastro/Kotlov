@@ -6,6 +6,7 @@ use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Orders\OrderWorkflow;
 use DomainException;
@@ -107,7 +108,6 @@ class OrderWorkflowSequenceTest extends TestCase
             ->assertTableActionVisible('correctOrder', $new)
             ->assertTableActionVisible('findAnalog', $new)
             ->assertTableActionHasLabel('advanceWorkflow', 'Подтвердить', $checking)
-            ->assertTableActionDisabled('advanceWorkflow', $checking)
             ->assertTableActionVisible('correctOrder', $checking)
             ->assertTableActionHasLabel('advanceWorkflow', 'В доставку', $processing)
             ->assertTableActionHidden('correctOrder', $processing)
@@ -117,6 +117,53 @@ class OrderWorkflowSequenceTest extends TestCase
             ->assertTableActionDoesNotExist('processing', record: $new)
             ->assertTableActionDoesNotExist('shipped', record: $new)
             ->assertTableActionDoesNotExist('delivered', record: $new);
+    }
+
+    public function test_table_confirmation_collects_fulfillment_and_advances_checking_order(): void
+    {
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->create([
+            'code' => 'workflow-supplier',
+            'name' => 'Тестовый поставщик',
+            'is_active' => true,
+        ]);
+        $order = $this->order('checking');
+        $item = OrderItem::query()->create([
+            'order_id' => $order->id,
+            'product_name' => 'Товар для быстрого подтверждения',
+            'product_sku' => 'QUICK-1',
+            'price' => 100,
+            'quantity' => 1,
+            'total' => 100,
+            'supply_supplier_id' => $supplier->id,
+            'supply_supplier_name' => $supplier->name,
+            'supply_is_available' => true,
+            'supply_purchase_price' => 70,
+        ]);
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(ListOrders::class)
+            ->callTableAction('advanceWorkflow', $order, [
+                'order_item_id' => $item->id,
+                'fulfillment_route' => 'supplier_purchase',
+                'supplier_id' => $supplier->id,
+                'availability_status' => 'available',
+                'purchase_price' => 70,
+                'note' => 'Наличие подтверждено поставщиком',
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $order->refresh();
+        $item->refresh();
+
+        $this->assertSame('confirmed', $order->status);
+        $this->assertNotNull($order->availability_confirmed_at);
+        $this->assertSame('supplier_purchase', $item->fulfillment_route);
+        $this->assertSame($supplier->id, $item->fulfillment_supplier_id);
+        $this->assertSame('available', $item->fulfillment_availability_status);
+        $this->assertNotNull($item->fulfillment_confirmed_at);
     }
 
     private function order(string $status): Order

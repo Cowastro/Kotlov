@@ -12,6 +12,7 @@ use App\Models\OrderPortalLink;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\Orders\OrderItemFulfillmentManager;
 use App\Services\Orders\OrderPortal;
 use App\Services\Orders\OrderSettlementManager;
 use App\Services\Orders\OrderWorkflow;
@@ -23,7 +24,9 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\IconSize;
 use Filament\Tables\Columns\IconColumn;
@@ -89,7 +92,7 @@ class OrdersTable
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->withSum('items', 'quantity')
                 ->with([
-                    'items:id,order_id,product_id,integration_product_id,warehouse_stock_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_warehouse_name,supply_delivery_days,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price,fulfillment_confirmed_at',
+                    'items:id,order_id,product_id,integration_product_id,warehouse_stock_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_warehouse_name,supply_delivery_days,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price,fulfillment_availability_status,fulfillment_confirmed_at',
                     'items.fulfillmentSupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
                     'items.fulfillmentSupplier.crmCounterparty.contactPoints',
                     'items.supplySupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
@@ -569,16 +572,109 @@ class OrdersTable
                     ->color(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['color'] ?? 'gray')
                     ->button()
                     ->visible(fn (Order $record): bool => app(OrderWorkflow::class)->step($record) !== null)
-                    ->disabled(fn (Order $record): bool => app(OrderWorkflow::class)->blocker($record) !== null)
                     ->tooltip(fn (Order $record): ?string => app(OrderWorkflow::class)->blocker($record)
-                        ?? app(OrderWorkflow::class)->step($record)['label']
-                        ?? null)
+                        ? 'Откроется короткое подтверждение наличия и способа исполнения.'
+                        : (app(OrderWorkflow::class)->step($record)['label'] ?? null))
                     ->requiresConfirmation()
-                    ->modalHeading(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['heading'] ?? 'Перейти к следующему этапу?')
-                    ->modalDescription(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['description'] ?? '')
-                    ->modalSubmitActionLabel(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['submit'] ?? 'Продолжить')
-                    ->action(function (Order $record): void {
+                    ->modalHeading(fn (Order $record): string => app(OrderWorkflow::class)->blocker($record)
+                        ? 'Подтвердить позицию заказа'
+                        : (app(OrderWorkflow::class)->step($record)['heading'] ?? 'Перейти к следующему этапу?'))
+                    ->modalDescription(fn (Order $record): string => app(OrderWorkflow::class)->blocker($record)
+                        ? 'Зафиксируйте фактического поставщика, способ исполнения и наличие. Если это последняя позиция, заказ сразу перейдёт в «Наличие подтверждено».'
+                        : (app(OrderWorkflow::class)->step($record)['description'] ?? ''))
+                    ->modalSubmitActionLabel(fn (Order $record): string => app(OrderWorkflow::class)->blocker($record)
+                        ? 'Сохранить и продолжить'
+                        : (app(OrderWorkflow::class)->step($record)['submit'] ?? 'Продолжить'))
+                    ->fillForm(function (Order $record): array {
+                        $item = $record->items->first(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at));
+                        if (! $item || $record->status !== 'checking') {
+                            return [];
+                        }
+
+                        $recommendedRoute = $item->supply_status;
+
+                        return [
+                            'order_item_id' => $item->id,
+                            'fulfillment_route' => $item->fulfillment_route
+                                ?: (array_key_exists($recommendedRoute, OrderItem::FULFILLMENT_ROUTES) ? $recommendedRoute : 'supplier_purchase'),
+                            'supplier_id' => $item->fulfillment_supplier_id ?: $item->supply_supplier_id,
+                            'availability_status' => $item->fulfillment_availability_status
+                                ?: match ($item->supply_is_available) {
+                                    true => 'available',
+                                    false => 'unavailable',
+                                    default => null,
+                                },
+                            'purchase_price' => $item->fulfillment_purchase_price ?? $item->supply_purchase_price,
+                        ];
+                    })
+                    ->schema(fn (Order $record): array => $record->status === 'checking'
+                        && app(OrderWorkflow::class)->blocker($record) !== null
+                            ? [
+                                Select::make('order_item_id')
+                                    ->label('Позиция заказа')
+                                    ->options(fn (): array => $record->items
+                                        ->filter(fn (OrderItem $item): bool => blank($item->fulfillment_confirmed_at))
+                                        ->mapWithKeys(fn (OrderItem $item): array => [
+                                            $item->id => $item->product_name.' · '.($item->product_sku ?: 'без артикула'),
+                                        ])->all())
+                                    ->required(),
+                                Select::make('fulfillment_route')
+                                    ->label('Как исполняем')
+                                    ->options(OrderItem::FULFILLMENT_ROUTES)
+                                    ->required(),
+                                Select::make('supplier_id')
+                                    ->label('Фактический поставщик')
+                                    ->options(fn (): array => Supplier::query()
+                                        ->where('is_active', true)
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id')
+                                        ->all())
+                                    ->searchable()
+                                    ->required(),
+                                Select::make('availability_status')
+                                    ->label('Решение по наличию')
+                                    ->options(OrderItem::FULFILLMENT_AVAILABILITY_STATUSES)
+                                    ->required(),
+                                TextInput::make('purchase_price')
+                                    ->label('Входная цена за единицу, BYN')
+                                    ->numeric()
+                                    ->minValue(0),
+                                Textarea::make('note')
+                                    ->label('Комментарий менеджера')
+                                    ->rows(2)
+                                    ->maxLength(2000),
+                            ]
+                            : [])
+                    ->action(function (Order $record, array $data): void {
                         try {
+                            if ($record->status === 'checking' && app(OrderWorkflow::class)->blocker($record) !== null) {
+                                $item = $record->items()->findOrFail($data['order_item_id']);
+                                $supplier = Supplier::query()->findOrFail($data['supplier_id']);
+
+                                app(OrderItemFulfillmentManager::class)->confirm(
+                                    $item,
+                                    $data['fulfillment_route'],
+                                    $supplier,
+                                    auth()->user(),
+                                    $data['note'] ?? null,
+                                    filled($data['purchase_price'] ?? null) ? (float) $data['purchase_price'] : null,
+                                    $data['availability_status'],
+                                );
+
+                                $record->unsetRelation('items');
+                                $record->load('items');
+                                if (app(OrderWorkflow::class)->blocker($record) !== null) {
+                                    $remaining = $record->items->whereNull('fulfillment_confirmed_at')->count();
+                                    Notification::make()
+                                        ->success()
+                                        ->title('Позиция подтверждена')
+                                        ->body('Осталось проверить позиций: '.$remaining.'. Нажмите эту же кнопку ещё раз.')
+                                        ->send();
+
+                                    return;
+                                }
+                            }
+
                             $result = app(OrderWorkflow::class)->advance($record, auth()->user());
 
                             Notification::make()
