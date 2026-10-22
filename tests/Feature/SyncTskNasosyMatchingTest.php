@@ -25,6 +25,7 @@ class SyncTskNasosyMatchingTest extends TestCase
         $jetS = $make('Насосная станция UNIPUMP AUTO JET 100 S', 'auto-jet-100-s');
         $jetSS = $make('Насосная станция UNIPUMP AUTO JET 100 S-S', 'auto-jet-100-s-s');
         $tank = $make('Насосная станция UNIPUMP АКВАРОБОТ JS 60 (р/а 2л)', 'akvarobot-js-60');
+        $latinTank = $make('Насосная станция UNIPUMP АКВАРОБОТ JS 80 (r/a 2л)', 'akvarobot-js-80');
         $mh = $make('Насос поверхностный многоступенчатый UNIPUMP MH 200 A', 'mh-200-a');
         $universal = $make('Насосная станция UNIPUMP АКВАРОБОТ JET 80 L-24', 'akvarobot-jet-80-l-24');
 
@@ -39,6 +40,7 @@ class SyncTskNasosyMatchingTest extends TestCase
             '74715,,AUTO JET 100 S,UNIPUMP,AUTO JET 100 S,"300,00","400,00",в наличии',
             '23291,,AUTO JET 100 S-S,UNIPUMP,AUTO JET 100 S-S,"320,00","420,00",в наличии',
             '96231,,Адапт.станция АКВАРОБОТ JS 60 (г/а 2л),UNIPUMP,АКВАРОБОТ JS 60 (г/а 2л),"200,00","280,00",в наличии',
+            '26536,,Адапт.станция АКВАРОБОТ JS 80 (г/а 2л),UNIPUMP,АКВАРОБОТ JS 80 (г/а 2л),"220,00","300,00",в наличии',
             '74638,,Насос МН 200 А,UNIPUMP,МН 200 А,"500,00","650,00",в наличии',
             '79791,,Статор МН 200 А,UNIPUMP,Статор МН 200 А,"50,00","65,00",в наличии',
             '84632,,Универсальная станция АКВАРОБОТ JET 80 L-24,UNIPUMP,АКВАРОБОТ JET 80 L-24,"400,00","550,00",в наличии',
@@ -46,7 +48,7 @@ class SyncTskNasosyMatchingTest extends TestCase
 
         $this->artisan('supplier:sync-tsk-nasosy', ['--apply' => true, '--stock-file' => $csv])->assertSuccessful();
 
-        foreach ([[$auto, '76108'], [$auto5, '71464'], [$robot, '18969'], [$pump, '38873'], [$upc, '95772'], [$universal, '84632'], [$jetS, '74715'], [$jetSS, '23291'], [$tank, '96231'], [$mh, '74638']] as [$product, $article]) {
+        foreach ([[$auto, '76108'], [$auto5, '71464'], [$robot, '18969'], [$pump, '38873'], [$upc, '95772'], [$universal, '84632'], [$jetS, '74715'], [$jetSS, '23291'], [$tank, '96231'], [$latinTank, '26536'], [$mh, '74638']] as [$product, $article]) {
             $this->assertSame($article, $product->supplierProducts()->sole()->supplier_article, $product->name);
         }
         $this->assertSame('326.52', number_format((float) $auto->supplierProducts()->sole()->price_byn, 2, '.', ''));
