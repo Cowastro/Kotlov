@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Coupon;
+use App\Models\Product;
 
 class CartCouponService
 {
@@ -50,10 +51,20 @@ class CartCouponService
     public function onlineOrderDiscountSubtotal(array $items): float
     {
         $excluded = (array) config('shop.online_order_discount.excluded_category_slugs', []);
+        // Products of a running supplier promotion keep the promotional price only.
+        $promoIds = Product::query()
+            ->whereIn('id', collect($items)->pluck('id')->filter()->all())
+            ->whereNotNull('sale_campaign')
+            ->where('is_sale', true)
+            ->where('sale_ends_at', '>', now())
+            ->pluck('id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->all();
 
         return round(collect($items)
             ->filter(fn (array $item): bool => ($item['pricing_type'] ?? 'retail') !== 'b2b')
             ->reject(fn (array $item): bool => in_array($item['category_slug'] ?? null, $excluded, true))
+            ->reject(fn (array $item): bool => in_array((int) ($item['id'] ?? 0), $promoIds, true))
             ->sum(fn (array $item): float => (float) ($item['price'] ?? 0) * (int) ($item['quantity'] ?? 0)), 2);
     }
 

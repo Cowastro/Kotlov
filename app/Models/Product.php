@@ -490,7 +490,8 @@ class Product extends Model
         $categorySlug = $this->category?->slug;
         $excluded = (array) config('shop.online_order_discount.excluded_category_slugs', []);
 
-        return ! in_array($categorySlug, $excluded, true);
+        // A supplier promotion already lowers the price: the online discount does not stack.
+        return ! in_array($categorySlug, $excluded, true) && ! $this->hasActiveSaleCampaign();
     }
 
     public function category(): BelongsTo

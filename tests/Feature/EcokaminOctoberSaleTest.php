@@ -47,6 +47,14 @@ class EcokaminOctoberSaleTest extends TestCase
         }
         $this->assertSame(3, Product::query()->inActiveSaleCampaign(ApplyEcokaminOctoberSaleCommand::CAMPAIGN)->count());
 
+        // The online-order 3 % does not stack with the promotion.
+        $this->assertFalse($delta->fresh()->qualifiesForOnlineOrderDiscount());
+        $this->assertTrue($other->fresh()->qualifiesForOnlineOrderDiscount());
+        $this->assertSame(2000.0, app(\App\Services\CartCouponService::class)->onlineOrderDiscountSubtotal([
+            ['id' => $delta->id, 'price' => 2400, 'quantity' => 1, 'category_slug' => 'kaminy'],
+            ['id' => $other->id, 'price' => 2000, 'quantity' => 1, 'category_slug' => 'kaminy'],
+        ]));
+
         \Illuminate\Support\Facades\Cache::flush();
         $this->get('/akcii/ecokamin-skidki')->assertOk()
             ->assertSee('Топки ЭкоКамин Дельта')
@@ -64,6 +72,7 @@ class EcokaminOctoberSaleTest extends TestCase
         $this->assertNull($delta->price_old);
         $this->assertFalse($delta->is_sale);
         $this->assertNull($delta->sale_campaign);
+        $this->assertTrue($delta->qualifiesForOnlineOrderDiscount());
         \Illuminate\Support\Facades\Cache::flush();
         $this->get('/akcii/ecokamin-skidki')->assertRedirect('/akcii');
         $this->get('/')->assertOk()->assertDontSee('/akcii/ecokamin-skidki#delta', false);
