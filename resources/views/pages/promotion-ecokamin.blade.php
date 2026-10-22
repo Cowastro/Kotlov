@@ -59,7 +59,7 @@
     <section class="eco-promo__section eco-promo__section--alt" id="kaminy">
         <div class="container">
             <div class="eco-promo__head">
-                <div><span class="eco-promo__kicker">Камины</span><h2>Мадрид, Рио, Эклипс, Родос, Прага, Три стекла</h2></div>
+                <div><span class="eco-promo__kicker">Камины</span><h2>Мадрид, Рио, Крит, Эклипс, Родос, Прага, Мюнхен, Три стекла</h2></div>
                 <span class="eco-promo__badge">−20% / −15%</span>
             </div>
             <div class="tf-grid-layout sm-col-2 lg-col-3 xl-col-4">

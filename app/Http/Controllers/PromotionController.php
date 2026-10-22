@@ -72,7 +72,7 @@ class PromotionController extends Controller
         $fireplaceProducts = $products->reject($isDelta)->values();
         $endsAt = CarbonImmutable::parse(ApplyEcokaminOctoberSaleCommand::ENDS_AT, 'Europe/Minsk');
         $title = 'Акция ЭкоКамин: скидка до 20% на топки Дельта и камины | KOTLOV';
-        $description = 'Скидка 20% на топки ЭкоКамин Дельта и камины Мадрид, Рио, Эклипс, Родос, Прага, 15% на Мюнхен и Три стекла до '.$endsAt->format('d.m.Y').'. Цены на сайте уже со скидкой, доставка по Беларуси.';
+        $description = 'Скидка 20% на топки ЭкоКамин Дельта и камины Мадрид, Рио, Крит, Эклипс, Родос, Прага, 15% на Мюнхен и Три стекла до '.$endsAt->format('d.m.Y').'. Цены на сайте уже со скидкой, доставка по Беларуси.';
         $canonical = 'https://kotlov.by/akcii/ecokamin-skidki';
 
         return view('pages.promotion-ecokamin', compact('deltaProducts', 'fireplaceProducts', 'endsAt', 'title', 'description', 'canonical'));
