@@ -50,7 +50,7 @@ class SyncAtmosCommand extends Command
     ];
 
     /** Brand family => spellings in the price and in the catalogue. */
-    private const BRAND_FAMILIES = [
+    public const BRAND_FAMILIES = [
         'zota' => ['zota', 'зота'],
         'atmos' => ['atmos', 'атмос'],
         'burnit' => ['burnit'],
@@ -84,7 +84,7 @@ class SyncAtmosCommand extends Command
             if (count($rows) < 100) {
                 throw new RuntimeException('Прайс АТМОС вернул слишком мало строк: '.count($rows));
             }
-            [$rows, $counts] = $this->classify($rows);
+            [$rows, $counts] = $this->classify($rows, (bool) $this->option('audit'));
             foreach ($counts as $key => $value) {
                 $this->line("metric.atmos.{$key}={$value}");
             }
@@ -171,7 +171,7 @@ class SyncAtmosCommand extends Command
     }
 
     /** @return array{0: array<int, array<string, mixed>>, 1: array<string, int>} */
-    private function classify(array $rows): array
+    public function classify(array $rows, bool $diagnostics = false): array
     {
         $supplier = Supplier::query()->where('code', self::SUPPLIER_CODE)->first();
         $links = $supplier
@@ -267,7 +267,7 @@ class SyncAtmosCommand extends Command
             }
             $row['product_id'] = $productId ?: null;
             $row['match_reason'] = $reason ?? 'none';
-            if (! $productId && $this->option('audit')) {
+            if (! $productId && $diagnostics) {
                 $row['near'] = $this->nearest($row, $familyProducts[$row['family']] ?? [], $keyer);
             }
             $counts[$productId ? 'matched' : 'unmatched']++;
@@ -427,12 +427,14 @@ class SyncAtmosCommand extends Command
 
     public function cleanName(string $name): string
     {
+        // «АТМОS» / «АТМОС» written with Cyrillic letters.
+        $name = preg_replace('/(?<!\p{L})АТМО[SС](?!\p{L})/u', 'ATMOS', $name) ?? $name;
         $name = preg_replace('/[.!\s]*(скидка\s*-?\s*\d+\s*%|новинка|акция|цен[аы]\s+в\s+бел\.?\s*руб\.?|под заказ)[.!\s]*/iu', ' ', $name) ?? $name;
 
         return trim(preg_replace('/\s+/u', ' ', $name) ?? $name, " .!-\t");
     }
 
-    private function family(string $text): string
+    public function family(string $text): string
     {
         $text = mb_strtolower($text);
         foreach (self::BRAND_FAMILIES as $family => $spellings) {
