@@ -321,12 +321,23 @@ class OrdersTable
                     ->formatStateUsing(fn (?string $state, Order $record) => $record->isArchivedAsIrrelevant()
                         ? 'Неактуален · архив'
                         : ($state ? ($statusNames[$state] ?? $statusLabelOverrides[$state] ?? $state) : '—'))
-                    ->description(fn (Order $record): ?string => $record->isArchivedAsIrrelevant()
-                        ? collect([
-                            $record->archived_at?->format('d.m.Y H:i'),
-                            $record->archivedBy?->name,
-                        ])->filter()->implode(' · ')
-                        : $record->paymentStatusLabel())
+                    ->description(function (Order $record): HtmlString|string|null {
+                        if ($record->isArchivedAsIrrelevant()) {
+                            return collect([
+                                $record->archived_at?->format('d.m.Y H:i'),
+                                $record->archivedBy?->name,
+                            ])->filter()->implode(' · ');
+                        }
+
+                        if ($record->payment_status === 'paid') {
+                            return new HtmlString(
+                                '<span style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:3px 8px;border-radius:9999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:700">'
+                                .'✓ Оплачен</span>'
+                            );
+                        }
+
+                        return $record->paymentStatusLabel();
+                    })
                     ->tooltip(fn (Order $record): ?string => $record->isArchivedAsIrrelevant()
                         ? $record->archive_reason
                         : null)

@@ -90,6 +90,11 @@ class OrderWorkflowSequenceTest extends TestCase
         $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $new = $this->order('new');
         $checking = $this->order('checking');
+        $confirmedPaid = $this->order('confirmed');
+        $confirmedPaid->update([
+            'payment_type' => 'webpay',
+            'payment_status' => 'paid',
+        ]);
         $processing = $this->order('processing');
         OrderItem::query()->create([
             'order_id' => $new->id,
@@ -109,6 +114,7 @@ class OrderWorkflowSequenceTest extends TestCase
             ->assertTableActionVisible('findAnalog', $new)
             ->assertTableActionHasLabel('advanceWorkflow', 'Подтвердить', $checking)
             ->assertTableActionVisible('correctOrder', $checking)
+            ->assertTableActionHasLabel('advanceWorkflow', 'В работу', $confirmedPaid)
             ->assertTableActionHasLabel('advanceWorkflow', 'В доставку', $processing)
             ->assertTableActionHidden('correctOrder', $processing)
             ->assertTableActionHidden('findAnalog', $processing)
@@ -116,7 +122,8 @@ class OrderWorkflowSequenceTest extends TestCase
             ->assertTableActionDoesNotExist('confirmAvailability', record: $new)
             ->assertTableActionDoesNotExist('processing', record: $new)
             ->assertTableActionDoesNotExist('shipped', record: $new)
-            ->assertTableActionDoesNotExist('delivered', record: $new);
+            ->assertTableActionDoesNotExist('delivered', record: $new)
+            ->assertSeeText('✓ Оплачен');
     }
 
     public function test_table_confirmation_collects_fulfillment_and_advances_checking_order(): void
