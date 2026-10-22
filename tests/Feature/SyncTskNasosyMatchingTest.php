@@ -21,6 +21,8 @@ class SyncTskNasosyMatchingTest extends TestCase
         $auto5 = $make('Насосная станция UNIPUMP AUTO QB 80-5', 'auto-qb-80-5');
         $robot = $make('Насосная станция UNIPUMP АКВАРОБОТ QB 80 (г/а 2 л)', 'akvarobot-qb-80');
         $pump = $make('Насос поверхностный UNIPUMP QB-80', 'qb-80');
+        $upc = $make('Насос циркуляционный UNIPUMP UPC 25-40 130', 'upc-25-40-130');
+        $universal = $make('Насосная станция UNIPUMP АКВАРОБОТ JET 80 L-24', 'akvarobot-jet-80-l-24');
 
         $csv = tempnam(sys_get_temp_dir(), 'tsk').'.csv';
         file_put_contents($csv, implode("\n", [
@@ -29,11 +31,13 @@ class SyncTskNasosyMatchingTest extends TestCase
             '71464,,Станция авт.водоснабжения AUTO QB 80 - 5,UNIPUMP,AUTO QB 80 - 5,"229,87","311,56",под заказ 2 нед',
             '18969,,Адапт. станция АКВАРОБОТ QB 80 (г/а 2л),UNIPUMP,АКВАРОБОТ QB 80 (г/а 2л),"290,63","393,92",в наличии',
             '38873,,Поверхностный вихревой насос QB 80,UNIPUMP,QB 80,"184,87","250,56",в наличии',
+            '95772,,UPС 25-40 130,UNIPUMP,UPС 25-40 130,"70,00","95,00",в наличии',
+            '84632,,Универсальная станция АКВАРОБОТ JET 80 L-24,UNIPUMP,АКВАРОБОТ JET 80 L-24,"400,00","550,00",в наличии',
         ]));
 
         $this->artisan('supplier:sync-tsk-nasosy', ['--apply' => true, '--stock-file' => $csv])->assertSuccessful();
 
-        foreach ([[$auto, '76108'], [$auto5, '71464'], [$robot, '18969'], [$pump, '38873']] as [$product, $article]) {
+        foreach ([[$auto, '76108'], [$auto5, '71464'], [$robot, '18969'], [$pump, '38873'], [$upc, '95772'], [$universal, '84632']] as [$product, $article]) {
             $this->assertSame($article, $product->supplierProducts()->sole()->supplier_article, $product->name);
         }
         $this->assertSame('326.52', number_format((float) $auto->supplierProducts()->sole()->price_byn, 2, '.', ''));

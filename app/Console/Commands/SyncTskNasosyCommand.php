@@ -81,6 +81,8 @@ class SyncTskNasosyCommand extends Command
     private array $indexByBrandModel = [];
     private array $brandById = [];
     private array $brandByName = [];
+    /** model keys shared by several cards: [brandId][model] => product ids */
+    private array $modelCollisions = [];
     private array $categoryIdBySlug = [];
 
     public function handle(): int
@@ -419,13 +421,15 @@ class SyncTskNasosyCommand extends Command
             ->each(function ($p) {
                 $this->indexBySku[mb_strtoupper(trim((string) $p->sku))] = (int) $p->id;
                 // Cards without a brand still name it in the title («Насосная станция UNIPUMP AUTO QB 80»).
-                $bid = (int) $p->brand_id ?: (int) $this->brandInName((string) $p->name);
+                // A brand_id pointing at a deleted brand counts as no brand.
+                $bid = isset($this->brandById[(int) $p->brand_id]) ? (int) $p->brand_id : (int) $this->brandInName((string) $p->name);
                 if ($bid > 0) {
                     $model = $this->model((string) $p->name, $this->brandById[$bid] ?? '');
                     if ($model !== '') {
                         $current = $this->indexByBrandModel[$bid][$model] ?? null;
                         // Two cards with the same model key: link neither rather than a wrong one.
                         $this->indexByBrandModel[$bid][$model] = $current === null || $current === (int) $p->id ? (int) $p->id : 0;
+                        $this->modelCollisions[$bid][$model][] = (int) $p->id;
                     }
                 }
             });
@@ -472,6 +476,9 @@ class SyncTskNasosyCommand extends Command
             if ($model !== '' && ! empty($this->indexByBrandModel[$brandId][$model])) {
                 $pid = $this->indexByBrandModel[$brandId][$model];
                 return ['product_id' => $pid, 'sku' => $this->sku($pid), 'confidence' => 'brand_model'];
+            }
+            if ($model !== '' && count($this->modelCollisions[$brandId][$model] ?? []) > 1) {
+                $this->line('audit.tsk_sync.collision=' . implode(',', $this->modelCollisions[$brandId][$model]));
             }
         }
         return null;
@@ -892,6 +899,12 @@ class SyncTskNasosyCommand extends Command
         'СКВАЖИННЫЙ', 'ДРЕНАЖНЫЙ', 'ДРЕНАЖНО', 'ФЕКАЛЬНЫЙ', 'ПОВЕРХНОСТНЫЙ',
         'ПОГРУЖНОЙ', 'ВИХРЕВОЙ', 'САМОВСАСЫВАЮЩИЙ', 'СТАНЦИЯ', 'КОМПЛЕКТ',
         'АВТ', 'АВТОМАТИЧЕСКАЯ', 'АВТОМАТИЧЕСКОГО', 'ВОДОСНАБЖЕНИЯ', 'АДАПТ', 'АДАПТИВНАЯ',
+        'УНИВЕРСАЛЬНАЯ',
+    ];
+
+    private const HOMOGLYPHS = [
+        'А' => 'A', 'В' => 'B', 'С' => 'C', 'Е' => 'E', 'Н' => 'H', 'К' => 'K',
+        'М' => 'M', 'О' => 'O', 'Р' => 'P', 'Т' => 'T', 'Х' => 'X',
     ];
 
     /**
@@ -905,6 +918,8 @@ class SyncTskNasosyCommand extends Command
         if ($brand !== '') {
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', ' ', $n) ?? $n;
         }
+        // «UPС 25-40» typed with a Cyrillic С: fold look-alikes inside Latin model codes.
+        $n = preg_replace_callback('/[A-ZА-ЯЁ]*[A-Z][A-ZА-ЯЁ]*/u', fn ($m) => strtr($m[0], self::HOMOGLYPHS), $n) ?? $n;
         $n = preg_replace('/(?<=\d)(?=[А-ЯЁA-Z])|(?<=[А-ЯЁA-Z])(?=\d)/u', ' ', $n) ?? $n;
         $n = preg_replace('/[^А-ЯЁA-Z0-9]+/u', ' ', $n) ?? $n;
         $toks = array_unique(array_filter(
