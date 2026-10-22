@@ -14,6 +14,7 @@ class EnrichProductContentCommand extends Command
         {--brand= : Brand slug (e.g. tekhnolit, pegas)}
         {--category= : Category ID}
         {--sku= : Single product SKU}
+        {--sku-prefix= : Products whose SKU starts with this prefix (e.g. ATMOS- for cards created from one supplier price)}
         {--all : Process all non-archived products (no brand/category filter)}
         {--only= : Which fields to fill: content | short | both (default: both)}
         {--force : Re-generate even if content already exists}
@@ -87,6 +88,8 @@ class EnrichProductContentCommand extends Command
 
         if ($sku = $this->option('sku')) {
             $query->where('p.sku', $sku);
+        } elseif ($skuPrefix = $this->option('sku-prefix')) {
+            $query->where('p.sku', 'like', str_replace(['%', '_'], ['\%', '\_'], $skuPrefix).'%');
         } elseif ($brandSlug = $this->option('brand')) {
             $brandId = DB::table('brands')->where('slug', $brandSlug)->value('id');
             if (! $brandId) {
@@ -99,7 +102,7 @@ class EnrichProductContentCommand extends Command
         } elseif ($this->option('all')) {
             // no extra filter
         } else {
-            $this->error('Specify --brand=, --category=, --sku= or --all');
+            $this->error('Specify --brand=, --category=, --sku=, --sku-prefix= or --all');
             return self::FAILURE;
         }
 
