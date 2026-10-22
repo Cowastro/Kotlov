@@ -81,6 +81,7 @@ class CrmMailThreadResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $count = CrmMailMessage::query()
+            ->visibleTo(auth()->user())
             ->where('direction', 'incoming')
             ->where('is_read', false)
             ->whereHas('thread', fn (Builder $query): Builder => $query
@@ -105,7 +106,7 @@ class CrmMailThreadResource extends Resource
                 ->orderByDesc('id'),
             'latestMessage', 'commercialDocuments', 'supplierOrderRequest.order',
             'supplierOrderRequest.supplier.crmCounterparty', 'product', 'supplier',
-        ]);
+        ])->visibleTo(auth()->user());
     }
 
     public static function getRecordRouteBindingEloquentQuery(): Builder

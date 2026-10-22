@@ -49,7 +49,7 @@ final class CreateCommercialDocumentAction
                     ->options(fn (): array => self::recentThreadOptions())
                     ->getSearchResultsUsing(fn (string $search): array => self::searchThreadOptions($search))
                     ->getOptionLabelUsing(fn ($value): ?string => self::threadOptionLabel(
-                        CrmMailThread::query()->with('counterparty')->find($value),
+                        CrmMailThread::query()->visibleTo(auth()->user())->with('counterparty')->find($value),
                     )),
                 Toggle::make('create_mail_draft')
                     ->label('После сохранения подготовить письмо с PDF')
@@ -66,6 +66,7 @@ final class CreateCommercialDocumentAction
                 $linkToThread = (bool) ($data['link_to_thread'] ?? filled($data['crm_mail_thread_id'] ?? null));
                 $thread = $linkToThread && filled($data['crm_mail_thread_id'] ?? null)
                     ? CrmMailThread::query()
+                        ->visibleTo(auth()->user())
                         ->with(['counterparty.contacts.contactPoints', 'counterparty.contactPoints', 'contact.contactPoints'])
                         ->findOrFail((int) $data['crm_mail_thread_id'])
                     : null;
@@ -207,6 +208,7 @@ final class CreateCommercialDocumentAction
     private static function threadQuery(): Builder
     {
         return CrmMailThread::query()
+            ->visibleTo(auth()->user())
             ->with('counterparty')
             ->where('status', '!=', 'spam');
     }

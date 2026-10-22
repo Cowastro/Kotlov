@@ -25,6 +25,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Throwable;
 
 class CrmMailboxResource extends Resource
@@ -46,6 +47,11 @@ class CrmMailboxResource extends Resource
         return 'Почта и лиды';
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->visibleTo(auth()->user());
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
@@ -62,6 +68,20 @@ class CrmMailboxResource extends Resource
                         ->helperText('При редактировании оставьте пустым, чтобы не менять пароль.'),
                     Toggle::make('is_enabled')->label('Включить загрузку писем'),
                     Toggle::make('create_leads')->label('Создавать карточку нового лида')->default(true),
+                ]),
+            Section::make('Доступ')
+                ->description('Пусто — общий ящик, его видят все менеджеры. Если выбрать сотрудников, письма ящика видят только они и администраторы.')
+                ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
+                ->schema([
+                    Select::make('users')
+                        ->label('Сотрудники с доступом')
+                        ->relationship('users', 'name', fn (Builder $query): Builder => $query
+                            ->whereIn('role', ['admin', 'manager', 'sales_manager'])
+                            ->where('is_active', true)
+                            ->orderBy('name'))
+                        ->multiple()
+                        ->preload()
+                        ->searchable(),
                 ]),
             Section::make('IMAP — входящие')->columns(4)->schema([
                 TextInput::make('imap_host')->label('Сервер')->required()->default('imap.hoster.by')->columnSpan(2),
@@ -84,6 +104,11 @@ class CrmMailboxResource extends Resource
             TextColumn::make('purpose')->label('Назначение')->badge()
                 ->state(fn (CrmMailbox $record): string => $record->servicePurpose() ?? 'Рабочая переписка')
                 ->color(fn (CrmMailbox $record): string => $record->isServiceMailbox() ? 'info' : 'success'),
+            TextColumn::make('access')->label('Доступ')->badge()
+                ->state(fn (CrmMailbox $record): string => $record->users->isEmpty()
+                    ? 'Общий'
+                    : $record->users->pluck('name')->implode(', '))
+                ->color(fn (CrmMailbox $record): string => $record->users->isEmpty() ? 'gray' : 'warning'),
             IconColumn::make('is_enabled')->label('Синхронизация')->boolean(),
             TextColumn::make('last_success_at')->label('Последняя загрузка')->dateTime('d.m.Y H:i:s', 'Europe/Minsk')->placeholder('Ещё не запускалась'),
             TextColumn::make('last_error')->label('Состояние')->limit(90)->placeholder('Ошибок нет')->color('danger')->wrap(),

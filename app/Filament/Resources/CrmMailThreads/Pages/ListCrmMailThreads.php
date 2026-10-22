@@ -46,7 +46,7 @@ class ListCrmMailThreads extends ListRecords
     {
         parent::mount();
 
-        $query = CrmMailThread::query()->followUpDue();
+        $query = CrmMailThread::query()->visibleTo(auth()->user())->followUpDue();
         if (! auth()->user()?->isAdmin()) {
             $query->where(fn (Builder $query): Builder => $query
                 ->whereNull('assigned_user_id')
@@ -150,7 +150,7 @@ class ListCrmMailThreads extends ListRecords
      */
     public static function messageBadgeCounts(?int $mailboxId = null): array
     {
-        $activeMessages = fn () => CrmMailMessage::query()
+        $activeMessages = fn () => CrmMailMessage::query()->visibleTo(auth()->user())
             ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
             ->whereHas('thread', fn (Builder $threads): Builder => $threads
                 ->whereNotIn('status', ['draft', 'spam', 'closed']));
@@ -165,20 +165,20 @@ class ListCrmMailThreads extends ListRecords
                 ->where('is_read', false)
                 ->count(),
             'incoming' => $activeMessages()->where('direction', 'incoming')->count(),
-            'drafts' => CrmMailMessage::query()
+            'drafts' => CrmMailMessage::query()->visibleTo(auth()->user())
                 ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
                 ->whereHas('thread', fn (Builder $threads): Builder => $threads->where('status', 'draft'))
                 ->count(),
             'sent' => $activeMessages()->where('direction', 'outgoing')->count(),
-            'spam' => CrmMailMessage::query()
+            'spam' => CrmMailMessage::query()->visibleTo(auth()->user())
                 ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
                 ->whereHas('thread', fn (Builder $threads): Builder => $threads->where('status', 'spam'))
                 ->count(),
-            'trash' => CrmMailMessage::query()
+            'trash' => CrmMailMessage::query()->visibleTo(auth()->user())
                 ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
                 ->whereHas('thread', fn (Builder $threads): Builder => $threads->onlyTrashed())
                 ->count(),
-            'all' => CrmMailMessage::query()
+            'all' => CrmMailMessage::query()->visibleTo(auth()->user())
                 ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
                 ->whereHas('thread')
                 ->count(),
@@ -207,7 +207,7 @@ class ListCrmMailThreads extends ListRecords
 
         $mailboxId = (int) $this->mailbox;
 
-        return CrmMailbox::query()->whereKey($mailboxId)->where('is_enabled', true)->exists()
+        return CrmMailbox::query()->visibleTo(auth()->user())->whereKey($mailboxId)->where('is_enabled', true)->exists()
             ? $mailboxId
             : null;
     }
@@ -216,6 +216,7 @@ class ListCrmMailThreads extends ListRecords
     public function mailboxSwitchOptions(): array
     {
         $mailboxes = CrmMailbox::query()
+            ->visibleTo(auth()->user())
             ->where('is_enabled', true)
             ->withCount(['messages as unread_count' => fn (Builder $query): Builder => $query
                 ->where('direction', 'incoming')
@@ -290,8 +291,8 @@ class ListCrmMailThreads extends ListRecords
                 ->schema(array_merge([
                     Select::make('mailbox_id')
                         ->label('Отправить с ящика')
-                        ->options(fn (): array => CrmMailbox::query()->operatorSending()->where('is_enabled', true)->pluck('email', 'id')->all())
-                        ->default(fn (): ?int => CrmMailbox::query()->operatorSending()->where('is_enabled', true)->value('id'))
+                        ->options(fn (): array => CrmMailbox::query()->visibleTo(auth()->user())->operatorSending()->where('is_enabled', true)->pluck('email', 'id')->all())
+                        ->default(fn (): ?int => CrmMailbox::query()->visibleTo(auth()->user())->operatorSending()->where('is_enabled', true)->value('id'))
                         ->required(),
                     TextInput::make('participant_name')->label('Имя / компания получателя')->maxLength(255),
                 ], CrmMailThreadResource::draftFields(true)))
@@ -308,7 +309,7 @@ class ListCrmMailThreads extends ListRecords
                 ->action(function (array $data, array $arguments): void {
                     try {
                         $thread = app(SupplierRequestMailDraftService::class)->create(
-                            CrmMailbox::query()->findOrFail($data['mailbox_id']),
+                            CrmMailbox::query()->visibleTo(auth()->user())->findOrFail($data['mailbox_id']),
                             auth()->user(),
                             CrmMailThreadResource::mergeRecipients($data, 'recipients', 'address_book_to'),
                             $data['subject'],

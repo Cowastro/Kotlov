@@ -127,7 +127,7 @@ class SupplierB2bInquiry extends Page
                         }),
                     Select::make('mailbox_id')
                         ->label('Отправить из ящика')
-                        ->options(fn (): array => CrmMailbox::query()->manualSending()->where('is_enabled', true)->orderBy('name')->pluck('name', 'id')->all())
+                        ->options(fn (): array => CrmMailbox::query()->visibleTo(auth()->user())->manualSending()->where('is_enabled', true)->orderBy('name')->pluck('name', 'id')->all())
                         ->required(),
                     TextInput::make('recipient')
                         ->label('Email поставщика')
@@ -171,7 +171,7 @@ class SupplierB2bInquiry extends Page
                         $supplier = filled($data['supplier_id'] ?? null)
                             ? Supplier::query()->find((int) $data['supplier_id'])
                             : null;
-                        $mailbox = CrmMailbox::query()->findOrFail((int) $data['mailbox_id']);
+                        $mailbox = CrmMailbox::query()->visibleTo(auth()->user())->findOrFail((int) $data['mailbox_id']);
                         $user = auth()->user();
                         $thread = app(MarketResearchSupplierInquiry::class)->createStandaloneDraft(
                             $product,
@@ -208,8 +208,8 @@ class SupplierB2bInquiry extends Page
     /** @return array<string, mixed> */
     private function defaultFormData(): array
     {
-        $mailbox = CrmMailbox::query()->manualSending()->where('is_enabled', true)->first()
-            ?? CrmMailbox::query()->manualSending()->first();
+        $mailbox = CrmMailbox::query()->visibleTo(auth()->user())->manualSending()->where('is_enabled', true)->first()
+            ?? CrmMailbox::query()->visibleTo(auth()->user())->manualSending()->first();
         $service = app(MarketResearchSupplierInquiry::class);
 
         return [
@@ -244,6 +244,7 @@ class SupplierB2bInquiry extends Page
     public function recentInquiries()
     {
         return CrmMailMessage::query()
+            ->visibleTo(auth()->user())
             ->with('thread')
             ->whereIn('metadata->source', ['supplier_b2b_inquiry', 'market_research_b2b_inquiry'])
             ->latest('id')

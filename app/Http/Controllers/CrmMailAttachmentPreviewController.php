@@ -20,6 +20,7 @@ class CrmMailAttachmentPreviewController extends Controller
     public function __invoke(CrmMailMessage $message, int $attachment): View|BinaryFileResponse
     {
         abort_unless(auth()->user()?->is_active && auth()->user()?->isManager(), 403);
+        abort_unless(CrmMailMessage::query()->whereKey($message->getKey())->visibleTo(auth()->user())->exists(), 403);
 
         $file = collect($message->metadata['attachments'] ?? [])->values()->get($attachment);
         abort_unless(is_array($file), 404);

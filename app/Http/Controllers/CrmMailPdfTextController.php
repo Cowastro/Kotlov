@@ -20,6 +20,7 @@ class CrmMailPdfTextController extends Controller
         CrmMailPdfTextExtractor $extractor,
     ): View {
         abort_unless(auth()->user()?->is_active && auth()->user()?->isManager(), 403);
+        abort_unless(CrmMailMessage::query()->whereKey($message->getKey())->visibleTo(auth()->user())->exists(), 403);
 
         try {
             $result = $extractor->extract($message, $attachment);
@@ -71,6 +72,7 @@ class CrmMailPdfTextController extends Controller
         CrmMailPdfTextExtractor $extractor,
     ): JsonResponse {
         abort_unless(auth()->user()?->is_active && auth()->user()?->isManager(), 403);
+        abort_unless(CrmMailMessage::query()->whereKey($message->getKey())->visibleTo(auth()->user())->exists(), 403);
 
         $validated = $request->validate([
             'images' => ['required', 'array', 'min:1', 'max:8'],

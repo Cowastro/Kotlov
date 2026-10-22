@@ -149,7 +149,7 @@ class MarketResearchReportResource extends Resource
                             }),
                         Select::make('mailbox_id')
                             ->label('Отправить из ящика')
-                            ->options(fn (): array => CrmMailbox::query()->manualSending()->where('is_enabled', true)->pluck('name', 'id')->all())
+                            ->options(fn (): array => CrmMailbox::query()->visibleTo(auth()->user())->manualSending()->where('is_enabled', true)->pluck('name', 'id')->all())
                             ->required(),
                         TextInput::make('recipient')
                             ->label('Email поставщика')
@@ -186,7 +186,7 @@ class MarketResearchReportResource extends Resource
                             $supplier = filled($data['supplier_id'] ?? null)
                                 ? Supplier::query()->find((int) $data['supplier_id'])
                                 : null;
-                            $mailbox = CrmMailbox::query()->findOrFail((int) $data['mailbox_id']);
+                            $mailbox = CrmMailbox::query()->visibleTo(auth()->user())->findOrFail((int) $data['mailbox_id']);
                             $user = auth()->user();
                             $thread = app(MarketResearchSupplierInquiry::class)->createDraft(
                                 $record,

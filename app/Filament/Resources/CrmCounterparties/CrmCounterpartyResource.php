@@ -200,7 +200,7 @@ class CrmCounterpartyResource extends Resource
                     ->formatStateUsing(fn (string $state): string => CrmCounterparty::SOURCES[$state] ?? $state),
                 TextEntry::make('contacts_count')->label('Контактных лиц')->state(fn (CrmCounterparty $record): int => $record->contacts()->count()),
                 TextEntry::make('calls_count')->label('Звонков')->state(fn (CrmCounterparty $record): int => $record->calls()->count()),
-                TextEntry::make('mail_threads_count')->label('Переписок')->state(fn (CrmCounterparty $record): int => $record->mailThreads()->count()),
+                TextEntry::make('mail_threads_count')->label('Переписок')->state(fn (CrmCounterparty $record): int => $record->mailThreads()->visibleTo(auth()->user())->count()),
                 TextEntry::make('commercial_documents_count')->label('КП и счетов')->state(fn (CrmCounterparty $record): int => $record->commercialDocuments()->count()),
                 TextEntry::make('orders_count')->label('Заказов')->state(fn (CrmCounterparty $record): int => $record->orders()->count()),
                 TextEntry::make('external_identities_count')->label('Связей с 1С')

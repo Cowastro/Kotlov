@@ -317,4 +317,16 @@ class CrmMailThread extends Model
             ->where('status', 'spam')
             ->exists();
     }
+
+    /** Mail of the mailboxes the employee may see (see CrmMailbox::scopeVisibleTo). */
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if ($user?->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $query): Builder => $query
+            ->whereNull($query->qualifyColumn('mailbox_id'))
+            ->orWhereIn($query->qualifyColumn('mailbox_id'), CrmMailbox::query()->visibleTo($user)->select('id')));
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CrmMailbox extends Model
@@ -38,6 +39,38 @@ class CrmMailbox extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(CrmMailMessage::class, 'mailbox_id');
+    }
+
+    /** Employees who own this mailbox; none = shared by every manager. */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'crm_mailbox_user', 'mailbox_id', 'user_id')->withTimestamps();
+    }
+
+    public function isPersonal(): bool
+    {
+        return $this->users()->exists();
+    }
+
+    public function isVisibleTo(?User $user): bool
+    {
+        return static::query()->whereKey($this->getKey())->visibleTo($user)->exists();
+    }
+
+    /**
+     * Administrators see every mailbox; other employees see shared mailboxes
+     * and the ones assigned to them.
+     */
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if ($user?->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $query): Builder => $query
+            ->whereDoesntHave('users')
+            ->when($user, fn (Builder $query): Builder => $query
+                ->orWhereHas('users', fn (Builder $users): Builder => $users->whereKey($user->getKey()))));
     }
 
     public function imapPath(): string

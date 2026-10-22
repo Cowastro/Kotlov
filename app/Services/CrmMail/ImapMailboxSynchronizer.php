@@ -188,7 +188,8 @@ class ImapMailboxSynchronizer
                     return $message;
                 });
 
-                if (! $isBlockedSender) {
+                // The shared Telegram chat shows the letter text: personal mailboxes stay private.
+                if (! $isBlockedSender && ! $mailbox->isPersonal()) {
                     $this->telegramNotifier->send($message);
                 }
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -47,5 +48,17 @@ class CrmMailMessage extends Model
             ->value('id');
 
         return (int) $latestId === (int) $this->id;
+    }
+
+    /** Mail of the mailboxes the employee may see (see CrmMailbox::scopeVisibleTo). */
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        if ($user?->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where(fn (Builder $query): Builder => $query
+            ->whereNull($query->qualifyColumn('mailbox_id'))
+            ->orWhereIn($query->qualifyColumn('mailbox_id'), CrmMailbox::query()->visibleTo($user)->select('id')));
     }
 }
