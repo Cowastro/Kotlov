@@ -23,6 +23,8 @@ class WebpayPaymentAttempt extends Model
         'notification_payload',
         'notified_at',
         'verified_at',
+        'telegram_notified_at',
+        'telegram_notification_claimed_at',
     ];
 
     protected $casts = [
@@ -30,6 +32,8 @@ class WebpayPaymentAttempt extends Model
         'notification_payload' => 'array',
         'notified_at' => 'datetime',
         'verified_at' => 'datetime',
+        'telegram_notified_at' => 'datetime',
+        'telegram_notification_claimed_at' => 'datetime',
     ];
 
     public function order(): BelongsTo

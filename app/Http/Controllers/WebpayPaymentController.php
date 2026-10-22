@@ -27,9 +27,18 @@ class WebpayPaymentController extends Controller
         }
     }
 
-    public function completed(Request $request): View|RedirectResponse
+    public function completed(Request $request, WebpayService $webpay): View|RedirectResponse
     {
         $attempt = $this->attemptFromRequest($request);
+        $transactionId = (string) $request->query('wsb_tid');
+
+        if ($attempt && $attempt->status !== 'paid' && $transactionId !== '') {
+            try {
+                $attempt = $webpay->confirmReturnedPayment($attempt, $transactionId);
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        }
 
         if ($attempt && $request->user() && (int) $attempt->order?->user_id === (int) $request->user()->id) {
             $message = $attempt->fresh()->status === 'paid'

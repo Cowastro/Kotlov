@@ -14,6 +14,8 @@ use SimpleXMLElement;
 
 class WebpayService
 {
+    public function __construct(private readonly WebpayPaymentTelegramNotifier $telegramNotifier) {}
+
     /** @return array{action: string, fields: array<string, string>, items: array<int, array{name: string, quantity: string, price: string}>} */
     public function createPayment(Order $order): array
     {
@@ -150,13 +152,15 @@ class WebpayService
             ->firstOrFail();
 
         if ($attempt->status === 'paid' && hash_equals((string) $attempt->transaction_id, (string) $payload['transaction_id'])) {
+            $this->telegramNotifier->notify($attempt);
+
             return $attempt;
         }
 
         $transaction = $this->getTransaction((string) $payload['transaction_id']);
         $this->assertTransactionMatches($attempt, $payload, $transaction);
 
-        return DB::transaction(function () use ($attempt, $payload, $transaction): WebpayPaymentAttempt {
+        $attempt = DB::transaction(function () use ($attempt, $payload, $transaction): WebpayPaymentAttempt {
             $lockedAttempt = WebpayPaymentAttempt::query()->lockForUpdate()->findOrFail($attempt->id);
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($lockedAttempt->order_id);
 
@@ -197,6 +201,61 @@ class WebpayService
 
             return $lockedAttempt->fresh();
         });
+
+        $this->telegramNotifier->notify($attempt);
+
+        return $attempt;
+    }
+
+    public function confirmReturnedPayment(WebpayPaymentAttempt $attempt, string $transactionId): WebpayPaymentAttempt
+    {
+        $this->assertConfigured();
+
+        if ($attempt->status === 'paid' && hash_equals((string) $attempt->transaction_id, $transactionId)) {
+            $this->telegramNotifier->notify($attempt);
+
+            return $attempt;
+        }
+
+        $transaction = $this->getTransaction($transactionId);
+        $this->assertReturnedTransactionMatches($attempt, $transaction);
+
+        $attempt = DB::transaction(function () use ($attempt, $transaction): WebpayPaymentAttempt {
+            $lockedAttempt = WebpayPaymentAttempt::query()->lockForUpdate()->findOrFail($attempt->id);
+            $lockedOrder = Order::query()->lockForUpdate()->findOrFail($lockedAttempt->order_id);
+
+            if ($lockedAttempt->status === 'paid') {
+                if (! hash_equals((string) $lockedAttempt->transaction_id, $transaction['transaction_id'])) {
+                    throw new RuntimeException('WEBPAY attempt was already paid by another transaction.');
+                }
+
+                return $lockedAttempt;
+            }
+
+            if ($this->money($lockedOrder->total) !== $this->money($lockedAttempt->amount)) {
+                throw new RuntimeException('Order total changed after WEBPAY payment was started.');
+            }
+
+            $lockedAttempt->update([
+                'status' => 'paid',
+                'transaction_id' => $transaction['transaction_id'],
+                'webpay_order_id' => $transaction['order_id'],
+                'payment_method' => $transaction['payment_method'],
+                'payment_type' => $transaction['payment_type'],
+                'verified_at' => now(),
+            ]);
+
+            $lockedOrder->forceFill([
+                'payment_type' => 'webpay',
+                'payment_status' => 'paid',
+            ])->save();
+
+            return $lockedAttempt->fresh();
+        });
+
+        $this->telegramNotifier->notify($attempt);
+
+        return $attempt;
     }
 
     /** @return array<string, string> */
@@ -258,6 +317,18 @@ class WebpayService
 
         if (! $matches) {
             throw new RuntimeException('WEBPAY transaction does not match the order.');
+        }
+    }
+
+    /** @param array<string, string> $transaction */
+    private function assertReturnedTransactionMatches(WebpayPaymentAttempt $attempt, array $transaction): void
+    {
+        $matches = $this->money($transaction['amount']) === $this->money($attempt->amount)
+            && hash_equals($attempt->currency, $transaction['currency_id'])
+            && in_array($transaction['payment_type'], ['1', '4'], true);
+
+        if (! $matches) {
+            throw new RuntimeException('WEBPAY return transaction does not match the order.');
         }
     }
 

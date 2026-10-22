@@ -6,8 +6,10 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Models\WebpayPaymentAttempt;
+use App\Services\TelegramApi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Mockery;
 use Tests\TestCase;
 
 class WebpayPaymentTest extends TestCase
@@ -135,6 +137,45 @@ class WebpayPaymentTest extends TestCase
         $this->assertSame($payload['transaction_id'], $attempt->transaction_id);
 
         $this->post(route('webpay.notify'), $payload)->assertOk();
+        Http::assertSentCount(1);
+    }
+
+    public function test_successful_return_verifies_payment_and_notifies_telegram_once(): void
+    {
+        config()->set('services.telegram.bot_token', 'test-bot-token');
+        config()->set('services.telegram.orders_chat_id', '-100123456');
+
+        $telegram = Mockery::mock(TelegramApi::class);
+        $telegram->shouldReceive('sendMessage')
+            ->once()
+            ->withArgs(fn ($chatId, $message, $extra = []): bool => $chatId === '-100123456'
+                && str_contains($message, 'Заказ оплачен через WEBPAY'))
+            ->andReturn(['ok' => true, 'result' => ['message_id' => 123]]);
+        $this->app->instance(TelegramApi::class, $telegram);
+
+        $customer = User::factory()->create(['email' => 'test@kotlov.by']);
+        $order = $this->createConfirmedOrder($customer);
+        $attempt = $this->createAttempt($order);
+        $payload = $this->notificationPayload($attempt);
+
+        Http::fake([
+            'https://sandbox.webpay.by' => Http::response($this->transactionXml($payload), 200),
+        ]);
+
+        $returnUrl = route('webpay.return', [
+            'wsb_order_num' => $attempt->merchant_order_num,
+            'wsb_tid' => $payload['transaction_id'],
+        ]);
+
+        $this->actingAs($customer)->get($returnUrl)
+            ->assertRedirect(route('account.orders.show', $order))
+            ->assertSessionHas('payment_success', 'Оплата WEBPAY подтверждена.');
+
+        $this->actingAs($customer)->get($returnUrl)->assertRedirect();
+
+        $this->assertSame('paid', $order->fresh()->payment_status);
+        $this->assertSame('paid', $attempt->fresh()->status);
+        $this->assertNotNull($attempt->fresh()->telegram_notified_at);
         Http::assertSentCount(1);
     }
 
