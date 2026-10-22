@@ -28,6 +28,8 @@ use App\Services\Market\MarketWebResearchService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DateTimePicker;
@@ -54,6 +56,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -583,6 +586,64 @@ class CrmMailThreadResource extends Resource
                         ->modalHeading('Удалить переписку навсегда?')
                         ->modalDescription('Будут окончательно удалены вся цепочка и сохранённые письма. Это действие нельзя отменить.')
                         ->action(fn (CrmMailThread $record) => $record->forceDelete()),
+                ]),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('trash_selected')
+                        ->label('Удалить выбранные')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Переместить выбранные переписки в корзину?')
+                        ->modalDescription('Их можно будет восстановить во вкладке «Корзина».')
+                        ->action(function (Collection $records): void {
+                            $active = $records->reject(fn (CrmMailThread $record): bool => $record->trashed());
+                            $active->each(fn (CrmMailThread $record) => $record->delete());
+
+                            Notification::make()
+                                ->success()
+                                ->title('Письма перемещены в корзину')
+                                ->body('Удалено переписок: '.$active->count())
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('restore_selected')
+                        ->label('Восстановить выбранные')
+                        ->icon('heroicon-o-arrow-uturn-left')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records): void {
+                            $trashed = $records->filter(fn (CrmMailThread $record): bool => $record->trashed());
+                            $trashed->each(fn (CrmMailThread $record) => $record->restore());
+
+                            Notification::make()
+                                ->success()
+                                ->title('Письма восстановлены')
+                                ->body('Восстановлено переписок: '.$trashed->count())
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+                    BulkAction::make('delete_forever_selected')
+                        ->label('Удалить выбранные навсегда')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->visible(fn (): bool => auth()->user()?->isAdmin() === true)
+                        ->requiresConfirmation()
+                        ->modalHeading('Удалить выбранные переписки навсегда?')
+                        ->modalDescription('Окончательно удаляются только выбранные записи, которые уже находятся в корзине.')
+                        ->action(function (Collection $records): void {
+                            $trashed = $records->filter(fn (CrmMailThread $record): bool => $record->trashed());
+                            $count = $trashed->count();
+                            $trashed->each(fn (CrmMailThread $record) => $record->forceDelete());
+
+                            Notification::make()
+                                ->success()
+                                ->title('Письма удалены навсегда')
+                                ->body('Удалено переписок: '.$count)
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                 ]),
             ]);
     }

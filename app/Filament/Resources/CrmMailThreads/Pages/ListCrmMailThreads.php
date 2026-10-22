@@ -352,20 +352,43 @@ class ListCrmMailThreads extends ListRecords
                 ->label('Очистить корзину')
                 ->icon('heroicon-o-trash')
                 ->color('danger')
-                ->visible(fn (): bool => $this->activeTab === 'trash'
-                    && auth()->user()?->isAdmin() === true
-                    && CrmMailThread::onlyTrashed()->exists())
+                ->visible(fn (): bool => auth()->user()?->isAdmin() === true
+                    && static::threadQueryForMailbox($this->selectedMailboxId(), CrmMailThread::onlyTrashed())->exists())
                 ->requiresConfirmation()
                 ->modalHeading('Очистить корзину полностью?')
                 ->modalDescription('Все переписки в корзине и их письма будут удалены навсегда. Это действие нельзя отменить.')
                 ->action(function (): void {
-                    $count = CrmMailThread::onlyTrashed()->count();
-                    CrmMailThread::onlyTrashed()->forceDelete();
+                    $query = static::threadQueryForMailbox($this->selectedMailboxId(), CrmMailThread::onlyTrashed());
+                    $count = $query->count();
+                    $query->forceDelete();
 
                     Notification::make()
                         ->success()
                         ->title('Корзина очищена')
                         ->body('Удалено переписок: '.$count)
+                        ->send();
+                }),
+            Action::make('delete_all_spam')
+                ->label('Удалить весь спам')
+                ->icon('heroicon-o-no-symbol')
+                ->color('danger')
+                ->visible(fn (): bool => $this->activeTab === 'spam'
+                    && static::threadQueryForMailbox($this->selectedMailboxId())
+                        ->where('status', 'spam')
+                        ->exists())
+                ->requiresConfirmation()
+                ->modalHeading('Удалить весь спам?')
+                ->modalDescription('Все спам-переписки будут перемещены в корзину. До очистки корзины их можно будет восстановить.')
+                ->action(function (): void {
+                    $query = static::threadQueryForMailbox($this->selectedMailboxId())
+                        ->where('status', 'spam');
+                    $count = $query->count();
+                    $query->get()->each(fn (CrmMailThread $thread) => $thread->delete());
+
+                    Notification::make()
+                        ->success()
+                        ->title('Спам удалён')
+                        ->body('В корзину перемещено переписок: '.$count)
                         ->send();
                 }),
         ];
