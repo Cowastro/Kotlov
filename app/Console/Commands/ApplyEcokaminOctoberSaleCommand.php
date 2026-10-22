@@ -72,16 +72,8 @@ class ApplyEcokaminOctoberSaleCommand extends Command
             ->orderBy('id')
             ->get();
 
-        // Our card price = manufacturer price × rate of its last sync; the typical rate covers outdated cards.
-        $rates = [];
-        foreach ($products as $product) {
-            $bitrix = $bitrixByProduct[$product->id] ?? null;
-            if ($bitrix && ($rate = $this->cardRate($product, $source[$bitrix])) > 0) {
-                $rates[] = $rate;
-            }
-        }
-        sort($rates);
-        $typicalRate = $rates[intdiv(count($rates), 2)] ?? EcokaminChannel::rubRate();
+        // Card prices are manufacturer roubles × the official rate of their last sync.
+        $referenceRate = EcokaminChannel::rubRate();
 
         $endsAt = CarbonImmutable::parse(self::ENDS_AT, 'Europe/Minsk')->utc();
         $stats = ['source_models' => count($source), 'linked' => count($bitrixByProduct), 'promo' => 0, 'not_discounted_by_maker' => 0, 'not_linked_removed' => 0, 'rate_outdated' => 0, 'changed' => 0];
@@ -98,10 +90,10 @@ class ApplyEcokaminOctoberSaleCommand extends Command
                 continue;
             }
             ['current' => $current, 'old' => $old] = $source[$bitrix];
-            $rate = $this->cardRate($product, $source[$bitrix]) ?: $typicalRate;
-            if (abs($rate - $typicalRate) / $typicalRate > 0.02) {
+            $rate = $this->cardRate($product, $source[$bitrix], $referenceRate);
+            if ($rate === null) {
                 $stats['rate_outdated']++;
-                $rate = $typicalRate;
+                $rate = $referenceRate;
             }
             $price = round($current * $rate, 2);
             if ($old === null || $old <= $current) {
@@ -147,23 +139,22 @@ class ApplyEcokaminOctoberSaleCommand extends Command
     }
 
     /**
-     * BYN per rouble behind the card price. Already mirrored campaign cards:
-     * price / promotional price. Cards of the first run (own −20 % on top):
-     * price_old held the card price = promotional price × rate.
+     * BYN per rouble behind the card price: price / promotional rouble price,
+     * or — for cards of the first run that took another 20 % off — price_old /
+     * promotional price. The candidate closest to the official rate wins;
+     * null when the card is too far from it (outdated price).
      *
      * @param  array{current: float, old: ?float}  $source
      */
-    private function cardRate(Product $product, array $source): float
+    private function cardRate(Product $product, array $source, float $referenceRate): ?float
     {
-        $price = (float) $product->price;
-        $priceOld = (float) $product->price_old;
-        if ($product->sale_campaign === self::CAMPAIGN && $priceOld > 0) {
-            $mirrored = $source['old'] && abs($price / $source['current'] - $priceOld / $source['old']) <= 0.0005 * $price / $source['current'];
-
-            return ($mirrored ? $price : $priceOld) / $source['current'];
+        $candidates = [(float) $product->price / $source['current']];
+        if ($product->sale_campaign === self::CAMPAIGN && (float) $product->price_old > 0) {
+            $candidates[] = (float) $product->price_old / $source['current'];
         }
+        usort($candidates, fn (float $a, float $b): int => abs($a - $referenceRate) <=> abs($b - $referenceRate));
 
-        return $price > 0 ? $price / $source['current'] : 0.0;
+        return abs($candidates[0] - $referenceRate) / $referenceRate <= 0.05 ? $candidates[0] : null;
     }
 
     /** Regular card price before the campaign (the first run kept it in price_old). */
@@ -179,10 +170,16 @@ class ApplyEcokaminOctoberSaleCommand extends Command
     {
         $prices = [];
         foreach (self::SECTIONS as $section) {
+            $pageParam = 'PAGEN_1';
             for ($page = 1; $page <= self::MAX_PAGES; $page++) {
-                $url = 'https://ecokamin.ru/catalog/'.$section.'/'.($page > 1 ? '?PAGEN_7='.$page : '');
+                $url = 'https://ecokamin.ru/catalog/'.$section.'/'.($page > 1 ? '?'.$pageParam.'='.$page : '');
+                $html = $this->fetch($url);
+                // Bitrix numbers the pager per page template (PAGEN_1, PAGEN_7…): take it from the page.
+                if ($page === 1 && preg_match('~\?(PAGEN_\d+)=2~', $html, $pager)) {
+                    $pageParam = $pager[1];
+                }
                 $found = 0;
-                foreach ($this->parseListing($this->fetch($url)) as $id => $item) {
+                foreach ($this->parseListing($html) as $id => $item) {
                     if (! isset($prices[$id])) {
                         $prices[$id] = $item;
                         $found++;

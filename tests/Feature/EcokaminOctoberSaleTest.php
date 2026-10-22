@@ -54,7 +54,8 @@ class EcokaminOctoberSaleTest extends TestCase
             .($p[1] ? '<div class="price discount" data-currency="RUB" data-value="'.$p[1].'"></div>' : '').'</div>')->implode('');
         $filler = collect(range(1, 20))->mapWithKeys(fn ($i) => [(string) (90000 + $i) => [100000, 125000]])->all();
         Http::fake(fn ($request) => Http::response(match (true) {
-            str_contains($request->url(), 'PAGEN_7') => '',
+            str_contains($request->url(), 'api.nbrb.by') => ['Cur_OfficialRate' => 3.61, 'Cur_Scale' => 100],
+            str_contains($request->url(), 'PAGEN_') => '',
             str_contains($request->url(), 'kaminnye_topki/delta') => $listing(['19157' => [799990, null]] + $filler),
             str_contains($request->url(), 'kaminy_rio') => $listing(['17944' => [219992, 274990]]),
             str_contains($request->url(), 'myunkhen') => $listing(['14732' => [140242, 164990]]),
