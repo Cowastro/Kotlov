@@ -19,7 +19,9 @@ class SyncEcokaminStovesCommand extends Command
         {--no-images : Do not download product images}
         {--only-broken-images : Only replace existing products whose image paths are empty or missing on disk}
         {--enrich : Generate AI descriptions for products that have none (DeepSeek)}
-        {--sleep=150 : Delay between product requests in milliseconds}';
+        {--sleep=150 : Delay between product requests in milliseconds}
+        {--section=* : Only these ecokamin.ru sections, e.g. kaminy/myunkhen (default: all fireplace and stove sections)}
+        {--only-new : Create cards that do not exist yet and never touch existing ones (prices of running promotions stay)}';
 
     protected $description = 'Scrape ecokamin.ru pechi-kaminy (кроме Invicta) and sync prices, cards, photos and attributes.';
 
@@ -209,6 +211,12 @@ class SyncEcokaminStovesCommand extends Command
                 $isNew   = ! $product;
                 $images  = [];
 
+                if ($product && (bool) $this->option('only-new')) {
+                    $stats['skipped_existing'] = ($stats['skipped_existing'] ?? 0) + 1;
+                    $this->line('  skipped: card exists (--only-new)');
+                    continue;
+                }
+
                 if ($onlyBrokenImages) {
                     if (! $product) {
                         $stats['skipped_missing']++;
@@ -298,6 +306,9 @@ class SyncEcokaminStovesCommand extends Command
             array_keys($stats),
             array_values($stats)
         ));
+        foreach ($stats as $key => $value) {
+            $this->line("metric.ecokamin_stoves.{$key}={$value}");
+        }
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
@@ -354,6 +365,9 @@ class SyncEcokaminStovesCommand extends Command
         }
 
         $this->table(['article', 'brand', 'price', 'price_byn', 'action', 'name', 'url'], $preview);
+        foreach (collect($preview)->countBy(fn (array $row): string => preg_replace('/[^a-z]+/', '_', mb_strtolower($row['action'])) ?: 'other') as $action => $count) {
+            $this->line("metric.ecokamin_stoves.preview_{$action}={$count}");
+        }
         $this->line((bool) $this->option('only-broken-images')
             ? 'Run with --apply --only-broken-images to replace only missing product images.'
             : 'Run with --apply to update products, attributes and images.');
@@ -373,14 +387,17 @@ class SyncEcokaminStovesCommand extends Command
         $skipped = [];
 
         // Discover non-Invicta subfolders of pechi_kaminy + extra sections
-        $sections = $this->discoverSections();
+        $only = array_filter((array) $this->option('section'));
+        $sections = $only !== []
+            ? array_map(fn (string $section): string => 'https://ecokamin.ru/catalog/'.trim($section, '/').'/', $only)
+            : $this->discoverSections();
 
         foreach ($sections as $sectionUrl) {
             $this->line('  Раздел: ' . $sectionUrl);
             $this->scrapeSection($sectionUrl, $items, $skipped);
         }
 
-        foreach (self::FEATURED_PRODUCTS as $bitrixId => $featured) {
+        foreach ($only !== [] ? [] : self::FEATURED_PRODUCTS as $bitrixId => $featured) {
             $existing = $items[$bitrixId] ?? [];
             $items[$bitrixId] = array_merge($featured, $existing, [
                 'dealer_discount_percent' => $featured['dealer_discount_percent'],
