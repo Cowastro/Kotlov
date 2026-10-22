@@ -489,6 +489,8 @@ class SyncTskNasosyCommand extends Command
     {
         if (isset($this->indexBySupplierArticle[$row['norm_article']])) {
             $pid = $this->indexBySupplierArticle[$row['norm_article']];
+            $this->reportDuplicate($pid, $row, $brandId);
+
             return ['product_id' => $pid, 'sku' => $this->sku($pid), 'confidence' => 'exact_supplier_article'];
         }
         $up = mb_strtoupper($row['norm_article']);
@@ -506,6 +508,17 @@ class SyncTskNasosyCommand extends Command
             }
         }
         return null;
+    }
+
+    /** A linked row whose model also names another card: that card is a duplicate. */
+    private function reportDuplicate(int $linkedId, array $row, ?int $brandId): void
+    {
+        $model = $brandId !== null ? $this->model($row['name'], $this->brandById[$brandId] ?? '') : '';
+        foreach ($model !== '' ? $this->modelCollisions[$brandId][$model] ?? [] : [] as $otherId) {
+            if ($otherId !== $linkedId) {
+                $this->line("audit.tsk_sync.duplicate={$linkedId},{$otherId}");
+            }
+        }
     }
 
     private function resolveBrand(string $name): ?int
@@ -944,7 +957,7 @@ class SyncTskNasosyCommand extends Command
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', ' ', $n) ?? $n;
         }
         // «(г/а 2л)» and «(р/а 2 л)» both name the tank; only its volume tells models apart.
-        $n = preg_replace('~(?<![А-ЯЁA-Z])[ГРP]\s*[\/.]?\s*[АA](?![А-ЯЁA-Z])~u', ' ', $n) ?? $n;
+        $n = preg_replace('~(?<![А-ЯЁA-Z])[ГРP][^\p{L}\p{N}]{1,3}[АA](?![А-ЯЁA-Z])~u', ' ', $n) ?? $n;
         // «UPС 25-40» / «МН 200 А» typed in Cyrillic: fold look-alike letters of model codes
         // (words with any Latin letter, or made of look-alike letters only).
         $n = preg_replace_callback('/[A-ZА-ЯЁ]+/u', fn ($m) => preg_match('/[A-Z]/', $m[0]) || preg_match('/^[АВСЕНКМОРТХ]+$/u', $m[0])
