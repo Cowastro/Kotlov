@@ -409,13 +409,24 @@ class SupplierResource extends Resource
             ->map(fn (array $channel): string => AdminPhoneLinks::digits((string) ($channel['value'] ?? '')))
             ->filter();
         $structuredChannels = collect($supplier->communication_channels ?? [])
-            ->map(function (array $channel): string|HtmlString {
-                $label = trim((string) ($channel['name'] ?? ''));
-                $value = trim((string) ($channel['value'] ?? ''));
+            ->map(function ($channel, $key): ?HtmlString {
+                if (is_array($channel)) {
+                    $label = trim((string) ($channel['name'] ?? ''));
+                    $value = trim((string) ($channel['value'] ?? ''));
+                } else {
+                    $label = is_string($key) ? trim($key) : '';
+                    $value = is_scalar($channel) ? trim((string) $channel) : '';
+                }
+
+                if ($value === '') {
+                    return null;
+                }
+
                 $rendered = AdminPhoneLinks::render($value)?->toHtml() ?? e($value);
 
                 return new HtmlString(($label !== '' ? '<span style="color:#9ca3af">'.e($label).':</span> ' : '').$rendered);
-            });
+            })
+            ->filter();
 
         $phones = collect($supplier->contactPhoneNumbers())
             ->reject(fn (string $phone): bool => $structuredPhoneDigits->contains(AdminPhoneLinks::digits($phone)))

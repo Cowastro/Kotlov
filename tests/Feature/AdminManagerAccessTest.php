@@ -246,6 +246,34 @@ class AdminManagerAccessTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_manager_can_open_supplier_directory_with_legacy_contact_format(): void
+    {
+        $manager = User::factory()->create([
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'manager-legacy-contacts',
+            'name' => '000 Поставщик со старыми контактами',
+            'communication_channels' => [
+                'email' => 'orders@example.by',
+                'phone' => '+375 29 100-20-30',
+            ],
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($manager)
+            ->get(SupplierResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText($supplier->name)
+            ->assertSeeText('orders@example.by')
+            ->assertSeeText('+375 29 100-20-30');
+
+        $this->assertTrue(SupplierResource::canViewAny());
+        $this->assertFalse(SupplierResource::canCreate());
+        $this->assertFalse(SupplierResource::canEdit($supplier));
+    }
+
     public function test_administrator_keeps_full_access_and_manager_role_is_assignable(): void
     {
         $admin = User::factory()->create([
