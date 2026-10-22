@@ -324,6 +324,10 @@ class SyncEcokaminStovesCommand extends Command
             try {
                 $detail  = $this->scrapeProduct($item['url']);
                 $article = $detail['article'] ?: $item['article'];
+                if ($existing = $this->findProduct(['article' => $article] + $item, $previewSupplierId)) {
+                    $state = DB::table('products')->where('id', $existing->id)->first(['slug', 'is_active', 'is_archived', 'price']);
+                    $this->line(sprintf('audit.ecokamin_stoves.existing=%s:%d:%s:%d:%d:%d', $item['bitrix_id'], $existing->id, $state->slug, (int) $state->is_active, (int) $state->is_archived, (int) round((float) $state->price)));
+                }
                 $preview[] = [
                     'article'   => $article,
                     'brand'     => $item['brand'],
