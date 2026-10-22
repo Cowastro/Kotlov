@@ -910,7 +910,8 @@ class SyncTskNasosyCommand extends Command
     /**
      * Order-free model key: «Насос поверхностный UNIPUMP QB-80» == «Поверхностный
      * вихревой насос QB 80», «(г/а 2 л)» == «(г/а 2л)», «QB 80-5» == «QB 80 - 5».
-     * Numbers stay separate tokens, so «QB 80» ≠ «AUTO QB 80» ≠ «AUTO QB 80-5».
+     * Numbers stay separate tokens, so «QB 80» ≠ «AUTO QB 80» ≠ «AUTO QB 80-5»,
+     * and «JET 100 S» ≠ «JET 100 S-S».
      */
     private function model(string $productName, string $brand): string
     {
@@ -922,10 +923,11 @@ class SyncTskNasosyCommand extends Command
         $n = preg_replace_callback('/[A-ZА-ЯЁ]*[A-Z][A-ZА-ЯЁ]*/u', fn ($m) => strtr($m[0], self::HOMOGLYPHS), $n) ?? $n;
         $n = preg_replace('/(?<=\d)(?=[А-ЯЁA-Z])|(?<=[А-ЯЁA-Z])(?=\d)/u', ' ', $n) ?? $n;
         $n = preg_replace('/[^А-ЯЁA-Z0-9]+/u', ' ', $n) ?? $n;
-        $toks = array_unique(array_filter(
+        // Repeated tokens stay: «AUTO JET 100 S-S» is another model than «AUTO JET 100 S».
+        $toks = array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
             fn ($t) => $t !== '' && ! in_array($t, self::MODEL_STOPWORDS, true)
-        ));
+        );
         if (! preg_grep('/\d/', $toks)) {
             return '';
         }
