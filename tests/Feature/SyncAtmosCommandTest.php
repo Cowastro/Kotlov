@@ -35,6 +35,10 @@ class SyncAtmosCommandTest extends TestCase
         $brand = Brand::query()->create(['name' => 'Burnit', 'slug' => 'burnit', 'is_active' => true]);
         $exact = Product::query()->create(['category_id' => $category->id, 'brand_id' => $brand->id, 'is_active' => true, 'price' => 1, 'name' => 'BURNiT WBS AC 40', 'slug' => 'burnit-wbs-ac-40']);
         $model = Product::query()->create(['category_id' => $category->id, 'brand_id' => $brand->id, 'is_active' => true, 'price' => 1, 'requires_price_confirmation' => true, 'name' => 'Твердотопливный котел Burnit WBS AC 50 кВт', 'slug' => 'burnit-wbs-ac-50']);
+        // Another supplier's article of another brand must not link.
+        $foreign = Product::query()->create(['category_id' => $category->id, 'is_active' => true, 'price' => 1, 'name' => 'Котел UNIVAT 30', 'slug' => 'univat-30']);
+        $other = Supplier::query()->create(['code' => 'other', 'name' => 'Other', 'is_active' => true]);
+        \Illuminate\Support\Facades\DB::table('supplier_products')->insert(['supplier_id' => $other->id, 'product_id' => $foreign->id, 'supplier_article' => '2024', 'supplier_article_normalized' => '2024', 'currency' => 'BYN', 'match_status' => 'matched', 'created_at' => now(), 'updated_at' => now()]);
 
         $page = (string) file_get_contents(base_path('tests/Fixtures/atmos-price-page.html'));
         Http::fake([
@@ -46,6 +50,7 @@ class SyncAtmosCommandTest extends TestCase
             ->expectsOutputToContain('metric.atmos.matched=68')
             ->expectsOutputToContain('audit.atmos.row=1:burnit:2:'.$exact->id.':burnit-wbs-ac-40:exact_name:0')
             ->expectsOutputToContain('audit.atmos.row=1:burnit:3:'.$model->id.':burnit-wbs-ac-50:model_key:0')
+            ->expectsOutputToContain('audit.atmos.row=1:burnit:1:0::none:1')
             ->assertSuccessful();
         $this->assertNull(Supplier::query()->where('code', 'atmos')->first());
 

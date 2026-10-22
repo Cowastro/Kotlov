@@ -178,16 +178,19 @@ class SyncAtmosCommand extends Command
             ? SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->pluck('product_id', 'supplier_article_normalized')
             : collect();
         $products = Product::query()->where('is_archived', false)->with('brand:id,name')->get(['id', 'sku', 'name', 'slug', 'brand_id']);
-        $productIds = $products->pluck('id')->flip();
+        $productFamily = [];
         $bySku = [];
         $byName = [];
         $byModel = [];
         $familyProducts = [];
+        $modelTokens = [];
         $keyer = new SyncThermokraftCommand;
         foreach ($products as $product) {
             $family = $this->family(($product->brand?->name ?? '').' '.$product->name);
+            $productFamily[(int) $product->id] = $family;
             if ($family !== '') {
                 $familyProducts[$family][] = $product;
+                $modelTokens[(int) $product->id] = array_filter(explode(' ', $keyer->modelKey($this->cleanName($product->name), (string) $product->brand?->name)));
             }
             if ($family !== '' && ($modelKey = $keyer->modelKey($this->cleanName($product->name), (string) $product->brand?->name)) !== '') {
                 $byModel[$family][$modelKey][] = (int) $product->id;
@@ -202,7 +205,7 @@ class SyncAtmosCommand extends Command
         $byArticle = [];
         foreach (DB::table('supplier_products')->whereNotNull('product_id')->when($supplier, fn ($q) => $q->where('supplier_id', '!=', $supplier->id))
             ->get(['supplier_article_normalized', 'product_id']) as $link) {
-            if (isset($productIds[$link->product_id]) && ($article = $this->key((string) $link->supplier_article_normalized)) !== '') {
+            if (isset($productFamily[$link->product_id]) && ($article = $this->key((string) $link->supplier_article_normalized)) !== '') {
                 $byArticle[$article][] = (int) $link->product_id;
             }
         }
@@ -219,7 +222,8 @@ class SyncAtmosCommand extends Command
             if (! $productId && strlen($articleKey) >= 5 && preg_match('/\d/', $articleKey) === 1) {
                 if ($id = $unique($bySku[$articleKey] ?? [])) {
                     [$productId, $reason] = [$id, 'catalogue_sku'];
-                } elseif ($id = $unique($byArticle[$articleKey] ?? [])) {
+                } elseif (($id = $unique($byArticle[$articleKey] ?? [])) && $row['family'] !== '' && ($productFamily[$id] ?? '') === $row['family']) {
+                    // Another supplier's article counts only inside the same brand.
                     [$productId, $reason] = [$id, 'supplier_article_other'];
                 }
             }
@@ -238,6 +242,24 @@ class SyncAtmosCommand extends Command
                 } elseif (count($candidates) > 1) {
                     $reason = 'ambiguous_model';
                     $counts['ambiguous']++;
+                }
+            }
+            // The card may add descriptive Cyrillic words («бойлер», «аккумулирующий»), never another model code.
+            if (! $productId && $reason !== 'ambiguous_model' && $row['family'] !== '') {
+                $tokens = array_filter(explode(' ', $keyer->modelKey($row['name'], $row['brand'])));
+                $candidates = [];
+                foreach ($familyProducts[$row['family']] ?? [] as $product) {
+                    $card = $modelTokens[(int) $product->id] ?? [];
+                    $extra = array_diff($card, $tokens);
+                    if ($tokens !== [] && array_diff($tokens, $card) === []
+                        && array_filter($extra, fn (string $t): bool => preg_match('/\p{Cyrillic}/u', $t) !== 1 || preg_match('/\d/', $t) === 1) === []
+                        && (! isset($claimed[$product->id]) || $claimed[$product->id] === $row['article_key'])) {
+                        $candidates[] = (int) $product->id;
+                    }
+                }
+                $candidates = array_values(array_unique($candidates));
+                if (count($candidates) === 1) {
+                    [$productId, $reason] = [$candidates[0], 'model_words'];
                 }
             }
             if ($row['retail'] === null && $row['wholesale'] === null) {
