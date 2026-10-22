@@ -116,7 +116,12 @@ class StorefrontProductSearch
 
         return $query->where(function (Builder $matches) use ($search, $tokens, $includeInternal, $heatingElementQuery): void {
             if (! $heatingElementQuery) {
-                $this->addTermMatches($matches, $this->normalize($search), $includeInternal);
+                // Keep cross-script brands/model codes in the fast pass, but do
+                // not multiply every value by three case variants. Production
+                // uses a case-insensitive MySQL collation.
+                foreach ($this->variants($search) as $variant) {
+                    $this->addTermMatches($matches, $variant, $includeInternal);
+                }
             }
 
             $matches->orWhere(function (Builder $allTokens) use ($tokens, $includeInternal): void {
