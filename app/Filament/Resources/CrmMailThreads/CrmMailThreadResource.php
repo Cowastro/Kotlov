@@ -590,6 +590,25 @@ class CrmMailThreadResource extends Resource
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('mark_spam_selected')
+                        ->label('Отметить выбранное как спам')
+                        ->icon('heroicon-o-no-symbol')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalHeading('Отметить выбранные письма как спам?')
+                        ->modalDescription('Отправители будут заблокированы, а новые письма от них будут сразу попадать в «Спам» без уведомлений.')
+                        ->action(function (Collection $records): void {
+                            $active = $records->filter(fn (CrmMailThread $record): bool => ! $record->trashed()
+                                && $record->status !== 'draft');
+                            $active->each(fn (CrmMailThread $record) => $record->markAsSpam());
+
+                            Notification::make()
+                                ->success()
+                                ->title('Письма отмечены как спам')
+                                ->body('Обработано переписок: '.$active->count())
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     BulkAction::make('trash_selected')
                         ->label('Удалить выбранные')
                         ->icon('heroicon-o-trash')

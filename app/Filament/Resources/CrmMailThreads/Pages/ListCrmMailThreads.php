@@ -360,7 +360,7 @@ class ListCrmMailThreads extends ListRecords
                 ->action(function (): void {
                     $query = static::threadQueryForMailbox($this->selectedMailboxId(), CrmMailThread::onlyTrashed());
                     $count = $query->count();
-                    $query->forceDelete();
+                    $query->get()->each(fn (CrmMailThread $thread) => $thread->forceDelete());
 
                     Notification::make()
                         ->success()

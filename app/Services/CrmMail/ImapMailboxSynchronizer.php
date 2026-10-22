@@ -7,6 +7,7 @@ use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -49,6 +50,18 @@ class ImapMailboxSynchronizer
             // ALL criterion and select incremental candidates locally instead.
             $serverUids = @imap_search($imap, 'ALL', SE_UID) ?: [];
             $numbers = $this->candidateUids($serverUids, $mailbox->last_uid ? (int) $mailbox->last_uid : null);
+            $deletedUids = Schema::hasTable('crm_mail_deleted_messages')
+                ? DB::table('crm_mail_deleted_messages')
+                    ->where('mailbox_id', $mailbox->id)
+                    ->whereIn('imap_uid', $numbers)
+                    ->pluck('imap_uid')
+                    ->map(fn ($uid): int => (int) $uid)
+                    ->all()
+                : [];
+            if ($deletedUids !== []) {
+                $numbers = array_values(array_diff($numbers, $deletedUids));
+                $skipped += count($deletedUids);
+            }
             $existingUids = CrmMailMessage::query()
                 ->where('mailbox_id', $mailbox->id)
                 ->whereIn('imap_uid', $numbers)

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CrmMailThread extends Model
 {
@@ -71,6 +72,34 @@ class CrmMailThread extends Model
 
     protected static function booted(): void
     {
+        static::forceDeleting(function (CrmMailThread $thread): void {
+            if ($thread->status === 'spam' && Schema::hasTable('crm_mail_blocked_senders')) {
+                static::rememberBlockedSender($thread->mailbox_id, $thread->participant_email);
+            }
+
+            if (Schema::hasTable('crm_mail_deleted_messages')) {
+                $now = now();
+                $markers = $thread->messages()
+                    ->whereNotNull('imap_uid')
+                    ->get(['mailbox_id', 'imap_uid', 'message_id'])
+                    ->map(fn (CrmMailMessage $message): array => [
+                        'mailbox_id' => $message->mailbox_id,
+                        'imap_uid' => $message->imap_uid,
+                        'message_id' => $message->message_id,
+                        'deleted_at' => $now,
+                    ])
+                    ->all();
+
+                if ($markers !== []) {
+                    DB::table('crm_mail_deleted_messages')->upsert(
+                        $markers,
+                        ['mailbox_id', 'imap_uid'],
+                        ['message_id', 'deleted_at'],
+                    );
+                }
+            }
+        });
+
         static::saved(function (CrmMailThread $thread): void {
             if ($thread->wasChanged([
                 'assigned_user_id', 'status', 'sales_stage', 'next_follow_up_at',
@@ -273,6 +302,8 @@ class CrmMailThread extends Model
     public function markAsSpam(): void
     {
         DB::transaction(function (): void {
+            static::rememberBlockedSender($this->mailbox_id, $this->participant_email);
+
             $threads = static::query()
                 ->where('mailbox_id', $this->mailbox_id)
                 ->where('participant_email', mb_strtolower(trim((string) $this->participant_email)));
@@ -296,6 +327,13 @@ class CrmMailThread extends Model
 
     public function restoreFromSpam(): void
     {
+        if (Schema::hasTable('crm_mail_blocked_senders')) {
+            DB::table('crm_mail_blocked_senders')
+                ->where('mailbox_id', $this->mailbox_id)
+                ->where('email', mb_strtolower(trim((string) $this->participant_email)))
+                ->delete();
+        }
+
         static::query()
             ->where('mailbox_id', $this->mailbox_id)
             ->where('participant_email', mb_strtolower(trim((string) $this->participant_email)))
@@ -311,9 +349,19 @@ class CrmMailThread extends Model
 
     public static function senderIsBlocked(int $mailboxId, string $email): bool
     {
+        $email = mb_strtolower(trim($email));
+
+        if (Schema::hasTable('crm_mail_blocked_senders')
+            && DB::table('crm_mail_blocked_senders')
+                ->where('mailbox_id', $mailboxId)
+                ->where('email', $email)
+                ->exists()) {
+            return true;
+        }
+
         return static::query()
             ->where('mailbox_id', $mailboxId)
-            ->where('participant_email', mb_strtolower(trim($email)))
+            ->where('participant_email', $email)
             ->where('status', 'spam')
             ->exists();
     }
@@ -328,5 +376,24 @@ class CrmMailThread extends Model
         return $query->where(fn (Builder $query): Builder => $query
             ->whereNull($query->qualifyColumn('mailbox_id'))
             ->orWhereIn($query->qualifyColumn('mailbox_id'), CrmMailbox::query()->visibleTo($user)->select('id')));
+    }
+
+    private static function rememberBlockedSender(int $mailboxId, ?string $email): void
+    {
+        $email = mb_strtolower(trim((string) $email));
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)
+            || ! Schema::hasTable('crm_mail_blocked_senders')) {
+            return;
+        }
+
+        DB::table('crm_mail_blocked_senders')->upsert(
+            [[
+                'mailbox_id' => $mailboxId,
+                'email' => $email,
+                'blocked_at' => now(),
+            ]],
+            ['mailbox_id', 'email'],
+            ['blocked_at'],
+        );
     }
 }
