@@ -428,6 +428,12 @@ jobs:
             grep -E '^audit\.rizon_merge\.pair=[0-9]+:[0-9]+:([a-z0-9._(),-]+:[a-z0-9._(),-]+|skipped)$' "$detail_log" || true
             echo "safe_rizon_merge_metrics_end"
           fi
+          if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:merge-duplicate-cards" ]]; then
+            echo "safe_merge_cards_metrics_begin"
+            grep -E '^metric\.merge_cards\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.merge_cards\.pair=[0-9]+:[0-9]+:([a-z0-9._(),-]+:[a-z0-9._(),-]+|skipped)$' "$detail_log" || true
+            echo "safe_merge_cards_metrics_end"
+          fi
           if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:publish-thermokraft-price-cards" ]]; then
             echo "safe_thermokraft_cards_metrics_begin"
             grep -E '^metric\.thermokraft_cards\.[a-z_]+=[0-9]+$' "$detail_log" || true
