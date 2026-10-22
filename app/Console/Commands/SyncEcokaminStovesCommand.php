@@ -296,6 +296,8 @@ class SyncEcokaminStovesCommand extends Command
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->warn('  failed: ' . $e->getMessage());
+                $this->line(sprintf('audit.ecokamin_stoves.error=%s:%s:%s', $item['bitrix_id'] ?? '0', class_basename($e),
+                    preg_match('/SQLSTATE\[(\w+)\][^:]*:\s*(\d+)?/', $e->getMessage(), $sql) ? $sql[1].'-'.($sql[2] ?? '') : 'line'.$e->getLine()));
             }
 
             usleep(max(0, (int) $this->option('sleep')) * 1000);
