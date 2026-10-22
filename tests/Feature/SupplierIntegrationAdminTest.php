@@ -362,7 +362,7 @@ class SupplierIntegrationAdminTest extends TestCase
     public function test_ecokamin_admin_list_uses_fifteen_percent_partner_discount_from_current_sale_price(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
-        $brand = Brand::query()->create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        $brand = Brand::query()->create(['name' => 'ЭкоКамин', 'slug' => 'eko-kamin-production']);
         $category = Category::query()->create([
             'name' => 'Печи-камины',
             'slug' => 'ecokamin-admin-pricing',
@@ -404,7 +404,9 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertOk()
             ->assertSeeText('ЭкоКамин с действующей акционной ценой')
             ->assertSeeText('170,00 BYN')
-            ->assertSeeText('30.00 BYN / 15.0%');
+            ->assertSeeText('30.00 BYN / 15.0%')
+            ->assertSeeText('В наличии: 1 шт.')
+            ->assertSeeText('обновлено '.now()->format('d.m.Y H:i'));
     }
 
     public function test_connect_1c_action_can_prefill_supplier_without_saving_anything(): void

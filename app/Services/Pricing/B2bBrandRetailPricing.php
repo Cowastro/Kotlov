@@ -21,8 +21,10 @@ class B2bBrandRetailPricing
     public function discountPercent(Product $product): ?float
     {
         $brandSlug = trim((string) ($product->brand?->slug ?? ''));
+        $brandName = mb_strtolower(trim((string) ($product->brand?->name ?? '')));
+        $brandName = preg_replace('/[^a-zа-яё0-9]+/ui', '', $brandName) ?? '';
         $discounts = (array) config('shop.b2b_brand_retail_discounts', []);
-        $discount = (float) ($discounts[$brandSlug] ?? 0);
+        $discount = (float) ($discounts[$brandSlug] ?? $discounts[$brandName] ?? 0);
 
         return $discount > 0 && $discount < 100 ? $discount : null;
     }

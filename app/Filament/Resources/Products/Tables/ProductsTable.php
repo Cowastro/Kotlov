@@ -23,6 +23,7 @@ use App\Services\Market\MarketPriceIndicator;
 use App\Services\Market\MarketWebResearchService;
 use App\Services\Pricing\B2bBrandRetailPricing;
 use App\Support\AdminPhoneLinks;
+use Carbon\CarbonInterface;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
@@ -272,7 +273,7 @@ class ProductsTable
                     ->state(fn (Product $record): string => match (true) {
                         $record->is_archived => 'Архив',
                         ! $record->is_active => 'Отключён',
-                        default => self::availabilityLabel($record),
+                        default => $record->publicAvailabilityLabel(),
                     })
                     ->description(fn (Product $record): string => self::availabilityDescription($record))
                     ->badge()
@@ -1090,6 +1091,16 @@ class ProductsTable
                 $bySupplier->put($supplierId, max((float) ($bySupplier->get($supplierId) ?? 0), (float) $item->stock_quantity));
             });
 
+        collect($record->warehouseStocks ?? [])
+            ->filter(fn ($item): bool => $item->available_quantity !== null)
+            ->each(function ($item) use ($bySupplier): void {
+                $supplierId = (int) $item->supplier_id;
+                $bySupplier->put($supplierId, max(
+                    (float) ($bySupplier->get($supplierId) ?? 0),
+                    (float) $item->available_quantity,
+                ));
+            });
+
         return $bySupplier->isEmpty() ? null : (int) $bySupplier->sum();
     }
 
@@ -1132,7 +1143,7 @@ class ProductsTable
 
     private static function availabilityStatus(Product $record): string
     {
-        return $record->effectiveAvailabilityStatus();
+        return $record->publicAvailabilityStatus();
     }
 
     private static function availabilityLabel(Product $record): string
@@ -1257,8 +1268,13 @@ class ProductsTable
 
     private static function availabilityDescription(Product $record): string
     {
+        $updatedAt = self::availabilityUpdatedAt($record);
+        $updated = $updatedAt
+            ? 'обновлено '.$updatedAt->format('d.m.Y H:i')
+            : 'нет данных синхронизации';
+
         if (self::isSupplierOrderOnly($record)) {
-            return 'По актуальному прайсу поставщика';
+            return 'По актуальному прайсу поставщика · '.$updated;
         }
 
         $supplierStock = self::supplierStock($record);
@@ -1268,12 +1284,34 @@ class ProductsTable
 
         if ($stock === null) {
             if (self::availabilityStatus($record) === Product::AVAILABILITY_IN_STOCK) {
-                return 'Наличие подтверждено прайсом';
+                return 'Наличие подтверждено прайсом · '.$updated;
             }
 
-            return 'Количество не указано';
+            return 'Количество не указано · '.$updated;
         }
 
-        return 'Остаток: '.number_format($stock, 0, ',', ' ').' шт.';
+        return 'Остаток: '.number_format($stock, 0, ',', ' ').' шт. · '.$updated;
+    }
+
+    private static function availabilityUpdatedAt(Product $record): ?CarbonInterface
+    {
+        $timestamps = collect();
+
+        $record->operationalSupplierProducts()->each(function ($item) use ($timestamps): void {
+            $timestamps->push($item->last_stock_synced_at ?? $item->last_synced_at ?? $item->updated_at);
+        });
+
+        self::activeIntegrationItems($record)->each(function ($item) use ($timestamps): void {
+            $timestamps->push($item->stock_confirmed_at ?? $item->last_offer_seen_at ?? $item->last_seen_at ?? $item->updated_at);
+        });
+
+        collect($record->warehouseStocks ?? [])->each(function ($item) use ($timestamps): void {
+            $timestamps->push($item->last_synced_at ?? $item->updated_at);
+        });
+
+        return $timestamps
+            ->filter(fn ($timestamp): bool => $timestamp instanceof CarbonInterface)
+            ->sortBy(fn (CarbonInterface $timestamp): int => $timestamp->getTimestamp())
+            ->last();
     }
 }

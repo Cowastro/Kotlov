@@ -164,7 +164,7 @@ class ProductAdminAvailabilityFilterTest extends TestCase
         Livewire::actingAs($admin)
             ->test(ListProducts::class)
             ->assertSeeText('Наличие подтверждено прайсом')
-            ->assertSeeText('Под заказ')
+            ->assertSeeText('Доступно к заказу')
             ->assertSeeText('По актуальному прайсу поставщика');
     }
 
