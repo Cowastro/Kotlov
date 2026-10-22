@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CrmMailThreads;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
+use App\Filament\Resources\CrmMailThreads\Actions\AssignMailThreadAction;
 use App\Filament\Resources\CrmMailThreads\Actions\ManageMailThreadNotesAction;
 use App\Filament\Resources\CrmMailThreads\Pages\EditCrmMailThread;
 use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
@@ -326,6 +327,8 @@ class CrmMailThreadResource extends Resource
                         ? CommercialDocumentResource::getUrl('view', ['record' => $quote])
                         : null),
                 ManageMailThreadNotesAction::make()
+                    ->iconButton(),
+                AssignMailThreadAction::make()
                     ->iconButton(),
                 Action::make('quick_quote')
                     ->label('Быстрое КП')

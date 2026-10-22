@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CrmMailThreads\Pages;
 
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
+use App\Filament\Resources\CrmMailThreads\Actions\AssignMailThreadAction;
 use App\Filament\Resources\CrmMailThreads\Actions\ManageMailThreadNotesAction;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Suppliers\SupplierResource;
@@ -81,6 +82,7 @@ class ViewCrmMailThread extends ViewRecord
     {
         return [
             ManageMailThreadNotesAction::make(),
+            AssignMailThreadAction::make(),
             Action::make('take')
                 ->label('Взять в работу')->icon('heroicon-o-hand-raised')->color('warning')
                 ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--take'])
