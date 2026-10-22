@@ -87,6 +87,22 @@ class AccountOrderAvailabilityTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_customer_order_page_shows_the_current_delivery_status_in_the_main_banner(): void
+    {
+        $customer = User::factory()->create();
+        $order = $this->createOrder($customer, [
+            'status' => 'shipped',
+            'availability_confirmed_at' => now(),
+        ]);
+        $this->createConfirmedItem($order);
+
+        $this->actingAs($customer)
+            ->get(route('account.orders.show', $order))
+            ->assertOk()
+            ->assertSeeText('Передан в доставку')
+            ->assertSeeText('Заказ собран и передан в доставку или подготовлен к выдаче клиенту.');
+    }
+
     public function test_order_link_is_hidden_until_availability_is_confirmed(): void
     {
         $customer = User::factory()->create();

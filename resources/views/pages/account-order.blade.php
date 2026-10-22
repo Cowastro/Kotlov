@@ -10,6 +10,38 @@
         ->unique()
         ->implode(', ');
     $onlinePayment = in_array($order->payment_type, ['online_card', 'webpay'], true);
+    $statusBanner = match ($order->status) {
+        'processing' => [
+            'title' => 'Заказ в исполнении',
+            'description' => 'Менеджер передал заказ в работу. Сейчас мы готовим товары к доставке или выдаче.',
+            'icon' => '↻',
+            'class' => 'is-processing',
+        ],
+        'shipped' => [
+            'title' => 'Передан в доставку',
+            'description' => 'Заказ собран и передан в доставку или подготовлен к выдаче клиенту.',
+            'icon' => '→',
+            'class' => 'is-shipped',
+        ],
+        'delivered', 'completed' => [
+            'title' => 'Заказ доставлен',
+            'description' => 'Заказ получен клиентом. Благодарим за покупку в KOTLOV.BY.',
+            'icon' => '✓',
+            'class' => 'is-delivered',
+        ],
+        'cancelled' => [
+            'title' => 'Заказ отменён',
+            'description' => 'Заказ отменён. Если у вас остались вопросы, пожалуйста, свяжитесь с менеджером.',
+            'icon' => '×',
+            'class' => 'is-cancelled',
+        ],
+        default => [
+            'title' => 'Наличие подтверждено',
+            'description' => 'Менеджер проверил возможность исполнения всех позиций. Здесь отображаются актуальный состав и сумма заказа.',
+            'icon' => '✓',
+            'class' => 'is-confirmed',
+        ],
+    };
 @endphp
 
 <main id="wrapper" class="account-order-page">
@@ -31,12 +63,12 @@
 
     <section class="flat-spacing">
         <div class="container">
-            <div class="order-confirmed-banner mb-24">
-                <div class="order-confirmed-banner__icon">✓</div>
+            <div class="order-confirmed-banner {{ $statusBanner['class'] }} mb-24">
+                <div class="order-confirmed-banner__icon">{{ $statusBanner['icon'] }}</div>
                 <div>
-                    <h5 class="mb-4">Наличие подтверждено</h5>
+                    <h5 class="mb-4">{{ $statusBanner['title'] }}</h5>
                     <p class="mb-0 cl-text-2">
-                        Менеджер проверил возможность исполнения всех позиций. Здесь отображаются актуальный состав и сумма заказа.
+                        {{ $statusBanner['description'] }}
                     </p>
                 </div>
             </div>
@@ -143,6 +175,12 @@
     .order-card, .order-confirmed-banner { background: #fff; border: 1px solid #e8e8e3; border-radius: 16px; padding: 28px; }
     .order-confirmed-banner { display: flex; align-items: center; gap: 18px; border-color: #cfe8d6; background: #f5fbf7; }
     .order-confirmed-banner__icon { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: #278449; font-size: 22px; font-weight: 700; }
+    .order-confirmed-banner.is-processing { border-color: #cbdcf5; background: #f3f7fd; }
+    .order-confirmed-banner.is-processing .order-confirmed-banner__icon { background: #2563a8; }
+    .order-confirmed-banner.is-shipped { border-color: #f0ddb0; background: #fffaf0; }
+    .order-confirmed-banner.is-shipped .order-confirmed-banner__icon { background: #bd7600; }
+    .order-confirmed-banner.is-cancelled { border-color: #f0caca; background: #fff6f6; }
+    .order-confirmed-banner.is-cancelled .order-confirmed-banner__icon { background: #b42323; }
     .order-status-pill { display: inline-flex; align-items: center; min-height: 32px; padding: 6px 12px; border-radius: 999px; color: #246c3d; background: #e9f7ed; font-size: 13px; font-weight: 600; }
     .order-line { display: grid; grid-template-columns: minmax(0, 1fr) auto 140px; gap: 20px; align-items: center; padding: 20px 0; border-top: 1px solid #ededeb; }
     .order-line:first-child { border-top: 0; padding-top: 0; }

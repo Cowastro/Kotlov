@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Orders\Pages\ListOrders;
+use App\Mail\OrderStatusUpdatedMail;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Supplier;
@@ -11,6 +12,7 @@ use App\Services\Orders\OrderWorkflow;
 use DomainException;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -34,9 +36,15 @@ class OrderWorkflowSequenceTest extends TestCase
     public function test_manager_can_only_advance_in_sequence_and_availability_is_a_required_gate(): void
     {
         config()->set('onec.order_queue_enabled', false);
+        Mail::fake();
 
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $customer = User::factory()->create();
         $order = $this->order('new');
+        $order->update([
+            'user_id' => $customer->id,
+            'customer_email' => $customer->email,
+        ]);
         $workflow = app(OrderWorkflow::class);
 
         $workflow->advance($order, $manager);
@@ -67,12 +75,16 @@ class OrderWorkflowSequenceTest extends TestCase
         $workflow->advance($order->fresh(), $manager);
         $this->assertSame('processing', $order->fresh()->status);
         $this->assertDatabaseCount('order_integration_deliveries', 0);
+        Mail::assertQueued(OrderStatusUpdatedMail::class, fn (OrderStatusUpdatedMail $mail): bool => $mail->order->status === 'processing');
 
         $workflow->advance($order->fresh(), $manager);
         $this->assertSame('shipped', $order->fresh()->status);
+        Mail::assertQueued(OrderStatusUpdatedMail::class, fn (OrderStatusUpdatedMail $mail): bool => $mail->order->status === 'shipped');
 
         $workflow->advance($order->fresh(), $manager);
         $this->assertSame('delivered', $order->fresh()->status);
+        Mail::assertQueued(OrderStatusUpdatedMail::class, fn (OrderStatusUpdatedMail $mail): bool => $mail->order->status === 'delivered');
+        Mail::assertQueuedCount(4);
 
         $this->expectException(DomainException::class);
         $workflow->advance($order->fresh(), $manager);

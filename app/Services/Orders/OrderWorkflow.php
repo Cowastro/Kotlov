@@ -88,7 +88,7 @@ class OrderWorkflow
             throw new DomainException($blocker);
         }
 
-        return match ($expectedStatus) {
+        $result = match ($expectedStatus) {
             'new' => $this->transition(
                 $order,
                 $manager,
@@ -117,6 +117,10 @@ class OrderWorkflow
             ),
             default => throw new DomainException('Для текущего статуса нет следующего этапа.'),
         };
+
+        app(OrderStatusCustomerNotifier::class)->notify($order->fresh(['user']));
+
+        return $result;
     }
 
     /** @return array{title:string,body:string} */
