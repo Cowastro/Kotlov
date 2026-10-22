@@ -385,6 +385,12 @@ jobs:
             grep -E '^audit\.ecokamin_sale\.(item|part)=[0-9]+:[a-z0-9._(),-]+(:[0-9]+:[0-9]+:[0-9]+:(new|active|off))?$' "$detail_log" || true
             echo "safe_ecokamin_sale_metrics_end"
           fi
+          if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:rename-product-slug" ]]; then
+            echo "safe_product_slug_metrics_begin"
+            grep -E '^metric\.product_slug\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.product_slug\.rename=[0-9]+:[a-z0-9._(),-]+:[a-z0-9-]+$' "$detail_log" || true
+            echo "safe_product_slug_metrics_end"
+          fi
           if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "supplier:sync-ecokamin-stoves" ]]; then
             echo "safe_ecokamin_stoves_metrics_begin"
             grep -E '^metric\.ecokamin_stoves\.[a-z_]+=[0-9]+$' "$detail_log" || true
