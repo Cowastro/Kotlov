@@ -113,4 +113,18 @@ return [
         'orders_overlap_minutes' => (int) env('DEAL_BY_ORDERS_OVERLAP_MINUTES', 15),
     ],
 
+    'webpay' => [
+        'enabled' => (bool) env('WEBPAY_ENABLED', false),
+        'test_mode' => (bool) env('WEBPAY_TEST_MODE', true),
+        'store_id' => env('WEBPAY_STORE_ID', ''),
+        'store_name' => env('WEBPAY_STORE_NAME', 'KOTLOV.BY'),
+        'secret_key' => env('WEBPAY_SECRET_KEY', ''),
+        'username' => env('WEBPAY_USERNAME', ''),
+        'password' => env('WEBPAY_PASSWORD', ''),
+        'payment_url' => env('WEBPAY_PAYMENT_URL', 'https://securesandbox.webpay.by/'),
+        'api_url' => env('WEBPAY_API_URL', 'https://sandbox.webpay.by'),
+        'currency' => env('WEBPAY_CURRENCY', 'BYN'),
+        'timeout' => (int) env('WEBPAY_TIMEOUT', 15),
+    ],
+
 ];

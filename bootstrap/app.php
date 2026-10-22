@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             '1c/exchange',
             '1c/exchange/*',
             'integrations/a1/telephony/*',
+            'webpay/notify',
         ]);
 
         // SSL на балансировщике — доверяем X-Forwarded-For для получения реального IP

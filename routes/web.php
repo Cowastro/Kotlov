@@ -40,6 +40,7 @@ use App\Http\Controllers\TaxpayerLookupController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\TisStandard30PriceListController;
 use App\Http\Controllers\TisStandard50PriceListController;
+use App\Http\Controllers\WebpayPaymentController;
 use App\Http\Controllers\WishlistController;
 use App\Models\Banner;
 use App\Models\BlogPost;
@@ -87,6 +88,12 @@ Route::match(['get', 'post'], '/1c/exchange/{source}', OneCExchangeController::c
     ->where('source', '[a-z0-9][a-z0-9_-]{1,99}')
     ->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
     ->name('onec.exchange.source');
+
+Route::post('/webpay/notify', [WebpayPaymentController::class, 'notify'])
+    ->middleware('throttle:60,1')
+    ->name('webpay.notify');
+Route::get('/webpay/return', [WebpayPaymentController::class, 'completed'])->name('webpay.return');
+Route::get('/webpay/cancel', [WebpayPaymentController::class, 'cancelled'])->name('webpay.cancel');
 
 Route::get('/admin/commercial-documents/{commercialDocument}/pdf', CommercialDocumentPdfController::class)
     ->middleware('auth')
@@ -662,6 +669,9 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'index'])->name('account');
     Route::get('/account/orders/{order}', [AccountOrderController::class, 'show'])->name('account.orders.show');
+    Route::post('/account/orders/{order}/webpay', [WebpayPaymentController::class, 'start'])
+        ->middleware('throttle:10,1')
+        ->name('account.orders.webpay.start');
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile');
     Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password');
     Route::post('/account/b2b-request', [AccountController::class, 'b2bRequest'])->name('account.b2b-request');

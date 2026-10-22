@@ -76,7 +76,7 @@ class AccountOrderAvailabilityTest extends TestCase
             ->assertOk()
             ->assertSeeText('Котёл тестовый')
             ->assertSeeText('240,00 BYN')
-            ->assertSeeText('Онлайн-оплата станет доступна здесь после подключения WEBPAY')
+            ->assertSeeText('Онлайн-оплата временно недоступна')
             ->assertDontSeeText('Секретный поставщик')
             ->assertDontSeeText('supplier@example.test')
             ->assertDontSeeText('Служебная заметка только для CRM')

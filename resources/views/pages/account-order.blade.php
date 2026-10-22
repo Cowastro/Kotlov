@@ -84,6 +84,14 @@
                 <div class="col-lg-4">
                     <div class="order-card mb-24">
                         <h5 class="mb-20">Оплата</h5>
+
+                        @if (session('payment_success'))
+                            <div class="order-payment-note order-payment-note--success mb-20">{{ session('payment_success') }}</div>
+                        @endif
+                        @if (session('payment_error'))
+                            <div class="order-payment-note order-payment-note--error mb-20">{{ session('payment_error') }}</div>
+                        @endif
+
                         <dl class="order-info mb-0">
                             <div><dt>Способ</dt><dd>{{ $paymentTypeLabel }}</dd></div>
                             <div><dt>Статус</dt><dd>{{ $order->paymentStatusLabel() }}</dd></div>
@@ -91,9 +99,17 @@
 
                         @if ($order->payment_status === 'paid')
                             <div class="order-payment-note order-payment-note--success mt-20">Заказ оплачен</div>
-                        @elseif ($onlinePayment)
+                        @elseif ($webpayCanPay)
                             <div class="order-payment-note mt-20">
-                                Онлайн-оплата станет доступна здесь после подключения WEBPAY. Сейчас оплачивать заказ не нужно.
+                                Состав и сумма подтверждены менеджером. Заказ можно безопасно оплатить картой через WEBPAY.
+                            </div>
+                            <form method="POST" action="{{ route('account.orders.webpay.start', $order) }}" class="mt-16">
+                                @csrf
+                                <button type="submit" class="tf-btn animate-btn w-100">Оплатить через WEBPAY</button>
+                            </form>
+                        @elseif ($onlinePayment && ! $webpayConfigured)
+                            <div class="order-payment-note mt-20">
+                                Онлайн-оплата временно недоступна. Менеджер сообщит, когда можно будет оплатить заказ.
                             </div>
                         @elseif ($order->isPaymentOnReceipt())
                             <div class="order-payment-note mt-20">Оплата производится при получении заказа.</div>
@@ -140,6 +156,7 @@
     .order-info dd { margin: 0; color: #171714; }
     .order-payment-note { padding: 14px 16px; border-radius: 10px; background: #fff5d8; color: #6b5313; font-size: 14px; line-height: 1.45; }
     .order-payment-note--success { background: #e9f7ed; color: #246c3d; }
+    .order-payment-note--error { background: #fdecec; color: #9a2f2f; }
     @media (max-width: 767.98px) {
         .order-card, .order-confirmed-banner { padding: 20px; }
         .order-line { grid-template-columns: 1fr auto; gap: 8px 16px; }

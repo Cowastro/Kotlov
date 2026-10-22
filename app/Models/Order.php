@@ -397,6 +397,11 @@ class Order extends Model
         return $this->hasMany(OrderPortalEvent::class)->latest('occurred_at');
     }
 
+    public function webpayPaymentAttempts(): HasMany
+    {
+        return $this->hasMany(WebpayPaymentAttempt::class)->latest('id');
+    }
+
     public function archivedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'archived_by');
