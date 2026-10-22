@@ -29,6 +29,7 @@ class EcokaminOctoberSaleTest extends TestCase
         $glass = $make('Стекло для топки ЭкоКамин Дельта', 300);
         $other = $make('Каминная топка ЭкоКамин Альфа 01/100', 2000);
         $priority = $make('Камин ЭкоКамин Приоритет', 1000);
+        $alphaGlass = $make('Каминная топка ЭкоКамин Альфа 700 три стекла подовая', 5700);
 
         $this->artisan('catalog:apply-ecokamin-october-sale')->expectsOutputToContain('metric.ecokamin_sale.to_discount=3')->assertSuccessful();
         $this->assertSame('3000.00', (string) $delta->fresh()->price);
@@ -41,10 +42,19 @@ class EcokaminOctoberSaleTest extends TestCase
         $this->assertSame('3400.00', (string) $munich->fresh()->price);
         $this->assertTrue($delta->fresh()->isPublicSale());
         $this->assertSame(20, $delta->fresh()->discount_percent);
-        foreach ([$glass, $other, $priority] as $untouched) {
+        foreach ([$glass, $other, $priority, $alphaGlass] as $untouched) {
             $this->assertFalse((bool) $untouched->fresh()->is_sale);
         }
         $this->assertSame(3, Product::query()->inActiveSaleCampaign(ApplyEcokaminOctoberSaleCommand::CAMPAIGN)->count());
+
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->get('/akcii/ecokamin-skidki')->assertOk()
+            ->assertSee('Топки ЭкоКамин Дельта')
+            ->assertSee('img/promotions/ecokamin-2026-10/delta.webp', false)
+            ->assertSee('Каминная топка ЭкоКамин Дельта 01/150 угловая')
+            ->assertDontSee('Альфа 01/100');
+        $this->get('/akcii')->assertOk()->assertSee('Акция ЭкоКамин');
+        $this->get('/')->assertOk()->assertSee('/akcii/ecokamin-skidki#delta', false);
 
         Carbon::setTestNow('2026-11-01 00:05:00');
         $this->assertFalse($delta->fresh()->isPublicSale());
@@ -54,5 +64,8 @@ class EcokaminOctoberSaleTest extends TestCase
         $this->assertNull($delta->price_old);
         $this->assertFalse($delta->is_sale);
         $this->assertNull($delta->sale_campaign);
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->get('/akcii/ecokamin-skidki')->assertRedirect('/akcii');
+        $this->get('/')->assertOk()->assertDontSee('/akcii/ecokamin-skidki#delta', false);
     }
 }

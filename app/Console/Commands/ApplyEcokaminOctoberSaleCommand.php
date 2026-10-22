@@ -95,7 +95,7 @@ class ApplyEcokaminOctoberSaleCommand extends Command
                     $stats['discounted']++;
                 }
             });
-            Cache::forget('home:data:v4');
+            Cache::forget('home:data:v5');
         }
 
         foreach ($stats as $key => $value) {
@@ -112,6 +112,10 @@ class ApplyEcokaminOctoberSaleCommand extends Command
     {
         $text = ' '.mb_strtolower(str_replace(['ё', 'Ё'], 'е', $name)).' ';
         foreach (self::RULES as $percent => $series) {
+            // Мюнхен and Три стекла are fireplaces; «три стекла» on a firebox is only its glazing.
+            if ($percent === 15 && str_contains($text, 'топк')) {
+                continue;
+            }
             foreach ($series as $word) {
                 if (preg_match('/(?<!\p{L})'.preg_quote($word, '/').'(?!\p{L})/u', $text) === 1) {
                     return $percent;

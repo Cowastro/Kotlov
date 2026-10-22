@@ -99,7 +99,7 @@ class RepairEurotermProductRoutingCommand extends Command
 
             $availability->refreshMany($eurotermLinkedIds);
             Cache::forget('home:data');
-            Cache::forget('home:data:v4');
+            Cache::forget('home:data:v5');
         }
 
         $this->line('metric.euroterm_routing.status='.($this->option('apply') ? 'applied' : 'dry_run'));

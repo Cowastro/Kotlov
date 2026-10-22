@@ -198,7 +198,7 @@ Route::get('/robots.txt', function (Request $request) {
 Route::get('/', function () {
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
-    $data = Cache::remember('home:data:v4', 600, function () {
+    $data = Cache::remember('home:data:v5', 600, function () {
         $categoryBranchIds = function ($categoryId) {
             $categories = Category::where('is_active', true)
                 ->get(['id', 'parent_id'])
@@ -361,6 +361,9 @@ Route::get('/', function () {
         $bannerPromoKaminy = Banner::active()->byPosition('promo_kaminy')->first();
         $bannerPromoAkcii = Banner::active()->byPosition('promo_akcii')->first();
         $bannerPartners = Banner::active()->byPosition('partners')->first();
+        $ecokaminSaleCount = Product::query()->orderable()
+            ->inActiveSaleCampaign(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::CAMPAIGN)
+            ->count();
 
         $homeBlogPosts = BlogPost::published()
             ->with('category:id,name,slug')
@@ -376,7 +379,7 @@ Route::get('/', function () {
             'bannersHero',
             'bannerPromoKotly', 'bannerPromoNasosy',
             'bannerPromoKaminy', 'bannerPromoAkcii',
-            'bannerPartners', 'homeBlogPosts'
+            'bannerPartners', 'homeBlogPosts', 'ecokaminSaleCount'
         );
     });
 
@@ -386,6 +389,7 @@ Route::get('/', function () {
 // ===== Статичные страницы — ДО динамических! =====
 Route::view('/about', 'pages.about');
 Route::get('/akcii', [PromotionController::class, 'index'])->name('promotions.index');
+Route::get('/akcii/ecokamin-skidki', [PromotionController::class, 'ecokamin'])->name('promotions.ecokamin');
 Route::get('/akcii/kotlov-xo-ceramic-pro', [PromotionController::class, 'xoCeramicPro'])->name('promotions.xo-ceramic-pro');
 Route::get('/akcii/kotlov-xo-evo-26', [PromotionController::class, 'xoEvo26'])->name('promotions.xo-evo-26');
 Route::get('/akcii/hotta-ceramik-20-30', [PromotionController::class, 'hottaCeramik'])->name('promotions.hotta-ceramik');

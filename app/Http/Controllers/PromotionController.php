@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Console\Commands\ApplyEcokaminOctoberSaleCommand;
 use App\Models\Product;
+use Carbon\CarbonImmutable;
 
 class PromotionController extends Controller
 {
@@ -53,7 +55,40 @@ class PromotionController extends Controller
             ->limit(8)
             ->get();
 
-        return view('pages.promotions', compact('title', 'description', 'canonical', 'ogImage', 'xoProduct', 'evoProduct', 'hottaProducts', 'saleProducts'));
+        $ecokaminSaleCount = Product::query()->active()->notArchived()->inActiveSaleCampaign(ApplyEcokaminOctoberSaleCommand::CAMPAIGN)->count();
+
+        return view('pages.promotions', compact('title', 'description', 'canonical', 'ogImage', 'xoProduct', 'evoProduct', 'hottaProducts', 'saleProducts', 'ecokaminSaleCount'));
+    }
+
+    public function ecokamin()
+    {
+        $products = self::ecokaminSaleProducts();
+        if ($products->isEmpty()) {
+            return redirect()->route('promotions.index');
+        }
+
+        $isDelta = fn (Product $product): bool => preg_match('/дельта|delta/iu', $product->name) === 1;
+        $deltaProducts = $products->filter($isDelta)->values();
+        $fireplaceProducts = $products->reject($isDelta)->values();
+        $endsAt = CarbonImmutable::parse(ApplyEcokaminOctoberSaleCommand::ENDS_AT, 'Europe/Minsk');
+        $title = 'Акция ЭкоКамин: скидка до 20% на топки Дельта и камины | KOTLOV';
+        $description = 'Скидка 20% на топки ЭкоКамин Дельта и камины Мадрид, Рио, Эклипс, Родос, Прага, 15% на Мюнхен и Три стекла до '.$endsAt->format('d.m.Y').'. Цены на сайте уже со скидкой, доставка по Беларуси.';
+        $canonical = 'https://kotlov.by/akcii/ecokamin-skidki';
+
+        return view('pages.promotion-ecokamin', compact('deltaProducts', 'fireplaceProducts', 'endsAt', 'title', 'description', 'canonical'));
+    }
+
+    /** Products of the running ЭкоКамин promotion, cheapest first. */
+    public static function ecokaminSaleProducts()
+    {
+        return Product::query()
+            ->active()
+            ->notArchived()
+            ->withSupplierChannels()
+            ->with(['category', 'brand'])
+            ->inActiveSaleCampaign(ApplyEcokaminOctoberSaleCommand::CAMPAIGN)
+            ->orderBy('price')
+            ->get();
     }
 
     public function xoCeramicPro()

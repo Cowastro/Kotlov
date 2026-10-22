@@ -34,7 +34,7 @@ class ExpireSaleCampaignsCommand extends Command
                 $restored++;
             }
             if ($restored > 0) {
-                Cache::forget('home:data:v4');
+                Cache::forget('home:data:v5');
             }
         }
 

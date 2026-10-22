@@ -158,7 +158,7 @@ class AlignKotlovSanBusinessGroupCommand extends Command
             });
 
             Cache::forget('home:data');
-            Cache::forget('home:data:v4');
+            Cache::forget('home:data:v5');
         }
 
         $metrics['operational_products'] = Product::query()
