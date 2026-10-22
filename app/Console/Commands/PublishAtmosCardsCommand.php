@@ -142,6 +142,9 @@ class PublishAtmosCardsCommand extends Command
             Cache::forget('home:data:v6');
         }
 
+        // Progress of product:enrich-content --sku-prefix=ATMOS- (template text is under 600 chars).
+        $stats['cards_total'] = Product::query()->where('sku', 'like', 'ATMOS-%')->count();
+        $stats['cards_thin_content'] = Product::query()->where('sku', 'like', 'ATMOS-%')->whereRaw('LENGTH(COALESCE(content, "")) < 600')->count();
         foreach ($stats as $key => $value) {
             $this->line("metric.atmos_cards.{$key}={$value}");
         }
