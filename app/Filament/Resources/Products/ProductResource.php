@@ -50,7 +50,7 @@ class ProductResource extends Resource
             ->withCount('supplierMailThreads')
             ->with([
                 'category:id,name,slug',
-                'brand:id,name',
+                'brand:id,name,slug',
                 // products.supplier_id is the legacy supplier user account,
                 // not a row from the suppliers table.
                 'supplier:id,name',

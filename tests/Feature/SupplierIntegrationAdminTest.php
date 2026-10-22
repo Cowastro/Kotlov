@@ -7,6 +7,7 @@ use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
 use App\Filament\Resources\Suppliers\SupplierResource;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
@@ -356,6 +357,54 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertSeeText('Товар со статусом без количества')
             ->assertSeeText('Количество не указано')
             ->assertDontSeeText('Остаток: 0 шт.');
+    }
+
+    public function test_ecokamin_admin_list_uses_fifteen_percent_partner_discount_from_current_sale_price(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $brand = Brand::query()->create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        $category = Category::query()->create([
+            'name' => 'Печи-камины',
+            'slug' => 'ecokamin-admin-pricing',
+            'parent_id' => 0,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'sanbusinessgroup-ecokamin-pricing',
+            'name' => 'ООО «СанБизнесГруп»',
+        ]);
+        $product = Product::query()->create([
+            'brand_id' => $brand->id,
+            'category_id' => $category->id,
+            'sku' => 'ECOKAMIN-SALE-PRICE',
+            'name' => 'ЭкоКамин с действующей акционной ценой',
+            'slug' => 'ecokamin-sale-price-admin-test',
+            'price_old' => 250,
+            'price' => 200,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'ecokamin-admin-pricing-source',
+            'name' => '1С СанБизнесГруп',
+            'driver' => 'commerceml',
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'ecokamin-admin-pricing-offer',
+            'price_byn' => 200,
+            'stock_quantity' => 1,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'matched',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(ProductResource::getUrl('index', panel: 'admin'))
+            ->assertOk()
+            ->assertSeeText('ЭкоКамин с действующей акционной ценой')
+            ->assertSeeText('170,00 BYN')
+            ->assertSeeText('30.00 BYN / 15.0%');
     }
 
     public function test_connect_1c_action_can_prefill_supplier_without_saving_anything(): void

@@ -7,6 +7,7 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Pricing\B2bBrandRetailPricing;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -84,11 +85,12 @@ class B2bCatalogOfferResolver
 
     public function priceWithTax(IntegrationProduct $offer): float
     {
-        $retailDiscount = $this->brandRetailDiscountPercent($offer);
-        $retailPrice = (float) ($offer->product?->price ?? 0);
+        $brandRetailPrice = $offer->product
+            ? app(B2bBrandRetailPricing::class)->priceFor($offer->product)
+            : null;
 
-        if ($retailDiscount !== null && $retailPrice > 0) {
-            return round($retailPrice * (1 - $retailDiscount / 100), 2);
+        if ($brandRetailPrice !== null) {
+            return $brandRetailPrice;
         }
 
         $price = $offer->normalizedPriceByn();
@@ -98,15 +100,6 @@ class B2bCatalogOfferResolver
         }
 
         return $price;
-    }
-
-    private function brandRetailDiscountPercent(IntegrationProduct $offer): ?float
-    {
-        $brandSlug = trim((string) ($offer->product?->brand?->slug ?? ''));
-        $discounts = (array) config('shop.b2b_brand_retail_discounts', []);
-        $discount = (float) ($discounts[$brandSlug] ?? 0);
-
-        return $discount > 0 && $discount < 100 ? $discount : null;
     }
 
     public function hasFreshStock(IntegrationProduct $offer): bool

@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\Market\MarketPriceIndicator;
 use App\Services\Market\MarketWebResearchService;
+use App\Services\Pricing\B2bBrandRetailPricing;
 use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -1048,6 +1049,13 @@ class ProductsTable
 
     private static function wholesalePrice(object $record): ?float
     {
+        if ($record instanceof Product) {
+            $brandRetailPrice = app(B2bBrandRetailPricing::class)->priceFor($record);
+            if ($brandRetailPrice !== null) {
+                return $brandRetailPrice;
+            }
+        }
+
         $prices = $record->usablePurchasePriceSources()->pluck('price_byn')
             ->concat(self::activeIntegrationItems($record)
                 ->map(fn ($item): ?float => $item->normalizedPriceByn()))
