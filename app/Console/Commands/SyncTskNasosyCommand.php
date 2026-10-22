@@ -923,7 +923,7 @@ class SyncTskNasosyCommand extends Command
         'СКВАЖИННЫЙ', 'ДРЕНАЖНЫЙ', 'ДРЕНАЖНО', 'ФЕКАЛЬНЫЙ', 'ПОВЕРХНОСТНЫЙ',
         'ПОГРУЖНОЙ', 'ВИХРЕВОЙ', 'САМОВСАСЫВАЮЩИЙ', 'СТАНЦИЯ', 'КОМПЛЕКТ',
         'АВТ', 'АВТОМАТИЧЕСКАЯ', 'АВТОМАТИЧЕСКОГО', 'ВОДОСНАБЖЕНИЯ', 'АДАПТ', 'АДАПТИВНАЯ',
-        'УНИВЕРСАЛЬНАЯ',
+        'УНИВЕРСАЛЬНАЯ', 'МНОГОСТУПЕНЧАТЫЙ', 'КОНСОЛЬНЫЙ', 'ЦЕНТРОБЕЖНЫЙ', 'ЦЕНТРОБЕЖНЫИ',
     ];
 
     private const HOMOGLYPHS = [
@@ -943,14 +943,19 @@ class SyncTskNasosyCommand extends Command
         if ($brand !== '') {
             $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', ' ', $n) ?? $n;
         }
-        // «UPС 25-40» typed with a Cyrillic С: fold look-alikes inside Latin model codes.
-        $n = preg_replace_callback('/[A-ZА-ЯЁ]*[A-Z][A-ZА-ЯЁ]*/u', fn ($m) => strtr($m[0], self::HOMOGLYPHS), $n) ?? $n;
+        // «(г/а 2л)» and «(р/а 2 л)» both name the tank; only its volume tells models apart.
+        $n = preg_replace('~(?<![А-ЯЁA-Z])[ГР]\s*/\s*А(?![А-ЯЁA-Z])~u', ' ', $n) ?? $n;
+        // «UPС 25-40» / «МН 200 А» typed in Cyrillic: fold look-alike letters of model codes
+        // (words with any Latin letter, or made of look-alike letters only).
+        $n = preg_replace_callback('/[A-ZА-ЯЁ]+/u', fn ($m) => preg_match('/[A-Z]/', $m[0]) || preg_match('/^[АВСЕНКМОРТХ]+$/u', $m[0])
+            ? strtr($m[0], self::HOMOGLYPHS) : $m[0], $n) ?? $n;
         $n = preg_replace('/(?<=\d)(?=[А-ЯЁA-Z])|(?<=[А-ЯЁA-Z])(?=\d)/u', ' ', $n) ?? $n;
         $n = preg_replace('/[^А-ЯЁA-Z0-9]+/u', ' ', $n) ?? $n;
         // Repeated tokens stay: «AUTO JET 100 S-S» is another model than «AUTO JET 100 S».
         $toks = array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
             fn ($t) => $t !== '' && ! in_array($t, self::MODEL_STOPWORDS, true)
+                && ! in_array($t, array_map(fn ($w) => strtr($w, self::HOMOGLYPHS), self::MODEL_STOPWORDS), true)
         );
         if (! preg_grep('/\d/', $toks)) {
             return '';
