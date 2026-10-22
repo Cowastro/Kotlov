@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Cache;
  */
 final class EcokaminPromotion
 {
-    public const CACHE_KEY = 'ecokamin-promotion:showcase:v2';
+    public const CACHE_KEY = 'ecokamin-promotion:showcase:v3';
 
     private const SERIES = ['дельта', 'рио', 'мюнхен', 'мадрид', 'крит', 'прага', 'эклипс', 'родос', 'три стекла'];
 
@@ -29,11 +29,11 @@ final class EcokaminPromotion
         return now()->lt(self::endsAt());
     }
 
-    /** @return array{all: Collection<int, Product>, hits: Collection<int, Product>, deltaHits: Collection<int, Product>, maxDiscount: int, deltaMaxDiscount: int, from: array{delta: ?float, kaminy: ?float}} */
+    /** @return array{all: Collection<int, Product>, hits: Collection<int, Product>, deltaHits: Collection<int, Product>, fireplaceHits: Collection<int, Product>, maxDiscount: int, deltaMaxDiscount: int, fireplaceMaxDiscount: int, from: array{delta: ?float, kaminy: ?float}} */
     public static function showcase(): array
     {
         if (! self::isRunning()) {
-            return ['all' => collect(), 'hits' => collect(), 'deltaHits' => collect(), 'maxDiscount' => 0, 'deltaMaxDiscount' => 0, 'from' => ['delta' => null, 'kaminy' => null]];
+            return ['all' => collect(), 'hits' => collect(), 'deltaHits' => collect(), 'fireplaceHits' => collect(), 'maxDiscount' => 0, 'deltaMaxDiscount' => 0, 'fireplaceMaxDiscount' => 0, 'from' => ['delta' => null, 'kaminy' => null]];
         }
 
         return Cache::remember(self::CACHE_KEY, 600, function (): array {
@@ -68,6 +68,8 @@ final class EcokaminPromotion
                 'all' => $all,
                 'hits' => $hits,
                 'deltaHits' => $deltaHits,
+                'fireplaceHits' => $hits->reject($isDelta)->take(3)->values(),
+                'fireplaceMaxDiscount' => (int) $all->reject($isDelta)->max(fn (Product $product): int => (int) $product->discount_percent),
                 'deltaMaxDiscount' => (int) $delta->max(fn (Product $product): int => (int) $product->discount_percent),
                 'maxDiscount' => (int) $all->max(fn (Product $product): int => (int) $product->discount_percent),
                 'from' => [

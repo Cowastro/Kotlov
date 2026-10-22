@@ -847,10 +847,20 @@ class CatalogController extends Controller
         $ecokaminPromo = in_array($category->slug, ['kaminy', 'pechi-kaminy', 'topki'], true) || $category->parent?->slug === 'kaminy'
             ? \App\Support\Promotions\EcokaminPromotion::showcase()
             : null;
-        // В разделе топок — вариант баннера про топки Дельта.
-        $ecokaminPromoVariant = $ecokaminPromo && ($category->slug === 'topki' || $category->parent?->slug === 'topki') ? 'delta' : 'all';
-        $ecokaminPromoHits = $ecokaminPromo[$ecokaminPromoVariant === 'delta' ? 'deltaHits' : 'hits'] ?? collect();
-        $ecokaminPromoMaxDiscount = $ecokaminPromo[$ecokaminPromoVariant === 'delta' ? 'deltaMaxDiscount' : 'maxDiscount'] ?? 0;
+        // Свой вариант баннера: в топках — про топки Дельта, в печах-каминах — про камины.
+        $ecokaminPromoVariant = match (true) {
+            ! $ecokaminPromo => 'all',
+            $category->slug === 'topki' || $category->parent?->slug === 'topki' => 'delta',
+            $category->slug === 'pechi-kaminy' || $category->parent?->slug === 'pechi-kaminy' => 'fireplaces',
+            default => 'all',
+        };
+        [$hitsKey, $discountKey] = match ($ecokaminPromoVariant) {
+            'delta' => ['deltaHits', 'deltaMaxDiscount'],
+            'fireplaces' => ['fireplaceHits', 'fireplaceMaxDiscount'],
+            default => ['hits', 'maxDiscount'],
+        };
+        $ecokaminPromoHits = $ecokaminPromo[$hitsKey] ?? collect();
+        $ecokaminPromoMaxDiscount = $ecokaminPromo[$discountKey] ?? 0;
 
         return view('pages.catalog', compact(
             'ecokaminPromoHits',
