@@ -330,7 +330,7 @@ jobs:
             echo "script_failure_lines=$(grep -Eic 'script .* returned with error|post-autoload-dump|post-update-cmd|could not open input file' "$detail_log" || true)"
             echo "memory_failure_lines=$(grep -Eic 'allowed memory size|out of memory|memory exhausted' "$detail_log" || true)"
             grep -Ei 'error|exception|failed|critical' "$detail_log" \
-              | tail -n 5 \
+              | head -n 5 \
               | sed -E \
                   -e 's#https?://[^[:space:]]+#<url>#g' \
                   -e 's#(^|[[:space:]])/[^[:space:]]+#\\1<path>#g' \
