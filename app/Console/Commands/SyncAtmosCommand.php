@@ -182,9 +182,13 @@ class SyncAtmosCommand extends Command
         $bySku = [];
         $byName = [];
         $byModel = [];
+        $familyProducts = [];
         $keyer = new SyncThermokraftCommand;
         foreach ($products as $product) {
             $family = $this->family(($product->brand?->name ?? '').' '.$product->name);
+            if ($family !== '') {
+                $familyProducts[$family][] = $product;
+            }
             if ($family !== '' && ($modelKey = $keyer->modelKey($this->cleanName($product->name), (string) $product->brand?->name)) !== '') {
                 $byModel[$family][$modelKey][] = (int) $product->id;
             }
@@ -241,9 +245,15 @@ class SyncAtmosCommand extends Command
             }
             $row['product_id'] = $productId ?: null;
             $row['match_reason'] = $reason ?? 'none';
+            if (! $productId && $this->option('audit')) {
+                $row['near'] = $this->nearest($row, $familyProducts[$row['family']] ?? [], $keyer);
+            }
             $counts[$productId ? 'matched' : 'unmatched']++;
         }
         unset($row);
+        foreach (array_keys(self::BRAND_FAMILIES) as $family) {
+            $counts['catalogue_'.$family] = count($familyProducts[$family] ?? []);
+        }
 
         return [$rows, $counts];
     }
@@ -358,7 +368,38 @@ class SyncAtmosCommand extends Command
         foreach ($rows as $row) {
             $id = (int) ($row['product_id'] ?? 0);
             $this->line(sprintf('audit.atmos.row=%d:%s:%d:%d:%s:%s:%d', $row['section'], $row['family'] ?: 'other', $row['row'], $id, $id ? (string) ($slugs[$id] ?? '') : '', $row['match_reason'], (int) $row['in_stock']));
+            if (! empty($row['near'])) {
+                $this->line(sprintf('audit.atmos.near=%d:%s:%d:%d:%s:%d', $row['section'], $row['family'], $row['row'], ...$row['near']));
+            }
         }
+    }
+
+    /**
+     * Diagnostics: the closest card of the same brand — model tokens overlap,
+     * every number of the price row must be present in the card.
+     *
+     * @return array{0: int, 1: string, 2: int}|null product id, slug, score %
+     */
+    private function nearest(array $row, array $products, SyncThermokraftCommand $keyer): ?array
+    {
+        $tokens = array_filter(explode(' ', $keyer->modelKey($row['name'], $row['brand'])));
+        if ($tokens === []) {
+            return null;
+        }
+        $numbers = array_filter($tokens, fn (string $t): bool => preg_match('/\d/', $t) === 1);
+        $best = null;
+        foreach ($products as $product) {
+            $candidate = array_filter(explode(' ', $keyer->modelKey($this->cleanName($product->name), (string) $product->brand?->name)));
+            if ($candidate === [] || array_diff($numbers, $candidate) !== []) {
+                continue;
+            }
+            $score = (int) round(100 * count(array_intersect($tokens, $candidate)) / count(array_unique(array_merge($tokens, $candidate))));
+            if (! $best || $score > $best[2]) {
+                $best = [(int) $product->id, (string) $product->slug, $score];
+            }
+        }
+
+        return $best;
     }
 
     public function cleanName(string $name): string
