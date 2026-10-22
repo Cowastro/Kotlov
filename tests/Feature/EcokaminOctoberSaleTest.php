@@ -29,12 +29,14 @@ class EcokaminOctoberSaleTest extends TestCase
             $product = Product::query()->create([
                 'category_id' => $category->id, 'brand_id' => $brand->id, 'is_active' => true,
                 'name' => $name, 'slug' => Str::slug($name), 'price' => $price,
+                'in_stock' => true, 'availability_status' => 'in_stock',
             ]);
             if ($bitrix) {
                 DB::table('supplier_products')->insert([
                     'supplier_id' => $supplier->id, 'product_id' => $product->id, 'supplier_article' => 'A'.$bitrix,
                     'source_url' => "https://ecokamin.ru/catalog/kaminy/x/{$bitrix}/", 'price' => 1, 'currency' => 'RUB',
-                    'match_status' => 'matched', 'created_at' => now(), 'updated_at' => now(),
+                    'price_byn' => $price * 0.7, 'match_status' => 'matched', 'match_confidence' => 'official_source',
+                    'created_at' => now(), 'updated_at' => now(),
                 ]);
             }
 
@@ -44,6 +46,8 @@ class EcokaminOctoberSaleTest extends TestCase
         $rio = $make('Камин ЭкоКамин Рио КР206', 7941.71, '17944');
         $delta1400 = $make('Каминная топка ЭкоКамин Дельта 1400V', 28879.64, '19157');
         $munich = $make('Камин ЭкоКамин МЮНХЕН ГИГАНТ черный', 5062.74, '14732');
+        $delta800 = $make('Каминная топка ЭкоКамин ДЕЛЬТА 800 три стекла', 12389.24, '5543');
+        $krit = $make('Камин КРИТ черный', 6353.42, '12680');
         $other = $make('Каминная топка ЭкоКамин Альфа 01/100', 2000, null);
         // A leftover of the first run that discounted twice: price_old holds the real card price.
         $rio->forceFill(['price' => 6353.37, 'price_old' => 7941.71, 'is_sale' => true, 'sale_campaign' => ApplyEcokaminOctoberSaleCommand::CAMPAIGN, 'sale_ends_at' => '2026-10-31 20:59:59'])->save();
@@ -56,13 +60,14 @@ class EcokaminOctoberSaleTest extends TestCase
         Http::fake(fn ($request) => Http::response(match (true) {
             str_contains($request->url(), 'api.nbrb.by') => ['Cur_OfficialRate' => 3.61, 'Cur_Scale' => 100],
             str_contains($request->url(), 'PAGEN_') => '',
-            str_contains($request->url(), 'kaminnye_topki/delta') => $listing(['19157' => [799990, null]] + $filler),
+            str_contains($request->url(), 'kaminnye_topki/delta') => $listing(['19157' => [799990, null], '5543' => [343192, 428990]] + $filler),
+            str_contains($request->url(), 'kamin_krit') => $listing(['12680' => [175992, 219990]]),
             str_contains($request->url(), 'kaminy_rio') => $listing(['17944' => [219992, 274990]]),
             str_contains($request->url(), 'myunkhen') => $listing(['14732' => [140242, 164990]]),
             default => '',
         }));
 
-        $this->artisan('catalog:apply-ecokamin-october-sale')->expectsOutputToContain('metric.ecokamin_sale.promo=2')->assertSuccessful();
+        $this->artisan('catalog:apply-ecokamin-october-sale')->expectsOutputToContain('metric.ecokamin_sale.promo=4')->assertSuccessful();
         $this->assertSame('6353.37', (string) $rio->fresh()->price);
 
         $this->artisan('catalog:apply-ecokamin-october-sale --apply')->assertSuccessful();
@@ -79,7 +84,7 @@ class EcokaminOctoberSaleTest extends TestCase
         $this->assertNull($delta1400->sale_campaign);
         $this->assertFalse($delta1400->is_sale);
         $this->assertFalse((bool) $other->fresh()->is_sale);
-        $this->assertSame(2, Product::query()->inActiveSaleCampaign(ApplyEcokaminOctoberSaleCommand::CAMPAIGN)->count());
+        $this->assertSame(4, Product::query()->inActiveSaleCampaign(ApplyEcokaminOctoberSaleCommand::CAMPAIGN)->count());
 
         // The online-order 3 % does not stack with the promotion.
         $this->assertFalse($rio->qualifiesForOnlineOrderDiscount());
@@ -92,11 +97,16 @@ class EcokaminOctoberSaleTest extends TestCase
         Cache::flush();
         $this->get('/akcii/ecokamin-skidki')->assertOk()->assertSee('img/promotions/ecokamin-2026-10/delta.webp', false)->assertSee($rio->name)->assertDontSee('Альфа 01/100');
         $this->get('/akcii')->assertOk()->assertSee('Акция ЭкоКамин');
-        $this->get('/')->assertOk()->assertSee('/akcii/ecokamin-skidki#delta', false);
+        $this->get('/')->assertOk()
+            ->assertSee('eco-promo-slide__product', false)
+            ->assertSee('Дельта 800 три стекла')
+            ->assertSee('/akcii/ecokamin-skidki#delta', false)
+            ->assertSee('/akcii/ecokamin-skidki#kaminy', false)
+            ->assertSee('Акция ЭкоКамин — скидки до 20%');
 
         Carbon::setTestNow('2026-11-01 00:05:00');
         $this->assertFalse($rio->fresh()->isPublicSale());
-        $this->artisan('catalog:expire-sale-campaigns --apply')->expectsOutputToContain('metric.sale_campaigns.restored=2')->assertSuccessful();
+        $this->artisan('catalog:expire-sale-campaigns --apply')->expectsOutputToContain('metric.sale_campaigns.restored=4')->assertSuccessful();
         $rio = $rio->fresh();
         $this->assertSame('9927.14', (string) $rio->price);
         $this->assertNull($rio->price_old);
@@ -104,6 +114,6 @@ class EcokaminOctoberSaleTest extends TestCase
         $this->assertTrue($rio->qualifiesForOnlineOrderDiscount());
         Cache::flush();
         $this->get('/akcii/ecokamin-skidki')->assertRedirect('/akcii');
-        $this->get('/')->assertOk()->assertDontSee('/akcii/ecokamin-skidki#delta', false);
+        $this->get('/')->assertOk()->assertDontSee('/akcii/ecokamin-skidki#delta', false)->assertDontSee('eco-promo-slide__product', false);
     }
 }

@@ -221,7 +221,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
             });
 
             Cache::forget('home:data');
-            Cache::forget('home:data:v5');
+            Cache::forget('home:data:v6');
         }
 
         foreach (['metabel' => $metaBrand, 'tsar' => $tsarBrand, 'teplov_suhov' => $teplovBrand] as $key => $brand) {

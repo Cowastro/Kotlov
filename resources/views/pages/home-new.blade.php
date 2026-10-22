@@ -81,6 +81,11 @@
                         data-tablet="1" data-mobile="1" data-auto="true" data-delay="3000" data-loop="true"
                         data-space-lg="30" data-space-md="20" data-space="15">
                         <div class="swiper-wrapper">
+                            @if(($ecokaminPromoHits ?? collect())->count() >= 3 && now()->lt(\Carbon\CarbonImmutable::parse(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::ENDS_AT, 'Europe/Minsk')))
+                            <div class="swiper-slide">
+                                @include('partials.ecokamin-promo-slide')
+                            </div>
+                            @endif
                             @forelse($bannersHero as $banner)
                             <div class="swiper-slide">
                                 @if($banner->image === 'banners/invicta-shaman-launch.svg')
@@ -259,13 +264,24 @@
                             <p class="text-caption-01 cl-text-2 mb-8 fw-semibold" style="letter-spacing:.08em;text-transform:uppercase;">
                                 ЭкоКамин в Беларуси
                             </p>
+                            @if(($ecokaminPromoHits ?? collect())->isNotEmpty())
+                            <h3 class="s-title">Акция ЭкоКамин — скидки до {{ $ecokaminPromoMaxDiscount }}%</h3>
+                            <p class="s-desc text-body-1 cl-text-2">
+                                Топки Дельта и камины Мадрид, Рио, Крит, Мюнхен, Прага по акционным ценам производителя до 31 октября. Поможем подобрать модель, дымоход и комплектацию.
+                            </p>
+                            @else
                             <h3 class="s-title">Каминные топки ЭкоКамин АЛЬФА</h3>
                             <p class="s-desc text-body-1 cl-text-2">
                                 Фронтальные, угловые и трёхсторонние модели с реальными фото проектов. Поможем подобрать топку, дымоход и комплектацию.
                             </p>
+                            @endif
                         </div>
                         <div class="col-right wow fadeInUp" data-wow-delay="0.1s">
+                            @if(($ecokaminPromoHits ?? collect())->isNotEmpty())
+                            <a href="{{ route('promotions.ecokamin') }}" class="tf-btn btn-white btn-stroke">Все товары акции</a>
+                            @else
                             <a href="/brands/ecokamin" class="tf-btn btn-white btn-stroke">Вся коллекция ЭкоКамин</a>
+                            @endif
                         </div>
                     </div>
 
@@ -551,29 +567,9 @@
     
             <!-- Lookbook -->
    
-{{-- Акция ЭкоКамин: баннеры исчезают сами после окончания акции --}}
-@if(($ecokaminSaleCount ?? 0) > 0 && now()->lt(\Carbon\CarbonImmutable::parse(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::ENDS_AT, 'Europe/Minsk')))
-<section class="container flat-spacing pb-0 home-ecokamin-sale">
-    <div class="sect-heading type-2 text-center mb-32">
-        <h3 class="s-title">Акция ЭкоКамин — скидки до 20%</h3>
-        <p class="s-desc text-body-1 cl-text-2">До {{ \Carbon\CarbonImmutable::parse(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::ENDS_AT)->format('d.m.Y') }}: цены на сайте уже со скидкой</p>
-    </div>
-    <div class="home-ecokamin-sale__grid">
-        <a href="{{ route('promotions.ecokamin') }}#delta" aria-label="Скидка до 20% на все топки ЭкоКамин Дельта">
-            <img width="1000" height="300" loading="lazy" decoding="async" src="{{ asset('img/promotions/ecokamin-2026-10/delta.webp') }}" alt="Акция ЭкоКамин: скидка до 20% на все топки Дельта">
-        </a>
-        <a href="{{ route('promotions.ecokamin') }}#kaminy" aria-label="Скидки 20% и 15% на камины ЭкоКамин">
-            <img width="1000" height="300" loading="lazy" decoding="async" src="{{ asset('img/promotions/ecokamin-2026-10/kaminy.webp') }}" alt="Акция ЭкоКамин: скидка 20% на камины Мадрид, Рио, Крит, Эклипс, Родос, Прага и 15% на Мюнхен, Три стекла">
-        </a>
-    </div>
-    <style>
-        .home-ecokamin-sale__grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-        .home-ecokamin-sale__grid a{display:block;overflow:hidden;border-radius:16px;box-shadow:0 14px 36px rgba(17,19,22,.12)}
-        .home-ecokamin-sale__grid img{display:block;width:100%;height:auto;transition:transform .4s}
-        .home-ecokamin-sale__grid a:hover img{transform:scale(1.02)}
-        @media(max-width:767px){.home-ecokamin-sale__grid{grid-template-columns:1fr}}
-    </style>
-</section>
+{{-- Акция ЭкоКамин: два баннера, исчезают сами после окончания акции --}}
+@if(($ecokaminPromoHits ?? collect())->isNotEmpty() && now()->lt(\Carbon\CarbonImmutable::parse(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::ENDS_AT, 'Europe/Minsk')))
+@include('partials.ecokamin-promo-duo')
 @endif
 
 {{-- Используем готовый класс banner-countdown-v01 style-4 из шаблона --}}

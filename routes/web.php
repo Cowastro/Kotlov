@@ -198,7 +198,7 @@ Route::get('/robots.txt', function (Request $request) {
 Route::get('/', function () {
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
-    $data = Cache::remember('home:data:v5', 600, function () {
+    $data = Cache::remember('home:data:v6', 600, function () {
         $categoryBranchIds = function ($categoryId) {
             $categories = Category::where('is_active', true)
                 ->get(['id', 'parent_id'])
@@ -255,7 +255,36 @@ Route::get('/', function () {
             ->value('id');
         $popularOrderProducts = collect();
 
-        if ($ecokaminBrandId) {
+        // Акция ЭкоКамин: акционные товары первыми в витрине бренда, по одному
+        // хиту каждой серии — для слайда наверху и баннеров внизу главной.
+        $ecokaminPromoAll = $sellableProducts()
+            ->withSupplierChannels()
+            ->with(['category', 'brand'])
+            ->inActiveSaleCampaign(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::CAMPAIGN)
+            ->homepageRatingOrder(true)
+            ->get()
+            ->filter(fn (Product $product): bool => $product->canBeAddedToCart())
+            ->values();
+        $ecokaminPromoSeries = ['дельта', 'рио', 'мюнхен', 'мадрид', 'крит', 'прага', 'эклипс', 'родос', 'три стекла'];
+        $ecokaminPromoHits = collect($ecokaminPromoSeries)
+            ->map(fn (string $series) => $ecokaminPromoAll
+                ->filter(fn (Product $product): bool => str_contains(mb_strtolower($product->name), $series))
+                ->sortByDesc(fn (Product $product): int => count($product->imagePaths()) > 0 ? 1 : 0)
+                ->first())
+            ->filter()
+            ->unique('id')
+            ->values();
+        $ecokaminPromoMaxDiscount = (int) $ecokaminPromoAll->max(fn (Product $product): int => (int) $product->discount_percent);
+        $isDelta = fn (Product $product): bool => str_contains(mb_strtolower($product->name), 'дельта');
+        $ecokaminPromoFrom = [
+            'delta' => $ecokaminPromoAll->filter($isDelta)->min('price'),
+            'kaminy' => $ecokaminPromoAll->reject($isDelta)->min('price'),
+        ];
+        foreach ($ecokaminPromoHits->concat($ecokaminPromoAll)->unique('id')->take(8) as $candidate) {
+            $popularOrderProducts->put($candidate->id, $candidate);
+        }
+
+        if ($ecokaminBrandId && $popularOrderProducts->count() < 8) {
             $alphaProducts = $sellableProducts()
                 ->withSupplierChannels()
                 ->with(['category', 'brand'])
@@ -272,6 +301,10 @@ Route::get('/', function () {
                 ->get();
 
             foreach ($alphaProducts as $candidate) {
+                if ($popularOrderProducts->count() >= 8) {
+                    break;
+                }
+
                 if ($candidate->canBeAddedToCart()) {
                     $popularOrderProducts->put($candidate->id, $candidate);
                 }
@@ -379,7 +412,8 @@ Route::get('/', function () {
             'bannersHero',
             'bannerPromoKotly', 'bannerPromoNasosy',
             'bannerPromoKaminy', 'bannerPromoAkcii',
-            'bannerPartners', 'homeBlogPosts', 'ecokaminSaleCount'
+            'bannerPartners', 'homeBlogPosts', 'ecokaminSaleCount',
+            'ecokaminPromoHits', 'ecokaminPromoMaxDiscount', 'ecokaminPromoFrom'
         );
     });
 

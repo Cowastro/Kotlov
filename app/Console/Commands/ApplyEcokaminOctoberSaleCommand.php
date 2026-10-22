@@ -125,7 +125,7 @@ class ApplyEcokaminOctoberSaleCommand extends Command
                     }
                 }
             });
-            Cache::forget('home:data:v5');
+            Cache::forget('home:data:v6');
         }
 
         foreach ($stats as $key => $value) {
