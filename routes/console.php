@@ -154,6 +154,15 @@ Schedule::command('supplier:sync-thermokraft --apply --all-sheets --sync-retail-
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/thermokraft-price-stock-sync.log'));
 
+// ТД «АТМОС» (price.teplota.by): опт, РРЦ и «на складе»/«под заказ» для
+// привязанных карточек. Новые карточки — только catalog:publish-atmos-cards.
+Schedule::command('supplier:sync-atmos --apply --sync-retail-prices')
+    ->hourlyAt(25)
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/atmos-price-stock-sync.log'));
+
 // TENKO: enrich only manually verified exact modifications from the official
 // manufacturer catalogue. Small batches avoid accidental broad replacements.
 Schedule::command('supplier:enrich-thermokraft-official --apply --limit=3')
