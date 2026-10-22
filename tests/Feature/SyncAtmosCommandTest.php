@@ -62,6 +62,8 @@ class SyncAtmosCommandTest extends TestCase
         $link = $model->supplierProducts()->sole();
         $this->assertSame('7522.80', number_format((float) $link->price_byn, 2, '.', ''));
         $this->assertFalse((bool) $link->in_stock);
+        $this->assertSame('preorder', $link->stock_status);
+        $this->assertSame(Product::AVAILABILITY_CHECK, $model->availability_status);
         $this->assertSame('8216.04', (string) $exact->fresh()->price);
     }
 }

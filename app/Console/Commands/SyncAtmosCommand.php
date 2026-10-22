@@ -341,7 +341,8 @@ class SyncAtmosCommand extends Command
                     'currency_rate' => 1,
                     'in_stock' => $row['in_stock'],
                     'stock_quantity' => null,
-                    'stock_status' => $row['in_stock'] ? 'in_stock' : 'out_of_stock',
+                    // Rows without «на складе» are ordered from the supplier: «под заказ», never hidden.
+                    'stock_status' => $row['in_stock'] ? 'in_stock' : 'preorder',
                     'stock_text' => $row['in_stock'] ? 'На складе' : 'Под заказ',
                     'warehouse_name' => 'Склад АТМОС, Минск',
                     'delivery_days' => $row['in_stock'] ? 1 : null,
