@@ -457,9 +457,13 @@ class CommercialDocumentWorkflow
         $document->recalculate();
         $document->refresh();
 
-        $mailbox = CrmMailbox::query()->manualSending()->where('is_enabled', true)->first();
+        $mailbox = CrmMailbox::query()
+            ->visibleTo($user)
+            ->manualSending()
+            ->where('is_enabled', true)
+            ->first();
         if (! $mailbox) {
-            throw new RuntimeException('Нет активного почтового ящика. Проверьте раздел «Настройка почты».');
+            throw new RuntimeException('Нет доступного почтового ящика для отправки. Проверьте доступ менеджера в разделе «Настройка почты».');
         }
 
         $portalLink = $document->type === 'quote'
@@ -491,8 +495,9 @@ class CommercialDocumentWorkflow
             [$attachment['path']],
             [$attachment['path'] => $attachment['name']],
         ];
-        $thread = $document->mailThread
-            ? $drafts->createInThread($document->mailThread, ...$draftArguments)
+        $existingThread = $document->mailThread;
+        $thread = $existingThread?->mailbox?->isVisibleTo($user)
+            ? $drafts->createInThread($existingThread, ...$draftArguments)
             : $drafts->create($mailbox, ...$draftArguments);
 
         $document->forceFill(['crm_mail_thread_id' => $thread->id])->save();

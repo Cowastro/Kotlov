@@ -8,6 +8,7 @@ use App\Filament\Resources\CommercialDocuments\Pages\ListCommercialDocuments;
 use App\Models\Category;
 use App\Models\CommercialDocument;
 use App\Models\CrmMailbox;
+use App\Models\CrmMailThread;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\CommercialDocuments\CommercialDocumentPdf;
@@ -198,6 +199,72 @@ class CommercialDocumentWorkflowTest extends TestCase
         $this->assertSame(1, $message->attachments_count);
         Storage::disk('local')->assertExists($attachment['path']);
         $this->assertSame($thread->id, $document->fresh()->crm_mail_thread_id);
+    }
+
+    public function test_manager_is_redirected_to_a_draft_in_a_mailbox_they_can_open(): void
+    {
+        Storage::fake('local');
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $otherManager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $privateMailbox = CrmMailbox::query()->create([
+            'name' => 'Личная почта другого менеджера',
+            'email' => 'private-manager@kotlov.by',
+            'username' => 'private-manager@kotlov.by',
+            'password' => 'secret',
+            'imap_host' => 'imap.example.com',
+            'imap_port' => 993,
+            'imap_encryption' => 'ssl',
+            'imap_folder' => 'INBOX',
+            'smtp_host' => 'smtp.example.com',
+            'smtp_port' => 465,
+            'smtp_encryption' => 'ssl',
+            'is_enabled' => true,
+        ]);
+        $privateMailbox->users()->attach($otherManager);
+        $sharedMailbox = CrmMailbox::query()->create([
+            'name' => 'Общая почта',
+            'email' => 'shared-documents@kotlov.by',
+            'username' => 'shared-documents@kotlov.by',
+            'password' => 'secret',
+            'imap_host' => 'imap.example.com',
+            'imap_port' => 993,
+            'imap_encryption' => 'ssl',
+            'imap_folder' => 'INBOX',
+            'smtp_host' => 'smtp.example.com',
+            'smtp_port' => 465,
+            'smtp_encryption' => 'ssl',
+            'is_enabled' => true,
+        ]);
+        $privateThread = $privateMailbox->threads()->create([
+            'thread_key' => hash('sha256', 'private-commercial-document-thread'),
+            'subject' => 'КП из личного ящика',
+            'participant_email' => 'client@example.com',
+            'status' => 'in_progress',
+            'priority' => 'normal',
+            'messages_count' => 0,
+            'unread_count' => 0,
+            'last_message_at' => now(),
+        ]);
+        $document = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'crm_mail_thread_id' => $privateThread->id,
+            'client_name' => 'Клиент',
+            'client_email' => 'client@example.com',
+            'manager_id' => $manager->id,
+        ]);
+        $document->items()->create([
+            'name' => 'Котёл',
+            'quantity' => 1,
+            'unit_price' => 1000,
+            'vat_rate' => 20,
+        ]);
+
+        $draftThread = app(CommercialDocumentWorkflow::class)->createMailDraft($document, $manager);
+
+        $this->assertSame($sharedMailbox->id, $draftThread->mailbox_id);
+        $this->assertNotSame($privateThread->id, $draftThread->id);
+        $this->assertSame($draftThread->id, $document->fresh()->crm_mail_thread_id);
+        $this->assertTrue(CrmMailThread::query()->visibleTo($manager)->whereKey($draftThread->id)->exists());
     }
 
     public function test_existing_mail_draft_is_refreshed_with_recalculated_total(): void
