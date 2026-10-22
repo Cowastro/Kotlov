@@ -33,7 +33,8 @@ class SyncTskNasosyCommand extends Command
         {--sheet-url= : Override the default Google Sheet URL}
         {--category-id= : Restrict matching, updates and missing-row deactivation to one product category}
         {--in-stock-only : Create products only for rows «в наличии» (skip preorder/out)}
-        {--create-new : Create products for rows with no match}';
+        {--create-new : Create products for rows with no match}
+        {--trace=* : Product ids: print their model key and the price rows with the same model numbers}';
 
     protected $description = 'Sync ТСК Насосы prices & stock from Google Sheets into supplier_products.';
 
@@ -139,6 +140,8 @@ class SyncTskNasosyCommand extends Command
             $classified = $this->scopeRowsToCategory($classified, $categoryId);
             $this->info(sprintf('Category scope %d: %d price rows', $categoryId, count($classified)));
         }
+
+        $this->trace($classified);
 
         return $apply
             ? $this->applyChanges($classified, $createNew, $categoryId)
@@ -433,6 +436,27 @@ class SyncTskNasosyCommand extends Command
                     }
                 }
             });
+    }
+
+    /** Why a card is (not) linked: its index entry and the price rows naming the same numbers. */
+    private function trace(array $rows): void
+    {
+        $linked = DB::table('supplier_products')->where('supplier_id', $this->supplierId());
+        foreach (DB::table('products')->whereIn('id', array_map('intval', (array) $this->option('trace')))->get(['id', 'name', 'brand_id', 'is_archived']) as $p) {
+            $bid = isset($this->brandById[(int) $p->brand_id]) ? (int) $p->brand_id : (int) $this->brandInName((string) $p->name);
+            $key = $this->model((string) $p->name, $this->brandById[$bid] ?? '');
+            preg_match_all('/\d+/', $key, $m);
+            $digits = implode(' ', $m[0]);
+            $this->line(sprintf('audit.tsk_sync.trace=%d:%d:%d:%d:%s:%s', $p->id, (int) $p->is_archived, $bid, (int) ($this->indexByBrandModel[$bid][$key] ?? -1),
+                (clone $linked)->where('product_id', $p->id)->pluck('supplier_article')->implode(',') ?: '-', $key));
+            foreach ($rows as $row) {
+                $rowKey = $this->model($row['name'], $this->brandById[(int) $row['resolved_brand_id']] ?? '');
+                preg_match_all('/\d+/', $rowKey, $rm);
+                if ($digits !== '' && implode(' ', $rm[0]) === $digits && (int) $row['resolved_brand_id'] === $bid) {
+                    $this->line(sprintf('audit.tsk_sync.trace_row=%d:%s:%d:%s:%s', $p->id, $row['norm_article'], (int) ($row['matched_product_id'] ?? 0), $row['confidence'] ?? 'none', $rowKey));
+                }
+            }
+        }
     }
 
     private function classify(array $row): array
