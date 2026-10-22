@@ -29,7 +29,8 @@ class EnrichTskNasosyCommand extends Command
     use ScrapesAqualiderCard;
 
     protected $signature = 'supplier:enrich-tsk-nasosy
-        {--xlsx-file= : Local .xlsx path (skips Google Sheet download)}
+        {--xlsx-file= : Local .xlsx path with an «aqualider» tab (default: the aqualider.by sitemap)}
+        {--brand= : Only products of this brand slug}
         {--sheet-url= : Override the default Google Sheet URL}
         {--limit= : Process only the first N linked products}
         {--sleep=600 : Delay between card requests, ms}
@@ -63,10 +64,13 @@ class EnrichTskNasosyCommand extends Command
             return self::FAILURE;
         }
 
-        // ── article → aqualider card URL (from the «aqualider» tab hyperlinks) ────
+        // ── article → aqualider card URL ─────────────────────────────────────────
+        // The price book lost its «aqualider» tab; card URLs end with the ТСК
+        // article (/p/adaptivnaya-stanciya-qb-80-18969), so the sitemap is the map.
         try {
-            $xlsx = $this->resolveXlsxPath();
-            $map  = $this->buildAqualiderMap($xlsx);
+            $map = $this->option('xlsx-file') !== null || $this->option('sheet-url') !== null
+                ? $this->buildAqualiderMap($this->resolveXlsxPath())
+                : $this->buildSitemapMap();
         } catch (\RuntimeException $e) {
             $this->error($e->getMessage());
             return self::FAILURE;
@@ -87,13 +91,16 @@ class EnrichTskNasosyCommand extends Command
             ->where('sp.supplier_id', $sid)
             ->whereNotNull('sp.product_id')
             ->when((bool) $this->option('in-stock-only'), fn ($q) => $q->where('sp.in_stock', true))
+            ->when(trim((string) $this->option('brand')) !== '', fn ($q) => $q->whereIn('p.brand_id', DB::table('brands')->where('slug', $this->option('brand'))->select('id')))
+            ->where('p.is_archived', false)
             ->when(trim((string) $this->option('max-current-attrs')) !== '', fn ($q) => $q->whereRaw('COALESCE(pav.attribute_rows, 0) <= ?', [max(0, (int) $this->option('max-current-attrs'))]))
             ->get(['sp.id as sp_id', 'sp.supplier_article', 'sp.source_url', 'sp.in_stock',
                    'p.id as product_id', 'p.category_id', 'p.name', 'p.images', 'p.content', DB::raw('COALESCE(pav.attribute_rows, 0) as attribute_rows')]);
 
         $candidates = [];
         foreach ($rows as $r) {
-            $url = $map[$this->foldArticle((string) $r->supplier_article)] ?? null;
+            $article = $this->foldArticle((string) $r->supplier_article);
+            $url = $map[$article] ?? $map[ltrim($article, '0')] ?? null;
             if ($url === null) {
                 continue;
             }
@@ -111,6 +118,10 @@ class EnrichTskNasosyCommand extends Command
         $candidates = array_slice($candidates, 0, $limit);
 
         if (! $this->apply) {
+            foreach (['linked', 'candidates'] as $key) {
+                $this->line("metric.tsk_enrich.{$key}={$this->stats[$key]}");
+            }
+            $this->line('metric.tsk_enrich.map=' . count($map));
             $this->previewTable($candidates);
             $this->newLine();
             $this->line('Run with <fg=green>--apply</> to write photos/descriptions/specs.');
@@ -129,6 +140,9 @@ class EnrichTskNasosyCommand extends Command
 
         $this->newLine();
         $this->table(['metric', 'count'], array_map(fn ($k, $v) => [$k, $v], array_keys($this->stats), array_values($this->stats)));
+        foreach ($this->stats as $key => $value) {
+            $this->line("metric.tsk_enrich.{$key}={$value}");
+        }
         return $this->stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
 
@@ -237,6 +251,23 @@ class EnrichTskNasosyCommand extends Command
                 ];
             }, array_slice($candidates, 0, 20))
         );
+    }
+
+    /** @return array<string,string> article → card URL from the aqualider.by sitemap */
+    private function buildSitemapMap(): array
+    {
+        $xml = $this->fetchCard('https://aqualider.by/sitemap.xml');
+        if ($xml === null) {
+            throw new \RuntimeException('Failed to download the aqualider.by sitemap.');
+        }
+        $map = [];
+        if (preg_match_all('#<loc>(https://aqualider\.by/p/[^<]*-(\d{4,}))</loc>#', $xml, $m)) {
+            foreach ($m[2] as $i => $article) {
+                $map[ltrim($article, '0')] = $m[1][$i];
+            }
+        }
+
+        return $map;
     }
 
     // ── XLSX «aqualider» tab → article → card URL ────────────────────────────────

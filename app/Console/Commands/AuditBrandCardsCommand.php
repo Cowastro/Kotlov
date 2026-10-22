@@ -42,6 +42,7 @@ class AuditBrandCardsCommand extends Command
         $stats = ['cards' => $cards->count(), 'active' => 0, 'brand_missing' => 0, 'brand_other' => 0, 'brand_set' => 0, 'supplier_linked' => 0,
             'any_supplier' => 0, 'unlinked_active' => 0, 'no_images' => 0, 'thin_content' => 0, 'no_specs' => 0, 'no_price' => 0, 'duplicate_groups' => 0];
         $linked = $supplierId ? DB::table('supplier_products')->where('supplier_id', $supplierId)->whereNotNull('product_id')->pluck('product_id')->flip() : collect();
+        $withAttributes = DB::table('product_attribute_values')->whereIn('product_id', $cards->pluck('id'))->distinct()->pluck('product_id')->flip();
         $anyLink = DB::table('supplier_products')->whereIn('product_id', $cards->pluck('id'))->pluck('product_id')->flip();
         $byName = [];
         $byCategory = [];
@@ -78,7 +79,8 @@ class AuditBrandCardsCommand extends Command
                 $stats['thin_content']++;
                 $flags[] = 'content';
             }
-            if (count(array_filter((array) json_decode((string) $p->specs, true))) === 0) {
+            // The card page shows attribute values; the specs JSON is only one source of them.
+            if (! $withAttributes->has($p->id) && count(array_filter((array) json_decode((string) $p->specs, true))) === 0) {
                 $stats['no_specs']++;
                 $flags[] = 'specs';
             }
