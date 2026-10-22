@@ -32,12 +32,13 @@ class WebpayPaymentTest extends TestCase
             'api_url' => 'https://sandbox.webpay.by',
             'currency' => 'BYN',
             'timeout' => 5,
+            'sandbox_emails' => 'test@kotlov.by',
         ]);
     }
 
     public function test_only_owner_of_confirmed_order_can_start_signed_payment(): void
     {
-        $customer = User::factory()->create();
+        $customer = User::factory()->create(['email' => 'test@kotlov.by']);
         $other = User::factory()->create();
         $order = $this->createConfirmedOrder($customer);
 
@@ -76,7 +77,7 @@ class WebpayPaymentTest extends TestCase
 
     public function test_unconfirmed_order_cannot_start_payment(): void
     {
-        $customer = User::factory()->create();
+        $customer = User::factory()->create(['email' => 'test@kotlov.by']);
         $order = $this->createConfirmedOrder($customer, [
             'status' => 'checking',
             'availability_confirmed_at' => null,
@@ -85,6 +86,24 @@ class WebpayPaymentTest extends TestCase
         $this->actingAs($customer)
             ->post(route('account.orders.webpay.start', $order))
             ->assertNotFound();
+
+        $this->assertDatabaseCount('webpay_payment_attempts', 0);
+    }
+
+    public function test_sandbox_payment_is_hidden_from_customers_outside_allowlist(): void
+    {
+        $customer = User::factory()->create(['email' => 'customer@example.test']);
+        $order = $this->createConfirmedOrder($customer);
+
+        $this->actingAs($customer)
+            ->get(route('account.orders.show', $order))
+            ->assertOk()
+            ->assertDontSeeText('Оплатить через WEBPAY');
+
+        $this->actingAs($customer)
+            ->post(route('account.orders.webpay.start', $order))
+            ->assertRedirect(route('account.orders.show', $order))
+            ->assertSessionHas('payment_error');
 
         $this->assertDatabaseCount('webpay_payment_attempts', 0);
     }

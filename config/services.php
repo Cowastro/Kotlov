@@ -125,6 +125,7 @@ return [
         'api_url' => env('WEBPAY_API_URL', 'https://sandbox.webpay.by'),
         'currency' => env('WEBPAY_CURRENCY', 'BYN'),
         'timeout' => (int) env('WEBPAY_TIMEOUT', 15),
+        'sandbox_emails' => env('WEBPAY_SANDBOX_EMAILS', 'test@kotlov.by'),
     ],
 
 ];

@@ -94,7 +94,8 @@ class WebpayService
             && $order->availability_confirmed_at !== null
             && in_array($order->status, ['confirmed', 'processing', 'shipped'], true)
             && $order->payment_status !== 'paid'
-            && (float) $order->total > 0;
+            && (float) $order->total > 0
+            && (! $this->testMode() || $this->sandboxCustomerAllowed($order));
     }
 
     public function configured(): bool
@@ -301,6 +302,19 @@ class WebpayService
     private function testMode(): bool
     {
         return (bool) config('services.webpay.test_mode', true);
+    }
+
+    private function sandboxCustomerAllowed(Order $order): bool
+    {
+        $allowedEmails = collect(explode(',', (string) config('services.webpay.sandbox_emails', '')))
+            ->map(fn (string $email): string => mb_strtolower(trim($email)))
+            ->filter();
+        $customerEmail = $order->relationLoaded('user')
+            ? $order->user?->email
+            : $order->user()->value('email');
+
+        return filled($customerEmail)
+            && $allowedEmails->contains(mb_strtolower(trim((string) $customerEmail)));
     }
 
     private function money(mixed $amount): string
