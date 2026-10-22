@@ -448,12 +448,12 @@ class SyncTskNasosyCommand extends Command
             preg_match_all('/\d+/', $key, $m);
             $digits = implode(' ', $m[0]);
             $this->line(sprintf('audit.tsk_sync.trace=%d:%d:%d:%d:%s:%s', $p->id, (int) $p->is_archived, $bid, (int) ($this->indexByBrandModel[$bid][$key] ?? -1),
-                (clone $linked)->where('product_id', $p->id)->pluck('supplier_article')->implode(',') ?: '-', $key));
+                (clone $linked)->where('product_id', $p->id)->pluck('supplier_article')->implode(',') ?: '-', \Illuminate\Support\Str::ascii($key)));
             foreach ($rows as $row) {
                 $rowKey = $this->model($row['name'], $this->brandById[(int) $row['resolved_brand_id']] ?? '');
                 preg_match_all('/\d+/', $rowKey, $rm);
                 if ($digits !== '' && implode(' ', $rm[0]) === $digits && (int) $row['resolved_brand_id'] === $bid) {
-                    $this->line(sprintf('audit.tsk_sync.trace_row=%d:%s:%d:%s:%s', $p->id, $row['norm_article'], (int) ($row['matched_product_id'] ?? 0), $row['confidence'] ?? 'none', $rowKey));
+                    $this->line(sprintf('audit.tsk_sync.trace_row=%d:%s:%d:%s:%s', $p->id, $row['norm_article'], (int) ($row['matched_product_id'] ?? 0), $row['confidence'] ?? 'none', \Illuminate\Support\Str::ascii($rowKey)));
                 }
             }
         }
