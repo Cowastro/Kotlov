@@ -135,6 +135,15 @@
         @include('partials.pellet-boiler-quick-filters')
     @endif
 
+    @if (($ecokaminPromoHits ?? collect())->count() >= 3)
+        <section class="catalog-ecokamin-promo">
+            <div class="container">
+                @include('partials.ecokamin-promo-slide')
+            </div>
+        </section>
+        <style>.catalog-ecokamin-promo{padding:28px 0 8px}</style>
+    @endif
+
     @if (in_array($category->slug, ['pechki', 'pechi-kaminy', 'pechi', 'peci-drovianye-otopitelnye', 'burzhuiki-pechi', 'dlya-dachi', 'kaminy', 'topki'], true))
         @include('partials.stove-fireplace-quick-filters')
     @endif

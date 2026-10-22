@@ -843,7 +843,16 @@ class CatalogController extends Controller
             }
         }
 
+        // Баннер акции ЭкоКамин в разделах каминов и топок.
+        $ecokaminPromo = in_array($category->slug, ['kaminy', 'pechi-kaminy', 'topki'], true) || $category->parent?->slug === 'kaminy'
+            ? \App\Support\Promotions\EcokaminPromotion::showcase()
+            : null;
+        $ecokaminPromoHits = $ecokaminPromo['hits'] ?? collect();
+        $ecokaminPromoMaxDiscount = $ecokaminPromo['maxDiscount'] ?? 0;
+
         return view('pages.catalog', compact(
+            'ecokaminPromoHits',
+            'ecokaminPromoMaxDiscount',
             'category',
             'subcategories',
             'brands',

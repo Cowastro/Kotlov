@@ -255,31 +255,13 @@ Route::get('/', function () {
             ->value('id');
         $popularOrderProducts = collect();
 
-        // Акция ЭкоКамин: акционные товары первыми в витрине бренда, по одному
-        // хиту каждой серии — для слайда наверху и баннеров внизу главной.
-        $ecokaminPromoAll = $sellableProducts()
-            ->withSupplierChannels()
-            ->with(['category', 'brand'])
-            ->inActiveSaleCampaign(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::CAMPAIGN)
-            ->homepageRatingOrder(true)
-            ->get()
-            ->filter(fn (Product $product): bool => $product->canBeAddedToCart())
-            ->values();
-        $ecokaminPromoSeries = ['дельта', 'рио', 'мюнхен', 'мадрид', 'крит', 'прага', 'эклипс', 'родос', 'три стекла'];
-        $ecokaminPromoHits = collect($ecokaminPromoSeries)
-            ->map(fn (string $series) => $ecokaminPromoAll
-                ->filter(fn (Product $product): bool => str_contains(mb_strtolower($product->name), $series))
-                ->sortByDesc(fn (Product $product): int => count($product->imagePaths()) > 0 ? 1 : 0)
-                ->first())
-            ->filter()
-            ->unique('id')
-            ->values();
-        $ecokaminPromoMaxDiscount = (int) $ecokaminPromoAll->max(fn (Product $product): int => (int) $product->discount_percent);
-        $isDelta = fn (Product $product): bool => str_contains(mb_strtolower($product->name), 'дельта');
-        $ecokaminPromoFrom = [
-            'delta' => $ecokaminPromoAll->filter($isDelta)->min('price'),
-            'kaminy' => $ecokaminPromoAll->reject($isDelta)->min('price'),
-        ];
+        // Акция ЭкоКамин: акционные товары первыми в витрине бренда; хиты серий
+        // — для слайда наверху и баннеров внизу главной.
+        $ecokaminPromo = \App\Support\Promotions\EcokaminPromotion::showcase();
+        $ecokaminPromoAll = $ecokaminPromo['all'];
+        $ecokaminPromoHits = $ecokaminPromo['hits'];
+        $ecokaminPromoMaxDiscount = $ecokaminPromo['maxDiscount'];
+        $ecokaminPromoFrom = $ecokaminPromo['from'];
         foreach ($ecokaminPromoHits->concat($ecokaminPromoAll)->unique('id')->take(8) as $candidate) {
             $popularOrderProducts->put($candidate->id, $candidate);
         }

@@ -103,6 +103,7 @@ class EcokaminOctoberSaleTest extends TestCase
             ->assertSee('/akcii/ecokamin-skidki#delta', false)
             ->assertSee('/akcii/ecokamin-skidki#kaminy', false)
             ->assertSee('Акция ЭкоКамин — скидки до 20%');
+        $this->get('/kaminy')->assertOk()->assertSee('eco-promo-slide__product', false)->assertSee('Рио КР206');
 
         Carbon::setTestNow('2026-11-01 00:05:00');
         $this->assertFalse($rio->fresh()->isPublicSale());
@@ -115,5 +116,6 @@ class EcokaminOctoberSaleTest extends TestCase
         Cache::flush();
         $this->get('/akcii/ecokamin-skidki')->assertRedirect('/akcii');
         $this->get('/')->assertOk()->assertDontSee('/akcii/ecokamin-skidki#delta', false)->assertDontSee('eco-promo-slide__product', false);
+        $this->get('/kaminy')->assertOk()->assertDontSee('eco-promo-slide__product', false);
     }
 }

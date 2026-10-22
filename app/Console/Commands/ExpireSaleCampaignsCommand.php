@@ -35,6 +35,7 @@ class ExpireSaleCampaignsCommand extends Command
             }
             if ($restored > 0) {
                 Cache::forget('home:data:v6');
+                \App\Support\Promotions\EcokaminPromotion::forget();
             }
         }
 
