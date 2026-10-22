@@ -249,7 +249,7 @@ class CrmMailThreadResource extends Resource
                     ->icon(fn (CrmMailThread $record): string => static::mailReadIcon($record))
                     ->color(fn (CrmMailThread $record): string => static::mailReadColor($record))
                     ->weight(fn (CrmMailThread $record): string => $record->unread_count > 0 ? 'bold' : 'medium')
-                    ->width('9.5rem')
+                    ->width('8.5rem')
                     ->grow(false)
                     ->sortable(),
                 TextColumn::make('participant_name')
@@ -259,7 +259,7 @@ class CrmMailThreadResource extends Resource
                     ->limit(30)
                     ->tooltip(fn (CrmMailThread $record): ?string => $record->participant_name)
                     ->description(fn (CrmMailThread $record): string => $record->participant_email)
-                    ->width('13rem')
+                    ->width('11.5rem')
                     ->grow(false),
                 TextColumn::make('subject')->label('Последняя тема')->searchable()->limit(80)->wrap()
                     ->description(fn (CrmMailThread $record): string => $record->messages_count.' писем · непрочитанных '.$record->unread_count)
@@ -268,37 +268,37 @@ class CrmMailThreadResource extends Resource
                         : null)
                     ->iconColor('warning')
                     ->tooltip(fn (CrmMailThread $record): ?string => $record->manager_note ?: $record->subject)
-                    ->width('25rem')
+                    ->width('18rem')
                     ->grow(),
                 TextColumn::make('counterparty.name')->label('CRM')->placeholder('Новый лид')
                     ->description(fn (CrmMailThread $record): ?string => $record->contact?->full_name)
                     ->limit(26)
-                    ->width('11rem')
+                    ->width('8.5rem')
                     ->grow(false),
                 TextColumn::make('assignedUser.name')->label('Ответственный')->placeholder('Не назначен')
                     ->limit(24)
-                    ->width('9rem')
+                    ->width('7.5rem')
                     ->grow(false),
                 TextColumn::make('priority')->label('Приоритет')->badge()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::PRIORITIES[$state] ?? $state)
                     ->color(fn (string $state): string => match ($state) {
                         'urgent' => 'danger', 'high' => 'warning', 'low' => 'gray', default => 'info',
                     })
-                    ->width('6.5rem')
+                    ->width('5.5rem')
                     ->grow(false),
                 TextColumn::make('status')->label('Состояние')->badge()->sortable()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => static::statusColor($state))
-                    ->width('8rem')
+                    ->width('6.5rem')
                     ->grow(false),
-                TextColumn::make('sales_stage')->label('Сделка / контроль')->badge()->sortable()
+                TextColumn::make('sales_stage')->label('Сделка')->badge()->sortable()
                     ->placeholder('—')
                     ->formatStateUsing(fn (?string $state): string => CrmMailThread::SALES_STAGES[$state] ?? (string) $state)
                     ->color(fn (?string $state): string => static::salesStageColor($state))
                     ->icon(fn (CrmMailThread $record): ?string => static::commercialOfferIcon($record))
                     ->iconColor(fn (CrmMailThread $record): string => static::commercialOfferIconColor($record))
                     ->tooltip(fn (CrmMailThread $record): ?string => static::commercialOfferTooltip($record))
-                    ->width('10.5rem')
+                    ->width('6.5rem')
                     ->grow(false),
             ])
             ->defaultSort('last_message_at', 'desc')

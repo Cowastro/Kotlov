@@ -29,6 +29,8 @@ class ListCrmMailThreads extends ListRecords
 {
     protected static string $resource = CrmMailThreadResource::class;
 
+    protected array $extraBodyAttributes = ['class' => 'crm-mail-list-page'];
+
     #[Url(as: 'mailbox', except: 'all')]
     public string $mailbox = 'all';
 

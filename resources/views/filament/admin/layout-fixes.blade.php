@@ -121,6 +121,48 @@
         max-width: 14rem;
     }
 
+    /* Mail is reviewed on narrower office displays. Keep operational columns
+       compact so the table fits without sacrificing sender and subject. */
+    @media (min-width: 1024px) {
+        .crm-mail-list-page .fi-ta-header-cell {
+            padding: 0.5rem 0.375rem;
+            font-size: 0.72rem;
+            line-height: 1rem;
+        }
+
+        .crm-mail-list-page .fi-ta-text:not(.fi-inline),
+        .crm-mail-list-page .fi-ta-icon {
+            padding: 0.55rem 0.375rem;
+        }
+
+        .crm-mail-list-page .fi-ta-cell .fi-ta-text-item-label {
+            font-size: 0.75rem;
+            line-height: 1.05rem;
+        }
+
+        .crm-mail-list-page .fi-ta-cell .fi-ta-text-item-description {
+            font-size: 0.675rem;
+            line-height: 0.95rem;
+        }
+
+        .crm-mail-list-page .fi-ta-actions {
+            gap: 0.125rem;
+            padding-inline: 0.25rem;
+            white-space: nowrap;
+        }
+
+        .crm-mail-list-page .fi-ta-actions .fi-icon-btn {
+            width: 1.75rem;
+            height: 1.75rem;
+            padding: 0.25rem;
+        }
+
+        .crm-mail-list-page .fi-ta-actions .fi-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+    }
+
     /* Order view is an operational screen: keep the primary facts dense and
        let explicitly collapsible technical sections carry the long detail. */
     .order-view-page .fi-main {
