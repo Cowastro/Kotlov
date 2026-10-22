@@ -392,11 +392,14 @@ class SyncTskNasosyCommand extends Command
         DB::table('products')->where('is_archived', false)->get(['id', 'sku', 'name', 'brand_id'])
             ->each(function ($p) {
                 $this->indexBySku[mb_strtoupper(trim((string) $p->sku))] = (int) $p->id;
-                $bid = (int) $p->brand_id;
+                // Cards without a brand still name it in the title («Насосная станция UNIPUMP AUTO QB 80»).
+                $bid = (int) $p->brand_id ?: (int) $this->brandInName((string) $p->name);
                 if ($bid > 0) {
                     $model = $this->model((string) $p->name, $this->brandById[$bid] ?? '');
                     if ($model !== '') {
-                        $this->indexByBrandModel[$bid][$model] = (int) $p->id;
+                        $current = $this->indexByBrandModel[$bid][$model] ?? null;
+                        // Two cards with the same model key: link neither rather than a wrong one.
+                        $this->indexByBrandModel[$bid][$model] = $current === null || $current === (int) $p->id ? (int) $p->id : 0;
                     }
                 }
             });
@@ -440,7 +443,7 @@ class SyncTskNasosyCommand extends Command
         }
         if ($brandId !== null && ! empty($this->indexByBrandModel[$brandId])) {
             $model = $this->model($row['name'], $this->brandById[$brandId] ?? '');
-            if ($model !== '' && isset($this->indexByBrandModel[$brandId][$model])) {
+            if ($model !== '' && ! empty($this->indexByBrandModel[$brandId][$model])) {
                 $pid = $this->indexByBrandModel[$brandId][$model];
                 return ['product_id' => $pid, 'sku' => $this->sku($pid), 'confidence' => 'brand_model'];
             }
@@ -862,20 +865,44 @@ class SyncTskNasosyCommand extends Command
         'НАСОС', 'НАСОСНЫЙ', 'НАСОСНАЯ', 'ЦИРКУЛЯЦИОННЫЙ', 'ЦИРКУЛЯЦИОННАЯ',
         'СКВАЖИННЫЙ', 'ДРЕНАЖНЫЙ', 'ДРЕНАЖНО', 'ФЕКАЛЬНЫЙ', 'ПОВЕРХНОСТНЫЙ',
         'ПОГРУЖНОЙ', 'ВИХРЕВОЙ', 'САМОВСАСЫВАЮЩИЙ', 'СТАНЦИЯ', 'КОМПЛЕКТ',
+        'АВТ', 'АВТОМАТИЧЕСКАЯ', 'АВТОМАТИЧЕСКОГО', 'ВОДОСНАБЖЕНИЯ', 'АДАПТ', 'АДАПТИВНАЯ',
     ];
 
+    /**
+     * Order-free model key: «Насос поверхностный UNIPUMP QB-80» == «Поверхностный
+     * вихревой насос QB 80», «(г/а 2 л)» == «(г/а 2л)», «QB 80-5» == «QB 80 - 5».
+     * Numbers stay separate tokens, so «QB 80» ≠ «AUTO QB 80» ≠ «AUTO QB 80-5».
+     */
     private function model(string $productName, string $brand): string
     {
         $n = mb_strtoupper($productName);
         if ($brand !== '') {
-            $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', '', $n) ?? $n;
+            $n = preg_replace('/' . preg_quote(mb_strtoupper($brand), '/') . '/u', ' ', $n) ?? $n;
         }
-        $n = preg_replace('/[^А-ЯЁA-Z0-9\-\/.]/u', ' ', $n) ?? $n;
-        $toks = array_filter(
+        $n = preg_replace('/(?<=\d)(?=[А-ЯЁA-Z])|(?<=[А-ЯЁA-Z])(?=\d)/u', ' ', $n) ?? $n;
+        $n = preg_replace('/[^А-ЯЁA-Z0-9]+/u', ' ', $n) ?? $n;
+        $toks = array_unique(array_filter(
             preg_split('/\s+/u', trim($n)) ?: [],
             fn ($t) => $t !== '' && ! in_array($t, self::MODEL_STOPWORDS, true)
-        );
+        ));
+        if (! preg_grep('/\d/', $toks)) {
+            return '';
+        }
+        sort($toks, SORT_STRING);
+
         return implode(' ', $toks);
+    }
+
+    /** Brand id of the first catalogue brand named as a whole word in the title. */
+    private function brandInName(string $name): ?int
+    {
+        foreach (preg_split('/[^\p{L}\p{N}-]+/u', mb_strtolower($name)) ?: [] as $word) {
+            if (mb_strlen($word) >= 4 && isset($this->brandByName[$word])) {
+                return $this->brandByName[$word];
+            }
+        }
+
+        return null;
     }
 
     private function num(string $v): ?float
