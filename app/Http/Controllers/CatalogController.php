@@ -844,14 +844,14 @@ class CatalogController extends Controller
         }
 
         // Баннер акции ЭкоКамин в разделах каминов и топок.
-        $ecokaminPromo = in_array($category->slug, ['kaminy', 'pechi-kaminy', 'topki'], true) || $category->parent?->slug === 'kaminy'
+        $ecokaminPromo = in_array($category->slug, ['kaminy', 'pechi-kaminy', 'topki', 'pechki'], true) || $category->parent?->slug === 'kaminy'
             ? \App\Support\Promotions\EcokaminPromotion::showcase()
             : null;
-        // Свой вариант баннера: в топках — про топки Дельта, в печах-каминах — про камины.
+        // Свой вариант баннера: в топках — про топки Дельта, в печах и печах-каминах — про камины.
         $ecokaminPromoVariant = match (true) {
             ! $ecokaminPromo => 'all',
             $category->slug === 'topki' || $category->parent?->slug === 'topki' => 'delta',
-            $category->slug === 'pechi-kaminy' || $category->parent?->slug === 'pechi-kaminy' => 'fireplaces',
+            in_array($category->slug, ['pechki', 'pechi-kaminy'], true) || $category->parent?->slug === 'pechi-kaminy' => 'fireplaces',
             default => 'all',
         };
         [$hitsKey, $discountKey] = match ($ecokaminPromoVariant) {

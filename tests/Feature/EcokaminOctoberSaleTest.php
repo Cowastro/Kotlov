@@ -118,6 +118,8 @@ class EcokaminOctoberSaleTest extends TestCase
         }
         \App\Support\Promotions\EcokaminPromotion::forget();
         $this->get('/pechi-kaminy')->assertOk()->assertSee('Камины ЭкоКамин<br>', false)->assertSee('Все камины по акции')->assertSee('Рио КР206')->assertDontSee('Дельта 800 три стекла');
+        Category::query()->create(['slug' => 'pechki', 'name' => 'Печи', 'parent_id' => 0, 'is_active' => true]);
+        $this->get('/pechki')->assertOk()->assertSee('Камины ЭкоКамин<br>', false)->assertSee('Рио КР206');
         $this->get('/topki')->assertOk()->assertSee('Топки Дельта<br>', false)->assertSee('Дельта 800 три стекла')->assertSee('Все топки Дельта')->assertDontSee('Рио КР206');
 
         Carbon::setTestNow('2026-11-01 00:05:00');
