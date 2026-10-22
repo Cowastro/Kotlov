@@ -54,7 +54,8 @@ class PublishAtmosCardsCommand extends Command
         [[1], '/^пеллетн/u', ['kotly-na-pelletah', 'tverdotoplivnye'], 'Пеллетный котел'],
         [[1], '/./u', ['tverdotoplivnye'], 'Твердотопливный котел'],
         [[2], '/./u', ['gazovye'], 'Газовый котел'],
-        [[3, 5], '/тэн|нагревательн|esh/u', ['elektricheskie-teny-dlya-otopleniya', 'komplektuyushhie-dlya-otopleniya'], ''],
+        // Only real heating elements: «Комбинированные водонагреватели с керамическим ТЭНом» are water heaters.
+        [[3, 5], '/^(тэн|нагревательн|блок.{0,3}тэн)|(?<!\p{L})esh(?!\p{L})/u', ['elektricheskie-teny-dlya-otopleniya', 'komplektuyushhie-dlya-otopleniya'], ''],
         [[3], '/./u', ['elektricheskie'], 'Электрический котел'],
         [[5], '/косвен|ntr|okc|okh|vega|amet/u', ['kosvennye', 'vodonagrevateli'], 'Бойлер косвенного нагрева'],
         [[5], '/./u', ['vodonagrevateli', 'kosvennye'], 'Водонагреватель'],
