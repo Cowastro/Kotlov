@@ -146,84 +146,60 @@
                             @endphp
 
                             @if ($orders->count() > 0)
-                                <div class="overflow-auto">
-                                    <table class="table-my_recent">
-                                        <thead>
-                                            <tr>
-                                                <th>Заказ</th>
-                                                <th>Товары</th>
-                                                <th>Сумма</th>
-                                                <th>Статус</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($orders as $order)
-                                                @php $st = $orderStatusMap[$order->status] ?? ['label' => $order->status, 'class' => '']; @endphp
-                                                <tr class="tb-order-item">
-                                                    <td class="tb-order_code fw-medium">
-                                                        <p class="mb-0">
-                                                            @if ($order->customerDetailsAreAvailable())
-                                                                <a href="{{ route('account.orders.show', $order) }}" class="link fw-medium">
-                                                                    {{ $order->number }}
-                                                                </a>
-                                                            @else
-                                                                {{ $order->number }}
-                                                            @endif
+                                <div class="account-orders-list">
+                                    @foreach ($orders as $order)
+                                        @php
+                                            $st = $orderStatusMap[$order->status] ?? ['label' => $order->status, 'class' => ''];
+                                            $canOpen = $order->customerDetailsAreAvailable();
+                                            $canPayOnline = in_array($order->id, $webpayPayableOrderIds, true);
+                                        @endphp
+                                        <article class="account-order-card">
+                                            <div class="account-order-card__head">
+                                                <div>
+                                                    <p class="account-order-card__number mb-0">{{ $order->number }}</p>
+                                                    <p class="text-caption-01 cl-text-3 mb-0">от {{ $order->created_at?->format('d.m.Y') }}</p>
+                                                </div>
+                                                <div class="tb-order_status text-label {{ $st['class'] }}">{{ $st['label'] }}</div>
+                                            </div>
+
+                                            <div class="account-order-card__body">
+                                                <div class="account-order-card__products">
+                                                    @forelse ($order->items->take(2) as $item)
+                                                        <p class="account-order-card__product mb-0">
+                                                            {{ Str::limit($item->product_name ?? 'Товар удалён', 62) }}
+                                                            <span>{{ $item->quantity }} шт. × {{ number_format($item->price, 2, '.', ' ') }} BYN</span>
                                                         </p>
-                                                        <p class="text-caption-01 cl-text-3 mb-0">
-                                                            {{ $order->created_at?->format('d.m.Y') }}
-                                                        </p>
-                                                        <p class="text-caption-01 cl-text-3 mb-0">
-                                                            {{ $paymentLabels[$order->payment_type] ?? $order->payment_type }}
-                                                        </p>
-                                                        @if ($order->customerDetailsAreAvailable())
-                                                            <a href="{{ route('account.orders.show', $order) }}" class="text-caption-01 link mt-4 d-inline-block">
-                                                                Открыть заказ
-                                                            </a>
+                                                    @empty
+                                                        <span class="cl-text-3">Товары не указаны</span>
+                                                    @endforelse
+                                                    @if ($order->items->count() > 2)
+                                                        <p class="text-caption-01 cl-text-3 mb-0">+ ещё {{ $order->items->count() - 2 }} поз.</p>
+                                                    @endif
+                                                </div>
+
+                                                <div class="account-order-card__summary">
+                                                    <strong>{{ number_format($order->total ?? 0, 2, '.', ' ') }} BYN</strong>
+                                                    <span>{{ $order->paymentStatusLabel() }}</span>
+                                                </div>
+
+                                                <div class="account-order-card__action">
+                                                    @if ($canOpen)
+                                                        <a href="{{ route('account.orders.show', $order) }}" class="tf-btn animate-btn account-order-card__button">
+                                                            {{ $canPayOnline ? 'Открыть и оплатить' : 'Открыть заказ' }}
+                                                            <i class="icon icon-CaretRight"></i>
+                                                        </a>
+                                                        @if ($canPayOnline)
+                                                            <small>Оплата картой через WEBPAY</small>
                                                         @else
-                                                            <p class="text-caption-01 cl-text-3 mt-4 mb-0">
-                                                                Ссылка появится после проверки наличия
-                                                            </p>
+                                                            <small>{{ $paymentLabels[$order->payment_type] ?? $order->payment_type }}</small>
                                                         @endif
-                                                    </td>
-                                                    <td>
-                                                        @if ($order->items && $order->items->count())
-                                                            @foreach ($order->items->take(2) as $item)
-                                                                <div class="tb-order_product">
-                                                                    <div class="infor-prd">
-                                                                        <p class="prd_name fw-medium lh-24 mb-0">
-                                                                            {{ Str::limit($item->product_name ?? 'Товар удалён', 40) }}
-                                                                        </p>
-                                                                        <p class="prd_type cl-text-2 text-caption-01 mb-0">
-                                                                            {{ $item->quantity }} шт. × {{ number_format($item->price, 2, '.', ' ') }} BYN
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            @endforeach
-                                                            @if ($order->items->count() > 2)
-                                                                <p class="text-caption-01 cl-text-3 mt-4 mb-0">
-                                                                    + ещё {{ $order->items->count() - 2 }} поз.
-                                                                </p>
-                                                            @endif
-                                                        @else
-                                                            <span class="cl-text-3">—</span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="tb-order_price fw-medium">
-                                                        {{ number_format($order->total ?? 0, 2, '.', ' ') }} BYN
-                                                    </td>
-                                                    <td>
-                                                        <div class="tb-order_status text-label {{ $st['class'] }}">
-                                                            {{ $st['label'] }}
-                                                        </div>
-                                                        <p class="text-caption-01 cl-text-3 mt-4 mb-0">
-                                                            {{ $order->paymentStatusLabel() }}
-                                                        </p>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                                                    @else
+                                                        <span class="account-order-card__waiting">После проверки наличия здесь появится кнопка заказа</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </article>
+                                    @endforeach
                                 </div>
 
                                 @if ($orders->hasPages())
@@ -595,6 +571,29 @@
 .tb-order_status.stt-processing { background: #dbeafe; color: #1e40af; }
 .tb-order_status.stt-completed  { background: #dcfce7; color: #166534; }
 .tb-order_status.stt-cancelled  { background: #fee2e2; color: #991b1b; }
+.account-orders-list { display: grid; gap: 14px; min-width: 0; }
+.account-order-card {
+    min-width: 0; padding: 20px; border: 1px solid #e7e7e7; border-radius: 14px;
+    background: #fff;
+}
+.account-order-card__head,
+.account-order-card__body { display: flex; align-items: flex-start; gap: 20px; }
+.account-order-card__head { justify-content: space-between; padding-bottom: 14px; border-bottom: 1px solid #eee; }
+.account-order-card__body { align-items: center; padding-top: 16px; }
+.account-order-card__number { color: #111; font-weight: 700; white-space: nowrap; }
+.account-order-card__products { flex: 1 1 auto; min-width: 0; }
+.account-order-card__product { color: #111; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
+.account-order-card__product + .account-order-card__product { margin-top: 8px !important; }
+.account-order-card__product span { display: block; margin-top: 2px; color: #777; font-size: 12px; font-weight: 400; }
+.account-order-card__summary { flex: 0 0 132px; }
+.account-order-card__summary strong,
+.account-order-card__summary span { display: block; }
+.account-order-card__summary strong { white-space: nowrap; }
+.account-order-card__summary span { margin-top: 4px; color: #777; font-size: 12px; }
+.account-order-card__action { flex: 0 0 205px; text-align: center; }
+.account-order-card__button { width: 100%; justify-content: center; gap: 8px; white-space: nowrap; }
+.account-order-card__action small { display: block; margin-top: 7px; color: #777; }
+.account-order-card__waiting { display: block; color: #777; font-size: 12px; line-height: 1.4; }
 .account-my_address textarea {
     width: 100%; border: 1px solid #e0e0e0; border-radius: 8px;
     padding: 10px 14px; font-size: 14px; resize: vertical; min-height: 100px;
@@ -602,6 +601,19 @@
 @media (max-width: 575px) {
     .b2b-choice { grid-template-columns: 1fr; }
     .b2b-catalog-groups { grid-template-columns: 1fr; }
+}
+@media (max-width: 991px) {
+    .account-order-card__body { align-items: stretch; flex-wrap: wrap; }
+    .account-order-card__products { flex-basis: 100%; }
+    .account-order-card__summary { flex: 1 1 auto; }
+    .account-order-card__action { flex: 0 1 220px; }
+}
+@media (max-width: 575px) {
+    .account-order-card { padding: 16px; }
+    .account-order-card__head { gap: 10px; }
+    .account-order-card__body { display: grid; gap: 14px; }
+    .account-order-card__summary,
+    .account-order-card__action { width: 100%; }
 }
 </style>
 @endpush

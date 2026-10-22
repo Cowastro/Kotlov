@@ -99,8 +99,36 @@ class AccountOrderAvailabilityTest extends TestCase
         $this->actingAs($customer)
             ->get(route('account'))
             ->assertOk()
-            ->assertSeeText('Ссылка появится после проверки наличия')
+            ->assertSeeText('После проверки наличия здесь появится кнопка заказа')
             ->assertDontSee(route('account.orders.show', $order), false);
+    }
+
+    public function test_confirmed_sandbox_order_has_a_clear_payment_action_in_account(): void
+    {
+        config()->set('services.webpay.enabled', true);
+        config()->set('services.webpay.test_mode', true);
+        config()->set('services.webpay.store_id', '833122335');
+        config()->set('services.webpay.secret_key', 'test-secret');
+        config()->set('services.webpay.username', 'test-user');
+        config()->set('services.webpay.password', 'test-password');
+        config()->set('services.webpay.sandbox_emails', 'test@kotlov.by');
+
+        $customer = User::factory()->create(['email' => 'test@kotlov.by']);
+        $order = $this->createOrder($customer, [
+            'number' => 'ORD-2026-0187',
+            'status' => 'confirmed',
+            'availability_confirmed_at' => now(),
+        ]);
+        $this->createConfirmedItem($order);
+
+        $this->actingAs($customer)
+            ->get(route('account'))
+            ->assertOk()
+            ->assertSeeText('ORD-2026-0187')
+            ->assertSeeText('Открыть и оплатить')
+            ->assertSeeText('Оплата картой через WEBPAY')
+            ->assertSee(route('account.orders.show', $order), false)
+            ->assertDontSee('class="overflow-auto"', false);
     }
 
     public function test_manager_can_publish_confirmed_own_stock_order_without_external_supplier(): void

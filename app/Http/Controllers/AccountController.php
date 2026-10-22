@@ -6,6 +6,7 @@ use App\Enums\ClientType;
 use App\Services\B2bAccessRequestNotifier;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bClientWorkflow;
+use App\Services\Payments\WebpayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +14,7 @@ use Illuminate\Validation\Rule;
 
 class AccountController extends Controller
 {
-    public function index(B2bCatalogOfferResolver $offerResolver)
+    public function index(B2bCatalogOfferResolver $offerResolver, WebpayService $webpay)
     {
         $user = Auth::user();
 
@@ -21,6 +22,10 @@ class AccountController extends Controller
             ->with('items.product')
             ->orderByDesc('created_at')
             ->paginate(10);
+
+        $webpayPayableOrderIds = $orders->getCollection()
+            ->filter(fn ($order): bool => $webpay->canPay($order))
+            ->modelKeys();
 
         $installerProfile = $user->installerProfile;
         $b2bCatalogGroups = $offerResolver->catalogGroups($user);
@@ -32,6 +37,7 @@ class AccountController extends Controller
             'installerProfile',
             'b2bCatalogGroups',
             'b2bPartnerNames',
+            'webpayPayableOrderIds',
         ));
     }
 
