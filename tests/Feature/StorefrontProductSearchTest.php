@@ -13,6 +13,32 @@ class StorefrontProductSearchTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_fast_suggestion_pass_handles_normal_queries_without_expensive_variants(): void
+    {
+        $category = Category::create([
+            'name' => 'Счетчики газа',
+            'slug' => 'fast-search-gas-meters',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $meter = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Счетчик газа СКАТ G4',
+            'slug' => 'fast-search-skat-g4',
+            'sku' => 'SKAT-G4-FAST',
+            'price' => 470,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        foreach (['газовый счетчик', 'счетчик газовый', 'СКАТ', 'SKAT-G4-FAST'] as $term) {
+            $query = Product::query();
+            app(StorefrontProductSearch::class)->applyForSuggestions($query, $term);
+
+            $this->assertTrue($query->whereKey($meter->id)->exists(), $term);
+        }
+    }
+
     public function test_category_suggestions_explain_identical_names_with_their_parent_section(): void
     {
         $boilers = Category::create(['name' => 'Котлы', 'slug' => 'search-boilers-parent', 'parent_id' => 0, 'is_active' => true]);

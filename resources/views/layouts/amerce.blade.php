@@ -548,43 +548,68 @@
         if (!input || !suggest) return;
 
         var timer = null;
+        var request = null;
+        var cache = Object.create(null);
+
+        function renderSuggestions(data) {
+            if (!data.length) {
+                suggest.style.display = 'none';
+                suggest.innerHTML = '';
+                return;
+            }
+
+            var html = data.map(function (item) {
+                if (item.type === 'category') {
+                    return '<a href="' + item.url + '" class="suggest-item suggest-category">' +
+                        '<i class="icon icon-FolderOpen me-8"></i>' +
+                        '<span class="suggest-category__text">' +
+                            '<span>' + item.name + '</span>' +
+                            (item.context ? '<small>' + item.context + '</small>' : '') +
+                        '</span>' +
+                        '</a>';
+                }
+                return '<a href="' + item.url + '" class="suggest-item suggest-product">' +
+                    '<span class="suggest-product__image"><img src="' + item.image + '" alt="" loading="lazy"></span>' +
+                    '<span class="suggest-product__body">' +
+                        '<span class="suggest-name">' + item.name + '</span>' +
+                        '<span class="suggest-price cl-text-2">' + item.price + '</span>' +
+                    '</span>' +
+                    '</a>';
+            }).join('');
+            suggest.innerHTML = html;
+            suggest.style.display = 'block';
+        }
 
         input.addEventListener('input', function () {
             clearTimeout(timer);
             var q = this.value.trim();
             if (q.length < 2) {
+                if (request) request.abort();
                 suggest.style.display = 'none';
                 suggest.innerHTML = '';
                 return;
             }
+
+            var cacheKey = q.toLocaleLowerCase('ru');
+            if (cache[cacheKey]) {
+                renderSuggestions(cache[cacheKey]);
+                return;
+            }
+
             timer = setTimeout(function () {
-                $.get('/search/suggest', { q: q }, function (data) {
-                    if (!data.length) {
-                        suggest.style.display = 'none';
-                        return;
-                    }
-                    var html = data.map(function (item) {
-                        if (item.type === 'category') {
-                            return '<a href="' + item.url + '" class="suggest-item suggest-category">' +
-                                '<i class="icon icon-FolderOpen me-8"></i>' +
-                                '<span class="suggest-category__text">' +
-                                    '<span>' + item.name + '</span>' +
-                                    (item.context ? '<small>' + item.context + '</small>' : '') +
-                                '</span>' +
-                                '</a>';
-                        }
-                        return '<a href="' + item.url + '" class="suggest-item suggest-product">' +
-                            '<span class="suggest-product__image"><img src="' + item.image + '" alt="" loading="lazy"></span>' +
-                            '<span class="suggest-product__body">' +
-                                '<span class="suggest-name">' + item.name + '</span>' +
-                                '<span class="suggest-price cl-text-2">' + item.price + '</span>' +
-                            '</span>' +
-                            '</a>';
-                    }).join('');
-                    suggest.innerHTML = html;
-                    suggest.style.display = 'block';
-                });
-            }, 250);
+                if (request) request.abort();
+                var activeRequest = $.get('/search/suggest', { q: q });
+                request = activeRequest;
+                activeRequest
+                    .done(function (data) {
+                        if (input.value.trim().toLocaleLowerCase('ru') !== cacheKey) return;
+                        cache[cacheKey] = data;
+                        renderSuggestions(data);
+                    })
+                    .always(function () {
+                        if (request === activeRequest) request = null;
+                    });
+            }, 120);
         });
 
         document.addEventListener('click', function (e) {

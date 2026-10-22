@@ -68,18 +68,36 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
-        // Товары
         $search = app(StorefrontProductSearch::class);
         $includeInternal = auth()->user()?->is_active === true && auth()->user()?->isManager();
-        $products = Product::active()
-            ->notArchived();
-        $search->apply($products, $q, $includeInternal);
-        $products = $products
-            ->select('id', 'name', 'slug', 'sku', 'images', 'price', 'requires_price_confirmation', 'category_id')
-            ->with('category:id,slug')
+        $limit = $search->isHeatingElementQuery($q) ? 10 : 6;
+
+        $productQuery = fn () => Product::active()
+            ->notArchived()
+            ->select('id', 'name', 'slug', 'sku', 'images', 'price', 'requires_price_confirmation', 'category_id', 'rating')
+            ->with([
+                'category:id,slug',
+                'supplierProducts.supplier.latestChannelTransition',
+                'integrationProducts.source.supplier',
+                'purchasePriceSources.supplier',
+            ])
             ->orderByDesc('rating')
-            ->limit($search->isHeatingElementQuery($q) ? 10 : 6)
-            ->get()
+            ->orderByDesc('id')
+            ->limit($limit);
+
+        $productsQuery = $productQuery();
+        $search->applyForSuggestions($productsQuery, $q, $includeInternal);
+        $products = $productsQuery->get();
+
+        // Transliteration, a wrong keyboard layout and visual model-code
+        // substitutions are uncommon, but remain available as a fallback.
+        if ($products->isEmpty()) {
+            $productsQuery = $productQuery();
+            $search->apply($productsQuery, $q, $includeInternal);
+            $products = $productsQuery->get();
+        }
+
+        $products = $products
             ->map(fn ($p) => [
                 'type' => 'product',
                 'name' => $p->name,
@@ -90,7 +108,6 @@ class SearchController extends Controller
                     : 'Цену уточняйте',
             ]);
 
-        // Категории
         $categories = Category::where('is_active', true);
         $search->applyCategory($categories, $q);
         $categories = $categories

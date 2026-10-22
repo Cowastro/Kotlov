@@ -98,6 +98,46 @@ class StorefrontProductSearch
         });
     }
 
+    /**
+     * A deliberately small first pass for autocomplete. Most visitors type a
+     * product name, article or category in the correct keyboard layout. Running
+     * every transliteration and keyboard-layout variant for each keystroke makes
+     * that common path unnecessarily expensive. The controller falls back to
+     * apply() when this pass finds nothing, so typo/layout support is preserved.
+     */
+    public function applyForSuggestions(Builder $query, string $search, bool $includeInternal = false): Builder
+    {
+        $tokens = array_slice($this->directTokens($search), 0, self::MAX_TOKENS);
+        $heatingElementQuery = $this->isHeatingElementQuery($search);
+
+        if ($tokens === []) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $matches) use ($search, $tokens, $includeInternal, $heatingElementQuery): void {
+            if (! $heatingElementQuery) {
+                $this->addTermMatches($matches, $this->normalize($search), $includeInternal);
+            }
+
+            $matches->orWhere(function (Builder $allTokens) use ($tokens, $includeInternal): void {
+                foreach ($tokens as $alternatives) {
+                    $allTokens->where(function (Builder $tokenMatch) use ($alternatives, $includeInternal): void {
+                        if ($this->isHeatingElementToken($alternatives)) {
+                            $tokenMatch->whereHas('category', fn (Builder $category) => $category
+                                ->where('slug', 'elektricheskie-teny-dlya-otopleniya'));
+
+                            return;
+                        }
+
+                        foreach ($alternatives as $alternative) {
+                            $this->addTermMatches($tokenMatch, $alternative, $includeInternal, true);
+                        }
+                    });
+                }
+            });
+        });
+    }
+
     public function isHeatingElementQuery(string $search): bool
     {
         $tokens = preg_split('/[^\pL\pN]+/u', $this->normalize($search), -1, PREG_SPLIT_NO_EMPTY) ?: [];
@@ -239,6 +279,28 @@ class StorefrontProductSearch
         $tokens = preg_split('/[^\pL\pN]+/u', $normalized, -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
         return array_map(fn (string $token): array => $this->variants($token), $tokens);
+    }
+
+    /** @return list<list<string>> */
+    private function directTokens(string $search): array
+    {
+        $tokens = preg_split('/[^\pL\pN]+/u', $this->normalize($search), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return array_map(function (string $token): array {
+            $alternatives = [$token];
+
+            foreach (self::DOMAIN_TOKEN_ALIASES[$token] ?? [] as $alias) {
+                $alternatives[] = $alias;
+            }
+
+            if (str_contains($token, 'ё')) {
+                $alternatives[] = str_replace('ё', 'е', $token);
+            } elseif (str_contains($token, 'е')) {
+                $alternatives[] = str_replace('е', 'ё', $token);
+            }
+
+            return array_values(array_unique($alternatives));
+        }, $tokens);
     }
 
     private function normalize(string $value): string
