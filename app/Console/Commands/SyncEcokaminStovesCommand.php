@@ -795,7 +795,7 @@ HTML;
             : null;
 
         $existingVideoUrl = $product
-            ? (is_string($product->video_url) ? trim($product->video_url) : null)
+            ? (is_string($product->video_url ?? null) ? trim($product->video_url) : null)
             : null;
 
         $existingSpecs = $product
@@ -979,9 +979,10 @@ HTML;
         }
 
         $normalizedName = $this->normalizeProductName($item['name']);
+        // Full rows: upsertProduct also reads video_url and the other kept fields.
         $candidates     = DB::table('products')
             ->where('category_id', self::CATEGORY_ID)
-            ->get(['id', 'sku', 'name', 'images', 'price', 'content', 'short_description', 'specs']);
+            ->get();
 
         foreach ($candidates as $candidate) {
             if ($this->normalizeProductName($candidate->name) === $normalizedName) {
