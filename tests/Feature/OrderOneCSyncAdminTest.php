@@ -15,6 +15,13 @@ class OrderOneCSyncAdminTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config()->set('onec.order_queue_enabled', true);
+    }
+
     public function test_order_list_distinguishes_delivery_progress_from_actionable_onec_problems(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);

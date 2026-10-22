@@ -524,10 +524,12 @@ class Order extends Model
                 ->where(fn (Builder $owner): Builder => $owner
                     ->whereNull('assigned_to')
                     ->orWhere('assigned_to', '')),
-            'sync_problem' => $query->whereHas(
-                'integrationIssues',
-                fn (Builder $issues): Builder => $issues->open()->orders(),
-            ),
+            'sync_problem' => config('onec.order_queue_enabled', false)
+                ? $query->whereHas(
+                    'integrationIssues',
+                    fn (Builder $issues): Builder => $issues->open()->orders(),
+                )
+                : $query->whereRaw('1 = 0'),
             'supplier_request_rejected' => $query->whereHas(
                 'supplierOrderRequests',
                 fn (Builder $requests): Builder => $requests->where('status', 'rejected'),
@@ -536,7 +538,11 @@ class Order extends Model
             'needs_attention' => $query
                 ->operationallyActive()
                 ->where(function (Builder $attention): void {
-                    foreach (array_keys(array_diff_key(self::OPERATIONAL_PROBLEMS, ['needs_attention' => true])) as $problem) {
+                    $ignored = config('onec.order_queue_enabled', false)
+                        ? ['needs_attention' => true]
+                        : ['needs_attention' => true, 'sync_problem' => true];
+
+                    foreach (array_keys(array_diff_key(self::OPERATIONAL_PROBLEMS, $ignored)) as $problem) {
                         $attention->orWhere(fn (Builder $part): Builder => $part->withOperationalProblem($problem));
                     }
                 }),
@@ -589,12 +595,14 @@ class Order extends Model
             $problems->push(['severity' => 'warning', 'label' => 'Не назначен менеджер']);
         }
 
-        $syncState = $this->onecSyncState();
-        if (in_array($syncState, ['conflict', 'unknown', 'no_response', 'delayed'], true)) {
-            $problems->push([
-                'severity' => $syncState === 'conflict' ? 'critical' : 'warning',
-                'label' => $this->onecSyncLabel(),
-            ]);
+        if (config('onec.order_queue_enabled', false)) {
+            $syncState = $this->onecSyncState();
+            if (in_array($syncState, ['conflict', 'unknown', 'no_response', 'delayed'], true)) {
+                $problems->push([
+                    'severity' => $syncState === 'conflict' ? 'critical' : 'warning',
+                    'label' => $this->onecSyncLabel(),
+                ]);
+            }
         }
         if ($this->payment_status === 'failed') {
             $problems->push(['severity' => 'critical', 'label' => 'Ошибка оплаты']);

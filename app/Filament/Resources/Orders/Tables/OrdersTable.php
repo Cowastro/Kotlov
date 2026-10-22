@@ -382,7 +382,9 @@ class OrdersTable
                 TextColumn::make('management_attention')
                     ->label('Контроль')
                     ->state(fn (Order $record): string => self::compactAttentionLabel($record))
-                    ->description(fn (Order $record): string => '1С · '.$record->onecSyncLabel())
+                    ->description(fn (Order $record): ?string => config('onec.order_queue_enabled', false)
+                        ? '1С · '.$record->onecSyncLabel()
+                        : null)
                     ->tooltip(fn (Order $record): string => self::attentionTooltip($record))
                     ->badge()
                     ->color(fn (Order $record): string => match ($record->managementSummary()['severity']) {
@@ -495,7 +497,9 @@ class OrdersTable
             ->filters([
                 SelectFilter::make('operational_problem')
                     ->label('Проблема / следующий шаг')
-                    ->options(Order::OPERATIONAL_PROBLEMS)
+                    ->options(fn (): array => config('onec.order_queue_enabled', false)
+                        ? Order::OPERATIONAL_PROBLEMS
+                        : array_diff_key(Order::OPERATIONAL_PROBLEMS, ['sync_problem' => true]))
                     ->query(function (Builder $query, array $data): Builder {
                         $problem = $data['value'] ?? null;
 

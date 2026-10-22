@@ -36,7 +36,7 @@ class OrderWorkflow
             'icon' => 'heroicon-o-arrow-path',
             'color' => 'primary',
             'heading' => 'Передать заказ в исполнение?',
-            'description' => 'Заказ будет поставлен в очередь центральной 1С. Следующим этапом станет передача в доставку.',
+            'description' => 'Заказ перейдёт в исполнение. Следующим этапом станет передача в доставку.',
             'submit' => 'Передать в исполнение',
         ],
         'processing' => [
@@ -135,6 +135,17 @@ class OrderWorkflow
     /** @return array{title:string,body:string} */
     private function startProcessing(Order $order, ?User $manager): array
     {
+        if (! config('onec.order_queue_enabled', false)) {
+            return $this->transition(
+                $order,
+                $manager,
+                'confirmed',
+                'processing',
+                'Заказ передан в исполнение без синхронизации с 1С.',
+                'Заказ передан в исполнение',
+            );
+        }
+
         app(OneCOrderQueue::class)->queue($order, $manager, $this->managerAttributes($order, $manager));
 
         return [

@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Orders\Pages\ListOrders;
-use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Supplier;
@@ -34,6 +33,8 @@ class OrderWorkflowSequenceTest extends TestCase
 
     public function test_manager_can_only_advance_in_sequence_and_availability_is_a_required_gate(): void
     {
+        config()->set('onec.order_queue_enabled', false);
+
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $order = $this->order('new');
         $workflow = app(OrderWorkflow::class);
@@ -63,17 +64,9 @@ class OrderWorkflowSequenceTest extends TestCase
         $workflow->advance($order->fresh(), $manager);
         $this->assertSame('confirmed', $order->fresh()->status);
 
-        IntegrationSource::query()->updateOrCreate(['code' => 'onec'], [
-            'name' => 'Центральная 1С',
-            'is_active' => true,
-            'settings' => [
-                'order_pricing_types' => ['retail', 'b2b'],
-                'require_linked_order_products' => false,
-            ],
-        ]);
-
         $workflow->advance($order->fresh(), $manager);
         $this->assertSame('processing', $order->fresh()->status);
+        $this->assertDatabaseCount('order_integration_deliveries', 0);
 
         $workflow->advance($order->fresh(), $manager);
         $this->assertSame('shipped', $order->fresh()->status);

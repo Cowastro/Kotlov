@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // Until order exchange is commissioned, CRM workflow must not depend on 1C mapping.
+    'order_queue_enabled' => (bool) env('ONEC_ORDER_QUEUE_ENABLED', false),
+
     'exchange' => [
         'username' => env('ONEC_EXCHANGE_USER'),
         'password' => env('ONEC_EXCHANGE_PASSWORD'),
