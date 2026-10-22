@@ -202,6 +202,37 @@ class B2bCatalogPricingTest extends TestCase
         $this->assertNotNull($item['integration_product_id']);
     }
 
+    public function test_ecokamin_partner_price_is_always_fifteen_percent_below_current_retail(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        $brand = Brand::query()->create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        $product->update([
+            'brand_id' => $brand->id,
+            'price' => 200,
+        ]);
+
+        IntegrationProduct::query()->where('product_id', $product->id)->update([
+            'price' => 80,
+            'price_byn' => 80,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
+            ->assertSeeText('170.00 BYN')
+            ->assertSeeText('Розничная цена: 200.00 BYN')
+            ->assertSeeText('Ваша скидка к рознице: 30.00 BYN (15.0%)')
+            ->assertDontSeeText('80.00 BYN');
+
+        $this->actingAs($user)
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2])
+            ->assertOk()
+            ->assertJsonPath('subtotal', 340);
+
+        $this->assertSame(170.0, session('cart')[$product->id]['price']);
+    }
+
     public function test_stale_one_c_stock_is_hidden_and_rejected_for_b2b_ordering(): void
     {
         [$product, $user] = $this->catalogFixture(approved: true);
