@@ -49,7 +49,7 @@ class Product extends Model
         'weight', 'unit', 'warranty',
         'is_active', 'is_archived', 'in_stock', 'availability_status', 'stock_qty',
         'requires_price_confirmation', 'manual_stock_management',
-        'is_featured', 'is_new', 'is_sale', 'sort_order', 'variant_selector_excluded',
+        'is_featured', 'is_new', 'is_sale', 'sale_campaign', 'sale_ends_at', 'sort_order', 'variant_selector_excluded',
         'meta_title', 'meta_keywords', 'meta_description',
         'rating', 'reviews_count', 'views_count', 'popularity_score', 'popularity_updated_at',
     ];
@@ -68,6 +68,7 @@ class Product extends Model
         'is_featured' => 'boolean',
         'is_new' => 'boolean',
         'is_sale' => 'boolean',
+        'sale_ends_at' => 'datetime',
         'variant_selector_excluded' => 'boolean',
         'price' => 'decimal:2',
         'price_old' => 'decimal:2',
@@ -470,7 +471,18 @@ class Product extends Model
 
     public function isPublicSale(): bool
     {
-        return $this->is_sale && in_array($this->slug, self::PUBLIC_SALE_SLUGS, true);
+        return $this->is_sale && (in_array($this->slug, self::PUBLIC_SALE_SLUGS, true) || $this->hasActiveSaleCampaign());
+    }
+
+    /** A supplier promotion with an end date (see ApplyEcokaminOctoberSaleCommand). */
+    public function hasActiveSaleCampaign(): bool
+    {
+        return filled($this->sale_campaign) && $this->sale_ends_at !== null && $this->sale_ends_at->isFuture();
+    }
+
+    public function scopeInActiveSaleCampaign($query, string $campaign)
+    {
+        return $query->where('sale_campaign', $campaign)->where('is_sale', true)->where('sale_ends_at', '>', now());
     }
 
     public function qualifiesForOnlineOrderDiscount(): bool

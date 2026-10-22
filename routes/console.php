@@ -288,6 +288,13 @@ Schedule::command('supplier:sync-domkotlov-venma --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/domkotlov-venma-sync.log'));
 
+// Акции поставщиков со сроком: после даты окончания возвращаем обычную цену.
+Schedule::command('catalog:expire-sale-campaigns --apply')
+    ->hourlyAt(5)
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/catalog-sale-campaigns.log'));
+
 // После всех основных прайсов страховка блокирует оформление товара, если
 // розница оказалась ниже закупки, маржа упала ниже минимума или цена выглядит
 // кратно завышенной. Цена не переписывается автоматически: менеджер видит
