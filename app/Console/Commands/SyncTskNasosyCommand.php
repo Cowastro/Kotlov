@@ -447,6 +447,9 @@ class SyncTskNasosyCommand extends Command
             $key = $this->model((string) $p->name, $this->brandById[$bid] ?? '');
             preg_match_all('/\d+/', $key, $m);
             $digits = implode(' ', $m[0]);
+            if (preg_match('/\(([^)]*)\)/u', (string) $p->name, $paren)) {
+                $this->line('audit.tsk_sync.trace=' . $p->id . ':hex:' . bin2hex($paren[1]));
+            }
             $this->line(sprintf('audit.tsk_sync.trace=%d:%d:%d:%d:%s:%s', $p->id, (int) $p->is_archived, $bid, (int) ($this->indexByBrandModel[$bid][$key] ?? -1),
                 (clone $linked)->where('product_id', $p->id)->pluck('supplier_article')->implode(',') ?: '-', \Illuminate\Support\Str::ascii($key)));
             foreach ($rows as $row) {
