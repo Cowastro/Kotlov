@@ -45,6 +45,13 @@ class SyncTskNasosyCommand extends Command
     private const SHEET_CACHE_PATH  = 'supplier-cache/tsk-nasosy.xlsx';
 
     /**
+     * Hidden full 1C export of the workbook (artikul, brand, nomenclature, Опт 1,
+     * retail, Minsk stock). Holds models missing from the visible tabs (e.g.
+     * UNIPUMP AUTO QB 70); read last so the visible tabs keep priority.
+     */
+    private const FULL_EXPORT_SHEET = 'Лист1';
+
+    /**
      * Fixed column layout of the «Одним листом» tab — the CSV export has NO text
      * header row (column captions are frozen labels), so we map by position.
      */
@@ -193,6 +200,21 @@ class SyncTskNasosyCommand extends Command
             }
         }
         $this->line(sprintf('Tabs with data: %d', $tabsWithData));
+
+        // Hidden sheets are not listed in htmlview: read the 1C export by name.
+        $csv = $this->fetchUrl("https://docs.google.com/spreadsheets/d/{$id}/gviz/tq?tqx=out:csv&sheet=".rawurlencode(self::FULL_EXPORT_SHEET));
+        $extra = 0;
+        if ($csv !== null && ! str_starts_with(ltrim($csv), '<')) {
+            foreach ($this->normalise($this->csvToRows($csv)) as $item) {
+                if (! isset($seen[$item['norm_article']])) {
+                    $seen[$item['norm_article']] = true;
+                    $all[] = $item;
+                    $extra++;
+                }
+            }
+        }
+        $this->line(sprintf('Rows from the full export sheet: %d', $extra));
+
         return $all;
     }
 
@@ -303,7 +325,10 @@ class SyncTskNasosyCommand extends Command
                 'name'         => $get($row, 'name'),
                 'price'        => $price,
                 'retail_price' => $this->num($get($row, 'retail_price')),
-                'status_text'  => $get($row, 'status'),
+                // The 1C export has a Minsk balance instead of a status text.
+                'status_text'  => $get($row, 'status') !== '' || ! isset($c['stock_qty'])
+                    ? $get($row, 'status')
+                    : (($this->num($get($row, 'stock_qty')) ?? 0) > 0 ? 'в наличии' : 'под заказ'),
             ];
         }
         return $items;
@@ -317,10 +342,11 @@ class SyncTskNasosyCommand extends Command
         $patterns = [
             'article'      => ['артикул'],
             'brand'        => ['бренд', 'производитель', 'марка'],
-            'name'         => ['модель', 'наименование', 'название', 'товар'],
+            'name'         => ['модель', 'наименование', 'название', 'товар', 'номенклатура'],
             'price'        => ['опт 1', 'опт1'],
             'retail_price' => ['мрц', 'ррц', 'рекомендуем', 'розниц'],
             'status'       => ['наличие'],
+            'stock_qty'    => ['остаток в минске'],
         ];
         $candidates = [];
         foreach ($header as $idx => $cell) {
