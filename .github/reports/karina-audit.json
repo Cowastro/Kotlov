@@ -1,12 +1,13 @@
 {
     "schema": "karina-audit-v1",
-    "generated_at": "2026-10-23T13:44:24+00:00",
+    "generated_at": "2026-10-23T13:49:26+00:00",
     "mode": "read_only",
     "applied": false,
     "discount_percent": 25,
     "currency_confirmed": true,
     "source_currency": "RUB",
     "site_currency": "BYN",
+    "last_application": [],
     "currency_confirmation": "User confirmed RUB; site retail equals converted RRP.",
     "rate": {
         "source": "https:\/\/api.nbrb.by\/exrates\/rates\/RUB?parammode=2",
