@@ -223,6 +223,24 @@ jobs:
           status=$?
           set -e
 
+          failure_category=none
+          if [[ "$status" -ne 0 ]]; then
+            failure_category=unclassified
+            if grep -Fq 'Report changed' "$detail_log"; then failure_category=report_changed
+            elif grep -Fq 'Catalog changed' "$detail_log"; then failure_category=catalog_changed
+            elif grep -Fq 'not defined' "$detail_log"; then failure_category=command_missing
+            elif grep -Fq 'does not exist' "$detail_log"; then failure_category=option_missing
+            elif grep -Fq 'fast-forward' "$detail_log"; then failure_category=git_fast_forward
+            elif grep -Fq 'would be overwritten' "$detail_log"; then failure_category=git_local_changes
+            elif grep -Fq 'divergent branches' "$detail_log"; then failure_category=git_diverged
+            elif grep -Fq 'Authentication failed' "$detail_log"; then failure_category=git_auth
+            elif grep -Fq 'Dubious ownership' "$detail_log"; then failure_category=git_ownership
+            elif grep -Fq 'dubious ownership' "$detail_log"; then failure_category=git_ownership
+            elif grep -Fq 'Permission denied' "$detail_log"; then failure_category=permission_denied
+            elif grep -Fq 'SQLSTATE' "$detail_log"; then failure_category=database_error
+            fi
+          fi
+          echo "failure_category=$failure_category"
           echo "task=$TASK"
           echo "status=$status"
           echo "output_lines=$(wc -l < "$detail_log" | tr -d ' ')"
@@ -253,7 +271,7 @@ jobs:
             mv "$report_tmp" .github/reports/karina-audit.json
           fi
 
-          safe_summary="$(grep -E '^(task|status|output_lines|output_bytes|error_lines|warning_lines|detail_log)=[A-Za-z0-9_./-]+$' "$output_file" || true)"
+          safe_summary="$(grep -E '^(task|status|output_lines|output_bytes|error_lines|warning_lines|detail_log|failure_category)=[A-Za-z0-9_./-]+$' "$output_file" || true)"
 
           {
             echo "# Server Artisan Result"
