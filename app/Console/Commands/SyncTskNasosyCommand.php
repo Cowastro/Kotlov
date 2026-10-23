@@ -941,7 +941,8 @@ class SyncTskNasosyCommand extends Command
     /** Category words to drop so «Насос Unipump CP 32-60 180» == «CP 32-60 180». */
     /** Owner-approved links the model key cannot make: ТСК article => product id. */
     private const MANUAL_LINKS = [
-        '24834' => 5890, // «LPA 25-40 180» → card «Насос циркуляционный Unipump LPA 25-40» (23.10.2026)
+        // «LPA 25-40 180»: card 5890 «LPA 25-40» is a shorter duplicate of 8472; keep the row on 8472.
+        '24834' => 8472,
     ];
 
     private const MODEL_STOPWORDS = [
