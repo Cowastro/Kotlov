@@ -299,7 +299,7 @@ jobs:
           exit "$status"
 
       - name: Upload KARINA product audit
-        if: success() && (env.TASK == 'audit-karina' || env.TASK == 'apply-karina')
+        if: success() && (env.TASK == 'audit-karina' || env.TASK == 'apply-karina' || env.TASK == 'create-karina')
         uses: actions/upload-artifact@v4
         with:
           name: karina-audit
