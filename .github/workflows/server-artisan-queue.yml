@@ -36,7 +36,7 @@ jobs:
           log_file="$(jq -r '.log_file // "storage/logs/server-artisan.log"' .github/server-artisan-task.json)"
 
           case "$task" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|health-check|kill-pid) ;;
+            audit-karina|optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|health-check|kill-pid) ;;
             *) echo "::error::Unsupported task: $task"; exit 1 ;;
           esac
 
@@ -81,6 +81,21 @@ jobs:
             echo "ARTISAN_ARGS=$artisan_args"
             echo "LOG_FILE=$log_file"
           } >> "$GITHUB_ENV"
+
+      - name: Setup PHP for KARINA audit checks
+        if: env.TASK == 'audit-karina'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, xml, mbstring, zip, gd
+          coverage: none
+
+      - name: Verify KARINA audit before touching the server
+        if: env.TASK == 'audit-karina'
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          php -l app/Console/Commands/AuditKarinaCommand.php
+          vendor/bin/phpunit tests/Unit/KarinaPriceAuditTest.php
 
       - name: Configure SSH
         env:
@@ -138,6 +153,9 @@ jobs:
             git checkout -- public/icons
 
             case "$TASK" in
+              audit-karina)
+                "$PHP_BIN" artisan supplier:audit-karina
+                ;;
               optimize-clear)
                 "$PHP_BIN" artisan optimize:clear
                 ;;
@@ -191,6 +209,18 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
 
+          # This exception transfers only the fixed, explicitly projected product report.
+          # Never transfer detail_log, CRM data, arbitrary paths or command stdout.
+          if [[ "$TASK" == "audit-karina" && "$status" -eq 0 ]]; then
+            report_tmp="$RUNNER_TEMP/karina-audit.json"
+            ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
+              "cat '$server_path/storage/app/reports/suppliers/karina/audit.json'" > "$report_tmp"
+            test "$(wc -c < "$report_tmp")" -le 5000000
+            jq -e '.schema == "karina-audit-v1" and .mode == "read_only" and .applied == false and (.items | type == "array") and (.products | type == "array")' "$report_tmp" >/dev/null
+            mkdir -p .github/reports
+            mv "$report_tmp" .github/reports/karina-audit.json
+          fi
+
           safe_summary="$(grep -E '^(task|status|output_lines|output_bytes|error_lines|warning_lines|detail_log)=[A-Za-z0-9_./-]+$' "$output_file" || true)"
 
           {
@@ -209,6 +239,15 @@ jobs:
 
           exit "$status"
 
+      - name: Upload KARINA product audit
+        if: success() && env.TASK == 'audit-karina'
+        uses: actions/upload-artifact@v4
+        with:
+          name: karina-audit
+          path: .github/reports/karina-audit.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Commit result
         if: always()
         run: |
@@ -216,5 +255,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .github/server-artisan-result.md
+          if [[ "$TASK" == "audit-karina" && -f .github/reports/karina-audit.json ]]; then
+            git add .github/reports/karina-audit.json
+          fi
           git commit -m "Update server artisan result [skip ci]" || exit 0
           git push
