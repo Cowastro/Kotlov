@@ -52,7 +52,8 @@
                         <label>Ориентировочная высота<select name="height"><option value="3">3 м</option><option value="4">4 м</option><option value="5" selected>5 м</option><option value="6">6 м</option><option value="7">7 м</option><option value="8">8 м</option></select></label>
                         <label>Шибер<select name="damper"><option value="no" selected>Не нужен</option><option value="yes">Нужен</option></select></label>
                         <label>Проходы через перекрытие (ППУ)<select name="ceiling_passes"><option value="0">Нет</option><option value="1" selected>1 проход</option><option value="2">2 прохода</option></select></label>
-                        <label>Хомуты<select name="clamps"><option value="auto" selected>Рассчитать по высоте</option><option value="0">Не нужны</option><option value="1">1 шт.</option><option value="2">2 шт.</option><option value="3">3 шт.</option><option value="4">4 шт.</option><option value="5">5 шт.</option><option value="6">6 шт.</option></select></label>
+                        <label>Обычные соединительные хомуты<select name="clamps"><option value="auto" selected>Рассчитать по высоте</option><option value="0">Не нужны</option><option value="1">1 шт.</option><option value="2">2 шт.</option><option value="3">3 шт.</option><option value="4">4 шт.</option><option value="5">5 шт.</option><option value="6">6 шт.</option></select></label>
+                        <label>Растяжки для высокой мачты<select name="guy_wires"><option value="no" selected>Не нужны</option><option value="yes">Нужны</option></select></label>
                         <label>Зонт<select name="umbrella"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
                     </div>
                     <button type="submit" class="tf-btn animate-btn w-100">Показать комплект</button>
@@ -135,7 +136,7 @@
                 ? Array.isArray(product.diameter_pair) && product.diameter_pair.includes(settings.diameter) && product.diameter_pair.includes(need.toDiameter)
                 : null;
             return product.kind === need.kind && !used[product.id]
-                && (adapterPairMatches !== null ? adapterPairMatches : (!targetDiameter || productDiameter === targetDiameter || !productDiameter))
+                && (adapterPairMatches !== null ? adapterPairMatches : (!targetDiameter || productDiameter === targetDiameter || (!productDiameter && !need.exactDiameter)))
                 && (need.system === 'any' || product.system === need.system)
                 && (ignoreSteel || settings.steel === '' || product.steel === settings.steel || !product.steel)
                 && (need.kind !== 'pipe' || settings.thickness === '' || product.thickness === settings.thickness)
@@ -171,7 +172,8 @@
         }
         if (settings.scheme === 'elbows') needs.push({kind:'elbow', quantity:2, system:settings.system === 'sandwich' ? 'sandwich' : 'mono', label:'Колена для смещения'});
         if (settings.ceilingPasses > 0) needs.push({kind:'ceiling_pass', quantity:settings.ceilingPasses, system:'any', diameterMode:'outer', label:'ППУ · проход через перекрытие'});
-        if (settings.clamps > 0) needs.push({kind:'clamp', quantity:settings.clamps, system:'any', diameterMode:'outer', label:'Хомуты'});
+        if (settings.clamps > 0) needs.push({kind:'clamp', quantity:settings.clamps, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Обычные соединительные хомуты'});
+        if (settings.guyWires) needs.push({kind:'guy_wire', quantity:1, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', label:'Хомут для растяжек высокой мачты'});
         if (settings.umbrella) needs.push({kind:'umbrella', quantity:1, system:'any', label:'Зонт'});
         return needs;
     }
@@ -185,7 +187,7 @@
             diameter:data.get('diameter'), system:data.get('system'), steel:data.get('steel'), thickness:data.get('thickness'), scheme:data.get('scheme'),
             height:height, monoLength:Number(data.get('mono_length')), stoveAdapter:data.get('stove_adapter') === 'yes',
             damper:data.get('damper') === 'yes', ceilingPasses:Number(data.get('ceiling_passes')),
-            clamps:clampValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(clampValue),
+            clamps:clampValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(clampValue), guyWires:data.get('guy_wires') === 'yes',
             umbrella:data.get('umbrella') === 'yes', outerDiameter:null, chimneyDiameter:data.get('chimney_diameter')
         };
         if (!settings.stoveAdapter) settings.chimneyDiameter = settings.diameter;
@@ -232,7 +234,7 @@
                 + ', толщина трубы ' + (settings.thickness ? settings.thickness.replace('.', ',') + ' мм' : 'из доступных')
                 + ', схема ' + settings.scheme + ', высота ' + settings.height + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
                 + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
-                + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
+                + ', растяжки ' + (settings.guyWires ? 'да' : 'нет') + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
             result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">' + diameterLabel + ' · ' + systemLabel + ' · ' + settings.height + ' м</p>'
                 + (missing ? '<p class="cs-safety">Не все специальные узлы найдены в точном исполнении. Недостающие позиции добавит менеджер.</p>' : '')
                 + '<div class="cs-result__list">' + rows.map(function (row, index) {

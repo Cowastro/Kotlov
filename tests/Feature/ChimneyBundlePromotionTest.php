@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\ChimneySelectorController;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\CartCouponService;
@@ -113,13 +114,24 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSee('"length_mm":1000', false)
             ->assertSeeText('Шибер')
             ->assertSeeText('Проходы через перекрытие (ППУ)')
-            ->assertSeeText('Хомуты')
+            ->assertSeeText('Обычные соединительные хомуты')
+            ->assertSeeText('Растяжки для высокой мачты')
             ->assertSeeText('Зонт')
             ->assertSeeText('Схема и высота')
             ->assertSeeText('Теплов и Сухов')
             ->assertSeeText('−10%')
             ->assertSeeText('Передайте схему менеджеру')
             ->assertSee('test-chimney-bundle-pipe', false);
+    }
+
+    public function test_selector_distinguishes_regular_clamps_from_guy_wire_hardware(): void
+    {
+        $method = new \ReflectionMethod(ChimneySelectorController::class, 'kind');
+        $controller = app(ChimneySelectorController::class);
+
+        $this->assertSame('clamp', $method->invoke($controller, 'krepleniya-dymohod', 'Хомут трубный КНТ-Р Ø180'));
+        $this->assertSame('guy_wire', $method->invoke($controller, 'krepleniya-dymohod', 'Хомут растяжки Ø180'));
+        $this->assertSame('elbow', $method->invoke($controller, 'kolena-sendvich', 'Отвод Термо 45° с хомутом'));
     }
 
     /** @return array{Product, Product} */
