@@ -174,6 +174,7 @@ class OnlineOrderCouponTest extends TestCase
             $product->id => [
                 'id' => $product->id,
                 'name' => $product->name,
+                'slug' => $product->slug,
                 'sku' => $product->sku,
                 'price' => 200,
                 'quantity' => 1,
