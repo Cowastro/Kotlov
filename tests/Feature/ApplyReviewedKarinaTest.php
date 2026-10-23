@@ -65,6 +65,7 @@ class ApplyReviewedKarinaTest extends TestCase
         $supplier = Supplier::where('code', 'karina')->sole();
         $this->assertSame('RUB', $supplier->currency);
         $this->assertFalse((bool) $supplier->automatic_order_transfer_enabled);
+        $this->assertTrue($supplier->brands()->whereKey($product->brand_id)->exists());
         $this->assertSame($count, Product::count());
         $this->assertSame(1465.69, (float) $product->fresh()->price);
         $this->assertTrue($product->fresh()->in_stock);
@@ -103,8 +104,11 @@ class ApplyReviewedKarinaTest extends TestCase
     public function test_failure_after_batch_creation_rolls_back_every_write(): void
     {
         [$product, $report] = $this->fixture();
-        SupplierPriceItem::creating(function (): void {
-            throw new RuntimeException('Injected write failure');
+        $writes = 0;
+        SupplierPriceItem::creating(function () use (&$writes): void {
+            if (++$writes === 2) {
+                throw new RuntimeException('Injected write failure');
+            }
         });
         try {
             (new ApplyReviewedKarina)->run($report, true);
