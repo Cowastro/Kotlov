@@ -66,4 +66,19 @@ class SyncAtmosCommandTest extends TestCase
         $this->assertSame(Product::AVAILABILITY_CHECK, $model->availability_status);
         $this->assertSame('8216.04', (string) $exact->fresh()->price);
     }
+
+    public function test_an_article_shared_by_two_models_gives_each_row_its_own_key(): void
+    {
+        $row = fn (string $name, string $article): array => ['name' => $name, 'article' => $article, 'article_key' => $article];
+        $rows = (new SyncAtmosCommand)->uniqueArticleKeys([
+            $row('D 21 P', '1067'), $row('DC 18 GD', '1067'), $row('Прямая насосная группа HANSA UK DN25', '292520'), $row('Прямая насосная группа HANSA UK DN25', '292520'),
+        ]);
+
+        $this->assertNotSame($rows[0]['article_key'], $rows[1]['article_key']);
+        $this->assertStringStartsWith('1067N', $rows[0]['article_key']);
+        $this->assertSame('1067', $rows[1]['shared_article_key']);
+        // The same model listed twice keeps the plain article.
+        $this->assertSame('292520', $rows[2]['article_key']);
+        $this->assertSame('292520', $rows[3]['article_key']);
+    }
 }

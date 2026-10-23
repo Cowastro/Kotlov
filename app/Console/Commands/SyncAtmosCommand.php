@@ -123,6 +123,30 @@ class SyncAtmosCommand extends Command
             }
         }
 
+        return $this->uniqueArticleKeys($rows);
+    }
+
+    /**
+     * The price reuses one article for different models («D 21 P» and «DC 18 GD»
+     * are both 1067). One link per article merged them and gave a card the
+     * other model's price, so such rows get the article plus a name hash.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function uniqueArticleKeys(array $rows): array
+    {
+        $names = [];
+        foreach ($rows as $row) {
+            $names[$row['article_key']][$this->nameKey($row['name'])] = true;
+        }
+        foreach ($rows as &$row) {
+            if (count($names[$row['article_key']]) > 1) {
+                $row['shared_article_key'] = $row['article_key'];
+                $row['article_key'] .= 'N'.strtoupper(substr(sha1($this->nameKey($row['name'])), 0, 6));
+            }
+        }
+        unset($row);
+
         return $rows;
     }
 
@@ -309,7 +333,10 @@ class SyncAtmosCommand extends Command
             'last_run_at' => now(),
             'last_status' => 'running',
         ]);
-        $stats = ['offers' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'price_holds_released' => 0, 'skipped' => 0, 'errors' => 0];
+        // Links of articles shared by several models merged two rows into one card.
+        $shared = array_values(array_unique(array_filter(array_column($rows, 'shared_article_key'))));
+        $removed = $shared ? SupplierProduct::query()->where('supplier_id', $supplier->id)->whereIn('supplier_article_normalized', $shared)->delete() : 0;
+        $stats = ['shared_article_links_removed' => $removed, 'offers' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'price_holds_released' => 0, 'skipped' => 0, 'errors' => 0];
         $touched = [];
         foreach ($rows as $row) {
             if (! $row['product_id'] || ($row['wholesale'] === null && $row['retail'] === null)) {

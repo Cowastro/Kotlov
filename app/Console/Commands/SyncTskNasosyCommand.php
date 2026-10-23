@@ -79,6 +79,11 @@ class SyncTskNasosyCommand extends Command
 
     private array $indexBySupplierArticle = [];
     private array $indexBySku = [];
+    /** @var array<int, string> product id => name, for checking old article links */
+    private array $nameById = [];
+    private int $supplierId = 0;
+    /** @var array<string, int> article => card of an old link that names another model */
+    private array $staleArticles = [];
     private array $indexByBrandModel = [];
     private array $brandById = [];
     private array $brandByName = [];
@@ -408,6 +413,10 @@ class SyncTskNasosyCommand extends Command
 
     private function buildIndex(): void
     {
+        // A command object can run twice in one process (tests, Artisan::call): start clean.
+        $this->brandById = $this->brandByName = $this->indexBySupplierArticle = $this->indexBySku = [];
+        $this->indexByBrandModel = $this->modelCollisions = $this->nameById = $this->staleArticles = [];
+        $this->supplierId = 0;
         DB::table('brands')->get(['id', 'name'])->each(function ($b) {
             $this->brandById[(int) $b->id] = $b->name;
             $this->brandByName[mb_strtolower($b->name)] = (int) $b->id;
@@ -427,6 +436,7 @@ class SyncTskNasosyCommand extends Command
 
         DB::table('products')->where('is_archived', false)->get(['id', 'sku', 'name', 'brand_id'])
             ->each(function ($p) {
+                $this->nameById[(int) $p->id] = (string) $p->name;
                 $this->indexBySku[mb_strtoupper(trim((string) $p->sku))] = (int) $p->id;
                 // Cards without a brand still name it in the title («Насосная станция UNIPUMP AUTO QB 80»).
                 // A brand_id pointing at a deleted brand counts as no brand.
@@ -497,9 +507,15 @@ class SyncTskNasosyCommand extends Command
     {
         if (isset($this->indexBySupplierArticle[$row['norm_article']])) {
             $pid = $this->indexBySupplierArticle[$row['norm_article']];
-            $this->reportDuplicate($pid, $row, $brandId);
+            if ($this->namesAnotherModel($row['name'], $this->nameById[$pid] ?? '')) {
+                // An old link points at the neighbouring model (RV-80N row on the RV-100N card): match afresh.
+                $this->staleArticles[$row['norm_article']] = $pid;
+                $this->line("audit.tsk_sync.conflict={$pid}:{$row['norm_article']}");
+            } else {
+                $this->reportDuplicate($pid, $row, $brandId);
 
-            return ['product_id' => $pid, 'sku' => $this->sku($pid), 'confidence' => 'exact_supplier_article'];
+                return ['product_id' => $pid, 'sku' => $this->sku($pid), 'confidence' => 'exact_supplier_article'];
+            }
         }
         $up = mb_strtoupper($row['norm_article']);
         if (isset($this->indexBySku[$up])) {
@@ -516,6 +532,25 @@ class SyncTskNasosyCommand extends Command
             }
         }
         return null;
+    }
+
+    /**
+     * The card has a number the row lacks AND the row has one the card lacks:
+     * «CP 25-40 130» on «CP 25-40 180». Extra row numbers alone (power «0,37 кВт»,
+     * «370 Вт») are fine.
+     */
+    private function namesAnotherModel(string $rowName, string $cardName): bool
+    {
+        $numbers = function (string $name): array {
+            $name = preg_replace('/\d{8,}/', ' ', $name) ?? $name;
+            preg_match_all('/\d+(?:[.,]\d+)?(?!\d|[.,]\d|\s*(?:квт|вт|в|л|бар|мм|м|kw|w|v|гц|hz|об)(?![\p{L}]))/iu', $name, $m);
+
+            return array_unique(array_map(fn (string $n): string => ltrim(str_replace(',', '.', $n), '0') ?: '0', $m[0]));
+        };
+        $row = $numbers($rowName);
+        $card = $numbers($cardName);
+
+        return $cardName !== '' && $row !== [] && array_diff($row, $card) !== [] && array_diff($card, $row) !== [];
     }
 
     /** A linked row whose model also names another card: that card is a duplicate. */
@@ -663,7 +698,7 @@ class SyncTskNasosyCommand extends Command
         $syncId = $this->ensureSync($now);
         $stats = array_fill_keys([
             'matched', 'created', 'updated', 'brand_missing', 'category_missing', 'skipped', 'errors',
-            'errors_supplier_link', 'errors_product_update', 'errors_duplicate', 'errors_data',
+            'errors_supplier_link', 'errors_product_update', 'errors_duplicate', 'errors_data', 'stale_links_detached',
         ], 0);
         $touchedProductIds = [];
 
@@ -696,6 +731,13 @@ class SyncTskNasosyCommand extends Command
                     $stats['created']++;
                     $this->line("[create] {$r['article']} → {$sku}");
                 } else {
+                    if (isset($this->staleArticles[$r['norm_article']])) {
+                        // No card for this model: drop the wrong link instead of keeping the neighbour's price.
+                        DB::table('supplier_products')->where('supplier_id', $sid)->where('supplier_article_normalized', $r['norm_article'])
+                            ->update(['product_id' => null, 'product_sku' => null, 'match_status' => 'unmatched', 'updated_at' => $now]);
+                        $touchedProductIds[] = $this->staleArticles[$r['norm_article']];
+                        $stats['stale_links_detached']++;
+                    }
                     $stats['skipped']++;
                 }
             } catch (\Throwable $e) {
@@ -897,9 +939,8 @@ class SyncTskNasosyCommand extends Command
 
     private function supplierId(): int
     {
-        static $id = null;
-        $id ??= (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
-        return $id;
+        // Not cached while the supplier does not exist yet (ensureSupplier creates it later in the run).
+        return $this->supplierId ?: $this->supplierId = (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────────

@@ -77,4 +77,36 @@ class SyncTskNasosyMatchingTest extends TestCase
         $this->assertTrue((bool) $link->in_stock);
         $this->assertSame('preorder', $spare->supplierProducts()->sole()->stock_status);
     }
+
+    public function test_an_old_article_link_to_the_neighbouring_model_is_moved_or_dropped(): void
+    {
+        $category = Category::query()->firstOrCreate(['slug' => 'membrannye-baki'], ['name' => 'Мембранные баки', 'parent_id' => 0, 'is_active' => true]);
+        Brand::query()->create(['name' => 'UNIPUMP', 'slug' => 'unipump', 'is_active' => true]);
+        $make = fn (string $name, string $slug) => Product::query()->create(['category_id' => $category->id, 'is_active' => true, 'price' => 300, 'name' => $name, 'slug' => $slug]);
+        $rv100 = $make('UNIPUMP RV-100N', 'rv-100n');
+        $rv80 = $make('UNIPUMP RV-80N', 'rv-80n');
+        $cp180 = $make('Насос UNIPUMP CP 25-40 180', 'cp-25-40-180');
+        $supplier = \App\Models\Supplier::query()->create(['code' => 'tsk_nasosy', 'name' => 'ТСК Насосы', 'is_active' => true]);
+        foreach ([['11111', $rv100], ['22222', $cp180]] as [$article, $card]) {
+            \Illuminate\Support\Facades\DB::table('supplier_products')->insert(['supplier_id' => $supplier->id, 'product_id' => $card->id, 'supplier_article' => $article,
+                'supplier_article_normalized' => $article, 'currency' => 'BYN', 'match_status' => 'matched', 'created_at' => now(), 'updated_at' => now()]);
+        }
+
+        $csv = tempnam(sys_get_temp_dir(), 'tsk').'.csv';
+        file_put_contents($csv, implode("
+", [
+            'Артикул,,Наименование,Бренд,Модель,Опт 1,МРЦ,Наличие',
+            '11111,,RV-80N,UNIPUMP,RV-80N,"300,00","400,00",в наличии',
+            '22222,,CP 25-40 130,UNIPUMP,CP 25-40 130,"90,00","120,00",в наличии',
+        ]));
+
+        $this->artisan('supplier:sync-tsk-nasosy', ['--apply' => true, '--stock-file' => $csv])->assertSuccessful();
+
+        // The CP 25-40 130 row has no card: its link to the 180 card is dropped, not kept.
+        $moved = \Illuminate\Support\Facades\DB::table('supplier_products')->where('supplier_article_normalized', '22222')->value('product_id');
+        $this->assertNull($moved);
+        $this->assertSame('11111', $rv80->supplierProducts()->sole()->supplier_article);
+        $this->assertSame(0, $rv100->supplierProducts()->count());
+        $this->assertSame(0, $cp180->supplierProducts()->count());
+    }
 }
