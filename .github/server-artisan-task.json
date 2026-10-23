@@ -1,6 +1,6 @@
 {
-  "task": "create-karina",
-  "artisan_args": "7aefc5de7b7da7b1feaf4bd0f5f4dffb31bd7e3f",
+  "task": "enrich-karina-dry-run",
+  "artisan_args": "eb285ea5099367204450cd2496d679c193f548a0",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "karina-hidden-products-apply-20261023"
+  "run_id": "karina-official-content-dry-run-20261023"
 }
