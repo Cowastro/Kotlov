@@ -6,6 +6,7 @@ use App\Models\Supplier;
 use App\Models\SupplierPriceItem;
 use App\Models\Product;
 use App\Services\Pricing\CurrencyPriceConverter;
+use App\Services\Pricing\KarinaPricing;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -104,6 +105,15 @@ class PricesUpdateCommand extends Command
 
                 $newPrice = $item->price_byn ?? CurrencyPriceConverter::convertToByn($item->price, $itemCurrency, $itemRate);
 
+                if ($supplier->code === 'karina') {
+                    if ($itemCurrency !== 'RUB') {
+                        throw new \\RuntimeException('KARINA source prices must be RUB.');
+                    }
+                    $newPrice = KarinaPricing::quote(
+                        KarinaPricing::retailRubFromRaw($item->raw), $itemRate,
+                    )['retail_byn'];
+                }
+
                 // Пропустить если цена не изменилась
                 if (!$this->option('force') && abs($product->price - $newPrice) < 0.01) {
                     $stats['skipped']++;
@@ -113,7 +123,7 @@ class PricesUpdateCommand extends Command
 
                 // price_old: РРЦ * 1.15 (маркетинговая "старая цена"), иначе null
                 $priceOld = null;
-                if ($item->price_old > 0) {
+                if ($supplier->code !== 'karina' && $item->price_old > 0) {
                     $priceOld = round($item->price_old * 1.15, 2);
                 }
 
