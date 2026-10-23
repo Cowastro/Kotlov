@@ -7,6 +7,8 @@ use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\SupplierProductMapping;
 use App\Services\PriceList\KarinaPriceAudit;
+use App\Services\Pricing\KarinaPricing;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -54,14 +56,44 @@ class AuditKarinaCommand extends Command
         })->orderBy('id')->get(['id', 'supplier_code', 'supplier_article', 'product_id', 'is_active'])->toArray();
         $items = $audit->match($workbook['items'], $products);
         unset($workbook['items']);
+        $rate = KarinaPricing::rateEvidence(
+            Http::timeout(15)->get(KarinaPricing::RATE_URL)->throw()->json(),
+            now()->format('Y-m-d'),
+        );
+        $productIndex = collect($products)->keyBy('id');
+        foreach ($items as &$item) {
+            $item = array_merge($item, KarinaPricing::quote((float) $item['retail'], $rate['byn_per_rub']));
+            $product = count($item['candidate_product_ids']) === 1 ? $productIndex->get($item['candidate_product_ids'][0]) : null;
+            $blocked = [];
+            if ($item['match_status'] !== 'exact_candidate') {
+                $blocked[] = $item['match_status'];
+            }
+            if ($item['duplicate_article'] || $item['duplicate_name'] || $item['shared_target'] || $item['missing_article']) {
+                $blocked[] = 'identity_conflict';
+            }
+            if ($product && (! $product['is_active'] || $product['is_archived'])) {
+                $blocked[] = 'inactive_or_archived';
+            }
+            $item['blocked_reasons'] = $blocked;
+            $item['price_plan'] = $product ? [
+                'product_id' => $product['id'], 'current_retail_byn' => (float) $product['price'],
+                'proposed_retail_byn' => $item['retail_byn'],
+                'delta_byn' => round($item['retail_byn'] - (float) $product['price'], 2),
+                'eligible_for_reviewed_apply' => $blocked === [],
+            ] : null;
+        }
+        unset($item);
 
         // Explicit projections only: no CRM messages, metadata, contacts, raw offers or logs.
         $report = [
             'schema' => 'karina-audit-v1', 'generated_at' => now()->toIso8601String(),
             'mode' => 'read_only', 'applied' => false, 'discount_percent' => 25,
-            'currency_confirmed' => false,
+            'currency_confirmed' => true, 'source_currency' => 'RUB', 'site_currency' => 'BYN',
+            'currency_confirmation' => 'User confirmed RUB; site retail equals converted RRP.',
+            'rate' => $rate,
             'warnings' => [
-                'Currency must be confirmed from the workbook before conversion to BYN.',
+                'RUB confirmed by user; conversion uses dated NBRB official rate divided by scale.',
+                'Do not use generic prices:update or currency:fetch-nbrb-rates for KARINA until retail/purchase policy is supported.',
                 'Exact candidates require review of model, power and configuration.',
                 'Unmatched is not authorization to create a new product.',
                 'Existing mappings and supplier links are reported separately and are not automatically trusted.',
