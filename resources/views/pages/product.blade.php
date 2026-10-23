@@ -315,7 +315,7 @@
 
                                 @if ($onlinePrice !== null)
                                     <div class="online-order-price mb-16">
-                                        <strong>Онлайн-цена: {{ number_format($onlinePrice, 2, '.', ' ') }} BYN</strong>
+                                        <strong>Онлайн −{{ rtrim(rtrim(number_format($onlineDiscountPercent, 2, '.', ''), '0'), '.') }}%: {{ number_format($onlinePrice, 2, '.', ' ') }} BYN</strong>
                                         <span>Экономия {{ number_format($onlineSaving, 2, '.', ' ') }} BYN. Скидка применится в корзине автоматически.</span>
                                     </div>
                                 @endif
@@ -491,7 +491,7 @@
                                 <div class="tf-product-variant">
                                     <div class="tf-product-total-quantity">
                                         <p>Количество:</p>
-                                        <div class="group-action">
+                                        <div class="group-action product-main-quantity-row">
                                             <div class="wg-quantity">
                                                 <button class="btn-quantity btn-decrease">
                                                     <i class="icon icon-minus"></i>
@@ -501,31 +501,40 @@
                                                     <i class="icon icon-plus"></i>
                                                 </button>
                                             </div>
+                                        </div>
+                                        <div class="product-desktop-purchase-actions{{ ! $b2bOffer && in_array('installment_6', config('shop.checkout_payment_methods', []), true) ? ' has-installment' : '' }}">
                                             <a href="#shoppingCart"
                                                 class="tf-btn type-xl animate-btn w-100 btn-add-to-cart"
                                                 data-product-id="{{ $product->id }}"
                                                 data-qty-input=".product-main-qty"
                                                 @if ($b2bOffer) data-warehouse-select="#b2b-warehouse-{{ $product->id }}" @endif>
-                                                {{ $availabilityStatus === 'check' && ! $b2bOffer ? 'Заказать' : 'В корзину' }}
-                                                @if ($displayPrice > 0)
-                                                    <span class="d-none d-sm-block d-md-none d-lg-block">&nbsp;—&nbsp;</span>
-                                                    <span class="d-none d-sm-block d-md-none d-lg-block">
-                                                        {{ number_format($displayPrice, 2, '.', ' ') }} BYN
-                                                    </span>
+                                                @if ($onlinePrice !== null)
+                                                    <span>Купить со скидкой −{{ rtrim(rtrim(number_format($onlineDiscountPercent, 2, '.', ''), '0'), '.') }}%</span>
+                                                    <small>Онлайн-цена: {{ number_format($onlinePrice, 2, '.', ' ') }} BYN</small>
+                                                @else
+                                                    <span>{{ $availabilityStatus === 'check' && ! $b2bOffer ? 'Заказать' : 'В корзину' }}</span>
+                                                    @if ($displayPrice > 0)
+                                                        <small>{{ number_format($displayPrice, 2, '.', ' ') }} BYN</small>
+                                                    @endif
                                                 @endif
                                             </a>
+                                            @if (! $b2bOffer && in_array('installment_6', config('shop.checkout_payment_methods', []), true))
+                                                @php
+                                                    $installmentInfo = config('shop.payment_methods.installment_6', []);
+                                                @endphp
+                                                <a href="{{ route('checkout', ['payment_type' => 'installment_6']) }}"
+                                                    class="tf-btn type-xl btn-outline animate-btn w-100 btn-add-to-cart btn-installment-purchase"
+                                                    data-product-id="{{ $product->id }}"
+                                                    data-qty-input=".product-main-qty"
+                                                    data-after-add-url="{{ route('checkout', ['payment_type' => 'installment_6']) }}">
+                                                    <span>В рассрочку до 6 месяцев</span>
+                                                    @if ($displayPrice > 0)
+                                                        <small>{{ number_format($displayPrice, 2, '.', ' ') }} BYN · без онлайн-скидки</small>
+                                                    @endif
+                                                </a>
+                                            @endif
                                         </div>
                                         @if (! $b2bOffer && in_array('installment_6', config('shop.checkout_payment_methods', []), true))
-                                            @php
-                                                $installmentInfo = config('shop.payment_methods.installment_6', []);
-                                            @endphp
-                                            <a href="{{ route('checkout', ['payment_type' => 'installment_6']) }}"
-                                                class="tf-btn type-xl btn-outline animate-btn w-100 mt-12 btn-add-to-cart btn-installment-purchase"
-                                                data-product-id="{{ $product->id }}"
-                                                data-qty-input=".product-main-qty"
-                                                data-after-add-url="{{ route('checkout', ['payment_type' => 'installment_6']) }}">
-                                                Купить в рассрочку до 6 месяцев
-                                            </a>
                                             <p class="text-caption-01 cl-text-2 text-center mt-8 mb-0">
                                                 Менеджер подтвердит доступность и продолжит оформление
                                             </p>
@@ -695,6 +704,12 @@
                                 <p class="price__prd fw-semibold">
                                     {{ number_format($displayPrice, 2, '.', ' ') }} BYN
                                 </p>
+                                @if ($onlinePrice !== null)
+                                    <p class="sticky-online-price">
+                                        Онлайн −{{ rtrim(rtrim(number_format($onlineDiscountPercent, 2, '.', ''), '0'), '.') }}%:
+                                        {{ number_format($onlinePrice, 2, '.', ' ') }} BYN
+                                    </p>
+                                @endif
                             @endif
                         </div>
                     </div>
@@ -731,7 +746,13 @@
                             @else
                                 <span class="d-md-none">В корзину</span>
                             @endif
-                            <span class="d-none d-md-inline">
+                            @if ($onlinePrice !== null)
+                                <span class="sticky-desktop-action-copy d-none d-xl-flex">
+                                    <span>Купить со скидкой −{{ rtrim(rtrim(number_format($onlineDiscountPercent, 2, '.', ''), '0'), '.') }}%</span>
+                                    <small>{{ number_format($onlinePrice, 2, '.', ' ') }} BYN</small>
+                                </span>
+                            @endif
+                            <span class="d-none d-md-inline{{ $onlinePrice !== null ? ' d-xl-none' : '' }}">
                                 В корзину
                                 @if ($displayPrice > 0)
                                     — {{ number_format($displayPrice, 2, '.', ' ') }} BYN
@@ -740,12 +761,18 @@
                         </a>
                         @if ($mobileInstallmentAvailable)
                             <a href="{{ route('checkout', ['payment_type' => 'installment_6']) }}"
-                                class="mobile-sticky-installment d-md-none btn-add-to-cart"
+                                class="mobile-sticky-installment d-flex btn-add-to-cart"
                                 data-product-id="{{ $product->id }}"
                                 data-after-add-url="{{ route('checkout', ['payment_type' => 'installment_6']) }}"
                                 aria-label="Купить в рассрочку до 6 месяцев">
-                                <span>В рассрочку</span>
-                                <small>до 6 мес.</small>
+                                <span class="d-xl-none">В рассрочку</span>
+                                <small class="d-xl-none">до 6 мес.</small>
+                                <span class="sticky-desktop-action-copy d-none d-xl-flex">
+                                    <span>В рассрочку до 6 месяцев</span>
+                                    @if ($displayPrice > 0)
+                                        <small>{{ number_format($displayPrice, 2, '.', ' ') }} BYN</small>
+                                    @endif
+                                </span>
                             </a>
                         @endif
                     </div>

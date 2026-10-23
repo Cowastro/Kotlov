@@ -31,6 +31,14 @@
 .online-order-price { margin-top: 8px; padding: 11px 13px; border-radius: 12px; background: #f0f8f1; color: #195e2d; }
 .online-order-price strong { display: block; font-size: 17px; }
 .online-order-price span { display: block; margin-top: 2px; font-size: 12px; }
+.product-main-quantity-row { justify-content: flex-start; }
+.product-desktop-purchase-actions { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.product-desktop-purchase-actions .tf-btn { min-height: 64px; flex-direction: column; gap: 3px; line-height: 1.2; text-align: center; }
+.product-desktop-purchase-actions .tf-btn small { color: rgba(255, 255, 255, .76); font-size: 12px; font-weight: 600; line-height: 1.2; }
+.product-desktop-purchase-actions .btn-outline small { color: #686868; }
+@media (min-width: 992px) {
+    .product-desktop-purchase-actions.has-installment { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .online-order-card-price { margin: 3px 0 0; color: #1d6f34; font-size: 12px; font-weight: 650; line-height: 1.35; }
 .online-order-reminder { position: fixed; z-index: 999; left: 50%; bottom: 24px; width: min(430px, calc(100vw - 32px)); padding: 20px 54px 20px 20px; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: #151515; color: #fff; box-shadow: 0 18px 55px rgba(0,0,0,.28); opacity: 0; transform: translate(-50%,18px); transition: opacity .25s ease, transform .25s ease; }
 .online-order-reminder.is-visible { opacity: 1; transform: translate(-50%,0); }
@@ -1423,6 +1431,66 @@ body {
 
 @media (min-width: 768px) {
     .product-detail-page .mobile-sticky-actions { display: contents; }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .product-detail-page .mobile-sticky-installment { display: none !important; }
+}
+
+@media (min-width: 1200px) {
+    .product-detail-page .tf-sticky-btn-atc .tf-sticky-atc-infos {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .product-detail-page .mobile-sticky-actions,
+    .product-detail-page .mobile-sticky-actions.has-installment {
+        display: grid;
+        width: min(500px, 42vw);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .product-detail-page .mobile-sticky-actions .btn-add-to-cart,
+    .product-detail-page .mobile-sticky-installment {
+        min-height: 56px;
+        border-radius: 9px;
+    }
+
+    .product-detail-page .mobile-sticky-installment {
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #171717;
+        background: #fff;
+        color: #171717;
+    }
+
+    .product-detail-page .sticky-desktop-action-copy {
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+        font-weight: 750;
+        line-height: 1.15;
+        text-align: center;
+    }
+
+    .product-detail-page .sticky-desktop-action-copy small {
+        color: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        opacity: .72;
+    }
+
+    .product-detail-page .sticky-online-price {
+        margin: 0;
+        color: #1d6f34;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.2;
+    }
 }
 
 @media (max-width: 370px) {
