@@ -280,15 +280,13 @@ class SyncTeploshopCommand extends Command
             ? SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->pluck('product_id', 'supplier_article_normalized')
             : collect();
         $products = Product::query()->where('is_archived', false)->with('brand:id,name')->get(['id', 'sku', 'name', 'slug', 'brand_id']);
-        $keyer = new SyncThermokraftCommand;
-        $productFamily = $bySku = $byName = $byModel = $familyProducts = $modelTokens = [];
+        $productFamily = $bySku = $byName = $byModel = $familyProducts = [];
         foreach ($products as $product) {
             $family = $this->family(($product->brand?->name ?? '').' '.$product->name);
             $productFamily[(int) $product->id] = $family;
             if ($family !== '') {
                 $familyProducts[$family][] = $product;
-                $key = $keyer->modelKey($this->normalize($product->name), (string) $product->brand?->name);
-                $modelTokens[(int) $product->id] = array_filter(explode(' ', $key));
+                $key = $this->modelKey($product->name);
                 if ($key !== '') {
                     $byModel[$family][$key][] = (int) $product->id;
                 }
@@ -327,7 +325,7 @@ class SyncTeploshopCommand extends Command
                     [$productId, $reason] = [$id, 'exact_name'];
                 }
             }
-            $key = $keyer->modelKey($this->normalize($row['name']), $row['brand']);
+            $key = $this->modelKey($row['name']);
             if (! $productId && $key !== '') {
                 $candidates = array_values(array_unique(array_filter($byModel[$row['family']][$key] ?? [],
                     fn (int $id): bool => ! isset($claimed[$id]) || $claimed[$id] === $row['article_key'])));
@@ -336,24 +334,6 @@ class SyncTeploshopCommand extends Command
                 } elseif (count($candidates) > 1) {
                     $reason = 'ambiguous_model';
                     $counts['ambiguous']++;
-                }
-            }
-            // The card may add descriptive Cyrillic words («котел», «газовый»), never another model code.
-            if (! $productId && $reason !== 'ambiguous_model' && $key !== '') {
-                $tokens = array_filter(explode(' ', $key));
-                $candidates = [];
-                foreach ($familyProducts[$row['family']] ?? [] as $product) {
-                    $card = $modelTokens[(int) $product->id] ?? [];
-                    $extra = array_diff($card, $tokens);
-                    if ($card !== [] && array_diff($tokens, $card) === []
-                        && array_filter($extra, fn (string $t): bool => preg_match('/\p{Cyrillic}/u', $t) !== 1 || preg_match('/\d/', $t) === 1) === []
-                        && (! isset($claimed[$product->id]) || $claimed[$product->id] === $row['article_key'])) {
-                        $candidates[] = (int) $product->id;
-                    }
-                }
-                $candidates = array_values(array_unique($candidates));
-                if (count($candidates) === 1) {
-                    [$productId, $reason] = [$candidates[0], 'model_words'];
                 }
             }
             $row['product_id'] = $productId ?: null;
@@ -534,6 +514,29 @@ class SyncTeploshopCommand extends Command
         $name = preg_replace('/(?<=\d)(?=\p{L})|(?<=\p{L})(?=\d)/u', ' ', $name) ?? $name;
 
         return preg_replace('/(?<!\d)0+(?=\d)/', '', $name) ?? $name;
+    }
+
+    /** Words a card adds around the model («Котел газовый настенный …»). */
+    private const DESCRIPTIVE = ['котел', 'котёл', 'газовый', 'газовые', 'настенный', 'напольный', 'двухконтурный', 'одноконтурный',
+        'конденсационный', 'электрический', 'электрокотел', 'пеллетный', 'косвенный', 'косвенного', 'нагрева', 'накопительный',
+        'водонагреватель', 'бойлер', 'насос', 'циркуляционный', 'бак', 'расширительный', 'мембранный', 'с', 'и', 'для', 'гайками'];
+
+    /**
+     * Ordered model key: brand and descriptive words dropped, look-alike letters
+     * folded, but the order kept — «VUW 242/5-3» ≠ «VU 242/3-5», «pro» ≠ «plus».
+     */
+    public function modelKey(string $name): string
+    {
+        $text = mb_strtolower(str_replace(['ё', 'Ё'], 'е', $this->normalize($name)));
+        $tokens = [];
+        foreach (preg_split('/[^\p{L}\p{N}]+/u', $text) ?: [] as $token) {
+            if ($token === '' || in_array($token, self::DESCRIPTIVE, true) || $this->family($token) !== '' || in_array($token, ['de', 'dietrich'], true)) {
+                continue;
+            }
+            $tokens[] = strtr($token, ['а' => 'a', 'в' => 'b', 'е' => 'e', 'к' => 'k', 'м' => 'm', 'н' => 'h', 'о' => 'o', 'р' => 'p', 'с' => 'c', 'т' => 't', 'у' => 'y', 'х' => 'x']);
+        }
+
+        return preg_grep('/\d/', $tokens) ? implode(' ', $tokens) : '';
     }
 
     public function family(string $text): string
