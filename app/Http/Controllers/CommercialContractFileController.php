@@ -45,10 +45,15 @@ class CommercialContractFileController extends Controller
         abort_unless($commercialContract->source_template_path
             && Storage::disk('local')->exists($commercialContract->source_template_path), 404);
 
+        $extension = strtolower(pathinfo($commercialContract->source_template_path, PATHINFO_EXTENSION));
+        $contentType = $extension === 'doc'
+            ? 'application/msword'
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
         return Storage::disk('local')->download(
             $commercialContract->source_template_path,
-            'Исходная-форма-'.$commercialContract->number.'.docx',
-            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+            'Исходная-форма-'.$commercialContract->number.'.'.$extension,
+            ['Content-Type' => $contentType],
         );
     }
 }

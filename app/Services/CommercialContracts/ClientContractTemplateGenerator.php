@@ -17,6 +17,8 @@ class ClientContractTemplateGenerator
 {
     private const WORD_NAMESPACE = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 
+    public function __construct(private readonly LegacyWordConverter $legacyWordConverter) {}
+
     /** @param array<string, mixed> $input */
     public function create(CommercialDocument $document, array $input): CommercialContract
     {
@@ -24,20 +26,28 @@ class ClientContractTemplateGenerator
         $disk = Storage::disk('local');
 
         if ($sourcePath === '' || ! $disk->exists($sourcePath)) {
-            throw new RuntimeException('Загруженная форма клиента не найдена. Загрузите DOCX ещё раз.');
+            throw new RuntimeException('Загруженная форма клиента не найдена. Загрузите Word-файл ещё раз.');
         }
 
-        if (strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION)) !== 'docx') {
-            throw new RuntimeException('Форма клиента должна быть в формате DOCX. Старый DOC сначала сохраните в Word как DOCX.');
+        $sourceExtension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        if (! in_array($sourceExtension, ['doc', 'docx'], true)) {
+            throw new RuntimeException('Форма клиента должна быть в формате DOC или DOCX.');
         }
 
-        $this->assertValidDocx($disk->path($sourcePath));
+        $convertedPath = null;
+        $workingDocxPath = $disk->path($sourcePath);
+        if ($sourceExtension === 'doc') {
+            $convertedPath = $this->legacyWordConverter->convertToDocx($workingDocxPath);
+            $workingDocxPath = $convertedPath;
+        }
+
+        $this->assertValidDocx($workingDocxPath);
         $document->loadMissing(['items', 'clientCounterparty', 'clientContact']);
 
         $createdPaths = [];
 
         try {
-            return DB::transaction(function () use ($document, $input, $sourcePath, $disk, &$createdPaths): CommercialContract {
+            return DB::transaction(function () use ($document, $input, $sourcePath, $sourceExtension, $workingDocxPath, $disk, &$createdPaths): CommercialContract {
                 $seller = (array) config('legal.commercial_documents', []);
                 $buyer = $this->buyerSnapshot($document);
                 $contract = CommercialContract::query()->create([
@@ -55,11 +65,14 @@ class ClientContractTemplateGenerator
 
                 $directory = 'commercial-contracts/'.$contract->id;
                 $originalName = trim((string) ($input['client_template_name'] ?? ''));
-                $originalName = $originalName !== '' ? basename($originalName) : 'Форма-клиента.docx';
+                $originalName = $originalName !== '' ? basename($originalName) : 'Форма-клиента.'.$sourceExtension;
                 $sourceCopy = $directory.'/Исходник-'.$originalName;
                 $generatedPath = $directory.'/Договор-'.$contract->number.'-форма-клиента.docx';
 
-                if (! $disk->copy($sourcePath, $sourceCopy) || ! $disk->copy($sourcePath, $generatedPath)) {
+                $convertedContents = file_get_contents($workingDocxPath);
+                if (! is_string($convertedContents)
+                    || ! $disk->copy($sourcePath, $sourceCopy)
+                    || ! $disk->put($generatedPath, $convertedContents)) {
                     throw new RuntimeException('Не удалось сохранить исходную форму клиента.');
                 }
                 $createdPaths = [$sourceCopy, $generatedPath];
@@ -91,6 +104,10 @@ class ClientContractTemplateGenerator
             }
 
             throw $exception;
+        } finally {
+            if ($convertedPath !== null) {
+                $this->legacyWordConverter->cleanup($convertedPath);
+            }
         }
     }
 

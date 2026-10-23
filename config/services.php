@@ -128,4 +128,8 @@ return [
         'sandbox_emails' => env('WEBPAY_SANDBOX_EMAILS', 'test@kotlov.by'),
     ],
 
+    'libreoffice' => [
+        'binary' => env('LIBREOFFICE_BIN'),
+    ],
+
 ];

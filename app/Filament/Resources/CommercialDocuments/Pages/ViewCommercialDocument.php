@@ -302,12 +302,18 @@ class ViewCommercialDocument extends ViewRecord
                     ])
                     ->schema([
                         FileUpload::make('client_template_path')
-                            ->label('Форма клиента DOCX')
-                            ->helperText('Поддерживается DOCX до 15 МБ. Если в форме нет меток, система найдёт таблицу с колонками «Поставщик/Исполнитель» и «Покупатель/Заказчик».')
+                            ->label('Форма клиента DOC или DOCX')
+                            ->helperText('Поддерживаются старые DOC и современные DOCX до 15 МБ. DOC будет автоматически преобразован. Если в форме нет меток, система найдёт таблицу с колонками «Поставщик/Исполнитель» и «Покупатель/Заказчик».')
                             ->disk('local')
                             ->directory('commercial-contracts/client-uploads')
                             ->visibility('private')
-                            ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+                            ->acceptedFileTypes([
+                                'application/msword',
+                                'application/vnd.ms-word',
+                                'application/vnd.ms-office',
+                                'application/x-tika-msoffice',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                            ])
                             ->storeFileNamesIn('client_template_name')
                             ->maxSize(15360)
                             ->required()
