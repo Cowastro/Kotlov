@@ -222,6 +222,7 @@
                                         </label>
                                         @if ($key === 'installment_6')
                                             <div class="text-caption-01 ms-4 mt-1">
+                                                <span class="cl-text-2 d-block">Онлайн-скидка −3% при рассрочке не применяется.</span>
                                                 <a href="{{ $method['video_url'] }}" target="_blank" rel="noopener noreferrer">
                                                     Смотреть видеоинструкцию
                                                 </a>
@@ -409,7 +410,8 @@
 
                             {{-- Промокод --}}
                             @if ($coupon['valid'])
-                                <div class="mt-16 mb-8">
+                                <div class="mt-16 mb-8" id="checkout-coupon-summary"
+                                    @if ($onlineOrderDiscountExcludedByPayment) style="display:none" @endif>
                                     <p class="text-caption-01 cl-text-2">
                                         Промокод:
                                         <strong class="text-primary">{{ $coupon['code'] }}</strong>
@@ -423,7 +425,8 @@
                                 use App\Http\Controllers\CheckoutController;
                                 $selectedDelivery = old('delivery_type', 'courier');
                                 $deliveryCost     = CheckoutController::calcDelivery($selectedDelivery, $subtotal);
-                                $total            = $coupon['total'] + ($deliveryCost ?? 0);
+                                $effectiveDiscount = $onlineOrderDiscountExcludedByPayment ? 0 : $coupon['discount'];
+                                $total            = $subtotal - $effectiveDiscount + ($deliveryCost ?? 0);
                             @endphp
                             <ul class="list-total mt-20">
                                 <li class="total-item lh-24 fw-medium">
@@ -431,7 +434,8 @@
                                     <span>{{ number_format($subtotal, 2, '.', ' ') }} BYN</span>
                                 </li>
                                 @if ($coupon['valid'])
-                                    <li class="total-item lh-24 fw-medium">
+                                    <li class="total-item lh-24 fw-medium" id="checkout-discount-row"
+                                        @if ($onlineOrderDiscountExcludedByPayment) style="display:none" @endif>
                                         <span>Скидка {{ $coupon['code'] }}:</span>
                                         <span>−{{ number_format($coupon['discount'], 2, '.', ' ') }} BYN</span>
                                     </li>
@@ -477,6 +481,7 @@
     var deliveryMethods = @json(collect(config('shop.checkout_delivery_methods', []))->mapWithKeys(fn($k) => [$k => config("shop.delivery_methods.$k")])->filter());
     var subtotal = {{ (float) $subtotal }};
     var discount = {{ (float) $coupon['discount'] }};
+    var onlineOrderDiscountCoupon = @json($onlineOrderDiscountCoupon);
 
     // ── Показ/скрытие полей адреса при самовывозе ──
     var deliverySelect   = document.getElementById('delivery-type');
@@ -497,6 +502,17 @@
     // ── Динамический пересчёт стоимости доставки ──
     var deliveryCostEl = document.getElementById('checkout-delivery-cost');
     var totalEl        = document.getElementById('checkout-total');
+    var couponSummaryEl = document.getElementById('checkout-coupon-summary');
+    var discountRowEl   = document.getElementById('checkout-discount-row');
+
+    function installmentSelected() {
+        var checked = document.querySelector('input[name="payment_type"]:checked');
+        return checked && checked.value === 'installment_6';
+    }
+
+    function effectiveDiscount() {
+        return onlineOrderDiscountCoupon && installmentSelected() ? 0 : discount;
+    }
 
     function calcDelivery(key) {
         var method = deliveryMethods[key];
@@ -517,7 +533,7 @@
         if (!deliveryCostEl || !totalEl || !deliverySelect) return;
 
         var cost  = calcDelivery(deliverySelect.value);
-        var total = subtotal - discount + (cost !== null ? cost : 0);
+        var total = subtotal - effectiveDiscount() + (cost !== null ? cost : 0);
 
         if (cost === null) {
             deliveryCostEl.innerHTML = '<span class="cl-text-2">уточняется</span>';
@@ -538,6 +554,15 @@
     // ── Показ/скрытие реквизитов при оплате по счёту ──
     var paymentRadios = document.querySelectorAll('input[name="payment_type"]');
     var invoiceFields = document.getElementById('invoice-fields');
+    function updatePaymentDiscount() {
+        var hideOnlineDiscount = onlineOrderDiscountCoupon && installmentSelected();
+        if (couponSummaryEl) couponSummaryEl.style.display = hideOnlineDiscount ? 'none' : '';
+        if (discountRowEl) discountRowEl.style.display = hideOnlineDiscount ? 'none' : '';
+        updateTotals();
+    }
+    paymentRadios.forEach(function (r) { r.addEventListener('change', updatePaymentDiscount); });
+    updatePaymentDiscount();
+
     if (paymentRadios.length && invoiceFields) {
         function toggleInvoice() {
             var checked = document.querySelector('input[name="payment_type"]:checked');

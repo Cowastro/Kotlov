@@ -75,6 +75,15 @@ class CartCouponService
         );
     }
 
+    public function onlineOrderDiscountAppliesToPayment(?string $paymentType): bool
+    {
+        return ! in_array(
+            $paymentType,
+            (array) config('shop.online_order_discount.excluded_payment_methods', []),
+            true
+        );
+    }
+
     private function subtotal(array $items): float
     {
         return round(collect($items)->sum(

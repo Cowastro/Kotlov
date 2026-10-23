@@ -83,6 +83,11 @@ class OnlineOrderCouponTest extends TestCase
             ]);
         $response->assertSessionMissing('cart_coupon');
         $this->assertFalse($product->qualifiesForOnlineOrderDiscount());
+
+        $this->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertDontSeeText('со скидкой −3%')
+            ->assertSeeText('В корзину');
     }
 
     public function test_mixed_cart_discounts_regular_goods_but_not_the_heat_pump(): void
@@ -158,6 +163,47 @@ class OnlineOrderCouponTest extends TestCase
         $this->assertSame('6.00', $order->discount);
         $this->assertSame('194.00', $order->total);
         $this->assertSame(1, Coupon::query()->where('code', 'ONLINE3')->value('uses_count'));
+        Event::assertDispatched(NewOrderCreated::class);
+    }
+
+    public function test_installment_checkout_does_not_apply_the_online_order_discount(): void
+    {
+        Event::fake([NewOrderCreated::class]);
+        $product = $this->orderableProduct();
+        $cart = [
+            $product->id => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'price' => 200,
+                'quantity' => 1,
+                'category_slug' => $product->category->slug,
+                'pricing_type' => 'retail',
+            ],
+        ];
+
+        $this->withSession(['cart' => $cart, 'cart_coupon' => 'ONLINE3'])
+            ->get(route('checkout', ['payment_type' => 'installment_6']))
+            ->assertOk()
+            ->assertSeeText('Онлайн-скидка −3% при рассрочке не применяется.')
+            ->assertSee('id="checkout-discount-row"', false)
+            ->assertSee('style="display:none"', false);
+
+        $response = $this->post(route('checkout.store'), [
+            'order_token' => 'installment-without-online3',
+            'customer_name' => 'Покупатель',
+            'customer_phone' => '+375291112233',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'installment_6',
+        ]);
+
+        $order = Order::query()->latest('id')->firstOrFail();
+
+        $response->assertRedirect(route('checkout.success', $order->number));
+        $this->assertNull($order->coupon_code);
+        $this->assertSame('0.00', $order->discount);
+        $this->assertSame('200.00', $order->total);
+        $this->assertSame(0, Coupon::query()->where('code', 'ONLINE3')->value('uses_count'));
         Event::assertDispatched(NewOrderCreated::class);
     }
 

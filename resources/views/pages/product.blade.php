@@ -671,6 +671,9 @@
     @php
         $mobileInstallmentAvailable = ! $b2bOffer
             && in_array('installment_6', config('shop.checkout_payment_methods', []), true);
+        $mobileOnlineDiscountAvailable = $mobileInstallmentAvailable
+            && $product->qualifiesForOnlineOrderDiscount();
+        $mobileOnlineDiscountPercent = (float) config('shop.online_order_discount.percent', 3);
     @endphp
     <div class="tf-sticky-btn-atc">
         <div class="container">
@@ -720,8 +723,11 @@
                             data-product-id="{{ $product->id }}"
                             aria-label="Добавить в корзину"
                             @if ($b2bOffer) data-warehouse-select="#b2b-warehouse-{{ $product->id }}" @endif>
-                            @if ($mobileInstallmentAvailable)
-                                <i class="icon icon-shopping-cart-simple d-md-none" aria-hidden="true"></i>
+                            @if ($mobileOnlineDiscountAvailable)
+                                <span class="d-md-none">Купить</span>
+                                <small class="mobile-sticky-cart-benefit d-md-none">
+                                    со скидкой −{{ rtrim(rtrim(number_format($mobileOnlineDiscountPercent, 2, '.', ''), '0'), '.') }}%
+                                </small>
                             @else
                                 <span class="d-md-none">В корзину</span>
                             @endif

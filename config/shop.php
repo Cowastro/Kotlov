@@ -9,6 +9,9 @@ return [
         'excluded_category_slugs' => [
             'teplovyie-nasosyi',
         ],
+        'excluded_payment_methods' => [
+            'installment_6',
+        ],
     ],
 
     // Операционные пороги для очереди менеджера.

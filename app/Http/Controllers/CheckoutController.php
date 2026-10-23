@@ -53,6 +53,10 @@ class CheckoutController extends Controller
         }
 
         $subtotal = $this->calcSubtotal($cart);
+        $requestedPayment = (string) $request->query('payment_type', '');
+        $selectedPayment = in_array($requestedPayment, config('shop.checkout_payment_methods', []), true)
+            ? $requestedPayment
+            : null;
         $couponCode = session('cart_coupon');
         if ($couponService->isOnlineOrderDiscountCode($couponCode)
             && $couponService->onlineOrderDiscountSubtotal($cart) <= 0) {
@@ -63,14 +67,23 @@ class CheckoutController extends Controller
         if (session('cart_coupon') && ! $coupon['valid']) {
             session()->forget('cart_coupon');
         }
+        $onlineOrderDiscountCoupon = $coupon['valid']
+            && $couponService->isOnlineOrderDiscountCode($coupon['code']);
+        $onlineOrderDiscountExcludedByPayment = $onlineOrderDiscountCoupon
+            && ! $couponService->onlineOrderDiscountAppliesToPayment($selectedPayment);
         $user = Auth::user();
         $threshold = (float) config('shop.free_delivery_threshold', 400);
-        $requestedPayment = (string) $request->query('payment_type', '');
-        $selectedPayment = in_array($requestedPayment, config('shop.checkout_payment_methods', []), true)
-            ? $requestedPayment
-            : null;
 
-        return view('pages.checkout', compact('cart', 'subtotal', 'coupon', 'user', 'threshold', 'selectedPayment'));
+        return view('pages.checkout', compact(
+            'cart',
+            'subtotal',
+            'coupon',
+            'user',
+            'threshold',
+            'selectedPayment',
+            'onlineOrderDiscountCoupon',
+            'onlineOrderDiscountExcludedByPayment',
+        ));
     }
 
     // ─────────────────────────────────────────
@@ -258,6 +271,10 @@ class CheckoutController extends Controller
                 'error',
                 'Промокод больше не действует. Проверьте сумму заказа и оформите его повторно.'
             );
+        }
+        if ($couponService->isOnlineOrderDiscountCode($coupon['code'])
+            && ! $couponService->onlineOrderDiscountAppliesToPayment($request->payment_type)) {
+            $coupon = $couponService->quoteForCart(null, $cart);
         }
         $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
 
