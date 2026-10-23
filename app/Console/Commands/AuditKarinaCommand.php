@@ -139,6 +139,9 @@ class AuditKarinaCommand extends Command
 
         $receiptPath = storage_path('app/reports/suppliers/karina/apply.json');
         $receipt = is_file($receiptPath) ? json_decode(file_get_contents($receiptPath), true, 512, JSON_THROW_ON_ERROR) : [];
+        $creationReceiptPath = storage_path('app/reports/suppliers/karina/create.json');
+        $creationReceipt = is_file($creationReceiptPath)
+            ? json_decode(file_get_contents($creationReceiptPath), true, 512, JSON_THROW_ON_ERROR) : [];
 
         // Explicit projections only: no CRM messages, metadata, contacts, raw offers or logs.
         $report = [
@@ -146,6 +149,7 @@ class AuditKarinaCommand extends Command
             'mode' => 'read_only', 'applied' => false, 'discount_percent' => 25,
             'currency_confirmed' => true, 'source_currency' => 'RUB', 'site_currency' => 'BYN',
             'last_application' => array_intersect_key($receipt, array_flip(['applied', 'report_blob', 'workbook_sha256', 'generated_at', 'already_applied', 'offers', 'matched', 'unmatched', 'quarantined', 'supplier_id', 'import_id'])),
+            'last_creation' => array_intersect_key($creationReceipt, array_flip(['applied', 'report_blob', 'workbook_sha256', 'generated_at', 'already_applied', 'planned', 'stoves', 'accessories', 'created', 'existing_batch_products', 'supplier_id', 'import_id', 'matched_after', 'unmatched_after'])),
             'currency_confirmation' => 'User confirmed RUB; site retail equals converted RRP.',
             'rate' => $rate,
             'warnings' => [
