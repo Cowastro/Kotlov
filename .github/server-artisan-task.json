@@ -1,6 +1,6 @@
 {
-  "task": "artisan-apply",
-  "artisan_args": "crm-mail:stage-attachment 281 --extension=xlsx --name-contains=KARINA --output=pricelists/karina-thread-281.xlsx --apply",
+  "task": "audit-karina",
+  "artisan_args": "none",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "karina-thread281-stage-20261023"
+  "run_id": "karina-readonly-audit-20261023-v1"
 }
