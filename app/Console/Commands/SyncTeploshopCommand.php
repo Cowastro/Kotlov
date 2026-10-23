@@ -43,7 +43,8 @@ class SyncTeploshopCommand extends Command
         {--apply : Save supplier links and prices}
         {--sync-retail-prices : Copy the supplier retail price to cards that have no other operational supplier}
         {--create-biotep : Create cards for BIOTEP boilers missing in the catalogue}
-        {--audit : Print one public line per row: sheet, brand, row, product id/slug and match reason}';
+        {--audit : Print one public line per row: sheet, brand, row, product id/slug and match reason}
+        {--catalogue= : Also print the catalogue cards of this brand family with their model keys}';
 
     protected $description = 'ООО «Теплошоп» (BIOTEP, Wester, Kospel, De Dietrich, BAXI, Vaillant, Protherm): prices for linked catalogue cards';
 
@@ -88,6 +89,13 @@ class SyncTeploshopCommand extends Command
             }
             if ($this->option('audit')) {
                 $this->audit($rows);
+            }
+            if ($family = (string) $this->option('catalogue')) {
+                foreach (Product::query()->where('is_archived', false)->with('brand:id,name')->get(['id', 'slug', 'name', 'brand_id']) as $product) {
+                    if ($this->family(($product->brand?->name ?? '').' '.$product->name) === $family) {
+                        $this->line(sprintf('audit.teploshop.card=%d:%s:%s', $product->id, $product->slug, Str::slug($this->modelKey($product->name)) ?: '-'));
+                    }
+                }
             }
             if (! $this->option('apply')) {
                 return self::SUCCESS;
@@ -502,7 +510,7 @@ class SyncTeploshopCommand extends Command
         foreach ($rows as $row) {
             $id = (int) ($row['product_id'] ?? 0);
             $this->line(sprintf('audit.teploshop.row=%s:%s:%d:%d:%s:%s', Str::slug($row['sheet']) ?: 'sheet', $row['family'] ?: 'other', $row['row'], $id,
-                $id ? (string) ($slugs[$id] ?? '') : Str::slug($row['name']), $row['match_reason']));
+                $id ? (string) ($slugs[$id] ?? '') : Str::slug($this->modelKey($row['name']) ?: $row['name']), $row['match_reason']));
         }
     }
 
