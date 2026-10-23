@@ -29,6 +29,9 @@ class WebProductSources
         'vodopad.ru', 'santehnika-online.ru', 'teplodom.ru', 'ecokamin.ru',
     ];
 
+    /** HTTP status of the last Google request (0: not asked). */
+    public int $lastStatus = 0;
+
     public function isConfigured(): bool
     {
         return $this->key() !== '';
@@ -52,6 +55,7 @@ class WebProductSources
                 $response = Http::timeout(20)->retry(2, 1000, throw: false)
                     ->withHeaders(['X-API-KEY' => $this->key(), 'Content-Type' => 'application/json'])
                     ->post('https://google.serper.dev/search', ['q' => $query, 'num' => 10] + $locale);
+                $this->lastStatus = $response->status();
                 foreach ((array) $response->json('organic', []) as $item) {
                     $url = (string) ($item['link'] ?? '');
                     $host = Str::lower((string) parse_url($url, PHP_URL_HOST));

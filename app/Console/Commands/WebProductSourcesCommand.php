@@ -26,6 +26,7 @@ class WebProductSourcesCommand extends Command
             $this->line('audit.web_sources.page='.Str::slug((string) parse_url($url, PHP_URL_HOST)).':'.Str::slug(Str::limit((string) parse_url($url, PHP_URL_PATH), 80, '')));
         }
         $this->line('metric.web_sources.pages='.count($found));
+        $this->line('metric.web_sources.http_status='.$sources->lastStatus);
 
         return self::SUCCESS;
     }
