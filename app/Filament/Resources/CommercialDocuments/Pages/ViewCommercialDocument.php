@@ -7,6 +7,7 @@ use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CommercialDocument;
+use App\Services\CommercialContracts\ClientContractTemplateGenerator;
 use App\Services\CommercialContracts\CommercialContractGenerator;
 use App\Models\IntegrationSource;
 use App\Models\Supplier;
@@ -286,19 +287,77 @@ class ViewCommercialDocument extends ViewRecord
                             Notification::make()->danger()->title('Не удалось создать договор')->body($exception->getMessage())->send();
                         }
                     }),
+                Action::make('create_client_contract')
+                    ->label('Договор по форме клиента')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('success')
+                    ->visible(fn (): bool => $this->record->type === 'quote')
+                    ->modalHeading('Заполнить форму договора клиента')
+                    ->modalDescription('Загрузите DOCX. Система сохранит оригинал и рабочую копию, заменит только реквизиты Поставщика и служебные метки. Юридический текст клиента не переписывается.')
+                    ->modalSubmitActionLabel('Подготовить договор')
+                    ->fillForm(fn (): array => [
+                        'contract_date' => today(),
+                        'valid_until' => null,
+                        'auto_replace_supplier_column' => true,
+                    ])
+                    ->schema([
+                        FileUpload::make('client_template_path')
+                            ->label('Форма клиента DOCX')
+                            ->helperText('Поддерживается DOCX до 15 МБ. Если в форме нет меток, система найдёт таблицу с колонками «Поставщик/Исполнитель» и «Покупатель/Заказчик».')
+                            ->disk('local')
+                            ->directory('commercial-contracts/client-uploads')
+                            ->visibility('private')
+                            ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+                            ->storeFileNamesIn('client_template_name')
+                            ->maxSize(15360)
+                            ->required()
+                            ->columnSpanFull(),
+                        DatePicker::make('contract_date')->label('Дата договора')->required()->native(false),
+                        DatePicker::make('valid_until')->label('Действует до')->native(false),
+                        Toggle::make('auto_replace_supplier_column')
+                            ->label('Автоматически заменить колонку Поставщика')
+                            ->helperText('Если меток нет, реквизиты в колонке «Поставщик» или «Исполнитель» будут заменены полностью. Оригинал всегда сохраняется.')
+                            ->default(true)
+                            ->columnSpanFull(),
+                        Textarea::make('supported_markers')
+                            ->label('Метки для точного заполнения')
+                            ->default('{{SUPPLIER_NAME}}, {{SUPPLIER_UNP}}, {{SUPPLIER_ADDRESS}}, {{SUPPLIER_IBAN}}, {{SUPPLIER_BANK}}, {{SUPPLIER_BIC}}, {{SUPPLIER_PHONE}}, {{SUPPLIER_EMAIL}}, {{SUPPLIER_DIRECTOR}}, {{CONTRACT_NUMBER}}, {{CONTRACT_DATE}}')
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->rows(3)
+                            ->columnSpanFull(),
+                    ])
+                    ->action(function (array $data): void {
+                        try {
+                            $contract = app(ClientContractTemplateGenerator::class)->create($this->record, $data);
+                            $report = (array) data_get($contract->terms_snapshot, 'replacement_report', []);
+                            $mode = ($report['supplier_column_replaced'] ?? false) ? 'заменена колонка Поставщика' : 'заполнены метки';
+                            $warning = count((array) ($report['unresolved_tokens'] ?? [])) > 0 ? ' Есть незаполненные неизвестные метки — проверьте DOCX.' : '';
+
+                            Notification::make()
+                                ->success()
+                                ->title('Форма клиента подготовлена')
+                                ->body($contract->number.' · '.$mode.'. Оригинал сохранён.'.$warning)
+                                ->persistent()
+                                ->send();
+                            $this->record->refresh();
+                        } catch (Throwable $exception) {
+                            Notification::make()->danger()->title('Не удалось заполнить форму клиента')->body($exception->getMessage())->persistent()->send();
+                        }
+                    }),
                 Action::make('contract_pdf')
                     ->label('Открыть последний договор PDF')
                     ->icon('heroicon-o-document-check')
                     ->color('gray')
-                    ->visible(fn (): bool => $this->record->contracts()->exists())
-                    ->url(fn (): string => route('admin.commercial-contracts.pdf', $this->record->contracts()->firstOrFail()))
+                    ->visible(fn (): bool => $this->record->contracts()->whereNotNull('generated_pdf_path')->exists())
+                    ->url(fn (): string => route('admin.commercial-contracts.pdf', $this->record->contracts()->whereNotNull('generated_pdf_path')->firstOrFail()))
                     ->openUrlInNewTab(),
                 Action::make('contract_docx')
                     ->label('Скачать последний договор DOCX')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('gray')
-                    ->visible(fn (): bool => $this->record->contracts()->exists())
-                    ->url(fn (): string => route('admin.commercial-contracts.docx', $this->record->contracts()->firstOrFail())),
+                    ->visible(fn (): bool => $this->record->contracts()->whereNotNull('generated_docx_path')->exists())
+                    ->url(fn (): string => route('admin.commercial-contracts.docx', $this->record->contracts()->whereNotNull('generated_docx_path')->firstOrFail())),
             ])
                 ->label('Документы')
                 ->icon('heroicon-o-folder-open')

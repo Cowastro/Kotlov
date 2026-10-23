@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\CommercialDocument;
+use App\Services\CommercialContracts\ClientContractTemplateGenerator;
 use App\Services\CommercialContracts\CommercialContractGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -74,5 +75,52 @@ class CommercialContractGeneratorTest extends TestCase
         $this->assertStringContainsString('ООО «Покупатель»', $xml);
         $this->assertStringContainsString('Котёл тестовый', $xml);
         $this->assertStringContainsString('100% предварительную оплату', $xml);
+    }
+
+    public function test_it_preserves_and_fills_a_client_docx_template(): void
+    {
+        Storage::fake('local');
+
+        $quote = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'accepted',
+            'client_name' => 'Иванов Иван Иванович',
+            'client_legal_name' => 'ООО «Покупатель»',
+            'client_unp' => '190000000',
+            'currency' => 'BYN',
+        ]);
+        $templatePath = 'commercial-contracts/client-uploads/form.docx';
+        Storage::disk('local')->makeDirectory(dirname($templatePath));
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open(Storage::disk('local')->path($templatePath), ZipArchive::CREATE | ZipArchive::OVERWRITE) === true);
+        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>');
+        $zip->addFromString('word/document.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+            .'<w:p><w:r><w:t>УНП: {{SUPPLIER_</w:t></w:r><w:r><w:t>UNP}}</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>Договор № {{CONTRACT_NUMBER}}</w:t></w:r></w:p>'
+            .'</w:body></w:document>');
+        $zip->close();
+
+        $contract = app(ClientContractTemplateGenerator::class)->create($quote, [
+            'client_template_path' => $templatePath,
+            'client_template_name' => 'Договор клиента.docx',
+            'contract_date' => '2026-10-23',
+            'auto_replace_supplier_column' => true,
+        ]);
+
+        $this->assertSame('client', $contract->template_mode);
+        $this->assertNull($contract->generated_pdf_path);
+        Storage::disk('local')->assertExists($contract->source_template_path);
+        Storage::disk('local')->assertExists($contract->generated_docx_path);
+
+        $zip = new ZipArchive;
+        $this->assertTrue($zip->open(Storage::disk('local')->path($contract->generated_docx_path)) === true);
+        $xml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        $this->assertIsString($xml);
+        $this->assertStringContainsString('191355768', $xml);
+        $this->assertStringContainsString($contract->number, $xml);
+        $this->assertStringNotContainsString('{{SUPPLIER_UNP}}', $xml);
     }
 }

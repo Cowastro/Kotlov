@@ -38,4 +38,17 @@ class CommercialContractFileController extends Controller
             ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
         );
     }
+
+    public function source(CommercialContract $commercialContract): BinaryFileResponse
+    {
+        abort_unless(auth()->user()?->isManager(), 403);
+        abort_unless($commercialContract->source_template_path
+            && Storage::disk('local')->exists($commercialContract->source_template_path), 404);
+
+        return Storage::disk('local')->download(
+            $commercialContract->source_template_path,
+            'Исходная-форма-'.$commercialContract->number.'.docx',
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        );
+    }
 }

@@ -108,6 +108,10 @@ Route::get('/admin/commercial-contracts/{commercialContract}/docx', [CommercialC
     ->whereNumber('commercialContract')
     ->middleware('auth')
     ->name('admin.commercial-contracts.docx');
+Route::get('/admin/commercial-contracts/{commercialContract}/source', [CommercialContractFileController::class, 'source'])
+    ->whereNumber('commercialContract')
+    ->middleware('auth')
+    ->name('admin.commercial-contracts.source');
 
 Route::get('/admin/orders/{order}/procurement', OrderProcurementController::class)
     ->whereNumber('order')
