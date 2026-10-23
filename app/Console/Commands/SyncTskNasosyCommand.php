@@ -419,6 +419,11 @@ class SyncTskNasosyCommand extends Command
                 ->get(['supplier_article', 'product_id'])
                 ->each(fn ($sp) => $this->indexBySupplierArticle[$this->normArticle($sp->supplier_article)] = (int) $sp->product_id);
         }
+        foreach (self::MANUAL_LINKS as $article => $productId) {
+            if (DB::table('products')->where('id', $productId)->where('is_archived', false)->exists()) {
+                $this->indexBySupplierArticle[$this->normArticle((string) $article)] = $productId;
+            }
+        }
 
         DB::table('products')->where('is_archived', false)->get(['id', 'sku', 'name', 'brand_id'])
             ->each(function ($p) {
@@ -934,6 +939,11 @@ class SyncTskNasosyCommand extends Command
     }
 
     /** Category words to drop so «Насос Unipump CP 32-60 180» == «CP 32-60 180». */
+    /** Owner-approved links the model key cannot make: ТСК article => product id. */
+    private const MANUAL_LINKS = [
+        '24834' => 5890, // «LPA 25-40 180» → card «Насос циркуляционный Unipump LPA 25-40» (23.10.2026)
+    ];
+
     private const MODEL_STOPWORDS = [
         'НАСОС', 'НАСОСНЫЙ', 'НАСОСНАЯ', 'ЦИРКУЛЯЦИОННЫЙ', 'ЦИРКУЛЯЦИОННАЯ',
         'СКВАЖИННЫЙ', 'ДРЕНАЖНЫЙ', 'ДРЕНАЖНО', 'ФЕКАЛЬНЫЙ', 'ПОВЕРХНОСТНЫЙ',

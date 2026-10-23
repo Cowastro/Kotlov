@@ -434,6 +434,12 @@ jobs:
             grep -E '^audit\.merge_cards\.pair=[0-9]+:[0-9]+:([a-z0-9._(),-]+:[a-z0-9._(),-]+|skipped)$' "$detail_log" || true
             echo "safe_merge_cards_metrics_end"
           fi
+          if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:set-product-brand" ]]; then
+            echo "safe_product_brand_metrics_begin"
+            grep -E '^metric\.product_brand\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.product_brand\.change=[0-9]+:[a-z0-9._(),-]+:[a-z0-9_-]+:[a-z0-9_-]+$' "$detail_log" || true
+            echo "safe_product_brand_metrics_end"
+          fi
           if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:audit-brand-cards" ]]; then
             echo "safe_brand_cards_metrics_begin"
             grep -E '^metric\.brand_cards\.[a-z_]+=[0-9]+$' "$detail_log" || true
