@@ -1,12 +1,23 @@
 {
     "schema": "karina-audit-v1",
-    "generated_at": "2026-10-23T13:30:49+00:00",
+    "generated_at": "2026-10-23T13:35:06+00:00",
     "mode": "read_only",
     "applied": false,
     "discount_percent": 25,
-    "currency_confirmed": false,
+    "currency_confirmed": true,
+    "source_currency": "RUB",
+    "site_currency": "BYN",
+    "currency_confirmation": "User confirmed RUB; site retail equals converted RRP.",
+    "rate": {
+        "source": "https:\/\/api.nbrb.by\/exrates\/rates\/RUB?parammode=2",
+        "date": "2026-10-23",
+        "official_rate": 3.646,
+        "scale": 100,
+        "byn_per_rub": 0.03646
+    },
     "warnings": [
-        "Currency must be confirmed from the workbook before conversion to BYN.",
+        "RUB confirmed by user; conversion uses dated NBRB official rate divided by scale.",
+        "Do not use generic prices:update or currency:fetch-nbrb-rates for KARINA until retail\/purchase policy is supported.",
         "Exact candidates require review of model, power and configuration.",
         "Unmatched is not authorization to create a new product.",
         "Existing mappings and supplier links are reported separately and are not automatically trusted."
@@ -623,7 +634,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 26800,
+            "purchase_rub": 20100,
+            "retail_byn": 977.13,
+            "purchase_byn": 732.85,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -638,7 +657,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 29300,
+            "purchase_rub": 21975,
+            "retail_byn": 1068.28,
+            "purchase_byn": 801.21,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -655,7 +682,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 40200,
+            "purchase_rub": 30150,
+            "retail_byn": 1465.69,
+            "purchase_byn": 1099.27,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22247,
+                "current_retail_byn": 1549,
+                "proposed_retail_byn": 1465.69,
+                "delta_byn": -83.31,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -670,7 +709,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 42400,
+            "purchase_rub": 31800,
+            "retail_byn": 1545.9,
+            "purchase_byn": 1159.43,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -687,7 +734,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 44700,
+            "purchase_rub": 33525,
+            "retail_byn": 1629.76,
+            "purchase_byn": 1222.32,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22245,
+                "current_retail_byn": 1722.4,
+                "proposed_retail_byn": 1629.76,
+                "delta_byn": -92.64,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -702,7 +761,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 51700,
+            "purchase_rub": 38775,
+            "retail_byn": 1884.98,
+            "purchase_byn": 1413.74,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -717,7 +784,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 54800,
+            "purchase_rub": 41100,
+            "retail_byn": 1998.01,
+            "purchase_byn": 1498.51,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -734,7 +809,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 58100,
+            "purchase_rub": 43575,
+            "retail_byn": 2118.33,
+            "purchase_byn": 1588.74,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22246,
+                "current_retail_byn": 2239,
+                "proposed_retail_byn": 2118.33,
+                "delta_byn": -120.67,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -749,7 +836,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 86000,
+            "purchase_rub": 64500,
+            "retail_byn": 3135.56,
+            "purchase_byn": 2351.67,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -764,7 +859,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 90200,
+            "purchase_rub": 67650,
+            "retail_byn": 3288.69,
+            "purchase_byn": 2466.52,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -779,7 +882,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 105100,
+            "purchase_rub": 78825,
+            "retail_byn": 3831.95,
+            "purchase_byn": 2873.96,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -794,7 +905,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 108100,
+            "purchase_rub": 81075,
+            "retail_byn": 3941.33,
+            "purchase_byn": 2955.99,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -809,7 +928,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 116100,
+            "purchase_rub": 87075,
+            "retail_byn": 4233.01,
+            "purchase_byn": 3174.75,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -824,7 +951,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 39100,
+            "purchase_rub": 29325,
+            "retail_byn": 1425.59,
+            "purchase_byn": 1069.19,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -839,7 +974,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 39900,
+            "purchase_rub": 29925,
+            "retail_byn": 1454.75,
+            "purchase_byn": 1091.07,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -854,7 +997,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 59200,
+            "purchase_rub": 44400,
+            "retail_byn": 2158.43,
+            "purchase_byn": 1618.82,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -869,7 +1020,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 41000,
+            "purchase_rub": 30750,
+            "retail_byn": 1494.86,
+            "purchase_byn": 1121.15,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -884,7 +1043,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 60700,
+            "purchase_rub": 45525,
+            "retail_byn": 2213.12,
+            "purchase_byn": 1659.84,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -901,7 +1068,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 62200,
+            "purchase_rub": 46650,
+            "retail_byn": 2267.81,
+            "purchase_byn": 1700.86,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22239,
+                "current_retail_byn": 2396.7,
+                "proposed_retail_byn": 2267.81,
+                "delta_byn": -128.89,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -918,7 +1097,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 64800,
+            "purchase_rub": 48600,
+            "retail_byn": 2362.61,
+            "purchase_byn": 1771.96,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22240,
+                "current_retail_byn": 2497,
+                "proposed_retail_byn": 2362.61,
+                "delta_byn": -134.39,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -933,7 +1124,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 124100,
+            "purchase_rub": 93075,
+            "retail_byn": 4524.69,
+            "purchase_byn": 3393.51,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -948,7 +1147,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 127100,
+            "purchase_rub": 95325,
+            "retail_byn": 4634.07,
+            "purchase_byn": 3475.55,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -963,7 +1170,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 132500,
+            "purchase_rub": 99375,
+            "retail_byn": 4830.95,
+            "purchase_byn": 3623.21,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -978,7 +1193,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 26700,
+            "purchase_rub": 20025,
+            "retail_byn": 973.48,
+            "purchase_byn": 730.11,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -995,7 +1218,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 30500,
+            "purchase_rub": 22875,
+            "retail_byn": 1112.03,
+            "purchase_byn": 834.02,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22249,
+                "current_retail_byn": 1175.2,
+                "proposed_retail_byn": 1112.03,
+                "delta_byn": -63.17,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1012,7 +1247,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 36200,
+            "purchase_rub": 27150,
+            "retail_byn": 1319.85,
+            "purchase_byn": 989.89,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 11265,
+                "current_retail_byn": 1394.9,
+                "proposed_retail_byn": 1319.85,
+                "delta_byn": -75.05,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1027,7 +1274,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 38000,
+            "purchase_rub": 28500,
+            "retail_byn": 1385.48,
+            "purchase_byn": 1039.11,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1042,7 +1297,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 39700,
+            "purchase_rub": 29775,
+            "retail_byn": 1447.46,
+            "purchase_byn": 1085.6,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1057,7 +1320,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 30600,
+            "purchase_rub": 22950,
+            "retail_byn": 1115.68,
+            "purchase_byn": 836.76,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1074,7 +1345,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 32300,
+            "purchase_rub": 24225,
+            "retail_byn": 1177.66,
+            "purchase_byn": 883.24,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22250,
+                "current_retail_byn": 1244.6,
+                "proposed_retail_byn": 1177.66,
+                "delta_byn": -66.94,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1089,7 +1372,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 45000,
+            "purchase_rub": 33750,
+            "retail_byn": 1640.7,
+            "purchase_byn": 1230.53,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1106,7 +1397,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 46800,
+            "purchase_rub": 35100,
+            "retail_byn": 1706.33,
+            "purchase_byn": 1279.75,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22251,
+                "current_retail_byn": 1803.3,
+                "proposed_retail_byn": 1706.33,
+                "delta_byn": -96.97,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1123,7 +1426,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 48500,
+            "purchase_rub": 36375,
+            "retail_byn": 1768.31,
+            "purchase_byn": 1326.23,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22252,
+                "current_retail_byn": 1868.8,
+                "proposed_retail_byn": 1768.31,
+                "delta_byn": -100.49,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1141,7 +1456,15 @@
             "duplicate_name": false,
             "match_status": "ambiguous",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 44600,
+            "purchase_rub": 33450,
+            "retail_byn": 1626.12,
+            "purchase_byn": 1219.59,
+            "blocked_reasons": [
+                "ambiguous"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1158,7 +1481,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 46900,
+            "purchase_rub": 35175,
+            "retail_byn": 1709.97,
+            "purchase_byn": 1282.48,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 11268,
+                "current_retail_byn": 1807.2,
+                "proposed_retail_byn": 1709.97,
+                "delta_byn": -97.23,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1175,7 +1510,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 47900,
+            "purchase_rub": 35925,
+            "retail_byn": 1746.43,
+            "purchase_byn": 1309.83,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 11263,
+                "current_retail_byn": 1845.7,
+                "proposed_retail_byn": 1746.43,
+                "delta_byn": -99.27,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1192,7 +1539,21 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 49100,
+            "purchase_rub": 36825,
+            "retail_byn": 1790.19,
+            "purchase_byn": 1342.64,
+            "blocked_reasons": [
+                "inactive_or_archived"
+            ],
+            "price_plan": {
+                "product_id": 11262,
+                "current_retail_byn": 1455,
+                "proposed_retail_byn": 1790.19,
+                "delta_byn": 335.19,
+                "eligible_for_reviewed_apply": false
+            }
         },
         {
             "sheet": 0,
@@ -1209,7 +1570,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 50400,
+            "purchase_rub": 37800,
+            "retail_byn": 1837.58,
+            "purchase_byn": 1378.19,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22248,
+                "current_retail_byn": 1942,
+                "proposed_retail_byn": 1837.58,
+                "delta_byn": -104.42,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1226,7 +1599,21 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 52700,
+            "purchase_rub": 39525,
+            "retail_byn": 1921.44,
+            "purchase_byn": 1441.08,
+            "blocked_reasons": [
+                "inactive_or_archived"
+            ],
+            "price_plan": {
+                "product_id": 11485,
+                "current_retail_byn": 1685,
+                "proposed_retail_byn": 1921.44,
+                "delta_byn": 236.44,
+                "eligible_for_reviewed_apply": false
+            }
         },
         {
             "sheet": 0,
@@ -1241,7 +1628,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 78200,
+            "purchase_rub": 58650,
+            "retail_byn": 2851.17,
+            "purchase_byn": 2138.38,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1256,7 +1651,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 81000,
+            "purchase_rub": 60750,
+            "retail_byn": 2953.26,
+            "purchase_byn": 2214.95,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1271,7 +1674,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 83700,
+            "purchase_rub": 62775,
+            "retail_byn": 3051.7,
+            "purchase_byn": 2288.78,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1286,7 +1697,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 20200,
+            "purchase_rub": 15150,
+            "retail_byn": 736.49,
+            "purchase_byn": 552.37,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1301,7 +1720,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 19500,
+            "purchase_rub": 14625,
+            "retail_byn": 710.97,
+            "purchase_byn": 533.23,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1316,7 +1743,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 23100,
+            "purchase_rub": 17325,
+            "retail_byn": 842.23,
+            "purchase_byn": 631.67,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1331,7 +1766,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 29500,
+            "purchase_rub": 22125,
+            "retail_byn": 1075.57,
+            "purchase_byn": 806.68,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1346,7 +1789,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 31500,
+            "purchase_rub": 23625,
+            "retail_byn": 1148.49,
+            "purchase_byn": 861.37,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1361,7 +1812,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 64500,
+            "purchase_rub": 48375,
+            "retail_byn": 2351.67,
+            "purchase_byn": 1763.75,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1376,7 +1835,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 64500,
+            "purchase_rub": 48375,
+            "retail_byn": 2351.67,
+            "purchase_byn": 1763.75,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1391,7 +1858,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 8250,
+            "purchase_rub": 6187.5,
+            "retail_byn": 300.8,
+            "purchase_byn": 225.6,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1406,7 +1881,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 82200,
+            "purchase_rub": 61650,
+            "retail_byn": 2997.01,
+            "purchase_byn": 2247.76,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1421,7 +1904,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 85600,
+            "purchase_rub": 64200,
+            "retail_byn": 3120.98,
+            "purchase_byn": 2340.73,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1436,7 +1927,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 88900,
+            "purchase_rub": 66675,
+            "retail_byn": 3241.29,
+            "purchase_byn": 2430.97,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1451,7 +1950,16 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 112900,
+            "purchase_rub": 84675,
+            "retail_byn": 4116.33,
+            "purchase_byn": 3087.25,
+            "blocked_reasons": [
+                "unmatched",
+                "identity_conflict"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1466,7 +1974,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 116200,
+            "purchase_rub": 87150,
+            "retail_byn": 4236.65,
+            "purchase_byn": 3177.49,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1481,7 +1997,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 119400,
+            "purchase_rub": 89550,
+            "retail_byn": 4353.32,
+            "purchase_byn": 3264.99,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1496,7 +2020,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 121300,
+            "purchase_rub": 90975,
+            "retail_byn": 4422.6,
+            "purchase_byn": 3316.95,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1511,7 +2043,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 62300,
+            "purchase_rub": 46725,
+            "retail_byn": 2271.46,
+            "purchase_byn": 1703.59,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1526,7 +2066,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 64100,
+            "purchase_rub": 48075,
+            "retail_byn": 2337.09,
+            "purchase_byn": 1752.81,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1541,7 +2089,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 66100,
+            "purchase_rub": 49575,
+            "retail_byn": 2410.01,
+            "purchase_byn": 1807.5,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1558,7 +2114,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 75600,
+            "purchase_rub": 56700,
+            "retail_byn": 2756.38,
+            "purchase_byn": 2067.28,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22253,
+                "current_retail_byn": 2913,
+                "proposed_retail_byn": 2756.38,
+                "delta_byn": -156.62,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1573,7 +2141,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 78500,
+            "purchase_rub": 58875,
+            "retail_byn": 2862.11,
+            "purchase_byn": 2146.58,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1588,7 +2164,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 81400,
+            "purchase_rub": 61050,
+            "retail_byn": 2967.84,
+            "purchase_byn": 2225.88,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1603,7 +2187,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 95000,
+            "purchase_rub": 71250,
+            "retail_byn": 3463.7,
+            "purchase_byn": 2597.78,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1618,7 +2210,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 102700,
+            "purchase_rub": 77025,
+            "retail_byn": 3744.44,
+            "purchase_byn": 2808.33,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1633,7 +2233,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 124100,
+            "purchase_rub": 93075,
+            "retail_byn": 4524.69,
+            "purchase_byn": 3393.51,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1648,7 +2256,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 133900,
+            "purchase_rub": 100425,
+            "retail_byn": 4881.99,
+            "purchase_byn": 3661.5,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1663,7 +2279,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 99100,
+            "purchase_rub": 74325,
+            "retail_byn": 3613.19,
+            "purchase_byn": 2709.89,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1678,7 +2302,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 101100,
+            "purchase_rub": 75825,
+            "retail_byn": 3686.11,
+            "purchase_byn": 2764.58,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1693,7 +2325,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 103100,
+            "purchase_rub": 77325,
+            "retail_byn": 3759.03,
+            "purchase_byn": 2819.27,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1708,7 +2348,16 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 131700,
+            "purchase_rub": 98775,
+            "retail_byn": 4801.78,
+            "purchase_byn": 3601.34,
+            "blocked_reasons": [
+                "unmatched",
+                "identity_conflict"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1723,7 +2372,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 135000,
+            "purchase_rub": 101250,
+            "retail_byn": 4922.1,
+            "purchase_byn": 3691.58,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1738,7 +2395,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 138400,
+            "purchase_rub": 103800,
+            "retail_byn": 5046.06,
+            "purchase_byn": 3784.55,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1753,7 +2418,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 144700,
+            "purchase_rub": 108525,
+            "retail_byn": 5275.76,
+            "purchase_byn": 3956.82,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1770,7 +2443,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 87500,
+            "purchase_rub": 65625,
+            "retail_byn": 3190.25,
+            "purchase_byn": 2392.69,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22243,
+                "current_retail_byn": 3371.6,
+                "proposed_retail_byn": 3190.25,
+                "delta_byn": -181.35,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1787,7 +2472,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 89000,
+            "purchase_rub": 66750,
+            "retail_byn": 3244.94,
+            "purchase_byn": 2433.71,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22244,
+                "current_retail_byn": 3429.3,
+                "proposed_retail_byn": 3244.94,
+                "delta_byn": -184.36,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1802,7 +2499,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 94700,
+            "purchase_rub": 71025,
+            "retail_byn": 3452.76,
+            "purchase_byn": 2589.57,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1819,7 +2524,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 97600,
+            "purchase_rub": 73200,
+            "retail_byn": 3558.5,
+            "purchase_byn": 2668.87,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22242,
+                "current_retail_byn": 3760.7,
+                "proposed_retail_byn": 3558.5,
+                "delta_byn": -202.2,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1834,7 +2551,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 126900,
+            "purchase_rub": 95175,
+            "retail_byn": 4626.77,
+            "purchase_byn": 3470.08,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1849,7 +2574,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 129600,
+            "purchase_rub": 97200,
+            "retail_byn": 4725.22,
+            "purchase_byn": 3543.91,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1864,7 +2597,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 132300,
+            "purchase_rub": 99225,
+            "retail_byn": 4823.66,
+            "purchase_byn": 3617.74,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1879,7 +2620,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 26800,
+            "purchase_rub": 20100,
+            "retail_byn": 977.13,
+            "purchase_byn": 732.85,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1896,7 +2645,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 36500,
+            "purchase_rub": 27375,
+            "retail_byn": 1330.79,
+            "purchase_byn": 998.09,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22237,
+                "current_retail_byn": 1406.4,
+                "proposed_retail_byn": 1330.79,
+                "delta_byn": -75.61,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1911,7 +2672,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 38200,
+            "purchase_rub": 28650,
+            "retail_byn": 1392.77,
+            "purchase_byn": 1044.58,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1928,7 +2697,19 @@
             "duplicate_name": false,
             "match_status": "exact_candidate",
             "match_method": "exact_name",
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 39800,
+            "purchase_rub": 29850,
+            "retail_byn": 1451.11,
+            "purchase_byn": 1088.33,
+            "blocked_reasons": [],
+            "price_plan": {
+                "product_id": 22238,
+                "current_retail_byn": 1533.6,
+                "proposed_retail_byn": 1451.11,
+                "delta_byn": -82.49,
+                "eligible_for_reviewed_apply": true
+            }
         },
         {
             "sheet": 0,
@@ -1943,7 +2724,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 45100,
+            "purchase_rub": 33825,
+            "retail_byn": 1644.35,
+            "purchase_byn": 1233.26,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1958,7 +2747,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 46000,
+            "purchase_rub": 34500,
+            "retail_byn": 1677.16,
+            "purchase_byn": 1257.87,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1973,7 +2770,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 47100,
+            "purchase_rub": 35325,
+            "retail_byn": 1717.27,
+            "purchase_byn": 1287.95,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -1988,7 +2793,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 68200,
+            "purchase_rub": 51150,
+            "retail_byn": 2486.57,
+            "purchase_byn": 1864.93,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2003,7 +2816,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 69700,
+            "purchase_rub": 52275,
+            "retail_byn": 2541.26,
+            "purchase_byn": 1905.95,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2018,7 +2839,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 71300,
+            "purchase_rub": 53475,
+            "retail_byn": 2599.6,
+            "purchase_byn": 1949.7,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2033,7 +2862,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 73900,
+            "purchase_rub": 55425,
+            "retail_byn": 2694.39,
+            "purchase_byn": 2020.8,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2048,7 +2885,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 136200,
+            "purchase_rub": 102150,
+            "retail_byn": 4965.85,
+            "purchase_byn": 3724.39,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2063,7 +2908,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 139200,
+            "purchase_rub": 104400,
+            "retail_byn": 5075.23,
+            "purchase_byn": 3806.42,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2078,7 +2931,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 144600,
+            "purchase_rub": 108450,
+            "retail_byn": 5272.12,
+            "purchase_byn": 3954.09,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2093,7 +2954,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 48700,
+            "purchase_rub": 36525,
+            "retail_byn": 1775.6,
+            "purchase_byn": 1331.7,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2108,7 +2977,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 45400,
+            "purchase_rub": 34050,
+            "retail_byn": 1655.28,
+            "purchase_byn": 1241.46,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2123,7 +3000,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 49800,
+            "purchase_rub": 37350,
+            "retail_byn": 1815.71,
+            "purchase_byn": 1361.78,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2138,7 +3023,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 47700,
+            "purchase_rub": 35775,
+            "retail_byn": 1739.14,
+            "purchase_byn": 1304.36,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2153,7 +3046,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 51300,
+            "purchase_rub": 38475,
+            "retail_byn": 1870.4,
+            "purchase_byn": 1402.8,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2168,7 +3069,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 53700,
+            "purchase_rub": 40275,
+            "retail_byn": 1957.9,
+            "purchase_byn": 1468.43,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2183,7 +3092,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 79100,
+            "purchase_rub": 59325,
+            "retail_byn": 2883.99,
+            "purchase_byn": 2162.99,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2198,7 +3115,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 82000,
+            "purchase_rub": 61500,
+            "retail_byn": 2989.72,
+            "purchase_byn": 2242.29,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2213,7 +3138,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 84700,
+            "purchase_rub": 63525,
+            "retail_byn": 3088.16,
+            "purchase_byn": 2316.12,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2228,7 +3161,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 83100,
+            "purchase_rub": 62325,
+            "retail_byn": 3029.83,
+            "purchase_byn": 2272.37,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2243,7 +3184,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 88000,
+            "purchase_rub": 66000,
+            "retail_byn": 3208.48,
+            "purchase_byn": 2406.36,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2258,7 +3207,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 93300,
+            "purchase_rub": 69975,
+            "retail_byn": 3401.72,
+            "purchase_byn": 2551.29,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2273,7 +3230,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 97800,
+            "purchase_rub": 73350,
+            "retail_byn": 3565.79,
+            "purchase_byn": 2674.34,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2288,7 +3253,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 96100,
+            "purchase_rub": 72075,
+            "retail_byn": 3503.81,
+            "purchase_byn": 2627.85,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2303,7 +3276,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 98500,
+            "purchase_rub": 73875,
+            "retail_byn": 3591.31,
+            "purchase_byn": 2693.48,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2318,7 +3299,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 110500,
+            "purchase_rub": 82875,
+            "retail_byn": 4028.83,
+            "purchase_byn": 3021.62,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2333,7 +3322,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 112800,
+            "purchase_rub": 84600,
+            "retail_byn": 4112.69,
+            "purchase_byn": 3084.52,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2348,7 +3345,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 148500,
+            "purchase_rub": 111375,
+            "retail_byn": 5414.31,
+            "purchase_byn": 4060.73,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2363,7 +3368,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 151200,
+            "purchase_rub": 113400,
+            "retail_byn": 5512.75,
+            "purchase_byn": 4134.56,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2378,7 +3391,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 154000,
+            "purchase_rub": 115500,
+            "retail_byn": 5614.84,
+            "purchase_byn": 4211.13,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2393,7 +3414,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 89800,
+            "purchase_rub": 67350,
+            "retail_byn": 3274.11,
+            "purchase_byn": 2455.58,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2408,7 +3437,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 90700,
+            "purchase_rub": 68025,
+            "retail_byn": 3306.92,
+            "purchase_byn": 2480.19,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2423,7 +3460,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 96500,
+            "purchase_rub": 72375,
+            "retail_byn": 3518.39,
+            "purchase_byn": 2638.79,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2438,7 +3483,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 99500,
+            "purchase_rub": 74625,
+            "retail_byn": 3627.77,
+            "purchase_byn": 2720.83,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2453,7 +3506,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 129400,
+            "purchase_rub": 97050,
+            "retail_byn": 4717.92,
+            "purchase_byn": 3538.44,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2468,7 +3529,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 136800,
+            "purchase_rub": 102600,
+            "retail_byn": 4987.73,
+            "purchase_byn": 3740.8,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2483,7 +3552,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 139800,
+            "purchase_rub": 104850,
+            "retail_byn": 5097.11,
+            "purchase_byn": 3822.83,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2498,7 +3575,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 50500,
+            "purchase_rub": 37875,
+            "retail_byn": 1841.23,
+            "purchase_byn": 1380.92,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2513,7 +3598,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 52900,
+            "purchase_rub": 39675,
+            "retail_byn": 1928.73,
+            "purchase_byn": 1446.55,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2528,7 +3621,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 53800,
+            "purchase_rub": 40350,
+            "retail_byn": 1961.55,
+            "purchase_byn": 1471.16,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2543,7 +3644,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 55100,
+            "purchase_rub": 41325,
+            "retail_byn": 2008.95,
+            "purchase_byn": 1506.71,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2558,7 +3667,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 56300,
+            "purchase_rub": 42225,
+            "retail_byn": 2052.7,
+            "purchase_byn": 1539.52,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2573,7 +3690,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 58600,
+            "purchase_rub": 43950,
+            "retail_byn": 2136.56,
+            "purchase_byn": 1602.42,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2588,7 +3713,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 87800,
+            "purchase_rub": 65850,
+            "retail_byn": 3201.19,
+            "purchase_byn": 2400.89,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2603,7 +3736,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 90600,
+            "purchase_rub": 67950,
+            "retail_byn": 3303.28,
+            "purchase_byn": 2477.46,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2618,7 +3759,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 93300,
+            "purchase_rub": 69975,
+            "retail_byn": 3401.72,
+            "purchase_byn": 2551.29,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2633,7 +3782,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 54700,
+            "purchase_rub": 41025,
+            "retail_byn": 1994.36,
+            "purchase_byn": 1495.77,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2648,7 +3805,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 51500,
+            "purchase_rub": 38625,
+            "retail_byn": 1877.69,
+            "purchase_byn": 1408.27,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2663,7 +3828,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 55900,
+            "purchase_rub": 41925,
+            "retail_byn": 2038.11,
+            "purchase_byn": 1528.59,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2678,7 +3851,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 54900,
+            "purchase_rub": 41175,
+            "retail_byn": 2001.65,
+            "purchase_byn": 1501.24,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2693,7 +3874,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 57300,
+            "purchase_rub": 42975,
+            "retail_byn": 2089.16,
+            "purchase_byn": 1566.87,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2708,7 +3897,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 59700,
+            "purchase_rub": 44775,
+            "retail_byn": 2176.66,
+            "purchase_byn": 1632.5,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2723,7 +3920,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 88800,
+            "purchase_rub": 66600,
+            "retail_byn": 3237.65,
+            "purchase_byn": 2428.24,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2738,7 +3943,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 91500,
+            "purchase_rub": 68625,
+            "retail_byn": 3336.09,
+            "purchase_byn": 2502.07,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         },
         {
             "sheet": 0,
@@ -2753,7 +3966,15 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
-            "shared_target": false
+            "shared_target": false,
+            "retail_rub": 94400,
+            "purchase_rub": 70800,
+            "retail_byn": 3441.82,
+            "purchase_byn": 2581.37,
+            "blocked_reasons": [
+                "unmatched"
+            ],
+            "price_plan": null
         }
     ],
     "catalog_duplicate_names": {
