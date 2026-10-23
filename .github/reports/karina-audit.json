@@ -1,6 +1,6 @@
 {
     "schema": "karina-audit-v1",
-    "generated_at": "2026-10-23T13:25:27+00:00",
+    "generated_at": "2026-10-23T13:26:51+00:00",
     "mode": "read_only",
     "applied": false,
     "discount_percent": 25,
@@ -23,6 +23,45 @@
                         "column": 7,
                         "kind": "article",
                         "label": "артикул"
+                    }
+                ],
+                "header_candidates": [
+                    {
+                        "row": 16,
+                        "cells": [
+                            {
+                                "column": 1,
+                                "label": "Фото"
+                            },
+                            {
+                                "column": 2,
+                                "label": "Наименование товара Поставщика"
+                            },
+                            {
+                                "column": 3,
+                                "label": "Страна производства"
+                            },
+                            {
+                                "column": 4,
+                                "label": "Единица измерения"
+                            },
+                            {
+                                "column": 5,
+                                "label": "Рекомендованная розничная цена, руб. с НДС"
+                            },
+                            {
+                                "column": 6,
+                                "label": "Тип товара"
+                            },
+                            {
+                                "column": 7,
+                                "label": "Артикул"
+                            },
+                            {
+                                "column": 8,
+                                "label": "Тезнические характеристикм\/описание"
+                            }
+                        ]
                     }
                 ],
                 "header_row": null,
