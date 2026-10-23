@@ -2,5 +2,5 @@
   "task": "audit-karina",
   "artisan_args": "none",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "karina-readonly-audit-20261023-v3-real-columns"
+  "run_id": "karina-readonly-audit-20261023-v4-decimal-articles"
 }
