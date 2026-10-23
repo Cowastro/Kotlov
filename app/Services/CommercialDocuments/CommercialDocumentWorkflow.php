@@ -461,6 +461,7 @@ class CommercialDocumentWorkflow
             ->visibleTo($user)
             ->manualSending()
             ->where('is_enabled', true)
+            ->preferredSendingOrder()
             ->first();
         if (! $mailbox) {
             throw new RuntimeException('Нет доступного почтового ящика для отправки. Проверьте доступ менеджера в разделе «Настройка почты».');

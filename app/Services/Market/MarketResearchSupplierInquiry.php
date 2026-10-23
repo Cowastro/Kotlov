@@ -58,8 +58,8 @@ class MarketResearchSupplierInquiry
     public function formData(MarketResearchReport $report, ?Supplier $supplier = null): array
     {
         $supplier ??= $this->recommendedSupplier($report);
-        $mailbox = CrmMailbox::query()->manualSending()->where('is_enabled', true)->first()
-            ?? CrmMailbox::query()->manualSending()->first();
+        $mailbox = CrmMailbox::query()->visibleTo(auth()->user())->manualSending()->where('is_enabled', true)->preferredSendingOrder()->first()
+            ?? CrmMailbox::query()->visibleTo(auth()->user())->manualSending()->preferredSendingOrder()->first();
 
         return [
             'supplier_id' => $supplier?->id,

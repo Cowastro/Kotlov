@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CrmMailbox extends Model
 {
+    public const DEFAULT_SENDER_EMAIL = 'info@kotlov.by';
+
     public const SERVICE_MAILBOXES = [
         'order@kotlov.by' => 'Системные заказы и заявки',
         'no-reply@kotlov.by' => 'Автоматические письма доступа',
@@ -103,5 +105,14 @@ class CrmMailbox extends Model
     public function scopeOperatorSending(Builder $query): Builder
     {
         return $query->where('email', '!=', 'no-reply@kotlov.by');
+    }
+
+    /** Put the main company mailbox first while retaining a stable fallback order. */
+    public function scopePreferredSendingOrder(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw('CASE WHEN LOWER(email) = ? THEN 0 ELSE 1 END', [self::DEFAULT_SENDER_EMAIL])
+            ->orderBy('name')
+            ->orderBy('id');
     }
 }

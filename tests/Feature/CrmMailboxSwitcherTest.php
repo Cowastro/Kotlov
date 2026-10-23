@@ -53,6 +53,29 @@ class CrmMailboxSwitcherTest extends TestCase
         $this->assertSame(1, ListCrmMailThreads::messageBadgeCounts($orders->id)['unread']);
     }
 
+    public function test_info_mailbox_is_the_default_sender_even_when_another_mailbox_was_created_first(): void
+    {
+        CrmMailbox::query()->delete();
+
+        $other = $this->mailbox('sales@kotlov.by');
+        $info = $this->mailbox('info@kotlov.by');
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        $this->assertSame($info->id, CrmMailbox::query()->preferredSendingOrder()->value('id'));
+
+        Livewire::actingAs($manager)
+            ->test(ListCrmMailThreads::class)
+            ->mountAction('compose')
+            ->assertSchemaStateSet(['mailbox_id' => $info->id]);
+
+        $info->update(['is_enabled' => false]);
+
+        Livewire::actingAs($manager)
+            ->test(ListCrmMailThreads::class)
+            ->mountAction('compose')
+            ->assertSchemaStateSet(['mailbox_id' => $other->id]);
+    }
+
     private function mailbox(string $email): CrmMailbox
     {
         return CrmMailbox::query()->updateOrCreate(['email' => $email], [
