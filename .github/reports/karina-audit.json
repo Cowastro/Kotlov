@@ -1,6 +1,6 @@
 {
     "schema": "karina-audit-v1",
-    "generated_at": "2026-10-23T14:12:59+00:00",
+    "generated_at": "2026-10-23T14:31:06+00:00",
     "mode": "read_only",
     "applied": false,
     "discount_percent": 25,
@@ -34,6 +34,33 @@
         "import_id": 2,
         "matched_after": 135,
         "unmatched_after": 3
+    },
+    "last_enrichment": {
+        "applied": false,
+        "report_blob": "eb285ea5099367204450cd2496d679c193f548a0",
+        "workbook_sha256": "236ef6841215892a7e488ac9bdffc7a93926e3983c39968d5454e1da61edf196",
+        "source_snapshot_sha256": "687b7b481d44a94bb33541f80944abd2a2e88f16ee8b57858a98168e65fea005",
+        "generated_at": "2026-10-23T14:31:05+00:00",
+        "already_applied": false,
+        "planned": 62,
+        "activated": 0,
+        "left_hidden": 54,
+        "official_pages": 72,
+        "source_summary": {
+            "created_products": 116,
+            "official_pages": 72,
+            "eligible": 62,
+            "incomplete": 10,
+            "not_found": 44
+        }
+    },
+    "created_content_summary": {
+        "total": 116,
+        "active": 0,
+        "hidden": 116,
+        "with_official_source": 0,
+        "with_content": 0,
+        "with_images": 0
     },
     "currency_confirmation": "User confirmed RUB; site retail equals converted RRP.",
     "rate": {
