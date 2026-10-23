@@ -230,7 +230,7 @@ jobs:
             echo "- Task: \`$TASK\`"
             echo "- Exit code: \`$status\`"
             echo
-            echo "Only aggregate diagnostics are stored here. Detailed output remains in the server-local log."
+            echo "Only aggregate fields are stored here. Detailed output remains in the server-local log."
             echo
             echo '```text'
             printf '%s\n' "$safe_summary"
