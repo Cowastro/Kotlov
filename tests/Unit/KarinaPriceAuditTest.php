@@ -128,4 +128,20 @@ class KarinaPriceAuditTest extends TestCase
             'Date' => '2026-10-23T00:00:00',
         ], '2026-10-23');
     }
+
+    public function test_site_rrp_is_read_from_source_instead_of_discounted_purchase(): void
+    {
+        $this->assertSame(40200.0, KarinaPricing::retailRubFromRaw([
+            'Рекомендованная розничная цена, руб. с НДС' => '40 200,00',
+        ]));
+        $this->assertSame(40200.0, KarinaPricing::retailRubFromRaw(json_encode([
+            'karina' => ['retail_rub' => 40200], 'purchase' => 30150,
+        ])));
+    }
+
+    public function test_missing_source_rrp_never_falls_back_to_purchase(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        KarinaPricing::retailRubFromRaw(['purchase' => 30150]);
+    }
 }
