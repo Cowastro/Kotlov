@@ -420,7 +420,7 @@ class SyncTeploshopCommand extends Command
                     'supplier_article' => $row['article'] !== '' ? $row['article'] : $row['article_key'],
                     'supplier_article_compact' => $row['article_key'],
                     'supplier_name' => $row['name'],
-                    'source_url' => $source,
+                    'source_url' => $this->makerPage($row) ?? $source,
                     // Retail-only rows (Kospel, De Dietrich, Wester valves): the cost is unknown, not the retail.
                     'price' => $row['wholesale'],
                     'price_byn' => $row['wholesale'],
@@ -461,6 +461,17 @@ class SyncTeploshopCommand extends Command
         $sync->forceFill(['last_status' => $stats['errors'] ? 'partial' : 'updated', 'last_exit_code' => $stats['errors'] ? 1 : 0, 'last_run_at' => now()])->save();
 
         return $stats;
+    }
+
+    /** BIOTEP model pages at the manufacturer (the 18-78 kW boiler is «BIOTEP 77» there); used to enrich the cards. */
+    private function makerPage(array $row): ?string
+    {
+        $pages = ['18' => 'biotep-18', '25' => 'biotep-25', '32' => 'biotep-32', '78' => 'biotep-77', '77' => 'biotep-77'];
+        if ($row['family'] !== 'biotep' || ! preg_match('/(\d+)/', $row['name'], $m) || ! isset($pages[$m[1]])) {
+            return null;
+        }
+
+        return 'https://bio-tep.ru/product/'.$pages[$m[1]].'/';
     }
 
     private function createBiotepCard(array $row): Product

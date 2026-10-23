@@ -285,6 +285,9 @@ class EnrichSupplierSourceProductsCommand extends Command
             array_keys($stats),
             array_values($stats),
         ));
+        foreach ($stats as $key => $value) {
+            $this->line("metric.source_enrich.{$key}={$value}");
+        }
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
     }
