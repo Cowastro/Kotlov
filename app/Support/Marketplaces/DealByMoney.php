@@ -40,6 +40,14 @@ final class DealByMoney
             return $major < 0 ? $major - ($minor / 100) : $major + ($minor / 100);
         }
 
+        // Remove currency abbreviations before deciding which punctuation is
+        // the decimal separator. In "505,40 руб." the final dot belongs to
+        // "руб.", not to the amount.
+        $value = preg_replace(
+            '/(?:byn|руб(?:\.|ля|лей|ль)?|р\.?|коп(?:\.|ейки?|еек)?)/iu',
+            '',
+            $value,
+        ) ?? $value;
         $normalized = str_replace(' ', '', $value);
         $normalized = preg_replace('/[^0-9,\.\-]/u', '', $normalized) ?? '';
 

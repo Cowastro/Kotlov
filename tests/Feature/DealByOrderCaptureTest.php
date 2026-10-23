@@ -126,15 +126,15 @@ class DealByOrderCaptureTest extends TestCase
     public function test_it_parses_deal_by_prices_with_currency_and_repairs_existing_order(): void
     {
         $formattedPayload = $this->orderPayload([
-            'price' => '505 руб. 40 коп.',
-            'full_price' => '505 руб. 40 коп.',
+            'price' => '505,40 руб.',
+            'full_price' => '505,40 руб.',
             'delivery_cost' => '0 руб.',
             'products' => [[
                 'id' => 111,
                 'sku' => 'test-product',
                 'name' => 'Тестовый товар',
-                'price' => '72 руб. 20 коп.',
-                'total_price' => '505 руб. 40 коп.',
+                'price' => '72,20 руб.',
+                'total_price' => '505,40 руб.',
                 'quantity' => 7,
             ]],
         ]);
