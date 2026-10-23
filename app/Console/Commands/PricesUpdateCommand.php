@@ -107,7 +107,7 @@ class PricesUpdateCommand extends Command
 
                 if ($supplier->code === 'karina') {
                     if ($itemCurrency !== 'RUB') {
-                        throw new \\RuntimeException('KARINA source prices must be RUB.');
+                        throw new \RuntimeException('KARINA source prices must be RUB.');
                     }
                     $newPrice = KarinaPricing::quote(
                         KarinaPricing::retailRubFromRaw($item->raw), $itemRate,
