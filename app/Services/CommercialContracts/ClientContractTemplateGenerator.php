@@ -88,6 +88,8 @@ class ClientContractTemplateGenerator
                 );
                 $report['conversion_mode'] = $conversionMode;
 
+                $this->assertRecoveredTemplateFilled($report);
+
                 if (($report['seller_replacements'] ?? 0) < 1) {
                     throw new RuntimeException('В форме не найдены метки реквизитов или таблица с колонками «Поставщик/Исполнитель» и «Покупатель/Заказчик». Исходник не изменён.');
                 }
@@ -153,6 +155,8 @@ class ClientContractTemplateGenerator
             );
             $report['conversion_mode'] = $conversionMode;
 
+            $this->assertRecoveredTemplateFilled($report);
+
             if (($report['seller_replacements'] ?? 0) < 1) {
                 throw new RuntimeException('При повторной сборке не удалось заполнить реквизиты Поставщика.');
             }
@@ -186,6 +190,25 @@ class ClientContractTemplateGenerator
 
         if (! $valid) {
             throw new RuntimeException('В файле отсутствует основной документ Word. Загрузите корректный DOCX.');
+        }
+    }
+
+    /** @param array<string, mixed> $report */
+    private function assertRecoveredTemplateFilled(array $report): void
+    {
+        if (($report['conversion_mode'] ?? null) !== 'text_recovery') {
+            return;
+        }
+
+        $counts = (array) ($report['replaced_tokens'] ?? []);
+        foreach (['{{CONTRACT_NUMBER}}', '{{CONTRACT_DATE}}', '{{QUOTE_NUMBER}}', '{{QUOTE_TOTAL}}'] as $token) {
+            if (($counts[$token] ?? 0) < 1) {
+                throw new RuntimeException('В старой форме Word не удалось восстановить обязательное поле '.$token.'.');
+            }
+        }
+
+        if ((array) ($report['unresolved_tokens'] ?? []) !== []) {
+            throw new RuntimeException('После восстановления старой формы Word остались незаполненные поля.');
         }
     }
 
