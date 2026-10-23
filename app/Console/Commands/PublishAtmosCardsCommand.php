@@ -257,7 +257,8 @@ class PublishAtmosCardsCommand extends Command
             ], [
                 'product_id' => $product->id,
                 'product_sku' => $product->sku,
-                'supplier_article' => $row['article'] !== '' ? $row['article'] : $row['article_key'],
+                // A shared article is unique per supplier only with the name hash.
+                    'supplier_article' => $row['article'] !== '' && empty($row['shared_article_key']) ? $row['article'] : $row['article_key'],
                 'supplier_article_compact' => $row['article_key'],
                 'supplier_name' => trim($row['brand'].' '.$row['name']),
                 'source_url' => $row['url'],
