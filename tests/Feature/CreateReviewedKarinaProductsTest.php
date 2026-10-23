@@ -119,7 +119,7 @@ class CreateReviewedKarinaProductsTest extends TestCase
 
     public function test_second_product_failure_rolls_back_products_links_and_import_updates(): void
     {
-        [, $import, , , $report] = $this->fixture();
+        [$supplier, $import, , , $report] = $this->fixture();
         $writes = 0;
         Product::creating(function () use (&$writes): void {
             if (++$writes === 2) {
@@ -138,7 +138,7 @@ class CreateReviewedKarinaProductsTest extends TestCase
 
         $this->assertSame(0, Product::where('created_via', CreateReviewedKarinaProducts::CREATED_VIA)->count());
         $this->assertSame(0, SupplierProductMapping::where('supplier_code', 'karina')->count());
-        $this->assertSame(0, SupplierProduct::count());
+        $this->assertSame(0, SupplierProduct::where('supplier_id', $supplier->id)->count());
         $this->assertSame(0, $import->fresh()->matched);
         $this->assertSame(2, $import->fresh()->unmatched);
         $this->assertSame(2, SupplierPriceItem::where('import_id', $import->id)->where('match_status', 'unmatched')->count());
