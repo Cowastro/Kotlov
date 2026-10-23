@@ -38,6 +38,19 @@ class AuditDealByOrderPricesCommand extends Command
                     $this->encoded($product['total_price'] ?? null),
                     $this->encoded($product['quantity'] ?? null),
                 ];
+
+                $this->line(sprintf(
+                    'metric.deal_price_format.%s_%d=%s',
+                    $inbox->remote_order_id,
+                    $index + 1,
+                    implode(',', [
+                        'order_'.$this->format(data_get($inbox->payload, 'price')),
+                        'full_'.$this->format(data_get($inbox->payload, 'full_price')),
+                        'delivery_'.$this->format(data_get($inbox->payload, 'delivery_cost')),
+                        'line_'.$this->format($product['price'] ?? null),
+                        'total_'.$this->format($product['total_price'] ?? null),
+                    ]),
+                ));
             }
         }
 
@@ -52,5 +65,25 @@ class AuditDealByOrderPricesCommand extends Command
     private function encoded(mixed $value): string
     {
         return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: 'null';
+    }
+
+    private function format(mixed $value): string
+    {
+        if (is_int($value)) {
+            return 'int'.strlen((string) abs($value));
+        }
+
+        if (is_float($value)) {
+            return 'float';
+        }
+
+        if (! is_string($value)) {
+            return get_debug_type($value);
+        }
+
+        return 'string'.strlen(preg_replace('/\D/', '', $value) ?? '')
+            .'d'.(str_contains($value, '.') ? '1' : '0')
+            .'c'.(str_contains($value, ',') ? '1' : '0')
+            .'a'.(preg_match('/[[:alpha:]]/u', $value) === 1 ? '1' : '0');
     }
 }
