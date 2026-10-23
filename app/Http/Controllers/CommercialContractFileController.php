@@ -40,7 +40,7 @@ class CommercialContractFileController extends Controller
         );
     }
 
-    public function source(CommercialContract $commercialContract): BinaryFileResponse
+    public function source(CommercialContract $commercialContract): StreamedResponse
     {
         abort_unless(auth()->user()?->isManager(), 403);
         abort_unless($commercialContract->source_template_path
