@@ -336,10 +336,37 @@ class SyncAtmosCommand extends Command
         // Links of articles shared by several models merged two rows into one card.
         $shared = array_values(array_unique(array_filter(array_column($rows, 'shared_article_key'))));
         $removed = $shared ? SupplierProduct::query()->where('supplier_id', $supplier->id)->whereIn('supplier_article_normalized', $shared)->delete() : 0;
-        $stats = ['shared_article_links_removed' => $removed, 'offers' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'price_holds_released' => 0, 'skipped' => 0, 'errors' => 0];
+        $stats = ['shared_article_links_removed' => $removed, 'offers' => 0, 'offers_stored' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'price_holds_released' => 0, 'skipped' => 0, 'errors' => 0];
         $touched = [];
         foreach ($rows as $row) {
             if (! $row['product_id'] || ($row['wholesale'] === null && $row['retail'] === null)) {
+                // A priced row without a card stays as an unlinked offer for КП (SupplierOfferCardCreator).
+                if (! $row['product_id'] && ($row['wholesale'] !== null || $row['retail'] !== null)) {
+                    SupplierProduct::query()->updateOrCreate([
+                        'supplier_id' => $supplier->id,
+                        'supplier_article_normalized' => $row['article_key'],
+                    ], [
+                        'supplier_sync_id' => $sync->id,
+                        'product_id' => null,
+                        'product_sku' => null,
+                        'supplier_article' => $row['article'] !== '' && empty($row['shared_article_key']) ? $row['article'] : $row['article_key'],
+                        'supplier_article_compact' => $row['article_key'],
+                        'supplier_name' => trim($row['brand'].' '.$row['name']),
+                        'source_url' => $row['url'] ?: self::BASE_URL."/prices?section={$row['section']}",
+                        'price' => $row['wholesale'] ?? $row['retail'],
+                        'price_byn' => $row['wholesale'] ?? $row['retail'],
+                        'currency' => 'BYN',
+                        'currency_rate' => 1,
+                        'in_stock' => $row['in_stock'],
+                        'stock_status' => $row['in_stock'] ? 'in_stock' : 'preorder',
+                        'stock_text' => $row['in_stock'] ? 'На складе' : 'Под заказ',
+                        'match_status' => 'unmatched',
+                        'match_confidence' => null,
+                        'raw' => $row,
+                        'last_synced_at' => now(),
+                    ]);
+                    $stats['offers_stored']++;
+                }
                 $stats['skipped']++;
 
                 continue;

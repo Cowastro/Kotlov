@@ -14,6 +14,9 @@ class Product extends Model
 {
     public const AVAILABILITY_IN_STOCK = 'in_stock';
 
+    /** Card created from a supplier price row while writing a КП; hidden until checked. */
+    public const CREATED_VIA_COMMERCIAL_OFFER = 'commercial_offer';
+
     public const AVAILABILITY_CHECK = 'check';
 
     public const AVAILABILITY_OUT_OF_STOCK = 'out_of_stock';
@@ -49,6 +52,7 @@ class Product extends Model
         'weight', 'unit', 'warranty',
         'is_active', 'is_archived', 'in_stock', 'availability_status', 'stock_qty',
         'requires_price_confirmation', 'manual_stock_management',
+        'created_via', 'created_by_user_id',
         'is_featured', 'is_new', 'is_sale', 'sale_campaign', 'sale_ends_at', 'sort_order', 'variant_selector_excluded',
         'meta_title', 'meta_keywords', 'meta_description',
         'rating', 'reviews_count', 'views_count', 'popularity_score', 'popularity_updated_at',

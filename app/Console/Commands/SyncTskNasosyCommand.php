@@ -90,6 +90,8 @@ class SyncTskNasosyCommand extends Command
     /** @var array<int, string> product id => name, for checking old article links */
     private array $nameById = [];
     private int $supplierId = 0;
+    /** @var array<string, int|null>|null supplier article => linked product id (null: unlinked offer) */
+    private ?array $offerLinks = null;
     /** @var array<string, int> article => card of an old link that names another model */
     private array $staleArticles = [];
     private array $indexByBrandModel = [];
@@ -426,6 +428,7 @@ class SyncTskNasosyCommand extends Command
         $this->brandById = $this->brandByName = $this->indexBySupplierArticle = $this->indexBySku = [];
         $this->indexByBrandModel = $this->modelCollisions = $this->nameById = $this->staleArticles = [];
         $this->supplierId = 0;
+        $this->offerLinks = null;
         DB::table('brands')->get(['id', 'name'])->each(function ($b) {
             $this->brandById[(int) $b->id] = $b->name;
             $this->brandByName[mb_strtolower($b->name)] = (int) $b->id;
@@ -717,7 +720,7 @@ class SyncTskNasosyCommand extends Command
         $syncId = $this->ensureSync($now);
         $stats = array_fill_keys([
             'matched', 'created', 'updated', 'brand_missing', 'category_missing', 'skipped', 'errors',
-            'errors_supplier_link', 'errors_product_update', 'errors_duplicate', 'errors_data', 'stale_links_detached',
+            'errors_supplier_link', 'errors_product_update', 'errors_duplicate', 'errors_data', 'stale_links_detached', 'offers_stored',
         ], 0);
         $touchedProductIds = [];
 
@@ -756,6 +759,8 @@ class SyncTskNasosyCommand extends Command
                             ->update(['product_id' => null, 'product_sku' => null, 'match_status' => 'unmatched', 'updated_at' => $now]);
                         $touchedProductIds[] = $this->staleArticles[$r['norm_article']];
                         $stats['stale_links_detached']++;
+                    } elseif ($this->storeOffer($r, $sid, $syncId, $now)) {
+                        $stats['offers_stored']++;
                     }
                     $stats['skipped']++;
                 }
@@ -827,14 +832,15 @@ class SyncTskNasosyCommand extends Command
         };
     }
 
-    private function upsertSupplierProduct(array $r, int $pid, string $sku, int $sid, ?int $syncId, $now): void
+    /** Supplier price row as a supplier_products record; $pid 0 = no card yet (an offer a manager can turn into one). */
+    private function offerPayload(array $r, int $pid, string $sku, ?int $syncId, $now): array
     {
-        $payload = [
+        return [
             'supplier_article'            => $r['norm_article'],
             'supplier_article_normalized' => $r['norm_article'],
             'supplier_sync_id' => $syncId,
-            'product_id'   => $pid,
-            'product_sku'  => $sku,
+            'product_id'   => $pid ?: null,
+            'product_sku'  => $pid ? $sku : null,
             'supplier_name' => Str::limit(trim($r['brand'] . ' ' . $r['name']), 255, ''),
             'source_url'   => self::SOURCE_URL,
             'price'        => $r['price'],          // Опт1 — закупка
@@ -845,13 +851,43 @@ class SyncTskNasosyCommand extends Command
             'stock_status' => $r['stock']['status'],
             'stock_text'   => $r['status_text'] !== '' ? $r['status_text'] : null,
             'delivery_days' => $r['stock']['delivery_days'],
-            'match_status' => 'matched',
-            'match_confidence' => $r['confidence'],
+            'match_status' => $pid ? 'matched' : 'unmatched',
+            'match_confidence' => $pid ? $r['confidence'] : null,
             'raw'          => json_encode(['article' => $r['article'], 'brand' => $r['brand'], 'retail' => $r['retail_price']], JSON_UNESCAPED_UNICODE),
             'last_synced_at' => $now,
             'last_stock_synced_at' => $now,
             'updated_at'   => $now,
         ];
+    }
+
+    /**
+     * Keep a price row without a card as an unlinked offer: a manager writing a
+     * КП finds it and creates the card (SupplierOfferCardCreator).
+     */
+    private function storeOffer(array $r, int $sid, ?int $syncId, $now): bool
+    {
+        if ((float) ($r['price'] ?? 0) <= 0) {
+            return false;
+        }
+        $this->offerLinks ??= DB::table('supplier_products')->where('supplier_id', $sid)->pluck('product_id', 'supplier_article')->all();
+        if (! array_key_exists($r['norm_article'], $this->offerLinks)) {
+            DB::table('supplier_products')->insert($this->offerPayload($r, 0, '', $syncId, $now) + ['supplier_id' => $sid, 'created_at' => $now]);
+            $this->offerLinks[$r['norm_article']] = null;
+
+            return true;
+        }
+        if ($this->offerLinks[$r['norm_article']] !== null) {
+            return false;
+        }
+        DB::table('supplier_products')->where('supplier_id', $sid)->where('supplier_article', $r['norm_article'])
+            ->update($this->offerPayload($r, 0, '', $syncId, $now));
+
+        return true;
+    }
+
+    private function upsertSupplierProduct(array $r, int $pid, string $sku, int $sid, ?int $syncId, $now): void
+    {
+        $payload = $this->offerPayload($r, $pid, $sku, $syncId, $now);
 
         // The supplier article is the unique external identity. Prefer its row
         // before a product-level fallback; otherwise changing an older product

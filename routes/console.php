@@ -307,6 +307,13 @@ Schedule::command('supplier:sync-domkotlov-venma --apply')
     ->appendOutputTo(storage_path('logs/domkotlov-venma-sync.log'));
 
 // Акции поставщиков со сроком: после даты окончания возвращаем обычную цену.
+// Cards a manager created from a supplier offer in a КП: AI description.
+Schedule::command('catalog:finish-offer-cards')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/offer-cards.log'));
+
 Schedule::command('catalog:expire-sale-campaigns --apply')
     ->hourlyAt(5)
     ->timezone($supplierSyncTimezone)

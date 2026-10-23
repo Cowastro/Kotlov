@@ -10,6 +10,7 @@ use App\Filament\Resources\CommercialDocuments\Pages\ViewCommercialDocument;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\MarketResearchReports\MarketResearchReportResource;
 use App\Filament\Resources\Orders\OrderResource;
+use App\Models\Category;
 use App\Models\CommercialDocument;
 use App\Models\CrmContact;
 use App\Models\CrmCounterparty;
@@ -22,6 +23,7 @@ use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
 use App\Services\Market\MarketWebResearchService;
+use App\Services\Suppliers\SupplierOfferCards;
 use App\Services\Telephony\PhoneNumber;
 use App\Support\AdminPhoneLinks;
 use BackedEnum;
@@ -295,6 +297,86 @@ class CommercialDocumentResource extends Resource
                                     ->send();
                             }),
                     ])->key('catalog_actions')->columnSpanFull(),
+                    // Not in the catalogue: a supplier price row becomes a hidden card and a КП line.
+                    Hidden::make('supplier_offer_labels')->default([])->dehydrated(false),
+                    Select::make('supplier_offer_id')
+                        ->label('Нет в каталоге — найдено в прайсах поставщиков')
+                        ->helperText('Выберите позицию: создадим карточку с фото и характеристиками поставщика и добавим её в КП. На сайте карточка появится после проверки.')
+                        ->options(fn (Get $get): array => (array) $get('supplier_offer_labels'))
+                        ->dehydrated(false)
+                        ->live()
+                        ->afterStateUpdated(fn ($state, Set $set) => $set('supplier_offer_category_id', $state ? app(SupplierOfferCards::class)->suggestedCategoryId((int) $state) : null))
+                        ->visible(fn (Get $get): bool => (array) $get('supplier_offer_labels') !== [])
+                        ->columnSpanFull(),
+                    Select::make('supplier_offer_category_id')
+                        ->label('Категория новой карточки')
+                        ->options(fn (): array => Category::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
+                        ->searchable()
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get): bool => filled($get('supplier_offer_id'))),
+                    TextInput::make('supplier_offer_source_url')
+                        ->label('Страница с фото и характеристиками')
+                        ->helperText('Необязательно: для ТСК страницу aqualider.by найдём сами.')
+                        ->url()
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get): bool => filled($get('supplier_offer_id'))),
+                    SchemaActions::make([
+                        Action::make('search_supplier_offers')
+                            ->label('Найти у поставщиков')
+                            ->icon('heroicon-o-truck')
+                            ->color('gray')
+                            ->action(function (Get $get, Set $set): void {
+                                $search = trim((string) $get('catalog_search'));
+                                if ($search === '') {
+                                    Notification::make()->warning()->title('Введите название или артикул в поиск выше')->send();
+
+                                    return;
+                                }
+                                $results = app(SupplierOfferCards::class)->search($search);
+                                $set('supplier_offer_labels', $results);
+                                $set('supplier_offer_id', null);
+                                Notification::make()
+                                    ->title($results === [] ? 'В прайсах поставщиков не найдено' : 'Найдено в прайсах: '.count($results))
+                                    ->body($results === [] ? 'Попробуйте модель без лишних слов, например «WRS D 50-120».' : 'Выберите позицию и нажмите «Создать карточку и добавить в КП».')
+                                    ->color($results === [] ? 'warning' : 'success')
+                                    ->send();
+                            }),
+                        Action::make('create_from_supplier_offer')
+                            ->label('Создать карточку и добавить в КП')
+                            ->icon('heroicon-o-sparkles')
+                            ->color('primary')
+                            ->visible(fn (Get $get): bool => filled($get('supplier_offer_id')))
+                            ->action(function (Get $get, Set $set): void {
+                                try {
+                                    $product = app(SupplierOfferCards::class)->create(
+                                        (int) $get('supplier_offer_id'),
+                                        (int) $get('supplier_offer_category_id') ?: null,
+                                        trim((string) $get('supplier_offer_source_url')) ?: null,
+                                        auth()->id(),
+                                    );
+                                } catch (\RuntimeException $e) {
+                                    Notification::make()->warning()->title($e->getMessage())->send();
+
+                                    return;
+                                }
+                                $items = (array) $get('items');
+                                $defaultDiscount = min(100, max(0, (float) $get('client_default_discount_percent')));
+                                foreach (app(CommercialOfferCopilotService::class)->itemRows([$product->id]) as $row) {
+                                    $row['discount_percent'] = $defaultDiscount;
+                                    $row['line_total'] = round((float) $row['unit_price'] * (float) $row['quantity'] * (1 - ($defaultDiscount / 100)), 2);
+                                    $items[(string) Str::uuid()] = $row;
+                                }
+                                $set('items', $items);
+                                $set('supplier_offer_id', null);
+                                $set('supplier_offer_labels', []);
+                                Notification::make()
+                                    ->success()
+                                    ->title('Карточка создана и добавлена в КП')
+                                    ->body($product->name.'. На сайте она скрыта до проверки; описание допишется автоматически в течение 15 минут.'
+                                        .((float) $product->price > 0 ? '' : ' У поставщика нет РРЦ — укажите цену в строке КП.'))
+                                    ->send();
+                            }),
+                    ])->key('supplier_offer_actions')->columnSpanFull(),
                 ]),
 
             Section::make('Товары и услуги')

@@ -23,7 +23,7 @@ class ProductAdminAvailabilityFilterTest extends TestCase
         $component = Livewire::actingAs($admin)->test(ListProducts::class);
 
         $this->assertSame(
-            ['category_id', 'brand_id', 'supplier', 'in_stock'],
+            ['category_id', 'brand_id', 'supplier', 'created_from_offer', 'in_stock'],
             array_keys($component->instance()->getTable()->getFilters()),
         );
     }

@@ -362,6 +362,16 @@ class ProductsTable
                         : $query
                     ),
 
+                TernaryFilter::make('created_from_offer')
+                    ->label('Созданы из КП')
+                    ->placeholder('Все')
+                    ->trueLabel('Ждут проверки')
+                    ->falseLabel('Проверены и опубликованы')
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->where('created_via', Product::CREATED_VIA_COMMERCIAL_OFFER)->where('is_active', false),
+                        false: fn (Builder $query): Builder => $query->where('created_via', Product::CREATED_VIA_COMMERCIAL_OFFER)->where('is_active', true),
+                    ),
+
                 TernaryFilter::make('in_stock')
                     ->label('Наличие')
                     ->placeholder('Все')
@@ -378,6 +388,16 @@ class ProductsTable
                 panel: 'admin',
             ))
             ->recordActions([
+                Action::make('publish_offer_card')
+                    ->label('Опубликовать')
+                    ->icon('heroicon-o-check-badge')
+                    ->iconButton()
+                    ->color('success')
+                    ->tooltip('Карточка создана из КП: проверьте фото, характеристики и описание и опубликуйте')
+                    ->visible(fn (Product $record): bool => $record->created_via === Product::CREATED_VIA_COMMERCIAL_OFFER && ! $record->is_active)
+                    ->requiresConfirmation()
+                    ->modalHeading('Опубликовать карточку на сайте?')
+                    ->action(fn (Product $record) => $record->forceFill(['is_active' => true])->save()),
                 CreateCommercialDocumentAction::make()
                     ->iconButton()
                     ->tooltip('Создать КП и привязать к лиду'),
