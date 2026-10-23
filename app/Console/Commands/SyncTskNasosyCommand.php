@@ -6,6 +6,7 @@ use App\Services\SupplierProductAvailabilityService;
 use App\Support\Catalog\TskPumpClassifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -34,6 +35,8 @@ class SyncTskNasosyCommand extends Command
         {--category-id= : Restrict matching, updates and missing-row deactivation to one product category}
         {--in-stock-only : Create products only for rows «в наличии» (skip preorder/out)}
         {--create-new : Create products for rows with no match}
+        {--create-brand= : With --create-new: only rows of this brand (e.g. WELLMIX)}
+        {--create-with-aqualider : With --create-new: only rows that have a card on aqualider.by (photos and specs to enrich from)}
         {--trace=* : Product ids: print their model key and the price rows with the same model numbers}';
 
     protected $description = 'Sync ТСК Насосы prices & stock from Google Sheets into supplier_products.';
@@ -396,7 +399,8 @@ class SyncTskNasosyCommand extends Command
         if ($t === '') {
             return ['status' => 'unknown', 'in_stock' => false, 'delivery_days' => null];
         }
-        if (str_contains($t, 'заказ')) {
+        // «ожидается» is an incoming delivery: sold as «под заказ».
+        if (str_contains($t, 'заказ') || str_contains($t, 'ожида')) {
             return ['status' => 'preorder', 'in_stock' => false,
                     'delivery_days' => str_contains($t, 'мес') ? 60 : (str_contains($t, 'нед') ? 10 : 14)];
         }
@@ -686,6 +690,13 @@ class SyncTskNasosyCommand extends Command
         $this->line('metric.tsk_sync.matched=' . ($actions['matched'] ?? 0));
         $this->line('metric.tsk_sync.create_candidates=' . ($actions['create_candidate'] ?? 0));
         $this->line('metric.tsk_sync.skipped=' . $skipped);
+        if ($this->option('create-new')) {
+            $creatable = array_filter($rows, fn (array $r): bool => $r['action'] === 'create_candidate' && $r['resolved_category_id'] !== null && $this->mayCreate($r));
+            $this->line('metric.tsk_sync.would_create=' . count($creatable));
+            foreach (array_count_values(array_map(fn (array $r): int => (int) $r['resolved_category_id'], $creatable)) as $category => $count) {
+                $this->line("audit.tsk_sync.would_create_category={$category}:{$count}");
+            }
+        }
         return self::SUCCESS;
     }
 
@@ -722,7 +733,7 @@ class SyncTskNasosyCommand extends Command
                     if ($this->updateProductRetailAndStock($r, $pid, $now)) {
                         $stats['updated']++;
                     }
-                } elseif ($createNew && trim($r['brand']) !== '' && $r['resolved_category_id'] !== null) {
+                } elseif ($createNew && trim($r['brand']) !== '' && $r['resolved_category_id'] !== null && $this->mayCreate($r)) {
                     $r['resolved_brand_id'] = $r['resolved_brand_id'] ?? $this->findOrCreateBrand($r['brand']);
                     $pid = $this->createProduct($r, $now);
                     $sku = $this->sku($pid);
@@ -856,10 +867,32 @@ class SyncTskNasosyCommand extends Command
         );
     }
 
+    private ?array $aqualiderArticles = null;
+
+    private function mayCreate(array $r): bool
+    {
+        $brand = trim((string) $this->option('create-brand'));
+        if ($brand !== '' && mb_strtolower(trim($r['brand'])) !== mb_strtolower($brand)) {
+            return false;
+        }
+        if (! $this->option('create-with-aqualider')) {
+            return true;
+        }
+        if ($this->aqualiderArticles === null) {
+            // aqualider.by card URLs end with the ТСК article: /p/…-wellmix-wrs-d-50-120sf-17109972
+            $xml = (string) Http::timeout(60)->retry(3, 2000, throw: false)->get('https://aqualider.by/sitemap.xml')->body();
+            preg_match_all('#<loc>https://aqualider\.by/p/[^<]*-(\d{4,})</loc>#', $xml, $m);
+            $this->aqualiderArticles = array_flip(array_map(fn (string $a): string => ltrim($a, '0'), $m[1]));
+        }
+
+        return isset($this->aqualiderArticles[ltrim((string) $r['norm_article'], '0')]);
+    }
+
     private function createProduct(array $r, $now): int
     {
         $brand = $this->brandById[(int) $r['resolved_brand_id']] ?? '';
-        $name  = trim($r['brand'] . ' ' . $r['name']);
+        // «Циркуляционный насос Wellmix WRS …» already names the brand.
+        $name  = mb_stripos($r['name'], trim($r['brand'])) !== false ? trim($r['name']) : trim($r['brand'] . ' ' . $r['name']);
         $name  = $name !== '' ? $name : $r['article'];
         return (int) DB::table('products')->insertGetId([
             'category_id' => (int) $r['resolved_category_id'],

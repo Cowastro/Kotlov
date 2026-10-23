@@ -44,7 +44,7 @@ final class TskPumpClassifier
         if (self::containsAny($value, [
             'циркуляц', 'циркул', ' nmt', 'nmt ', ' upc', 'upc ',
             ' lpa', 'lpa ', 'ups ', 'ups-', 'ups25', 'ups32',
-        ])) {
+        ]) || preg_match('/(?:^|\s)(?:wrs|wre)(?:\s|-|$)/u', $value)) {
             return 'tsirkulyatsionnyie';
         }
 
@@ -53,6 +53,8 @@ final class TskPumpClassifier
         if (self::containsAny($value, [
             'поверхност', 'мотопомп', 'самовсас', 'частотным преобразовател',
             'частотным регулятор', 'центробежный насос', 'насос вихревой',
+            // Wellmix industrial: vertical multistage, monoblock and end-suction pumps.
+            'многоступенчат', 'моноблочн', 'консольн',
         ]) || preg_match('/\b(?:psb|wp)[\s_-]*\d/i', $value)) {
             return 'poverhnostnyie';
         }

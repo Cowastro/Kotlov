@@ -534,6 +534,7 @@ jobs:
             echo "safe_tsk_metrics_begin"
             grep -E '^metric\.tsk_(scrape|sync|enrich)\.[a-z_]+=[0-9]+$' "$detail_log" || true
             grep -E '^audit\.tsk_sync\.(collision|duplicate)=[0-9,]+$' "$detail_log" | sort -u || true
+            grep -E '^audit\.tsk_sync\.would_create_category=[0-9]+:[0-9]+$' "$detail_log" || true
             grep -E '^audit\.tsk_sync\.trace(_row)?=[0-9]+:[0-9A-Za-z,:_ -]+$' "$detail_log" || true
             echo "safe_tsk_metrics_end"
           fi

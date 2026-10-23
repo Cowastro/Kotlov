@@ -109,4 +109,38 @@ class SyncTskNasosyMatchingTest extends TestCase
         $this->assertSame(0, $rv100->supplierProducts()->count());
         $this->assertSame(0, $cp180->supplierProducts()->count());
     }
+
+    public function test_it_creates_cards_only_for_the_given_brand_with_an_aqualider_card(): void
+    {
+        foreach (['tsirkulyatsionnyie' => 'Циркуляционные насосы', 'poverhnostnyie' => 'Поверхностные насосы'] as $slug => $name) {
+            Category::query()->firstOrCreate(['slug' => $slug], ['name' => $name, 'parent_id' => 0, 'is_active' => true]);
+        }
+        Brand::query()->create(['name' => 'WELLMIX', 'slug' => 'wellmix', 'is_active' => true]);
+        Brand::query()->create(['name' => 'UNIPUMP', 'slug' => 'unipump', 'is_active' => true]);
+        \Illuminate\Support\Facades\Http::fake(['aqualider.by/sitemap.xml' => \Illuminate\Support\Facades\Http::response(
+            '<urlset><url><loc>https://aqualider.by/p/sdvoennyy-cirkulyacionnyy-wellmix-wrs-d-50-120sf-17109972</loc></url>'
+            .'<url><loc>https://aqualider.by/p/mnogostupenchatyy-nasos-wellmix-cv-1-4-17000001</loc></url></urlset>')]);
+
+        $csv = tempnam(sys_get_temp_dir(), 'tsk').'.csv';
+        file_put_contents($csv, implode("
+", [
+            'Артикул,,Наименование,Бренд,Модель,Опт 1,МРЦ,Наличие',
+            '17109972,,"WRS D 50-120SF (3скорости,220V)",WELLMIX,"WRS D 50-120SF (3скорости,220V)","3549,43","4617,14",в наличии',
+            '17000001,,Многоступенчатый насос Wellmix CV 1- 4-0-HQCV,WELLMIX,Многоступенчатый насос Wellmix CV 1- 4-0-HQCV,"1165,05","1500,00",ожидается',
+            '17000002,,WRS 20/40 130,WELLMIX,WRS 20/40 130,"126,51","164,57",в наличии',
+            '18000001,,UPC 25-40 130,UNIPUMP,UPC 25-40 130,"70,00","95,00",в наличии',
+        ]));
+        $before = Product::query()->count();
+
+        $this->artisan('supplier:sync-tsk-nasosy', ['--apply' => true, '--create-new' => true, '--create-brand' => 'WELLMIX',
+            '--create-with-aqualider' => true, '--stock-file' => $csv])->assertSuccessful();
+
+        $this->assertSame($before + 2, Product::query()->count());
+        $twin = Product::query()->where('name', 'WELLMIX WRS D 50-120SF (3скорости,220V)')->sole();
+        $this->assertSame('tsirkulyatsionnyie', $twin->category->slug);
+        $this->assertSame('17109972', $twin->supplierProducts()->sole()->supplier_article);
+        $multistage = Product::query()->where('name', 'Многоступенчатый насос Wellmix CV 1- 4-0-HQCV')->sole();
+        $this->assertSame('poverhnostnyie', $multistage->category->slug);
+        $this->assertSame('preorder', $multistage->supplierProducts()->sole()->stock_status);
+    }
 }
