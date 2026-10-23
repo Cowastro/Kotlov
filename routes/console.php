@@ -163,6 +163,15 @@ Schedule::command('supplier:sync-atmos --apply --sync-retail-prices')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/atmos-price-stock-sync.log'));
 
+// ООО «Теплошоп» (BIOTEP): the newest Prajs-Teploshop xlsx on biodom.by,
+// uploaded every few months. Links and wholesale only; retail stays ours.
+Schedule::command('supplier:sync-teploshop --apply')
+    ->dailyAt('07:40')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/teploshop-price-sync.log'));
+
 // TENKO: enrich only manually verified exact modifications from the official
 // manufacturer catalogue. Small batches avoid accidental broad replacements.
 Schedule::command('supplier:enrich-thermokraft-official --apply --limit=3')
