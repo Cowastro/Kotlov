@@ -81,7 +81,7 @@ class EnrichBaniaPriceListProductsCommand extends Command
     {
         $apply = (bool) $this->option('apply');
         $dryRun = (bool) $this->option('dry-run') || ! $apply;
-        $apiKey = (string) env('SERPER_API_KEY', '');
+        $apiKey = (string) config('services.serper.key', '');
         $this->sourceDomain = $this->normalizeSourceDomain((string) $this->option('source-domain'));
         try {
             $this->sourceStartUrls = $this->normalizeSourceUrls((string) $this->option('source-url'));

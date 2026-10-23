@@ -137,7 +137,7 @@ trait ScrapesRusklimatSpecs
     {
         try {
             $r = Http::timeout(20)
-                ->withHeaders(['X-API-KEY' => env('SERPER_API_KEY'), 'Content-Type' => 'application/json'])
+                ->withHeaders(['X-API-KEY' => config('services.serper.key'), 'Content-Type' => 'application/json'])
                 ->post('https://google.serper.dev/search', ['q' => $query, 'num' => 10, 'gl' => 'ru', 'hl' => 'ru']);
             return $r->successful()
                 ? array_values(array_filter(array_map(fn ($it) => $it['link'] ?? null, $r->json('organic') ?? [])))

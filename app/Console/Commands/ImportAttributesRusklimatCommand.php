@@ -110,7 +110,7 @@ class ImportAttributesRusklimatCommand extends Command
             $this->error("No scrape mapping for category {$catId}. Mapped: " . implode(', ', array_keys(self::MAP_SCRAPE)));
             return self::FAILURE;
         }
-        if (! env('SERPER_API_KEY')) {
+        if (! config('services.serper.key')) {
             $this->error('SERPER_API_KEY not set.');
             return self::FAILURE;
         }

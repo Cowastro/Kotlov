@@ -66,9 +66,20 @@ return [
         'installer_applications_chat_id' => env('TELEGRAM_INSTALLER_APPLICATIONS_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
     ],
 
-    // Google search API (serper.dev): product pages for cards created from a КП.
+    // Google search API (serper.dev): КП product pages, Rusklimat photos/specs, Bania enrichment.
+    // Read through config(): with a cached config env() returns null in app code.
     'serper' => [
         'key' => env('SERPER_API_KEY'),
+    ],
+
+    // Image search fallbacks of catalog:enrich-images (Rusklimat photos).
+    'google_cse' => [
+        'key' => env('GOOGLE_CSE_KEY'),
+        'cx' => env('GOOGLE_CSE_CX'),
+    ],
+
+    'bing_image' => [
+        'key' => env('BING_IMAGE_KEY'),
     ],
 
     'ai' => [

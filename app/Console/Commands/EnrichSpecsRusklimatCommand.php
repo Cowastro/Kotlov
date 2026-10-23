@@ -56,7 +56,7 @@ class EnrichSpecsRusklimatCommand extends Command
             ? '<fg=red;options=bold>APPLY: specs/short will be written.</>'
             : '<fg=yellow;options=bold>DRY RUN: nothing will be written.</>');
 
-        if (! env('SERPER_API_KEY')) {
+        if (! config('services.serper.key')) {
             $this->error('SERPER_API_KEY not set.');
             return self::FAILURE;
         }
@@ -307,7 +307,7 @@ class EnrichSpecsRusklimatCommand extends Command
     {
         try {
             $r = Http::timeout(20)
-                ->withHeaders(['X-API-KEY' => env('SERPER_API_KEY'), 'Content-Type' => 'application/json'])
+                ->withHeaders(['X-API-KEY' => config('services.serper.key'), 'Content-Type' => 'application/json'])
                 ->post('https://google.serper.dev/search', ['q' => $query, 'num' => 10, 'gl' => 'ru', 'hl' => 'ru']);
             if (! $r->successful()) {
                 return [];

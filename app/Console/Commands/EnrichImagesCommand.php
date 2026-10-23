@@ -396,9 +396,9 @@ class EnrichImagesCommand extends Command
 
     private function detectProvider(): ?string
     {
-        if (env('GOOGLE_CSE_KEY') && env('GOOGLE_CSE_CX')) { return 'google_cse'; }
-        if (env('SERPER_API_KEY'))                          { return 'serper'; }
-        if (env('BING_IMAGE_KEY'))                          { return 'bing'; }
+        if (config('services.google_cse.key') && config('services.google_cse.cx')) { return 'google_cse'; }
+        if (config('services.serper.key'))                          { return 'serper'; }
+        if (config('services.bing_image.key'))                          { return 'bing'; }
         return null;
     }
 
@@ -423,7 +423,7 @@ class EnrichImagesCommand extends Command
     private function searchGoogleCse(string $query): array
     {
         $r = Http::timeout(20)->get('https://www.googleapis.com/customsearch/v1', [
-            'key' => env('GOOGLE_CSE_KEY'), 'cx' => env('GOOGLE_CSE_CX'),
+            'key' => config('services.google_cse.key'), 'cx' => config('services.google_cse.cx'),
             'searchType' => 'image', 'num' => 6, 'imgSize' => 'large', 'q' => $query,
         ]);
         if (! $r->successful()) {
@@ -441,7 +441,7 @@ class EnrichImagesCommand extends Command
     private function searchSerper(string $query): array
     {
         $r = Http::timeout(20)
-            ->withHeaders(['X-API-KEY' => env('SERPER_API_KEY'), 'Content-Type' => 'application/json'])
+            ->withHeaders(['X-API-KEY' => config('services.serper.key'), 'Content-Type' => 'application/json'])
             ->post('https://google.serper.dev/images', ['q' => $query, 'num' => 6]);
         if (! $r->successful()) {
             $this->line('  <fg=red>serper http-' . $r->status() . '</>');
@@ -459,7 +459,7 @@ class EnrichImagesCommand extends Command
     private function searchBing(string $query): array
     {
         $r = Http::timeout(20)
-            ->withHeaders(['Ocp-Apim-Subscription-Key' => env('BING_IMAGE_KEY')])
+            ->withHeaders(['Ocp-Apim-Subscription-Key' => config('services.bing_image.key')])
             ->get('https://api.bing.microsoft.com/v7.0/images/search', ['q' => $query, 'count' => 6]);
         if (! $r->successful()) {
             return [];
