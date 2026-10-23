@@ -701,6 +701,9 @@ class SyncTskNasosyCommand extends Command
             foreach (array_count_values(array_map(fn (array $r): int => (int) $r['resolved_category_id'], $creatable)) as $category => $count) {
                 $this->line("audit.tsk_sync.would_create_category={$category}:{$count}");
             }
+            foreach (array_count_values(array_map(fn (array $r): string => Str::slug($r['brand']) ?: 'none', $creatable)) as $brand => $count) {
+                $this->line("audit.tsk_sync.would_create_brand={$brand}:{$count}");
+            }
         }
         return self::SUCCESS;
     }

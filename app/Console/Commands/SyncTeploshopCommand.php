@@ -53,6 +53,13 @@ class SyncTeploshopCommand extends Command
 
     private const SUPPLIER_NAME = 'ООО «Теплошоп»';
 
+    /**
+     * Brands we buy from Теплошоп. Kospel, De Dietrich, Vaillant, Protherm and
+     * BAXI come cheaper or direct from other suppliers (owner's decision of
+     * 23.10.2026): their rows are read for reference but not linked.
+     */
+    public const LINKED_FAMILIES = ['biotep', 'wester'];
+
     private const MEDIA_SEARCH = 'https://biodom.by/wp-json/wp/v2/media?search=prajs-teploshop&per_page=50&_fields=source_url';
 
     /** Brand family => spellings in the price and in the catalogue. */
@@ -396,9 +403,24 @@ class SyncTeploshopCommand extends Command
             'last_run_at' => now(),
             'last_status' => 'running',
         ]);
-        $stats = ['offers' => 0, 'created' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'skipped' => 0, 'errors' => 0];
         $touched = [];
+        $stats = ['offers' => 0, 'created' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'skipped' => 0, 'errors' => 0, 'not_linked_brand' => 0];
+        // Links of brands bought elsewhere go, with the brands on the supplier.
+        $stats['links_removed'] = SupplierProduct::query()->where('supplier_id', $supplier->id)->get()
+            ->filter(fn (SupplierProduct $link): bool => ! in_array($this->family((string) $link->supplier_name), self::LINKED_FAMILIES, true))
+            ->each(function (SupplierProduct $link) use (&$touched): void {
+                $touched[] = (int) $link->product_id;
+                $link->delete();
+            })->count();
+        $keepBrands = DB::table('supplier_products')->where('supplier_products.supplier_id', $supplier->id)
+            ->join('products', 'products.id', '=', 'supplier_products.product_id')->pluck('products.brand_id')->filter()->unique();
+        $supplier->brands()->sync($keepBrands->all());
         foreach ($rows as $row) {
+            if (! in_array($row['family'], self::LINKED_FAMILIES, true)) {
+                $stats['not_linked_brand']++;
+
+                continue;
+            }
             try {
                 if (! $row['product_id'] && $row['family'] === 'biotep' && $this->option('create-biotep') && $row['retail']) {
                     $row['product_id'] = $this->createBiotepCard($row)->id;

@@ -56,11 +56,10 @@ class SyncTeploshopCommandTest extends TestCase
             ->expectsOutputToContain('metric.teploshop.created=1')
             ->assertSuccessful();
 
-        $this->assertSame('2809.17', number_format((float) $turbo->supplierProducts()->sole()->price_byn, 2, '.', ''));
-        // Protherm wholesale 0 and Kospel retail-only rows: the cost stays unknown.
-        $this->assertNull($panther->supplierProducts()->sole()->price_byn);
-        $this->assertNull($ekco->supplierProducts()->sole()->price_byn);
-        $this->assertSame(2795.17, (float) $ekco->supplierProducts()->sole()->raw['retail']);
+        // Vaillant, Protherm and Kospel are bought elsewhere: matched for reference, never linked.
+        $this->assertSame(0, $turbo->supplierProducts()->count());
+        $this->assertSame(0, $panther->supplierProducts()->count());
+        $this->assertSame(0, $ekco->supplierProducts()->count());
         $biotep = Product::query()->where('sku', 'BIOTEP-18')->sole();
         $this->assertSame('Пеллетный котел BIOTEP 18', $biotep->name);
         $this->assertSame(13700.0, (float) $biotep->price);
