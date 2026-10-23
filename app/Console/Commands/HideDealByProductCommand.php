@@ -10,7 +10,7 @@ class HideDealByProductCommand extends Command
 {
     protected $signature = 'deal:hide-product
         {sku : Exact Deal.by SKU}
-        {--name= : Exact product name used as an additional safety check}
+        {--title= : Exact product name used as an additional safety check}
         {--apply : Hide the matched product on Deal.by}';
 
     protected $description = 'Find one exact Deal.by product and optionally hide it from the storefront';
@@ -18,7 +18,7 @@ class HideDealByProductCommand extends Command
     public function handle(DealByClient $client): int
     {
         $sku = $this->normalize((string) $this->argument('sku'));
-        $name = $this->normalize((string) $this->option('name'));
+        $name = $this->normalize((string) $this->option('title'));
 
         if ($sku === '' || $name === '') {
             $this->error('Укажите точный артикул и точное название товара.');
