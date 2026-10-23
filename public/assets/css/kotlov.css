@@ -1288,7 +1288,7 @@ body {
     }
 
     .product-detail-page .mobile-sticky-actions.has-installment {
-        grid-template-columns: 52px minmax(0, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .product-detail-page .tf-sticky-btn-atc .tf-product-info-quantity {
@@ -1318,8 +1318,8 @@ body {
     }
 
     .product-detail-page .mobile-sticky-actions.has-installment .mobile-sticky-cart {
-        width: 52px;
-        min-width: 52px;
+        width: 100%;
+        min-width: 0;
         padding: 0;
     }
 
@@ -1336,7 +1336,7 @@ body {
         justify-content: center;
         flex-direction: column;
         gap: 1px;
-        padding: 6px 8px;
+        padding: 6px 4px;
         border: 1px solid #171717;
         border-radius: 8px;
         background: #fff;
