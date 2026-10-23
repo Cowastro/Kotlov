@@ -196,7 +196,9 @@ class SyncTeploshopCommand extends Command
                     break;
                 case 'расшир.баки':
                     if (stripos($text(4), 'wester') !== false || str_starts_with(mb_strtolower($text(4)), 'комплект')) {
-                        $row = ['brand' => 'Wester', 'article' => $text(3), 'name' => $text(4),
+                        // «Бак расширительный WESTER WRV 1 000л 10 бар»: the catalogue names the series and volume only.
+                        $tank = preg_match('/(W[RD]V)\s*([\d ]+?)\s*л/u', $text(4), $t) ? 'Бак Wester '.$t[1].' '.str_replace(' ', '', $t[2]) : $text(4);
+                        $row = ['brand' => 'Wester', 'article' => $text(3), 'name' => $tank, 'description' => $text(4),
                             'wholesale' => $this->money($c[10] ?? null), 'retail' => $this->money($c[11] ?? null)];
                     }
                     break;
@@ -301,6 +303,12 @@ class SyncTeploshopCommand extends Command
             }
             if (($sku = $this->key((string) $product->sku)) !== '') {
                 $bySku[$sku][] = (int) $product->id;
+            }
+            // Some cards carry the manufacturer article in the name («Lynx HK 24 0010015239»).
+            if (preg_match_all('/\d{8,}/', $product->name, $numbers)) {
+                foreach ($numbers[0] as $number) {
+                    $bySku[$this->key($number)][] = (int) $product->id;
+                }
             }
             $byName[$this->nameKey(($product->brand?->name ?? '').' '.$product->name)][] = (int) $product->id;
             $byName[$this->nameKey($product->name)][] = (int) $product->id;
@@ -527,7 +535,8 @@ class SyncTeploshopCommand extends Command
     /** Words a card adds around the model («Котел газовый настенный …»). */
     private const DESCRIPTIVE = ['котел', 'котёл', 'газовый', 'газовые', 'настенный', 'напольный', 'двухконтурный', 'одноконтурный',
         'конденсационный', 'электрический', 'электрокотел', 'пеллетный', 'косвенный', 'косвенного', 'нагрева', 'накопительный',
-        'водонагреватель', 'бойлер', 'насос', 'циркуляционный', 'бак', 'расширительный', 'мембранный', 'с', 'и', 'для', 'гайками'];
+        'водонагреватель', 'бойлер', 'насос', 'циркуляционный', 'бак', 'расширительный', 'мембранный', 'с', 'и', 'для', 'гайками',
+        'самоочисткой', 'автоматической', 'очисткой'];
 
     /**
      * Ordered model key: brand and descriptive words dropped, look-alike letters
