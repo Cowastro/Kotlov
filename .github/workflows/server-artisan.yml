@@ -439,6 +439,7 @@ jobs:
             echo "safe_web_sources_metrics_begin"
             grep -E '^metric\.(web_sources|offer_cards)\.[a-z_]+=[0-9]+$' "$detail_log" || true
             grep -E '^audit\.web_sources\.page=[a-z0-9-]+:[a-z0-9-]*$' "$detail_log" || true
+            grep -E '^audit\.web_sources\.error=[a-z0-9-]+$' "$detail_log" || true
             echo "safe_web_sources_metrics_end"
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:check-supplier-links" ]]; then

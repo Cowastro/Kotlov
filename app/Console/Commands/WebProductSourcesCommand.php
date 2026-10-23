@@ -27,6 +27,9 @@ class WebProductSourcesCommand extends Command
         }
         $this->line('metric.web_sources.pages='.count($found));
         $this->line('metric.web_sources.http_status='.$sources->lastStatus);
+        if ($sources->lastError !== '') {
+            $this->line('audit.web_sources.error='.Str::slug($sources->lastError));
+        }
 
         return self::SUCCESS;
     }

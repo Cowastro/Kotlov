@@ -32,6 +32,9 @@ class WebProductSources
     /** HTTP status of the last Google request (0: not asked). */
     public int $lastStatus = 0;
 
+    /** Error text of the last failed Google request. */
+    public string $lastError = '';
+
     public function isConfigured(): bool
     {
         return $this->key() !== '';
@@ -56,6 +59,7 @@ class WebProductSources
                     ->withHeaders(['X-API-KEY' => $this->key(), 'Content-Type' => 'application/json'])
                     ->post('https://google.serper.dev/search', ['q' => $query, 'num' => 10] + $locale);
                 $this->lastStatus = $response->status();
+                $this->lastError = $response->successful() ? '' : (string) ($response->json('message') ?? Str::limit($response->body(), 120));
                 foreach ((array) $response->json('organic', []) as $item) {
                     $url = (string) ($item['link'] ?? '');
                     $host = Str::lower((string) parse_url($url, PHP_URL_HOST));
