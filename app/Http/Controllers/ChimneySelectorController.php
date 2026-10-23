@@ -61,6 +61,7 @@ class ChimneySelectorController extends Controller
                 'url' => '/'.$slug.'/'.$product->slug,
                 'diameter' => $diameter[1] ?? null,
                 'outer_diameter' => $diameterPair[2] ?? null,
+                'diameter_pair' => isset($diameterPair[1], $diameterPair[2]) ? [$diameterPair[1], $diameterPair[2]] : null,
                 'steel' => $steel[1] ?? null,
                 'length_mm' => isset($length[1]) ? (int) $length[1] : null,
                 'system' => str_contains($slug, 'sendvich')

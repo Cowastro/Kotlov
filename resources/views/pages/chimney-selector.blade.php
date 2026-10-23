@@ -41,8 +41,9 @@
                         <label>Марка стали<select name="steel"><option value="">Подобрать из доступных</option><option value="430">AISI 430</option><option value="304">AISI 304</option><option value="316">AISI 316</option><option value="321">AISI 321</option></select></label>
                         <label>Длина моно-участка<select name="mono_length"><option value="0.5">0,5 м</option><option value="1" selected>1 м</option><option value="1.5">1,5 м</option><option value="2">2 м</option></select></label>
                         <label>Адаптер на печь<select name="stove_adapter"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
+                        <label>Диаметр трассы после адаптера<select name="chimney_diameter" data-chimney-diameter></select></label>
                     </div>
-                    <p class="cs-field-note">Для патрубка Ø115 подборщик выбирает переходной адаптер 115/120.</p>
+                    <p class="cs-field-note">Складские диаметры трассы: Ø120, Ø150, Ø180 и Ø200. Для патрубка Ø130 можно выбрать адаптер на Ø120 или Ø150.</p>
 
                     <div class="cs-step"><span>03</span><div><h2>Схема и высота</h2><p>Выберите основные элементы трассы. Точный состав проверит специалист.</p></div></div>
                     <div class="cs-fields">
@@ -98,6 +99,23 @@
     var message = document.querySelector('[data-cs-message]');
     if (!form || !result) return;
 
+    var standardDiameters = {
+        '100':['120'], '110':['120'], '115':['120'], '120':['120'],
+        '130':['120','150'], '150':['150'], '160':['180'], '180':['180'], '200':['200']
+    };
+    var preferredDiameter = {'100':'120', '110':'120', '115':'120', '120':'120', '130':'150', '150':'150', '160':'180', '180':'180', '200':'200'};
+    var chimneyDiameterSelect = form.querySelector('[data-chimney-diameter]');
+    function syncChimneyDiameters() {
+        var selected = form.querySelector('input[name="diameter"]:checked');
+        var inlet = selected ? selected.value : '115';
+        var previous = chimneyDiameterSelect.value;
+        var options = standardDiameters[inlet] || [inlet];
+        chimneyDiameterSelect.innerHTML = options.map(function (diameter) { return '<option value="' + diameter + '">Ø ' + diameter + ' мм</option>'; }).join('');
+        chimneyDiameterSelect.value = options.includes(previous) ? previous : (preferredDiameter[inlet] || options[0]);
+    }
+    form.querySelectorAll('input[name="diameter"]').forEach(function (input) { input.addEventListener('change', syncChimneyDiameters); });
+    syncChimneyDiameters();
+
     function money(value) {
         return Number(value).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' BYN';
     }
@@ -108,11 +126,15 @@
     }
     function choose(need, settings, used) {
         function matches(product, ignoreSteel) {
-            var targetDiameter = need.diameterMode === 'outer' ? settings.outerDiameter : settings.diameter;
+            var targetDiameter = need.diameterMode === 'outer'
+                ? settings.outerDiameter
+                : (need.kind === 'adapter' ? settings.diameter : settings.chimneyDiameter);
             var productDiameter = need.diameterMode === 'outer' ? (product.outer_diameter || product.diameter) : product.diameter;
+            var adapterPairMatches = need.kind === 'adapter' && need.toDiameter
+                ? Array.isArray(product.diameter_pair) && product.diameter_pair.includes(settings.diameter) && product.diameter_pair.includes(need.toDiameter)
+                : null;
             return product.kind === need.kind && !used[product.id]
-                && (!targetDiameter || productDiameter === targetDiameter || !productDiameter)
-                && (!need.toDiameter || product.outer_diameter === need.toDiameter)
+                && (adapterPairMatches !== null ? adapterPairMatches : (!targetDiameter || productDiameter === targetDiameter || !productDiameter))
                 && (need.system === 'any' || product.system === need.system)
                 && (ignoreSteel || settings.steel === '' || product.steel === settings.steel || !product.steel)
                 && (!need.lengthMm || product.length_mm === need.lengthMm);
@@ -131,7 +153,7 @@
         var needs = [];
         var height = Math.max(1, Math.ceil(settings.height));
         var monoLength = Math.max(0.5, Number(settings.monoLength));
-        if (settings.stoveAdapter) needs.push({kind:'adapter', quantity:1, system:'any', toDiameter:settings.diameter === '115' ? '120' : null, label:'Адаптер на патрубок печи' + (settings.diameter === '115' ? ' · 115/120' : '')});
+        if (settings.stoveAdapter) needs.push({kind:'adapter', quantity:1, system:'any', toDiameter:settings.diameter === settings.chimneyDiameter ? null : settings.chimneyDiameter, label:'Адаптер на патрубок печи' + (settings.diameter === settings.chimneyDiameter ? '' : ' · ' + settings.diameter + '/' + settings.chimneyDiameter)});
         if (settings.system === 'combined') {
             addPipeNeeds(needs, monoLength, 'mono', 'Участок от оборудования · моно');
             if (settings.damper) needs.push({kind:'damper', quantity:1, system:'mono', label:'Шибер'});
@@ -162,8 +184,9 @@
             height:height, monoLength:Number(data.get('mono_length')), stoveAdapter:data.get('stove_adapter') === 'yes',
             damper:data.get('damper') === 'yes', ceilingPasses:Number(data.get('ceiling_passes')),
             clamps:clampValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(clampValue),
-            umbrella:data.get('umbrella') === 'yes', outerDiameter:null
+            umbrella:data.get('umbrella') === 'yes', outerDiameter:null, chimneyDiameter:data.get('chimney_diameter')
         };
+        if (!settings.stoveAdapter) settings.chimneyDiameter = settings.diameter;
         var needs = buildNeeds(settings);
         var used = {};
         var matchedNeeds = 0;
@@ -192,6 +215,7 @@
         }
         var missing = needs.length - matchedNeeds;
         var systemLabel = settings.system === 'combined' ? 'моно ' + settings.monoLength.toLocaleString('ru-RU') + ' м + утеплённый' : (settings.system === 'sandwich' ? 'полностью утеплённый' : 'полностью моно');
+        var diameterLabel = settings.diameter === settings.chimneyDiameter ? 'Ø ' + settings.diameter + ' мм' : 'патрубок Ø ' + settings.diameter + ' → дымоход Ø ' + settings.chimneyDiameter + ' мм';
         function renderBundle() {
             if (!rows.length) {
                 message.value = 'Подбор дымохода очищен пользователем.';
@@ -202,11 +226,11 @@
             var saving = unlocked ? subtotal * discount / 100 : 0;
             var total = subtotal - saving;
             var names = rows.map(function (row) { return row.label + ': ' + row.quantity + ' × ' + row.product.name; }).join('; ');
-            message.value = 'Подбор дымохода: Ø ' + settings.diameter + ' мм, ' + systemLabel + ', сталь ' + (settings.steel || 'из доступных')
+            message.value = 'Подбор дымохода: ' + diameterLabel + ', ' + systemLabel + ', сталь ' + (settings.steel || 'из доступных')
                 + ', схема ' + settings.scheme + ', высота ' + settings.height + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
                 + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
                 + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
-            result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">Ø ' + settings.diameter + ' мм · ' + systemLabel + ' · ' + settings.height + ' м</p>'
+            result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">' + diameterLabel + ' · ' + systemLabel + ' · ' + settings.height + ' м</p>'
                 + (missing ? '<p class="cs-safety">Не все специальные узлы найдены в точном исполнении. Недостающие позиции добавит менеджер.</p>' : '')
                 + '<div class="cs-result__list">' + rows.map(function (row, index) {
                     return '<div class="cs-result__item"><img src="' + esc(row.product.image) + '" alt=""><div><a href="' + esc(row.product.url) + '">' + esc(row.product.name)
