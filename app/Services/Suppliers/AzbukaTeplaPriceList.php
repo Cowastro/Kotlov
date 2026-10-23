@@ -8,6 +8,10 @@ class AzbukaTeplaPriceList
 {
     public const RETAIL_SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1dXDdXhq26L9WtWxjac5kyzpKZXu0RjlQAQntHtWCS_k/edit?gid=2045946143#gid=2045946143';
 
+    public const MANAGER_NAME = 'Петр';
+
+    public const MANAGER_PHONE = '+375 44 557-19-35';
+
     /** @return array<string,mixed> */
     public function load(string $path): array
     {

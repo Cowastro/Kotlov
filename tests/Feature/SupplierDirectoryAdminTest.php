@@ -97,6 +97,17 @@ class SupplierDirectoryAdminTest extends TestCase
         $this->assertTrue($brand->suppliers()->whereKey($supplier->id)->exists());
     }
 
+    public function test_price_list_url_identifiers_are_not_treated_as_supplier_phone_numbers(): void
+    {
+        $supplier = Supplier::query()->create([
+            'code' => 'url-is-not-phone',
+            'name' => 'Поставщик со ссылкой на прайс',
+            'contact' => 'https://docs.google.com/spreadsheets/d/example/edit?gid=2045946143#gid=2045946143',
+        ]);
+
+        $this->assertSame([], $supplier->contactPhoneNumbers());
+    }
+
     public function test_manager_can_quickly_find_supplier_by_brand_search_or_filter(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);

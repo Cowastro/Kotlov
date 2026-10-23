@@ -49,6 +49,9 @@ class SyncAzbukaTeplaPriceListCommandTest extends TestCase
             ->assertSuccessful();
 
         $supplier = Supplier::query()->where('code', 'azbuka-tepla')->firstOrFail();
+        $this->assertSame('Петр: +375 44 557-19-35', $supplier->contact);
+        $this->assertSame('+375 44 557-19-35', $supplier->contactPhoneNumbers()[0]);
+        $this->assertNotContains('2045946143', $supplier->contactPhoneNumbers());
         $product->refresh()->load('supplierProducts.supplier');
         $this->assertTrue($product->is_active);
         $this->assertFalse($product->is_archived);

@@ -472,12 +472,40 @@ class SyncAzbukaTeplaPriceListCommand extends Command
     private function ensureSupplier(?Supplier $supplier, array $payload): array
     {
         $supplier ??= new Supplier;
+        $communicationChannels = collect($supplier->communication_channels ?? [])
+            ->map(function ($channel, $key): ?array {
+                if (is_array($channel)) {
+                    return $channel;
+                }
+
+                if (is_string($key) && is_scalar($channel) && trim((string) $channel) !== '') {
+                    return ['type' => $key, 'value' => trim((string) $channel)];
+                }
+
+                return null;
+            })
+            ->filter()
+            ->reject(fn (array $channel): bool => in_array(
+                mb_strtolower((string) ($channel['type'] ?? '')),
+                ['phone', 'whatsapp', 'viber', 'telegram'],
+                true,
+            ))
+            ->prepend([
+                'type' => 'phone',
+                'name' => AzbukaTeplaPriceList::MANAGER_NAME,
+                'value' => AzbukaTeplaPriceList::MANAGER_PHONE,
+                'note' => 'Менеджер Азбуки Тепла',
+            ])
+            ->values()
+            ->all();
+
         $supplier->forceFill([
             'code' => 'azbuka-tepla',
             'name' => $supplier->exists ? $supplier->name : 'Азбука Тепла',
             'currency' => 'BYN',
             'currency_rate' => 1,
-            'contact' => AzbukaTeplaPriceList::RETAIL_SOURCE_URL,
+            'contact' => AzbukaTeplaPriceList::MANAGER_NAME.': '.AzbukaTeplaPriceList::MANAGER_PHONE,
+            'communication_channels' => $communicationChannels,
             'notes' => 'Розничные цены — Google Таблица; закупочная цена — колонка «Опт VIP» партнерского прайса. Остатки не передаются: менеджер уточняет наличие.',
             'is_active' => true,
         ])->save();

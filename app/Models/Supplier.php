@@ -57,9 +57,14 @@ class Supplier extends Model
             ->values()
             ->all();
 
-        preg_match_all('/(?<!\w)(?:\+?\d[\d\s().\-]{5,}\d)(?!\w)/u', (string) $this->contact, $matches);
+        // Price-list URLs may contain long numeric identifiers (for example a
+        // Google Sheets `gid`) which are not telephone numbers.
+        $contactText = preg_replace('~https?://\S+~iu', ' ', (string) $this->contact) ?? '';
+        preg_match_all('/(?<!\w)(?:\+?\d[\d\s().\-]{5,}\d)(?!\w)/u', $contactText, $matches);
 
-        return collect([...$crmPhones, ...$channelPhones, ...($matches[0] ?? [])])
+        // Direct operational contacts are intentionally first: this is the
+        // number managers should call before a general CRM company phone.
+        return collect([...$channelPhones, ...$crmPhones, ...($matches[0] ?? [])])
             ->map(fn (string $phone): string => trim($phone))
             ->filter()
             ->unique(fn (string $phone): string => preg_replace('/\D/', '', $phone) ?? $phone)
