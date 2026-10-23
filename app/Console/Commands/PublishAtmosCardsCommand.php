@@ -136,6 +136,8 @@ class PublishAtmosCardsCommand extends Command
                 } catch (\Throwable $e) {
                     $stats['errors']++;
                     $this->warn($item['name'].': '.$e->getMessage());
+                    $this->line(sprintf('audit.atmos_cards.error=%s:%s:%s', $item['row']['article_key'] ?? '-', class_basename($e),
+                        $e instanceof \Illuminate\Database\QueryException ? (string) ($e->errorInfo[1] ?? 0) : '0'));
                 }
             }
             app(SupplierProductAvailabilityService::class)->refreshMany($created);
