@@ -20,6 +20,7 @@ class KarinaPriceAudit
         foreach ($book->getWorksheetIterator() as $sheetIndex => $sheet) {
             $rows = $sheet->toArray(null, true, false, false);
             $structure = [];
+            $headerCandidates = [];
             $header = null;
             $columns = [];
             foreach ($rows as $index => $row) {
@@ -38,6 +39,17 @@ class KarinaPriceAudit
                         $structure[] = ['row' => $index + 1, 'column' => $col + 1, 'kind' => $kind, 'label' => $label];
                         $found[$kind][] = $col;
                     }
+                }
+                if (count($found['article'] ?? []) === 1) {
+                    $cells = [];
+                    foreach ($row as $col => $value) {
+                        $text = trim((string) $value);
+                        if ($text !== '' && mb_strlen($text) <= 160
+                            && ! preg_match('/@|https?:|телефон|контакт|\\+\\d{7}/iu', $text)) {
+                            $cells[] = ['column' => $col + 1, 'label' => $text];
+                        }
+                    }
+                    $headerCandidates[] = ['row' => $index + 1, 'cells' => $cells];
                 }
                 if ($header === null && count($found['name'] ?? []) === 1 && count($found['retail'] ?? []) === 1) {
                     $header = $index;
@@ -80,7 +92,7 @@ class KarinaPriceAudit
             }
             $sheets[] = [
                 'index' => $sheetIndex, 'rows' => count($rows),
-                'recognized_cells' => $structure, 'header_row' => $header === null ? null : $header + 1,
+                'recognized_cells' => $structure, 'header_candidates' => $headerCandidates, 'header_row' => $header === null ? null : $header + 1,
                 'columns' => $columns, 'excluded_rows' => $invalid,
             ];
         }
