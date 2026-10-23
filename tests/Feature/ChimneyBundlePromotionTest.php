@@ -84,6 +84,7 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertOk()
             ->assertSeeText('Соберите дымоход под своё оборудование')
             ->assertSeeText('Марка стали')
+            ->assertSeeText('Моно + утеплённый')
             ->assertSeeText('Схема и высота')
             ->assertSeeText('Теплов и Сухов')
             ->assertSeeText('−10%')

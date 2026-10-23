@@ -46,7 +46,12 @@ class ChimneySelectorController extends Controller
                 'url' => '/'.$slug.'/'.$product->slug,
                 'diameter' => $diameter[1] ?? null,
                 'steel' => $steel[1] ?? null,
-                'system' => str_contains($slug, 'sendvich') || str_contains(mb_strtolower($text), 'сэндвич') ? 'sandwich' : 'mono',
+                'system' => str_contains($slug, 'sendvich')
+                    || str_contains(mb_strtolower($text), 'сэндвич')
+                    || str_contains(mb_strtolower($text), 'термо')
+                    || (bool) preg_match('/D?\s*\d{2,3}\s*[\/]\s*\d{2,3}/iu', $text)
+                        ? 'sandwich'
+                        : 'mono',
                 'kind' => $this->kind($slug, $product->name),
                 'preferred' => $product->brand?->slug === config('shop.chimney_bundle_discount.preferred_brand_slug'),
             ];
