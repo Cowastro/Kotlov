@@ -78,7 +78,7 @@ class KarinaPriceAudit
                         continue;
                     }
                     $article = $columns['article'] !== null ? trim((string) ($row[$columns['article']] ?? '')) : '';
-                    if ($article !== '' && ! preg_match('/^[\pL\pN_.\/() -]{1,100}$/u', $article)) {
+                    if ($article !== '' && ! preg_match('/^[\pL\pN_.,\/() -]{1,100}$/u', $article)) {
                         $invalid[] = $index + 1;
                         continue;
                     }
