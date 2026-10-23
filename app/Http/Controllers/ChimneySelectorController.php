@@ -18,11 +18,13 @@ class ChimneySelectorController extends Controller
         $preferredBrandSlug = (string) config('shop.chimney_bundle_discount.preferred_brand_slug', 'teplov-i-suhov');
         $preferredBrandId = Brand::query()->where('slug', $preferredBrandSlug)->value('id');
 
-        $products = Product::query()
+        $catalogQuery = Product::query()
             ->whereIn('category_id', $categoryIds)
             ->orderable()
             ->withSupplierChannels()
-            ->with(['category', 'brand'])
+            ->with(['category', 'brand']);
+
+        $products = (clone $catalogQuery)
             ->when($preferredBrandId, fn ($query) => $query->orderByRaw(
                 'CASE WHEN brand_id = ? THEN 0 ELSE 1 END',
                 [$preferredBrandId]
@@ -32,10 +34,21 @@ class ChimneySelectorController extends Controller
             ->limit(700)
             ->get();
 
+        // Keep the common half- and one-metre pipe sections in the selector even
+        // when they fall outside the general catalogue limit.
+        $pipeSections = (clone $catalogQuery)
+            ->where(function ($query) {
+                $query->where('name', 'like', '%L500%')
+                    ->orWhere('name', 'like', '%L1000%');
+            })
+            ->limit(300)
+            ->get();
+        $products = $products->merge($pipeSections)->unique('id')->values();
+
         $catalog = $products->map(function (Product $product): array {
             $text = $product->name.' '.collect((array) $product->specs)->flatten()->implode(' ');
             preg_match('/(?:Ø|диаметр[^0-9]{0,12})?(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*(?:мм)?/iu', $text, $diameter);
-            preg_match('/(?:D|Ø)?\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*[\/]\s*(130|150|160|180|200|210|220|230|250|260|280|300|310|350)/iu', $text, $diameterPair);
+            preg_match('/(?:D|Ø)?\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*[\/]\s*(120|130|150|160|180|200|210|220|230|250|260|280|300|310|350)/iu', $text, $diameterPair);
             preg_match('/(?:AISI\s*)?(304|316|321|430)/iu', $text, $steel);
             preg_match('/\bL\s*(250|500|750|1000)\b/iu', $text, $length);
             $slug = (string) $product->category?->slug;

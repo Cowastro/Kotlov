@@ -42,6 +42,7 @@
                         <label>Длина моно-участка<select name="mono_length"><option value="0.5">0,5 м</option><option value="1" selected>1 м</option><option value="1.5">1,5 м</option><option value="2">2 м</option></select></label>
                         <label>Адаптер на печь<select name="stove_adapter"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
                     </div>
+                    <p class="cs-field-note">Для патрубка Ø115 подборщик выбирает переходной адаптер 115/120.</p>
 
                     <div class="cs-step"><span>03</span><div><h2>Схема и высота</h2><p>Выберите основные элементы трассы. Точный состав проверит специалист.</p></div></div>
                     <div class="cs-fields">
@@ -81,7 +82,7 @@
 
 @push('styles')
 <style>
-.chimney-selector-page{--cs-red:#e34234;--cs-dark:#111;--cs-line:#e6e6e3;background:#fafaf8}.cs-hero{padding:70px 0;background:#111;color:#fff}.cs-hero__grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:48px;align-items:center}.cs-hero h1{max-width:780px;margin:12px 0 16px;color:#fff;font-size:clamp(38px,5vw,68px);line-height:1.02}.cs-hero p{max-width:700px;margin:0;color:#c8c8c8;font-size:18px;line-height:1.6}.cs-kicker{color:#ff7065;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.cs-equipment{margin-top:24px;padding:15px 18px;border:1px solid #383838;border-radius:14px;background:#1b1b1b}.cs-discount{display:flex;flex-direction:column;padding:30px;border-radius:24px;background:var(--cs-red)}.cs-discount strong{font-size:58px;line-height:1}.cs-discount span{margin-top:10px;line-height:1.4}.cs-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:32px;align-items:start}.cs-form,.cs-result{padding:30px;border:1px solid var(--cs-line);border-radius:24px;background:#fff}.cs-result{position:sticky;top:110px;min-height:350px}.cs-step{display:flex;gap:16px;margin:0 0 18px}.cs-step:not(:first-child){margin-top:34px;padding-top:28px;border-top:1px solid var(--cs-line)}.cs-step>span{display:grid;flex:0 0 38px;height:38px;place-items:center;border-radius:50%;background:#111;color:#fff;font-size:12px;font-weight:700}.cs-step h2{margin:0 0 4px;font-size:23px}.cs-step p{margin:0;color:#777;font-size:14px}.cs-options{display:flex;flex-wrap:wrap;gap:8px}.cs-options input{position:absolute;opacity:0}.cs-options span{display:block;padding:11px 14px;border:1px solid var(--cs-line);border-radius:10px;cursor:pointer}.cs-options input:checked+span{border-color:#111;background:#111;color:#fff}.cs-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:26px}.cs-fields label{font-size:13px;font-weight:700}.cs-fields select{width:100%;height:50px;margin-top:7px;padding:0 14px;border:1px solid var(--cs-line);border-radius:10px;background:#fff}.cs-safety{margin:14px 0 0;color:#777;font-size:12px;line-height:1.5}.cs-result__empty{padding:60px 15px;text-align:center;color:#777}.cs-result__empty span{font-size:42px}.cs-result h2{font-size:24px}.cs-result__list{display:grid;gap:12px;margin:20px 0}.cs-result__item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--cs-line)}.cs-result__item img{width:58px;height:58px;object-fit:contain}.cs-result__item a{color:#111;font-size:13px;font-weight:700}.cs-result__item small{display:block;color:#777}.cs-result__price{font-weight:700;white-space:nowrap}.cs-result__totals{padding:18px;border-radius:14px;background:#f5f5f2}.cs-result__row{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px}.cs-result__row--total{margin:14px 0 0;padding-top:14px;border-top:1px solid #ddd;font-size:18px;font-weight:800}.cs-result__saving{color:var(--cs-red);font-weight:700}.cs-result__actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.cs-manager{padding:55px 0;background:#eeeae4}.cs-manager__box{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}.cs-manager h2{margin:8px 0}.cs-manager p{margin:0;color:#666}.cs-manager form{display:grid;grid-template-columns:1fr auto;gap:10px}.cs-manager input{height:54px;padding:0 16px;border:1px solid #ccc;border-radius:10px;background:#fff}@media(max-width:991px){.cs-hero__grid,.cs-layout,.cs-manager__box{grid-template-columns:1fr}.cs-discount{max-width:330px}.cs-result{position:static}.cs-manager form{grid-template-columns:1fr}}@media(max-width:575px){.cs-hero{padding:42px 0}.cs-hero h1{font-size:38px}.cs-form,.cs-result{padding:20px;border-radius:18px}.cs-fields,.cs-result__actions{grid-template-columns:1fr}.cs-result__item{grid-template-columns:48px 1fr}.cs-result__price{grid-column:2}.cs-options span{padding:9px 11px;font-size:13px}}
+.chimney-selector-page{--cs-red:#e34234;--cs-dark:#111;--cs-line:#e6e6e3;background:#fafaf8}.cs-hero{padding:70px 0;background:#111;color:#fff}.cs-hero__grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:48px;align-items:center}.cs-hero h1{max-width:780px;margin:12px 0 16px;color:#fff;font-size:clamp(38px,5vw,68px);line-height:1.02}.cs-hero p{max-width:700px;margin:0;color:#c8c8c8;font-size:18px;line-height:1.6}.cs-kicker{color:#ff7065;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.cs-equipment{margin-top:24px;padding:15px 18px;border:1px solid #383838;border-radius:14px;background:#1b1b1b}.cs-discount{display:flex;flex-direction:column;padding:30px;border-radius:24px;background:var(--cs-red)}.cs-discount strong{font-size:58px;line-height:1}.cs-discount span{margin-top:10px;line-height:1.4}.cs-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:32px;align-items:start}.cs-form,.cs-result{padding:30px;border:1px solid var(--cs-line);border-radius:24px;background:#fff}.cs-result{position:sticky;top:110px;min-height:350px}.cs-step{display:flex;gap:16px;margin:0 0 18px}.cs-step:not(:first-child){margin-top:34px;padding-top:28px;border-top:1px solid var(--cs-line)}.cs-step>span{display:grid;flex:0 0 38px;height:38px;place-items:center;border-radius:50%;background:#111;color:#fff;font-size:12px;font-weight:700}.cs-step h2{margin:0 0 4px;font-size:23px}.cs-step p{margin:0;color:#777;font-size:14px}.cs-options{display:flex;flex-wrap:wrap;gap:8px}.cs-options input{position:absolute;opacity:0}.cs-options span{display:block;padding:11px 14px;border:1px solid var(--cs-line);border-radius:10px;cursor:pointer}.cs-options input:checked+span{border-color:#111;background:#111;color:#fff}.cs-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.cs-fields label{font-size:13px;font-weight:700}.cs-fields select{width:100%;height:50px;margin-top:7px;padding:0 14px;border:1px solid var(--cs-line);border-radius:10px;background:#fff}.cs-field-note{margin:0 0 26px;color:#777;font-size:12px}.cs-safety{margin:14px 0 0;color:#777;font-size:12px;line-height:1.5}.cs-result__empty{padding:60px 15px;text-align:center;color:#777}.cs-result__empty span{font-size:42px}.cs-result h2{font-size:24px}.cs-result__list{display:grid;gap:12px;margin:20px 0}.cs-result__item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--cs-line)}.cs-result__item img{width:58px;height:58px;object-fit:contain}.cs-result__item a{color:#111;font-size:13px;font-weight:700}.cs-result__item small{display:block;color:#777}.cs-result__price{font-weight:700;white-space:nowrap}.cs-result__totals{padding:18px;border-radius:14px;background:#f5f5f2}.cs-result__row{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px}.cs-result__row--total{margin:14px 0 0;padding-top:14px;border-top:1px solid #ddd;font-size:18px;font-weight:800}.cs-result__saving{color:var(--cs-red);font-weight:700}.cs-result__actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.cs-manager{padding:55px 0;background:#eeeae4}.cs-manager__box{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}.cs-manager h2{margin:8px 0}.cs-manager p{margin:0;color:#666}.cs-manager form{display:grid;grid-template-columns:1fr auto;gap:10px}.cs-manager input{height:54px;padding:0 16px;border:1px solid #ccc;border-radius:10px;background:#fff}@media(max-width:991px){.cs-hero__grid,.cs-layout,.cs-manager__box{grid-template-columns:1fr}.cs-discount{max-width:330px}.cs-result{position:static}.cs-manager form{grid-template-columns:1fr}}@media(max-width:575px){.cs-hero{padding:42px 0}.cs-hero h1{font-size:38px}.cs-form,.cs-result{padding:20px;border-radius:18px}.cs-fields,.cs-result__actions{grid-template-columns:1fr}.cs-result__item{grid-template-columns:48px 1fr}.cs-result__price{grid-column:2}.cs-options span{padding:9px 11px;font-size:13px}}
 </style>
 @endpush
 
@@ -111,13 +112,14 @@
             var productDiameter = need.diameterMode === 'outer' ? (product.outer_diameter || product.diameter) : product.diameter;
             return product.kind === need.kind && !used[product.id]
                 && (!targetDiameter || productDiameter === targetDiameter || !productDiameter)
+                && (!need.toDiameter || product.outer_diameter === need.toDiameter)
                 && (need.system === 'any' || product.system === need.system)
                 && (ignoreSteel || settings.steel === '' || product.steel === settings.steel || !product.steel)
                 && (!need.lengthMm || product.length_mm === need.lengthMm);
         }
         var picked = catalog.find(function (product) { return matches(product, false); });
         if (!picked && settings.steel !== '') picked = catalog.find(function (product) { return matches(product, true); });
-        if (picked) used[picked.id] = true;
+        if (picked && need.kind !== 'pipe') used[picked.id] = true;
         return picked;
     }
     function addPipeNeeds(needs, length, system, label) {
@@ -129,7 +131,7 @@
         var needs = [];
         var height = Math.max(1, Math.ceil(settings.height));
         var monoLength = Math.max(0.5, Number(settings.monoLength));
-        if (settings.stoveAdapter) needs.push({kind:'adapter', quantity:1, system:'any', label:'Адаптер на патрубок печи'});
+        if (settings.stoveAdapter) needs.push({kind:'adapter', quantity:1, system:'any', toDiameter:settings.diameter === '115' ? '120' : null, label:'Адаптер на патрубок печи' + (settings.diameter === '115' ? ' · 115/120' : '')});
         if (settings.system === 'combined') {
             addPipeNeeds(needs, monoLength, 'mono', 'Участок от оборудования · моно');
             if (settings.damper) needs.push({kind:'damper', quantity:1, system:'mono', label:'Шибер'});
@@ -164,11 +166,26 @@
         };
         var needs = buildNeeds(settings);
         var used = {};
-        var rows = needs.map(function (need) {
+        var matchedNeeds = 0;
+        var rawRows = needs.map(function (need) {
             var product = choose(need, settings, used);
+            var quantity = need.quantity;
+            var label = need.label;
+            if (!product && need.kind === 'pipe' && need.lengthMm === 1000) {
+                product = choose(Object.assign({}, need, {lengthMm:500}), settings, used);
+                quantity *= 2;
+                label = label.replace('1 м', 'секции 0,5 м');
+            }
             if (product && need.kind === 'pipe' && product.system === 'sandwich' && product.outer_diameter) settings.outerDiameter = product.outer_diameter;
-            return product ? {product:product, quantity:need.quantity, label:need.label} : null;
+            if (product) matchedNeeds++;
+            return product ? {product:product, quantity:quantity, label:label} : null;
         }).filter(Boolean);
+        var rows = rawRows.reduce(function (resultRows, row) {
+            var existing = resultRows.find(function (item) { return item.product.id === row.product.id && item.label === row.label; });
+            if (existing) existing.quantity += row.quantity;
+            else resultRows.push(row);
+            return resultRows;
+        }, []);
         if (!rows.length) {
             result.innerHTML = '<div class="cs-result__empty"><h2>Точных позиций пока не найдено</h2><p>Отправьте параметры менеджеру — он соберёт комплект вручную.</p><a href="#manager-check" class="tf-btn animate-btn">Передать менеджеру</a></div>';
             return;
@@ -176,7 +193,7 @@
         var subtotal = rows.reduce(function (sum, row) { return sum + row.product.price * row.quantity; }, 0);
         var saving = unlocked ? subtotal * discount / 100 : 0;
         var total = subtotal - saving;
-        var missing = needs.length - rows.length;
+        var missing = needs.length - matchedNeeds;
         var systemLabel = settings.system === 'combined' ? 'моно ' + settings.monoLength.toLocaleString('ru-RU') + ' м + утеплённый' : (settings.system === 'sandwich' ? 'полностью утеплённый' : 'полностью моно');
         var names = rows.map(function (row) { return row.label + ': ' + row.quantity + ' × ' + row.product.name; }).join('; ');
         message.value = 'Подбор дымохода: Ø ' + settings.diameter + ' мм, ' + systemLabel + ', сталь ' + (settings.steel || 'из доступных')

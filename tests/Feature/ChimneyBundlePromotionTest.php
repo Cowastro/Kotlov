@@ -87,6 +87,7 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Моно + утеплённый')
             ->assertSeeText('Длина моно-участка')
             ->assertSeeText('Адаптер на печь')
+            ->assertSeeText('Для патрубка Ø115 подборщик выбирает переходной адаптер 115/120.')
             ->assertSeeText('Шибер')
             ->assertSeeText('Проходы через перекрытие (ППУ)')
             ->assertSeeText('Хомуты')
