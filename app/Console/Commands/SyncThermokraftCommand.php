@@ -661,7 +661,7 @@ class SyncThermokraftCommand extends Command
         return match (true) {
             str_contains($text, 'univat') => 'univat',
             str_contains($text, 'tenko') || str_contains($text, 'тенко') => 'tenko',
-            str_contains($text, 'стэн') || preg_match('/sten/u', $text) === 1 || str_contains($text, 'каракан') => 'sten',
+            str_contains($text, 'стэн') || preg_match('/\bsten\b/u', $text) === 1 || str_contains($text, 'каракан') => 'sten',
             str_contains($text, 'с-тэнк') || str_contains($text, 's-tank') || str_contains($text, 's tank') => 's-tank',
             str_contains($text, 'regler') => 'regler',
             default => preg_replace('/[^a-zа-я0-9]+/u', '', explode(' ', trim($text))[0] ?? '') ?? '',

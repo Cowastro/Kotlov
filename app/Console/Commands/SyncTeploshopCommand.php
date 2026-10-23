@@ -197,7 +197,7 @@ class SyncTeploshopCommand extends Command
                 case 'расшир.баки':
                     if (stripos($text(4), 'wester') !== false || str_starts_with(mb_strtolower($text(4)), 'комплект')) {
                         // «Бак расширительный WESTER WRV 1 000л 10 бар»: the catalogue names the series and volume only.
-                        $tank = preg_match('/(W[RD]V)\s*([\d ]+?)\s*л/u', $text(4), $t) ? 'Бак Wester '.$t[1].' '.str_replace(' ', '', $t[2]) : $text(4);
+                        $tank = preg_match('/\b(W[RD]V)\s*([\d ]+?)\s*л/u', $text(4), $t) ? 'Бак Wester '.$t[1].' '.str_replace(' ', '', $t[2]) : $text(4);
                         $row = ['brand' => 'Wester', 'article' => $text(3), 'name' => $tank, 'description' => $text(4),
                             'wholesale' => $this->money($c[10] ?? null), 'retail' => $this->money($c[11] ?? null)];
                     }
