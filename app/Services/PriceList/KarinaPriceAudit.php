@@ -29,8 +29,8 @@ class KarinaPriceAudit
                     $label = $this->normalize((string) $value);
                     $kind = match (true) {
                         in_array($label, ['артикул', 'арт.', 'арт', 'код', 'article', 'sku'], true) => 'article',
-                        in_array($label, ['наименование', 'наименование товара', 'название', 'модель', 'name'], true) => 'name',
-                        in_array($label, ['ррц', 'розничная цена', 'цена', 'цена, руб.', 'цена руб.', 'price'], true) => 'retail',
+                        in_array($label, ['наименование', 'наименование товара', 'наименование товара поставщика', 'название', 'модель', 'name'], true) => 'name',
+                        in_array($label, ['ррц', 'розничная цена', 'рекомендованная розничная цена, руб. с ндс', 'цена', 'цена, руб.', 'цена руб.', 'price'], true) => 'retail',
                         in_array($label, ['byn', 'rub', 'rur', 'бел. руб.', 'рос. руб.'], true) => 'currency',
                         default => null,
                     };
