@@ -42,6 +42,7 @@ class SyncTeploshopCommand extends Command
         {--eur-rate= : EUR/BYN rate instead of the NBRB rate}
         {--apply : Save supplier links and prices}
         {--sync-retail-prices : Copy the supplier retail price to cards that have no other operational supplier}
+        {--retail-family=* : Limit --sync-retail-prices to these brand families (e.g. biotep)}
         {--create-biotep : Create cards for BIOTEP boilers missing in the catalogue}
         {--audit : Print one public line per row: sheet, brand, row, product id/slug and match reason}
         {--catalogue= : Also print the catalogue cards of this brand family with their model keys}';
@@ -437,11 +438,13 @@ class SyncTeploshopCommand extends Command
                     'raw' => $row,
                     'last_synced_at' => now(),
                 ]);
-                if ($this->option('sync-retail-prices') && $row['retail']) {
+                $families = (array) $this->option('retail-family');
+                if ($this->option('sync-retail-prices') && $row['retail'] && ($families === [] || in_array($row['family'], $families, true))) {
                     $otherSupplier = $product->operationalSupplierProducts()->contains(fn (SupplierProduct $item): bool => (int) $item->supplier_id !== (int) $supplier->id);
                     if ($otherSupplier) {
                         $stats['retail_kept_other_supplier']++;
-                    } elseif (abs((float) $product->price - $row['retail']) > 0.005) {
+                    } elseif (abs((float) $product->price - $row['retail']) > 0.005 || $product->requires_price_confirmation) {
+                        // The supplier RRP is the confirmed price: «Цену уточняйте» goes away.
                         $product->forceFill(['price' => $row['retail'], 'requires_price_confirmation' => false])->save();
                         $stats['retail_updated']++;
                     }

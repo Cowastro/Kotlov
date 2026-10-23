@@ -164,8 +164,8 @@ Schedule::command('supplier:sync-atmos --apply --sync-retail-prices')
     ->appendOutputTo(storage_path('logs/atmos-price-stock-sync.log'));
 
 // ООО «Теплошоп» (BIOTEP): the newest Prajs-Teploshop xlsx on biodom.by,
-// uploaded every few months. Links and wholesale only; retail stays ours.
-Schedule::command('supplier:sync-teploshop --apply')
+// uploaded every few months. Retail follows the RRP for BIOTEP only (sole supplier).
+Schedule::command('supplier:sync-teploshop --apply --sync-retail-prices --retail-family=biotep')
     ->dailyAt('07:40')
     ->timezone($supplierSyncTimezone)
     ->withoutOverlapping(30)
