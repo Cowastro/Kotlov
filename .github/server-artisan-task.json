@@ -1,6 +1,6 @@
 {
-  "task": "optimize-clear",
-  "artisan_args": "none",
+  "task": "artisan-dry-run",
+  "artisan_args": "crm-mail:stage-attachment 281 --extension=xlsx --name-contains=KARINA --output=pricelists/karina-thread-281.xlsx",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "karina-step1-sync-main-20261023"
+  "run_id": "karina-thread281-lookup-20261023-1319"
 }
