@@ -1,6 +1,6 @@
 {
     "schema": "karina-audit-v1",
-    "generated_at": "2026-10-23T14:31:06+00:00",
+    "generated_at": "2026-10-23T14:33:26+00:00",
     "mode": "read_only",
     "applied": false,
     "discount_percent": 25,
@@ -36,14 +36,14 @@
         "unmatched_after": 3
     },
     "last_enrichment": {
-        "applied": false,
-        "report_blob": "eb285ea5099367204450cd2496d679c193f548a0",
+        "applied": true,
+        "report_blob": "258fa09dd659e139ff5e1bb2b444df8179a16d8f",
         "workbook_sha256": "236ef6841215892a7e488ac9bdffc7a93926e3983c39968d5454e1da61edf196",
         "source_snapshot_sha256": "687b7b481d44a94bb33541f80944abd2a2e88f16ee8b57858a98168e65fea005",
-        "generated_at": "2026-10-23T14:31:05+00:00",
+        "generated_at": "2026-10-23T14:33:25+00:00",
         "already_applied": false,
         "planned": 62,
-        "activated": 0,
+        "activated": 62,
         "left_hidden": 54,
         "official_pages": 72,
         "source_summary": {
@@ -56,11 +56,11 @@
     },
     "created_content_summary": {
         "total": 116,
-        "active": 0,
-        "hidden": 116,
-        "with_official_source": 0,
-        "with_content": 0,
-        "with_images": 0
+        "active": 62,
+        "hidden": 54,
+        "with_official_source": 62,
+        "with_content": 62,
+        "with_images": 62
     },
     "currency_confirmation": "User confirmed RUB; site retail equals converted RRP.",
     "rate": {
@@ -575,7 +575,7 @@
             "name": "Электрическая печь KARINA Lite 6",
             "price": "977.13",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -589,7 +589,7 @@
             "name": "Электрическая печь KARINA Lite 8 mini",
             "price": "1068.28",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -603,7 +603,7 @@
             "name": "Электрическая печь KARINA Lite 10",
             "price": "1545.90",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -617,7 +617,7 @@
             "name": "Электрическая печь KARINA Lite 14",
             "price": "1884.98",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -631,7 +631,7 @@
             "name": "Электрическая печь KARINA Lite 16",
             "price": "1998.01",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -645,7 +645,7 @@
             "name": "Электрическая печь KARINA Lite 20",
             "price": "3135.56",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -659,7 +659,7 @@
             "name": "Электрическая печь KARINA Lite 24",
             "price": "3288.69",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -673,7 +673,7 @@
             "name": "Электрическая печь KARINA Lite 28",
             "price": "3831.95",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -687,7 +687,7 @@
             "name": "Электрическая печь KARINA Lite 32",
             "price": "3941.33",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -701,7 +701,7 @@
             "name": "Электрическая печь KARINA Lite 36",
             "price": "4233.01",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -715,7 +715,7 @@
             "name": "Электрическая печь KARINA Classic 6",
             "price": "1425.59",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -729,7 +729,7 @@
             "name": "Электрическая печь KARINA Classic 7,5",
             "price": "1454.75",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -743,7 +743,7 @@
             "name": "Электрическая печь KARINA Classic 9",
             "price": "2158.43",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -757,7 +757,7 @@
             "name": "Электрическая печь KARINA Classic 9 mini",
             "price": "1494.86",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -771,7 +771,7 @@
             "name": "Электрическая печь KARINA Classic 12",
             "price": "2213.12",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -785,7 +785,7 @@
             "name": "Электрическая печь KARINA Classic 24",
             "price": "4524.69",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -799,7 +799,7 @@
             "name": "Электрическая печь KARINA Classic 30",
             "price": "4634.07",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -813,7 +813,7 @@
             "name": "Электрическая печь KARINA Classic 36",
             "price": "4830.95",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -827,7 +827,7 @@
             "name": "Электрическая печь KARINA Optima 3",
             "price": "973.48",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -841,7 +841,7 @@
             "name": "Электрическая печь KARINA Optima 7,5",
             "price": "1385.48",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -855,7 +855,7 @@
             "name": "Электрическая печь KARINA Optima 9",
             "price": "1447.46",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -869,7 +869,7 @@
             "name": "Электрическая печь KARINA Optima Steam 3",
             "price": "1115.68",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -883,7 +883,7 @@
             "name": "Электрическая печь KARINA Optima Steam 6",
             "price": "1640.70",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1051,7 +1051,7 @@
             "name": "Электрическая печь KARINA Quadro 6 Талькохлорит",
             "price": "2997.01",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1065,7 +1065,7 @@
             "name": "Электрическая печь KARINA Quadro 7,5 Талькохлорит",
             "price": "3120.98",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1079,7 +1079,7 @@
             "name": "Электрическая печь KARINA Quadro 9 mini Талькохлорит",
             "price": "3241.29",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1093,7 +1093,7 @@
             "name": "Электрическая печь KARINA Quadro 12 Талькохлорит",
             "price": "4236.65",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1107,7 +1107,7 @@
             "name": "Электрическая печь KARINA Quadro 15 Талькохлорит",
             "price": "4353.32",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1121,7 +1121,7 @@
             "name": "Электрическая печь KARINA Quadro 18 Талькохлорит",
             "price": "4422.60",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1135,7 +1135,7 @@
             "name": "Электрическая печь KARINA Tetra 8 Талькохлорит",
             "price": "2271.46",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1149,7 +1149,7 @@
             "name": "Электрическая печь KARINA Tetra 10 Талькохлорит",
             "price": "2337.09",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1163,7 +1163,7 @@
             "name": "Электрическая печь KARINA Tetra 12 Талькохлорит",
             "price": "2410.01",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1177,7 +1177,7 @@
             "name": "Электрическая печь KARINA Tetra 16 Талькохлорит",
             "price": "2862.11",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1191,7 +1191,7 @@
             "name": "Электрическая печь KARINA Tetra 18 Талькохлорит",
             "price": "2967.84",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1205,7 +1205,7 @@
             "name": "Электрическая печь KARINA Tetra 20 Талькохлорит",
             "price": "3463.70",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1219,7 +1219,7 @@
             "name": "Электрическая печь KARINA Tetra 24 Талькохлорит",
             "price": "3744.44",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1233,7 +1233,7 @@
             "name": "Электрическая печь KARINA Tetra 28 Талькохлорит",
             "price": "4524.69",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1247,7 +1247,7 @@
             "name": "Электрическая печь KARINA Tetra 32 Талькохлорит",
             "price": "4881.99",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1261,7 +1261,7 @@
             "name": "Электрическая печь KARINA Quadro 6 Змеевик",
             "price": "3613.19",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1275,7 +1275,7 @@
             "name": "Электрическая печь KARINA Quadro 7,5 Змеевик",
             "price": "3686.11",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1289,7 +1289,7 @@
             "name": "Электрическая печь KARINA Quadro 9 mini Змеевик",
             "price": "3759.03",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1303,7 +1303,7 @@
             "name": "Электрическая печь KARINA Quadro 12 Змеевик",
             "price": "4922.10",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1317,7 +1317,7 @@
             "name": "Электрическая печь KARINA Quadro 15 Змеевик",
             "price": "5046.06",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1331,7 +1331,7 @@
             "name": "Электрическая печь KARINA Quadro 18 Змеевик",
             "price": "5275.76",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1401,7 +1401,7 @@
             "name": "Электрическая печь KARINA Air 3",
             "price": "977.13",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1415,7 +1415,7 @@
             "name": "Электрическая печь KARINA Air 7,5",
             "price": "1392.77",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1569,7 +1569,7 @@
             "name": "Электрическая печь KARINA Nika 6",
             "price": "1775.60",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1583,7 +1583,7 @@
             "name": "Электрическая печь KARINA Nika 6E",
             "price": "1655.28",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1597,7 +1597,7 @@
             "name": "Электрическая печь KARINA Nika 8",
             "price": "1815.71",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1611,7 +1611,7 @@
             "name": "Электрическая печь KARINA Nika 8E",
             "price": "1739.14",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1625,7 +1625,7 @@
             "name": "Электрическая печь KARINA Nika 10E",
             "price": "1870.40",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1639,7 +1639,7 @@
             "name": "Электрическая печь KARINA Nika 12E",
             "price": "1957.90",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1653,7 +1653,7 @@
             "name": "Электрическая печь KARINA Nika 15E",
             "price": "2883.99",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -1681,7 +1681,7 @@
             "name": "Электрическая печь KARINA Nika 21E",
             "price": "3088.16",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -2073,7 +2073,7 @@
             "name": "Электрическая печь KARINA Nika 6 Black",
             "price": "1994.36",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -2087,7 +2087,7 @@
             "name": "Электрическая печь KARINA Nika 6E Black",
             "price": "1877.69",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -2101,7 +2101,7 @@
             "name": "Электрическая печь KARINA Nika 8 Black",
             "price": "2038.11",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -2115,7 +2115,7 @@
             "name": "Электрическая печь KARINA Nika 8E Black",
             "price": "2001.65",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -2129,7 +2129,7 @@
             "name": "Электрическая печь KARINA Nika 10E Black",
             "price": "2089.16",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -2143,7 +2143,7 @@
             "name": "Электрическая печь KARINA Nika 12E Black",
             "price": "2176.66",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -2157,7 +2157,7 @@
             "name": "Электрическая печь KARINA Nika 15E Black",
             "price": "3237.65",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         },
@@ -2185,7 +2185,7 @@
             "name": "Электрическая печь KARINA Nika 21E Black",
             "price": "3441.82",
             "price_old": null,
-            "is_active": false,
+            "is_active": true,
             "is_archived": false,
             "created_via": "karina_issue_34"
         }
@@ -4730,15 +4730,13 @@
             "purchase_rub": 20100,
             "retail_byn": 977.13,
             "purchase_byn": 732.85,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28768,
                 "current_retail_byn": 977.13,
                 "proposed_retail_byn": 977.13,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -4761,15 +4759,13 @@
             "purchase_rub": 21975,
             "retail_byn": 1068.28,
             "purchase_byn": 801.21,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28769,
                 "current_retail_byn": 1068.28,
                 "proposed_retail_byn": 1068.28,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -4821,15 +4817,13 @@
             "purchase_rub": 31800,
             "retail_byn": 1545.9,
             "purchase_byn": 1159.43,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28770,
                 "current_retail_byn": 1545.9,
                 "proposed_retail_byn": 1545.9,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -4881,15 +4875,13 @@
             "purchase_rub": 38775,
             "retail_byn": 1884.98,
             "purchase_byn": 1413.74,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28771,
                 "current_retail_byn": 1884.98,
                 "proposed_retail_byn": 1884.98,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -4912,15 +4904,13 @@
             "purchase_rub": 41100,
             "retail_byn": 1998.01,
             "purchase_byn": 1498.51,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28772,
                 "current_retail_byn": 1998.01,
                 "proposed_retail_byn": 1998.01,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -4972,15 +4962,13 @@
             "purchase_rub": 64500,
             "retail_byn": 3135.56,
             "purchase_byn": 2351.67,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28773,
                 "current_retail_byn": 3135.56,
                 "proposed_retail_byn": 3135.56,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5003,15 +4991,13 @@
             "purchase_rub": 67650,
             "retail_byn": 3288.69,
             "purchase_byn": 2466.52,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28774,
                 "current_retail_byn": 3288.69,
                 "proposed_retail_byn": 3288.69,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5034,15 +5020,13 @@
             "purchase_rub": 78825,
             "retail_byn": 3831.95,
             "purchase_byn": 2873.96,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28775,
                 "current_retail_byn": 3831.95,
                 "proposed_retail_byn": 3831.95,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5065,15 +5049,13 @@
             "purchase_rub": 81075,
             "retail_byn": 3941.33,
             "purchase_byn": 2955.99,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28776,
                 "current_retail_byn": 3941.33,
                 "proposed_retail_byn": 3941.33,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5096,15 +5078,13 @@
             "purchase_rub": 87075,
             "retail_byn": 4233.01,
             "purchase_byn": 3174.75,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28777,
                 "current_retail_byn": 4233.01,
                 "proposed_retail_byn": 4233.01,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5127,15 +5107,13 @@
             "purchase_rub": 29325,
             "retail_byn": 1425.59,
             "purchase_byn": 1069.19,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28778,
                 "current_retail_byn": 1425.59,
                 "proposed_retail_byn": 1425.59,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5158,15 +5136,13 @@
             "purchase_rub": 29925,
             "retail_byn": 1454.75,
             "purchase_byn": 1091.07,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28779,
                 "current_retail_byn": 1454.75,
                 "proposed_retail_byn": 1454.75,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5189,15 +5165,13 @@
             "purchase_rub": 44400,
             "retail_byn": 2158.43,
             "purchase_byn": 1618.82,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28780,
                 "current_retail_byn": 2158.43,
                 "proposed_retail_byn": 2158.43,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5220,15 +5194,13 @@
             "purchase_rub": 30750,
             "retail_byn": 1494.86,
             "purchase_byn": 1121.15,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28781,
                 "current_retail_byn": 1494.86,
                 "proposed_retail_byn": 1494.86,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5251,15 +5223,13 @@
             "purchase_rub": 45525,
             "retail_byn": 2213.12,
             "purchase_byn": 1659.84,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28782,
                 "current_retail_byn": 2213.12,
                 "proposed_retail_byn": 2213.12,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5340,15 +5310,13 @@
             "purchase_rub": 93075,
             "retail_byn": 4524.69,
             "purchase_byn": 3393.51,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28783,
                 "current_retail_byn": 4524.69,
                 "proposed_retail_byn": 4524.69,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5371,15 +5339,13 @@
             "purchase_rub": 95325,
             "retail_byn": 4634.07,
             "purchase_byn": 3475.55,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28784,
                 "current_retail_byn": 4634.07,
                 "proposed_retail_byn": 4634.07,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5402,15 +5368,13 @@
             "purchase_rub": 99375,
             "retail_byn": 4830.95,
             "purchase_byn": 3623.21,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28785,
                 "current_retail_byn": 4830.95,
                 "proposed_retail_byn": 4830.95,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5433,15 +5397,13 @@
             "purchase_rub": 20025,
             "retail_byn": 973.48,
             "purchase_byn": 730.11,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28786,
                 "current_retail_byn": 973.48,
                 "proposed_retail_byn": 973.48,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5522,15 +5484,13 @@
             "purchase_rub": 28500,
             "retail_byn": 1385.48,
             "purchase_byn": 1039.11,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28787,
                 "current_retail_byn": 1385.48,
                 "proposed_retail_byn": 1385.48,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5553,15 +5513,13 @@
             "purchase_rub": 29775,
             "retail_byn": 1447.46,
             "purchase_byn": 1085.6,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28788,
                 "current_retail_byn": 1447.46,
                 "proposed_retail_byn": 1447.46,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5584,15 +5542,13 @@
             "purchase_rub": 22950,
             "retail_byn": 1115.68,
             "purchase_byn": 836.76,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28789,
                 "current_retail_byn": 1115.68,
                 "proposed_retail_byn": 1115.68,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -5644,15 +5600,13 @@
             "purchase_rub": 33750,
             "retail_byn": 1640.7,
             "purchase_byn": 1230.53,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28790,
                 "current_retail_byn": 1640.7,
                 "proposed_retail_byn": 1640.7,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6249,15 +6203,13 @@
             "purchase_rub": 61650,
             "retail_byn": 2997.01,
             "purchase_byn": 2247.76,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28802,
                 "current_retail_byn": 2997.01,
                 "proposed_retail_byn": 2997.01,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6280,15 +6232,13 @@
             "purchase_rub": 64200,
             "retail_byn": 3120.98,
             "purchase_byn": 2340.73,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28803,
                 "current_retail_byn": 3120.98,
                 "proposed_retail_byn": 3120.98,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6311,15 +6261,13 @@
             "purchase_rub": 66675,
             "retail_byn": 3241.29,
             "purchase_byn": 2430.97,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28804,
                 "current_retail_byn": 3241.29,
                 "proposed_retail_byn": 3241.29,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6366,15 +6314,13 @@
             "purchase_rub": 87150,
             "retail_byn": 4236.65,
             "purchase_byn": 3177.49,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28805,
                 "current_retail_byn": 4236.65,
                 "proposed_retail_byn": 4236.65,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6397,15 +6343,13 @@
             "purchase_rub": 89550,
             "retail_byn": 4353.32,
             "purchase_byn": 3264.99,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28806,
                 "current_retail_byn": 4353.32,
                 "proposed_retail_byn": 4353.32,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6428,15 +6372,13 @@
             "purchase_rub": 90975,
             "retail_byn": 4422.6,
             "purchase_byn": 3316.95,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28807,
                 "current_retail_byn": 4422.6,
                 "proposed_retail_byn": 4422.6,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6459,15 +6401,13 @@
             "purchase_rub": 46725,
             "retail_byn": 2271.46,
             "purchase_byn": 1703.59,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28808,
                 "current_retail_byn": 2271.46,
                 "proposed_retail_byn": 2271.46,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6490,15 +6430,13 @@
             "purchase_rub": 48075,
             "retail_byn": 2337.09,
             "purchase_byn": 1752.81,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28809,
                 "current_retail_byn": 2337.09,
                 "proposed_retail_byn": 2337.09,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6521,15 +6459,13 @@
             "purchase_rub": 49575,
             "retail_byn": 2410.01,
             "purchase_byn": 1807.5,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28810,
                 "current_retail_byn": 2410.01,
                 "proposed_retail_byn": 2410.01,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6581,15 +6517,13 @@
             "purchase_rub": 58875,
             "retail_byn": 2862.11,
             "purchase_byn": 2146.58,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28811,
                 "current_retail_byn": 2862.11,
                 "proposed_retail_byn": 2862.11,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6612,15 +6546,13 @@
             "purchase_rub": 61050,
             "retail_byn": 2967.84,
             "purchase_byn": 2225.88,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28812,
                 "current_retail_byn": 2967.84,
                 "proposed_retail_byn": 2967.84,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6643,15 +6575,13 @@
             "purchase_rub": 71250,
             "retail_byn": 3463.7,
             "purchase_byn": 2597.78,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28813,
                 "current_retail_byn": 3463.7,
                 "proposed_retail_byn": 3463.7,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6674,15 +6604,13 @@
             "purchase_rub": 77025,
             "retail_byn": 3744.44,
             "purchase_byn": 2808.33,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28814,
                 "current_retail_byn": 3744.44,
                 "proposed_retail_byn": 3744.44,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6705,15 +6633,13 @@
             "purchase_rub": 93075,
             "retail_byn": 4524.69,
             "purchase_byn": 3393.51,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28815,
                 "current_retail_byn": 4524.69,
                 "proposed_retail_byn": 4524.69,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6736,15 +6662,13 @@
             "purchase_rub": 100425,
             "retail_byn": 4881.99,
             "purchase_byn": 3661.5,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28816,
                 "current_retail_byn": 4881.99,
                 "proposed_retail_byn": 4881.99,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6767,15 +6691,13 @@
             "purchase_rub": 74325,
             "retail_byn": 3613.19,
             "purchase_byn": 2709.89,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28817,
                 "current_retail_byn": 3613.19,
                 "proposed_retail_byn": 3613.19,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6798,15 +6720,13 @@
             "purchase_rub": 75825,
             "retail_byn": 3686.11,
             "purchase_byn": 2764.58,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28818,
                 "current_retail_byn": 3686.11,
                 "proposed_retail_byn": 3686.11,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6829,15 +6749,13 @@
             "purchase_rub": 77325,
             "retail_byn": 3759.03,
             "purchase_byn": 2819.27,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28819,
                 "current_retail_byn": 3759.03,
                 "proposed_retail_byn": 3759.03,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6884,15 +6802,13 @@
             "purchase_rub": 101250,
             "retail_byn": 4922.1,
             "purchase_byn": 3691.58,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28820,
                 "current_retail_byn": 4922.1,
                 "proposed_retail_byn": 4922.1,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6915,15 +6831,13 @@
             "purchase_rub": 103800,
             "retail_byn": 5046.06,
             "purchase_byn": 3784.55,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28821,
                 "current_retail_byn": 5046.06,
                 "proposed_retail_byn": 5046.06,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -6946,15 +6860,13 @@
             "purchase_rub": 108525,
             "retail_byn": 5275.76,
             "purchase_byn": 3956.82,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28822,
                 "current_retail_byn": 5275.76,
                 "proposed_retail_byn": 5275.76,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -7188,15 +7100,13 @@
             "purchase_rub": 20100,
             "retail_byn": 977.13,
             "purchase_byn": 732.85,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28827,
                 "current_retail_byn": 977.13,
                 "proposed_retail_byn": 977.13,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -7248,15 +7158,13 @@
             "purchase_rub": 28650,
             "retail_byn": 1392.77,
             "purchase_byn": 1044.58,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28828,
                 "current_retail_byn": 1392.77,
                 "proposed_retail_byn": 1392.77,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -7618,15 +7526,13 @@
             "purchase_rub": 36525,
             "retail_byn": 1775.6,
             "purchase_byn": 1331.7,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28839,
                 "current_retail_byn": 1775.6,
                 "proposed_retail_byn": 1775.6,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -7649,15 +7555,13 @@
             "purchase_rub": 34050,
             "retail_byn": 1655.28,
             "purchase_byn": 1241.46,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28840,
                 "current_retail_byn": 1655.28,
                 "proposed_retail_byn": 1655.28,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -7680,15 +7584,13 @@
             "purchase_rub": 37350,
             "retail_byn": 1815.71,
             "purchase_byn": 1361.78,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28841,
                 "current_retail_byn": 1815.71,
                 "proposed_retail_byn": 1815.71,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -7711,15 +7613,13 @@
             "purchase_rub": 35775,
             "retail_byn": 1739.14,
             "purchase_byn": 1304.36,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28842,
                 "current_retail_byn": 1739.14,
                 "proposed_retail_byn": 1739.14,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -7742,15 +7642,13 @@
             "purchase_rub": 38475,
             "retail_byn": 1870.4,
             "purchase_byn": 1402.8,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28843,
                 "current_retail_byn": 1870.4,
                 "proposed_retail_byn": 1870.4,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -7773,15 +7671,13 @@
             "purchase_rub": 40275,
             "retail_byn": 1957.9,
             "purchase_byn": 1468.43,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28844,
                 "current_retail_byn": 1957.9,
                 "proposed_retail_byn": 1957.9,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -7804,15 +7700,13 @@
             "purchase_rub": 59325,
             "retail_byn": 2883.99,
             "purchase_byn": 2162.99,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28845,
                 "current_retail_byn": 2883.99,
                 "proposed_retail_byn": 2883.99,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -7866,15 +7760,13 @@
             "purchase_rub": 63525,
             "retail_byn": 3088.16,
             "purchase_byn": 2316.12,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28847,
                 "current_retail_byn": 3088.16,
                 "proposed_retail_byn": 3088.16,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -8734,15 +8626,13 @@
             "purchase_rub": 41025,
             "retail_byn": 1994.36,
             "purchase_byn": 1495.77,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28875,
                 "current_retail_byn": 1994.36,
                 "proposed_retail_byn": 1994.36,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -8765,15 +8655,13 @@
             "purchase_rub": 38625,
             "retail_byn": 1877.69,
             "purchase_byn": 1408.27,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28876,
                 "current_retail_byn": 1877.69,
                 "proposed_retail_byn": 1877.69,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -8796,15 +8684,13 @@
             "purchase_rub": 41925,
             "retail_byn": 2038.11,
             "purchase_byn": 1528.59,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28877,
                 "current_retail_byn": 2038.11,
                 "proposed_retail_byn": 2038.11,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -8827,15 +8713,13 @@
             "purchase_rub": 41175,
             "retail_byn": 2001.65,
             "purchase_byn": 1501.24,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28878,
                 "current_retail_byn": 2001.65,
                 "proposed_retail_byn": 2001.65,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -8858,15 +8742,13 @@
             "purchase_rub": 42975,
             "retail_byn": 2089.16,
             "purchase_byn": 1566.87,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28879,
                 "current_retail_byn": 2089.16,
                 "proposed_retail_byn": 2089.16,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -8889,15 +8771,13 @@
             "purchase_rub": 44775,
             "retail_byn": 2176.66,
             "purchase_byn": 1632.5,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28880,
                 "current_retail_byn": 2176.66,
                 "proposed_retail_byn": 2176.66,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -8920,15 +8800,13 @@
             "purchase_rub": 66600,
             "retail_byn": 3237.65,
             "purchase_byn": 2428.24,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28881,
                 "current_retail_byn": 3237.65,
                 "proposed_retail_byn": 3237.65,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         },
         {
@@ -8982,15 +8860,13 @@
             "purchase_rub": 70800,
             "retail_byn": 3441.82,
             "purchase_byn": 2581.37,
-            "blocked_reasons": [
-                "inactive_or_archived"
-            ],
+            "blocked_reasons": [],
             "price_plan": {
                 "product_id": 28883,
                 "current_retail_byn": 3441.82,
                 "proposed_retail_byn": 3441.82,
                 "delta_byn": 0,
-                "eligible_for_reviewed_apply": false
+                "eligible_for_reviewed_apply": true
             }
         }
     ],
@@ -11786,7 +11662,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028768",
             "name": "Электрическая печь KARINA Lite 6",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11795,7 +11671,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028769",
             "name": "Электрическая печь KARINA Lite 8 mini",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11804,7 +11680,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028770",
             "name": "Электрическая печь KARINA Lite 10",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11813,7 +11689,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028771",
             "name": "Электрическая печь KARINA Lite 14",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11822,7 +11698,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028772",
             "name": "Электрическая печь KARINA Lite 16",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11831,7 +11707,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028773",
             "name": "Электрическая печь KARINA Lite 20",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11840,7 +11716,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028774",
             "name": "Электрическая печь KARINA Lite 24",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11849,7 +11725,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028775",
             "name": "Электрическая печь KARINA Lite 28",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11858,7 +11734,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028776",
             "name": "Электрическая печь KARINA Lite 32",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11867,7 +11743,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028777",
             "name": "Электрическая печь KARINA Lite 36",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11876,7 +11752,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028778",
             "name": "Электрическая печь KARINA Classic 6",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11885,7 +11761,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028779",
             "name": "Электрическая печь KARINA Classic 7,5",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11894,7 +11770,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028780",
             "name": "Электрическая печь KARINA Classic 9",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11903,7 +11779,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028781",
             "name": "Электрическая печь KARINA Classic 9 mini",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11912,7 +11788,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028782",
             "name": "Электрическая печь KARINA Classic 12",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11921,7 +11797,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028783",
             "name": "Электрическая печь KARINA Classic 24",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11930,7 +11806,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028784",
             "name": "Электрическая печь KARINA Classic 30",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11939,7 +11815,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028785",
             "name": "Электрическая печь KARINA Classic 36",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11948,7 +11824,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028786",
             "name": "Электрическая печь KARINA Optima 3",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11957,7 +11833,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028787",
             "name": "Электрическая печь KARINA Optima 7,5",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11966,7 +11842,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028788",
             "name": "Электрическая печь KARINA Optima 9",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11975,7 +11851,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028789",
             "name": "Электрическая печь KARINA Optima Steam 3",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -11984,7 +11860,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028790",
             "name": "Электрическая печь KARINA Optima Steam 6",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12092,7 +11968,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028802",
             "name": "Электрическая печь KARINA Quadro 6 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12101,7 +11977,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028803",
             "name": "Электрическая печь KARINA Quadro 7,5 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12110,7 +11986,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028804",
             "name": "Электрическая печь KARINA Quadro 9 mini Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12119,7 +11995,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028805",
             "name": "Электрическая печь KARINA Quadro 12 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12128,7 +12004,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028806",
             "name": "Электрическая печь KARINA Quadro 15 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12137,7 +12013,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028807",
             "name": "Электрическая печь KARINA Quadro 18 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12146,7 +12022,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028808",
             "name": "Электрическая печь KARINA Tetra 8 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12155,7 +12031,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028809",
             "name": "Электрическая печь KARINA Tetra 10 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12164,7 +12040,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028810",
             "name": "Электрическая печь KARINA Tetra 12 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12173,7 +12049,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028811",
             "name": "Электрическая печь KARINA Tetra 16 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12182,7 +12058,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028812",
             "name": "Электрическая печь KARINA Tetra 18 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12191,7 +12067,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028813",
             "name": "Электрическая печь KARINA Tetra 20 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12200,7 +12076,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028814",
             "name": "Электрическая печь KARINA Tetra 24 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12209,7 +12085,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028815",
             "name": "Электрическая печь KARINA Tetra 28 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12218,7 +12094,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028816",
             "name": "Электрическая печь KARINA Tetra 32 Талькохлорит",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12227,7 +12103,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028817",
             "name": "Электрическая печь KARINA Quadro 6 Змеевик",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12236,7 +12112,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028818",
             "name": "Электрическая печь KARINA Quadro 7,5 Змеевик",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12245,7 +12121,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028819",
             "name": "Электрическая печь KARINA Quadro 9 mini Змеевик",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12254,7 +12130,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028820",
             "name": "Электрическая печь KARINA Quadro 12 Змеевик",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12263,7 +12139,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028821",
             "name": "Электрическая печь KARINA Quadro 15 Змеевик",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12272,7 +12148,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028822",
             "name": "Электрическая печь KARINA Quadro 18 Змеевик",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12317,7 +12193,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028827",
             "name": "Электрическая печь KARINA Air 3",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12326,7 +12202,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028828",
             "name": "Электрическая печь KARINA Air 7,5",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12425,7 +12301,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028839",
             "name": "Электрическая печь KARINA Nika 6",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12434,7 +12310,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028840",
             "name": "Электрическая печь KARINA Nika 6E",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12443,7 +12319,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028841",
             "name": "Электрическая печь KARINA Nika 8",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12452,7 +12328,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028842",
             "name": "Электрическая печь KARINA Nika 8E",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12461,7 +12337,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028843",
             "name": "Электрическая печь KARINA Nika 10E",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12470,7 +12346,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028844",
             "name": "Электрическая печь KARINA Nika 12E",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12479,7 +12355,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028845",
             "name": "Электрическая печь KARINA Nika 15E",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12497,7 +12373,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028847",
             "name": "Электрическая печь KARINA Nika 21E",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12749,7 +12625,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028875",
             "name": "Электрическая печь KARINA Nika 6 Black",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12758,7 +12634,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028876",
             "name": "Электрическая печь KARINA Nika 6E Black",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12767,7 +12643,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028877",
             "name": "Электрическая печь KARINA Nika 8 Black",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12776,7 +12652,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028878",
             "name": "Электрическая печь KARINA Nika 8E Black",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12785,7 +12661,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028879",
             "name": "Электрическая печь KARINA Nika 10E Black",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12794,7 +12670,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028880",
             "name": "Электрическая печь KARINA Nika 12E Black",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12803,7 +12679,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028881",
             "name": "Электрическая печь KARINA Nika 15E Black",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         },
         {
@@ -12821,7 +12697,7 @@
             "brand_id": 338,
             "sku": "KOTLOV-028883",
             "name": "Электрическая печь KARINA Nika 21E Black",
-            "is_active": false,
+            "is_active": true,
             "is_archived": false
         }
     ],
