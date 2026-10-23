@@ -39,12 +39,18 @@
                     <div class="cs-fields">
                         <label>Состав системы<select name="system"><option value="combined">Моно + утеплённый (рекомендуется)</option><option value="sandwich">Полностью утеплённый</option><option value="mono">Полностью моно</option></select></label>
                         <label>Марка стали<select name="steel"><option value="">Подобрать из доступных</option><option value="430">AISI 430</option><option value="304">AISI 304</option><option value="316">AISI 316</option><option value="321">AISI 321</option></select></label>
+                        <label>Длина моно-участка<select name="mono_length"><option value="0.5">0,5 м</option><option value="1" selected>1 м</option><option value="1.5">1,5 м</option><option value="2">2 м</option></select></label>
+                        <label>Адаптер на печь<select name="stove_adapter"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
                     </div>
 
                     <div class="cs-step"><span>03</span><div><h2>Схема и высота</h2><p>Выберите основные элементы трассы. Точный состав проверит специалист.</p></div></div>
                     <div class="cs-fields">
                         <label>Схема<select name="scheme"><option value="straight">Прямая через кровлю</option><option value="tee">Через стену с тройником</option><option value="elbows">Со смещением и коленами</option></select></label>
                         <label>Ориентировочная высота<select name="height"><option value="3">3 м</option><option value="4">4 м</option><option value="5" selected>5 м</option><option value="6">6 м</option><option value="7">7 м</option><option value="8">8 м</option></select></label>
+                        <label>Шибер<select name="damper"><option value="no" selected>Не нужен</option><option value="yes">Нужен</option></select></label>
+                        <label>Проходы через перекрытие (ППУ)<select name="ceiling_passes"><option value="0">Нет</option><option value="1" selected>1 проход</option><option value="2">2 прохода</option></select></label>
+                        <label>Хомуты<select name="clamps"><option value="auto" selected>Рассчитать по высоте</option><option value="0">Не нужны</option><option value="1">1 шт.</option><option value="2">2 шт.</option><option value="3">3 шт.</option><option value="4">4 шт.</option><option value="5">5 шт.</option><option value="6">6 шт.</option></select></label>
+                        <label>Зонт<select name="umbrella"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
                     </div>
                     <button type="submit" class="tf-btn animate-btn w-100">Показать комплект</button>
                     <p class="cs-safety">Результат предварительный. Перед покупкой менеджер проверит высоту, проходы перекрытий, пожарные отступы, тягу и условия монтажа.</p>
@@ -81,14 +87,126 @@
 
 @push('scripts')
 <script>
-(function(){
-    var catalog=@json($catalog);var unlocked=@json($discountUnlocked);var discount={{ (float) $discountPercent }};var equipmentId=@json(($equipmentInCart ?? false) ? null : $equipment?->id);var form=document.querySelector('[data-cs-form]');var result=document.querySelector('[data-cs-result]');var message=document.querySelector('[data-cs-message]');if(!form||!result)return;
-    function money(value){return Number(value).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2})+' BYN'}
-    function esc(value){var node=document.createElement('div');node.textContent=String(value);return node.innerHTML}
-    function choose(need,settings,used){var candidates=catalog.filter(function(p){return p.kind===need.kind&&!used[p.id]&&(p.diameter===settings.diameter||!p.diameter)&&(need.system==='any'||p.system===need.system)&&(settings.steel===''||p.steel===settings.steel||!p.steel)});if(!candidates.length)candidates=catalog.filter(function(p){return p.kind===need.kind&&!used[p.id]&&(p.diameter===settings.diameter||!p.diameter)&&(need.system==='any'||p.system===need.system)});var picked=candidates[0];if(picked)used[picked.id]=true;return picked}
-    function buildNeeds(settings){var height=Math.max(1,Math.ceil(settings.height));var needs=settings.system==='combined'?[{kind:'pipe',quantity:1,system:'mono',label:'Участок от оборудования · моно'},{kind:'adapter',quantity:1,system:'any',label:'Переход моно / термо'},{kind:'pipe',quantity:Math.max(1,height-1),system:'sandwich',label:'Наружная трасса · утеплённая'},{kind:'mount',quantity:Math.max(2,Math.ceil(height/2)),system:'any',label:'Крепление'},{kind:'cap',quantity:1,system:'sandwich',label:'Оголовок'}]:[{kind:'adapter',quantity:1,system:settings.system,label:'Подключение'},{kind:'pipe',quantity:height,system:settings.system,label:settings.system==='sandwich'?'Утеплённая трасса':'Одностенная трасса'},{kind:'mount',quantity:Math.max(2,Math.ceil(height/2)),system:'any',label:'Крепление'},{kind:'cap',quantity:1,system:settings.system,label:'Оголовок'}];if(settings.scheme==='tee')needs.splice(settings.system==='combined'?2:1,0,{kind:'tee',quantity:1,system:settings.system==='mono'?'mono':'sandwich',label:'Тройник 87°'},{kind:'condensate',quantity:1,system:'any',label:'Ревизия / конденсатоотвод'});if(settings.scheme==='elbows')needs.splice(1,0,{kind:'elbow',quantity:2,system:settings.system==='sandwich'?'sandwich':'mono',label:'Смещение трассы'});return needs}
-    form.addEventListener('submit',function(event){event.preventDefault();var data=new FormData(form);var settings={diameter:data.get('diameter'),system:data.get('system'),steel:data.get('steel'),scheme:data.get('scheme'),height:Number(data.get('height'))};var needs=buildNeeds(settings);var used={};var rows=needs.map(function(need){var product=choose(need,settings,used);return product?{product:product,quantity:need.quantity,label:need.label}:null}).filter(Boolean);if(!rows.length){result.innerHTML='<div class="cs-result__empty"><h2>Точных позиций пока не найдено</h2><p>Отправьте параметры менеджеру — он соберёт комплект вручную.</p><a href="#manager-check" class="tf-btn animate-btn">Передать менеджеру</a></div>';return}var subtotal=rows.reduce(function(sum,row){return sum+row.product.price*row.quantity},0);var saving=unlocked?subtotal*discount/100:0;var total=subtotal-saving;var names=rows.map(function(row){return row.label+': '+row.quantity+' × '+row.product.name}).join('; ');var systemLabel=settings.system==='combined'?'моно + утеплённый':(settings.system==='sandwich'?'полностью утеплённый':'полностью моно');var missing=needs.length-rows.length;message.value='Подбор дымохода: Ø '+settings.diameter+' мм, '+systemLabel+', сталь '+(settings.steel||'из доступных')+', схема '+settings.scheme+', высота '+settings.height+' м. Предварительный состав: '+names;result.innerHTML='<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">Ø '+settings.diameter+' мм · '+systemLabel+' · '+settings.height+' м</p>'+(missing?'<p class="cs-safety">Часть специальных узлов добавит менеджер после проверки схемы.</p>':'')+'<div class="cs-result__list">'+rows.map(function(row){return '<div class="cs-result__item"><img src="'+esc(row.product.image)+'" alt=""><div><a href="'+esc(row.product.url)+'">'+esc(row.product.name)+'</a><small>'+esc(row.label)+' · '+row.quantity+' шт.</small></div><div class="cs-result__price">'+money(row.product.price*row.quantity)+'</div></div>'}).join('')+'</div><div class="cs-result__totals"><div class="cs-result__row"><span>Стоимость товаров</span><strong>'+money(subtotal)+'</strong></div>'+(unlocked?'<div class="cs-result__row cs-result__saving"><span>Скидка на дымоход −'+discount+'%</span><strong>−'+money(saving)+'</strong></div>':'<div class="cs-result__row cs-result__saving"><span>Добавьте печь, камин или котёл — получите −'+discount+'%</span></div>')+'<div class="cs-result__row cs-result__row--total"><span>Итого</span><span>'+money(total)+'</span></div></div><div class="cs-result__actions"><button type="button" class="tf-btn animate-btn" data-add-kit>Добавить комплект</button><a href="#manager-check" class="tf-btn btn-white btn-stroke">Проверить с менеджером</a></div>';
-        var add=result.querySelector('[data-add-kit]');add.addEventListener('click',function(){add.disabled=true;var csrf=document.querySelector('meta[name="csrf-token"]').content;var additions=rows.slice();if(equipmentId)additions.unshift({product:{id:equipmentId},quantity:1});additions.reduce(function(chain,row){return chain.then(function(){return fetch(@json(route('cart.add')),{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf},body:JSON.stringify({product_id:row.product.id,quantity:row.quantity})}).then(function(response){if(!response.ok)throw new Error();return response.json()})})},Promise.resolve()).then(function(){window.location=@json(route('cart'))}).catch(function(){add.disabled=false;add.textContent='Не всё добавилось — проверить корзину'})});
+(function () {
+    var catalog = @json($catalog);
+    var unlocked = @json($discountUnlocked);
+    var discount = {{ (float) $discountPercent }};
+    var equipmentId = @json(($equipmentInCart ?? false) ? null : $equipment?->id);
+    var form = document.querySelector('[data-cs-form]');
+    var result = document.querySelector('[data-cs-result]');
+    var message = document.querySelector('[data-cs-message]');
+    if (!form || !result) return;
+
+    function money(value) {
+        return Number(value).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' BYN';
+    }
+    function esc(value) {
+        var node = document.createElement('div');
+        node.textContent = String(value);
+        return node.innerHTML;
+    }
+    function choose(need, settings, used) {
+        function matches(product, ignoreSteel) {
+            var targetDiameter = need.diameterMode === 'outer' ? settings.outerDiameter : settings.diameter;
+            var productDiameter = need.diameterMode === 'outer' ? (product.outer_diameter || product.diameter) : product.diameter;
+            return product.kind === need.kind && !used[product.id]
+                && (!targetDiameter || productDiameter === targetDiameter || !productDiameter)
+                && (need.system === 'any' || product.system === need.system)
+                && (ignoreSteel || settings.steel === '' || product.steel === settings.steel || !product.steel)
+                && (!need.lengthMm || product.length_mm === need.lengthMm);
+        }
+        var picked = catalog.find(function (product) { return matches(product, false); });
+        if (!picked && settings.steel !== '') picked = catalog.find(function (product) { return matches(product, true); });
+        if (picked) used[picked.id] = true;
+        return picked;
+    }
+    function addPipeNeeds(needs, length, system, label) {
+        var wholeMetres = Math.floor(length);
+        if (wholeMetres > 0) needs.push({kind:'pipe', quantity:wholeMetres, system:system, lengthMm:1000, label:label + ' · 1 м'});
+        if (length - wholeMetres >= 0.49) needs.push({kind:'pipe', quantity:1, system:system, lengthMm:500, label:label + ' · 0,5 м'});
+    }
+    function buildNeeds(settings) {
+        var needs = [];
+        var height = Math.max(1, Math.ceil(settings.height));
+        var monoLength = Math.max(0.5, Number(settings.monoLength));
+        if (settings.stoveAdapter) needs.push({kind:'adapter', quantity:1, system:'any', label:'Адаптер на патрубок печи'});
+        if (settings.system === 'combined') {
+            addPipeNeeds(needs, monoLength, 'mono', 'Участок от оборудования · моно');
+            if (settings.damper) needs.push({kind:'damper', quantity:1, system:'mono', label:'Шибер'});
+            needs.push({kind:'transition', quantity:1, system:'any', label:'Переход моно / термо'});
+            addPipeNeeds(needs, Math.max(0.5, height - monoLength), 'sandwich', 'Наружная трасса · утеплённая');
+        } else {
+            if (settings.damper) needs.push({kind:'damper', quantity:1, system:settings.system, label:'Шибер'});
+            addPipeNeeds(needs, height, settings.system, settings.system === 'sandwich' ? 'Утеплённая трасса' : 'Одностенная трасса');
+        }
+        if (settings.scheme === 'tee') {
+            needs.push({kind:'tee', quantity:1, system:settings.system === 'mono' ? 'mono' : 'sandwich', label:'Тройник 87°'});
+            needs.push({kind:'condensate', quantity:1, system:'any', label:'Ревизия / конденсатоотвод'});
+        }
+        if (settings.scheme === 'elbows') needs.push({kind:'elbow', quantity:2, system:settings.system === 'sandwich' ? 'sandwich' : 'mono', label:'Колена для смещения'});
+        if (settings.ceilingPasses > 0) needs.push({kind:'ceiling_pass', quantity:settings.ceilingPasses, system:'any', diameterMode:'outer', label:'ППУ · проход через перекрытие'});
+        if (settings.clamps > 0) needs.push({kind:'clamp', quantity:settings.clamps, system:'any', diameterMode:'outer', label:'Хомуты'});
+        if (settings.umbrella) needs.push({kind:'umbrella', quantity:1, system:'any', label:'Зонт'});
+        return needs;
+    }
+
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var data = new FormData(form);
+        var height = Number(data.get('height'));
+        var clampValue = data.get('clamps');
+        var settings = {
+            diameter:data.get('diameter'), system:data.get('system'), steel:data.get('steel'), scheme:data.get('scheme'),
+            height:height, monoLength:Number(data.get('mono_length')), stoveAdapter:data.get('stove_adapter') === 'yes',
+            damper:data.get('damper') === 'yes', ceilingPasses:Number(data.get('ceiling_passes')),
+            clamps:clampValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(clampValue),
+            umbrella:data.get('umbrella') === 'yes', outerDiameter:null
+        };
+        var needs = buildNeeds(settings);
+        var used = {};
+        var rows = needs.map(function (need) {
+            var product = choose(need, settings, used);
+            if (product && need.kind === 'pipe' && product.system === 'sandwich' && product.outer_diameter) settings.outerDiameter = product.outer_diameter;
+            return product ? {product:product, quantity:need.quantity, label:need.label} : null;
+        }).filter(Boolean);
+        if (!rows.length) {
+            result.innerHTML = '<div class="cs-result__empty"><h2>Точных позиций пока не найдено</h2><p>Отправьте параметры менеджеру — он соберёт комплект вручную.</p><a href="#manager-check" class="tf-btn animate-btn">Передать менеджеру</a></div>';
+            return;
+        }
+        var subtotal = rows.reduce(function (sum, row) { return sum + row.product.price * row.quantity; }, 0);
+        var saving = unlocked ? subtotal * discount / 100 : 0;
+        var total = subtotal - saving;
+        var missing = needs.length - rows.length;
+        var systemLabel = settings.system === 'combined' ? 'моно ' + settings.monoLength.toLocaleString('ru-RU') + ' м + утеплённый' : (settings.system === 'sandwich' ? 'полностью утеплённый' : 'полностью моно');
+        var names = rows.map(function (row) { return row.label + ': ' + row.quantity + ' × ' + row.product.name; }).join('; ');
+        message.value = 'Подбор дымохода: Ø ' + settings.diameter + ' мм, ' + systemLabel + ', сталь ' + (settings.steel || 'из доступных')
+            + ', схема ' + settings.scheme + ', высота ' + settings.height + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
+            + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
+            + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Предварительный состав: ' + names;
+        result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">Ø ' + settings.diameter + ' мм · ' + systemLabel + ' · ' + settings.height + ' м</p>'
+            + (missing ? '<p class="cs-safety">Не все специальные узлы найдены в точном исполнении. Недостающие позиции добавит менеджер.</p>' : '')
+            + '<div class="cs-result__list">' + rows.map(function (row) {
+                return '<div class="cs-result__item"><img src="' + esc(row.product.image) + '" alt=""><div><a href="' + esc(row.product.url) + '">' + esc(row.product.name)
+                    + '</a><small>' + esc(row.label) + ' · ' + row.quantity + ' шт.</small></div><div class="cs-result__price">' + money(row.product.price * row.quantity) + '</div></div>';
+            }).join('') + '</div><div class="cs-result__totals"><div class="cs-result__row"><span>Стоимость товаров</span><strong>' + money(subtotal) + '</strong></div>'
+            + (unlocked ? '<div class="cs-result__row cs-result__saving"><span>Скидка на дымоход −' + discount + '%</span><strong>−' + money(saving) + '</strong></div>' : '<div class="cs-result__row cs-result__saving"><span>Добавьте печь, камин или котёл — получите −' + discount + '%</span></div>')
+            + '<div class="cs-result__row cs-result__row--total"><span>Итого</span><span>' + money(total) + '</span></div></div><div class="cs-result__actions"><button type="button" class="tf-btn animate-btn" data-add-kit>'
+            + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><a href="#manager-check" class="tf-btn btn-white btn-stroke">Проверить с менеджером</a></div>';
+
+        var add = result.querySelector('[data-add-kit]');
+        add.addEventListener('click', function () {
+            add.disabled = true;
+            var csrf = document.querySelector('meta[name="csrf-token"]').content;
+            var additions = rows.slice();
+            if (equipmentId) additions.unshift({product:{id:equipmentId}, quantity:1});
+            additions.reduce(function (chain, row) {
+                return chain.then(function () {
+                    return fetch(@json(route('cart.add')), {method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf}, body:JSON.stringify({product_id:row.product.id,quantity:row.quantity})})
+                        .then(function (response) { if (!response.ok) throw new Error(); return response.json(); });
+                });
+            }, Promise.resolve()).then(function () { window.location = @json(route('cart')); })
+                .catch(function () { add.disabled = false; add.textContent = 'Не всё добавилось — проверить корзину'; });
+        });
     });
 })();
 </script>

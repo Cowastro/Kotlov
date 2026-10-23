@@ -29,13 +29,15 @@ class ChimneySelectorController extends Controller
             ))
             ->orderByDesc('in_stock')
             ->orderBy('sort_order')
-            ->limit(400)
+            ->limit(700)
             ->get();
 
         $catalog = $products->map(function (Product $product): array {
             $text = $product->name.' '.collect((array) $product->specs)->flatten()->implode(' ');
             preg_match('/(?:Ø|диаметр[^0-9]{0,12})?(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*(?:мм)?/iu', $text, $diameter);
+            preg_match('/(?:D|Ø)?\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*[\/]\s*(130|150|160|180|200|210|220|230|250|260|280|300|310|350)/iu', $text, $diameterPair);
             preg_match('/(?:AISI\s*)?(304|316|321|430)/iu', $text, $steel);
+            preg_match('/\bL\s*(250|500|750|1000)\b/iu', $text, $length);
             $slug = (string) $product->category?->slug;
 
             return [
@@ -45,7 +47,9 @@ class ChimneySelectorController extends Controller
                 'image' => $product->image_url,
                 'url' => '/'.$slug.'/'.$product->slug,
                 'diameter' => $diameter[1] ?? null,
+                'outer_diameter' => $diameterPair[2] ?? null,
                 'steel' => $steel[1] ?? null,
+                'length_mm' => isset($length[1]) ? (int) $length[1] : null,
                 'system' => str_contains($slug, 'sendvich')
                     || str_contains(mb_strtolower($text), 'сэндвич')
                     || str_contains(mb_strtolower($text), 'термо')
@@ -82,17 +86,23 @@ class ChimneySelectorController extends Controller
 
     private function kind(string $slug, string $name): string
     {
+        $normalizedName = mb_strtolower($name);
+
         return match (true) {
+            str_contains($slug, 'shibery') || str_contains($normalizedName, 'шибер') => 'damper',
+            str_contains($slug, 'zonty') || str_contains($normalizedName, 'зонт') || str_contains($normalizedName, 'дефлектор') => 'umbrella',
+            str_contains($normalizedName, 'ппу') || str_contains($normalizedName, 'проход через') || str_contains($normalizedName, 'проходной узел') => 'ceiling_pass',
+            str_contains($normalizedName, 'хомут') => 'clamp',
+            str_contains($normalizedName, 'моно/термо') || str_contains($normalizedName, 'моно термо') || str_contains($normalizedName, 'пмт') => 'transition',
             str_contains($slug, 'truby') => 'pipe',
             str_contains($slug, 'troyniki') => 'tee',
             str_contains($slug, 'kolena') => 'elbow',
             str_contains($slug, 'kondensat') => 'condensate',
             str_contains($slug, 'krepleniya') => 'mount',
-            str_contains($slug, 'zonty') || str_contains($slug, 'zaglushki') => 'cap',
             str_contains($slug, 'perehody') => 'adapter',
-            str_contains(mb_strtolower($name), 'труба') => 'pipe',
-            str_contains(mb_strtolower($name), 'тройник') => 'tee',
-            str_contains(mb_strtolower($name), 'колен') || str_contains(mb_strtolower($name), 'отвод') => 'elbow',
+            str_contains($normalizedName, 'труба') => 'pipe',
+            str_contains($normalizedName, 'тройник') => 'tee',
+            str_contains($normalizedName, 'колен') || str_contains($normalizedName, 'отвод') => 'elbow',
             default => 'other',
         };
     }
