@@ -1,6 +1,6 @@
 {
-  "task": "ps-artisan",
+  "task": "optimize-clear",
   "artisan_args": "none",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "status-check-20261023-pumps"
+  "run_id": "karina-step1-sync-main-20261023"
 }
