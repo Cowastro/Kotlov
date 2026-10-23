@@ -36,7 +36,7 @@ jobs:
           log_file="$(jq -r '.log_file // "storage/logs/server-artisan.log"' .github/server-artisan-task.json)"
 
           case "$task" in
-            create-karina-dry-run|create-karina|apply-karina|audit-karina|optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|health-check|kill-pid) ;;
+            enrich-karina-dry-run|enrich-karina|create-karina-dry-run|create-karina|apply-karina|audit-karina|optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|health-check|kill-pid) ;;
             *) echo "::error::Unsupported task: $task"; exit 1 ;;
           esac
 
@@ -60,8 +60,12 @@ jobs:
             exit 1
           fi
 
-          if [[ ( "$task" == "apply-karina" || "$task" == "create-karina" || "$task" == "create-karina-dry-run" ) && ! "$artisan_args" =~ ^[a-f0-9]{40}$ ]]; then
+          if [[ ( "$task" == "apply-karina" || "$task" == "create-karina" || "$task" == "create-karina-dry-run" || "$task" == "enrich-karina-dry-run" ) && ! "$artisan_args" =~ ^[a-f0-9]{40}$ ]]; then
             echo "::error::$task requires the exact reviewed report blob SHA."
+            exit 1
+          fi
+          if [[ "$task" == "enrich-karina" && ! "$artisan_args" =~ ^[a-f0-9]{40}:[a-f0-9]{64}$ ]]; then
+            echo "::error::enrich-karina requires reviewed report and official-content snapshot hashes."
             exit 1
           fi
 
@@ -88,7 +92,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Setup PHP for KARINA audit checks
-        if: env.TASK == 'audit-karina' || env.TASK == 'apply-karina' || env.TASK == 'create-karina' || env.TASK == 'create-karina-dry-run'
+        if: env.TASK == 'audit-karina' || env.TASK == 'apply-karina' || env.TASK == 'create-karina' || env.TASK == 'create-karina-dry-run' || env.TASK == 'enrich-karina-dry-run' || env.TASK == 'enrich-karina'
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -96,7 +100,7 @@ jobs:
           coverage: none
 
       - name: Verify KARINA audit before touching the server
-        if: env.TASK == 'audit-karina' || env.TASK == 'apply-karina' || env.TASK == 'create-karina' || env.TASK == 'create-karina-dry-run'
+        if: env.TASK == 'audit-karina' || env.TASK == 'apply-karina' || env.TASK == 'create-karina' || env.TASK == 'create-karina-dry-run' || env.TASK == 'enrich-karina-dry-run' || env.TASK == 'enrich-karina'
         run: |
           composer install --prefer-dist --no-interaction --no-progress
           php -l app/Console/Commands/AuditKarinaCommand.php
@@ -107,10 +111,12 @@ jobs:
           php -l app/Console/Commands/ApplyReviewedKarinaCommand.php
           php -l app/Services/PriceList/CreateReviewedKarinaProducts.php
           php -l app/Console/Commands/CreateReviewedKarinaProductsCommand.php
+          php -l app/Services/PriceList/EnrichReviewedKarinaProducts.php
+          php -l app/Console/Commands/EnrichReviewedKarinaProductsCommand.php
           vendor/bin/phpunit tests/Unit/KarinaPriceAuditTest.php
 
       - name: Verify transactional KARINA import against MySQL
-        if: env.TASK == 'audit-karina' || env.TASK == 'apply-karina' || env.TASK == 'create-karina' || env.TASK == 'create-karina-dry-run'
+        if: env.TASK == 'audit-karina' || env.TASK == 'apply-karina' || env.TASK == 'create-karina' || env.TASK == 'create-karina-dry-run' || env.TASK == 'enrich-karina-dry-run' || env.TASK == 'enrich-karina'
         env:
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
@@ -124,7 +130,7 @@ jobs:
           cp .env.example .env
           php artisan key:generate
           php artisan migrate --force
-          vendor/bin/phpunit tests/Feature/ApplyReviewedKarinaTest.php tests/Feature/CreateReviewedKarinaProductsTest.php
+          vendor/bin/phpunit tests/Feature/ApplyReviewedKarinaTest.php tests/Feature/CreateReviewedKarinaProductsTest.php tests/Feature/EnrichReviewedKarinaProductsTest.php
 
       - name: Configure SSH
         env:
@@ -185,6 +191,16 @@ jobs:
               apply-karina)
                 "$PHP_BIN" artisan supplier:apply-reviewed-karina --report-blob="$ARTISAN_ARGS"
                 "$PHP_BIN" artisan supplier:apply-reviewed-karina --report-blob="$ARTISAN_ARGS" --apply
+                "$PHP_BIN" artisan supplier:audit-karina
+                ;;
+              enrich-karina-dry-run)
+                "$PHP_BIN" artisan supplier:enrich-reviewed-karina-products --report-blob="$ARTISAN_ARGS"
+                "$PHP_BIN" artisan supplier:audit-karina
+                ;;
+              enrich-karina)
+                report_blob="${ARTISAN_ARGS%%:*}"
+                source_snapshot="${ARTISAN_ARGS#*:}"
+                "$PHP_BIN" artisan supplier:enrich-reviewed-karina-products --report-blob="$report_blob" --source-snapshot="$source_snapshot" --apply
                 "$PHP_BIN" artisan supplier:audit-karina
                 ;;
               create-karina-dry-run)
@@ -272,7 +288,7 @@ jobs:
 
           # This exception transfers only the fixed, explicitly projected product report.
           # Never transfer detail_log, CRM data, arbitrary paths or command stdout.
-          if [[ ( "$TASK" == "audit-karina" || "$TASK" == "apply-karina" || "$TASK" == "create-karina" || "$TASK" == "create-karina-dry-run" ) && "$status" -eq 0 ]]; then
+          if [[ ( "$TASK" == "audit-karina" || "$TASK" == "apply-karina" || "$TASK" == "create-karina" || "$TASK" == "create-karina-dry-run" || "$TASK" == "enrich-karina-dry-run" || "$TASK" == "enrich-karina" ) && "$status" -eq 0 ]]; then
             report_tmp="$RUNNER_TEMP/karina-audit.json"
             ssh -i ~/.ssh/server_key -p "$port" "$SERVER_USER@$SERVER_HOST" \
               "cat '$server_path/storage/app/reports/suppliers/karina/audit.json'" > "$report_tmp"
@@ -303,7 +319,7 @@ jobs:
           exit "$status"
 
       - name: Upload KARINA product audit
-        if: success() && (env.TASK == 'audit-karina' || env.TASK == 'apply-karina' || env.TASK == 'create-karina' || env.TASK == 'create-karina-dry-run')
+        if: success() && (env.TASK == 'audit-karina' || env.TASK == 'apply-karina' || env.TASK == 'create-karina' || env.TASK == 'create-karina-dry-run' || env.TASK == 'enrich-karina-dry-run' || env.TASK == 'enrich-karina')
         uses: actions/upload-artifact@v4
         with:
           name: karina-audit
@@ -318,7 +334,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .github/server-artisan-result.md
-          if [[ ( "$TASK" == "audit-karina" || "$TASK" == "apply-karina" || "$TASK" == "create-karina" || "$TASK" == "create-karina-dry-run" ) && -f .github/reports/karina-audit.json ]]; then
+          if [[ ( "$TASK" == "audit-karina" || "$TASK" == "apply-karina" || "$TASK" == "create-karina" || "$TASK" == "create-karina-dry-run" || "$TASK" == "enrich-karina-dry-run" || "$TASK" == "enrich-karina" ) && -f .github/reports/karina-audit.json ]]; then
             git add .github/reports/karina-audit.json
           fi
           git commit -m "Update server artisan result [skip ci]" || exit 0
