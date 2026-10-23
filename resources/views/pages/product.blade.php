@@ -668,6 +668,10 @@
 
     {{-- Sticky кнопка "В корзину" при скролле --}}
     @if ($canBuy)
+    @php
+        $mobileInstallmentAvailable = ! $b2bOffer
+            && in_array('installment_6', config('shop.checkout_payment_methods', []), true);
+    @endphp
     <div class="tf-sticky-btn-atc">
         <div class="container">
             <div class="tf-height-observer w-100 d-flex align-items-center">
@@ -710,18 +714,30 @@
                             </button>
                         </div>
                     </div>
-                    <a href="#shoppingCart"
-                        class="tf-btn animate-btn btn-add-to-cart"
-                        data-product-id="{{ $product->id }}"
-                        @if ($b2bOffer) data-warehouse-select="#b2b-warehouse-{{ $product->id }}" @endif>
-                        <span class="d-md-none">В корзину</span>
-                        <span class="d-none d-md-inline">
-                            В корзину
-                            @if ($displayPrice > 0)
-                                — {{ number_format($displayPrice, 2, '.', ' ') }} BYN
-                            @endif
-                        </span>
-                    </a>
+                    <div class="mobile-sticky-actions{{ $mobileInstallmentAvailable ? ' has-installment' : '' }}">
+                        <a href="#shoppingCart"
+                            class="tf-btn animate-btn btn-add-to-cart mobile-sticky-cart"
+                            data-product-id="{{ $product->id }}"
+                            @if ($b2bOffer) data-warehouse-select="#b2b-warehouse-{{ $product->id }}" @endif>
+                            <span class="d-md-none">В корзину</span>
+                            <span class="d-none d-md-inline">
+                                В корзину
+                                @if ($displayPrice > 0)
+                                    — {{ number_format($displayPrice, 2, '.', ' ') }} BYN
+                                @endif
+                            </span>
+                        </a>
+                        @if ($mobileInstallmentAvailable)
+                            <a href="{{ route('checkout', ['payment_type' => 'installment_6']) }}"
+                                class="mobile-sticky-installment d-md-none btn-add-to-cart"
+                                data-product-id="{{ $product->id }}"
+                                data-after-add-url="{{ route('checkout', ['payment_type' => 'installment_6']) }}"
+                                aria-label="Купить в рассрочку до 6 месяцев">
+                                <span>В рассрочку</span>
+                                <small>до 6 мес.</small>
+                            </a>
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>

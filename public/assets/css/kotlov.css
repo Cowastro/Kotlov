@@ -1280,6 +1280,17 @@ body {
         gap: 14px;
     }
 
+    .product-detail-page .mobile-sticky-actions {
+        display: grid;
+        min-width: 0;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .product-detail-page .mobile-sticky-actions.has-installment {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .product-detail-page .tf-sticky-btn-atc .tf-product-info-quantity {
         display: none;
     }
@@ -1304,6 +1315,39 @@ body {
         border-radius: 8px;
         font-size: 16px;
         font-weight: 700;
+    }
+
+    .product-detail-page .mobile-sticky-installment {
+        display: flex;
+        min-width: 0;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 1px;
+        padding: 6px 8px;
+        border: 1px solid #171717;
+        border-radius: 8px;
+        background: #fff;
+        color: #171717;
+        font-size: 13px;
+        font-weight: 750;
+        line-height: 1.1;
+        text-align: center;
+        transition: background .18s ease, color .18s ease;
+    }
+
+    .product-detail-page .mobile-sticky-installment small {
+        color: #777;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1.1;
+    }
+
+    .product-detail-page .mobile-sticky-installment:hover,
+    .product-detail-page .mobile-sticky-installment:focus-visible {
+        background: #f3f3f3;
+        color: #171717;
     }
 
     .tf-toolbar-bottom {
@@ -1339,6 +1383,36 @@ body {
     .tf-toolbar-bottom .toolbar-item.is-active a {
         color: var(--primary);
     }
+
+    @media (max-width: 374px) {
+        body.product-detail-page { padding-bottom: 204px; }
+        .product-detail-page .tf-sticky-btn-atc .tf-sticky-atc-infos {
+            grid-template-columns: 82px minmax(0, 1fr);
+            gap: 10px;
+        }
+        .product-detail-page .mobile-sticky-price {
+            font-size: 16px;
+            white-space: normal;
+        }
+        .product-detail-page .mobile-sticky-price span {
+            display: block;
+            margin-top: 2px;
+        }
+        .product-detail-page .mobile-sticky-actions.has-installment {
+            grid-template-columns: 1fr;
+        }
+        .product-detail-page .mobile-sticky-installment,
+        .product-detail-page .tf-sticky-btn-atc .btn-add-to-cart {
+            min-height: 42px;
+        }
+        .product-detail-page .ai-selector__launcher { bottom: 212px; }
+        .product-detail-page .ai-selector__teaser,
+        .product-detail-page .ai-selector__assistance-menu { bottom: 270px; }
+    }
+}
+
+@media (min-width: 768px) {
+    .product-detail-page .mobile-sticky-actions { display: contents; }
 }
 
 @media (max-width: 370px) {
