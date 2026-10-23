@@ -1,6 +1,6 @@
 {
-  "task": "apply-karina",
-  "artisan_args": "d360d151a128171bc9a31a3a575603c8a5c288ec",
+  "task": "audit-karina",
+  "artisan_args": "none",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "karina-reviewed-first-apply-20261023"
+  "run_id": "karina-diagnose-stopped-apply-20261023"
 }
