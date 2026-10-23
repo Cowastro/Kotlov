@@ -116,6 +116,7 @@ class ApplyReviewedKarina
             } else {
                 $supplier->update(['currency_rate' => $rate]);
             }
+            $supplier->brands()->syncWithoutDetaching(array_values(array_unique(array_map(fn ($target) => $target['product']->brand_id, $selected))));
             $import = SupplierPriceImport::create(['supplier_id' => $supplier->id, 'filename' => $filename,
                 'total_rows' => count($offers), 'matched' => count($selected), 'unmatched' => $result['unmatched'],
                 'updated' => count($selected), 'skipped' => $result['unmatched'], 'status' => 'done', 'imported_at' => now()]);
