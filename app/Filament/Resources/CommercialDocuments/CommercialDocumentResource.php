@@ -24,6 +24,7 @@ use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
 use App\Services\Market\MarketWebResearchService;
 use App\Services\Suppliers\SupplierOfferCards;
+use App\Services\Suppliers\WebProductSources;
 use App\Services\Telephony\PhoneNumber;
 use App\Support\AdminPhoneLinks;
 use BackedEnum;
@@ -377,6 +378,105 @@ class CommercialDocumentResource extends Resource
                                     ->send();
                             }),
                     ])->key('supplier_offer_actions')->columnSpanFull(),
+                    // Not in any supplier price either: a product page from the internet becomes the card.
+                    Hidden::make('web_source_labels')->default([])->dehydrated(false),
+                    Select::make('web_source_url')
+                        ->label('Страницы товара в интернете')
+                        ->helperText('Выберите страницу производителя или магазина с фото и характеристиками именно этой модели.')
+                        ->options(fn (Get $get): array => (array) $get('web_source_labels'))
+                        ->dehydrated(false)
+                        ->live()
+                        ->visible(fn (Get $get): bool => (array) $get('web_source_labels') !== [])
+                        ->columnSpanFull(),
+                    TextInput::make('web_card_name')
+                        ->label('Название новой карточки')
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get): bool => filled($get('web_source_url'))),
+                    TextInput::make('web_card_brand')
+                        ->label('Бренд')
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get): bool => filled($get('web_source_url'))),
+                    Select::make('web_card_category_id')
+                        ->label('Категория новой карточки')
+                        ->options(fn (): array => Category::query()->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
+                        ->searchable()
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get): bool => filled($get('web_source_url'))),
+                    TextInput::make('web_card_price')
+                        ->label('Цена для клиента, BYN')
+                        ->helperText('Необязательно: можно указать позже в строке КП.')
+                        ->numeric()
+                        ->minValue(0)
+                        ->dehydrated(false)
+                        ->visible(fn (Get $get): bool => filled($get('web_source_url'))),
+                    SchemaActions::make([
+                        Action::make('search_web_sources')
+                            ->label('Найти в интернете')
+                            ->icon('heroicon-o-globe-alt')
+                            ->color('gray')
+                            ->action(function (Get $get, Set $set): void {
+                                $search = trim((string) $get('catalog_search'));
+                                $sources = app(WebProductSources::class);
+                                if (! $sources->isConfigured()) {
+                                    Notification::make()->warning()->title('Поиск в интернете не настроен')->body('Нужен ключ SERPER_API_KEY на сервере.')->send();
+
+                                    return;
+                                }
+                                if (mb_strlen($search) < 3) {
+                                    Notification::make()->warning()->title('Введите модель в поиск выше')->send();
+
+                                    return;
+                                }
+                                $results = $sources->search($search);
+                                $set('web_source_labels', $results);
+                                $set('web_source_url', null);
+                                $set('web_card_name', $search);
+                                Notification::make()
+                                    ->title($results === [] ? 'Подходящих страниц не найдено' : 'Найдено страниц: '.count($results))
+                                    ->body($results === [] ? 'Уточните модель или бренд.' : 'Выберите страницу именно этой модели, укажите категорию и создайте карточку.')
+                                    ->color($results === [] ? 'warning' : 'success')
+                                    ->send();
+                            }),
+                        Action::make('create_from_web')
+                            ->label('Создать карточку из страницы и добавить в КП')
+                            ->icon('heroicon-o-sparkles')
+                            ->color('primary')
+                            ->visible(fn (Get $get): bool => filled($get('web_source_url')))
+                            ->action(function (Get $get, Set $set): void {
+                                try {
+                                    $product = app(SupplierOfferCards::class)->createFromWeb(
+                                        (string) $get('web_card_name'),
+                                        trim((string) $get('web_card_brand')) ?: null,
+                                        (int) $get('web_card_category_id'),
+                                        (string) $get('web_source_url'),
+                                        filled($get('web_card_price')) ? (float) $get('web_card_price') : null,
+                                        auth()->id(),
+                                    );
+                                } catch (\RuntimeException $e) {
+                                    Notification::make()->warning()->title($e->getMessage())->send();
+
+                                    return;
+                                }
+                                $items = (array) $get('items');
+                                $defaultDiscount = min(100, max(0, (float) $get('client_default_discount_percent')));
+                                foreach (app(CommercialOfferCopilotService::class)->itemRows([$product->id]) as $row) {
+                                    $row['discount_percent'] = $defaultDiscount;
+                                    $row['line_total'] = round((float) $row['unit_price'] * (float) $row['quantity'] * (1 - ($defaultDiscount / 100)), 2);
+                                    $items[(string) Str::uuid()] = $row;
+                                }
+                                $set('items', $items);
+                                foreach (['web_source_url', 'web_card_brand', 'web_card_price'] as $field) {
+                                    $set($field, null);
+                                }
+                                $set('web_source_labels', []);
+                                Notification::make()
+                                    ->success()
+                                    ->title('Карточка создана из страницы и добавлена в КП')
+                                    ->body($product->name.'. Поставщика у неё пока нет — закупку уточните отдельно. На сайте карточка скрыта до проверки.'
+                                        .((float) $product->price > 0 ? '' : ' Укажите цену в строке КП.'))
+                                    ->send();
+                            }),
+                    ])->key('web_source_actions')->columnSpanFull(),
                 ]),
 
             Section::make('Товары и услуги')

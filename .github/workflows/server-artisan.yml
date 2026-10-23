@@ -435,6 +435,12 @@ jobs:
             grep -E '^audit\.merge_cards\.pair=[0-9]+:[0-9]+:([a-z0-9._(),-]+:[a-z0-9._(),-]+|skipped)$' "$detail_log" || true
             echo "safe_merge_cards_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:web-product-sources" || "${ARTISAN_ARGV[0]:-}" == "catalog:finish-offer-cards" ]]; then
+            echo "safe_web_sources_metrics_begin"
+            grep -E '^metric\.(web_sources|offer_cards)\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.web_sources\.page=[a-z0-9-]+:[a-z0-9-]*$' "$detail_log" || true
+            echo "safe_web_sources_metrics_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:check-supplier-links" ]]; then
             echo "safe_link_check_metrics_begin"
             grep -E '^metric\.link_check\.[a-z_]+=[0-9]+$' "$detail_log" || true

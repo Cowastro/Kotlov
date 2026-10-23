@@ -66,6 +66,11 @@ return [
         'installer_applications_chat_id' => env('TELEGRAM_INSTALLER_APPLICATIONS_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
     ],
 
+    // Google search API (serper.dev): product pages for cards created from a КП.
+    'serper' => [
+        'key' => env('SERPER_API_KEY'),
+    ],
+
     'ai' => [
         'anthropic_key' => env('ANTHROPIC_API_KEY', ''),
         'api_key' => env('AI_API_KEY', ''),

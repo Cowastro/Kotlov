@@ -146,6 +146,55 @@ class SupplierOfferCards
         return $product->fresh();
     }
 
+    /**
+     * Phase 2: a model in no supplier price. The card is built from a page the
+     * manager picked among the web search results; the price comes from the КП
+     * line, so the card waits for a price confirmation.
+     */
+    public function createFromWeb(string $name, ?string $brandName, int $categoryId, string $sourceUrl, ?float $price = null, ?int $userId = null): Product
+    {
+        $name = trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
+        if (mb_strlen($name) < 3) {
+            throw new RuntimeException('Укажите название товара.');
+        }
+        if (! Category::query()->whereKey($categoryId)->exists()) {
+            throw new RuntimeException('Выберите категорию для новой карточки.');
+        }
+        if (! preg_match('#^https?://[^/]+/.+#', $sourceUrl)) {
+            throw new RuntimeException('Выберите страницу товара из результатов поиска.');
+        }
+        $brand = $this->brand((string) $brandName);
+        $price = $price !== null && $price > 0 ? round($price, 2) : null;
+        $product = Product::query()->create([
+            'category_id' => $categoryId,
+            'brand_id' => $brand?->id,
+            'name' => $name,
+            'h1' => $name,
+            'slug' => $this->uniqueSlug($name),
+            'sku' => $this->uniqueSku('KP-'.now()->format('ymd').'-'.Str::upper(Str::random(4))),
+            'price' => $price ?? 0,
+            'currency' => 'BYN',
+            'unit' => 'шт',
+            'meta_title' => Str::limit($name, 60, '').' — купить в %city%',
+            'meta_description' => Str::limit($name.'. Цена, наличие и доставка по Беларуси.', 175, ''),
+            'content_source_url' => $sourceUrl,
+            'is_active' => false,
+            'is_archived' => false,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+            'requires_price_confirmation' => true,
+            'created_via' => Product::CREATED_VIA_COMMERCIAL_OFFER,
+            'created_by_user_id' => $userId,
+        ]);
+        try {
+            app(ProductSourceEnricher::class)->enrich($product, $sourceUrl, ['update_content' => false]);
+        } catch (\Throwable $e) {
+            Log::warning('Web offer card enrichment failed', ['product_id' => $product->id, 'url' => $sourceUrl, 'error' => $e->getMessage()]);
+        }
+
+        return $product->fresh();
+    }
+
     public function retail(SupplierProduct $offer): ?float
     {
         $retail = (float) ($offer->raw['retail'] ?? 0);
