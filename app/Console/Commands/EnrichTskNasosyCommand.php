@@ -30,7 +30,7 @@ class EnrichTskNasosyCommand extends Command
 
     protected $signature = 'supplier:enrich-tsk-nasosy
         {--xlsx-file= : Local .xlsx path with an «aqualider» tab (default: the aqualider.by sitemap)}
-        {--brand= : Only products of this brand slug}
+        {--brand= : Only products of these brand slugs (comma-separated)}
         {--sheet-url= : Override the default Google Sheet URL}
         {--limit= : Process only the first N linked products}
         {--sleep=600 : Delay between card requests, ms}
@@ -91,7 +91,7 @@ class EnrichTskNasosyCommand extends Command
             ->where('sp.supplier_id', $sid)
             ->whereNotNull('sp.product_id')
             ->when((bool) $this->option('in-stock-only'), fn ($q) => $q->where('sp.in_stock', true))
-            ->when(trim((string) $this->option('brand')) !== '', fn ($q) => $q->whereIn('p.brand_id', DB::table('brands')->where('slug', $this->option('brand'))->select('id')))
+            ->when(trim((string) $this->option('brand')) !== '', fn ($q) => $q->whereIn('p.brand_id', DB::table('brands')->whereIn('slug', array_map('trim', explode(',', (string) $this->option('brand'))))->select('id')))
             ->where('p.is_archived', false)
             ->when(trim((string) $this->option('max-current-attrs')) !== '', fn ($q) => $q->whereRaw('COALESCE(pav.attribute_rows, 0) <= ?', [max(0, (int) $this->option('max-current-attrs'))]))
             ->get(['sp.id as sp_id', 'sp.supplier_article', 'sp.source_url', 'sp.in_stock',
