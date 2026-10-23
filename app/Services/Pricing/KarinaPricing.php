@@ -46,4 +46,18 @@ class KarinaPricing
             'purchase_byn' => CurrencyPriceConverter::convertToByn($purchaseRub, 'RUB', $rate),
         ];
     }
+
+    public static function retailRubFromRaw(array|string|null $raw): float
+    {
+        $data = is_string($raw) ? json_decode($raw, true, 512, JSON_THROW_ON_ERROR) : $raw;
+        $value = $data['karina']['retail_rub']
+            ?? $data['Рекомендованная розничная цена, руб. с НДС']
+            ?? null;
+        $price = \App\Services\PriceList\SupplierAdapter::parsePrice($value);
+        if ($price === null || $price <= 0) {
+            throw new InvalidArgumentException('KARINA source RRP missing; refusing to use purchase as site retail.');
+        }
+
+        return $price;
+    }
 }
