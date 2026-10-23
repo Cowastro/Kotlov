@@ -20,11 +20,13 @@ class KarinaPriceAuditTest extends TestCase
             ['K-9', 'KARINA 9', '1 200,00'],
             ['K-X', 'private@example.test', 100],
             ['K-0', 'KARINA 0', 0],
+            ['Op-7,5-220/380', 'KARINA Optima 7,5', 1000],
         ], null, 'A1');
         try {
             (new Xlsx($book))->save($path);
             $report = (new KarinaPriceAudit)->inspect($path);
-            $this->assertCount(2, $report['items']);
+            $this->assertCount(3, $report['items']);
+            $this->assertSame('Op-7,5-220/380', $report['items'][2]['article']);
             $this->assertSame(749.99, $report['items'][0]['purchase']);
             $this->assertSame(900.0, $report['items'][1]['purchase']);
             $this->assertSame(2, $report['sheets'][0]['header_row']);
