@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * ЭкоКамин promotion until 31.10.2026 (Дельта fireboxes, Мадрид, Рио, Крит,
- * Эклипс, Родос, Прага, Мюнхен, Три стекла). Prices mirror the manufacturer:
+ * Эклипс, Родос, Прага, Мюнхен, Три стекла; from 23.10 also the Бавария
+ * stove-fireplaces −15% and the corner Дельта 800/1000 from stock −28%). Prices mirror the manufacturer:
  * ecokamin.ru shows the promotional and the regular rouble price of every
  * model, the card gets both, converted with the same rate as its current
  * price. Our retail prices were already synced from ecokamin.ru, so no own
@@ -36,7 +37,19 @@ class ApplyEcokaminOctoberSaleCommand extends Command
     /** ecokamin.ru catalogue sections of the promotion. */
     public const SECTIONS = [
         'kaminnye_topki/delta', 'kaminy/kaminy_madrid', 'kaminy/kaminy_rio', 'kaminy/kamin_krit', 'kaminy/eklips',
-        'kaminy/rodos', 'kaminy/praga', 'kaminy/myunkhen', 'kaminy/kaminy_tri_stekla',
+        'kaminy/rodos', 'kaminy/praga', 'kaminy/myunkhen', 'kaminy/kaminy_tri_stekla', 'pechi_kaminy/bavariya',
+    ];
+
+    /**
+     * Corner Дельта 800/1000 without the built-in damper, from stock: −28% of the
+     * regular price (ЭкоКамин marketing, 23.10.2026). ecokamin.ru still shows
+     * −20% for these models, so the price is set here. Bitrix id => model.
+     */
+    public const STOCK_DELTA_DISCOUNT = 28;
+
+    public const STOCK_DELTA = [
+        '5530' => '1000 L', '5531' => '1000 LB', '5532' => '1000 R', '5533' => '1000 RB',
+        '5546' => '800 L', '5547' => '800 LB', '5548' => '800 R', '5549' => '800 RB', '17996' => '800 LPB', '17998' => '800 RPB',
     ];
 
     private const MAX_PAGES = 8;
@@ -51,6 +64,11 @@ class ApplyEcokaminOctoberSaleCommand extends Command
             return self::FAILURE;
         }
         $source = $this->sourcePrices();
+        foreach (array_keys(self::STOCK_DELTA) as $id) {
+            if (isset($source[$id]) && $source[$id]['old']) {
+                $source[$id]['current'] = round($source[$id]['old'] * (100 - self::STOCK_DELTA_DISCOUNT) / 100);
+            }
+        }
         if (count($source) < 20) {
             $this->error('ecokamin.ru вернул слишком мало товаров: '.count($source));
 

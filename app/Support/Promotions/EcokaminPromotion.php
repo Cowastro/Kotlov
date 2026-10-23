@@ -17,7 +17,7 @@ final class EcokaminPromotion
 {
     public const CACHE_KEY = 'ecokamin-promotion:showcase:v3';
 
-    private const SERIES = ['дельта', 'рио', 'мюнхен', 'мадрид', 'крит', 'прага', 'эклипс', 'родос', 'три стекла'];
+    private const SERIES = ['дельта', 'бавария', 'рио', 'мюнхен', 'мадрид', 'крит', 'прага', 'эклипс', 'родос', 'три стекла'];
 
     public static function endsAt(): CarbonImmutable
     {
