@@ -1,6 +1,6 @@
 {
-  "task": "audit-karina",
-  "artisan_args": "none",
+  "task": "create-karina-dry-run",
+  "artisan_args": "bf25f5ec9d8c5ce1997f7b226a1da2ae5bd3cd6e",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "karina-new-products-cross-catalog-audit-20261023"
+  "run_id": "karina-hidden-products-dry-run-20261023"
 }
