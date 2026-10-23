@@ -434,6 +434,13 @@ jobs:
             grep -E '^audit\.merge_cards\.pair=[0-9]+:[0-9]+:([a-z0-9._(),-]+:[a-z0-9._(),-]+|skipped)$' "$detail_log" || true
             echo "safe_merge_cards_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:supplier-overlap" ]]; then
+            echo "safe_overlap_metrics_begin"
+            grep -E '^metric\.overlap\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.overlap\.card=[0-9]+:[a-z0-9._(),-]+:[a-z0-9_-]+:[01]:[0-9.]+:[0-9.]+:[0-9.]+:[0-9.]+:[a-z_]+$' "$detail_log" || true
+            grep -E '^audit\.overlap\.pair=[a-z0-9_-]+:[a-z0-9_-]+(:-?[0-9]+){6}$' "$detail_log" || true
+            echo "safe_overlap_metrics_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:enrich-source-products" ]]; then
             echo "safe_source_enrich_metrics_begin"
             grep -E '^metric\.source_enrich\.[a-z_]+=[0-9]+$' "$detail_log" || true
