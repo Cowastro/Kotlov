@@ -2477,7 +2477,7 @@ class ProductSourceEnricher
         $path = (string) parse_url($url, PHP_URL_PATH);
         $host = (string) parse_url($url, PHP_URL_HOST);
 
-        if (($host === 'teplo.by' || str_ends_with($host, 'pkmercury.by')) && str_starts_with($path, '/uploads/')) {
+        if (($host === 'teplo.by' || $host === 'bio-tep.ru' || str_ends_with($host, 'pkmercury.by')) && str_starts_with($path, '/uploads/')) {
             $url = str_replace('://' . $host . '/uploads/', '://' . $host . '/wp-content/uploads/', $url);
             $path = (string) parse_url($url, PHP_URL_PATH);
         }
