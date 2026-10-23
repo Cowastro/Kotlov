@@ -339,6 +339,9 @@ class ViewCommercialDocument extends ViewRecord
                             $report = (array) data_get($contract->terms_snapshot, 'replacement_report', []);
                             $mode = ($report['supplier_column_replaced'] ?? false) ? 'заменена колонка Поставщика' : 'заполнены метки';
                             $warning = count((array) ($report['unresolved_tokens'] ?? [])) > 0 ? ' Есть незаполненные неизвестные метки — проверьте DOCX.' : '';
+                            if (($report['conversion_mode'] ?? null) === 'text_recovery') {
+                                $warning .= ' Старый DOC восстановлен в чистый DOCX без исходного оформления — обязательно сверьте его с сохранённым оригиналом.';
+                            }
 
                             Notification::make()
                                 ->success()

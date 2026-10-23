@@ -35,9 +35,12 @@ class ClientContractTemplateGenerator
         }
 
         $convertedPath = null;
+        $conversionMode = null;
         $workingDocxPath = $disk->path($sourcePath);
         if ($sourceExtension === 'doc') {
-            $convertedPath = $this->legacyWordConverter->convertToDocx($workingDocxPath);
+            $conversion = $this->legacyWordConverter->convertToDocx($workingDocxPath);
+            $convertedPath = $conversion['path'];
+            $conversionMode = $conversion['mode'];
             $workingDocxPath = $convertedPath;
         }
 
@@ -47,7 +50,7 @@ class ClientContractTemplateGenerator
         $createdPaths = [];
 
         try {
-            return DB::transaction(function () use ($document, $input, $sourcePath, $sourceExtension, $workingDocxPath, $disk, &$createdPaths): CommercialContract {
+            return DB::transaction(function () use ($document, $input, $sourcePath, $sourceExtension, $workingDocxPath, $conversionMode, $disk, &$createdPaths): CommercialContract {
                 $seller = (array) config('legal.commercial_documents', []);
                 $buyer = $this->buyerSnapshot($document);
                 $contract = CommercialContract::query()->create([
@@ -83,6 +86,7 @@ class ClientContractTemplateGenerator
                     $seller,
                     (bool) ($input['auto_replace_supplier_column'] ?? true),
                 );
+                $report['conversion_mode'] = $conversionMode;
 
                 if (($report['seller_replacements'] ?? 0) < 1) {
                     throw new RuntimeException('В форме не найдены метки реквизитов или таблица с колонками «Поставщик/Исполнитель» и «Покупатель/Заказчик». Исходник не изменён.');
