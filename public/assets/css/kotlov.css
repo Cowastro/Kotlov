@@ -544,77 +544,9 @@ body {
     overflow-y: auto;
 }
 
-/* Быстрый поиск на первом экране главной для телефона и планшета. */
-.home-quick-search {
-    position: relative;
-    z-index: 110;
-    padding: 0 0 14px;
-}
-.home-quick-search__form {
-    position: relative;
-    display: flex;
-    min-height: 52px;
-    align-items: center;
-    gap: 10px;
-    padding: 5px 5px 5px 16px;
-    border: 1px solid #dedede;
-    border-radius: 14px;
-    background: #fff;
-    box-shadow: 0 7px 22px rgba(0, 0, 0, .07);
-    transition: border-color .18s ease, box-shadow .18s ease;
-}
-.home-quick-search__form:focus-within {
-    border-color: #df4145;
-    box-shadow: 0 0 0 3px rgba(223, 65, 69, .12), 0 8px 24px rgba(0, 0, 0, .08);
-}
-.home-quick-search__icon {
-    flex: 0 0 auto;
-    color: #222;
-    font-size: 20px;
-}
-.home-quick-search__form input {
-    min-width: 0;
-    flex: 1;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: #111;
-    font-size: 15px;
-    line-height: 1.35;
-}
-.home-quick-search__form input::placeholder { color: #8a8a8a; }
-.home-quick-search__form input::-webkit-search-cancel-button { display: none; }
-.home-quick-search__submit {
-    align-self: stretch;
-    padding: 0 17px;
-    border: 0;
-    border-radius: 10px;
-    background: #171717;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 700;
-    transition: background .18s ease;
-}
-.home-quick-search__submit:hover,
-.home-quick-search__submit:focus-visible { background: #df4145; }
-.home-quick-search .search-suggest-dropdown {
-    top: calc(100% + 5px);
-    max-height: min(430px, calc(100vh - 210px));
-    text-align: left;
-}
 .search-suggest-dropdown .suggest-item.is-active {
     background: #f3f3f3;
     outline: none;
-}
-@media (max-width: 575px) {
-    .home-quick-search { padding-bottom: 11px; }
-    .home-quick-search__form {
-        min-height: 50px;
-        gap: 9px;
-        padding-left: 14px;
-        border-radius: 13px;
-    }
-    .home-quick-search__submit { padding: 0 14px; }
 }
 
 /* Модалка поиска — разрешаем overflow чтобы дропдаун не обрезался */

@@ -691,7 +691,6 @@
     }
 
     initSearchSuggest('header-search-input',      'search-suggest');
-    initSearchSuggest('home-search-input',        'home-search-suggest');
     initSearchSuggest('modal-search-input',       'modal-search-suggest');
     initSearchSuggest('mobilemenu-search-input',  'mobilemenu-search-suggest');
     initSearchSuggest('searchpage-search-input',  'searchpage-search-suggest');

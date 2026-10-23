@@ -116,8 +116,9 @@
 
                 <div class="header-right">
                     <ul class="nav-icon-list d-xl-none">
-                        <li class="d-none d-sm-block">
-                            <a href="#search" data-bs-toggle="modal" class="nav-icon-item link">
+                        <li>
+                            <a href="#search" data-bs-toggle="modal" class="nav-icon-item link mobile-search-trigger"
+                                aria-label="Открыть умный поиск" title="Поиск">
                                 <i class="icon icon-MagnifyingGlass"></i>
                             </a>
                         </li>
@@ -160,24 +161,6 @@
 
             <div class="br-line d-none d-xl-flex"></div>
 
-            @if (request()->is('/'))
-                <div class="home-quick-search d-xl-none">
-                    <form action="{{ route('search') }}" method="get" class="home-quick-search__form"
-                        role="search" aria-label="Поиск по каталогу" autocomplete="off">
-                        <i class="icon icon-MagnifyingGlass home-quick-search__icon" aria-hidden="true"></i>
-                        <input type="search" name="q" id="home-search-input"
-                            placeholder="Товар, артикул или категория"
-                            aria-label="Товар, артикул или категория"
-                            aria-controls="home-search-suggest" aria-autocomplete="list"
-                            aria-expanded="false" autocomplete="off">
-                        <button type="submit" class="home-quick-search__submit" aria-label="Найти">
-                            Найти
-                        </button>
-                        <div id="home-search-suggest" class="search-suggest-dropdown"
-                            role="listbox" aria-label="Подсказки поиска"></div>
-                    </form>
-                </div>
-            @endif
         </div>
     </div>
 
