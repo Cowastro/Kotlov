@@ -556,34 +556,77 @@
         var timer = null;
         var request = null;
         var cache = Object.create(null);
+        var activeIndex = -1;
+
+        function setActive(index) {
+            var links = suggest.querySelectorAll('.suggest-item');
+            if (!links.length) return;
+
+            activeIndex = (index + links.length) % links.length;
+            links.forEach(function (link, itemIndex) {
+                var isActive = itemIndex === activeIndex;
+                link.classList.toggle('is-active', isActive);
+                link.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                if (isActive) link.scrollIntoView({ block: 'nearest' });
+            });
+        }
+
+        function appendText(parent, className, value) {
+            var node = document.createElement('span');
+            node.className = className;
+            node.textContent = value || '';
+            parent.appendChild(node);
+            return node;
+        }
 
         function renderSuggestions(data) {
             if (!data.length) {
                 suggest.style.display = 'none';
-                suggest.innerHTML = '';
+                suggest.replaceChildren();
+                input.setAttribute('aria-expanded', 'false');
                 return;
             }
 
-            var html = data.map(function (item) {
+            var fragment = document.createDocumentFragment();
+            data.forEach(function (item) {
+                var link = document.createElement('a');
+                link.href = item.url;
+                link.className = 'suggest-item ' + (item.type === 'category' ? 'suggest-category' : 'suggest-product');
+                link.setAttribute('role', 'option');
+                link.setAttribute('aria-selected', 'false');
+
                 if (item.type === 'category') {
-                    return '<a href="' + item.url + '" class="suggest-item suggest-category">' +
-                        '<i class="icon icon-FolderOpen me-8"></i>' +
-                        '<span class="suggest-category__text">' +
-                            '<span>' + item.name + '</span>' +
-                            (item.context ? '<small>' + item.context + '</small>' : '') +
-                        '</span>' +
-                        '</a>';
+                    var icon = document.createElement('i');
+                    icon.className = 'icon icon-FolderOpen me-8';
+                    icon.setAttribute('aria-hidden', 'true');
+                    link.appendChild(icon);
+
+                    var categoryText = appendText(link, 'suggest-category__text', '');
+                    appendText(categoryText, '', item.name);
+                    if (item.context) {
+                        var context = document.createElement('small');
+                        context.textContent = item.context;
+                        categoryText.appendChild(context);
+                    }
+                } else {
+                    var imageWrap = appendText(link, 'suggest-product__image', '');
+                    var image = document.createElement('img');
+                    image.src = item.image;
+                    image.alt = '';
+                    image.loading = 'lazy';
+                    imageWrap.appendChild(image);
+
+                    var body = appendText(link, 'suggest-product__body', '');
+                    appendText(body, 'suggest-name', item.name);
+                    appendText(body, 'suggest-price cl-text-2', item.price);
                 }
-                return '<a href="' + item.url + '" class="suggest-item suggest-product">' +
-                    '<span class="suggest-product__image"><img src="' + item.image + '" alt="" loading="lazy"></span>' +
-                    '<span class="suggest-product__body">' +
-                        '<span class="suggest-name">' + item.name + '</span>' +
-                        '<span class="suggest-price cl-text-2">' + item.price + '</span>' +
-                    '</span>' +
-                    '</a>';
-            }).join('');
-            suggest.innerHTML = html;
+
+                fragment.appendChild(link);
+            });
+            suggest.replaceChildren(fragment);
             suggest.style.display = 'block';
+            activeIndex = -1;
+            input.setAttribute('aria-expanded', 'true');
         }
 
         input.addEventListener('input', function () {
@@ -592,7 +635,8 @@
             if (q.length < 2) {
                 if (request) request.abort();
                 suggest.style.display = 'none';
-                suggest.innerHTML = '';
+                suggest.replaceChildren();
+                input.setAttribute('aria-expanded', 'false');
                 return;
             }
 
@@ -618,9 +662,26 @@
             }, 120);
         });
 
+        input.addEventListener('keydown', function (event) {
+            var links = suggest.querySelectorAll('.suggest-item');
+            if (suggest.style.display !== 'block' || !links.length) return;
+
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+                setActive(activeIndex + (event.key === 'ArrowDown' ? 1 : -1));
+            } else if (event.key === 'Enter' && activeIndex >= 0) {
+                event.preventDefault();
+                links[activeIndex].click();
+            } else if (event.key === 'Escape') {
+                suggest.style.display = 'none';
+                input.setAttribute('aria-expanded', 'false');
+            }
+        });
+
         document.addEventListener('click', function (e) {
             if (!input.contains(e.target) && !suggest.contains(e.target)) {
                 suggest.style.display = 'none';
+                input.setAttribute('aria-expanded', 'false');
             }
         });
 
@@ -630,6 +691,7 @@
     }
 
     initSearchSuggest('header-search-input',      'search-suggest');
+    initSearchSuggest('home-search-input',        'home-search-suggest');
     initSearchSuggest('modal-search-input',       'modal-search-suggest');
     initSearchSuggest('mobilemenu-search-input',  'mobilemenu-search-suggest');
     initSearchSuggest('searchpage-search-input',  'searchpage-search-suggest');

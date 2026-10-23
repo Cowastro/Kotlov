@@ -13,6 +13,19 @@ class StorefrontProductSearchTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_homepage_has_a_dedicated_mobile_smart_search(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('id="home-search-input"', false)
+            ->assertSee('id="home-search-suggest"', false)
+            ->assertSee("initSearchSuggest('home-search-input',        'home-search-suggest')", false);
+
+        $this->get('/search')
+            ->assertOk()
+            ->assertDontSee('id="home-search-input"', false);
+    }
+
     public function test_fast_suggestion_pass_handles_normal_queries_without_expensive_variants(): void
     {
         $category = Category::create([
