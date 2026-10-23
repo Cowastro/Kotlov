@@ -576,6 +576,14 @@ body {
 .modal-search .modal-dialog {
     overflow: visible;
 }
+@media (max-width: 767px) {
+    .modal-search .modal-dialog.modal-dialog-centered {
+        min-height: calc(100% - max(24px, env(safe-area-inset-top)));
+        align-items: flex-start;
+        margin-top: max(12px, env(safe-area-inset-top));
+        margin-bottom: 12px;
+    }
+}
 
 /* Мобильное меню — fieldset растягиваем на всю ширину формы */
 .canvas-header .form-search-nav fieldset {
