@@ -48,6 +48,9 @@ class LegacyWordConverterTest extends TestCase
             $this->assertStringContainsString('{{SUPPLIER_SHORT_NAME}}', $xml);
             $this->assertStringContainsString('{{QUOTE_NUMBER}}', $xml);
             $this->assertStringContainsString('{{QUOTE_TOTAL}}', $xml);
+            $this->assertStringContainsString('{{SUPPLIER_REPRESENTATIVE}}, действующий', $xml);
+            $this->assertStringContainsString('{{QUOTE_DATE}} г., являющейся', $xml);
+            $this->assertStringNotContainsString('<w:t xml:space="preserve">,', $xml);
             $this->assertLessThan(strpos($xml, 'Покупатель:'), strpos($xml, 'Поставщик:'));
             $this->assertStringNotContainsString('Font Style13', $xml);
         } finally {

@@ -197,6 +197,25 @@ class LegacyWordConverter
         return $paragraphs;
     }
 
+    /** @param array<int, string> $paragraphs @return array<int, string> */
+    private function joinContinuationParagraphs(array $paragraphs): array
+    {
+        $joined = [];
+        foreach ($paragraphs as $paragraph) {
+            $lastIndex = array_key_last($joined);
+            if ($lastIndex !== null && preg_match('/^(?:[,;:]|г\.,)/iu', $paragraph)) {
+                $separator = preg_match('/^г\.,/iu', $paragraph) ? ' ' : '';
+                $joined[$lastIndex] = rtrim($joined[$lastIndex]).$separator.ltrim($paragraph);
+
+                continue;
+            }
+
+            $joined[] = $paragraph;
+        }
+
+        return $joined;
+    }
+
     private function isWordMetadataParagraph(string $paragraph): bool
     {
         $normalized = mb_strtolower(trim($paragraph));
@@ -273,7 +292,7 @@ class LegacyWordConverter
             }
         }
 
-        return $paragraphs;
+        return $this->joinContinuationParagraphs($paragraphs);
     }
 
     /** @param array<int, string> $paragraphs */
