@@ -27,6 +27,7 @@ class WebProductSourcesCommand extends Command
         }
         $this->line('metric.web_sources.pages='.count($found));
         $this->line('metric.web_sources.http_status='.$sources->lastStatus);
+        $this->line('metric.web_sources.engine_ai='.(int) ($sources->engine === 'ai'));
         if ($sources->lastError !== '') {
             $this->line('audit.web_sources.error='.Str::slug($sources->lastError));
         }

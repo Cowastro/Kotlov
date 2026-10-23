@@ -2,6 +2,7 @@
 
 namespace App\Services\Suppliers;
 
+use App\Services\Market\MarketWebResearchService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -29,15 +30,19 @@ class WebProductSources
         'vodopad.ru', 'santehnika-online.ru', 'teplodom.ru', 'ecokamin.ru',
     ];
 
+    /** Which search answered: serper, ai or none. */
+    public string $engine = 'none';
+
     /** HTTP status of the last Google request (0: not asked). */
     public int $lastStatus = 0;
 
     /** Error text of the last failed Google request. */
     public string $lastError = '';
 
+    /** Google (serper.dev) or, without it, the AI web search of the market research. */
     public function isConfigured(): bool
     {
-        return $this->key() !== '';
+        return $this->key() !== '' || $this->aiConfigured();
     }
 
     /** @return array<string, string> url => «domain · title» */
@@ -47,6 +52,7 @@ class WebProductSources
         if (mb_strlen($query) < 3 || ! $this->isConfigured()) {
             return [];
         }
+        $this->engine = 'none';
 
         $cacheKey = 'web-product-sources:'.sha1(mb_strtolower($query));
         if (is_array($cached = Cache::get($cacheKey))) {
@@ -54,6 +60,9 @@ class WebProductSources
         }
         $found = (function () use ($query, $limit): array {
             $results = [];
+            if ($this->key() === '') {
+                return $this->aiSearch($query, $limit);
+            }
             foreach ([['gl' => 'by', 'hl' => 'ru'], ['gl' => 'ru', 'hl' => 'ru']] as $locale) {
                 $response = Http::timeout(20)->retry(2, 1000, throw: false)
                     ->withHeaders(['X-API-KEY' => $this->key(), 'Content-Type' => 'application/json'])
@@ -73,6 +82,11 @@ class WebProductSources
                     break;
                 }
             }
+            // No Google credits or a failed request: the AI web search finds the pages instead.
+            if ($results === [] && $this->lastError !== '') {
+                return $this->aiSearch($query, $limit);
+            }
+            $this->engine = 'serper';
             uasort($results, fn (array $a, array $b): int => $b['score'] <=> $a['score']);
 
             return array_map(fn (array $r): string => $r['label'], array_slice($results, 0, $limit, true));
@@ -83,6 +97,43 @@ class WebProductSources
         }
 
         return $found;
+    }
+
+    /** @return array<string, string> url => label, from the market research web search */
+    private function aiSearch(string $query, int $limit): array
+    {
+        if (! $this->aiConfigured()) {
+            return [];
+        }
+        $research = app(MarketWebResearchService::class)->researchQuery($query);
+        $pages = array_merge((array) ($research['offers'] ?? []), (array) ($research['sources'] ?? []));
+        $results = [];
+        foreach ($pages as $page) {
+            $url = trim((string) ($page['url'] ?? ''));
+            $host = preg_replace('/^www\./', '', Str::lower((string) parse_url($url, PHP_URL_HOST))) ?? '';
+            if ($host === '' || isset($results[$url]) || $this->denied($host) || ! preg_match('#^https?://[^/]+/.+#', $url)) {
+                continue;
+            }
+            $results[$url] = ['label' => $host.' · '.Str::limit(trim((string) ($page['title'] ?? $page['seller'] ?? '')), 90), 'score' => $this->score($host, $url, $query)];
+        }
+        if ($results !== []) {
+            $this->engine = 'ai';
+        }
+        uasort($results, fn (array $a, array $b): int => $b['score'] <=> $a['score']);
+
+        return array_map(fn (array $r): string => $r['label'], array_slice($results, 0, $limit, true));
+    }
+
+    private function aiConfigured(): bool
+    {
+        $provider = trim((string) config('services.ai.market_research_provider', 'deepseek'));
+        $key = match ($provider) {
+            'deepseek' => config('services.ai.api_key'),
+            'azure' => config('services.ai.azure_openai_key'),
+            default => config('services.ai.openai_key'),
+        };
+
+        return trim((string) $key) !== '';
     }
 
     private function denied(string $host): bool

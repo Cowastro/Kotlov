@@ -49,10 +49,29 @@ class WebProductSourcesTest extends TestCase
 
     public function test_without_a_key_the_search_is_off(): void
     {
-        config(['services.serper.key' => null]);
+        config(['services.serper.key' => null, 'services.ai.market_research_provider' => 'openai', 'services.ai.openai_key' => null]);
         putenv('SERPER_API_KEY');
 
         $this->assertFalse(app(WebProductSources::class)->isConfigured());
         $this->assertSame([], app(WebProductSources::class)->search('Grundfos MAGNA3'));
+    }
+
+    public function test_without_google_credits_the_ai_web_search_finds_the_pages(): void
+    {
+        config(['services.serper.key' => 'test-key', 'services.ai.market_research_provider' => 'openai', 'services.ai.openai_key' => 'sk-test']);
+        Http::fake(['google.serper.dev/*' => Http::response(['message' => 'Not enough credits', 'statusCode' => 400], 400)]);
+        $this->mock(\App\Services\Market\MarketWebResearchService::class)
+            ->shouldReceive('researchQuery')->once()->with('Wellmix WRS D 50-120SF')
+            ->andReturn(['status' => 'ready', 'offers' => [
+                ['url' => 'https://aqualider.by/p/sdvoennyy-cirkulyacionnyy-wellmix-wrs-d-50-120sf-17109972', 'title' => 'Сдвоенный циркуляционный Wellmix WRS D 50-120SF', 'seller' => 'Аквалидер'],
+                ['url' => 'https://www.ozon.ru/product/123', 'title' => 'Ozon'],
+            ], 'sources' => []]);
+
+        $sources = app(WebProductSources::class);
+        $found = $sources->search('Wellmix WRS D 50-120SF');
+
+        $this->assertSame(['https://aqualider.by/p/sdvoennyy-cirkulyacionnyy-wellmix-wrs-d-50-120sf-17109972'], array_keys($found));
+        $this->assertSame('ai', $sources->engine);
+        $this->assertSame('Not enough credits', $sources->lastError);
     }
 }
