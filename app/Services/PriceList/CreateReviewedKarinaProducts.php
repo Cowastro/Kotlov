@@ -56,6 +56,20 @@ class CreateReviewedKarinaProducts
                 return ['already_applied' => $created > 0, 'created' => 0, 'existing_batch_products' => $created];
             }
 
+            $candidateArticles = $candidates->pluck('article')->all();
+            $existingBatch = SupplierProductMapping::query()
+                ->where('supplier_code', 'karina')
+                ->whereIn('supplier_article', $candidateArticles)
+                ->whereHas('product', fn ($query) => $query->where('created_via', self::CREATED_VIA))
+                ->lockForUpdate()
+                ->count();
+            if ($existingBatch === $candidates->count()) {
+                return ['already_applied' => true, 'created' => 0, 'existing_batch_products' => $existingBatch];
+            }
+            if ($existingBatch > 0) {
+                throw new RuntimeException('Partial KARINA creation batch requires manual review.');
+            }
+
             if ($candidates->pluck('article')->unique()->count() !== $candidates->count()
                 || $candidates->pluck('name')->map(fn ($name) => mb_strtolower(trim((string) $name)))->unique()->count() !== $candidates->count()) {
                 throw new RuntimeException('Creation plan contains duplicate articles or names.');
@@ -169,7 +183,8 @@ class CreateReviewedKarinaProducts
                 $sku = $this->uniqueSku($product->id);
                 $product->forceFill(['sku' => $sku, 'slug' => $this->uniqueSlug($name, $product->id)])->save();
 
-                $raw = $row['priceItem']->raw;
+                $raw = is_array($row['priceItem']->raw) ? $row['priceItem']->raw : [];
+                $raw['karina'] = is_array($raw['karina'] ?? null) ? $raw['karina'] : [];
                 $raw['karina']['reviewed'] = true;
                 $raw['karina']['created_product'] = true;
                 $row['priceItem']->forceFill([
