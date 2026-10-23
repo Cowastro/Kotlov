@@ -417,6 +417,12 @@
             })
             .then(function (data) {
                 updateCartCount(data.count);
+                var afterAddUrl = btn.dataset.afterAddUrl;
+                if (afterAddUrl) {
+                    window.location.assign(afterAddUrl);
+                    return;
+                }
+
                 var cartCanvas = document.getElementById('shoppingCart');
                 if (cartCanvas && window.bootstrap) {
                     // Открываем корзину — loadMiniCart вызовется через show.bs.offcanvas

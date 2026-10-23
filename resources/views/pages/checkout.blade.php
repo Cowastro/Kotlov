@@ -210,7 +210,7 @@
                                                 class="tf-check-rounded style-2"
                                                 id="pay-{{ $key }}"
                                                 value="{{ $key }}"
-                                                {{ old('payment_type', $firstPayment) === $key ? 'checked' : '' }}>
+                                                {{ old('payment_type', $selectedPayment ?? $firstPayment) === $key ? 'checked' : '' }}>
                                             <span class="pay-title fw-medium lh-24">
                                                 {{ $method['name'] }}
                                                 @if (!empty($method['desc']))

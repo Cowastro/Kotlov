@@ -25,7 +25,7 @@ class CheckoutController extends Controller
     // ─────────────────────────────────────────
     // Страница оформления заказа  GET /checkout
     // ─────────────────────────────────────────
-    public function index(CartAvailabilityGuard $availabilityGuard, CartCouponService $couponService)
+    public function index(Request $request, CartAvailabilityGuard $availabilityGuard, CartCouponService $couponService)
     {
         $cart = session(self::CART_KEY, []);
 
@@ -65,8 +65,12 @@ class CheckoutController extends Controller
         }
         $user = Auth::user();
         $threshold = (float) config('shop.free_delivery_threshold', 400);
+        $requestedPayment = (string) $request->query('payment_type', '');
+        $selectedPayment = in_array($requestedPayment, config('shop.checkout_payment_methods', []), true)
+            ? $requestedPayment
+            : null;
 
-        return view('pages.checkout', compact('cart', 'subtotal', 'coupon', 'user', 'threshold'));
+        return view('pages.checkout', compact('cart', 'subtotal', 'coupon', 'user', 'threshold', 'selectedPayment'));
     }
 
     // ─────────────────────────────────────────

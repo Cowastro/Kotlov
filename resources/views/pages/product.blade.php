@@ -515,6 +515,18 @@
                                                 @endif
                                             </a>
                                         </div>
+                                        @if (! $b2bOffer && in_array('installment_6', config('shop.checkout_payment_methods', []), true))
+                                            <a href="{{ route('checkout', ['payment_type' => 'installment_6']) }}"
+                                                class="tf-btn type-xl btn-outline animate-btn w-100 mt-12 btn-add-to-cart btn-installment-purchase"
+                                                data-product-id="{{ $product->id }}"
+                                                data-qty-input=".product-main-qty"
+                                                data-after-add-url="{{ route('checkout', ['payment_type' => 'installment_6']) }}">
+                                                Купить в рассрочку до 6 месяцев
+                                            </a>
+                                            <p class="text-caption-01 cl-text-2 text-center mt-8 mb-0">
+                                                Оставьте контакты — оформление продолжит менеджер
+                                            </p>
+                                        @endif
                                         <a href="#ask" data-bs-toggle="modal"
                                             class="tf-btn type-xl btn-primary animate-btn w-100">
                                             Заказать консультацию

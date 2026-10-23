@@ -33,7 +33,8 @@ class B2bCatalogPricingTest extends TestCase
             ->assertSeeText('Ваша скидка к рознице: 24.00 BYN (20.0%)')
             ->assertSeeText('Основной: 7 шт.')
             ->assertSee('В корзину', false)
-            ->assertSeeText('— 96.00 BYN');
+            ->assertSeeText('— 96.00 BYN')
+            ->assertDontSeeText('Купить в рассрочку до 6 месяцев');
     }
 
     public function test_unapproved_wholesale_user_does_not_see_wholesale_price(): void

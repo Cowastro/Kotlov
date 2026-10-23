@@ -32,6 +32,20 @@ class CheckoutPaymentAvailabilityTest extends TestCase
             ->assertSee('менеджер свяжется с вами и поможет с оформлением');
     }
 
+    public function test_installment_button_target_preselects_six_month_installment(): void
+    {
+        $product = $this->orderableProduct();
+
+        $response = $this->withSession(['cart' => $this->cartFor($product)])
+            ->get(route('checkout', ['payment_type' => 'installment_6']))
+            ->assertOk();
+
+        $this->assertMatchesRegularExpression(
+            '/id="pay-installment_6"[\s\S]*?value="installment_6"[\s\S]*?checked/',
+            $response->getContent(),
+        );
+    }
+
     public function test_disabled_online_card_payment_cannot_be_submitted_directly(): void
     {
         $product = $this->orderableProduct();
