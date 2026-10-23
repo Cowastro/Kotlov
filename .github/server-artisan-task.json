@@ -1,6 +1,6 @@
 {
-  "task": "health-check",
+  "task": "ps-artisan",
   "artisan_args": "none",
-  "log_file": "storage/logs/laravel.log",
-  "run_id": "tls-chain-config-check-20261006"
+  "log_file": "storage/logs/server-artisan.log",
+  "run_id": "status-check-20261023-pumps"
 }
