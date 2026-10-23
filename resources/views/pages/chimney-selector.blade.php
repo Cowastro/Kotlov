@@ -38,8 +38,8 @@
                     <div class="cs-step"><span>02</span><div><h2>Исполнение и сталь</h2><p>Основная система — «{{ $preferredBrandName }}». Обычно у печи ставится моно, а наружная трасса собирается из утеплённых элементов.</p></div></div>
                     <div class="cs-fields">
                         <label>Состав системы<select name="system"><option value="combined">Моно + утеплённый (рекомендуется)</option><option value="sandwich">Полностью утеплённый</option><option value="mono">Полностью моно</option></select></label>
-                        <label>Марка стали<select name="steel"><option value="">Подобрать из доступных</option><option value="430">AISI 430</option><option value="304">AISI 304</option><option value="316">AISI 316</option><option value="321">AISI 321</option></select></label>
-                        <label>Толщина стали трубы<select name="thickness"><option value="">Подобрать из доступных</option><option value="0.5">0,5 мм</option><option value="0.8">0,8 мм</option></select></label>
+                        <label>Марка стали<select name="steel"><option value="">Подобрать из доступных</option><option value="430" selected>AISI 430</option><option value="304">AISI 304</option><option value="316">AISI 316</option><option value="321">AISI 321</option></select></label>
+                        <label>Толщина стали трубы<select name="thickness"><option value="">Подобрать из доступных</option><option value="0.5">0,5 мм</option><option value="0.8" selected>0,8 мм</option></select></label>
                         <label>Длина моно-участка<select name="mono_length"><option value="0.5">0,5 м</option><option value="1" selected>1 м</option><option value="1.5">1,5 м</option><option value="2">2 м</option></select></label>
                         <label>Адаптер на печь<select name="stove_adapter"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
                         <label>Диаметр трассы после адаптера<select name="chimney_diameter" data-chimney-diameter></select></label>
@@ -142,7 +142,7 @@
                 && (!need.lengthMm || product.length_mm === need.lengthMm);
         }
         var picked = catalog.find(function (product) { return matches(product, false); });
-        if (!picked && settings.steel !== '') picked = catalog.find(function (product) { return matches(product, true); });
+        if (!picked && settings.steel !== '' && need.kind !== 'pipe') picked = catalog.find(function (product) { return matches(product, true); });
         if (picked && need.kind !== 'pipe') used[picked.id] = true;
         return picked;
     }

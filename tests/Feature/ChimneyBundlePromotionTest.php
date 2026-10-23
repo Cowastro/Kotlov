@@ -85,6 +85,8 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Соберите дымоход под своё оборудование')
             ->assertSeeText('Марка стали')
             ->assertSeeText('Толщина стали трубы')
+            ->assertSee('<option value="430" selected>AISI 430</option>', false)
+            ->assertSee('<option value="0.8" selected>0,8 мм</option>', false)
             ->assertSeeText('Моно + утеплённый')
             ->assertSeeText('Длина моно-участка')
             ->assertSeeText('Адаптер на печь')
