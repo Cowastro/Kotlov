@@ -24,7 +24,23 @@ final class DealByMoney
             return 0.0;
         }
 
-        $normalized = str_replace(["\u{00A0}", "\u{202F}", ' '], '', trim($value));
+        $value = str_replace(["\u{00A0}", "\u{202F}"], ' ', trim($value));
+
+        // Deal.by sometimes formats fractional BYN amounts as
+        // "505 руб. 40 коп." instead of "505.40 BYN". Removing all words
+        // first would incorrectly turn that value into 50 540.
+        if (preg_match(
+            '/(-?\d[\d ]*)\s*(?:byn|руб(?:\.|ля|лей|ль)?|р\.?)\s*(\d{1,2})\s*коп(?:\.|ейки?|еек)?/iu',
+            $value,
+            $matches,
+        ) === 1) {
+            $major = (int) str_replace(' ', '', $matches[1]);
+            $minor = (int) str_pad($matches[2], 2, '0', STR_PAD_RIGHT);
+
+            return $major < 0 ? $major - ($minor / 100) : $major + ($minor / 100);
+        }
+
+        $normalized = str_replace(' ', '', $value);
         $normalized = preg_replace('/[^0-9,\.\-]/u', '', $normalized) ?? '';
 
         if ($normalized === '' || $normalized === '-') {

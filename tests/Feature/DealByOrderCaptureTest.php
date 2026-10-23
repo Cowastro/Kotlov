@@ -126,16 +126,16 @@ class DealByOrderCaptureTest extends TestCase
     public function test_it_parses_deal_by_prices_with_currency_and_repairs_existing_order(): void
     {
         $formattedPayload = $this->orderPayload([
-            'price' => '505,40 BYN',
-            'full_price' => '515.40 BYN',
-            'delivery_cost' => '10 руб.',
+            'price' => '505 руб. 40 коп.',
+            'full_price' => '505 руб. 40 коп.',
+            'delivery_cost' => '0 руб.',
             'products' => [[
                 'id' => 111,
                 'sku' => 'test-product',
                 'name' => 'Тестовый товар',
-                'price' => '505,40 BYN',
-                'total_price' => '505.40 BYN',
-                'quantity' => 1,
+                'price' => '72 руб. 20 коп.',
+                'total_price' => '505 руб. 40 коп.',
+                'quantity' => 7,
             ]],
         ]);
 
@@ -156,14 +156,15 @@ class DealByOrderCaptureTest extends TestCase
 
         $this->assertDatabaseHas('order_items', [
             'product_sku' => 'test-product',
-            'price' => 505.40,
+            'price' => 72.20,
+            'quantity' => 7,
             'total' => 505.40,
         ]);
         $this->assertDatabaseHas('orders', [
             'number' => 'DBY-987654',
             'subtotal' => 505.40,
-            'delivery_price' => 10,
-            'total' => 515.40,
+            'delivery_price' => 0,
+            'total' => 505.40,
         ]);
         Event::assertDispatched(NewOrderCreated::class, 1);
     }
