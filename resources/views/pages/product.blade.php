@@ -1308,7 +1308,7 @@
                     <div>
                         <span class="chimney-product-offer__eyebrow">Комплект выгоднее</span>
                         <h3 class="s-title mb-8">Дымоход со скидкой −{{ number_format(config('shop.chimney_bundle_discount.percent', 10), 0) }}%</h3>
-                        <p>Добавьте эту модель и любые комплектующие дымохода в одну корзину — скидка применится автоматически.</p>
+                        <p>Подберём систему «Теплов и Сухов». Добавьте эту модель и любые комплектующие дымохода в одну корзину — скидка применится автоматически.</p>
                     </div>
                     <a class="tf-btn animate-btn" href="{{ route('chimney-selector', ['equipment' => $product->id]) }}">Подобрать дымоход</a>
                 </div>

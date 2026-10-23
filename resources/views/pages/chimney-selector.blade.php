@@ -11,7 +11,7 @@
                 <div>
                     <span class="cs-kicker">Подбор за несколько минут</span>
                     <h1>Соберите дымоход под своё оборудование</h1>
-                    <p>Укажите диаметр патрубка, исполнение и схему. Подборщик найдёт совместимые позиции в каталоге и рассчитает предварительную стоимость.</p>
+                    <p>Укажите диаметр патрубка, исполнение и схему. Подборщик в первую очередь соберёт систему «{{ $preferredBrandName }}», найдёт совместимые позиции и рассчитает предварительную стоимость.</p>
                     @if ($equipment)
                         <div class="cs-equipment"><strong>Выбрано оборудование:</strong> {{ $equipment->name }}@if($defaultDiameter) · патрубок {{ $defaultDiameter }} мм @endif</div>
                     @endif
@@ -35,7 +35,7 @@
                         @endforeach
                     </div>
 
-                    <div class="cs-step"><span>02</span><div><h2>Исполнение и сталь</h2><p>Для наружного участка обычно используют утеплённый сэндвич.</p></div></div>
+                    <div class="cs-step"><span>02</span><div><h2>Исполнение и сталь</h2><p>Основная система — «{{ $preferredBrandName }}». Для наружного участка обычно используют утеплённый сэндвич.</p></div></div>
                     <div class="cs-fields">
                         <label>Тип дымохода<select name="system"><option value="sandwich">Сэндвич, утеплённый</option><option value="mono">Одностенный, моно</option></select></label>
                         <label>Марка стали<select name="steel"><option value="">Подобрать из доступных</option><option value="430">AISI 430</option><option value="304">AISI 304</option><option value="316">AISI 316</option><option value="321">AISI 321</option></select></label>

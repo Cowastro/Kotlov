@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Category;
+use App\Models\Brand;
 use App\Models\Product;
 use Illuminate\Support\Collection;
 
@@ -96,11 +97,19 @@ class ChimneyBundlePromotion
             ->whereIn('slug', (array) config('shop.chimney_bundle_discount.chimney_category_slugs', []))
             ->pluck('id');
 
+        $preferredBrandId = Brand::query()
+            ->where('slug', config('shop.chimney_bundle_discount.preferred_brand_slug'))
+            ->value('id');
+
         return Product::query()
             ->whereIn('category_id', $categoryIds)
             ->orderable()
             ->withSupplierChannels()
             ->with(['category', 'brand'])
+            ->when($preferredBrandId, fn ($query) => $query->orderByRaw(
+                'CASE WHEN brand_id = ? THEN 0 ELSE 1 END',
+                [$preferredBrandId]
+            ))
             ->orderByDesc('in_stock')
             ->orderByDesc('is_featured')
             ->orderBy('sort_order')

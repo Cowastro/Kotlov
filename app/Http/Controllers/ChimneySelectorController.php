@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Brand;
 use App\Models\Product;
 use App\Services\ChimneyBundlePromotion;
 use Illuminate\Http\Request;
@@ -14,12 +15,18 @@ class ChimneySelectorController extends Controller
         $categoryIds = Category::query()
             ->whereIn('slug', (array) config('shop.chimney_bundle_discount.chimney_category_slugs', []))
             ->pluck('id');
+        $preferredBrandSlug = (string) config('shop.chimney_bundle_discount.preferred_brand_slug', 'teplov-i-suhov');
+        $preferredBrandId = Brand::query()->where('slug', $preferredBrandSlug)->value('id');
 
         $products = Product::query()
             ->whereIn('category_id', $categoryIds)
             ->orderable()
             ->withSupplierChannels()
             ->with(['category', 'brand'])
+            ->when($preferredBrandId, fn ($query) => $query->orderByRaw(
+                'CASE WHEN brand_id = ? THEN 0 ELSE 1 END',
+                [$preferredBrandId]
+            ))
             ->orderByDesc('in_stock')
             ->orderBy('sort_order')
             ->limit(400)
@@ -41,6 +48,7 @@ class ChimneySelectorController extends Controller
                 'steel' => $steel[1] ?? null,
                 'system' => str_contains($slug, 'sendvich') || str_contains(mb_strtolower($text), 'сэндвич') ? 'sandwich' : 'mono',
                 'kind' => $this->kind($slug, $product->name),
+                'preferred' => $product->brand?->slug === config('shop.chimney_bundle_discount.preferred_brand_slug'),
             ];
         })->values();
 
@@ -63,6 +71,7 @@ class ChimneySelectorController extends Controller
             'discountPercent' => (float) config('shop.chimney_bundle_discount.percent', 10),
             'discountUnlocked' => $discountUnlocked,
             'equipmentInCart' => $equipmentInCart,
+            'preferredBrandName' => 'Теплов и Сухов',
         ]);
     }
 

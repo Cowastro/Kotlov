@@ -85,9 +85,10 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Соберите дымоход под своё оборудование')
             ->assertSeeText('Марка стали')
             ->assertSeeText('Схема и высота')
+            ->assertSeeText('Теплов и Сухов')
             ->assertSeeText('−10%')
             ->assertSeeText('Передайте схему менеджеру')
-            ->assertSee('Труба сэндвич AISI 304', false);
+            ->assertSee('test-chimney-bundle-pipe', false);
     }
 
     /** @return array{Product, Product} */
