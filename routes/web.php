@@ -13,6 +13,7 @@ use App\Http\Controllers\CatalogIndexController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CommercialDocumentPdfController;
 use App\Http\Controllers\CommercialDocumentPortalController;
+use App\Http\Controllers\CommercialContractFileController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\CrmMailAttachmentController;
@@ -98,6 +99,15 @@ Route::get('/webpay/cancel', [WebpayPaymentController::class, 'cancelled'])->nam
 Route::get('/admin/commercial-documents/{commercialDocument}/pdf', CommercialDocumentPdfController::class)
     ->middleware('auth')
     ->name('admin.commercial-documents.pdf');
+
+Route::get('/admin/commercial-contracts/{commercialContract}/pdf', [CommercialContractFileController::class, 'pdf'])
+    ->whereNumber('commercialContract')
+    ->middleware('auth')
+    ->name('admin.commercial-contracts.pdf');
+Route::get('/admin/commercial-contracts/{commercialContract}/docx', [CommercialContractFileController::class, 'docx'])
+    ->whereNumber('commercialContract')
+    ->middleware('auth')
+    ->name('admin.commercial-contracts.docx');
 
 Route::get('/admin/orders/{order}/procurement', OrderProcurementController::class)
     ->whereNumber('order')

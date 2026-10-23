@@ -178,6 +178,18 @@ class CrmCounterpartyResource extends Resource
                         ->rows(3)
                         ->columnSpanFull(),
                 ]),
+            Section::make('Реквизиты для договоров')
+                ->description('Подставляются в договоры автоматически. Перед первым использованием проверьте данные.')
+                ->columns(3)
+                ->schema([
+                    TextInput::make('authorized_representative')->label('ФИО подписанта'),
+                    TextInput::make('representative_position')->label('Должность'),
+                    TextInput::make('authority_basis')->label('Действует на основании'),
+                    TextInput::make('bank_iban')->label('IBAN')->columnSpan(2),
+                    TextInput::make('bank_bic')->label('BIC'),
+                    TextInput::make('bank_name')->label('Банк')->columnSpanFull(),
+                    Textarea::make('postal_address')->label('Почтовый адрес')->rows(2)->columnSpanFull(),
+                ]),
         ]);
     }
 

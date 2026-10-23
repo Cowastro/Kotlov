@@ -7,6 +7,7 @@ use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CommercialDocument;
+use App\Services\CommercialContracts\CommercialContractGenerator;
 use App\Models\IntegrationSource;
 use App\Models\Supplier;
 use App\Services\CommercialDocuments\CommercialDocumentPortal;
@@ -21,6 +22,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Utilities\Get;
@@ -170,6 +172,133 @@ class ViewCommercialDocument extends ViewRecord
                     ->color('gray')
                     ->url(fn (): string => route('admin.commercial-documents.pdf', $this->record))
                     ->openUrlInNewTab(),
+                Action::make('create_contract')
+                    ->label('Создать договор')
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->visible(fn (): bool => $this->record->type === 'quote')
+                    ->modalHeading('Создать договор по нашей форме')
+                    ->modalDescription('Данные клиента и товары будут взяты из КП. Проверьте реквизиты и выберите условия договора.')
+                    ->modalSubmitActionLabel('Создать DOCX и PDF')
+                    ->fillForm(fn (): array => [
+                        'contract_date' => today(),
+                        'valid_until' => now()->endOfYear()->toDateString(),
+                        'buyer_name' => $this->record->client_legal_name ?: ($this->record->client_company ?: $this->record->client_name),
+                        'buyer_unp' => $this->record->client_unp,
+                        'buyer_address' => $this->record->client_address,
+                        'buyer_postal_address' => $this->record->client_address,
+                        'buyer_representative' => $this->record->clientCounterparty?->authorized_representative ?: $this->record->client_name,
+                        'buyer_position' => $this->record->clientCounterparty?->representative_position ?: 'Директор',
+                        'buyer_authority_basis' => $this->record->clientCounterparty?->authority_basis ?: 'Устава',
+                        'buyer_iban' => $this->record->clientCounterparty?->bank_iban,
+                        'buyer_bank' => $this->record->clientCounterparty?->bank_name,
+                        'buyer_bic' => $this->record->clientCounterparty?->bank_bic,
+                        'buyer_phone' => $this->record->client_phone,
+                        'buyer_email' => $this->record->client_email,
+                        'purchase_purpose' => 'own_use',
+                        'regulated_goods' => false,
+                        'payment_type' => 'prepayment',
+                        'prepayment_percent' => 100,
+                        'payment_days' => 3,
+                        'delivery_method' => 'pickup',
+                        'delivery_days' => 10,
+                        'delivery_day_type' => 'working',
+                        'delivery_start_event' => 'prepayment',
+                        'auto_renew' => true,
+                        'save_buyer_requisites' => true,
+                    ])
+                    ->schema([
+                        DatePicker::make('contract_date')->label('Дата договора')->required()->native(false),
+                        DatePicker::make('valid_until')->label('Действует до')->required()->native(false),
+                        TextInput::make('buyer_name')->label('Юридическое наименование покупателя')->required()->columnSpanFull(),
+                        TextInput::make('buyer_unp')->label('УНП покупателя')->required(),
+                        TextInput::make('buyer_representative')->label('ФИО подписанта')->required(),
+                        TextInput::make('buyer_position')->label('Должность')->required(),
+                        TextInput::make('buyer_authority_basis')->label('Действует на основании')->required(),
+                        Textarea::make('buyer_address')->label('Юридический адрес')->required()->rows(2)->columnSpanFull(),
+                        Textarea::make('buyer_postal_address')->label('Почтовый адрес')->rows(2)->columnSpanFull(),
+                        TextInput::make('buyer_iban')->label('IBAN')->required(),
+                        TextInput::make('buyer_bank')->label('Банк')->required(),
+                        TextInput::make('buyer_bic')->label('BIC')->required(),
+                        TextInput::make('buyer_phone')->label('Телефон'),
+                        TextInput::make('buyer_email')->label('Email')->email(),
+                        Select::make('purchase_purpose')
+                            ->label('Цель приобретения')
+                            ->options([
+                                'own_use' => 'Собственное потребление',
+                                'resale' => 'Последующая розничная продажа',
+                                'repair' => 'Ремонт / благоустройство',
+                                'mixed' => 'Продажа, ремонт и благоустройство',
+                                'other' => 'Другая цель',
+                            ])->required()->live(),
+                        TextInput::make('purpose_custom')
+                            ->label('Другая цель приобретения')
+                            ->visible(fn (Get $get): bool => $get('purchase_purpose') === 'other')
+                            ->required(fn (Get $get): bool => $get('purchase_purpose') === 'other'),
+                        Toggle::make('regulated_goods')
+                            ->label('Товар подпадает под регулирование цен')
+                            ->helperText('Добавляет обязательство соблюдать применимые ограничения по цели приобретения.'),
+                        Select::make('payment_type')
+                            ->label('Порядок оплаты')
+                            ->options([
+                                'prepayment' => '100% предоплата',
+                                'partial' => 'Частичная предоплата',
+                                'on_delivery' => 'Оплата при передаче',
+                                'deferred' => 'Отсрочка платежа',
+                            ])->required()->live(),
+                        TextInput::make('prepayment_percent')
+                            ->label('Предоплата, %')
+                            ->numeric()->minValue(1)->maxValue(100)
+                            ->visible(fn (Get $get): bool => in_array($get('payment_type'), ['prepayment', 'partial'], true))
+                            ->required(fn (Get $get): bool => in_array($get('payment_type'), ['prepayment', 'partial'], true)),
+                        TextInput::make('payment_days')->label('Срок оплаты, дней')->numeric()->minValue(1)->required(),
+                        Select::make('delivery_method')
+                            ->label('Способ поставки')
+                            ->options(['pickup' => 'Самовывоз', 'supplier' => 'Доставка Поставщиком'])
+                            ->required(),
+                        TextInput::make('delivery_days')->label('Срок поставки, дней')->numeric()->minValue(1)->required(),
+                        Select::make('delivery_day_type')
+                            ->label('Тип дней')
+                            ->options(['working' => 'Рабочие', 'banking' => 'Банковские', 'calendar' => 'Календарные'])
+                            ->required(),
+                        Select::make('delivery_start_event')
+                            ->label('Срок считается')
+                            ->options([
+                                'prepayment' => 'От поступления предоплаты',
+                                'contract' => 'От подписания договора',
+                                'readiness' => 'От уведомления о готовности',
+                            ])->required(),
+                        Toggle::make('auto_renew')->label('Автоматически продлевать договор'),
+                        Toggle::make('save_buyer_requisites')
+                            ->label('Сохранить реквизиты в карточке контрагента')
+                            ->helperText('В следующем договоре эти поля будут заполнены автоматически.'),
+                    ])
+                    ->action(function (array $data): void {
+                        try {
+                            $contract = app(CommercialContractGenerator::class)->create($this->record, $data);
+                            Notification::make()
+                                ->success()
+                                ->title('Договор создан')
+                                ->body($contract->number.' · DOCX и PDF находятся в меню «Документы».')
+                                ->send();
+                            $this->record->refresh();
+                        } catch (Throwable $exception) {
+                            Notification::make()->danger()->title('Не удалось создать договор')->body($exception->getMessage())->send();
+                        }
+                    }),
+                Action::make('contract_pdf')
+                    ->label('Открыть последний договор PDF')
+                    ->icon('heroicon-o-document-check')
+                    ->color('gray')
+                    ->visible(fn (): bool => $this->record->contracts()->exists())
+                    ->url(fn (): string => route('admin.commercial-contracts.pdf', $this->record->contracts()->firstOrFail()))
+                    ->openUrlInNewTab(),
+                Action::make('contract_docx')
+                    ->label('Скачать последний договор DOCX')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('gray')
+                    ->visible(fn (): bool => $this->record->contracts()->exists())
+                    ->url(fn (): string => route('admin.commercial-contracts.docx', $this->record->contracts()->firstOrFail())),
             ])
                 ->label('Документы')
                 ->icon('heroicon-o-folder-open')

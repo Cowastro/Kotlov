@@ -283,4 +283,9 @@ class CommercialDocument extends Model
     {
         return $this->hasMany(CommercialDocumentPortalEvent::class);
     }
+
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(CommercialContract::class)->latest('id');
+    }
 }

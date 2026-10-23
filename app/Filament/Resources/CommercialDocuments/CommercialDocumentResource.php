@@ -672,6 +672,18 @@ class CommercialDocumentResource extends Resource
                             ->columnSpanFull()
                             ->visible(fn (CommercialDocument $record): bool => filled($record->contact_history)),
                     ]),
+                Section::make('Договоры')
+                    ->icon('heroicon-o-document-check')
+                    ->columnSpanFull()
+                    ->visible(fn (CommercialDocument $record): bool => $record->contracts()->exists())
+                    ->schema([
+                        ViewEntry::make('contracts_history')
+                            ->hiddenLabel()
+                            ->view('filament.commercial-documents.contracts-history', fn (CommercialDocument $record): array => [
+                                'contracts' => $record->contracts()->with('creator')->get(),
+                            ])
+                            ->columnSpanFull(),
+                    ]),
                 Section::make('Итого')
                     ->icon('heroicon-o-calculator')
                     ->columns(2)

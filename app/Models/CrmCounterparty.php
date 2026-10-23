@@ -53,6 +53,8 @@ class CrmCounterparty extends Model
         'business_region', 'one_c_manager_name', 'registered_at', 'abc_xyz_classification',
         'unp', 'external_1c_id', 'responsible_user_id', 'source', 'website',
         'legal_address', 'postal_address', 'actual_address', 'notes', 'last_contact_at',
+        'bank_name', 'bank_bic', 'bank_iban', 'authorized_representative',
+        'representative_position', 'authority_basis',
         'commercial_discount_percent', 'commercial_payment_terms', 'commercial_delivery_terms',
         'commercial_currency', 'commercial_note',
     ];
