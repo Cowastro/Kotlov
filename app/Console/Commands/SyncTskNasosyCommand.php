@@ -879,6 +879,11 @@ class SyncTskNasosyCommand extends Command
 
     private function mayCreate(array $r): bool
     {
+        // A new card needs a real category: motors, pool pumps and other rows the
+        // classifier does not know stay out instead of landing in a generic one.
+        if (TskPumpClassifier::categorySlug((string) $r['name']) === null) {
+            return false;
+        }
         $brand = trim((string) $this->option('create-brand'));
         if ($brand !== '' && mb_strtolower(trim($r['brand'])) !== mb_strtolower($brand)) {
             return false;
