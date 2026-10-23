@@ -19,6 +19,8 @@ class StorefrontProductSearchTest extends TestCase
             ->assertOk()
             ->assertSee('class="topbar-search-trigger d-xl-none text-white"', false)
             ->assertSee('aria-label="Открыть умный поиск"', false)
+            ->assertSee('Умный поиск')
+            ->assertSee('placeholder="Товар, артикул или категория"', false)
             ->assertDontSee('mobile-search-trigger', false)
             ->assertDontSee('id="home-search-input"', false);
     }
