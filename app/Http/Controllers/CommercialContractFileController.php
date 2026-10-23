@@ -6,6 +6,7 @@ use App\Models\CommercialContract;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CommercialContractFileController extends Controller
 {
@@ -26,7 +27,7 @@ class CommercialContractFileController extends Controller
         ]);
     }
 
-    public function docx(CommercialContract $commercialContract): BinaryFileResponse
+    public function docx(CommercialContract $commercialContract): StreamedResponse
     {
         abort_unless(auth()->user()?->isManager(), 403);
         abort_unless($commercialContract->generated_docx_path

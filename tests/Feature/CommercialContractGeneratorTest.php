@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\CommercialDocument;
+use App\Models\CommercialContract;
+use App\Models\User;
 use App\Services\CommercialContracts\ClientContractTemplateGenerator;
 use App\Services\CommercialContracts\CommercialContractGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,5 +124,33 @@ class CommercialContractGeneratorTest extends TestCase
         $this->assertStringContainsString('191355768', $xml);
         $this->assertStringContainsString($contract->number, $xml);
         $this->assertStringNotContainsString('{{SUPPLIER_UNP}}', $xml);
+    }
+
+    public function test_manager_can_download_generated_docx(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('commercial-contracts/1/contract.docx', 'docx-content');
+
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $quote = CommercialDocument::query()->create([
+            'type' => 'quote',
+            'status' => 'accepted',
+            'client_name' => 'Тестовый клиент',
+            'currency' => 'BYN',
+        ]);
+        $contract = CommercialContract::query()->create([
+            'commercial_document_id' => $quote->id,
+            'created_by' => $manager->id,
+            'status' => 'generated',
+            'template_mode' => 'standard',
+            'template_version' => 1,
+            'generated_docx_path' => 'commercial-contracts/1/contract.docx',
+        ]);
+
+        $response = $this->actingAs($manager)->get(route('admin.commercial-contracts.docx', $contract));
+
+        $response->assertOk();
+        $response->assertDownload('Договор-'.$contract->number.'.docx');
+        $this->assertSame('docx-content', $response->streamedContent());
     }
 }
