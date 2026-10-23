@@ -1,6 +1,6 @@
 {
-  "task": "enrich-karina-dry-run",
-  "artisan_args": "eb285ea5099367204450cd2496d679c193f548a0",
+  "task": "enrich-karina",
+  "artisan_args": "258fa09dd659e139ff5e1bb2b444df8179a16d8f:687b7b481d44a94bb33541f80944abd2a2e88f16ee8b57858a98168e65fea005",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "karina-official-content-dry-run-20261023"
+  "run_id": "karina-official-content-apply-20261023"
 }
