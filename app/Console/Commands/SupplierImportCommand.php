@@ -30,6 +30,7 @@ class SupplierImportCommand extends Command
         {--col-price-old= : Название колонки с РРЦ/рекомендованной ценой (для показа скидки)}
         {--col-stock= : Название колонки с наличием (опционально)}
         {--col-qty= : Название колонки с количеством (опционально)}
+        {--discount-percent=0 : Скидка от цены в --col-price, % (например 25 для закупки РРЦ -25%)}
         {--dry-run : Показать первые 10 строк без сохранения}
         {--encoding=utf-8 : Кодировка для CSV (utf-8, windows-1251)}';
 
@@ -61,6 +62,12 @@ class SupplierImportCommand extends Command
         $colPriceOld = $this->option('col-price-old');
         $colStock    = $this->option('col-stock');
         $colQty      = $this->option('col-qty');
+        $discountPercent = (float) $this->option('discount-percent');
+
+        if ($discountPercent < 0 || $discountPercent >= 100) {
+            $this->error('--discount-percent должен быть в диапазоне от 0 до 99.99');
+            return 1;
+        }
 
         // ── Читать строки ──────────────────────────────────────────────────────
         if (in_array($ext, ['xlsx', 'xls', 'ods'])) {
@@ -75,13 +82,33 @@ class SupplierImportCommand extends Command
             return 1;
         }
 
+        if ($discountPercent > 0) {
+            foreach ($rows as &$row) {
+                $row['source_price'] = $row['price'];
+                $row['price'] = round($row['price'] * (1 - $discountPercent / 100), 2);
+            }
+            unset($row);
+            $this->line(sprintf(
+                'Скидка поставщика: %.2f%% от %s → закупочная цена = %.4f × РРЦ',
+                $discountPercent,
+                $colPrice,
+                1 - $discountPercent / 100,
+            ));
+        }
+
         // ── Dry run ────────────────────────────────────────────────────────────
         if ($this->option('dry-run')) {
             $this->info('--- DRY RUN: первые 10 строк ---');
             $preview = array_slice($rows, 0, 10);
-            $this->table(['article', 'name', 'price'], array_map(fn($r) => [
-                $r['article'], mb_substr($r['name'], 0, 50), $r['price'],
-            ], $preview));
+            $headers = $discountPercent > 0
+                ? ['article', 'name', 'РРЦ', 'закупка']
+                : ['article', 'name', 'price'];
+            $this->table($headers, array_map(function ($r) use ($discountPercent) {
+                $base = [$r['article'], mb_substr($r['name'], 0, 50)];
+                return $discountPercent > 0
+                    ? [...$base, $r['source_price'] ?? $r['price'], $r['price']]
+                    : [...$base, $r['price']];
+            }, $preview));
             $this->line('Всего строк: ' . count($rows));
             return 0;
         }
