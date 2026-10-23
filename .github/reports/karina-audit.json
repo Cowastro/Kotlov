@@ -1,6 +1,6 @@
 {
     "schema": "karina-audit-v1",
-    "generated_at": "2026-10-23T13:55:26+00:00",
+    "generated_at": "2026-10-23T14:04:51+00:00",
     "mode": "read_only",
     "applied": false,
     "discount_percent": 25,
@@ -147,300 +147,381 @@
     "products": [
         {
             "id": 11262,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "PS-011.262",
+            "slug": "elektricheskaya-pech-karina-nova-8",
             "name": "Электрическая печь KARINA Nova 8",
             "price": "1455.00",
             "price_old": null,
             "is_active": false,
-            "is_archived": true
+            "is_archived": true,
+            "created_via": null
         },
         {
             "id": 11263,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "PS-011.263",
+            "slug": "elektricheskaya-pech-karina-nova-6",
             "name": "Электрическая печь KARINA Nova 6",
             "price": "1746.43",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 11264,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "PS-011.264",
+            "slug": "elektricheskaya-pech-karina-optima-45",
             "name": "Электрическая печь KARINA Optima 4,5",
             "price": "931.00",
             "price_old": null,
             "is_active": false,
-            "is_archived": true
+            "is_archived": true,
+            "created_via": null
         },
         {
             "id": 11265,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "PS-011.265",
+            "slug": "elektricheskaya-pech-karina-optima-6",
             "name": "Электрическая печь KARINA Optima 6",
             "price": "1319.85",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 11267,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "PS-011.267",
+            "slug": "elektricheskaya-pech-karina-nova-6e",
             "name": "Электрическая печь KARINA Nova 6E",
             "price": "1325.00",
             "price_old": null,
             "is_active": false,
-            "is_archived": true
+            "is_archived": true,
+            "created_via": null
         },
         {
             "id": 11268,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "PS-011.268",
+            "slug": "elektricheskaya-pech-karina-nova-8e",
             "name": "Электрическая печь KARINA Nova 8E",
             "price": "1709.97",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 11485,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "PS-011.485",
+            "slug": "elektricheskaya-pech-karina-nova-12e",
             "name": "Электрическая печь KARINA Nova 12E",
             "price": "1685.00",
             "price_old": null,
             "is_active": false,
-            "is_archived": true
+            "is_archived": true,
+            "created_via": null
         },
         {
             "id": 11612,
+            "category_id": 376,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "PS-011.612",
+            "slug": "pult-upravleniya-karina-slim-cs14",
             "name": "Пульт управления KARINA Slim CS14",
             "price": "570.00",
             "price_old": null,
             "is_active": false,
-            "is_archived": true
+            "is_archived": true,
+            "created_via": null
         },
         {
             "id": 16986,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-004708",
+            "slug": "elektriceskaia-pec-karina-nova-6e",
             "name": "Электрическая печь KARINA Nova 6E",
             "price": "1455.00",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 16987,
+            "category_id": 376,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-004709",
+            "slug": "ten-dlia-elektrokamenki-karina-optimasteam-25-75kvt-classicsteam-75",
             "name": "ТЭН для электрокаменки KARINA Optima\/Steam 2,5; 7,5кВт; Classic\/Steam 7,5",
             "price": "192.00",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22237,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022237",
+            "slug": "elektriceskaia-pec-karina-air-6",
             "name": "Электрическая печь KARINA Air 6",
             "price": "1330.79",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22238,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022238",
+            "slug": "elektriceskaia-pec-karina-air-9",
             "name": "Электрическая печь KARINA Air 9",
             "price": "1451.11",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22239,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022239",
+            "slug": "elektriceskaia-pec-karina-classic-15",
             "name": "Электрическая печь KARINA Classic 15",
             "price": "2267.81",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22240,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022240",
+            "slug": "elektriceskaia-pec-karina-classic-18",
             "name": "Электрическая печь KARINA Classic 18",
             "price": "2362.61",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22241,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022241",
+            "slug": "elektriceskaia-pec-karina-elite-12-talkoxlorit",
             "name": "Электрическая печь KARINA Elite 12 Талькохлорит",
             "price": "2781.00",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22242,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022242",
+            "slug": "elektriceskaia-pec-karina-forta-12-talkoxlorit",
             "name": "Электрическая печь KARINA Forta 12 Талькохлорит",
             "price": "3558.50",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22243,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022243",
+            "slug": "elektriceskaia-pec-karina-forta-6-talkoxlorit",
             "name": "Электрическая печь KARINA Forta 6 Талькохлорит",
             "price": "3190.25",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22244,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022244",
+            "slug": "elektriceskaia-pec-karina-forta-8-talkoxlorit",
             "name": "Электрическая печь KARINA Forta 8 Талькохлорит",
             "price": "3244.94",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22245,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022245",
+            "slug": "elektriceskaia-pec-karina-lite-12",
             "name": "Электрическая печь KARINA Lite 12",
             "price": "1629.76",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22246,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022246",
+            "slug": "elektriceskaia-pec-karina-lite-18",
             "name": "Электрическая печь KARINA Lite 18",
             "price": "2118.33",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22247,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022247",
+            "slug": "elektriceskaia-pec-karina-lite-8",
             "name": "Электрическая печь KARINA Lite 8",
             "price": "1465.69",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22248,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022248",
+            "slug": "elektriceskaia-pec-karina-nova-10e",
             "name": "Электрическая печь KARINA Nova 10E",
             "price": "1837.58",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22249,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022249",
+            "slug": "elektriceskaia-pec-karina-optima-5",
             "name": "Электрическая печь KARINA Optima 5",
             "price": "1112.03",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22250,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022250",
+            "slug": "elektriceskaia-pec-karina-optima-steam-5",
             "name": "Электрическая печь KARINA Optima Steam 5",
             "price": "1177.66",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22251,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022251",
+            "slug": "elektriceskaia-pec-karina-optima-steam-75",
             "name": "Электрическая печь KARINA Optima Steam 7,5",
             "price": "1706.33",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22252,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022252",
+            "slug": "elektriceskaia-pec-karina-optima-steam-9",
             "name": "Электрическая печь KARINA Optima Steam 9",
             "price": "1768.31",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         },
         {
             "id": 22253,
+            "category_id": 70,
             "brand_id": 338,
             "supplier_id": null,
             "sku": "KOTLOV-022253",
+            "slug": "elektriceskaia-pec-karina-tetra-14-talkoxlorit",
             "name": "Электрическая печь KARINA Tetra 14 Талькохлорит",
             "price": "2756.38",
             "price_old": null,
             "is_active": true,
-            "is_archived": false
+            "is_archived": false,
+            "created_via": null
         }
     ],
     "supplier_links": [
@@ -4347,6 +4428,2386 @@
             "price_plan": null
         }
     ],
+    "cross_supplier_article_links": [
+        {
+            "id": 21743,
+            "supplier_id": 51,
+            "product_id": 22237,
+            "product_sku": "KOTLOV-022237",
+            "supplier_article": "Ai-6-220\/380",
+            "supplier_name": "Электрическая печь KARINA Air 6",
+            "match_status": "matched"
+        },
+        {
+            "id": 21744,
+            "supplier_id": 51,
+            "product_id": 22238,
+            "product_sku": "KOTLOV-022238",
+            "supplier_article": "Ai-9-220\/380",
+            "supplier_name": "Электрическая печь KARINA Air 9",
+            "match_status": "matched"
+        },
+        {
+            "id": 21729,
+            "supplier_id": 51,
+            "product_id": 22239,
+            "product_sku": "KOTLOV-022239",
+            "supplier_article": "Cl-15-380",
+            "supplier_name": "Электрическая печь KARINA Classic 15",
+            "match_status": "matched"
+        },
+        {
+            "id": 21730,
+            "supplier_id": 51,
+            "product_id": 22240,
+            "product_sku": "KOTLOV-022240",
+            "supplier_article": "Cl-18-380",
+            "supplier_name": "Электрическая печь KARINA Classic 18",
+            "match_status": "matched"
+        },
+        {
+            "id": 21742,
+            "supplier_id": 51,
+            "product_id": 22242,
+            "product_sku": "KOTLOV-022242",
+            "supplier_article": "Fo-12-380-T",
+            "supplier_name": "Электрическая печь KARINA Forta 12 Талькохлорит",
+            "match_status": "matched"
+        },
+        {
+            "id": 21740,
+            "supplier_id": 51,
+            "product_id": 22243,
+            "product_sku": "KOTLOV-022243",
+            "supplier_article": "Fo-6-220\/380-T",
+            "supplier_name": "Электрическая печь KARINA Forta 6 Талькохлорит",
+            "match_status": "matched"
+        },
+        {
+            "id": 21741,
+            "supplier_id": 51,
+            "product_id": 22244,
+            "product_sku": "KOTLOV-022244",
+            "supplier_article": "Fo-8-220\/380-T",
+            "supplier_name": "Электрическая печь KARINA Forta 8 Талькохлорит",
+            "match_status": "matched"
+        },
+        {
+            "id": 21727,
+            "supplier_id": 51,
+            "product_id": 22245,
+            "product_sku": "KOTLOV-022245",
+            "supplier_article": "Li-12-380",
+            "supplier_name": "Электрическая печь KARINA Lite 12",
+            "match_status": "matched"
+        },
+        {
+            "id": 21728,
+            "supplier_id": 51,
+            "product_id": 22246,
+            "product_sku": "KOTLOV-022246",
+            "supplier_article": "Li-18-380",
+            "supplier_name": "Электрическая печь KARINA Lite 18",
+            "match_status": "matched"
+        },
+        {
+            "id": 21726,
+            "supplier_id": 51,
+            "product_id": 22247,
+            "product_sku": "KOTLOV-022247",
+            "supplier_article": "Li-8-380",
+            "supplier_name": "Электрическая печь KARINA Lite 8",
+            "match_status": "matched"
+        },
+        {
+            "id": 21738,
+            "supplier_id": 51,
+            "product_id": 22248,
+            "product_sku": "KOTLOV-022248",
+            "supplier_article": "No-10E-380",
+            "supplier_name": "Электрическая печь KARINA Nova 10E",
+            "match_status": "matched"
+        },
+        {
+            "id": 21737,
+            "supplier_id": 51,
+            "product_id": 11263,
+            "product_sku": "PS-011.263",
+            "supplier_article": "No-6-220\/380",
+            "supplier_name": "Электрическая печь KARINA Nova 6",
+            "match_status": "matched"
+        },
+        {
+            "id": 5109,
+            "supplier_id": 20,
+            "product_id": 16986,
+            "product_sku": "KOTLOV-004708",
+            "supplier_article": "No-6E-220\/380",
+            "supplier_name": "Электрическая печь KARINA Nova 6E",
+            "match_status": "created_from_price_list"
+        },
+        {
+            "id": 21736,
+            "supplier_id": 51,
+            "product_id": 11268,
+            "product_sku": "PS-011.268",
+            "supplier_article": "No-8E-220\/380",
+            "supplier_name": "Электрическая печь KARINA Nova 8E",
+            "match_status": "matched"
+        },
+        {
+            "id": 21731,
+            "supplier_id": 51,
+            "product_id": 22249,
+            "product_sku": "KOTLOV-022249",
+            "supplier_article": "Op-5-220",
+            "supplier_name": "Электрическая печь KARINA Optima 5",
+            "match_status": "matched"
+        },
+        {
+            "id": 21732,
+            "supplier_id": 51,
+            "product_id": 11265,
+            "product_sku": "PS-011.265",
+            "supplier_article": "Op-6-220\/380",
+            "supplier_name": "Электрическая печь KARINA Optima 6",
+            "match_status": "matched"
+        },
+        {
+            "id": 21733,
+            "supplier_id": 51,
+            "product_id": 22250,
+            "product_sku": "KOTLOV-022250",
+            "supplier_article": "Ops-5-220",
+            "supplier_name": "Электрическая печь KARINA Optima Steam 5",
+            "match_status": "matched"
+        },
+        {
+            "id": 21734,
+            "supplier_id": 51,
+            "product_id": 22251,
+            "product_sku": "KOTLOV-022251",
+            "supplier_article": "Ops-7,5-220\/380",
+            "supplier_name": "Электрическая печь KARINA Optima Steam 7,5",
+            "match_status": "matched"
+        },
+        {
+            "id": 21735,
+            "supplier_id": 51,
+            "product_id": 22252,
+            "product_sku": "KOTLOV-022252",
+            "supplier_article": "Ops-9-220\/380",
+            "supplier_name": "Электрическая печь KARINA Optima Steam 9",
+            "match_status": "matched"
+        },
+        {
+            "id": 21739,
+            "supplier_id": 51,
+            "product_id": 22253,
+            "product_sku": "KOTLOV-022253",
+            "supplier_article": "Te-14-380-T",
+            "supplier_name": "Электрическая печь KARINA Tetra 14 Талькохлорит",
+            "match_status": "matched"
+        }
+    ],
+    "cross_supplier_article_mappings": [
+        {
+            "id": 349,
+            "supplier_code": "karina",
+            "supplier_article": "Ai-6-220\/380",
+            "product_id": 22237,
+            "product_sku": "KOTLOV-022237",
+            "supplier_name": "Электрическая печь KARINA Air 6",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 350,
+            "supplier_code": "karina",
+            "supplier_article": "Ai-9-220\/380",
+            "product_id": 22238,
+            "product_sku": "KOTLOV-022238",
+            "supplier_name": "Электрическая печь KARINA Air 9",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 335,
+            "supplier_code": "karina",
+            "supplier_article": "Cl-15-380",
+            "product_id": 22239,
+            "product_sku": "KOTLOV-022239",
+            "supplier_name": "Электрическая печь KARINA Classic 15",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 336,
+            "supplier_code": "karina",
+            "supplier_article": "Cl-18-380",
+            "product_id": 22240,
+            "product_sku": "KOTLOV-022240",
+            "supplier_name": "Электрическая печь KARINA Classic 18",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 348,
+            "supplier_code": "karina",
+            "supplier_article": "Fo-12-380-T",
+            "product_id": 22242,
+            "product_sku": "KOTLOV-022242",
+            "supplier_name": "Электрическая печь KARINA Forta 12 Талькохлорит",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 346,
+            "supplier_code": "karina",
+            "supplier_article": "Fo-6-220\/380-T",
+            "product_id": 22243,
+            "product_sku": "KOTLOV-022243",
+            "supplier_name": "Электрическая печь KARINA Forta 6 Талькохлорит",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 347,
+            "supplier_code": "karina",
+            "supplier_article": "Fo-8-220\/380-T",
+            "product_id": 22244,
+            "product_sku": "KOTLOV-022244",
+            "supplier_name": "Электрическая печь KARINA Forta 8 Талькохлорит",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 333,
+            "supplier_code": "karina",
+            "supplier_article": "Li-12-380",
+            "product_id": 22245,
+            "product_sku": "KOTLOV-022245",
+            "supplier_name": "Электрическая печь KARINA Lite 12",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 334,
+            "supplier_code": "karina",
+            "supplier_article": "Li-18-380",
+            "product_id": 22246,
+            "product_sku": "KOTLOV-022246",
+            "supplier_name": "Электрическая печь KARINA Lite 18",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 332,
+            "supplier_code": "karina",
+            "supplier_article": "Li-8-380",
+            "product_id": 22247,
+            "product_sku": "KOTLOV-022247",
+            "supplier_name": "Электрическая печь KARINA Lite 8",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 344,
+            "supplier_code": "karina",
+            "supplier_article": "No-10E-380",
+            "product_id": 22248,
+            "product_sku": "KOTLOV-022248",
+            "supplier_name": "Электрическая печь KARINA Nova 10E",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 343,
+            "supplier_code": "karina",
+            "supplier_article": "No-6-220\/380",
+            "product_id": 11263,
+            "product_sku": "PS-011.263",
+            "supplier_name": "Электрическая печь KARINA Nova 6",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 342,
+            "supplier_code": "karina",
+            "supplier_article": "No-8E-220\/380",
+            "product_id": 11268,
+            "product_sku": "PS-011.268",
+            "supplier_name": "Электрическая печь KARINA Nova 8E",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 337,
+            "supplier_code": "karina",
+            "supplier_article": "Op-5-220",
+            "product_id": 22249,
+            "product_sku": "KOTLOV-022249",
+            "supplier_name": "Электрическая печь KARINA Optima 5",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 338,
+            "supplier_code": "karina",
+            "supplier_article": "Op-6-220\/380",
+            "product_id": 11265,
+            "product_sku": "PS-011.265",
+            "supplier_name": "Электрическая печь KARINA Optima 6",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 339,
+            "supplier_code": "karina",
+            "supplier_article": "Ops-5-220",
+            "product_id": 22250,
+            "product_sku": "KOTLOV-022250",
+            "supplier_name": "Электрическая печь KARINA Optima Steam 5",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 340,
+            "supplier_code": "karina",
+            "supplier_article": "Ops-7,5-220\/380",
+            "product_id": 22251,
+            "product_sku": "KOTLOV-022251",
+            "supplier_name": "Электрическая печь KARINA Optima Steam 7,5",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 341,
+            "supplier_code": "karina",
+            "supplier_article": "Ops-9-220\/380",
+            "product_id": 22252,
+            "product_sku": "KOTLOV-022252",
+            "supplier_name": "Электрическая печь KARINA Optima Steam 9",
+            "confidence": "manual",
+            "is_active": true
+        },
+        {
+            "id": 345,
+            "supplier_code": "karina",
+            "supplier_article": "Te-14-380-T",
+            "product_id": 22253,
+            "product_sku": "KOTLOV-022253",
+            "supplier_name": "Электрическая печь KARINA Tetra 14 Талькохлорит",
+            "confidence": "manual",
+            "is_active": true
+        }
+    ],
+    "exact_name_products": [
+        {
+            "id": 11262,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "PS-011.262",
+            "name": "Электрическая печь KARINA Nova 8",
+            "is_active": false,
+            "is_archived": true
+        },
+        {
+            "id": 11263,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "PS-011.263",
+            "name": "Электрическая печь KARINA Nova 6",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 11265,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "PS-011.265",
+            "name": "Электрическая печь KARINA Optima 6",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 11267,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "PS-011.267",
+            "name": "Электрическая печь KARINA Nova 6E",
+            "is_active": false,
+            "is_archived": true
+        },
+        {
+            "id": 11268,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "PS-011.268",
+            "name": "Электрическая печь KARINA Nova 8E",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 11485,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "PS-011.485",
+            "name": "Электрическая печь KARINA Nova 12E",
+            "is_active": false,
+            "is_archived": true
+        },
+        {
+            "id": 16986,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-004708",
+            "name": "Электрическая печь KARINA Nova 6E",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22237,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022237",
+            "name": "Электрическая печь KARINA Air 6",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22238,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022238",
+            "name": "Электрическая печь KARINA Air 9",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22239,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022239",
+            "name": "Электрическая печь KARINA Classic 15",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22240,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022240",
+            "name": "Электрическая печь KARINA Classic 18",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22242,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022242",
+            "name": "Электрическая печь KARINA Forta 12 Талькохлорит",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22243,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022243",
+            "name": "Электрическая печь KARINA Forta 6 Талькохлорит",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22244,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022244",
+            "name": "Электрическая печь KARINA Forta 8 Талькохлорит",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22245,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022245",
+            "name": "Электрическая печь KARINA Lite 12",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22246,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022246",
+            "name": "Электрическая печь KARINA Lite 18",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22247,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022247",
+            "name": "Электрическая печь KARINA Lite 8",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22248,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022248",
+            "name": "Электрическая печь KARINA Nova 10E",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22249,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022249",
+            "name": "Электрическая печь KARINA Optima 5",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22250,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022250",
+            "name": "Электрическая печь KARINA Optima Steam 5",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22251,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022251",
+            "name": "Электрическая печь KARINA Optima Steam 7,5",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22252,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022252",
+            "name": "Электрическая печь KARINA Optima Steam 9",
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22253,
+            "category_id": 70,
+            "brand_id": 338,
+            "sku": "KOTLOV-022253",
+            "name": "Электрическая печь KARINA Tetra 14 Талькохлорит",
+            "is_active": true,
+            "is_archived": false
+        }
+    ],
+    "creation_candidates": [
+        {
+            "row": 17,
+            "article": "Li-6-220",
+            "name": "Электрическая печь KARINA Lite 6",
+            "retail_rub": 26800,
+            "purchase_rub": 20100,
+            "retail_byn": 977.13,
+            "purchase_byn": 732.85,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 18,
+            "article": "Li-8-220",
+            "name": "Электрическая печь KARINA Lite 8 mini",
+            "retail_rub": 29300,
+            "purchase_rub": 21975,
+            "retail_byn": 1068.28,
+            "purchase_byn": 801.21,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 19,
+            "article": "Li-8-380",
+            "name": "Электрическая печь KARINA Lite 8",
+            "retail_rub": 40200,
+            "purchase_rub": 30150,
+            "retail_byn": 1465.69,
+            "purchase_byn": 1099.27,
+            "existing_product_ids": [
+                22247
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 20,
+            "article": "Li-10-380",
+            "name": "Электрическая печь KARINA Lite 10",
+            "retail_rub": 42400,
+            "purchase_rub": 31800,
+            "retail_byn": 1545.9,
+            "purchase_byn": 1159.43,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 21,
+            "article": "Li-12-380",
+            "name": "Электрическая печь KARINA Lite 12",
+            "retail_rub": 44700,
+            "purchase_rub": 33525,
+            "retail_byn": 1629.76,
+            "purchase_byn": 1222.32,
+            "existing_product_ids": [
+                22245
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 22,
+            "article": "Li-14-380",
+            "name": "Электрическая печь KARINA Lite 14",
+            "retail_rub": 51700,
+            "purchase_rub": 38775,
+            "retail_byn": 1884.98,
+            "purchase_byn": 1413.74,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 23,
+            "article": "Li-16-380",
+            "name": "Электрическая печь KARINA Lite 16",
+            "retail_rub": 54800,
+            "purchase_rub": 41100,
+            "retail_byn": 1998.01,
+            "purchase_byn": 1498.51,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 24,
+            "article": "Li-18-380",
+            "name": "Электрическая печь KARINA Lite 18",
+            "retail_rub": 58100,
+            "purchase_rub": 43575,
+            "retail_byn": 2118.33,
+            "purchase_byn": 1588.74,
+            "existing_product_ids": [
+                22246
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 25,
+            "article": "Li-20-380",
+            "name": "Электрическая печь KARINA Lite 20",
+            "retail_rub": 86000,
+            "purchase_rub": 64500,
+            "retail_byn": 3135.56,
+            "purchase_byn": 2351.67,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 26,
+            "article": "Li-24-380",
+            "name": "Электрическая печь KARINA Lite 24",
+            "retail_rub": 90200,
+            "purchase_rub": 67650,
+            "retail_byn": 3288.69,
+            "purchase_byn": 2466.52,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 27,
+            "article": "Li-28-380",
+            "name": "Электрическая печь KARINA Lite 28",
+            "retail_rub": 105100,
+            "purchase_rub": 78825,
+            "retail_byn": 3831.95,
+            "purchase_byn": 2873.96,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 28,
+            "article": "Li-32-380",
+            "name": "Электрическая печь KARINA Lite 32",
+            "retail_rub": 108100,
+            "purchase_rub": 81075,
+            "retail_byn": 3941.33,
+            "purchase_byn": 2955.99,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 29,
+            "article": "Li-36-380",
+            "name": "Электрическая печь KARINA Lite 36",
+            "retail_rub": 116100,
+            "purchase_rub": 87075,
+            "retail_byn": 4233.01,
+            "purchase_byn": 3174.75,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 30,
+            "article": "Cl-6-220\/380",
+            "name": "Электрическая печь KARINA Classic 6",
+            "retail_rub": 39100,
+            "purchase_rub": 29325,
+            "retail_byn": 1425.59,
+            "purchase_byn": 1069.19,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 31,
+            "article": "Cl-7,5-220\/380",
+            "name": "Электрическая печь KARINA Classic 7,5",
+            "retail_rub": 39900,
+            "purchase_rub": 29925,
+            "retail_byn": 1454.75,
+            "purchase_byn": 1091.07,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 32,
+            "article": "Cl-9-380",
+            "name": "Электрическая печь KARINA Classic 9",
+            "retail_rub": 59200,
+            "purchase_rub": 44400,
+            "retail_byn": 2158.43,
+            "purchase_byn": 1618.82,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 33,
+            "article": "Cl-9-220\/380",
+            "name": "Электрическая печь KARINA Classic 9 mini",
+            "retail_rub": 41000,
+            "purchase_rub": 30750,
+            "retail_byn": 1494.86,
+            "purchase_byn": 1121.15,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 34,
+            "article": "Cl-12-380",
+            "name": "Электрическая печь KARINA Classic 12",
+            "retail_rub": 60700,
+            "purchase_rub": 45525,
+            "retail_byn": 2213.12,
+            "purchase_byn": 1659.84,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 35,
+            "article": "Cl-15-380",
+            "name": "Электрическая печь KARINA Classic 15",
+            "retail_rub": 62200,
+            "purchase_rub": 46650,
+            "retail_byn": 2267.81,
+            "purchase_byn": 1700.86,
+            "existing_product_ids": [
+                22239
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 36,
+            "article": "Cl-18-380",
+            "name": "Электрическая печь KARINA Classic 18",
+            "retail_rub": 64800,
+            "purchase_rub": 48600,
+            "retail_byn": 2362.61,
+            "purchase_byn": 1771.96,
+            "existing_product_ids": [
+                22240
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 37,
+            "article": "Cl-24-380",
+            "name": "Электрическая печь KARINA Classic 24",
+            "retail_rub": 124100,
+            "purchase_rub": 93075,
+            "retail_byn": 4524.69,
+            "purchase_byn": 3393.51,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 38,
+            "article": "Cl-30-380",
+            "name": "Электрическая печь KARINA Classic 30",
+            "retail_rub": 127100,
+            "purchase_rub": 95325,
+            "retail_byn": 4634.07,
+            "purchase_byn": 3475.55,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 39,
+            "article": "Cl-36-380",
+            "name": "Электрическая печь KARINA Classic 36",
+            "retail_rub": 132500,
+            "purchase_rub": 99375,
+            "retail_byn": 4830.95,
+            "purchase_byn": 3623.21,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 40,
+            "article": "Op-3-220",
+            "name": "Электрическая печь KARINA Optima 3",
+            "retail_rub": 26700,
+            "purchase_rub": 20025,
+            "retail_byn": 973.48,
+            "purchase_byn": 730.11,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 41,
+            "article": "Op-5-220",
+            "name": "Электрическая печь KARINA Optima 5",
+            "retail_rub": 30500,
+            "purchase_rub": 22875,
+            "retail_byn": 1112.03,
+            "purchase_byn": 834.02,
+            "existing_product_ids": [
+                22249
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 42,
+            "article": "Op-6-220\/380",
+            "name": "Электрическая печь KARINA Optima 6",
+            "retail_rub": 36200,
+            "purchase_rub": 27150,
+            "retail_byn": 1319.85,
+            "purchase_byn": 989.89,
+            "existing_product_ids": [
+                11265
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 43,
+            "article": "Op-7,5-220\/380",
+            "name": "Электрическая печь KARINA Optima 7,5",
+            "retail_rub": 38000,
+            "purchase_rub": 28500,
+            "retail_byn": 1385.48,
+            "purchase_byn": 1039.11,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 44,
+            "article": "Op-9-220\/380",
+            "name": "Электрическая печь KARINA Optima 9",
+            "retail_rub": 39700,
+            "purchase_rub": 29775,
+            "retail_byn": 1447.46,
+            "purchase_byn": 1085.6,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 45,
+            "article": "Ops-3-220",
+            "name": "Электрическая печь KARINA Optima Steam 3",
+            "retail_rub": 30600,
+            "purchase_rub": 22950,
+            "retail_byn": 1115.68,
+            "purchase_byn": 836.76,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 46,
+            "article": "Ops-5-220",
+            "name": "Электрическая печь KARINA Optima Steam 5",
+            "retail_rub": 32300,
+            "purchase_rub": 24225,
+            "retail_byn": 1177.66,
+            "purchase_byn": 883.24,
+            "existing_product_ids": [
+                22250
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 47,
+            "article": "Ops-6-220\/380",
+            "name": "Электрическая печь KARINA Optima Steam 6",
+            "retail_rub": 45000,
+            "purchase_rub": 33750,
+            "retail_byn": 1640.7,
+            "purchase_byn": 1230.53,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 48,
+            "article": "Ops-7,5-220\/380",
+            "name": "Электрическая печь KARINA Optima Steam 7,5",
+            "retail_rub": 46800,
+            "purchase_rub": 35100,
+            "retail_byn": 1706.33,
+            "purchase_byn": 1279.75,
+            "existing_product_ids": [
+                22251
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 49,
+            "article": "Ops-9-220\/380",
+            "name": "Электрическая печь KARINA Optima Steam 9",
+            "retail_rub": 48500,
+            "purchase_rub": 36375,
+            "retail_byn": 1768.31,
+            "purchase_byn": 1326.23,
+            "existing_product_ids": [
+                22252
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 50,
+            "article": "No-6E-220\/380",
+            "name": "Электрическая печь KARINA Nova 6E",
+            "retail_rub": 44600,
+            "purchase_rub": 33450,
+            "retail_byn": 1626.12,
+            "purchase_byn": 1219.59,
+            "existing_product_ids": [
+                11267,
+                16986
+            ],
+            "blocked_reasons": [
+                "ambiguous",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 51,
+            "article": "No-8E-220\/380",
+            "name": "Электрическая печь KARINA Nova 8E",
+            "retail_rub": 46900,
+            "purchase_rub": 35175,
+            "retail_byn": 1709.97,
+            "purchase_byn": 1282.48,
+            "existing_product_ids": [
+                11268
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 52,
+            "article": "No-6-220\/380",
+            "name": "Электрическая печь KARINA Nova 6",
+            "retail_rub": 47900,
+            "purchase_rub": 35925,
+            "retail_byn": 1746.43,
+            "purchase_byn": 1309.83,
+            "existing_product_ids": [
+                11263
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 53,
+            "article": "No-8-220\/380",
+            "name": "Электрическая печь KARINA Nova 8",
+            "retail_rub": 49100,
+            "purchase_rub": 36825,
+            "retail_byn": 1790.19,
+            "purchase_byn": 1342.64,
+            "existing_product_ids": [
+                11262
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 54,
+            "article": "No-10E-380",
+            "name": "Электрическая печь KARINA Nova 10E",
+            "retail_rub": 50400,
+            "purchase_rub": 37800,
+            "retail_byn": 1837.58,
+            "purchase_byn": 1378.19,
+            "existing_product_ids": [
+                22248
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 55,
+            "article": "No-12E-380",
+            "name": "Электрическая печь KARINA Nova 12E",
+            "retail_rub": 52700,
+            "purchase_rub": 39525,
+            "retail_byn": 1921.44,
+            "purchase_byn": 1441.08,
+            "existing_product_ids": [
+                11485
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 56,
+            "article": "No-15E-380",
+            "name": "Электрическая печь KARINA Nova 15E",
+            "retail_rub": 78200,
+            "purchase_rub": 58650,
+            "retail_byn": 2851.17,
+            "purchase_byn": 2138.38,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 57,
+            "article": "No-18E-380",
+            "name": "Электрическая печь KARINA Nova 18E",
+            "retail_rub": 81000,
+            "purchase_rub": 60750,
+            "retail_byn": 2953.26,
+            "purchase_byn": 2214.95,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 58,
+            "article": "No-21E-380",
+            "name": "Электрическая печь KARINA Nova 21E",
+            "retail_rub": 83700,
+            "purchase_rub": 62775,
+            "retail_byn": 3051.7,
+            "purchase_byn": 2288.78,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 59,
+            "article": "Ca-15kV-Wd",
+            "name": "Пульт управления Karina Case C15 Wood",
+            "retail_rub": 20200,
+            "purchase_rub": 15150,
+            "retail_byn": 736.49,
+            "purchase_byn": 552.37,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 60,
+            "article": "Ca-15kV-Wh",
+            "name": "Пульт управления Karina Case C15 White",
+            "retail_rub": 19500,
+            "purchase_rub": 14625,
+            "retail_byn": 710.97,
+            "purchase_byn": 533.23,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 61,
+            "article": "Sl-15V",
+            "name": "Пульт управления Karina Slim CS15",
+            "retail_rub": 23100,
+            "purchase_rub": 17325,
+            "retail_byn": 842.23,
+            "purchase_byn": 631.67,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 62,
+            "article": "Sl-32V",
+            "name": "Пульт управления Karina Slim CS32",
+            "retail_rub": 29500,
+            "purchase_rub": 22125,
+            "retail_byn": 1075.57,
+            "purchase_byn": 806.68,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 63,
+            "article": "KSL-18kV",
+            "name": "Пульт управления Karina Sense Lite 18",
+            "retail_rub": 31500,
+            "purchase_rub": 23625,
+            "retail_byn": 1148.49,
+            "purchase_byn": 861.37,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 64,
+            "article": "SPM-15kV-220",
+            "name": "Пульт управления Karina Sense Pro Mini 15 (220W)",
+            "retail_rub": 64500,
+            "purchase_rub": 48375,
+            "retail_byn": 2351.67,
+            "purchase_byn": 1763.75,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 65,
+            "article": "Sp-15kV-380",
+            "name": "Пульт управления Karina Sense Pro 15 (380V)",
+            "retail_rub": 64500,
+            "purchase_rub": 48375,
+            "retail_byn": 2351.67,
+            "purchase_byn": 1763.75,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 66,
+            "article": "tpl-110441004",
+            "name": "Монтажный фланец  для встраивания печи Forta в полок",
+            "retail_rub": 8250,
+            "purchase_rub": 6187.5,
+            "retail_byn": 300.8,
+            "purchase_byn": 225.6,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 67,
+            "article": "Qu-6-220\/380-T",
+            "name": "Электрическая печь KARINA Quadro 6 Талькохлорит",
+            "retail_rub": 82200,
+            "purchase_rub": 61650,
+            "retail_byn": 2997.01,
+            "purchase_byn": 2247.76,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 68,
+            "article": "Qu-7,5-220\/380-T",
+            "name": "Электрическая печь KARINA Quadro 7,5 Талькохлорит",
+            "retail_rub": 85600,
+            "purchase_rub": 64200,
+            "retail_byn": 3120.98,
+            "purchase_byn": 2340.73,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 69,
+            "article": "Qu-9-220\/380-T",
+            "name": "Электрическая печь KARINA Quadro 9 mini Талькохлорит",
+            "retail_rub": 88900,
+            "purchase_rub": 66675,
+            "retail_byn": 3241.29,
+            "purchase_byn": 2430.97,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 70,
+            "article": "Qu-9-380-T",
+            "name": "Электрическая печь KARINA Quadro 9 Талькохлорит",
+            "retail_rub": 112900,
+            "purchase_rub": 84675,
+            "retail_byn": 4116.33,
+            "purchase_byn": 3087.25,
+            "existing_product_ids": [],
+            "blocked_reasons": [
+                "supplier_identity_conflict"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 71,
+            "article": "Qu-12-380-T",
+            "name": "Электрическая печь KARINA Quadro 12 Талькохлорит",
+            "retail_rub": 116200,
+            "purchase_rub": 87150,
+            "retail_byn": 4236.65,
+            "purchase_byn": 3177.49,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 72,
+            "article": "Qu-15-380-T",
+            "name": "Электрическая печь KARINA Quadro 15 Талькохлорит",
+            "retail_rub": 119400,
+            "purchase_rub": 89550,
+            "retail_byn": 4353.32,
+            "purchase_byn": 3264.99,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 73,
+            "article": "Qu-18-380-T",
+            "name": "Электрическая печь KARINA Quadro 18 Талькохлорит",
+            "retail_rub": 121300,
+            "purchase_rub": 90975,
+            "retail_byn": 4422.6,
+            "purchase_byn": 3316.95,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 74,
+            "article": "Te-8-380-T",
+            "name": "Электрическая печь KARINA Tetra 8 Талькохлорит",
+            "retail_rub": 62300,
+            "purchase_rub": 46725,
+            "retail_byn": 2271.46,
+            "purchase_byn": 1703.59,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 75,
+            "article": "Te-10-380-T",
+            "name": "Электрическая печь KARINA Tetra 10 Талькохлорит",
+            "retail_rub": 64100,
+            "purchase_rub": 48075,
+            "retail_byn": 2337.09,
+            "purchase_byn": 1752.81,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 76,
+            "article": "Te-12-380-T",
+            "name": "Электрическая печь KARINA Tetra 12 Талькохлорит",
+            "retail_rub": 66100,
+            "purchase_rub": 49575,
+            "retail_byn": 2410.01,
+            "purchase_byn": 1807.5,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 77,
+            "article": "Te-14-380-T",
+            "name": "Электрическая печь KARINA Tetra 14 Талькохлорит",
+            "retail_rub": 75600,
+            "purchase_rub": 56700,
+            "retail_byn": 2756.38,
+            "purchase_byn": 2067.28,
+            "existing_product_ids": [
+                22253
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 78,
+            "article": "Te-16-380-T",
+            "name": "Электрическая печь KARINA Tetra 16 Талькохлорит",
+            "retail_rub": 78500,
+            "purchase_rub": 58875,
+            "retail_byn": 2862.11,
+            "purchase_byn": 2146.58,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 79,
+            "article": "Te-18-380-T",
+            "name": "Электрическая печь KARINA Tetra 18 Талькохлорит",
+            "retail_rub": 81400,
+            "purchase_rub": 61050,
+            "retail_byn": 2967.84,
+            "purchase_byn": 2225.88,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 80,
+            "article": "Te-20-380-T",
+            "name": "Электрическая печь KARINA Tetra 20 Талькохлорит",
+            "retail_rub": 95000,
+            "purchase_rub": 71250,
+            "retail_byn": 3463.7,
+            "purchase_byn": 2597.78,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 81,
+            "article": "Te-24-380-T",
+            "name": "Электрическая печь KARINA Tetra 24 Талькохлорит",
+            "retail_rub": 102700,
+            "purchase_rub": 77025,
+            "retail_byn": 3744.44,
+            "purchase_byn": 2808.33,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 82,
+            "article": "Te-28-380-T",
+            "name": "Электрическая печь KARINA Tetra 28 Талькохлорит",
+            "retail_rub": 124100,
+            "purchase_rub": 93075,
+            "retail_byn": 4524.69,
+            "purchase_byn": 3393.51,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 83,
+            "article": "Te-32-380-T",
+            "name": "Электрическая печь KARINA Tetra 32 Талькохлорит",
+            "retail_rub": 133900,
+            "purchase_rub": 100425,
+            "retail_byn": 4881.99,
+            "purchase_byn": 3661.5,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 84,
+            "article": "Qu-6-220\/380-Z",
+            "name": "Электрическая печь KARINA Quadro 6 Змеевик",
+            "retail_rub": 99100,
+            "purchase_rub": 74325,
+            "retail_byn": 3613.19,
+            "purchase_byn": 2709.89,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 85,
+            "article": "Qu-7,5-220\/380-Z",
+            "name": "Электрическая печь KARINA Quadro 7,5 Змеевик",
+            "retail_rub": 101100,
+            "purchase_rub": 75825,
+            "retail_byn": 3686.11,
+            "purchase_byn": 2764.58,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 86,
+            "article": "Qu-9-220\/380-Z",
+            "name": "Электрическая печь KARINA Quadro 9 mini Змеевик",
+            "retail_rub": 103100,
+            "purchase_rub": 77325,
+            "retail_byn": 3759.03,
+            "purchase_byn": 2819.27,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 87,
+            "article": "Qu-9-380-T",
+            "name": "Электрическая печь KARINA Quadro 9 Змеевик",
+            "retail_rub": 131700,
+            "purchase_rub": 98775,
+            "retail_byn": 4801.78,
+            "purchase_byn": 3601.34,
+            "existing_product_ids": [],
+            "blocked_reasons": [
+                "supplier_identity_conflict"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 88,
+            "article": "Qu-12-380-Z",
+            "name": "Электрическая печь KARINA Quadro 12 Змеевик",
+            "retail_rub": 135000,
+            "purchase_rub": 101250,
+            "retail_byn": 4922.1,
+            "purchase_byn": 3691.58,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 89,
+            "article": "Qu-15-380-Z",
+            "name": "Электрическая печь KARINA Quadro 15 Змеевик",
+            "retail_rub": 138400,
+            "purchase_rub": 103800,
+            "retail_byn": 5046.06,
+            "purchase_byn": 3784.55,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 90,
+            "article": "Qu-18-380-Z",
+            "name": "Электрическая печь KARINA Quadro 18 Змеевик",
+            "retail_rub": 144700,
+            "purchase_rub": 108525,
+            "retail_byn": 5275.76,
+            "purchase_byn": 3956.82,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 91,
+            "article": "Fo-6-220\/380-T",
+            "name": "Электрическая печь KARINA Forta 6 Талькохлорит",
+            "retail_rub": 87500,
+            "purchase_rub": 65625,
+            "retail_byn": 3190.25,
+            "purchase_byn": 2392.69,
+            "existing_product_ids": [
+                22243
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 92,
+            "article": "Fo-8-220\/380-T",
+            "name": "Электрическая печь KARINA Forta 8 Талькохлорит",
+            "retail_rub": 89000,
+            "purchase_rub": 66750,
+            "retail_byn": 3244.94,
+            "purchase_byn": 2433.71,
+            "existing_product_ids": [
+                22244
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 93,
+            "article": "Fo-10-380-T",
+            "name": "Электрическая печь KARINA Forta 10 Талькохлорит",
+            "retail_rub": 94700,
+            "purchase_rub": 71025,
+            "retail_byn": 3452.76,
+            "purchase_byn": 2589.57,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 94,
+            "article": "Fo-12-380-T",
+            "name": "Электрическая печь KARINA Forta 12 Талькохлорит",
+            "retail_rub": 97600,
+            "purchase_rub": 73200,
+            "retail_byn": 3558.5,
+            "purchase_byn": 2668.87,
+            "existing_product_ids": [
+                22242
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 95,
+            "article": "Fo-15-380-T",
+            "name": "Электрическая печь KARINA Forta 15 Талькохлорит",
+            "retail_rub": 126900,
+            "purchase_rub": 95175,
+            "retail_byn": 4626.77,
+            "purchase_byn": 3470.08,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 96,
+            "article": "Fo-18-380-T",
+            "name": "Электрическая печь KARINA Forta 18 Талькохлорит",
+            "retail_rub": 129600,
+            "purchase_rub": 97200,
+            "retail_byn": 4725.22,
+            "purchase_byn": 3543.91,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 97,
+            "article": "Fo-21-380-T",
+            "name": "Электрическая печь KARINA Forta 21 Талькохлорит",
+            "retail_rub": 132300,
+            "purchase_rub": 99225,
+            "retail_byn": 4823.66,
+            "purchase_byn": 3617.74,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 98,
+            "article": "Ai-3-220",
+            "name": "Электрическая печь KARINA Air 3",
+            "retail_rub": 26800,
+            "purchase_rub": 20100,
+            "retail_byn": 977.13,
+            "purchase_byn": 732.85,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 99,
+            "article": "Ai-6-220\/380",
+            "name": "Электрическая печь KARINA Air 6",
+            "retail_rub": 36500,
+            "purchase_rub": 27375,
+            "retail_byn": 1330.79,
+            "purchase_byn": 998.09,
+            "existing_product_ids": [
+                22237
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 100,
+            "article": "Ai-7,5-220\/380",
+            "name": "Электрическая печь KARINA Air 7,5",
+            "retail_rub": 38200,
+            "purchase_rub": 28650,
+            "retail_byn": 1392.77,
+            "purchase_byn": 1044.58,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 101,
+            "article": "Ai-9-220\/380",
+            "name": "Электрическая печь KARINA Air 9",
+            "retail_rub": 39800,
+            "purchase_rub": 29850,
+            "retail_byn": 1451.11,
+            "purchase_byn": 1088.33,
+            "existing_product_ids": [
+                22238
+            ],
+            "blocked_reasons": [
+                "exact_candidate",
+                "existing_catalog_or_supplier_reference"
+            ],
+            "eligible_for_hidden_creation_review": false
+        },
+        {
+            "row": 102,
+            "article": "ClS-6-220\/380",
+            "name": "Электрическая печь KARINA Classic Steam 6",
+            "retail_rub": 45100,
+            "purchase_rub": 33825,
+            "retail_byn": 1644.35,
+            "purchase_byn": 1233.26,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 103,
+            "article": "ClS-7,5-220\/380",
+            "name": "Электрическая печь KARINA Classic Steam 7,5",
+            "retail_rub": 46000,
+            "purchase_rub": 34500,
+            "retail_byn": 1677.16,
+            "purchase_byn": 1257.87,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 104,
+            "article": "ClS-9-220\/380",
+            "name": "Электрическая печь KARINA Classic Steam 9 mini",
+            "retail_rub": 47100,
+            "purchase_rub": 35325,
+            "retail_byn": 1717.27,
+            "purchase_byn": 1287.95,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 105,
+            "article": "ClS-9-380",
+            "name": "Электрическая печь KARINA Classic Steam 9",
+            "retail_rub": 68200,
+            "purchase_rub": 51150,
+            "retail_byn": 2486.57,
+            "purchase_byn": 1864.93,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 106,
+            "article": "ClS-12-380",
+            "name": "Электрическая печь KARINA Classic Steam 12",
+            "retail_rub": 69700,
+            "purchase_rub": 52275,
+            "retail_byn": 2541.26,
+            "purchase_byn": 1905.95,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 107,
+            "article": "ClS-15-380",
+            "name": "Электрическая печь KARINA Classic Steam 15",
+            "retail_rub": 71300,
+            "purchase_rub": 53475,
+            "retail_byn": 2599.6,
+            "purchase_byn": 1949.7,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 108,
+            "article": "ClS-18-380",
+            "name": "Электрическая печь KARINA Classic Steam 18",
+            "retail_rub": 73900,
+            "purchase_rub": 55425,
+            "retail_byn": 2694.39,
+            "purchase_byn": 2020.8,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 109,
+            "article": "ClS-24-380",
+            "name": "Электрическая печь KARINA Classic Steam 24",
+            "retail_rub": 136200,
+            "purchase_rub": 102150,
+            "retail_byn": 4965.85,
+            "purchase_byn": 3724.39,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 110,
+            "article": "ClS-30-380",
+            "name": "Электрическая печь KARINA Classic Steam 30",
+            "retail_rub": 139200,
+            "purchase_rub": 104400,
+            "retail_byn": 5075.23,
+            "purchase_byn": 3806.42,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 111,
+            "article": "ClS-36-380",
+            "name": "Электрическая печь KARINA Classic Steam 36",
+            "retail_rub": 144600,
+            "purchase_rub": 108450,
+            "retail_byn": 5272.12,
+            "purchase_byn": 3954.09,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 112,
+            "article": "Ni-6-220\/380",
+            "name": "Электрическая печь KARINA Nika 6",
+            "retail_rub": 48700,
+            "purchase_rub": 36525,
+            "retail_byn": 1775.6,
+            "purchase_byn": 1331.7,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 113,
+            "article": "Ni-6E-220\/380",
+            "name": "Электрическая печь KARINA Nika 6E",
+            "retail_rub": 45400,
+            "purchase_rub": 34050,
+            "retail_byn": 1655.28,
+            "purchase_byn": 1241.46,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 114,
+            "article": "Ni-8-220\/380",
+            "name": "Электрическая печь KARINA Nika 8",
+            "retail_rub": 49800,
+            "purchase_rub": 37350,
+            "retail_byn": 1815.71,
+            "purchase_byn": 1361.78,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 115,
+            "article": "Ni-8E-220\/380",
+            "name": "Электрическая печь KARINA Nika 8E",
+            "retail_rub": 47700,
+            "purchase_rub": 35775,
+            "retail_byn": 1739.14,
+            "purchase_byn": 1304.36,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 116,
+            "article": "Ni-10E-380",
+            "name": "Электрическая печь KARINA Nika 10E",
+            "retail_rub": 51300,
+            "purchase_rub": 38475,
+            "retail_byn": 1870.4,
+            "purchase_byn": 1402.8,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 117,
+            "article": "Ni-12E-380",
+            "name": "Электрическая печь KARINA Nika 12E",
+            "retail_rub": 53700,
+            "purchase_rub": 40275,
+            "retail_byn": 1957.9,
+            "purchase_byn": 1468.43,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 118,
+            "article": "Ni-15E-380",
+            "name": "Электрическая печь KARINA Nika 15E",
+            "retail_rub": 79100,
+            "purchase_rub": 59325,
+            "retail_byn": 2883.99,
+            "purchase_byn": 2162.99,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 119,
+            "article": "Ni-18E-380",
+            "name": "Электрическая печь KARINA Nika 18E",
+            "retail_rub": 82000,
+            "purchase_rub": 61500,
+            "retail_byn": 2989.72,
+            "purchase_byn": 2242.29,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 120,
+            "article": "Ni-21E-380",
+            "name": "Электрическая печь KARINA Nika 21E",
+            "retail_rub": 84700,
+            "purchase_rub": 63525,
+            "retail_byn": 3088.16,
+            "purchase_byn": 2316.12,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 121,
+            "article": "Cli-6-220\/380",
+            "name": "Электрическая печь KARINA Clio 6",
+            "retail_rub": 83100,
+            "purchase_rub": 62325,
+            "retail_byn": 3029.83,
+            "purchase_byn": 2272.37,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 122,
+            "article": "Cli-8-220\/380",
+            "name": "Электрическая печь KARINA Clio 8",
+            "retail_rub": 88000,
+            "purchase_rub": 66000,
+            "retail_byn": 3208.48,
+            "purchase_byn": 2406.36,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 123,
+            "article": "Cli-10-380",
+            "name": "Электрическая печь KARINA Clio 10",
+            "retail_rub": 93300,
+            "purchase_rub": 69975,
+            "retail_byn": 3401.72,
+            "purchase_byn": 2551.29,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 124,
+            "article": "Cli-12-380",
+            "name": "Электрическая печь KARINA Clio 12",
+            "retail_rub": 97800,
+            "purchase_rub": 73350,
+            "retail_byn": 3565.79,
+            "purchase_byn": 2674.34,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 125,
+            "article": "Fo-6-220\/380-OG",
+            "name": "Электрическая печь KARINA Forta 6 Онего Грин",
+            "retail_rub": 96100,
+            "purchase_rub": 72075,
+            "retail_byn": 3503.81,
+            "purchase_byn": 2627.85,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 126,
+            "article": "Fo-8-220\/380-OG",
+            "name": "Электрическая печь KARINA Forta 8 Онего Грин",
+            "retail_rub": 98500,
+            "purchase_rub": 73875,
+            "retail_byn": 3591.31,
+            "purchase_byn": 2693.48,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 127,
+            "article": "Fo-10-380-OG",
+            "name": "Электрическая печь KARINA Forta 10 Онего Грин",
+            "retail_rub": 110500,
+            "purchase_rub": 82875,
+            "retail_byn": 4028.83,
+            "purchase_byn": 3021.62,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 128,
+            "article": "Fo-12-380-OG",
+            "name": "Электрическая печь KARINA Forta 12 Онего Грин",
+            "retail_rub": 112800,
+            "purchase_rub": 84600,
+            "retail_byn": 4112.69,
+            "purchase_byn": 3084.52,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 129,
+            "article": "Fo-15-380-OG",
+            "name": "Электрическая печь KARINA Forta 15 Онего Грин",
+            "retail_rub": 148500,
+            "purchase_rub": 111375,
+            "retail_byn": 5414.31,
+            "purchase_byn": 4060.73,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 130,
+            "article": "Fo-18-380-OG",
+            "name": "Электрическая печь KARINA Forta 18 Онего Грин",
+            "retail_rub": 151200,
+            "purchase_rub": 113400,
+            "retail_byn": 5512.75,
+            "purchase_byn": 4134.56,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 131,
+            "article": "Fo-21-380-OG",
+            "name": "Электрическая печь KARINA Forta 21 Онего Грин",
+            "retail_rub": 154000,
+            "purchase_rub": 115500,
+            "retail_byn": 5614.84,
+            "purchase_byn": 4211.13,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 132,
+            "article": "Fo-6-220\/380-A",
+            "name": "Электрическая печь KARINA Forta 6 Амфиболит",
+            "retail_rub": 89800,
+            "purchase_rub": 67350,
+            "retail_byn": 3274.11,
+            "purchase_byn": 2455.58,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 133,
+            "article": "Fo-8-220\/380-A",
+            "name": "Электрическая печь KARINA Forta 8 Амфиболит",
+            "retail_rub": 90700,
+            "purchase_rub": 68025,
+            "retail_byn": 3306.92,
+            "purchase_byn": 2480.19,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 134,
+            "article": "Fo-10-380-A",
+            "name": "Электрическая печь KARINA Forta 10 Амфиболит",
+            "retail_rub": 96500,
+            "purchase_rub": 72375,
+            "retail_byn": 3518.39,
+            "purchase_byn": 2638.79,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 135,
+            "article": "Fo-12-380-A",
+            "name": "Электрическая печь KARINA Forta 12 Амфиболит",
+            "retail_rub": 99500,
+            "purchase_rub": 74625,
+            "retail_byn": 3627.77,
+            "purchase_byn": 2720.83,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 136,
+            "article": "Fo-15-380-A",
+            "name": "Электрическая печь KARINA Forta 15 Амфиболит",
+            "retail_rub": 129400,
+            "purchase_rub": 97050,
+            "retail_byn": 4717.92,
+            "purchase_byn": 3538.44,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 137,
+            "article": "Fo-18-380-A",
+            "name": "Электрическая печь KARINA Forta 18 Амфиболит",
+            "retail_rub": 136800,
+            "purchase_rub": 102600,
+            "retail_byn": 4987.73,
+            "purchase_byn": 3740.8,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 138,
+            "article": "Fo-21-380-A",
+            "name": "Электрическая печь KARINA Forta 21 Амфиболит",
+            "retail_rub": 139800,
+            "purchase_rub": 104850,
+            "retail_byn": 5097.11,
+            "purchase_byn": 3822.83,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 139,
+            "article": "No-6E-220\/380-B",
+            "name": "Электрическая печь KARINA Nova 6E Black",
+            "retail_rub": 50500,
+            "purchase_rub": 37875,
+            "retail_byn": 1841.23,
+            "purchase_byn": 1380.92,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 140,
+            "article": "No-8E-220\/380-B",
+            "name": "Электрическая печь KARINA Nova 8E Black",
+            "retail_rub": 52900,
+            "purchase_rub": 39675,
+            "retail_byn": 1928.73,
+            "purchase_byn": 1446.55,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 141,
+            "article": "No-6-220\/380-B",
+            "name": "Электрическая печь KARINA Nova 6 Black",
+            "retail_rub": 53800,
+            "purchase_rub": 40350,
+            "retail_byn": 1961.55,
+            "purchase_byn": 1471.16,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 142,
+            "article": "No-8-220\/380-B",
+            "name": "Электрическая печь KARINA Nova 8 Black",
+            "retail_rub": 55100,
+            "purchase_rub": 41325,
+            "retail_byn": 2008.95,
+            "purchase_byn": 1506.71,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 143,
+            "article": "No-10E-380-B",
+            "name": "Электрическая печь KARINA Nova 10E Black",
+            "retail_rub": 56300,
+            "purchase_rub": 42225,
+            "retail_byn": 2052.7,
+            "purchase_byn": 1539.52,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 144,
+            "article": "No-12E-380-B",
+            "name": "Электрическая печь KARINA Nova 12E Black",
+            "retail_rub": 58600,
+            "purchase_rub": 43950,
+            "retail_byn": 2136.56,
+            "purchase_byn": 1602.42,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 145,
+            "article": "No-15E-380-B",
+            "name": "Электрическая печь KARINA Nova 15E Black",
+            "retail_rub": 87800,
+            "purchase_rub": 65850,
+            "retail_byn": 3201.19,
+            "purchase_byn": 2400.89,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 146,
+            "article": "No-18E-380-B",
+            "name": "Электрическая печь KARINA Nova 18E Black",
+            "retail_rub": 90600,
+            "purchase_rub": 67950,
+            "retail_byn": 3303.28,
+            "purchase_byn": 2477.46,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 147,
+            "article": "No-21E-380-B",
+            "name": "Электрическая печь KARINA Nova 21E Black",
+            "retail_rub": 93300,
+            "purchase_rub": 69975,
+            "retail_byn": 3401.72,
+            "purchase_byn": 2551.29,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 148,
+            "article": "Ni-6-220\/380-B",
+            "name": "Электрическая печь KARINA Nika 6 Black",
+            "retail_rub": 54700,
+            "purchase_rub": 41025,
+            "retail_byn": 1994.36,
+            "purchase_byn": 1495.77,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 149,
+            "article": "Ni-6E-220\/380-B",
+            "name": "Электрическая печь KARINA Nika 6E Black",
+            "retail_rub": 51500,
+            "purchase_rub": 38625,
+            "retail_byn": 1877.69,
+            "purchase_byn": 1408.27,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 150,
+            "article": "Ni-8-220\/380-B",
+            "name": "Электрическая печь KARINA Nika 8 Black",
+            "retail_rub": 55900,
+            "purchase_rub": 41925,
+            "retail_byn": 2038.11,
+            "purchase_byn": 1528.59,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 151,
+            "article": "Ni-8E-220\/380-B",
+            "name": "Электрическая печь KARINA Nika 8E Black",
+            "retail_rub": 54900,
+            "purchase_rub": 41175,
+            "retail_byn": 2001.65,
+            "purchase_byn": 1501.24,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 152,
+            "article": "Ni-10E-380-B",
+            "name": "Электрическая печь KARINA Nika 10E Black",
+            "retail_rub": 57300,
+            "purchase_rub": 42975,
+            "retail_byn": 2089.16,
+            "purchase_byn": 1566.87,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 153,
+            "article": "Ni-12E-380-B",
+            "name": "Электрическая печь KARINA Nika 12E Black",
+            "retail_rub": 59700,
+            "purchase_rub": 44775,
+            "retail_byn": 2176.66,
+            "purchase_byn": 1632.5,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 154,
+            "article": "Ni-15E-380-B",
+            "name": "Электрическая печь KARINA Nika 15E Black",
+            "retail_rub": 88800,
+            "purchase_rub": 66600,
+            "retail_byn": 3237.65,
+            "purchase_byn": 2428.24,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 155,
+            "article": "Ni-18E-380-B",
+            "name": "Электрическая печь KARINA Nika 18E Black",
+            "retail_rub": 91500,
+            "purchase_rub": 68625,
+            "retail_byn": 3336.09,
+            "purchase_byn": 2502.07,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        },
+        {
+            "row": 156,
+            "article": "Ni-21E-380-B",
+            "name": "Электрическая печь KARINA Nika 21E Black",
+            "retail_rub": 94400,
+            "purchase_rub": 70800,
+            "retail_byn": 3441.82,
+            "purchase_byn": 2581.37,
+            "existing_product_ids": [],
+            "blocked_reasons": [],
+            "eligible_for_hidden_creation_review": true
+        }
+    ],
     "catalog_duplicate_names": {
         "электрическая печь karina nova 6e": [
             11267,
@@ -4362,6 +6823,8 @@
         "unmatched": 118,
         "duplicate_articles": 2,
         "duplicate_names": 0,
-        "shared_targets": 0
+        "shared_targets": 0,
+        "eligible_for_hidden_creation_review": 116,
+        "creation_blocked": 24
     }
 }
