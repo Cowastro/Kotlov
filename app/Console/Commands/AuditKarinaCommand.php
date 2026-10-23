@@ -29,8 +29,9 @@ class AuditKarinaCommand extends Command
 
         $workbook = $audit->inspect($path);
         $products = Product::query()
-            ->where(function ($query): void {
+            ->where(function ($query) use ($workbook): void {
                 $query->where('name', 'like', '%KARINA%')
+                    ->orWhereIn('sku', array_values(array_filter(array_column($workbook['items'], 'article'))))
                     ->orWhere('name', 'like', '%КАРИНА%')
                     ->orWhereHas('brand', fn ($brand) => $brand->where('name', 'like', '%KARINA%')->orWhere('name', 'like', '%КАРИНА%'));
             })
@@ -67,6 +68,8 @@ class AuditKarinaCommand extends Command
             ],
             'workbook' => $workbook, 'suppliers' => $suppliers, 'products' => $products,
             'supplier_links' => $links, 'existing_mappings' => $mappings, 'items' => $items,
+            'catalog_duplicate_names' => collect($products)->groupBy(fn ($p) => $audit->normalize($p['name']))->filter(fn ($group) => $group->count() > 1)->map(fn ($group) => $group->pluck('id')->all())->all(),
+            'catalog_duplicate_skus' => collect($products)->filter(fn ($p) => trim((string) $p['sku']) !== '')->groupBy(fn ($p) => $audit->normalize((string) $p['sku']))->filter(fn ($group) => $group->count() > 1)->map(fn ($group) => $group->pluck('id')->all())->all(),
             'summary' => [
                 'products' => count($products), 'items' => count($items),
                 'exact_candidates' => count(array_filter($items, fn ($row) => $row['match_status'] === 'exact_candidate')),
