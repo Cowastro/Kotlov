@@ -292,12 +292,8 @@ class CheckoutController extends Controller
                 }
             }
 
-            $discountBase = $lockedCoupon && $couponService->isOnlineOrderDiscountCode($lockedCoupon->code)
-                ? $couponService->onlineOrderDiscountSubtotal($cart)
-                : $subtotal;
-            $discount = $lockedCoupon
-                ? min($discountBase, round($lockedCoupon->calculateDiscount($discountBase), 2))
-                : 0.0;
+            $finalQuote = $couponService->quoteForCart($lockedCoupon?->code, $cart);
+            $discount = $finalQuote['discount'];
             $total = round($subtotal - $discount + $deliveryPrice, 2);
 
             $order = Order::create([
@@ -327,6 +323,13 @@ class CheckoutController extends Controller
                 'subtotal' => $subtotal,
                 'coupon_code' => $coupon['code'],
                 'discount' => $discount,
+                'promotion_breakdown' => [
+                    'online_order_discount' => $finalQuote['coupon_discount'],
+                    'chimney_bundle_discount' => $finalQuote['bundle_discount'],
+                    'chimney_bundle_percent' => $finalQuote['bundle']['percent'],
+                    'chimney_product_ids' => $finalQuote['bundle']['chimney_product_ids'],
+                    'equipment_product_ids' => $finalQuote['bundle']['equipment_product_ids'],
+                ],
                 'total' => $total,
 
                 // comment: что пользователь написал в форме; если поле пустое — null

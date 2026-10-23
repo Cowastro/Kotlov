@@ -409,13 +409,15 @@
                             </ul>
 
                             {{-- Промокод --}}
-                            @if ($coupon['valid'])
+                            @if ($coupon['valid'] || $coupon['bundle']['active'])
                                 <div class="mt-16 mb-8" id="checkout-coupon-summary"
-                                    @if ($onlineOrderDiscountExcludedByPayment) style="display:none" @endif>
+                                    @if ($onlineOrderDiscountExcludedByPayment && ! $coupon['bundle']['active']) style="display:none" @endif>
                                     <p class="text-caption-01 cl-text-2">
-                                        Промокод:
-                                        <strong class="text-primary">{{ $coupon['code'] }}</strong>
-                                        — скидка {{ number_format($coupon['discount'], 2, '.', ' ') }} BYN
+                                        @if ($coupon['bundle']['active'])
+                                            Комплектная скидка на дымоход −{{ number_format($coupon['bundle']['percent'], 0) }}% применена автоматически.
+                                        @else
+                                            Онлайн-скидка применена автоматически.
+                                        @endif
                                     </p>
                                 </div>
                             @endif
@@ -425,7 +427,7 @@
                                 use App\Http\Controllers\CheckoutController;
                                 $selectedDelivery = old('delivery_type', 'courier');
                                 $deliveryCost     = CheckoutController::calcDelivery($selectedDelivery, $subtotal);
-                                $effectiveDiscount = $onlineOrderDiscountExcludedByPayment ? 0 : $coupon['discount'];
+                                $effectiveDiscount = ($onlineOrderDiscountExcludedByPayment ? 0 : $coupon['coupon_discount']) + $coupon['bundle_discount'];
                                 $total            = $subtotal - $effectiveDiscount + ($deliveryCost ?? 0);
                             @endphp
                             <ul class="list-total mt-20">
@@ -433,11 +435,17 @@
                                     <span>Товаров ({{ array_sum(array_column($cart, 'quantity')) }} шт.):</span>
                                     <span>{{ number_format($subtotal, 2, '.', ' ') }} BYN</span>
                                 </li>
-                                @if ($coupon['valid'])
+                                @if ($coupon['coupon_discount'] > 0)
                                     <li class="total-item lh-24 fw-medium" id="checkout-discount-row"
                                         @if ($onlineOrderDiscountExcludedByPayment) style="display:none" @endif>
-                                        <span>Скидка {{ $coupon['code'] }}:</span>
-                                        <span>−{{ number_format($coupon['discount'], 2, '.', ' ') }} BYN</span>
+                                        <span>Онлайн-скидка −3%:</span>
+                                        <span>−{{ number_format($coupon['coupon_discount'], 2, '.', ' ') }} BYN</span>
+                                    </li>
+                                @endif
+                                @if ($coupon['bundle_discount'] > 0)
+                                    <li class="total-item lh-24 fw-medium">
+                                        <span>Дымоход с оборудованием −{{ number_format($coupon['bundle']['percent'], 0) }}%:</span>
+                                        <span>−{{ number_format($coupon['bundle_discount'], 2, '.', ' ') }} BYN</span>
                                     </li>
                                 @endif
                                 <li class="total-item lh-24 fw-medium">
@@ -480,7 +488,8 @@
     // ── Конфиг доставки из PHP (price: null = уточняется, 0 = бесплатно) ──
     var deliveryMethods = @json(collect(config('shop.checkout_delivery_methods', []))->mapWithKeys(fn($k) => [$k => config("shop.delivery_methods.$k")])->filter());
     var subtotal = {{ (float) $subtotal }};
-    var discount = {{ (float) $coupon['discount'] }};
+    var couponDiscount = {{ (float) $coupon['coupon_discount'] }};
+    var bundleDiscount = {{ (float) $coupon['bundle_discount'] }};
     var onlineOrderDiscountCoupon = @json($onlineOrderDiscountCoupon);
 
     // ── Показ/скрытие полей адреса при самовывозе ──
@@ -511,7 +520,7 @@
     }
 
     function effectiveDiscount() {
-        return onlineOrderDiscountCoupon && installmentSelected() ? 0 : discount;
+        return (onlineOrderDiscountCoupon && installmentSelected() ? 0 : couponDiscount) + bundleDiscount;
     }
 
     function calcDelivery(key) {
@@ -556,7 +565,7 @@
     var invoiceFields = document.getElementById('invoice-fields');
     function updatePaymentDiscount() {
         var hideOnlineDiscount = onlineOrderDiscountCoupon && installmentSelected();
-        if (couponSummaryEl) couponSummaryEl.style.display = hideOnlineDiscount ? 'none' : '';
+        if (couponSummaryEl) couponSummaryEl.style.display = hideOnlineDiscount && bundleDiscount <= 0 ? 'none' : '';
         if (discountRowEl) discountRowEl.style.display = hideOnlineDiscount ? 'none' : '';
         updateTotals();
     }

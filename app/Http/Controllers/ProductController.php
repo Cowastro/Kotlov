@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Services\HeatPumpProductPresenter;
+use App\Services\ChimneyBundlePromotion;
 use App\Services\ProductPopularityService;
 use App\Services\ProductVariantSelector;
 use App\Services\SeoMetadataBuilder;
@@ -90,6 +91,12 @@ class ProductController extends Controller
             ->inRandomOrder()
             ->limit(8)
             ->get();
+
+        $chimneyPromotion = app(ChimneyBundlePromotion::class);
+        $showsChimneyOffer = $chimneyPromotion->productIsEligibleEquipment($product);
+        $chimneyProducts = $showsChimneyOffer
+            ? $chimneyPromotion->recommendedChimneys(8)
+            : collect();
 
         $analogProducts = $product->analogProducts()
             ->orderable()
@@ -344,6 +351,8 @@ class ProductController extends Controller
             'product',
             'attributeValues',
             'relatedProducts',
+            'showsChimneyOffer',
+            'chimneyProducts',
             'analogProducts',
             'reviews',
             'title',

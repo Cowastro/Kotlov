@@ -50,6 +50,7 @@
                                         @php
                                             $productUrl = '/' . $item['category_slug'] . '/' . $item['slug'];
                                             $itemTotal  = round($item['price'] * $item['quantity'], 2);
+                                            $bundleLineDiscount = (float) ($coupon['bundle']['line_discounts'][$item['id']] ?? 0);
                                         @endphp
                                         {{-- НЕТ each-prd — иначе Amerce перезапишет цену в USD --}}
                                         <tr class="tf-cart_item kotlov-cart-row"
@@ -85,6 +86,11 @@
                                                             @endif
                                                         </p>
                                                     @endif
+                                                    @if ($bundleLineDiscount > 0)
+                                                        <p class="text-caption-01 mb-4" style="color:#c63c32;font-weight:700;">
+                                                            Дымоход в комплекте −{{ number_format($coupon['bundle']['percent'], 0) }}%
+                                                        </p>
+                                                    @endif
                                                     <form action="{{ route('cart.remove') }}" method="POST"
                                                         class="d-inline">
                                                         @csrf
@@ -101,6 +107,11 @@
                                             <td class="cart_price fw-semibold text-primary"
                                                 data-price="{{ $item['price'] }}">
                                                 {{ number_format($item['price'], 2, '.', ' ') }} BYN
+                                                @if ($bundleLineDiscount > 0)
+                                                    <small class="d-block fw-semibold" style="color:#c63c32;">
+                                                        {{ number_format(($itemTotal - $bundleLineDiscount) / max(1, $item['quantity']), 2, '.', ' ') }} BYN со скидкой
+                                                    </small>
+                                                @endif
                                                 @if (($item['pricing_type'] ?? null) === 'b2b')
                                                     <small class="d-block cl-text-2 fw-normal">
                                                         Партнёрская цена
@@ -170,10 +181,14 @@
                                     </span>
                                 </div>
 
-                                <div id="cart-coupon-summary" @if (! $coupon['valid']) style="display:none" @endif>
-                                    <div class="d-flex justify-content-between align-items-center mb-12">
-                                        <p class="fw-medium lh-24 mb-0">Скидка <span id="cart-coupon-code">{{ $coupon['code'] }}</span>:</p>
-                                        <span class="fw-semibold" id="cart-discount">−{{ number_format($coupon['discount'], 2, '.', ' ') }} BYN</span>
+                                <div id="cart-coupon-summary" @if ($coupon['discount'] <= 0) style="display:none" @endif>
+                                    <div id="cart-online-discount-row" class="d-flex justify-content-between align-items-center mb-12" @if ($coupon['coupon_discount'] <= 0) style="display:none" @endif>
+                                        <p class="fw-medium lh-24 mb-0">Онлайн-скидка −3%:</p>
+                                        <span class="fw-semibold" id="cart-online-discount">−{{ number_format($coupon['coupon_discount'], 2, '.', ' ') }} BYN</span>
+                                    </div>
+                                    <div id="cart-bundle-discount-row" class="d-flex justify-content-between align-items-center mb-12" @if ($coupon['bundle_discount'] <= 0) style="display:none" @endif>
+                                        <p class="fw-medium lh-24 mb-0">Дымоход с оборудованием −{{ number_format($coupon['bundle']['percent'], 0) }}%:</p>
+                                        <span class="fw-semibold" id="cart-bundle-discount">−{{ number_format($coupon['bundle_discount'], 2, '.', ' ') }} BYN</span>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center mb-20">
                                         <p class="fw-semibold lh-24 mb-0">Итого со скидкой:</p>
@@ -185,6 +200,13 @@
                                     <div class="online-order-cart-note mb-20">
                                         <strong>Онлайн-скидка применена автоматически</strong>
                                         <p class="text-caption-01 cl-text-2 mt-4 mb-0">Онлайн-скидка применяется к участвующим в предложении товарам. Тепловые насосы не участвуют. Ничего вводить не нужно.</p>
+                                    </div>
+                                @endif
+
+                                @if ($coupon['bundle']['active'])
+                                    <div class="online-order-cart-note mb-20">
+                                        <strong>Скидка на дымоход применена</strong>
+                                        <p class="text-caption-01 cl-text-2 mt-4 mb-0">Печь, камин или котёл и участвующие комплектующие находятся в одной корзине. На дымоход действует −{{ number_format($coupon['bundle']['percent'], 0) }}%.</p>
                                     </div>
                                 @endif
 
@@ -295,6 +317,14 @@
             if (couponSummary) couponSummary.style.display = parseFloat(data.discount) > 0 ? '' : 'none';
             var discount = document.getElementById('cart-discount');
             if (discount) discount.textContent = '−' + formatBYN(data.discount);
+            var onlineRow = document.getElementById('cart-online-discount-row');
+            if (onlineRow) onlineRow.style.display = parseFloat(data.coupon_discount) > 0 ? '' : 'none';
+            var onlineDiscount = document.getElementById('cart-online-discount');
+            if (onlineDiscount) onlineDiscount.textContent = '−' + formatBYN(data.coupon_discount);
+            var bundleRow = document.getElementById('cart-bundle-discount-row');
+            if (bundleRow) bundleRow.style.display = parseFloat(data.bundle_discount) > 0 ? '' : 'none';
+            var bundleDiscount = document.getElementById('cart-bundle-discount');
+            if (bundleDiscount) bundleDiscount.textContent = '−' + formatBYN(data.bundle_discount);
             var total = document.getElementById('cart-total');
             if (total) total.textContent = formatBYN(data.total);
             updateHeaderCount(data.count);

@@ -1301,6 +1301,31 @@
         @include('partials.xo-controller-feature')
     @endif
 
+    @if (($showsChimneyOffer ?? false) && $chimneyProducts->isNotEmpty())
+        <section class="flat-spacing chimney-product-offer">
+            <div class="container">
+                <div class="chimney-product-offer__head">
+                    <div>
+                        <span class="chimney-product-offer__eyebrow">Комплект выгоднее</span>
+                        <h3 class="s-title mb-8">Дымоход со скидкой −{{ number_format(config('shop.chimney_bundle_discount.percent', 10), 0) }}%</h3>
+                        <p>Добавьте эту модель и любые комплектующие дымохода в одну корзину — скидка применится автоматически.</p>
+                    </div>
+                    <a class="tf-btn animate-btn" href="{{ route('chimney-selector', ['equipment' => $product->id]) }}">Подобрать дымоход</a>
+                </div>
+                <div dir="ltr" class="swiper tf-swiper" data-preview="4" data-tablet="3" data-mobile-sm="2" data-mobile="1" data-space-lg="30" data-space-md="20" data-space="10">
+                    <div class="swiper-wrapper">
+                        @foreach ($chimneyProducts as $chimneyProduct)
+                            <div class="swiper-slide">
+                                @include('partials.product-card', ['product' => $chimneyProduct, 'chimneyBundlePercent' => config('shop.chimney_bundle_discount.percent', 10)])
+                            </div>
+                        @endforeach
+                    </div>
+                    <div class="sw-dot-default tf-sw-pagination"></div>
+                </div>
+            </div>
+        </section>
+    @endif
+
     {{-- Похожие товары --}}
     @if ($relatedProducts->count() > 0)
         <section class="flat-spacing">
@@ -1331,6 +1356,7 @@
 <link rel="stylesheet" href="{{ asset('css/product-description-faq.css') }}">
 @endif
 <style>
+.chimney-product-offer{background:#f7f7f5}.chimney-product-offer__head{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:28px}.chimney-product-offer__head p{max-width:720px;margin:0;color:var(--text-2)}.chimney-product-offer__eyebrow{display:block;margin-bottom:8px;color:#c63c32;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}@media(max-width:767px){.chimney-product-offer__head{align-items:stretch;flex-direction:column}.chimney-product-offer__head .tf-btn{width:100%}}
 .product-model-selector__title {
     margin: 0 0 8px;
     color: var(--main);

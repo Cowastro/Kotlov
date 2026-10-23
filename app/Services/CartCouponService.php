@@ -7,6 +7,8 @@ use App\Models\Product;
 
 class CartCouponService
 {
+    public function __construct(private readonly ChimneyBundlePromotion $chimneyBundlePromotion) {}
+
     /**
      * @return array{code: ?string, coupon: ?Coupon, discount: float, total: float, valid: bool}
      */
@@ -41,11 +43,22 @@ class CartCouponService
     public function quoteForCart(?string $code, array $items): array
     {
         $subtotal = $this->subtotal($items);
+        $bundle = $this->chimneyBundlePromotion->quote($items);
         $discountBase = $this->isOnlineOrderDiscountCode($code)
-            ? $this->onlineOrderDiscountSubtotal($items)
+            ? max(0, $this->onlineOrderDiscountSubtotal($items) - $bundle['eligible_subtotal'])
             : $subtotal;
 
-        return $this->quote($code, $subtotal, $discountBase);
+        $coupon = $this->quote($code, $subtotal, $discountBase);
+        $couponDiscount = $coupon['discount'];
+        $discount = round($couponDiscount + $bundle['discount'], 2);
+
+        return array_merge($coupon, [
+            'coupon_discount' => $couponDiscount,
+            'bundle_discount' => $bundle['discount'],
+            'bundle' => $bundle,
+            'discount' => $discount,
+            'total' => round(max(0, $subtotal - $discount), 2),
+        ]);
     }
 
     public function onlineOrderDiscountSubtotal(array $items): float

@@ -170,6 +170,8 @@ class CartController extends Controller
                 'count' => $this->totalQty($cart),
                 'subtotal' => $subtotal,
                 'discount' => $coupon['discount'],
+                'coupon_discount' => $coupon['coupon_discount'],
+                'bundle_discount' => $coupon['bundle_discount'],
                 'total' => $coupon['total'],
             ]);
         }
@@ -249,6 +251,8 @@ class CartController extends Controller
                 'count' => $this->totalQty($cart),
                 'subtotal' => $subtotal,
                 'discount' => $coupon['discount'],
+                'coupon_discount' => $coupon['coupon_discount'],
+                'bundle_discount' => $coupon['bundle_discount'],
                 'total' => $coupon['total'],
                 'item_total' => isset($cart[$id])
                     ? round($cart[$id]['price'] * $cart[$id]['quantity'], 2)
@@ -294,6 +298,8 @@ class CartController extends Controller
                 'count' => $this->totalQty($cart),
                 'subtotal' => $subtotal,
                 'discount' => $coupon['discount'],
+                'coupon_discount' => $coupon['coupon_discount'],
+                'bundle_discount' => $coupon['bundle_discount'],
                 'total' => $coupon['total'],
             ]);
         }
@@ -333,6 +339,8 @@ class CartController extends Controller
             'count' => $this->totalQty($items),
             'subtotal' => $subtotal,
             'discount' => $coupon['discount'],
+            'coupon_discount' => $coupon['coupon_discount'],
+            'bundle_discount' => $coupon['bundle_discount'],
             'total' => $coupon['total'],
             'threshold' => $threshold,
             'remaining' => $remaining,
@@ -413,6 +421,8 @@ class CartController extends Controller
                 'message' => 'Промокод применён. Скидка '.number_format($coupon['discount'], 2, '.', ' ').' BYN.',
                 'coupon' => $coupon['code'],
                 'discount' => $coupon['discount'],
+                'coupon_discount' => $coupon['coupon_discount'],
+                'bundle_discount' => $coupon['bundle_discount'],
                 'total' => $coupon['total'],
             ]);
         }

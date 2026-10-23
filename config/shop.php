@@ -1,6 +1,30 @@
 <?php
 
 return [
+    'chimney_bundle_discount' => [
+        'enabled' => true,
+        'percent' => 10,
+        'chimney_category_slugs' => [
+            'dymohody', 'dymoxody-dlya-pechej', 'dymoxody-dlya-bani',
+            'dymoxody-dlya-kaminov', 'prochie-dymohod', 'dymohody-nerzhaveyushchie',
+            'koaxial-dymoxod', 'shibery-dymohod', 'kondensatootvody',
+            'krepleniya-dymohod', 'zonty-deflektory', 'teplosyomniki',
+            'perehody-adaptery-dymohod', 'zaglushki-dymohod', 'truby-mono',
+            'troyniki-mono', 'kolena-mono', 'truby-sendvich',
+            'troyniki-sendvich', 'kolena-sendvich',
+        ],
+        'equipment_category_slugs' => [
+            'kotly', 'kotly-otopleniya', 'gazovye', 'tverdotoplivnye',
+            'kaminy', 'topki', 'pechki', 'pechi', 'pechi-dlya-bani',
+            'pechi-kaminy', 'burzhuiki-pechi', 'dlya-dachi',
+            'peci-drovianye-otopitelnye', 'drovyanye-pechi-dlya-bani',
+            'drovianye-peci-bannye',
+        ],
+        'excluded_equipment_category_slugs' => [
+            'elektricheskie', 'elektrokamenki', 'elektrokamini',
+            'bio-kaminy', 'biokaminy', 'teplovyie-nasosyi', 'teplovye-nasosy',
+        ],
+    ],
 
     // Публичная выгода за самостоятельное оформление через корзину.
     'online_order_discount' => [

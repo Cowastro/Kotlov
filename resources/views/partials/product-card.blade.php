@@ -24,7 +24,8 @@
         && ! $product->requires_price_confirmation
         && $hasAssignedSupplier;
     $onlineDiscountPercent = (float) config('shop.online_order_discount.percent', 3);
-    $onlinePrice = ! $isB2bOffer && $canBuy && $product->qualifiesForOnlineOrderDiscount() && $hasVerifiedPublicPrice
+    $chimneyBundlePercent = isset($chimneyBundlePercent) ? (float) $chimneyBundlePercent : null;
+    $onlinePrice = ! $chimneyBundlePercent && ! $isB2bOffer && $canBuy && $product->qualifiesForOnlineOrderDiscount() && $hasVerifiedPublicPrice
         ? round((float) $product->price * (1 - $onlineDiscountPercent / 100), 2)
         : null;
     $onlineSaving = $onlinePrice !== null ? round((float) $product->price - $onlinePrice, 2) : null;
@@ -201,6 +202,9 @@
 
         @if ($onlinePrice !== null)
             <p class="online-order-card-price">Онлайн: {{ number_format($onlinePrice, 2, '.', ' ') }} BYN · экономия {{ number_format($onlineSaving, 2, '.', ' ') }} BYN</p>
+        @endif
+        @if ($chimneyBundlePercent && ! $isB2bOffer && $hasVerifiedPublicPrice)
+            <p class="online-order-card-price" style="color:#c63c32;font-weight:700;">С оборудованием: {{ number_format((float) $product->price * (1 - $chimneyBundlePercent / 100), 2, '.', ' ') }} BYN · −{{ number_format($chimneyBundlePercent, 0) }}%</p>
         @endif
 
         @if ($isB2bOffer)
