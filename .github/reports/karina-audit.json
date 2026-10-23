@@ -1,6 +1,6 @@
 {
     "schema": "karina-audit-v1",
-    "generated_at": "2026-10-23T13:28:25+00:00",
+    "generated_at": "2026-10-23T13:30:49+00:00",
     "mode": "read_only",
     "applied": false,
     "discount_percent": 25,
@@ -82,15 +82,7 @@
                     "name": 1,
                     "retail": 4
                 },
-                "excluded_rows": [
-                    31,
-                    43,
-                    48,
-                    68,
-                    85,
-                    100,
-                    103
-                ]
+                "excluded_rows": []
             }
         ]
     },
@@ -836,6 +828,21 @@
         },
         {
             "sheet": 0,
+            "row": 31,
+            "article": "Cl-7,5-220\/380",
+            "name": "Электрическая печь KARINA Classic 7,5",
+            "retail": 39900,
+            "purchase": 29925,
+            "missing_article": false,
+            "candidate_product_ids": [],
+            "duplicate_article": false,
+            "duplicate_name": false,
+            "match_status": "unmatched",
+            "match_method": null,
+            "shared_target": false
+        },
+        {
+            "sheet": 0,
             "row": 32,
             "article": "Cl-9-380",
             "name": "Электрическая печь KARINA Classic 9",
@@ -1009,6 +1016,21 @@
         },
         {
             "sheet": 0,
+            "row": 43,
+            "article": "Op-7,5-220\/380",
+            "name": "Электрическая печь KARINA Optima 7,5",
+            "retail": 38000,
+            "purchase": 28500,
+            "missing_article": false,
+            "candidate_product_ids": [],
+            "duplicate_article": false,
+            "duplicate_name": false,
+            "match_status": "unmatched",
+            "match_method": null,
+            "shared_target": false
+        },
+        {
+            "sheet": 0,
             "row": 44,
             "article": "Op-9-220\/380",
             "name": "Электрическая печь KARINA Optima 9",
@@ -1067,6 +1089,23 @@
             "duplicate_name": false,
             "match_status": "unmatched",
             "match_method": null,
+            "shared_target": false
+        },
+        {
+            "sheet": 0,
+            "row": 48,
+            "article": "Ops-7,5-220\/380",
+            "name": "Электрическая печь KARINA Optima Steam 7,5",
+            "retail": 46800,
+            "purchase": 35100,
+            "missing_article": false,
+            "candidate_product_ids": [
+                22251
+            ],
+            "duplicate_article": false,
+            "duplicate_name": false,
+            "match_status": "exact_candidate",
+            "match_method": "exact_name",
             "shared_target": false
         },
         {
@@ -1371,6 +1410,21 @@
         },
         {
             "sheet": 0,
+            "row": 68,
+            "article": "Qu-7,5-220\/380-T",
+            "name": "Электрическая печь KARINA Quadro 7,5 Талькохлорит",
+            "retail": 85600,
+            "purchase": 64200,
+            "missing_article": false,
+            "candidate_product_ids": [],
+            "duplicate_article": false,
+            "duplicate_name": false,
+            "match_status": "unmatched",
+            "match_method": null,
+            "shared_target": false
+        },
+        {
+            "sheet": 0,
             "row": 69,
             "article": "Qu-9-220\/380-T",
             "name": "Электрическая печь KARINA Quadro 9 mini Талькохлорит",
@@ -1613,6 +1667,21 @@
         },
         {
             "sheet": 0,
+            "row": 85,
+            "article": "Qu-7,5-220\/380-Z",
+            "name": "Электрическая печь KARINA Quadro 7,5 Змеевик",
+            "retail": 101100,
+            "purchase": 75825,
+            "missing_article": false,
+            "candidate_product_ids": [],
+            "duplicate_article": false,
+            "duplicate_name": false,
+            "match_status": "unmatched",
+            "match_method": null,
+            "shared_target": false
+        },
+        {
+            "sheet": 0,
             "row": 86,
             "article": "Qu-9-220\/380-Z",
             "name": "Электрическая печь KARINA Quadro 9 mini Змеевик",
@@ -1831,6 +1900,21 @@
         },
         {
             "sheet": 0,
+            "row": 100,
+            "article": "Ai-7,5-220\/380",
+            "name": "Электрическая печь KARINA Air 7,5",
+            "retail": 38200,
+            "purchase": 28650,
+            "missing_article": false,
+            "candidate_product_ids": [],
+            "duplicate_article": false,
+            "duplicate_name": false,
+            "match_status": "unmatched",
+            "match_method": null,
+            "shared_target": false
+        },
+        {
+            "sheet": 0,
             "row": 101,
             "article": "Ai-9-220\/380",
             "name": "Электрическая печь KARINA Air 9",
@@ -1853,6 +1937,21 @@
             "name": "Электрическая печь KARINA Classic Steam 6",
             "retail": 45100,
             "purchase": 33825,
+            "missing_article": false,
+            "candidate_product_ids": [],
+            "duplicate_article": false,
+            "duplicate_name": false,
+            "match_status": "unmatched",
+            "match_method": null,
+            "shared_target": false
+        },
+        {
+            "sheet": 0,
+            "row": 103,
+            "article": "ClS-7,5-220\/380",
+            "name": "Электрическая печь KARINA Classic Steam 7,5",
+            "retail": 46000,
+            "purchase": 34500,
             "missing_article": false,
             "candidate_product_ids": [],
             "duplicate_article": false,
@@ -2666,10 +2765,10 @@
     "catalog_duplicate_skus": [],
     "summary": {
         "products": 27,
-        "items": 133,
-        "exact_candidates": 20,
+        "items": 140,
+        "exact_candidates": 21,
         "ambiguous": 1,
-        "unmatched": 112,
+        "unmatched": 118,
         "duplicate_articles": 2,
         "duplicate_names": 0,
         "shared_targets": 0
