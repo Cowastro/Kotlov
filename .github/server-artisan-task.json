@@ -1,6 +1,6 @@
 {
-  "task": "apply-karina",
-  "artisan_args": "da4742d04fabde8ce46fbc09deb675691e396922",
+  "task": "audit-karina",
+  "artisan_args": "none",
   "log_file": "storage/logs/server-artisan.log",
-  "run_id": "karina-reviewed-apply-retry2-20261023"
+  "run_id": "karina-new-products-cross-catalog-audit-20261023"
 }
