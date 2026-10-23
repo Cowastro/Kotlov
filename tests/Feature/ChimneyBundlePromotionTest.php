@@ -79,6 +79,16 @@ class ChimneyBundlePromotionTest extends TestCase
             'name' => 'Труба сэндвич AISI 304 Ø115 мм',
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+        $metrePipe = Product::query()->create([
+            'category_id' => $chimney->category_id,
+            'name' => 'Труба Теплов и Сухов моно ТМ-Р L1000, 430, 0.8, Ø 120',
+            'slug' => 'test-l1000-430-08-d120',
+            'sku' => 'TEST-L1000-430-08-D120',
+            'price' => 100,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
 
         $this->get(route('chimney-selector', ['equipment' => $equipment->id]))
             ->assertOk()
@@ -96,6 +106,10 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSee('data-row-decrease', false)
             ->assertSee('data-row-increase', false)
             ->assertSee('data-row-remove', false)
+            ->assertSee('"id":'.$metrePipe->id.',"name":"Труба Теплов и Сухов моно ТМ-Р L1000, 430, 0.8, Ø 120"', false)
+            ->assertSee('"diameter":"120"', false)
+            ->assertSee('"thickness":"0.8"', false)
+            ->assertSee('"length_mm":1000', false)
             ->assertSeeText('Шибер')
             ->assertSeeText('Проходы через перекрытие (ППУ)')
             ->assertSeeText('Хомуты')

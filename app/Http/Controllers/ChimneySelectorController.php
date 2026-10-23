@@ -47,8 +47,8 @@ class ChimneySelectorController extends Controller
         $products = $products->merge($pipeSections)->unique('id')->values();
 
         $catalog = $products->map(function (Product $product): array {
-            $text = $product->name.' '.collect((array) $product->specs)->flatten()->implode(' ');
-            preg_match('/(?:Ø|диаметр[^0-9]{0,12})?(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*(?:мм)?/iu', $text, $diameter);
+            $text = $product->name.' '.json_encode((array) $product->specs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $diameter = $this->diameterFromText($text);
             preg_match('/(?:D|Ø)?\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*[\/]\s*(120|130|150|160|180|200|210|220|230|250|260|280|300|310|350)/iu', $text, $diameterPair);
             preg_match('/(?:AISI\s*)?(304|316|321|430)/iu', $text, $steel);
             preg_match('/(?:304|316|321|430)\s*[-,]\s*(0[.,][5-9]|1[.,]0)/iu', $text, $thickness);
@@ -61,7 +61,7 @@ class ChimneySelectorController extends Controller
                 'price' => (float) $product->price,
                 'image' => $product->image_url,
                 'url' => '/'.$slug.'/'.$product->slug,
-                'diameter' => $diameter[1] ?? null,
+                'diameter' => $diameter,
                 'outer_diameter' => $diameterPair[2] ?? null,
                 'diameter_pair' => isset($diameterPair[1], $diameterPair[2]) ? [$diameterPair[1], $diameterPair[2]] : null,
                 'steel' => $steel[1] ?? null,
@@ -126,9 +126,20 @@ class ChimneySelectorController extends Controller
 
     private function diameter(Product $product): ?string
     {
-        $text = $product->name.' '.collect((array) $product->specs)->flatten()->implode(' ');
-        preg_match('/(?:Ø|диаметр[^0-9]{0,12})?(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*(?:мм)?/iu', $text, $match);
+        $text = $product->name.' '.json_encode((array) $product->specs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        return $match[1] ?? null;
+        return $this->diameterFromText($text);
+    }
+
+    private function diameterFromText(string $text): ?string
+    {
+        if (preg_match('/(?:D|Ø|ф)\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\b/iu', $text, $match)) {
+            return $match[1];
+        }
+        if (preg_match('/диаметр[^0-9]{0,20}(80|100|110|115|120|130|140|150|160|180|200|250|300)\b/iu', $text, $match)) {
+            return $match[1];
+        }
+
+        return null;
     }
 }
