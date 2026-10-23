@@ -73,6 +73,7 @@ class DealByOrderCaptureTest extends TestCase
         $this->assertDatabaseHas('order_items', [
             'order_id' => $inbox->order_id,
             'product_sku' => 'test-product',
+            'price' => 125.50,
             'quantity' => 1,
         ]);
         $this->assertNotNull(MarketplaceSyncCursor::query()->where('channel', 'deal_by')->where('stream', 'orders')->first()?->last_succeeded_at);
@@ -119,6 +120,51 @@ class DealByOrderCaptureTest extends TestCase
         $requests = Http::recorded();
         $listRequests = collect($requests)->filter(fn (array $record): bool => $record[0]->method() === 'GET')->values();
         $this->assertSame('2026-10-19 07:45:00', $listRequests[1][0]['last_modified_from']);
+        Event::assertDispatched(NewOrderCreated::class, 1);
+    }
+
+    public function test_it_parses_deal_by_prices_with_currency_and_repairs_existing_order(): void
+    {
+        $formattedPayload = $this->orderPayload([
+            'price' => '505,40 BYN',
+            'full_price' => '515.40 BYN',
+            'delivery_cost' => '10 руб.',
+            'products' => [[
+                'id' => 111,
+                'sku' => 'test-product',
+                'name' => 'Тестовый товар',
+                'price' => '505,40 BYN',
+                'total_price' => '505.40 BYN',
+                'quantity' => 1,
+            ]],
+        ]);
+
+        Http::fake([
+            'https://my.deal.test/api/v1/orders/list*' => Http::sequence()
+                ->push(['orders' => [$this->orderPayload(['price' => 'Цена по запросу'])]])
+                ->push(['orders' => [$formattedPayload]]),
+            'https://my.deal.test/api/v1/orders/set_status' => Http::response([
+                'processed_ids' => [987654],
+            ]),
+        ]);
+
+        $this->artisan('deal:pull-orders')->assertSuccessful();
+        $this->assertDatabaseHas('order_items', ['price' => 0]);
+
+        Carbon::setTestNow('2026-10-19 08:03:00 UTC');
+        $this->artisan('deal:pull-orders')->assertSuccessful();
+
+        $this->assertDatabaseHas('order_items', [
+            'product_sku' => 'test-product',
+            'price' => 505.40,
+            'total' => 505.40,
+        ]);
+        $this->assertDatabaseHas('orders', [
+            'number' => 'DBY-987654',
+            'subtotal' => 505.40,
+            'delivery_price' => 10,
+            'total' => 515.40,
+        ]);
         Event::assertDispatched(NewOrderCreated::class, 1);
     }
 

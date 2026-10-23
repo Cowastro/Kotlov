@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Marketplaces\DealByMoney;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -54,7 +55,9 @@ class DealByOrderInbox extends Model
     {
         $value = data_get($this->payload, 'full_price', data_get($this->payload, 'price'));
 
-        return is_numeric($value) ? (float) $value : null;
+        $total = DealByMoney::parse($value);
+
+        return $total > 0 ? $total : null;
     }
 
     public function productsCount(): int

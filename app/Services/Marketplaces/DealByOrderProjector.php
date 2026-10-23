@@ -6,6 +6,7 @@ use App\Events\NewOrderCreated;
 use App\Models\DealByOrderInbox;
 use App\Models\Order;
 use App\Models\Product;
+use App\Support\Marketplaces\DealByMoney;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -49,13 +50,16 @@ class DealByOrderProjector
             $locked = DealByOrderInbox::query()->lockForUpdate()->findOrFail($inbox->id);
 
             if ($locked->order_id) {
+                $order = $locked->order()->firstOrFail();
+                $this->refreshPrices($order, $locked->payload);
+
                 $locked->forceFill([
                     'processing_status' => DealByOrderInbox::STATUS_PROCESSED,
                     'processed_at' => $locked->processed_at ?: now(),
                     'last_error' => null,
                 ])->save();
 
-                return $locked->order()->firstOrFail();
+                return $order->refresh();
             }
 
             $payload = $locked->payload;
@@ -209,7 +213,48 @@ class DealByOrderProjector
 
     private function number(mixed $value): float
     {
-        return is_numeric($value) ? (float) $value : 0.0;
+        return DealByMoney::parse($value);
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function refreshPrices(Order $order, array $payload): void
+    {
+        $products = collect(data_get($payload, 'products', []))
+            ->filter(fn (mixed $product): bool => is_array($product))
+            ->values();
+        $items = $order->items()->orderBy('id')->get();
+
+        foreach ($products as $index => $productPayload) {
+            $sku = $this->text($productPayload['sku'] ?? null);
+            $item = $sku
+                ? $items->first(fn ($candidate): bool => $candidate->product_sku === $sku)
+                : null;
+            $item ??= $items->get($index);
+
+            if (! $item) {
+                continue;
+            }
+
+            $quantity = max(1, (int) ($productPayload['quantity'] ?? 1));
+            $price = $this->number($productPayload['price'] ?? null);
+
+            $item->forceFill([
+                'price' => $price,
+                'quantity' => $quantity,
+                'total' => $this->lineTotal($productPayload) ?: $price * $quantity,
+            ])->save();
+        }
+
+        $subtotal = $products->sum(fn (array $product): float => $this->lineTotal($product));
+        $deliveryPrice = $this->number(data_get($payload, 'delivery_cost'));
+        $remoteTotal = $this->number(data_get($payload, 'full_price', data_get($payload, 'price')));
+
+        $order->forceFill([
+            'delivery_price' => $deliveryPrice,
+            'discount' => $this->number(data_get($payload, 'discount')),
+            'subtotal' => $subtotal,
+            'total' => $remoteTotal > 0 ? $remoteTotal : $subtotal + $deliveryPrice,
+        ])->saveQuietly();
     }
 
     private function text(mixed $value): ?string
