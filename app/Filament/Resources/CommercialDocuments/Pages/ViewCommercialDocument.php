@@ -293,7 +293,7 @@ class ViewCommercialDocument extends ViewRecord
                     ->color('success')
                     ->visible(fn (): bool => $this->record->type === 'quote')
                     ->modalHeading('Заполнить форму договора клиента')
-                    ->modalDescription('Загрузите DOCX. Система сохранит оригинал и рабочую копию, заменит только реквизиты Поставщика и служебные метки. Юридический текст клиента не переписывается.')
+                    ->modalDescription('Загрузите DOC или DOCX. Система сохранит оригинал и рабочую копию, заменит только реквизиты Поставщика и служебные метки. Юридический текст клиента не переписывается.')
                     ->modalSubmitActionLabel('Подготовить договор')
                     ->fillForm(fn (): array => [
                         'contract_date' => today(),
