@@ -154,6 +154,7 @@ class LegacyWordConverter
         $utf16Length = array_sum(array_map('mb_strlen', $utf16Paragraphs));
         $ansiLength = array_sum(array_map('mb_strlen', $ansiParagraphs));
         $paragraphs = $utf16Length >= $ansiLength ? $utf16Paragraphs : $ansiParagraphs;
+        $paragraphs = $this->addRecoveryPlaceholders($paragraphs);
         if (count($paragraphs) < 3 || array_sum(array_map('mb_strlen', $paragraphs)) < 150) {
             return false;
         }
@@ -218,31 +219,99 @@ class LegacyWordConverter
             'worddocument',
             'summaryinformation',
             'documentsummaryinformation',
+            'font style13',
         ], true);
+    }
+
+    /** @param array<int, string> $paragraphs @return array<int, string> */
+    private function addRecoveryPlaceholders(array $paragraphs): array
+    {
+        foreach ($paragraphs as $index => $paragraph) {
+            if (preg_match('/^ДОГОВОР(?:\s+ПОСТАВКИ)?\s*№\s*$/iu', $paragraph)) {
+                $paragraphs[$index] = rtrim($paragraph).' {{CONTRACT_NUMBER}}';
+
+                continue;
+            }
+
+            if (preg_match('/^\.\s*\d{4}\s*г\.?\s+г\.?\s*Минск$/iu', $paragraph)) {
+                $paragraphs[$index] = '{{CONTRACT_DATE}} г. Минск';
+
+                continue;
+            }
+
+            if (str_starts_with($paragraph, ',') && str_contains($paragraph, '«Поставщик»') && str_contains($paragraph, 'в лице')) {
+                $paragraphs[$index] = '{{SUPPLIER_SHORT_NAME}}, именуемое в дальнейшем «Поставщик», которое представляет {{SUPPLIER_REPRESENTATIVE}}';
+
+                continue;
+            }
+
+            if (preg_match('/^,\s*действующ(?:его|ей|ий)\s+на\s+основании\s+[^,]+(,.*)$/iu', $paragraph, $matches)) {
+                $paragraphs[$index] = ', действующий на основании {{SUPPLIER_AUTHORITY}}'.$matches[1];
+
+                continue;
+            }
+
+            if (preg_match('/сч[её]т-фактуре\s*№\s*$/iu', $paragraph)) {
+                $paragraphs[$index] = rtrim($paragraph).' {{QUOTE_NUMBER}}';
+
+                continue;
+            }
+
+            if (str_contains(mb_strtolower($paragraph), 'согласно счёт-фактуре')
+                && ! preg_match('/сч[её]т-фактуре\s*№/iu', $paragraph)) {
+                $paragraphs[$index] = preg_replace(
+                    '/сч[её]т-фактуре\s*$/iu',
+                    'счёт-фактуре № {{QUOTE_NUMBER}} от {{QUOTE_DATE}}',
+                    $paragraph,
+                ) ?? $paragraph;
+
+                continue;
+            }
+
+            if (preg_match('/^3\.3\.\s*Сумма\s+по\s+договору\s+составляет:\s*$/iu', $paragraph)) {
+                $paragraphs[$index] = rtrim($paragraph).' {{QUOTE_TOTAL}}';
+            }
+        }
+
+        return $paragraphs;
     }
 
     /** @param array<int, string> $paragraphs */
     private function documentXml(array $paragraphs): string
     {
         $body = '';
+        $supplierInserted = false;
         foreach ($paragraphs as $paragraph) {
+            if (! $supplierInserted && mb_strtolower(trim($paragraph)) === 'покупатель:') {
+                $body .= $this->supplierBlockXml();
+                $supplierInserted = true;
+            }
             $isHeading = mb_strlen($paragraph) < 100 && mb_strtoupper($paragraph) === $paragraph;
             $body .= '<w:p><w:pPr><w:spacing w:after="100" w:line="276" w:lineRule="auto"/>'
                 .($isHeading ? '<w:jc w:val="center"/>' : '<w:jc w:val="both"/>').'</w:pPr><w:r><w:rPr>'
                 .($isHeading ? '<w:b/>' : '').'<w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">'
                 .htmlspecialchars($paragraph, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</w:t></w:r></w:p>';
         }
-        $body .= '<w:p><w:r><w:t>{{SUPPLIER_NAME}}</w:t></w:r></w:p>'
+
+        if (! $supplierInserted) {
+            $body .= $this->supplierBlockXml();
+        }
+
+        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            .'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'.$body
+            .'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr>'
+            .'</w:body></w:document>';
+    }
+
+    private function supplierBlockXml(): string
+    {
+        return '<w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Поставщик:</w:t></w:r></w:p>'
+            .'<w:p><w:r><w:t>{{SUPPLIER_NAME}}</w:t></w:r></w:p>'
             .'<w:p><w:r><w:t>УНП {{SUPPLIER_UNP}}</w:t></w:r></w:p>'
             .'<w:p><w:r><w:t>{{SUPPLIER_ADDRESS}}</w:t></w:r></w:p>'
             .'<w:p><w:r><w:t>IBAN {{SUPPLIER_IBAN}}</w:t></w:r></w:p>'
             .'<w:p><w:r><w:t>{{SUPPLIER_BANK}}, BIC {{SUPPLIER_BIC}}</w:t></w:r></w:p>'
             .'<w:p><w:r><w:t>Тел.: {{SUPPLIER_PHONE}}, Email: {{SUPPLIER_EMAIL}}</w:t></w:r></w:p>'
             .'<w:p><w:r><w:t>________________ {{SUPPLIER_DIRECTOR}}</w:t></w:r></w:p>';
-
-        return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            .'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'.$body
-            .'<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr>'
-            .'</w:body></w:document>';
     }
 }

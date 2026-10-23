@@ -115,6 +115,62 @@ class ClientContractTemplateGenerator
         }
     }
 
+    public function regenerate(CommercialContract $contract): CommercialContract
+    {
+        $disk = Storage::disk('local');
+        $sourcePath = (string) $contract->source_template_path;
+        $generatedPath = (string) $contract->generated_docx_path;
+        if ($contract->template_mode !== 'client' || $sourcePath === '' || $generatedPath === '' || ! $disk->exists($sourcePath)) {
+            throw new RuntimeException('У договора отсутствует сохранённая форма клиента для повторной сборки.');
+        }
+
+        $sourceExtension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        $workingDocxPath = $disk->path($sourcePath);
+        $convertedPath = null;
+        $conversionMode = null;
+        if ($sourceExtension === 'doc') {
+            $conversion = $this->legacyWordConverter->convertToDocx($workingDocxPath);
+            $convertedPath = $conversion['path'];
+            $conversionMode = $conversion['mode'];
+            $workingDocxPath = $convertedPath;
+        }
+
+        try {
+            $this->assertValidDocx($workingDocxPath);
+            $contents = file_get_contents($workingDocxPath);
+            if (! is_string($contents) || ! $disk->put($generatedPath, $contents)) {
+                throw new RuntimeException('Не удалось обновить рабочую копию договора.');
+            }
+
+            $document = $contract->commercialDocument()->with(['items', 'clientCounterparty', 'clientContact'])->firstOrFail();
+            $seller = (array) ($contract->seller_snapshot ?: config('legal.commercial_documents', []));
+            $buyer = (array) ($contract->buyer_snapshot ?: $this->buyerSnapshot($document));
+            $report = $this->replaceInDocx(
+                $disk->path($generatedPath),
+                $this->replacements($contract, $document, $seller, $buyer),
+                $seller,
+                true,
+            );
+            $report['conversion_mode'] = $conversionMode;
+
+            if (($report['seller_replacements'] ?? 0) < 1) {
+                throw new RuntimeException('При повторной сборке не удалось заполнить реквизиты Поставщика.');
+            }
+
+            $contract->forceFill([
+                'content_checksum' => hash_file('sha256', $disk->path($generatedPath)) ?: null,
+                'terms_snapshot' => array_merge((array) $contract->terms_snapshot, ['replacement_report' => $report]),
+                'generated_at' => now(),
+            ])->save();
+
+            return $contract->fresh(['commercialDocument.items']);
+        } finally {
+            if ($convertedPath !== null) {
+                $this->legacyWordConverter->cleanup($convertedPath);
+            }
+        }
+    }
+
     private function assertValidDocx(string $path): void
     {
         if (! class_exists(ZipArchive::class)) {

@@ -130,6 +130,7 @@ class CommercialContractGeneratorTest extends TestCase
     {
         Storage::fake('local');
         Storage::disk('local')->put('commercial-contracts/1/contract.docx', 'docx-content');
+        Storage::disk('local')->put('commercial-contracts/1/source.doc', 'doc-content');
 
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $quote = CommercialDocument::query()->create([
@@ -144,6 +145,7 @@ class CommercialContractGeneratorTest extends TestCase
             'status' => 'generated',
             'template_mode' => 'standard',
             'template_version' => 1,
+            'source_template_path' => 'commercial-contracts/1/source.doc',
             'generated_docx_path' => 'commercial-contracts/1/contract.docx',
         ]);
 
@@ -152,5 +154,11 @@ class CommercialContractGeneratorTest extends TestCase
         $response->assertOk();
         $response->assertDownload('Договор-'.$contract->number.'.docx');
         $this->assertSame('docx-content', $response->streamedContent());
+
+        $sourceResponse = $this->actingAs($manager)->get(route('admin.commercial-contracts.source', $contract));
+
+        $sourceResponse->assertOk();
+        $sourceResponse->assertDownload('Исходная-форма-'.$contract->number.'.doc');
+        $this->assertSame('doc-content', $sourceResponse->streamedContent());
     }
 }
