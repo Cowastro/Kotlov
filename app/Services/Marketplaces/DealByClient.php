@@ -58,6 +58,15 @@ class DealByClient
         return $this->post('orders/set_status', $body);
     }
 
+    /**
+     * @param  list<array<string, mixed>>  $products
+     * @return array<string, mixed>
+     */
+    public function editProducts(array $products): array
+    {
+        return $this->post('products/edit', $products);
+    }
+
     /** @param array<string, scalar> $query
      * @return array<string, mixed>
      */
