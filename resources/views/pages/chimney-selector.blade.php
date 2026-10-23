@@ -82,7 +82,7 @@
 
 @push('styles')
 <style>
-.chimney-selector-page{--cs-red:#e34234;--cs-dark:#111;--cs-line:#e6e6e3;background:#fafaf8}.cs-hero{padding:70px 0;background:#111;color:#fff}.cs-hero__grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:48px;align-items:center}.cs-hero h1{max-width:780px;margin:12px 0 16px;color:#fff;font-size:clamp(38px,5vw,68px);line-height:1.02}.cs-hero p{max-width:700px;margin:0;color:#c8c8c8;font-size:18px;line-height:1.6}.cs-kicker{color:#ff7065;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.cs-equipment{margin-top:24px;padding:15px 18px;border:1px solid #383838;border-radius:14px;background:#1b1b1b}.cs-discount{display:flex;flex-direction:column;padding:30px;border-radius:24px;background:var(--cs-red)}.cs-discount strong{font-size:58px;line-height:1}.cs-discount span{margin-top:10px;line-height:1.4}.cs-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:32px;align-items:start}.cs-form,.cs-result{padding:30px;border:1px solid var(--cs-line);border-radius:24px;background:#fff}.cs-result{position:sticky;top:110px;min-height:350px}.cs-step{display:flex;gap:16px;margin:0 0 18px}.cs-step:not(:first-child){margin-top:34px;padding-top:28px;border-top:1px solid var(--cs-line)}.cs-step>span{display:grid;flex:0 0 38px;height:38px;place-items:center;border-radius:50%;background:#111;color:#fff;font-size:12px;font-weight:700}.cs-step h2{margin:0 0 4px;font-size:23px}.cs-step p{margin:0;color:#777;font-size:14px}.cs-options{display:flex;flex-wrap:wrap;gap:8px}.cs-options input{position:absolute;opacity:0}.cs-options span{display:block;padding:11px 14px;border:1px solid var(--cs-line);border-radius:10px;cursor:pointer}.cs-options input:checked+span{border-color:#111;background:#111;color:#fff}.cs-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.cs-fields label{font-size:13px;font-weight:700}.cs-fields select{width:100%;height:50px;margin-top:7px;padding:0 14px;border:1px solid var(--cs-line);border-radius:10px;background:#fff}.cs-field-note{margin:0 0 26px;color:#777;font-size:12px}.cs-safety{margin:14px 0 0;color:#777;font-size:12px;line-height:1.5}.cs-result__empty{padding:60px 15px;text-align:center;color:#777}.cs-result__empty span{font-size:42px}.cs-result h2{font-size:24px}.cs-result__list{display:grid;gap:12px;margin:20px 0}.cs-result__item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--cs-line)}.cs-result__item img{width:58px;height:58px;object-fit:contain}.cs-result__item a{color:#111;font-size:13px;font-weight:700}.cs-result__item small{display:block;color:#777}.cs-result__price{font-weight:700;white-space:nowrap}.cs-result__totals{padding:18px;border-radius:14px;background:#f5f5f2}.cs-result__row{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px}.cs-result__row--total{margin:14px 0 0;padding-top:14px;border-top:1px solid #ddd;font-size:18px;font-weight:800}.cs-result__saving{color:var(--cs-red);font-weight:700}.cs-result__actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.cs-manager{padding:55px 0;background:#eeeae4}.cs-manager__box{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}.cs-manager h2{margin:8px 0}.cs-manager p{margin:0;color:#666}.cs-manager form{display:grid;grid-template-columns:1fr auto;gap:10px}.cs-manager input{height:54px;padding:0 16px;border:1px solid #ccc;border-radius:10px;background:#fff}@media(max-width:991px){.cs-hero__grid,.cs-layout,.cs-manager__box{grid-template-columns:1fr}.cs-discount{max-width:330px}.cs-result{position:static}.cs-manager form{grid-template-columns:1fr}}@media(max-width:575px){.cs-hero{padding:42px 0}.cs-hero h1{font-size:38px}.cs-form,.cs-result{padding:20px;border-radius:18px}.cs-fields,.cs-result__actions{grid-template-columns:1fr}.cs-result__item{grid-template-columns:48px 1fr}.cs-result__price{grid-column:2}.cs-options span{padding:9px 11px;font-size:13px}}
+.chimney-selector-page{--cs-red:#e34234;--cs-dark:#111;--cs-line:#e6e6e3;background:#fafaf8}.cs-hero{padding:70px 0;background:#111;color:#fff}.cs-hero__grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:48px;align-items:center}.cs-hero h1{max-width:780px;margin:12px 0 16px;color:#fff;font-size:clamp(38px,5vw,68px);line-height:1.02}.cs-hero p{max-width:700px;margin:0;color:#c8c8c8;font-size:18px;line-height:1.6}.cs-kicker{color:#ff7065;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.cs-equipment{margin-top:24px;padding:15px 18px;border:1px solid #383838;border-radius:14px;background:#1b1b1b}.cs-discount{display:flex;flex-direction:column;padding:30px;border-radius:24px;background:var(--cs-red)}.cs-discount strong{font-size:58px;line-height:1}.cs-discount span{margin-top:10px;line-height:1.4}.cs-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:32px;align-items:start}.cs-form,.cs-result{padding:30px;border:1px solid var(--cs-line);border-radius:24px;background:#fff}.cs-result{position:sticky;top:110px;min-height:350px}.cs-step{display:flex;gap:16px;margin:0 0 18px}.cs-step:not(:first-child){margin-top:34px;padding-top:28px;border-top:1px solid var(--cs-line)}.cs-step>span{display:grid;flex:0 0 38px;height:38px;place-items:center;border-radius:50%;background:#111;color:#fff;font-size:12px;font-weight:700}.cs-step h2{margin:0 0 4px;font-size:23px}.cs-step p{margin:0;color:#777;font-size:14px}.cs-options{display:flex;flex-wrap:wrap;gap:8px}.cs-options input{position:absolute;opacity:0}.cs-options span{display:block;padding:11px 14px;border:1px solid var(--cs-line);border-radius:10px;cursor:pointer}.cs-options input:checked+span{border-color:#111;background:#111;color:#fff}.cs-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.cs-fields label{font-size:13px;font-weight:700}.cs-fields select{width:100%;height:50px;margin-top:7px;padding:0 14px;border:1px solid var(--cs-line);border-radius:10px;background:#fff}.cs-field-note{margin:0 0 26px;color:#777;font-size:12px}.cs-safety{margin:14px 0 0;color:#777;font-size:12px;line-height:1.5}.cs-result__empty{padding:60px 15px;text-align:center;color:#777}.cs-result__empty span{font-size:42px}.cs-result h2{font-size:24px}.cs-result__list{display:grid;gap:12px;margin:20px 0}.cs-result__item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--cs-line)}.cs-result__item img{width:58px;height:58px;object-fit:contain}.cs-result__item a{color:#111;font-size:13px;font-weight:700}.cs-result__item small{display:block;color:#777}.cs-result__controls{display:flex;align-items:center;gap:4px;margin-top:8px}.cs-result__quantity{min-width:28px;text-align:center;font-size:13px;font-weight:800}.cs-result__control{display:grid;width:30px;height:30px;padding:0;place-items:center;border:1px solid #ddd;border-radius:8px;background:#fff;color:#111;font-size:18px;line-height:1}.cs-result__control:hover{border-color:#111}.cs-result__remove{margin-left:5px;padding:5px;border:0;background:transparent;color:#777;font-size:12px;text-decoration:underline}.cs-result__price{font-weight:700;white-space:nowrap}.cs-result__totals{padding:18px;border-radius:14px;background:#f5f5f2}.cs-result__row{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px}.cs-result__row--total{margin:14px 0 0;padding-top:14px;border-top:1px solid #ddd;font-size:18px;font-weight:800}.cs-result__saving{color:var(--cs-red);font-weight:700}.cs-result__actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.cs-manager{padding:55px 0;background:#eeeae4}.cs-manager__box{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}.cs-manager h2{margin:8px 0}.cs-manager p{margin:0;color:#666}.cs-manager form{display:grid;grid-template-columns:1fr auto;gap:10px}.cs-manager input{height:54px;padding:0 16px;border:1px solid #ccc;border-radius:10px;background:#fff}@media(max-width:991px){.cs-hero__grid,.cs-layout,.cs-manager__box{grid-template-columns:1fr}.cs-discount{max-width:330px}.cs-result{position:static}.cs-manager form{grid-template-columns:1fr}}@media(max-width:575px){.cs-hero{padding:42px 0}.cs-hero h1{font-size:38px}.cs-form,.cs-result{padding:20px;border-radius:18px}.cs-fields,.cs-result__actions{grid-template-columns:1fr}.cs-result__item{grid-template-columns:48px 1fr}.cs-result__price{grid-column:2}.cs-options span{padding:9px 11px;font-size:13px}}
 </style>
 @endpush
 
@@ -190,40 +190,71 @@
             result.innerHTML = '<div class="cs-result__empty"><h2>Точных позиций пока не найдено</h2><p>Отправьте параметры менеджеру — он соберёт комплект вручную.</p><a href="#manager-check" class="tf-btn animate-btn">Передать менеджеру</a></div>';
             return;
         }
-        var subtotal = rows.reduce(function (sum, row) { return sum + row.product.price * row.quantity; }, 0);
-        var saving = unlocked ? subtotal * discount / 100 : 0;
-        var total = subtotal - saving;
         var missing = needs.length - matchedNeeds;
         var systemLabel = settings.system === 'combined' ? 'моно ' + settings.monoLength.toLocaleString('ru-RU') + ' м + утеплённый' : (settings.system === 'sandwich' ? 'полностью утеплённый' : 'полностью моно');
-        var names = rows.map(function (row) { return row.label + ': ' + row.quantity + ' × ' + row.product.name; }).join('; ');
-        message.value = 'Подбор дымохода: Ø ' + settings.diameter + ' мм, ' + systemLabel + ', сталь ' + (settings.steel || 'из доступных')
-            + ', схема ' + settings.scheme + ', высота ' + settings.height + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
-            + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
-            + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Предварительный состав: ' + names;
-        result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">Ø ' + settings.diameter + ' мм · ' + systemLabel + ' · ' + settings.height + ' м</p>'
-            + (missing ? '<p class="cs-safety">Не все специальные узлы найдены в точном исполнении. Недостающие позиции добавит менеджер.</p>' : '')
-            + '<div class="cs-result__list">' + rows.map(function (row) {
-                return '<div class="cs-result__item"><img src="' + esc(row.product.image) + '" alt=""><div><a href="' + esc(row.product.url) + '">' + esc(row.product.name)
-                    + '</a><small>' + esc(row.label) + ' · ' + row.quantity + ' шт.</small></div><div class="cs-result__price">' + money(row.product.price * row.quantity) + '</div></div>';
-            }).join('') + '</div><div class="cs-result__totals"><div class="cs-result__row"><span>Стоимость товаров</span><strong>' + money(subtotal) + '</strong></div>'
-            + (unlocked ? '<div class="cs-result__row cs-result__saving"><span>Скидка на дымоход −' + discount + '%</span><strong>−' + money(saving) + '</strong></div>' : '<div class="cs-result__row cs-result__saving"><span>Добавьте печь, камин или котёл — получите −' + discount + '%</span></div>')
-            + '<div class="cs-result__row cs-result__row--total"><span>Итого</span><span>' + money(total) + '</span></div></div><div class="cs-result__actions"><button type="button" class="tf-btn animate-btn" data-add-kit>'
-            + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><a href="#manager-check" class="tf-btn btn-white btn-stroke">Проверить с менеджером</a></div>';
+        function renderBundle() {
+            if (!rows.length) {
+                message.value = 'Подбор дымохода очищен пользователем.';
+                result.innerHTML = '<div class="cs-result__empty"><h2>В комплекте нет позиций</h2><p>Измените параметры или снова нажмите «Показать комплект».</p></div>';
+                return;
+            }
+            var subtotal = rows.reduce(function (sum, row) { return sum + row.product.price * row.quantity; }, 0);
+            var saving = unlocked ? subtotal * discount / 100 : 0;
+            var total = subtotal - saving;
+            var names = rows.map(function (row) { return row.label + ': ' + row.quantity + ' × ' + row.product.name; }).join('; ');
+            message.value = 'Подбор дымохода: Ø ' + settings.diameter + ' мм, ' + systemLabel + ', сталь ' + (settings.steel || 'из доступных')
+                + ', схема ' + settings.scheme + ', высота ' + settings.height + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
+                + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
+                + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
+            result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">Ø ' + settings.diameter + ' мм · ' + systemLabel + ' · ' + settings.height + ' м</p>'
+                + (missing ? '<p class="cs-safety">Не все специальные узлы найдены в точном исполнении. Недостающие позиции добавит менеджер.</p>' : '')
+                + '<div class="cs-result__list">' + rows.map(function (row, index) {
+                    return '<div class="cs-result__item"><img src="' + esc(row.product.image) + '" alt=""><div><a href="' + esc(row.product.url) + '">' + esc(row.product.name)
+                        + '</a><small>' + esc(row.label) + '</small><div class="cs-result__controls"><button type="button" class="cs-result__control" data-row-decrease="' + index + '" aria-label="Уменьшить количество">−</button>'
+                        + '<span class="cs-result__quantity" aria-label="Количество">' + row.quantity + '</span><button type="button" class="cs-result__control" data-row-increase="' + index + '" aria-label="Увеличить количество"' + (row.quantity >= 99 ? ' disabled' : '') + '>+</button>'
+                        + '<button type="button" class="cs-result__remove" data-row-remove="' + index + '">Удалить</button></div></div><div class="cs-result__price">' + money(row.product.price * row.quantity) + '</div></div>';
+                }).join('') + '</div><div class="cs-result__totals"><div class="cs-result__row"><span>Стоимость товаров</span><strong>' + money(subtotal) + '</strong></div>'
+                + (unlocked ? '<div class="cs-result__row cs-result__saving"><span>Скидка на дымоход −' + discount + '%</span><strong>−' + money(saving) + '</strong></div>' : '<div class="cs-result__row cs-result__saving"><span>Добавьте печь, камин или котёл — получите −' + discount + '%</span></div>')
+                + '<div class="cs-result__row cs-result__row--total"><span>Итого</span><span>' + money(total) + '</span></div></div><div class="cs-result__actions"><button type="button" class="tf-btn animate-btn" data-add-kit>'
+                + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><a href="#manager-check" class="tf-btn btn-white btn-stroke">Проверить с менеджером</a></div>';
 
-        var add = result.querySelector('[data-add-kit]');
-        add.addEventListener('click', function () {
-            add.disabled = true;
-            var csrf = document.querySelector('meta[name="csrf-token"]').content;
-            var additions = rows.slice();
-            if (equipmentId) additions.unshift({product:{id:equipmentId}, quantity:1});
-            additions.reduce(function (chain, row) {
-                return chain.then(function () {
-                    return fetch(@json(route('cart.add')), {method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf}, body:JSON.stringify({product_id:row.product.id,quantity:row.quantity})})
-                        .then(function (response) { if (!response.ok) throw new Error(); return response.json(); });
+            result.querySelectorAll('[data-row-decrease]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var index = Number(button.dataset.rowDecrease);
+                    if (rows[index].quantity > 1) rows[index].quantity--;
+                    else rows.splice(index, 1);
+                    renderBundle();
                 });
-            }, Promise.resolve()).then(function () { window.location = @json(route('cart')); })
-                .catch(function () { add.disabled = false; add.textContent = 'Не всё добавилось — проверить корзину'; });
-        });
+            });
+            result.querySelectorAll('[data-row-increase]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var index = Number(button.dataset.rowIncrease);
+                    rows[index].quantity = Math.min(99, rows[index].quantity + 1);
+                    renderBundle();
+                });
+            });
+            result.querySelectorAll('[data-row-remove]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    rows.splice(Number(button.dataset.rowRemove), 1);
+                    renderBundle();
+                });
+            });
+            var add = result.querySelector('[data-add-kit]');
+            add.addEventListener('click', function () {
+                add.disabled = true;
+                var csrf = document.querySelector('meta[name="csrf-token"]').content;
+                var additions = rows.slice();
+                if (equipmentId) additions.unshift({product:{id:equipmentId}, quantity:1});
+                additions.reduce(function (chain, row) {
+                    return chain.then(function () {
+                        return fetch(@json(route('cart.add')), {method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf}, body:JSON.stringify({product_id:row.product.id,quantity:row.quantity})})
+                            .then(function (response) { if (!response.ok) throw new Error(); return response.json(); });
+                    });
+                }, Promise.resolve()).then(function () { window.location = @json(route('cart')); })
+                    .catch(function () { add.disabled = false; add.textContent = 'Не всё добавилось — проверить корзину'; });
+            });
+        }
+        renderBundle();
     });
 })();
 </script>
