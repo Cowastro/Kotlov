@@ -106,8 +106,9 @@ return [
         ],
         'installment_6' => [
             'name' => 'Рассрочка на 6 месяцев',
-            'desc' => 'Оставьте заявку — менеджер свяжется с вами и поможет с оформлением',
+            'desc' => 'Оставьте заявку — менеджер подтвердит доступность рассрочки и поможет с оформлением',
             'requires_manager_follow_up' => true,
+            'video_url' => 'https://www.youtube.com/watch?v=nw2v3z5BZms',
         ],
         'credit_3_years' => [
             'name' => 'Кредит до 3 лет',

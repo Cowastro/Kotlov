@@ -29,7 +29,12 @@ class CheckoutPaymentAvailabilityTest extends TestCase
             ->assertDontSee('Онлайн-оплата картой')
             ->assertDontSee('Оплата через WEBPAY')
             ->assertSee('Рассрочка на 6 месяцев')
-            ->assertSee('менеджер свяжется с вами и поможет с оформлением');
+            ->assertSee('менеджер подтвердит доступность рассрочки и поможет с оформлением')
+            ->assertSee('Смотреть видеоинструкцию')
+            ->assertSee('https://www.youtube.com/watch?v=nw2v3z5BZms', false)
+            ->assertSee('Как оформить рассрочку')
+            ->assertSee(route('installment.info'), false)
+            ->assertDontSee('sbg.by', false);
     }
 
     public function test_installment_button_target_preselects_six_month_installment(): void

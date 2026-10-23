@@ -516,6 +516,9 @@
                                             </a>
                                         </div>
                                         @if (! $b2bOffer && in_array('installment_6', config('shop.checkout_payment_methods', []), true))
+                                            @php
+                                                $installmentInfo = config('shop.payment_methods.installment_6', []);
+                                            @endphp
                                             <a href="{{ route('checkout', ['payment_type' => 'installment_6']) }}"
                                                 class="tf-btn type-xl btn-outline animate-btn w-100 mt-12 btn-add-to-cart btn-installment-purchase"
                                                 data-product-id="{{ $product->id }}"
@@ -524,7 +527,16 @@
                                                 Купить в рассрочку до 6 месяцев
                                             </a>
                                             <p class="text-caption-01 cl-text-2 text-center mt-8 mb-0">
-                                                Оставьте контакты — оформление продолжит менеджер
+                                                Менеджер подтвердит доступность и продолжит оформление
+                                            </p>
+                                            <p class="text-caption-01 text-center mt-4 mb-0">
+                                                <a href="{{ $installmentInfo['video_url'] }}" target="_blank" rel="noopener noreferrer">
+                                                    Смотреть видеоинструкцию
+                                                </a>
+                                                <span class="cl-text-2"> · </span>
+                                                <a href="{{ route('installment.info') }}">
+                                                    Как оформить рассрочку
+                                                </a>
                                             </p>
                                         @endif
                                         <a href="#ask" data-bs-toggle="modal"

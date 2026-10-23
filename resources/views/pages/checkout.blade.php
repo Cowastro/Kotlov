@@ -220,6 +220,17 @@
                                                 @endif
                                             </span>
                                         </label>
+                                        @if ($key === 'installment_6')
+                                            <div class="text-caption-01 ms-4 mt-1">
+                                                <a href="{{ $method['video_url'] }}" target="_blank" rel="noopener noreferrer">
+                                                    Смотреть видеоинструкцию
+                                                </a>
+                                                <span class="cl-text-2"> · </span>
+                                                <a href="{{ route('installment.info') }}">
+                                                    Как оформить рассрочку
+                                                </a>
+                                            </div>
+                                        @endif
                                     </div>
                                     @endforeach
 

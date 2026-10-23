@@ -160,7 +160,12 @@ class UnconfirmedProductCheckoutTest extends TestCase
             ->assertSee('Менеджер подтвердит наличие и срок поставки после оформления.')
             ->assertSee('btn-add-to-cart', false)
             ->assertSeeText('Купить в рассрочку до 6 месяцев')
-            ->assertSeeText('Оставьте контакты — оформление продолжит менеджер')
+            ->assertSeeText('Менеджер подтвердит доступность и продолжит оформление')
+            ->assertSeeText('Смотреть видеоинструкцию')
+            ->assertSee('https://www.youtube.com/watch?v=nw2v3z5BZms', false)
+            ->assertSeeText('Как оформить рассрочку')
+            ->assertSee(route('installment.info'), false)
+            ->assertDontSee('sbg.by', false)
             ->assertSee('btn-installment-purchase', false)
             ->assertSee('payment_type=installment_6', false);
     }

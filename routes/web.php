@@ -517,6 +517,7 @@ Route::get('/install-request', [InstallRequestController::class, 'create'])->nam
 Route::post('/install-request', [InstallRequestController::class, 'store'])->middleware('public.form.protect:install-request')->name('install-requests.store');
 Route::view('/reviews', 'pages.reviews');
 Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->middleware('public.form.protect:reviews')->name('reviews.store');
+Route::view('/rassrochka-do-6-mesyatsev', 'pages.installment')->name('installment.info');
 Route::view('/faq', 'pages.faq');
 Route::view('/privacy', 'pages.privacy');
 // ===== Корзина =====
