@@ -271,7 +271,8 @@ jobs:
             mv "$report_tmp" .github/reports/karina-audit.json
           fi
 
-          safe_summary="$(grep -E '^(task|status|output_lines|output_bytes|error_lines|warning_lines|detail_log)=[A-Za-z0-9_./-]+
+          safe_summary="$(grep -E '^(task|status|output_lines|output_bytes|error_lines|warning_lines|detail_log)=[A-Za-z0-9_./-]+$' "$output_file" || true)"
+          failure_summary="$(grep -E '^failure_category=[A-Za-z0-9_-]+$' "$output_file" || true)"
 
           {
             echo "# Server Artisan Result"
@@ -284,85 +285,6 @@ jobs:
             echo
             echo '```text'
             printf '%s\n' "$failure_summary"
-            printf '%s\n' "$safe_summary"
-            echo '```'
-          } > .github/server-artisan-result.md
-
-          exit "$status"
-
-      - name: Upload KARINA product audit
-        if: success() && (env.TASK == 'audit-karina' || env.TASK == 'apply-karina')
-        uses: actions/upload-artifact@v4
-        with:
-          name: karina-audit
-          path: .github/reports/karina-audit.json
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Commit result
-        if: always()
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/server-artisan-result.md
-          if [[ ( "$TASK" == "audit-karina" || "$TASK" == "apply-karina" ) && -f .github/reports/karina-audit.json ]]; then
-            git add .github/reports/karina-audit.json
-          fi
-          git commit -m "Update server artisan result [skip ci]" || exit 0
-          git push
- "$output_file" || true)"
-          failure_summary="$(grep -E '^failure_category=[A-Za-z0-9_-]+
-
-          {
-            echo "# Server Artisan Result"
-            echo
-            echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-            echo "- Task: \`$TASK\`"
-            echo "- Exit code: \`$status\`"
-            echo
-            echo "Only aggregate fields are stored here. Detailed output remains in the server-local log."
-            echo
-            echo '```text'
-            printf '%s\n' "$safe_summary"
-            echo '```'
-          } > .github/server-artisan-result.md
-
-          exit "$status"
-
-      - name: Upload KARINA product audit
-        if: success() && (env.TASK == 'audit-karina' || env.TASK == 'apply-karina')
-        uses: actions/upload-artifact@v4
-        with:
-          name: karina-audit
-          path: .github/reports/karina-audit.json
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Commit result
-        if: always()
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/server-artisan-result.md
-          if [[ ( "$TASK" == "audit-karina" || "$TASK" == "apply-karina" ) && -f .github/reports/karina-audit.json ]]; then
-            git add .github/reports/karina-audit.json
-          fi
-          git commit -m "Update server artisan result [skip ci]" || exit 0
-          git push
- "$output_file" || true)"
-
-          {
-            echo "# Server Artisan Result"
-            echo
-            echo "- Time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-            echo "- Task: \`$TASK\`"
-            echo "- Exit code: \`$status\`"
-            echo
-            echo "Only aggregate fields are stored here. Detailed output remains in the server-local log."
-            echo
-            echo '```text'
             printf '%s\n' "$safe_summary"
             echo '```'
           } > .github/server-artisan-result.md
