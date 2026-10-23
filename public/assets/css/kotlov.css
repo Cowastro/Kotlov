@@ -86,6 +86,23 @@ li {
     font-weight: 500 !important;
 }
 
+.topbar-search-trigger {
+    display: inline-grid;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    place-items: center;
+    color: #fff !important;
+    font-size: 17px;
+    opacity: .9;
+    transition: opacity .18s ease;
+}
+.topbar-search-trigger:hover,
+.topbar-search-trigger:focus-visible {
+    opacity: 1;
+}
+@media (min-width: 1200px) { .topbar-search-trigger { display: none; } }
+
 /* =========================================
    Главное меню
 ========================================= */

@@ -13,12 +13,13 @@ class StorefrontProductSearchTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_header_has_a_minimal_mobile_smart_search_trigger(): void
+    public function test_topbar_has_a_minimal_mobile_smart_search_trigger(): void
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('class="nav-icon-item link mobile-search-trigger"', false)
+            ->assertSee('class="topbar-search-trigger d-xl-none text-white"', false)
             ->assertSee('aria-label="Открыть умный поиск"', false)
+            ->assertDontSee('mobile-search-trigger', false)
             ->assertDontSee('id="home-search-input"', false);
     }
 

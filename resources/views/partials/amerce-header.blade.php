@@ -17,6 +17,12 @@
                     <i class="icon icon-CaretDown"></i>
 
                 </a>
+
+                <a href="#search" data-bs-toggle="modal"
+                    class="topbar-search-trigger d-xl-none text-white"
+                    aria-label="Открыть умный поиск" title="Поиск">
+                    <i class="icon icon-MagnifyingGlass" aria-hidden="true"></i>
+                </a>
             </div>
 
             <div class="d-none d-md-block">
@@ -116,13 +122,6 @@
 
                 <div class="header-right">
                     <ul class="nav-icon-list d-xl-none">
-                        <li>
-                            <a href="#search" data-bs-toggle="modal" class="nav-icon-item link mobile-search-trigger"
-                                aria-label="Открыть умный поиск" title="Поиск">
-                                <i class="icon icon-MagnifyingGlass"></i>
-                            </a>
-                        </li>
-
                         <li>
                             @auth
                                 <form action="{{ route('logout') }}" method="POST" class="m-0 d-flex">
