@@ -40,9 +40,26 @@ class AuditKarinaCommand extends Command
                     ->orWhereHas('brand', fn ($brand) => $brand->where('name', 'like', '%KARINA%')->orWhere('name', 'like', '%КАРИНА%'));
             })
             ->orderBy('id')
-            ->get(['id', 'brand_id', 'supplier_id', 'sku', 'name', 'price', 'price_old', 'is_active', 'is_archived'])
+            ->get(['id', 'category_id', 'brand_id', 'supplier_id', 'sku', 'slug', 'name', 'price', 'price_old', 'is_active', 'is_archived', 'created_via'])
             ->toArray();
         $ids = array_column($products, 'id');
+        $sourceArticles = array_values(array_unique(array_filter(array_column($workbook['items'], 'article'))));
+        $sourceNames = array_values(array_unique(array_filter(array_column($workbook['items'], 'name'))));
+        $crossSupplierLinks = SupplierProduct::query()
+            ->whereIn('supplier_article', $sourceArticles)
+            ->orderBy('supplier_article')->orderBy('id')
+            ->get(['id', 'supplier_id', 'product_id', 'product_sku', 'supplier_article', 'supplier_name', 'match_status'])
+            ->toArray();
+        $crossSupplierMappings = SupplierProductMapping::query()
+            ->whereIn('supplier_article', $sourceArticles)
+            ->orderBy('supplier_article')->orderBy('id')
+            ->get(['id', 'supplier_code', 'supplier_article', 'product_id', 'product_sku', 'supplier_name', 'confidence', 'is_active'])
+            ->toArray();
+        $exactNameProducts = Product::query()
+            ->whereIn('name', $sourceNames)
+            ->orderBy('id')
+            ->get(['id', 'category_id', 'brand_id', 'sku', 'name', 'is_active', 'is_archived'])
+            ->toArray();
         $suppliers = Supplier::query()->where(function ($query): void {
             $query->where('code', 'like', '%karina%')
                 ->orWhere('name', 'like', '%KARINA%')->orWhere('name', 'like', '%Тепломаркет%');
@@ -86,6 +103,40 @@ class AuditKarinaCommand extends Command
         }
         unset($item);
 
+        $linkIdsByArticle = collect($crossSupplierLinks)->groupBy('supplier_article')
+            ->map(fn ($rows) => $rows->pluck('product_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all());
+        $mappingIdsByArticle = collect($crossSupplierMappings)->groupBy('supplier_article')
+            ->map(fn ($rows) => $rows->pluck('product_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all());
+        $exactNameIds = collect($exactNameProducts)->groupBy(fn ($product) => $audit->normalize($product['name']))
+            ->map(fn ($rows) => $rows->pluck('id')->map(fn ($id) => (int) $id)->unique()->values()->all());
+        $creationCandidates = collect($items)->map(function (array $item) use (
+            $audit, $linkIdsByArticle, $mappingIdsByArticle, $exactNameIds
+        ): array {
+            $article = (string) $item['article'];
+            $crossIds = collect($linkIdsByArticle->get($article, []))
+                ->merge($mappingIdsByArticle->get($article, []))
+                ->merge($exactNameIds->get($audit->normalize($item['name']), []))
+                ->map(fn ($id) => (int) $id)->unique()->sort()->values()->all();
+            $blocked = [];
+            if ($item['duplicate_article'] || $item['missing_article']) {
+                $blocked[] = 'supplier_identity_conflict';
+            }
+            if ($item['match_status'] !== 'unmatched') {
+                $blocked[] = $item['match_status'];
+            }
+            if ($crossIds !== []) {
+                $blocked[] = 'existing_catalog_or_supplier_reference';
+            }
+
+            return [
+                'row' => $item['row'], 'article' => $article, 'name' => $item['name'],
+                'retail_rub' => $item['retail_rub'], 'purchase_rub' => $item['purchase_rub'],
+                'retail_byn' => $item['retail_byn'], 'purchase_byn' => $item['purchase_byn'],
+                'existing_product_ids' => $crossIds, 'blocked_reasons' => array_values(array_unique($blocked)),
+                'eligible_for_hidden_creation_review' => $blocked === [],
+            ];
+        })->values()->all();
+
         $receiptPath = storage_path('app/reports/suppliers/karina/apply.json');
         $receipt = is_file($receiptPath) ? json_decode(file_get_contents($receiptPath), true, 512, JSON_THROW_ON_ERROR) : [];
 
@@ -108,6 +159,10 @@ class AuditKarinaCommand extends Command
             'import_item_counts' => SupplierPriceItem::whereIn('supplier_id', $supplierIds)->selectRaw('import_id, match_status, COUNT(*) as row_count')->groupBy('import_id', 'match_status')->get()->toArray(),
             'workbook' => $workbook, 'suppliers' => $suppliers, 'products' => $products,
             'supplier_links' => $links, 'existing_mappings' => $mappings, 'items' => $items,
+            'cross_supplier_article_links' => $crossSupplierLinks,
+            'cross_supplier_article_mappings' => $crossSupplierMappings,
+            'exact_name_products' => $exactNameProducts,
+            'creation_candidates' => $creationCandidates,
             'catalog_duplicate_names' => collect($products)->groupBy(fn ($p) => $audit->normalize($p['name']))->filter(fn ($group) => $group->count() > 1)->map(fn ($group) => $group->pluck('id')->all())->all(),
             'catalog_duplicate_skus' => collect($products)->filter(fn ($p) => trim((string) $p['sku']) !== '')->groupBy(fn ($p) => $audit->normalize((string) $p['sku']))->filter(fn ($group) => $group->count() > 1)->map(fn ($group) => $group->pluck('id')->all())->all(),
             'summary' => [
@@ -118,6 +173,8 @@ class AuditKarinaCommand extends Command
                 'duplicate_articles' => count(array_filter($items, fn ($row) => $row['duplicate_article'])),
                 'duplicate_names' => count(array_filter($items, fn ($row) => $row['duplicate_name'])),
                 'shared_targets' => count(array_filter($items, fn ($row) => $row['shared_target'])),
+                'eligible_for_hidden_creation_review' => count(array_filter($creationCandidates, fn ($row) => $row['eligible_for_hidden_creation_review'])),
+                'creation_blocked' => count(array_filter($creationCandidates, fn ($row) => ! $row['eligible_for_hidden_creation_review'])),
             ],
         ];
         File::put($output, json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n");
