@@ -1,0 +1,568 @@
+{
+    "schema": "karina-audit-v1",
+    "generated_at": "2026-10-23T13:25:27+00:00",
+    "mode": "read_only",
+    "applied": false,
+    "discount_percent": 25,
+    "currency_confirmed": false,
+    "warnings": [
+        "Currency must be confirmed from the workbook before conversion to BYN.",
+        "Exact candidates require review of model, power and configuration.",
+        "Unmatched is not authorization to create a new product.",
+        "Existing mappings and supplier links are reported separately and are not automatically trusted."
+    ],
+    "workbook": {
+        "sha256": "236ef6841215892a7e488ac9bdffc7a93926e3983c39968d5454e1da61edf196",
+        "sheets": [
+            {
+                "index": 0,
+                "rows": 156,
+                "recognized_cells": [
+                    {
+                        "row": 16,
+                        "column": 7,
+                        "kind": "article",
+                        "label": "артикул"
+                    }
+                ],
+                "header_row": null,
+                "columns": [],
+                "excluded_rows": []
+            }
+        ]
+    },
+    "suppliers": [],
+    "products": [
+        {
+            "id": 11262,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "PS-011.262",
+            "name": "Электрическая печь KARINA Nova 8",
+            "price": "1455.00",
+            "price_old": null,
+            "is_active": false,
+            "is_archived": true
+        },
+        {
+            "id": 11263,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "PS-011.263",
+            "name": "Электрическая печь KARINA Nova 6",
+            "price": "1845.70",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 11264,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "PS-011.264",
+            "name": "Электрическая печь KARINA Optima 4,5",
+            "price": "931.00",
+            "price_old": null,
+            "is_active": false,
+            "is_archived": true
+        },
+        {
+            "id": 11265,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "PS-011.265",
+            "name": "Электрическая печь KARINA Optima 6",
+            "price": "1394.90",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 11267,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "PS-011.267",
+            "name": "Электрическая печь KARINA Nova 6E",
+            "price": "1325.00",
+            "price_old": null,
+            "is_active": false,
+            "is_archived": true
+        },
+        {
+            "id": 11268,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "PS-011.268",
+            "name": "Электрическая печь KARINA Nova 8E",
+            "price": "1807.20",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 11485,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "PS-011.485",
+            "name": "Электрическая печь KARINA Nova 12E",
+            "price": "1685.00",
+            "price_old": null,
+            "is_active": false,
+            "is_archived": true
+        },
+        {
+            "id": 11612,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "PS-011.612",
+            "name": "Пульт управления KARINA Slim CS14",
+            "price": "570.00",
+            "price_old": null,
+            "is_active": false,
+            "is_archived": true
+        },
+        {
+            "id": 16986,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-004708",
+            "name": "Электрическая печь KARINA Nova 6E",
+            "price": "1455.00",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 16987,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-004709",
+            "name": "ТЭН для электрокаменки KARINA Optima\/Steam 2,5; 7,5кВт; Classic\/Steam 7,5",
+            "price": "192.00",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22237,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022237",
+            "name": "Электрическая печь KARINA Air 6",
+            "price": "1406.40",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22238,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022238",
+            "name": "Электрическая печь KARINA Air 9",
+            "price": "1533.60",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22239,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022239",
+            "name": "Электрическая печь KARINA Classic 15",
+            "price": "2396.70",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22240,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022240",
+            "name": "Электрическая печь KARINA Classic 18",
+            "price": "2497.00",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22241,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022241",
+            "name": "Электрическая печь KARINA Elite 12 Талькохлорит",
+            "price": "2781.00",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22242,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022242",
+            "name": "Электрическая печь KARINA Forta 12 Талькохлорит",
+            "price": "3760.70",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22243,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022243",
+            "name": "Электрическая печь KARINA Forta 6 Талькохлорит",
+            "price": "3371.60",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22244,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022244",
+            "name": "Электрическая печь KARINA Forta 8 Талькохлорит",
+            "price": "3429.30",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22245,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022245",
+            "name": "Электрическая печь KARINA Lite 12",
+            "price": "1722.40",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22246,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022246",
+            "name": "Электрическая печь KARINA Lite 18",
+            "price": "2239.00",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22247,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022247",
+            "name": "Электрическая печь KARINA Lite 8",
+            "price": "1549.00",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22248,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022248",
+            "name": "Электрическая печь KARINA Nova 10E",
+            "price": "1942.00",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22249,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022249",
+            "name": "Электрическая печь KARINA Optima 5",
+            "price": "1175.20",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22250,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022250",
+            "name": "Электрическая печь KARINA Optima Steam 5",
+            "price": "1244.60",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22251,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022251",
+            "name": "Электрическая печь KARINA Optima Steam 7,5",
+            "price": "1803.30",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22252,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022252",
+            "name": "Электрическая печь KARINA Optima Steam 9",
+            "price": "1868.80",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        },
+        {
+            "id": 22253,
+            "brand_id": 338,
+            "supplier_id": null,
+            "sku": "KOTLOV-022253",
+            "name": "Электрическая печь KARINA Tetra 14 Талькохлорит",
+            "price": "2913.00",
+            "price_old": null,
+            "is_active": true,
+            "is_archived": false
+        }
+    ],
+    "supplier_links": [
+        {
+            "id": 5109,
+            "supplier_id": 20,
+            "product_id": 16986,
+            "supplier_article": "No-6E-220\/380",
+            "price": "1272.24",
+            "currency": "BYN",
+            "price_byn": "1272.24",
+            "match_status": "created_from_price_list"
+        },
+        {
+            "id": 5110,
+            "supplier_id": 20,
+            "product_id": 16987,
+            "supplier_article": "tpl-1052288",
+            "price": "176.19",
+            "currency": "BYN",
+            "price_byn": "176.19",
+            "match_status": "created_from_price_list"
+        },
+        {
+            "id": 9071,
+            "supplier_id": 33,
+            "product_id": 22237,
+            "supplier_article": "elektricheskaya-pech-karina-air-6",
+            "price": "1406.40",
+            "currency": "BYN",
+            "price_byn": "1406.40",
+            "match_status": "matched"
+        },
+        {
+            "id": 9072,
+            "supplier_id": 33,
+            "product_id": 22238,
+            "supplier_article": "elektricheskaya-pech-karina-air-9",
+            "price": "1533.60",
+            "currency": "BYN",
+            "price_byn": "1533.60",
+            "match_status": "matched"
+        },
+        {
+            "id": 9073,
+            "supplier_id": 33,
+            "product_id": 22239,
+            "supplier_article": "elektricheskaya-pech-karina-classic-15",
+            "price": "2396.70",
+            "currency": "BYN",
+            "price_byn": "2396.70",
+            "match_status": "matched"
+        },
+        {
+            "id": 9074,
+            "supplier_id": 33,
+            "product_id": 22240,
+            "supplier_article": "elektricheskaya-pech-karina-classic-18",
+            "price": "2497.00",
+            "currency": "BYN",
+            "price_byn": "2497.00",
+            "match_status": "matched"
+        },
+        {
+            "id": 9075,
+            "supplier_id": 33,
+            "product_id": 22241,
+            "supplier_article": "elektricheskaya-pech-karina-elite-12-talkokhlorit",
+            "price": "2781.00",
+            "currency": "BYN",
+            "price_byn": "2781.00",
+            "match_status": "matched"
+        },
+        {
+            "id": 9076,
+            "supplier_id": 33,
+            "product_id": 22242,
+            "supplier_article": "elektricheskaya-pech-karina-forta-12-talkokhlorit",
+            "price": "3760.70",
+            "currency": "BYN",
+            "price_byn": "3760.70",
+            "match_status": "matched"
+        },
+        {
+            "id": 9077,
+            "supplier_id": 33,
+            "product_id": 22243,
+            "supplier_article": "elektricheskaya-pech-karina-forta-6-talkokhlorit",
+            "price": "3371.60",
+            "currency": "BYN",
+            "price_byn": "3371.60",
+            "match_status": "matched"
+        },
+        {
+            "id": 9078,
+            "supplier_id": 33,
+            "product_id": 22244,
+            "supplier_article": "elektricheskaya-pech-karina-forta-8-talkokhlorit",
+            "price": "3429.30",
+            "currency": "BYN",
+            "price_byn": "3429.30",
+            "match_status": "matched"
+        },
+        {
+            "id": 9079,
+            "supplier_id": 33,
+            "product_id": 22245,
+            "supplier_article": "elektricheskaya-pech-karina-lite-12",
+            "price": "1722.40",
+            "currency": "BYN",
+            "price_byn": "1722.40",
+            "match_status": "matched"
+        },
+        {
+            "id": 9080,
+            "supplier_id": 33,
+            "product_id": 22246,
+            "supplier_article": "elektricheskaya-pech-karina-lite-18",
+            "price": "2239.00",
+            "currency": "BYN",
+            "price_byn": "2239.00",
+            "match_status": "matched"
+        },
+        {
+            "id": 9081,
+            "supplier_id": 33,
+            "product_id": 22247,
+            "supplier_article": "elektricheskaya-pech-karina-lite-8",
+            "price": "1549.00",
+            "currency": "BYN",
+            "price_byn": "1549.00",
+            "match_status": "matched"
+        },
+        {
+            "id": 9082,
+            "supplier_id": 33,
+            "product_id": 22248,
+            "supplier_article": "elektricheskaya-pech-karina-nova-10e",
+            "price": "1942.00",
+            "currency": "BYN",
+            "price_byn": "1942.00",
+            "match_status": "matched"
+        },
+        {
+            "id": 9083,
+            "supplier_id": 33,
+            "product_id": 11263,
+            "supplier_article": "elektricheskaya-pech-karina-nova-6",
+            "price": "1845.70",
+            "currency": "BYN",
+            "price_byn": "1845.70",
+            "match_status": "matched"
+        },
+        {
+            "id": 9084,
+            "supplier_id": 33,
+            "product_id": 11268,
+            "supplier_article": "elektricheskaya-pech-karina-nova-8e",
+            "price": "1807.20",
+            "currency": "BYN",
+            "price_byn": "1807.20",
+            "match_status": "matched"
+        },
+        {
+            "id": 9085,
+            "supplier_id": 33,
+            "product_id": 22249,
+            "supplier_article": "elektricheskaya-pech-karina-optima-5",
+            "price": "1175.20",
+            "currency": "BYN",
+            "price_byn": "1175.20",
+            "match_status": "matched"
+        },
+        {
+            "id": 9086,
+            "supplier_id": 33,
+            "product_id": 11265,
+            "supplier_article": "elektricheskaya-pech-karina-optima-6",
+            "price": "1394.90",
+            "currency": "BYN",
+            "price_byn": "1394.90",
+            "match_status": "matched"
+        },
+        {
+            "id": 9087,
+            "supplier_id": 33,
+            "product_id": 22250,
+            "supplier_article": "elektricheskaya-pech-karina-optima-steam-5",
+            "price": "1244.60",
+            "currency": "BYN",
+            "price_byn": "1244.60",
+            "match_status": "matched"
+        },
+        {
+            "id": 9088,
+            "supplier_id": 33,
+            "product_id": 22251,
+            "supplier_article": "elektricheskaya-pech-karina-optima-steam-75",
+            "price": "1803.30",
+            "currency": "BYN",
+            "price_byn": "1803.30",
+            "match_status": "matched"
+        },
+        {
+            "id": 9089,
+            "supplier_id": 33,
+            "product_id": 22252,
+            "supplier_article": "elektricheskaya-pech-karina-optima-steam-9",
+            "price": "1868.80",
+            "currency": "BYN",
+            "price_byn": "1868.80",
+            "match_status": "matched"
+        },
+        {
+            "id": 9090,
+            "supplier_id": 33,
+            "product_id": 22253,
+            "supplier_article": "elektricheskaya-pech-karina-tetra-14-talkokhlorit",
+            "price": "2913.00",
+            "currency": "BYN",
+            "price_byn": "2913.00",
+            "match_status": "matched"
+        }
+    ],
+    "existing_mappings": [],
+    "items": [],
+    "summary": {
+        "products": 27,
+        "items": 0,
+        "exact_candidates": 0,
+        "ambiguous": 0,
+        "unmatched": 0,
+        "duplicate_articles": 0,
+        "duplicate_names": 0,
+        "shared_targets": 0
+    }
+}
