@@ -718,8 +718,13 @@
                         <a href="#shoppingCart"
                             class="tf-btn animate-btn btn-add-to-cart mobile-sticky-cart"
                             data-product-id="{{ $product->id }}"
+                            aria-label="Добавить в корзину"
                             @if ($b2bOffer) data-warehouse-select="#b2b-warehouse-{{ $product->id }}" @endif>
-                            <span class="d-md-none">В корзину</span>
+                            @if ($mobileInstallmentAvailable)
+                                <i class="icon icon-shopping-cart-simple d-md-none" aria-hidden="true"></i>
+                            @else
+                                <span class="d-md-none">В корзину</span>
+                            @endif
                             <span class="d-none d-md-inline">
                                 В корзину
                                 @if ($displayPrice > 0)

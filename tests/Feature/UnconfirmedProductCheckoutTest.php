@@ -169,6 +169,8 @@ class UnconfirmedProductCheckoutTest extends TestCase
             ->assertSee('btn-installment-purchase', false)
             ->assertSee('mobile-sticky-installment d-md-none btn-add-to-cart', false)
             ->assertSee('aria-label="Купить в рассрочку до 6 месяцев"', false)
+            ->assertSee('icon-shopping-cart-simple d-md-none', false)
+            ->assertSee('aria-label="Добавить в корзину"', false)
             ->assertSee('payment_type=installment_6', false);
     }
 
