@@ -142,6 +142,11 @@ class AuditKarinaCommand extends Command
         $creationReceiptPath = storage_path('app/reports/suppliers/karina/create.json');
         $creationReceipt = is_file($creationReceiptPath)
             ? json_decode(file_get_contents($creationReceiptPath), true, 512, JSON_THROW_ON_ERROR) : [];
+        $enrichmentReceiptPath = storage_path('app/reports/suppliers/karina/enrich.json');
+        $enrichmentReceipt = is_file($enrichmentReceiptPath)
+            ? json_decode(file_get_contents($enrichmentReceiptPath), true, 512, JSON_THROW_ON_ERROR) : [];
+        $createdContentRows = Product::query()->where('created_via', 'karina_issue_34')
+            ->get(['id', 'is_active', 'is_archived', 'content', 'images', 'content_source_url']);
 
         // Explicit projections only: no CRM messages, metadata, contacts, raw offers or logs.
         $report = [
@@ -150,6 +155,15 @@ class AuditKarinaCommand extends Command
             'currency_confirmed' => true, 'source_currency' => 'RUB', 'site_currency' => 'BYN',
             'last_application' => array_intersect_key($receipt, array_flip(['applied', 'report_blob', 'workbook_sha256', 'generated_at', 'already_applied', 'offers', 'matched', 'unmatched', 'quarantined', 'supplier_id', 'import_id'])),
             'last_creation' => array_intersect_key($creationReceipt, array_flip(['applied', 'report_blob', 'workbook_sha256', 'generated_at', 'already_applied', 'planned', 'stoves', 'accessories', 'created', 'existing_batch_products', 'supplier_id', 'import_id', 'matched_after', 'unmatched_after'])),
+            'last_enrichment' => array_intersect_key($enrichmentReceipt, array_flip(['applied', 'report_blob', 'workbook_sha256', 'source_snapshot_sha256', 'generated_at', 'already_applied', 'planned', 'activated', 'left_hidden', 'official_pages', 'source_summary'])),
+            'created_content_summary' => [
+                'total' => $createdContentRows->count(),
+                'active' => $createdContentRows->where('is_active', true)->count(),
+                'hidden' => $createdContentRows->where('is_active', false)->count(),
+                'with_official_source' => $createdContentRows->filter(fn ($row) => filled($row->content_source_url))->count(),
+                'with_content' => $createdContentRows->filter(fn ($row) => filled($row->content))->count(),
+                'with_images' => $createdContentRows->filter(fn ($row) => count($row->images ?? []) > 0)->count(),
+            ],
             'currency_confirmation' => 'User confirmed RUB; site retail equals converted RRP.',
             'rate' => $rate,
             'warnings' => [
