@@ -125,7 +125,7 @@ class FetchNbrbRatesCommand extends Command
                                 $retail = KarinaPricing::quote(
                                     KarinaPricing::retailRubFromRaw($sp->raw), $newRate,
                                 )['retail_byn'];
-                            } catch (\\Throwable) {
+                            } catch (\Throwable) {
                                 $this->warn('KARINA source RRP missing or invalid; retail price preserved.');
                                 continue;
                             }
