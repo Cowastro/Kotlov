@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Supplier;
 use App\Services\Pricing\CurrencyPriceConverter;
+use App\Services\Pricing\KarinaPricing;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -116,8 +117,21 @@ class FetchNbrbRatesCommand extends Command
                         ->first();
 
                     if ($sp && $sp->price_byn > 0) {
+                        $retail = round($sp->price_byn, 2);
+                        if ($supplier->code === 'karina') {
+                            // Procurement and retail remain separate when the daily rate changes.
+                            // Missing source RRP must preserve the current retail price.
+                            try {
+                                $retail = KarinaPricing::quote(
+                                    KarinaPricing::retailRubFromRaw($sp->raw), $newRate,
+                                )['retail_byn'];
+                            } catch (\\Throwable) {
+                                $this->warn('KARINA source RRP missing or invalid; retail price preserved.');
+                                continue;
+                            }
+                        }
                         DB::table('products')->where('id', $productId)->update([
-                            'price'      => round($sp->price_byn, 2),
+                            'price'      => $retail,
                             'updated_at' => now(),
                         ]);
                     }
