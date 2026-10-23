@@ -15,7 +15,7 @@ class KarinaPriceAuditTest extends TestCase
         $book = new Spreadsheet;
         $book->getActiveSheet()->fromArray([
             ['private@example.test', '+375291234567', ''],
-            ['Артикул', 'Наименование', 'РРЦ'],
+            ['Артикул', 'Наименование товара Поставщика', 'Рекомендованная розничная цена, руб. с НДС'],
             ['K-6', 'KARINA 6', 999.99],
             ['K-9', 'KARINA 9', '1 200,00'],
             ['K-X', 'private@example.test', 100],
