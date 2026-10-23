@@ -1,6 +1,6 @@
 {
     "schema": "karina-audit-v1",
-    "generated_at": "2026-10-23T14:04:51+00:00",
+    "generated_at": "2026-10-23T14:11:14+00:00",
     "mode": "read_only",
     "applied": false,
     "discount_percent": 25,
@@ -19,6 +19,17 @@
         "quarantined": 2,
         "supplier_id": 51,
         "import_id": 2
+    },
+    "last_creation": {
+        "applied": false,
+        "report_blob": "bf25f5ec9d8c5ce1997f7b226a1da2ae5bd3cd6e",
+        "workbook_sha256": "236ef6841215892a7e488ac9bdffc7a93926e3983c39968d5454e1da61edf196",
+        "generated_at": "2026-10-23T14:11:13+00:00",
+        "already_applied": false,
+        "planned": 116,
+        "stoves": 108,
+        "accessories": 8,
+        "created": 0
     },
     "currency_confirmation": "User confirmed RUB; site retail equals converted RRP.",
     "rate": {
