@@ -1,6 +1,6 @@
 {
     "schema": "karina-audit-v1",
-    "generated_at": "2026-10-23T13:37:50+00:00",
+    "generated_at": "2026-10-23T13:44:24+00:00",
     "mode": "read_only",
     "applied": false,
     "discount_percent": 25,
@@ -17,11 +17,13 @@
     },
     "warnings": [
         "RUB confirmed by user; conversion uses dated NBRB official rate divided by scale.",
-        "Do not use generic prices:update or currency:fetch-nbrb-rates for KARINA until retail\/purchase policy is supported.",
+        "KARINA site retail uses source RRP; procurement remains discounted by 25%.",
         "Exact candidates require review of model, power and configuration.",
         "Unmatched is not authorization to create a new product.",
         "Existing mappings and supplier links are reported separately and are not automatically trusted."
     ],
+    "imports": [],
+    "import_item_counts": [],
     "workbook": {
         "sha256": "236ef6841215892a7e488ac9bdffc7a93926e3983c39968d5454e1da61edf196",
         "sheets": [
