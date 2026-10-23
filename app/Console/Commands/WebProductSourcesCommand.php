@@ -14,14 +14,14 @@ use Illuminate\Support\Str;
  */
 class WebProductSourcesCommand extends Command
 {
-    protected $signature = 'catalog:web-product-sources {query : Model to look for}';
+    protected $signature = 'catalog:web-product-sources {query* : Model to look for}';
 
     protected $description = 'Show the product pages the КП internet search finds for a query';
 
     public function handle(WebProductSources $sources): int
     {
         $this->line('metric.web_sources.configured='.(int) $sources->isConfigured());
-        $found = $sources->search((string) $this->argument('query'));
+        $found = $sources->search(implode(' ', (array) $this->argument('query')));
         foreach (array_keys($found) as $url) {
             $this->line('audit.web_sources.page='.Str::slug((string) parse_url($url, PHP_URL_HOST)).':'.Str::slug(Str::limit((string) parse_url($url, PHP_URL_PATH), 80, '')));
         }
