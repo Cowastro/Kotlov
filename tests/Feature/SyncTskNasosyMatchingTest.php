@@ -112,7 +112,7 @@ class SyncTskNasosyMatchingTest extends TestCase
 
     public function test_it_creates_cards_only_for_the_given_brand_with_an_aqualider_card(): void
     {
-        foreach (['tsirkulyatsionnyie' => 'Циркуляционные насосы', 'poverhnostnyie' => 'Поверхностные насосы'] as $slug => $name) {
+        foreach (['tsirkulyatsionnyie' => 'Циркуляционные насосы', 'poverhnostnyie' => 'Поверхностные насосы', 'mnogostupenchatye-nasosy' => 'Многоступенчатые насосы'] as $slug => $name) {
             Category::query()->firstOrCreate(['slug' => $slug], ['name' => $name, 'parent_id' => 0, 'is_active' => true]);
         }
         Brand::query()->create(['name' => 'WELLMIX', 'slug' => 'wellmix', 'is_active' => true]);
@@ -140,7 +140,7 @@ class SyncTskNasosyMatchingTest extends TestCase
         $this->assertSame('tsirkulyatsionnyie', $twin->category->slug);
         $this->assertSame('17109972', $twin->supplierProducts()->sole()->supplier_article);
         $multistage = Product::query()->where('name', 'Многоступенчатый насос Wellmix CV 1- 4-0-HQCV')->sole();
-        $this->assertSame('poverhnostnyie', $multistage->category->slug);
+        $this->assertSame('mnogostupenchatye-nasosy', $multistage->category->slug);
         $this->assertSame('preorder', $multistage->supplierProducts()->sole()->stock_status);
     }
 }

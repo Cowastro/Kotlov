@@ -32,6 +32,23 @@ final class TskPumpClassifier
             return 'membrannyie-baki';
         }
 
+        // Industrial pumps (Wellmix, UNIPUMP MVH). A household «поверхностный»
+        // multistage or end-suction pump stays with the surface pumps.
+        if (str_contains($value, 'сухой установки')) {
+            return 'kanalizatsionnye-nasosy-sukhoy-ustanovki';
+        }
+        if (preg_match('/(?:^|\s)(?:td|tg)\s*\d/u', $value)) {
+            return 'in-lain-nasosy';
+        }
+        if (! str_contains($value, 'поверхност')) {
+            if (str_contains($value, 'многоступенчат') || preg_match('/(?:^|\s)(?:cmi|cuc|cvf?)\s*\d/u', $value)) {
+                return 'mnogostupenchatye-nasosy';
+            }
+            if (self::containsAny($value, ['моноблочн', 'консольн'])) {
+                return 'konsolnye-i-monoblochnye-nasosy';
+            }
+        }
+
         // Drainage/sewage submersibles must be checked before the generic
         // "погружной" rule used for borehole pumps.
         if (self::containsAny($value, [
@@ -53,8 +70,6 @@ final class TskPumpClassifier
         if (self::containsAny($value, [
             'поверхност', 'мотопомп', 'самовсас', 'частотным преобразовател',
             'частотным регулятор', 'центробежный насос', 'насос вихревой',
-            // Wellmix industrial: vertical multistage, monoblock and end-suction pumps.
-            'многоступенчат', 'моноблочн', 'консольн',
         ]) || preg_match('/\b(?:psb|wp)[\s_-]*\d/i', $value)) {
             return 'poverhnostnyie';
         }
@@ -88,6 +103,10 @@ final class TskPumpClassifier
                 : 'Поверхностный насос',
             'nasosnyie-stantsii' => 'Насосная станция',
             'skvajinnye-nasosy' => 'Скважинный насос',
+            'mnogostupenchatye-nasosy' => 'Многоступенчатый насос',
+            'konsolnye-i-monoblochnye-nasosy' => 'Консольный или моноблочный насос',
+            'in-lain-nasosy' => 'Ин-лайн насос',
+            'kanalizatsionnye-nasosy-sukhoy-ustanovki' => 'Канализационный насос сухой установки',
             default => null,
         };
     }

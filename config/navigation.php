@@ -222,6 +222,7 @@ return [
                     ['name' => 'Скважинные',         'url' => '/skvajinnye-nasosy'],
                     ['name' => 'Для отопления',      'url' => '/tsirkulyatsionnyie'],
                     ['name' => 'Насосные станции',   'url' => '/nasosnyie-stantsii'],
+                    ['name' => 'Промышленные',       'url' => '/promyshlennye-nasosy'],
                 ],
             ],
             [

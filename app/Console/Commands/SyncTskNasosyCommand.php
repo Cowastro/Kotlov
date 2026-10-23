@@ -78,6 +78,11 @@ class SyncTskNasosyCommand extends Command
         'skvajinnye-nasosy' => 272,
         'komplektuyushchie-dlya-nasosov' => 246,
         'vodosnabzhenie' => 246,
+        // Industrial pump subcategories (2026_10_23 migration); parents as fallback.
+        'mnogostupenchatye-nasosy' => 249,
+        'konsolnye-i-monoblochnye-nasosy' => 249,
+        'in-lain-nasosy' => 60,
+        'kanalizatsionnye-nasosy-sukhoy-ustanovki' => 265,
     ];
 
     private array $indexBySupplierArticle = [];

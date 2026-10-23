@@ -54,8 +54,8 @@ class MergeDuplicateCardsCommand extends Command
                 $keepAttributes = DB::table('product_attribute_values')->where('product_id', $keepId)->pluck('attribute_id');
                 $attributes = DB::table('product_attribute_values')->where('product_id', $dupeId)->whereNotIn('attribute_id', $keepAttributes);
                 $stats['attributes_moved'] += (clone $attributes)->count();
-                $keepSuppliers = DB::table('supplier_products')->where('product_id', $keepId)->pluck('supplier_id');
-                $links = DB::table('supplier_products')->where('product_id', $dupeId)->whereNotIn('supplier_id', $keepSuppliers);
+                // Every link moves, also a second article of the same supplier (the price lists the model twice).
+                $links = DB::table('supplier_products')->where('product_id', $dupeId);
                 $stats['links_moved'] += (clone $links)->count();
 
                 if (! $apply) {
