@@ -95,6 +95,9 @@ jobs:
         run: |
           composer install --prefer-dist --no-interaction --no-progress
           php -l app/Console/Commands/AuditKarinaCommand.php
+          php -l app/Services/Pricing/KarinaPricing.php
+          php -l app/Console/Commands/PricesUpdateCommand.php
+          php -l app/Console/Commands/FetchNbrbRatesCommand.php
           vendor/bin/phpunit tests/Unit/KarinaPriceAuditTest.php
 
       - name: Configure SSH
