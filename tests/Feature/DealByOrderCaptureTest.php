@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Events\NewOrderCreated;
 use App\Models\DealByOrderInbox;
 use App\Models\MarketplaceSyncCursor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -28,6 +30,7 @@ class DealByOrderCaptureTest extends TestCase
             'orders_initial_lookback_days' => 30,
             'orders_overlap_minutes' => 15,
         ]);
+        Event::fake([NewOrderCreated::class]);
         Carbon::setTestNow('2026-10-19 08:00:00 UTC');
     }
 
@@ -43,6 +46,9 @@ class DealByOrderCaptureTest extends TestCase
             'https://my.deal.test/api/v1/orders/list*' => Http::response([
                 'orders' => [$this->orderPayload()],
             ]),
+            'https://my.deal.test/api/v1/orders/set_status' => Http::response([
+                'processed_ids' => [987654],
+            ]),
         ]);
 
         $this->artisan('deal:pull-orders')->assertSuccessful();
@@ -53,7 +59,8 @@ class DealByOrderCaptureTest extends TestCase
 
         $inbox = DealByOrderInbox::query()->sole();
         $this->assertSame('987654', $inbox->remote_order_id);
-        $this->assertSame('pending', $inbox->remote_status);
+        $this->assertSame('received', $inbox->remote_status);
+        $this->assertSame('received', $inbox->last_pushed_status);
         $this->assertSame('buyer@example.test', $inbox->payload['email']);
         $this->assertSame(DealByOrderInbox::STATUS_PROCESSED, $inbox->processing_status);
         $this->assertNotNull($inbox->order_id);
@@ -80,13 +87,23 @@ class DealByOrderCaptureTest extends TestCase
             && $request['sort_dir'] === 'asc'
             && $request['last_modified_from'] === '2026-09-19 08:00:00'
             && $request['last_modified_to'] === '2026-10-19 08:00:00');
+        Http::assertSent(fn (Request $request): bool => $request->method() === 'POST'
+            && $request->url() === 'https://my.deal.test/api/v1/orders/set_status'
+            && $request['status'] === 'received'
+            && $request['ids'] === ['987654']);
+        Event::assertDispatched(NewOrderCreated::class, 1);
     }
 
     public function test_repeated_capture_updates_the_same_inbox_record(): void
     {
-        Http::fakeSequence('https://my.deal.test/api/v1/orders/list*')
-            ->push(['orders' => [$this->orderPayload()]])
-            ->push(['orders' => [$this->orderPayload(['status' => 'received', 'status_name' => 'Принят'])]]);
+        Http::fake([
+            'https://my.deal.test/api/v1/orders/list*' => Http::sequence()
+                ->push(['orders' => [$this->orderPayload()]])
+                ->push(['orders' => [$this->orderPayload(['status' => 'received', 'status_name' => 'Принят'])]]),
+            'https://my.deal.test/api/v1/orders/set_status' => Http::response([
+                'processed_ids' => [987654],
+            ]),
+        ]);
 
         $this->artisan('deal:pull-orders')->assertSuccessful();
         Carbon::setTestNow('2026-10-19 08:03:00 UTC');
@@ -100,7 +117,9 @@ class DealByOrderCaptureTest extends TestCase
         $this->assertNotNull($inbox->order_id);
 
         $requests = Http::recorded();
-        $this->assertSame('2026-10-19 07:45:00', $requests[1][0]['last_modified_from']);
+        $listRequests = collect($requests)->filter(fn (array $record): bool => $record[0]->method() === 'GET')->values();
+        $this->assertSame('2026-10-19 07:45:00', $listRequests[1][0]['last_modified_from']);
+        Event::assertDispatched(NewOrderCreated::class, 1);
     }
 
     public function test_disabled_capture_does_not_call_deal_by(): void
@@ -138,18 +157,25 @@ class DealByOrderCaptureTest extends TestCase
             $firstPage[] = $this->orderPayload(['id' => $id]);
         }
 
-        Http::fakeSequence('https://my.deal.test/api/v1/orders/list*')
-            ->push(['orders' => $firstPage])
-            ->push(['orders' => [$this->orderPayload(['id' => 101])]]);
+        Http::fake([
+            'https://my.deal.test/api/v1/orders/list*' => Http::sequence()
+                ->push(['orders' => $firstPage])
+                ->push(['orders' => [$this->orderPayload(['id' => 101])]]),
+            'https://my.deal.test/api/v1/orders/set_status' => Http::response([
+                'processed_ids' => range(1, 101),
+            ]),
+        ]);
 
         $this->artisan('deal:pull-orders')->assertSuccessful();
 
         $this->assertDatabaseCount('deal_by_order_inboxes', 101);
         $this->assertDatabaseCount('orders', 101);
-        Http::assertSentCount(2);
-        $requests = Http::recorded();
-        $this->assertFalse(isset($requests[0][0]['last_id']));
-        $this->assertSame(100, $requests[1][0]['last_id']);
+        $listRequests = collect(Http::recorded())
+            ->filter(fn (array $record): bool => $record[0]->method() === 'GET')
+            ->values();
+        $this->assertCount(2, $listRequests);
+        $this->assertFalse(isset($listRequests[0][0]['last_id']));
+        $this->assertSame(100, $listRequests[1][0]['last_id']);
     }
 
     public function test_invalid_response_does_not_advance_the_cursor(): void

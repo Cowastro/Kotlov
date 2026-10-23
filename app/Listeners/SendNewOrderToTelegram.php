@@ -26,6 +26,8 @@ class SendNewOrderToTelegram implements ShouldQueue
         }
 
         $order = $event->order;
+        $isDealByOrder = $order->dealByInbox()->exists();
+        $orderLabel = ($isDealByOrder ? 'Deal.by ' : '').$order->number;
         $requiresInstallmentFollowUp = $order->payment_type === 'installment_6';
         $requiresStockConfirmation = $order->items
             ->contains(fn ($item): bool => $item->supply_is_available !== true)
@@ -64,10 +66,10 @@ class SendNewOrderToTelegram implements ShouldQueue
 
         $lines = [
             $requiresInstallmentFollowUp
-                ? "📅 *Заявка на рассрочку {$order->number}*"
+                ? "📅 *Заявка на рассрочку {$orderLabel}*"
                 : ($order->payment_type === 'invoice'
-                    ? "🧾 *Запрос счёта {$order->number}*"
-                    : "🛒 *Новый заказ {$order->number}*"),
+                    ? "🧾 *Запрос счёта {$orderLabel}*"
+                    : "🛒 *Новый заказ {$orderLabel}*"),
             $requiresStockConfirmation ? '⚠️ *Сначала подтвердить наличие и срок поставки*' : null,
             '',
             '👤 *Клиент:* '.$escape($order->customer_name),

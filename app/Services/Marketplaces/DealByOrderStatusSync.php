@@ -58,7 +58,7 @@ class DealByOrderStatusSync
     private function remoteStatus(string $status): ?string
     {
         return match ($status) {
-            'confirmed', 'processing', 'shipped' => 'received',
+            'new', 'checking', 'confirmed', 'processing', 'shipped' => 'received',
             'delivered', 'completed' => 'delivered',
             'cancelled' => 'canceled',
             default => null,

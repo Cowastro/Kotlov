@@ -2,6 +2,7 @@
 
 namespace App\Services\Marketplaces;
 
+use App\Events\NewOrderCreated;
 use App\Models\DealByOrderInbox;
 use App\Models\Order;
 use App\Models\Product;
@@ -10,10 +11,24 @@ use Throwable;
 
 class DealByOrderProjector
 {
+    public function __construct(
+        private readonly DealByOrderStatusSync $statusSync,
+    ) {}
+
     public function projectSafely(DealByOrderInbox $inbox): bool
     {
         try {
-            $this->project($inbox);
+            $order = $this->project($inbox);
+
+            // A successfully imported order is already accepted by our system,
+            // so Deal.by must no longer keep it in the "New" queue.
+            $this->statusSync->syncSafely($order);
+
+            // Repeated polling projects the same inbox row again. Notify only
+            // when the operational order was actually created for the first time.
+            if ($order->wasRecentlyCreated) {
+                NewOrderCreated::dispatch($order->load('items'));
+            }
 
             return true;
         } catch (Throwable $exception) {

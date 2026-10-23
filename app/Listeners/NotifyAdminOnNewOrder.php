@@ -31,15 +31,16 @@ class NotifyAdminOnNewOrder implements ShouldQueue
             ->contains(fn ($item): bool => $item->supply_is_available !== true)
             || $order->payment_type === 'invoice';
         $requiresInstallmentFollowUp = $order->payment_type === 'installment_6';
-        $title = "Новый заказ {$order->number}";
+        $orderLabel = ($order->dealByInbox()->exists() ? 'Deal.by ' : '').$order->number;
+        $title = "Новый заказ {$orderLabel}";
         if ($requiresStockConfirmation) {
             $title .= ' — подтвердить наличие';
         }
         if ($requiresInstallmentFollowUp) {
-            $title = "Заявка на рассрочку {$order->number}";
+            $title = "Заявка на рассрочку {$orderLabel}";
         }
         if ($order->payment_type === 'invoice') {
-            $title = "Запрос счёта {$order->number} — проверить наличие";
+            $title = "Запрос счёта {$orderLabel} — проверить наличие";
         }
         $body = "{$order->customer_name} · {$order->customer_phone} · {$order->total} BYN";
         if ($requiresInstallmentFollowUp) {
