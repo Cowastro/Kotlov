@@ -37,6 +37,7 @@ class ChimneySelectorController extends Controller
         // Keep the common half- and one-metre pipe sections in the selector even
         // when they fall outside the general catalogue limit.
         $pipeSections = (clone $catalogQuery)
+            ->when($preferredBrandId, fn ($query) => $query->where('brand_id', $preferredBrandId))
             ->where(function ($query) {
                 $query->where('name', 'like', '%L500%')
                     ->orWhere('name', 'like', '%L1000%');
@@ -50,6 +51,7 @@ class ChimneySelectorController extends Controller
             preg_match('/(?:Ø|диаметр[^0-9]{0,12})?(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*(?:мм)?/iu', $text, $diameter);
             preg_match('/(?:D|Ø)?\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*[\/]\s*(120|130|150|160|180|200|210|220|230|250|260|280|300|310|350)/iu', $text, $diameterPair);
             preg_match('/(?:AISI\s*)?(304|316|321|430)/iu', $text, $steel);
+            preg_match('/(?:304|316|321|430)\s*[-,]\s*(0[.,][5-9]|1[.,]0)/iu', $text, $thickness);
             preg_match('/\bL\s*(250|500|750|1000)\b/iu', $text, $length);
             $slug = (string) $product->category?->slug;
 
@@ -63,6 +65,7 @@ class ChimneySelectorController extends Controller
                 'outer_diameter' => $diameterPair[2] ?? null,
                 'diameter_pair' => isset($diameterPair[1], $diameterPair[2]) ? [$diameterPair[1], $diameterPair[2]] : null,
                 'steel' => $steel[1] ?? null,
+                'thickness' => isset($thickness[1]) ? str_replace(',', '.', $thickness[1]) : null,
                 'length_mm' => isset($length[1]) ? (int) $length[1] : null,
                 'system' => str_contains($slug, 'sendvich')
                     || str_contains(mb_strtolower($text), 'сэндвич')

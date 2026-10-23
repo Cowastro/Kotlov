@@ -39,6 +39,7 @@
                     <div class="cs-fields">
                         <label>Состав системы<select name="system"><option value="combined">Моно + утеплённый (рекомендуется)</option><option value="sandwich">Полностью утеплённый</option><option value="mono">Полностью моно</option></select></label>
                         <label>Марка стали<select name="steel"><option value="">Подобрать из доступных</option><option value="430">AISI 430</option><option value="304">AISI 304</option><option value="316">AISI 316</option><option value="321">AISI 321</option></select></label>
+                        <label>Толщина стали трубы<select name="thickness"><option value="">Подобрать из доступных</option><option value="0.5">0,5 мм</option><option value="0.8">0,8 мм</option></select></label>
                         <label>Длина моно-участка<select name="mono_length"><option value="0.5">0,5 м</option><option value="1" selected>1 м</option><option value="1.5">1,5 м</option><option value="2">2 м</option></select></label>
                         <label>Адаптер на печь<select name="stove_adapter"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
                         <label>Диаметр трассы после адаптера<select name="chimney_diameter" data-chimney-diameter></select></label>
@@ -137,6 +138,7 @@
                 && (adapterPairMatches !== null ? adapterPairMatches : (!targetDiameter || productDiameter === targetDiameter || !productDiameter))
                 && (need.system === 'any' || product.system === need.system)
                 && (ignoreSteel || settings.steel === '' || product.steel === settings.steel || !product.steel)
+                && (need.kind !== 'pipe' || settings.thickness === '' || product.thickness === settings.thickness)
                 && (!need.lengthMm || product.length_mm === need.lengthMm);
         }
         var picked = catalog.find(function (product) { return matches(product, false); });
@@ -180,7 +182,7 @@
         var height = Number(data.get('height'));
         var clampValue = data.get('clamps');
         var settings = {
-            diameter:data.get('diameter'), system:data.get('system'), steel:data.get('steel'), scheme:data.get('scheme'),
+            diameter:data.get('diameter'), system:data.get('system'), steel:data.get('steel'), thickness:data.get('thickness'), scheme:data.get('scheme'),
             height:height, monoLength:Number(data.get('mono_length')), stoveAdapter:data.get('stove_adapter') === 'yes',
             damper:data.get('damper') === 'yes', ceilingPasses:Number(data.get('ceiling_passes')),
             clamps:clampValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(clampValue),
@@ -227,6 +229,7 @@
             var total = subtotal - saving;
             var names = rows.map(function (row) { return row.label + ': ' + row.quantity + ' × ' + row.product.name; }).join('; ');
             message.value = 'Подбор дымохода: ' + diameterLabel + ', ' + systemLabel + ', сталь ' + (settings.steel || 'из доступных')
+                + ', толщина трубы ' + (settings.thickness ? settings.thickness.replace('.', ',') + ' мм' : 'из доступных')
                 + ', схема ' + settings.scheme + ', высота ' + settings.height + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
                 + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
                 + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
