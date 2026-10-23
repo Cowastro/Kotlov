@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\PriceList\KarinaPriceAudit;
+use App\Services\Pricing\KarinaPricing;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PHPUnit\Framework\TestCase;
@@ -94,5 +95,37 @@ class KarinaPriceAuditTest extends TestCase
             $book->disconnectWorksheets();
             unlink($path);
         }
+    }
+
+    public function test_rub_rate_uses_nbrb_scale_and_keeps_site_retail_above_purchase(): void
+    {
+        $evidence = KarinaPricing::rateEvidence([
+            'Cur_Abbreviation' => 'RUB', 'Cur_OfficialRate' => 3.85,
+            'Cur_Scale' => 100, 'Date' => '2026-10-23T00:00:00',
+        ], '2026-10-23');
+        $this->assertSame(0.0385, $evidence['byn_per_rub']);
+        $quote = KarinaPricing::quote(40200, $evidence['byn_per_rub']);
+        $this->assertSame(30150.0, $quote['purchase_rub']);
+        $this->assertSame(1547.70, $quote['retail_byn']);
+        $this->assertSame(1160.78, $quote['purchase_byn']);
+        $this->assertGreaterThan($quote['purchase_byn'], $quote['retail_byn']);
+    }
+
+    public function test_stale_rate_is_rejected_without_a_silent_fallback(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        KarinaPricing::rateEvidence([
+            'Cur_Abbreviation' => 'RUB', 'Cur_OfficialRate' => 3.85,
+            'Cur_Scale' => 100, 'Date' => '2026-10-01T00:00:00',
+        ], '2026-10-23');
+    }
+
+    public function test_missing_currency_scale_is_rejected_instead_of_using_a_hundredfold_rate(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        KarinaPricing::rateEvidence([
+            'Cur_Abbreviation' => 'RUB', 'Cur_OfficialRate' => 3.85,
+            'Date' => '2026-10-23T00:00:00',
+        ], '2026-10-23');
     }
 }
