@@ -171,7 +171,7 @@ class UnconfirmedProductCheckoutTest extends TestCase
             ->assertSee(route('installment.info'), false)
             ->assertDontSee('sbg.by', false)
             ->assertSee('btn-installment-purchase', false)
-            ->assertSee('mobile-sticky-installment d-md-none btn-add-to-cart', false)
+            ->assertSee('mobile-sticky-installment d-flex btn-add-to-cart', false)
             ->assertSee('aria-label="Купить в рассрочку до 6 месяцев"', false)
             ->assertSee('mobile-sticky-cart-benefit d-md-none', false)
             ->assertSeeText('со скидкой −3%')
