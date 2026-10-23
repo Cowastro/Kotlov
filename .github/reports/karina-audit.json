@@ -1,6 +1,6 @@
 {
     "schema": "karina-audit-v1",
-    "generated_at": "2026-10-23T13:35:06+00:00",
+    "generated_at": "2026-10-23T13:37:50+00:00",
     "mode": "read_only",
     "applied": false,
     "discount_percent": 25,
