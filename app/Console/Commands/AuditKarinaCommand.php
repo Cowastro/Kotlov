@@ -6,6 +6,8 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\SupplierProductMapping;
+use App\Models\SupplierPriceImport;
+use App\Models\SupplierPriceItem;
 use App\Services\PriceList\KarinaPriceAudit;
 use App\Services\Pricing\KarinaPricing;
 use Illuminate\Support\Facades\Http;
@@ -93,11 +95,13 @@ class AuditKarinaCommand extends Command
             'rate' => $rate,
             'warnings' => [
                 'RUB confirmed by user; conversion uses dated NBRB official rate divided by scale.',
-                'Do not use generic prices:update or currency:fetch-nbrb-rates for KARINA until retail/purchase policy is supported.',
+                'KARINA site retail uses source RRP; procurement remains discounted by 25%.',
                 'Exact candidates require review of model, power and configuration.',
                 'Unmatched is not authorization to create a new product.',
                 'Existing mappings and supplier links are reported separately and are not automatically trusted.',
             ],
+            'imports' => SupplierPriceImport::whereIn('supplier_id', $supplierIds)->orderBy('id')->get(['id', 'supplier_id', 'filename', 'total_rows', 'matched', 'unmatched', 'updated', 'status'])->toArray(),
+            'import_item_counts' => SupplierPriceItem::whereIn('supplier_id', $supplierIds)->selectRaw('import_id, match_status, COUNT(*) as row_count')->groupBy('import_id', 'match_status')->get()->toArray(),
             'workbook' => $workbook, 'suppliers' => $suppliers, 'products' => $products,
             'supplier_links' => $links, 'existing_mappings' => $mappings, 'items' => $items,
             'catalog_duplicate_names' => collect($products)->groupBy(fn ($p) => $audit->normalize($p['name']))->filter(fn ($group) => $group->count() > 1)->map(fn ($group) => $group->pluck('id')->all())->all(),
