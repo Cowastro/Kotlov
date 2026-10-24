@@ -66,9 +66,13 @@ class ChimneySelectorController extends Controller
                 ->with(['category', 'brand'])
                 ->where(function ($query) {
                     $query->where('name', 'like', '%теплообмен%')
+                        ->orWhere('name', 'like', '%Теплообмен%')
                         ->orWhere('name', 'like', '%регистр%')
+                        ->orWhere('name', 'like', '%Регистр%')
                         ->orWhere('name', 'like', '%бак печной%')
-                        ->orWhere('name', 'like', '%бак на трубе%');
+                        ->orWhere('name', 'like', '%Бак печной%')
+                        ->orWhere('name', 'like', '%бак на трубе%')
+                        ->orWhere('name', 'like', '%Бак на трубе%');
                 })
                 ->limit(200)
                 ->get()
@@ -187,6 +191,15 @@ class ChimneySelectorController extends Controller
             str_contains($slug, 'shibery') || str_contains($normalizedName, 'шибер') => 'damper',
             str_contains($slug, 'zonty') || str_contains($normalizedName, 'зонт') || str_contains($normalizedName, 'дефлектор') => 'umbrella',
             str_contains($normalizedName, 'ппу') || str_contains($normalizedName, 'проход через') || str_contains($normalizedName, 'проходной узел') => 'ceiling_pass',
+            str_contains($normalizedName, 'площадка монтажная') || str_contains($normalizedName, 'площадка сквозная') => 'support',
+            str_contains($normalizedName, 'крепление настенное')
+                || str_contains($normalizedName, 'крепление универсальное')
+                || str_contains($normalizedName, 'крепление регулируемое')
+                || str_contains($normalizedName, 'крепление основное') => 'wall_mount',
+            str_contains($normalizedName, 'фартук')
+                || str_contains($normalizedName, 'master flash')
+                || str_contains($normalizedName, 'мастер флеш')
+                || str_contains($normalizedName, 'крышная разделка') => 'roof_flashing',
             str_contains($normalizedName, 'растяж') => 'guy_wire',
             str_contains($normalizedName, 'хомут штанги') || str_contains($normalizedName, 'хомуты штанги') => 'mount',
             (bool) preg_match('/(^|\s)хомут(?:\s|$)/u', $normalizedName) => 'clamp',

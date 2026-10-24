@@ -154,8 +154,7 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Чёрная сталь DARCO, 2 мм')
             ->assertSeeText('Окрашенная система «Теплов и Сухов» MC Black')
             ->assertSeeText('0,25 м')
-            ->assertSee('<option value="430" selected>AISI 430</option>', false)
-            ->assertSee('<option value="0.8" selected>0,8 мм</option>', false)
+            ->assertSee('<option value="auto" selected>Рекомендовать автоматически</option>', false)
             ->assertSeeText('Моно + утеплённый')
             ->assertSeeText('Длина моно-участка')
             ->assertSeeText('Адаптер на печь')
@@ -177,6 +176,17 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Зонт')
             ->assertSeeText('Схема и высота')
             ->assertSeeText('Угол колен для смещения')
+            ->assertSeeText('Горизонтальный участок через стену')
+            ->assertSeeText('Длина участка между коленами')
+            ->assertSeeText('Стеновые крепления')
+            ->assertSeeText('Свободная высота над последним креплением')
+            ->assertSeeText('Расстояние от трубы до конька')
+            ->assertSee('data-share-kit', false)
+            ->assertSee('recommendMaterial', false)
+            ->assertSee("kind:'support'", false)
+            ->assertSee("kind:'wall_mount'", false)
+            ->assertSee("kind:'roof_flashing'", false)
+            ->assertSee("sharedParams.get('items')", false)
             ->assertSeeText('Теплов и Сухов')
             ->assertSeeText('−10%')
             ->assertSeeText('Передайте схему менеджеру')
@@ -217,7 +227,9 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertSame('guy_wire', $method->invoke($controller, 'krepleniya-dymohod', 'Хомут растяжки Ø180'));
         $this->assertSame('elbow', $method->invoke($controller, 'kolena-sendvich', 'Отвод Термо 45° с хомутом'));
         $this->assertSame('mount', $method->invoke($controller, 'krepleniya-dymohod', 'Хомут штанги регулируемой ХШР d200'));
-        $this->assertSame('adapter', $method->invoke($controller, 'perehody-adaptery-dymohod', 'Площадка монтажная термо ПМТ-Р D120/180'));
+        $this->assertSame('support', $method->invoke($controller, 'perehody-adaptery-dymohod', 'Площадка монтажная термо ПМТ-Р D120/180'));
+        $this->assertSame('wall_mount', $method->invoke($controller, 'krepleniya-dymohod', 'Крепление настенное Ø180'));
+        $this->assertSame('roof_flashing', $method->invoke($controller, 'zaglushki-dymohod', 'Фартук D180'));
 
         $diameter = new \ReflectionMethod(ChimneySelectorController::class, 'diameterFromText');
         $this->assertSame('120', $diameter->invoke($controller, 'Шибер Darco SZK120-CZ2(ML) короткая ручка'));
@@ -229,10 +241,10 @@ class ChimneyBundlePromotionTest extends TestCase
     /** @return array{Product, Product} */
     private function products(): array
     {
-        $equipmentRoot = Category::query()->create(['name' => 'Печи', 'slug' => 'pechi', 'parent_id' => 0]);
-        $equipmentCategory = Category::query()->create(['name' => 'Печи для дома', 'slug' => 'test-wood-stoves', 'parent_id' => $equipmentRoot->id]);
-        $chimneyRoot = Category::query()->create(['name' => 'Дымоходы', 'slug' => 'dymohody', 'parent_id' => 0]);
-        $chimneyCategory = Category::query()->create(['name' => 'Трубы сэндвич', 'slug' => 'truby-sendvich', 'parent_id' => $chimneyRoot->id]);
+        $equipmentRoot = Category::query()->firstOrCreate(['slug' => 'pechi'], ['name' => 'Печи', 'parent_id' => 0]);
+        $equipmentCategory = Category::query()->firstOrCreate(['slug' => 'test-wood-stoves'], ['name' => 'Печи для дома', 'parent_id' => $equipmentRoot->id]);
+        $chimneyRoot = Category::query()->firstOrCreate(['slug' => 'dymohody'], ['name' => 'Дымоходы', 'parent_id' => 0]);
+        $chimneyCategory = Category::query()->firstOrCreate(['slug' => 'truby-sendvich'], ['name' => 'Трубы сэндвич', 'parent_id' => $chimneyRoot->id]);
 
         $equipment = Product::query()->create([
             'category_id' => $equipmentCategory->id,

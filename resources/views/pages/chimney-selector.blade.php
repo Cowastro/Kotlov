@@ -38,24 +38,35 @@
                     <div class="cs-step"><span>02</span><div><h2>Исполнение и сталь</h2><p>Основная система — «{{ $preferredBrandName }}». Обычно у печи ставится моно, а наружная трасса собирается из утеплённых элементов.</p></div></div>
                     <div class="cs-fields">
                         <label>Состав системы<select name="system"><option value="combined">Моно + утеплённый (рекомендуется)</option><option value="sandwich">Полностью утеплённый</option><option value="mono">Полностью моно</option></select></label>
-                        <label>Марка стали<select name="steel"><option value="">Подобрать из доступных</option><option value="430" selected>AISI 430</option><option value="304">AISI 304</option><option value="316">AISI 316</option><option value="321">AISI 321</option></select></label>
-                        <label>Толщина стали трубы<select name="thickness"><option value="">Подобрать из доступных</option><option value="0.5">0,5 мм</option><option value="0.8" selected>0,8 мм</option></select></label>
+                        <label>Топливо<select name="fuel"><option value="wood" selected>Дрова</option><option value="coal">Уголь / брикеты</option><option value="pellet">Пеллеты</option><option value="gas">Газ</option></select></label>
+                        <label>Режим работы<select name="operation"><option value="normal" selected>Обычный периодический</option><option value="intensive">Интенсивный / банная печь</option><option value="continuous">Длительный непрерывный</option></select></label>
+                        <label>Марка стали<select name="steel" data-steel><option value="auto" selected>Рекомендовать автоматически</option><option value="">Подобрать из доступных</option><option value="430">AISI 430</option><option value="304">AISI 304</option><option value="316">AISI 316</option><option value="321">AISI 321</option></select></label>
+                        <label>Толщина стали трубы<select name="thickness" data-thickness><option value="auto" selected>Рекомендовать автоматически</option><option value="">Подобрать из доступных</option><option value="0.5">0,5 мм</option><option value="0.8">0,8 мм</option><option value="1">1,0 мм</option></select></label>
                         <label>Материал моно-участка<select name="mono_material" data-mono-material><option value="stainless" selected>Нержавеющая сталь «Теплов и Сухов»</option><option value="mc_black" data-mc-black-option>Окрашенная система «Теплов и Сухов» MC Black</option><option value="black_darco" data-darco-option>Чёрная сталь DARCO, 2 мм</option></select></label>
                         <label>Длина моно-участка<select name="mono_length"><option value="0.25">0,25 м</option><option value="0.5">0,5 м</option><option value="0.75">0,75 м</option><option value="1" selected>1 м</option><option value="1.25">1,25 м</option><option value="1.5">1,5 м</option><option value="1.75">1,75 м</option><option value="2">2 м</option></select></label>
                         <label>Адаптер на печь<select name="stove_adapter"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
                         <label>Диаметр трассы после адаптера<select name="chimney_diameter" data-chimney-diameter></select></label>
                     </div>
+                    <p class="cs-recommendation" data-material-recommendation>Для дровяной печи рекомендуем AISI 430, 0,8 мм.</p>
                     <p class="cs-field-note">Складские диаметры трассы: Ø120, Ø150, Ø180 и Ø200. Для патрубка Ø130 можно выбрать адаптер на Ø120 или Ø150.</p>
 
                     <div class="cs-step"><span>03</span><div><h2>Схема и высота</h2><p>Выберите основные элементы трассы. Точный состав проверит специалист.</p></div></div>
                     <div class="cs-fields">
                         <label>Схема<select name="scheme"><option value="straight">Прямая через кровлю</option><option value="tee">Через стену с тройником</option><option value="elbows">Со смещением и коленами</option></select></label>
-                        <label>Угол колен для смещения<select name="elbow_angle"><option value="45" selected>2 × 45°</option><option value="90">1 × 90°</option></select></label>
-                        <label>Ориентировочная высота<select name="height"><option value="3">3 м</option><option value="4">4 м</option><option value="5" selected>5 м</option><option value="6">6 м</option><option value="7">7 м</option><option value="8">8 м</option></select></label>
+                        <label data-elbows-field>Угол колен для смещения<select name="elbow_angle"><option value="45" selected>2 × 45°</option><option value="90">1 × 90°</option></select></label>
+                        <label>Общая вертикальная высота, м<input type="number" name="height" value="5" min="1" max="20" step="0.25" inputmode="decimal"></label>
+                        <label data-tee-field>Горизонтальный участок через стену, м<input type="number" name="horizontal_length" value="0.5" min="0.25" max="3" step="0.25" inputmode="decimal"></label>
+                        <label data-elbows-field>Длина участка между коленами, м<input type="number" name="offset_length" value="0.5" min="0.25" max="3" step="0.25" inputmode="decimal"></label>
+                        <label data-elbows-field>Где находится смещение<select name="offset_system"><option value="mono">Внутри — моно</option><option value="sandwich">Снаружи — утеплённый</option></select></label>
                         <label>Шибер<select name="damper"><option value="no" selected>Не нужен</option><option value="yes">Нужен</option></select></label>
                         <label>Проходы через перекрытие (ППУ)<select name="ceiling_passes"><option value="0">Нет</option><option value="1" selected>1 проход</option><option value="2">2 прохода</option></select></label>
                         <label>Обычные соединительные хомуты<select name="clamps"><option value="auto" selected>Рассчитать по высоте</option><option value="0">Не нужны</option><option value="1">1 шт.</option><option value="2">2 шт.</option><option value="3">3 шт.</option><option value="4">4 шт.</option><option value="5">5 шт.</option><option value="6">6 шт.</option></select></label>
-                        <label>Растяжки для высокой мачты<select name="guy_wires"><option value="no" selected>Не нужны</option><option value="yes">Нужны</option></select></label>
+                        <label>Стеновые крепления<select name="wall_mounts"><option value="auto" selected>Рассчитать автоматически</option><option value="0">Не нужны</option><option value="1">1 шт.</option><option value="2">2 шт.</option><option value="3">3 шт.</option><option value="4">4 шт.</option><option value="5">5 шт.</option></select></label>
+                        <label>Свободная высота над последним креплением, м<input type="number" name="free_mast_height" value="1" min="0" max="5" step="0.25" inputmode="decimal"></label>
+                        <label>Растяжки для высокой мачты<select name="guy_wires"><option value="auto" selected>Автоматически</option><option value="no">Не нужны</option><option value="yes">Нужны</option></select></label>
+                        <label>Кровля<select name="roof_type"><option value="pitched_metal" selected>Скатная металлическая</option><option value="pitched_soft">Скатная мягкая</option><option value="flat">Плоская</option><option value="none">Кровлю не проходим</option></select></label>
+                        <label data-roof-field>Угол кровли, °<input type="number" name="roof_angle" value="30" min="0" max="60" step="5" inputmode="numeric"></label>
+                        <label data-roof-field>Расстояние от трубы до конька, м<input type="number" name="ridge_distance" value="1.5" min="0" max="10" step="0.25" inputmode="decimal"></label>
                         <label>Зонт<select name="umbrella"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
                     </div>
                     <button type="submit" class="tf-btn animate-btn w-100">Показать комплект</button>
@@ -87,8 +98,9 @@
 
 @push('styles')
 <style>
-.chimney-selector-page{--cs-red:#e34234;--cs-dark:#111;--cs-line:#e6e6e3;background:#fafaf8}.cs-hero{padding:70px 0;background:#111;color:#fff}.cs-hero__grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:48px;align-items:center}.cs-hero h1{max-width:780px;margin:12px 0 16px;color:#fff;font-size:clamp(38px,5vw,68px);line-height:1.02}.cs-hero p{max-width:700px;margin:0;color:#c8c8c8;font-size:18px;line-height:1.6}.cs-kicker{color:#ff7065;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.cs-equipment{margin-top:24px;padding:15px 18px;border:1px solid #383838;border-radius:14px;background:#1b1b1b}.cs-discount{display:flex;flex-direction:column;padding:30px;border-radius:24px;background:var(--cs-red)}.cs-discount strong{font-size:58px;line-height:1}.cs-discount span{margin-top:10px;line-height:1.4}.cs-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:32px;align-items:start}.cs-form,.cs-result{padding:30px;border:1px solid var(--cs-line);border-radius:24px;background:#fff}.cs-result{position:sticky;top:110px;min-height:350px}.cs-step{display:flex;gap:16px;margin:0 0 18px}.cs-step:not(:first-child){margin-top:34px;padding-top:28px;border-top:1px solid var(--cs-line)}.cs-step>span{display:grid;flex:0 0 38px;height:38px;place-items:center;border-radius:50%;background:#111;color:#fff;font-size:12px;font-weight:700}.cs-step h2{margin:0 0 4px;font-size:23px}.cs-step p{margin:0;color:#777;font-size:14px}.cs-options{display:flex;flex-wrap:wrap;gap:8px}.cs-options input{position:absolute;opacity:0}.cs-options span{display:block;padding:11px 14px;border:1px solid var(--cs-line);border-radius:10px;cursor:pointer}.cs-options input:checked+span{border-color:#111;background:#111;color:#fff}.cs-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.cs-fields label{font-size:13px;font-weight:700}.cs-fields select{width:100%;height:50px;margin-top:7px;padding:0 14px;border:1px solid var(--cs-line);border-radius:10px;background:#fff}.cs-field-note{margin:0 0 26px;color:#777;font-size:12px}.cs-safety{margin:14px 0 0;color:#777;font-size:12px;line-height:1.5}.cs-result__empty{padding:60px 15px;text-align:center;color:#777}.cs-result__empty span{font-size:42px}.cs-result h2{font-size:24px}.cs-result__list{display:grid;gap:12px;margin:20px 0}.cs-result__item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--cs-line)}.cs-result__item img{width:58px;height:58px;object-fit:contain}.cs-result__item a{color:#111;font-size:13px;font-weight:700}.cs-result__item small{display:block;color:#777}.cs-result__controls{display:flex;align-items:center;gap:4px;margin-top:8px}.cs-result__quantity{min-width:28px;text-align:center;font-size:13px;font-weight:800}.cs-result__control{display:grid;width:30px;height:30px;padding:0;place-items:center;border:1px solid #ddd;border-radius:8px;background:#fff;color:#111;font-size:18px;line-height:1}.cs-result__control:hover{border-color:#111}.cs-result__remove{margin-left:5px;padding:5px;border:0;background:transparent;color:#777;font-size:12px;text-decoration:underline}.cs-result__price{font-weight:700;white-space:nowrap}.cs-result__totals{padding:18px;border-radius:14px;background:#f5f5f2}.cs-result__row{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px}.cs-result__row--total{margin:14px 0 0;padding-top:14px;border-top:1px solid #ddd;font-size:18px;font-weight:800}.cs-result__saving{color:var(--cs-red);font-weight:700}.cs-result__actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.cs-manager{padding:55px 0;background:#eeeae4}.cs-manager__box{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}.cs-manager h2{margin:8px 0}.cs-manager p{margin:0;color:#666}.cs-manager form{display:grid;grid-template-columns:1fr auto;gap:10px}.cs-manager input{height:54px;padding:0 16px;border:1px solid #ccc;border-radius:10px;background:#fff}@media(max-width:991px){.cs-hero__grid,.cs-layout,.cs-manager__box{grid-template-columns:1fr}.cs-discount{max-width:330px}.cs-result{position:static}.cs-manager form{grid-template-columns:1fr}}@media(max-width:575px){.cs-hero{padding:42px 0}.cs-hero h1{font-size:38px}.cs-form,.cs-result{padding:20px;border-radius:18px}.cs-fields,.cs-result__actions{grid-template-columns:1fr}.cs-result__item{grid-template-columns:48px 1fr}.cs-result__price{grid-column:2}.cs-options span{padding:9px 11px;font-size:13px}}
+.chimney-selector-page{--cs-red:#e34234;--cs-dark:#111;--cs-line:#e6e6e3;background:#fafaf8}.cs-hero{padding:70px 0;background:#111;color:#fff}.cs-hero__grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:48px;align-items:center}.cs-hero h1{max-width:780px;margin:12px 0 16px;color:#fff;font-size:clamp(38px,5vw,68px);line-height:1.02}.cs-hero p{max-width:700px;margin:0;color:#c8c8c8;font-size:18px;line-height:1.6}.cs-kicker{color:#ff7065;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.cs-equipment{margin-top:24px;padding:15px 18px;border:1px solid #383838;border-radius:14px;background:#1b1b1b}.cs-discount{display:flex;flex-direction:column;padding:30px;border-radius:24px;background:var(--cs-red)}.cs-discount strong{font-size:58px;line-height:1}.cs-discount span{margin-top:10px;line-height:1.4}.cs-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:32px;align-items:start}.cs-form,.cs-result{padding:30px;border:1px solid var(--cs-line);border-radius:24px;background:#fff}.cs-result{position:sticky;top:110px;min-height:350px}.cs-step{display:flex;gap:16px;margin:0 0 18px}.cs-step:not(:first-child){margin-top:34px;padding-top:28px;border-top:1px solid var(--cs-line)}.cs-step>span{display:grid;flex:0 0 38px;height:38px;place-items:center;border-radius:50%;background:#111;color:#fff;font-size:12px;font-weight:700}.cs-step h2{margin:0 0 4px;font-size:23px}.cs-step p{margin:0;color:#777;font-size:14px}.cs-options{display:flex;flex-wrap:wrap;gap:8px}.cs-options input{position:absolute;opacity:0}.cs-options span{display:block;padding:11px 14px;border:1px solid var(--cs-line);border-radius:10px;cursor:pointer}.cs-options input:checked+span{border-color:#111;background:#111;color:#fff}.cs-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.cs-fields label{font-size:13px;font-weight:700}.cs-fields select,.cs-fields input{width:100%;height:50px;margin-top:7px;padding:0 14px;border:1px solid var(--cs-line);border-radius:10px;background:#fff}.cs-fields [hidden]{display:none}.cs-field-note{margin:0 0 26px;color:#777;font-size:12px}.cs-safety{margin:14px 0 0;color:#777;font-size:12px;line-height:1.5}.cs-result__empty{padding:60px 15px;text-align:center;color:#777}.cs-result__empty span{font-size:42px}.cs-result h2{font-size:24px}.cs-result__list{display:grid;gap:12px;margin:20px 0}.cs-result__item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--cs-line)}.cs-result__item img{width:58px;height:58px;object-fit:contain}.cs-result__item a{color:#111;font-size:13px;font-weight:700}.cs-result__item small{display:block;color:#777}.cs-result__controls{display:flex;align-items:center;gap:4px;margin-top:8px}.cs-result__quantity{min-width:28px;text-align:center;font-size:13px;font-weight:800}.cs-result__control{display:grid;width:30px;height:30px;padding:0;place-items:center;border:1px solid #ddd;border-radius:8px;background:#fff;color:#111;font-size:18px;line-height:1}.cs-result__control:hover{border-color:#111}.cs-result__remove{margin-left:5px;padding:5px;border:0;background:transparent;color:#777;font-size:12px;text-decoration:underline}.cs-result__price{font-weight:700;white-space:nowrap}.cs-result__totals{padding:18px;border-radius:14px;background:#f5f5f2}.cs-result__row{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px}.cs-result__row--total{margin:14px 0 0;padding-top:14px;border-top:1px solid #ddd;font-size:18px;font-weight:800}.cs-result__saving{color:var(--cs-red);font-weight:700}.cs-result__actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.cs-manager{padding:55px 0;background:#eeeae4}.cs-manager__box{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}.cs-manager h2{margin:8px 0}.cs-manager p{margin:0;color:#666}.cs-manager form{display:grid;grid-template-columns:1fr auto;gap:10px}.cs-manager input{height:54px;padding:0 16px;border:1px solid #ccc;border-radius:10px;background:#fff}@media(max-width:991px){.cs-hero__grid,.cs-layout,.cs-manager__box{grid-template-columns:1fr}.cs-discount{max-width:330px}.cs-result{position:static}.cs-manager form{grid-template-columns:1fr}}@media(max-width:575px){.cs-hero{padding:42px 0}.cs-hero h1{font-size:38px}.cs-form,.cs-result{padding:20px;border-radius:18px}.cs-fields,.cs-result__actions{grid-template-columns:1fr}.cs-result__item{grid-template-columns:48px 1fr}.cs-result__price{grid-column:2}.cs-options span{padding:9px 11px;font-size:13px}}
 .cs-addon{margin-top:14px}.cs-addon__toggle{width:100%;height:48px;border:1px dashed #aaa;border-radius:12px;background:#fff;font-weight:800}.cs-addon__panel{margin-top:10px;padding:12px;border:1px solid var(--cs-line);border-radius:14px;background:#fafaf8}.cs-addon__panel[hidden]{display:none}.cs-addon__search{width:100%;height:46px;padding:0 14px;border:1px solid #ccc;border-radius:10px;background:#fff}.cs-addon__results{display:grid;gap:7px;margin-top:10px}.cs-addon__result{display:grid;grid-template-columns:42px 1fr auto;gap:9px;align-items:center;padding:8px;border:1px solid #e3e3df;border-radius:10px;background:#fff;text-align:left}.cs-addon__result img{width:42px;height:42px;object-fit:contain}.cs-addon__result strong{display:block;font-size:12px;line-height:1.25}.cs-addon__result small{color:#777}.cs-addon__add{width:32px;height:32px;border:0;border-radius:50%;background:#111;color:#fff;font-size:20px}.cs-addon__empty{padding:10px;color:#777;font-size:12px;text-align:center}
+.cs-diagram{margin:16px 0;padding:16px;border-radius:14px;background:#171717;color:#fff}.cs-diagram__title{margin-bottom:12px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.cs-diagram__flow{display:flex;flex-wrap:wrap;gap:7px;align-items:center}.cs-diagram__node{padding:8px 10px;border:1px solid #444;border-radius:8px;background:#242424;font-size:11px}.cs-diagram__arrow{color:#ff7065;font-weight:900}.cs-share{width:100%;margin-top:10px}.cs-recommendation{margin:8px 0 0;color:#666;font-size:12px}
 </style>
 @endpush
 
@@ -111,6 +123,16 @@
     var preferredDiameter = {'100':'120', '110':'120', '115':'120', '120':'120', '130':'150', '150':'150', '160':'180', '180':'180', '200':'200'};
     var chimneyDiameterSelect = form.querySelector('[data-chimney-diameter]');
     var monoMaterialSelect = form.querySelector('[data-mono-material]');
+    var sharedParams = new URLSearchParams(window.location.search);
+    var sharedChimneyDiameter = sharedParams.get('chimney_diameter');
+    var restoreSharedItems = sharedParams.get('kit') === '1';
+    Array.from(form.elements).forEach(function (field) {
+        if (!field.name || field.name === 'chimney_diameter' || !sharedParams.has(field.name)) return;
+        var value = sharedParams.get(field.name);
+        if (field.type === 'radio') field.checked = field.value === value;
+        else if (field.tagName === 'SELECT' && !Array.from(field.options).some(function (option) { return option.value === value; })) return;
+        else field.value = value;
+    });
     function syncMonoMaterial() {
         var darcoOption = monoMaterialSelect.querySelector('[data-darco-option]');
         var mcBlackOption = monoMaterialSelect.querySelector('[data-mc-black-option]');
@@ -131,12 +153,42 @@
         var previous = chimneyDiameterSelect.value;
         var options = standardDiameters[inlet] || [inlet];
         chimneyDiameterSelect.innerHTML = options.map(function (diameter) { return '<option value="' + diameter + '">Ø ' + diameter + ' мм</option>'; }).join('');
-        chimneyDiameterSelect.value = options.includes(previous) ? previous : (preferredDiameter[inlet] || options[0]);
+        chimneyDiameterSelect.value = options.includes(sharedChimneyDiameter) ? sharedChimneyDiameter : (options.includes(previous) ? previous : (preferredDiameter[inlet] || options[0]));
+        sharedChimneyDiameter = null;
         syncMonoMaterial();
+    }
+    function syncConditionalFields() {
+        var scheme = form.elements.scheme.value;
+        form.querySelectorAll('[data-tee-field]').forEach(function (field) { field.hidden = scheme !== 'tee'; });
+        form.querySelectorAll('[data-elbows-field]').forEach(function (field) { field.hidden = scheme !== 'elbows'; });
+        form.querySelectorAll('[data-roof-field]').forEach(function (field) { field.hidden = form.elements.roof_type.value === 'none'; });
+    }
+    function recommendMaterial(fuel, operation) {
+        if (fuel === 'gas') return {steel:'316', thickness:'0.5', text:'Для газа рекомендуем кислотостойкую AISI 316, 0,5 мм из-за конденсата.'};
+        if (fuel === 'pellet') return {steel:'304', thickness:'0.5', text:'Для пеллет рекомендуем AISI 304, 0,5 мм.'};
+        if (fuel === 'coal' || operation === 'intensive') return {steel:'321', thickness:'0.8', text:'Для угля или интенсивной банной топки рекомендуем жаростойкую AISI 321, 0,8 мм.'};
+        if (operation === 'continuous') return {steel:'304', thickness:'0.8', text:'Для длительной работы рекомендуем AISI 304, 0,8 мм.'};
+        return {steel:'430', thickness:'0.8', text:'Для обычной дровяной печи рекомендуем AISI 430, 0,8 мм.'};
+    }
+    function syncMaterialRecommendation() {
+        var recommendation = recommendMaterial(form.elements.fuel.value, form.elements.operation.value);
+        form.querySelector('[data-material-recommendation]').textContent = recommendation.text;
+    }
+    function roofHeightAdvice(roofType, ridgeDistance) {
+        if (roofType === 'none') return 'Проход кровли не выбран.';
+        if (ridgeDistance <= 1.5) return 'Оголовок должен быть не ниже чем на 0,5 м выше конька.';
+        if (ridgeDistance <= 3) return 'Оголовок должен быть не ниже уровня конька.';
+        return 'Высоту оголовка проверяют по линии 10° вниз от конька.';
     }
     form.querySelectorAll('input[name="diameter"]').forEach(function (input) { input.addEventListener('change', syncChimneyDiameters); });
     chimneyDiameterSelect.addEventListener('change', syncMonoMaterial);
+    form.elements.scheme.addEventListener('change', syncConditionalFields);
+    form.elements.roof_type.addEventListener('change', syncConditionalFields);
+    form.elements.fuel.addEventListener('change', syncMaterialRecommendation);
+    form.elements.operation.addEventListener('change', syncMaterialRecommendation);
     syncChimneyDiameters();
+    syncConditionalFields();
+    syncMaterialRecommendation();
 
     function money(value) {
         return Number(value).toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' BYN';
@@ -184,6 +236,7 @@
             var diameterRangeMatches = need.kind === 'ceiling_pass' && targetDiameter && Array.isArray(product.diameter_pair)
                 ? Number(targetDiameter) >= Number(product.diameter_pair[0]) && Number(targetDiameter) <= Number(product.diameter_pair[1])
                 : false;
+            var productName = normalizeSearch(product.name);
             return product.kind === need.kind && !used[product.id]
                 && (adapterPairMatches !== null ? adapterPairMatches : (diameterRangeMatches || !targetDiameter || productDiameter === targetDiameter || (allowMissingDiameter && !productDiameter && !need.exactDiameter)))
                 && (need.system === 'any' || product.system === need.system)
@@ -193,7 +246,8 @@
                 && (need.material === 'black_steel' || ignoreSteel || settings.steel === '' || product.steel === settings.steel || !product.steel)
                 && (need.kind !== 'pipe' || (need.thickness || settings.thickness) === '' || product.thickness === (need.thickness || settings.thickness))
                 && (!need.angle || product.angle === need.angle || (need.angle === '90' && product.angle === '87'))
-                && (!need.lengthMm || product.length_mm === need.lengthMm);
+                && (!need.lengthMm || product.length_mm === need.lengthMm)
+                && (!need.roofType || need.roofType !== 'pitched_soft' || productName.includes('master flash') || productName.includes('мастер флеш'));
         }
         var picked = catalog.find(function (product) { return matches(product, false, false); })
             || catalog.find(function (product) { return matches(product, false, true); });
@@ -217,8 +271,9 @@
     }
     function buildNeeds(settings) {
         var needs = [];
-        var height = Math.max(1, Math.ceil(settings.height));
-        var monoLength = Math.max(0.25, Number(settings.monoLength));
+        var height = Math.max(1, Math.round(settings.height * 4) / 4);
+        var monoLength = Math.min(Math.max(0.25, Number(settings.monoLength)), Math.max(0.25, height - 0.5));
+        settings.monoLength = monoLength;
         var monoOptions = settings.monoMaterial === 'black_darco'
             ? {material:'black_steel', brandSlug:'darco', thickness:'2'}
             : (settings.monoMaterial === 'mc_black'
@@ -235,20 +290,33 @@
             addPipeNeeds(needs, Math.max(0.5, height - monoLength), 'sandwich', 'Наружная трасса · утеплённая', {material:'stainless'});
         } else {
             var fullSystemOptions = settings.system === 'mono' ? monoOptions : {material:'stainless'};
-            if (settings.damper) needs.push(Object.assign({kind:'damper', quantity:1, system:settings.system, label:'Шибер'}, fullSystemOptions));
+            if (settings.damper && settings.system === 'sandwich') {
+                needs.push({kind:'damper', quantity:1, system:'mono', material:'stainless', label:'Шибер у печи · моно'});
+                needs.push({kind:'transition', quantity:1, system:'any', label:'Переход после шибера на утеплённую систему'});
+            } else if (settings.damper) {
+                needs.push(Object.assign({kind:'damper', quantity:1, system:settings.system, label:'Шибер'}, fullSystemOptions));
+            }
             addPipeNeeds(needs, height, settings.system, settings.system === 'sandwich' ? 'Утеплённая трасса' : monoSectionLabel, fullSystemOptions);
         }
         if (settings.scheme === 'tee') {
-            needs.push({kind:'tee', quantity:1, system:settings.system === 'mono' ? 'mono' : 'sandwich', label:'Тройник 87°'});
+            var teeSystem = settings.system === 'mono' ? 'mono' : 'sandwich';
+            var teeOptions = teeSystem === 'mono' ? monoOptions : {material:'stainless'};
+            addPipeNeeds(needs, settings.horizontalLength, teeSystem, 'Горизонтальный участок через стену', teeOptions);
+            needs.push({kind:'tee', quantity:1, system:teeSystem, label:'Тройник 87°'});
             needs.push({kind:'condensate', quantity:1, system:'any', label:'Ревизия / конденсатоотвод'});
+            needs.push({kind:'support', quantity:1, system:teeSystem, material:teeSystem === 'mono' ? monoOptions.material : 'stainless', diameterMode:teeSystem === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Опорная монтажная площадка под тройник'});
+            if (settings.wallMounts > 0) needs.push({kind:'wall_mount', quantity:settings.wallMounts, system:'any', material:'stainless', diameterMode:teeSystem === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Стеновые крепления наружной трассы'});
         }
         if (settings.scheme === 'elbows') {
-            var elbowOptions = settings.system === 'sandwich' ? {material:'stainless'} : monoOptions;
-            needs.push(Object.assign({kind:'elbow', quantity:settings.elbowAngle === '45' ? 2 : 1, system:settings.system === 'sandwich' ? 'sandwich' : 'mono', angle:settings.elbowAngle, label:'Колена для смещения · ' + settings.elbowAngle + '°'}, elbowOptions));
+            var offsetSystem = settings.offsetSystem === 'sandwich' ? 'sandwich' : 'mono';
+            var elbowOptions = offsetSystem === 'sandwich' ? {material:'stainless'} : monoOptions;
+            needs.push(Object.assign({kind:'elbow', quantity:settings.elbowAngle === '45' ? 2 : 1, system:offsetSystem, angle:settings.elbowAngle, label:'Колена для смещения · ' + settings.elbowAngle + '°'}, elbowOptions));
+            addPipeNeeds(needs, settings.offsetLength, offsetSystem, 'Участок между коленами', elbowOptions);
         }
         if (settings.ceilingPasses > 0) needs.push({kind:'ceiling_pass', quantity:settings.ceilingPasses, system:'any', material:settings.system === 'mono' ? monoOptions.material : 'stainless', diameterMode:'outer', exactDiameter:true, label:'ППУ · проход через перекрытие'});
         if (settings.clamps > 0) needs.push({kind:'clamp', quantity:settings.clamps, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Обычные соединительные хомуты'});
         if (settings.guyWires) needs.push({kind:'guy_wire', quantity:1, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', label:'Хомут для растяжек высокой мачты'});
+        if (settings.roofType !== 'none') needs.push({kind:'roof_flashing', quantity:1, system:'any', material:'stainless', roofType:settings.roofType, diameterMode:settings.system === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Фартук / проход кровли · ' + settings.roofAngle + '°'});
         if (settings.umbrella) needs.push({kind:'umbrella', quantity:1, system:settings.system === 'mono' ? 'mono' : 'sandwich', material:'stainless', label:'Зонт / завершение дымохода'});
         return needs;
     }
@@ -258,13 +326,24 @@
         var data = new FormData(form);
         var height = Number(data.get('height'));
         var clampValue = data.get('clamps');
+        var wallMountValue = data.get('wall_mounts');
+        var freeMastHeight = Number(data.get('free_mast_height'));
+        var guyWireValue = data.get('guy_wires');
+        var recommendation = recommendMaterial(data.get('fuel'), data.get('operation'));
+        var selectedSteel = data.get('steel') === 'auto' ? recommendation.steel : data.get('steel');
+        var selectedThickness = data.get('thickness') === 'auto' ? recommendation.thickness : data.get('thickness');
         var settings = {
-            diameter:data.get('diameter'), system:data.get('system'), steel:data.get('steel'), thickness:data.get('thickness'), scheme:data.get('scheme'),
+            diameter:data.get('diameter'), system:data.get('system'), fuel:data.get('fuel'), operation:data.get('operation'), steel:selectedSteel, thickness:selectedThickness, scheme:data.get('scheme'),
             height:height, monoLength:Number(data.get('mono_length')), monoMaterial:data.get('mono_material'), stoveAdapter:data.get('stove_adapter') === 'yes', elbowAngle:data.get('elbow_angle'),
+            horizontalLength:Number(data.get('horizontal_length')), offsetLength:Number(data.get('offset_length')), offsetSystem:data.get('offset_system'),
             damper:data.get('damper') === 'yes', ceilingPasses:Number(data.get('ceiling_passes')),
-            clamps:clampValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(clampValue), guyWires:data.get('guy_wires') === 'yes',
-            umbrella:data.get('umbrella') === 'yes', outerDiameter:null, chimneyDiameter:data.get('chimney_diameter')
+            clamps:clampValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(clampValue),
+            wallMounts:wallMountValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(wallMountValue),
+            freeMastHeight:freeMastHeight, guyWires:guyWireValue === 'yes' || (guyWireValue === 'auto' && freeMastHeight > 1.5),
+            roofType:data.get('roof_type'), roofAngle:Number(data.get('roof_angle')), ridgeDistance:Number(data.get('ridge_distance')),
+            umbrella:data.get('umbrella') === 'yes', outerDiameter:null, chimneyDiameter:data.get('chimney_diameter'), recommendation:recommendation.text
         };
+        settings.roofAdvice = roofHeightAdvice(settings.roofType, settings.ridgeDistance);
         if (!settings.stoveAdapter) settings.chimneyDiameter = settings.diameter;
         var needs = buildNeeds(settings);
         var used = {};
@@ -299,6 +378,22 @@
             else resultRows.push(row);
             return resultRows;
         }, []);
+        var sharedItems = sharedParams.get('items');
+        if (restoreSharedItems && sharedItems) {
+            var restoredRows = sharedItems.split(',').map(function (entry) {
+                var parts = entry.split(':');
+                var product = catalog.find(function (item) { return item.id === Number(parts[0]); });
+                var quantity = Math.max(1, Math.min(99, Number(parts[1]) || 1));
+                return product ? {product:product, quantity:quantity, label:'Сохранённый комплект'} : null;
+            }).filter(Boolean).reduce(function (resultRows, row) {
+                var existing = resultRows.find(function (item) { return item.product.id === row.product.id; });
+                if (existing) existing.quantity = Math.min(99, existing.quantity + row.quantity);
+                else resultRows.push(row);
+                return resultRows;
+            }, []);
+            if (restoredRows.length) rows = restoredRows;
+        }
+        restoreSharedItems = false;
         if (!rows.length) {
             result.innerHTML = '<div class="cs-result__empty"><h2>Точных позиций пока не найдено</h2><p>Отправьте параметры менеджеру — он соберёт комплект вручную.</p><a href="#manager-check" class="tf-btn animate-btn">Передать менеджеру</a></div>';
             return;
@@ -309,6 +404,33 @@
             : (settings.monoMaterial === 'mc_black' ? 'окрашенный «Теплов и Сухов» MC Black' : 'моно из нержавеющей стали');
         var systemLabel = settings.system === 'combined' ? monoLabel + ' ' + settings.monoLength.toLocaleString('ru-RU') + ' м + утеплённый' : (settings.system === 'sandwich' ? 'полностью утеплённый' : 'полностью ' + monoLabel);
         var diameterLabel = settings.diameter === settings.chimneyDiameter ? 'Ø ' + settings.diameter + ' мм' : 'патрубок Ø ' + settings.diameter + ' → дымоход Ø ' + settings.chimneyDiameter + ' мм';
+        function diagramHtml() {
+            var nodes = ['Оборудование Ø' + settings.diameter];
+            if (settings.stoveAdapter) nodes.push('Адаптер Ø' + settings.chimneyDiameter);
+            if (settings.system === 'combined') nodes.push(monoLabel + ' ' + settings.monoLength.toLocaleString('ru-RU') + ' м');
+            if (settings.damper) nodes.push('Шибер');
+            if (settings.system === 'combined' || (settings.system === 'sandwich' && settings.damper)) nodes.push('Переход на термо');
+            if (settings.scheme === 'tee') nodes.push('Горизонталь ' + settings.horizontalLength.toLocaleString('ru-RU') + ' м', 'Тройник + опора');
+            if (settings.scheme === 'elbows') nodes.push(settings.elbowAngle + '° → ' + settings.offsetLength.toLocaleString('ru-RU') + ' м → ' + settings.elbowAngle + '°');
+            nodes.push('Вертикаль ' + settings.height.toLocaleString('ru-RU') + ' м');
+            if (settings.ceilingPasses) nodes.push('ППУ × ' + settings.ceilingPasses);
+            if (settings.roofType !== 'none') nodes.push('Кровля ' + settings.roofAngle + '°');
+            if (settings.guyWires) nodes.push('Растяжки');
+            if (settings.umbrella) nodes.push('Завершение');
+            return '<div class="cs-diagram"><div class="cs-diagram__title">Схема трассы</div><div class="cs-diagram__flow">'
+                + nodes.map(function (node, index) { return (index ? '<span class="cs-diagram__arrow">→</span>' : '') + '<span class="cs-diagram__node">' + esc(node) + '</span>'; }).join('')
+                + '</div></div>';
+        }
+        function shareUrl() {
+            var url = new URL(window.location.href);
+            var equipment = url.searchParams.get('equipment');
+            url.search = '';
+            if (equipment) url.searchParams.set('equipment', equipment);
+            new FormData(form).forEach(function (value, key) { url.searchParams.set(key, value); });
+            url.searchParams.set('items', rows.map(function (row) { return row.product.id + ':' + row.quantity; }).join(','));
+            url.searchParams.set('kit', '1');
+            return url.toString();
+        }
         function renderBundle() {
             if (!rows.length) {
                 message.value = 'Подбор дымохода очищен пользователем.';
@@ -322,10 +444,14 @@
             var names = rows.map(function (row) { return row.label + ': ' + row.quantity + ' × ' + row.product.name; }).join('; ');
             message.value = 'Подбор дымохода: ' + diameterLabel + ', ' + systemLabel + ', сталь ' + (settings.steel || 'из доступных')
                 + ', толщина трубы ' + (settings.thickness ? settings.thickness.replace('.', ',') + ' мм' : 'из доступных')
-                + ', схема ' + settings.scheme + (settings.scheme === 'elbows' ? ', колена ' + settings.elbowAngle + '°' : '') + ', высота ' + settings.height + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
+                + ', рекомендация: ' + settings.recommendation + ' ' + settings.roofAdvice + ', схема ' + settings.scheme
+                + (settings.scheme === 'tee' ? ', горизонталь ' + settings.horizontalLength + ' м' : '')
+                + (settings.scheme === 'elbows' ? ', колена ' + settings.elbowAngle + '°, участок ' + settings.offsetLength + ' м' : '')
+                + ', высота ' + settings.height + ' м, кровля ' + settings.roofType + ' ' + settings.roofAngle + '°, до конька ' + settings.ridgeDistance + ' м, свободная мачта ' + settings.freeMastHeight + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
                 + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
                 + ', растяжки ' + (settings.guyWires ? 'да' : 'нет') + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
             result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">' + diameterLabel + ' · ' + systemLabel + ' · ' + settings.height + ' м</p>'
+                + '<p class="cs-recommendation">' + esc(settings.recommendation + ' ' + settings.roofAdvice) + '</p>' + diagramHtml()
                 + (missing ? '<p class="cs-safety"><strong>Нужно подобрать вручную:</strong> ' + esc(Array.from(new Set(missingLabels)).join(', ')) + '. Менеджер проверит эти позиции.</p>' : '')
                 + '<div class="cs-result__list">' + rows.map(function (row, index) {
                     return '<div class="cs-result__item"><img src="' + esc(row.product.image) + '" alt=""><div><a href="' + esc(row.product.url) + '">' + esc(row.product.name)
@@ -337,7 +463,8 @@
                 + '<div class="cs-result__row cs-result__row--total"><span>Итого</span><span>' + money(total) + '</span></div></div><div class="cs-result__actions"><button type="button" class="tf-btn animate-btn" data-add-kit>'
                 + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><a href="#manager-check" class="tf-btn btn-white btn-stroke">Проверить с менеджером</a></div>'
                 + '<div class="cs-addon"><button type="button" class="cs-addon__toggle" data-addon-toggle>+ Добавить элемент «Теплов и Сухов»</button><div class="cs-addon__panel" data-addon-panel hidden>'
-                + '<input type="search" class="cs-addon__search" data-addon-search placeholder="Умный поиск: теплообменник, бак, шибер…" autocomplete="off"><div class="cs-addon__results" data-addon-results></div></div></div>';
+                + '<input type="search" class="cs-addon__search" data-addon-search placeholder="Умный поиск: теплообменник, бак, шибер…" autocomplete="off"><div class="cs-addon__results" data-addon-results></div></div></div>'
+                + '<button type="button" class="tf-btn btn-white btn-stroke cs-share" data-share-kit>Скопировать ссылку на комплект</button>';
 
             var addonPanel = result.querySelector('[data-addon-panel]');
             var addonInput = result.querySelector('[data-addon-search]');
@@ -364,6 +491,14 @@
                 if (!addonPanel.hidden) { renderAddonResults(); addonInput.focus(); }
             });
             addonInput.addEventListener('input', renderAddonResults);
+            result.querySelector('[data-share-kit]').addEventListener('click', function () {
+                var button = this;
+                var url = shareUrl();
+                window.history.replaceState({}, '', url);
+                var copied = navigator.clipboard && window.isSecureContext ? navigator.clipboard.writeText(url) : Promise.reject();
+                copied.then(function () { button.textContent = 'Ссылка скопирована'; })
+                    .catch(function () { window.prompt('Скопируйте ссылку на комплект', url); button.textContent = 'Ссылка готова'; });
+            });
 
             result.querySelectorAll('[data-row-decrease]').forEach(function (button) {
                 button.addEventListener('click', function () {
@@ -403,6 +538,7 @@
         }
         renderBundle();
     });
+    if (sharedParams.get('kit') === '1') form.requestSubmit();
 })();
 </script>
 @endpush
