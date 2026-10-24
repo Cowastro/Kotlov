@@ -121,6 +121,17 @@ class ChimneyBundlePromotionTest extends TestCase
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
         $tankCategory = Category::query()->create(['name' => 'Баки для воды', 'slug' => 'test-water-tanks', 'parent_id' => 0]);
+        $mcBlackDamper = Product::query()->create([
+            'category_id' => $tankCategory->id,
+            'brand_id' => $tisBrand->id,
+            'name' => 'Теплов и Сухов Шибер-задвижка (430-0,8) MC Black D115',
+            'slug' => 'test-tis-mc-black-damper-d115',
+            'sku' => 'TEST-TIS-MCB-DAMPER-D115',
+            'price' => 130,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
         $tank = Product::query()->create([
             'category_id' => $tankCategory->id,
             'brand_id' => $tisBrand->id,
@@ -177,16 +188,21 @@ class ChimneyBundlePromotionTest extends TestCase
         $catalog = collect(json_decode($catalogJson[1] ?? '[]', true));
         $darcoItem = $catalog->firstWhere('id', $darcoPipe->id);
         $mcBlackItem = $catalog->firstWhere('id', $mcBlackPipe->id);
+        $mcBlackDamperItem = $catalog->firstWhere('id', $mcBlackDamper->id);
         $tankItem = $catalog->firstWhere('id', $tank->id);
         $this->assertSame('120', $darcoItem['diameter'] ?? null);
         $this->assertSame(1000, $darcoItem['length_mm'] ?? null);
         $this->assertSame('2', $darcoItem['thickness'] ?? null);
         $this->assertSame('black_steel', $darcoItem['material'] ?? null);
         $this->assertSame('darco', $darcoItem['brand_slug'] ?? null);
+        $this->assertSame('mono', $darcoItem['system'] ?? null);
         $this->assertSame('115', $mcBlackItem['diameter'] ?? null);
         $this->assertSame(250, $mcBlackItem['length_mm'] ?? null);
         $this->assertSame('0.8', $mcBlackItem['thickness'] ?? null);
         $this->assertSame('mc_black', $mcBlackItem['material'] ?? null);
+        $this->assertSame('damper', $mcBlackDamperItem['kind'] ?? null);
+        $this->assertSame('mono', $mcBlackDamperItem['system'] ?? null);
+        $this->assertSame('115', $mcBlackDamperItem['diameter'] ?? null);
         $this->assertTrue($tankItem['preferred'] ?? false);
     }
 

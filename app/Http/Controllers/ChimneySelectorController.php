@@ -51,7 +51,10 @@ class ChimneySelectorController extends Controller
                 ->get()
             : collect();
         $mcBlackSections = $preferredBrandId
-            ? (clone $catalogQuery)->where('brand_id', $preferredBrandId)
+            ? Product::query()->where('brand_id', $preferredBrandId)
+                ->orderable()
+                ->withSupplierChannels()
+                ->with(['category', 'brand'])
                 ->where('name', 'like', '%MC Black%')
                 ->limit(500)
                 ->get()
@@ -109,12 +112,14 @@ class ChimneySelectorController extends Controller
                 'thickness' => $thicknessValue,
                 'length_mm' => isset($length[1]) ? (int) $length[1] : null,
                 'angle' => $angle[1] ?? null,
-                'system' => str_contains($slug, 'sendvich')
-                    || str_contains(mb_strtolower($text), 'сэндвич')
-                    || str_contains(mb_strtolower($text), 'термо')
-                    || (bool) preg_match('/D?\s*\d{2,3}\s*[\/]\s*\d{2,3}/iu', $text)
-                        ? 'sandwich'
-                        : 'mono',
+                'system' => $brandSlug === 'darco'
+                    ? 'mono'
+                    : (str_contains($slug, 'sendvich')
+                        || str_contains($normalizedText, 'сэндвич')
+                        || str_contains($normalizedText, 'термо')
+                        || (bool) preg_match('/D?\s*\d{2,3}\s*[\/]\s*\d{2,3}\b/iu', $text)
+                            ? 'sandwich'
+                            : 'mono'),
                 'kind' => $this->kind($slug, $product->name),
                 'brand_slug' => $brandSlug,
                 'material' => $brandSlug === 'darco'
