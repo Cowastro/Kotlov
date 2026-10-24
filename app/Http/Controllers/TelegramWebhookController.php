@@ -2,52 +2,64 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ChimneyCalculationRequest;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\ChimneyCalculationRequestService;
 use App\Services\TelegramApi;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class TelegramWebhookController extends Controller
 {
-    public function handle(Request $request): \Illuminate\Http\JsonResponse
+    public function __construct(
+        private readonly TelegramApi $telegram,
+        private readonly ChimneyCalculationRequestService $chimneyCalculations,
+    ) {}
+
+    public function handle(Request $request): JsonResponse
     {
         $update = $request->all();
-        $chatId = config('services.telegram.orders_chat_id');
-
         // Обрабатываем только callback_query
-        if (!isset($update['callback_query'])) {
+        if (! isset($update['callback_query'])) {
             return response()->json(['ok' => true]);
         }
 
-        $tg         = new TelegramApi();
-        $callback   = $update['callback_query'];
-        $callbackId = $callback['id'];
-        $data       = $callback['data'] ?? '';
-        $from       = $callback['from'];
-        $messageId  = $callback['message']['message_id'] ?? null;
-        $msgChatId  = $callback['message']['chat']['id'] ?? null;
+        $callback = $update['callback_query'];
+        $callbackId = $callback['id'] ?? '';
+        $data = $callback['data'] ?? '';
+        $from = $callback['from'] ?? [];
+        $messageId = $callback['message']['message_id'] ?? null;
+        $msgChatId = $callback['message']['chat']['id'] ?? null;
 
         // Формируем имя пользователя
-        $name     = trim(($from['first_name'] ?? '') . ' ' . ($from['last_name'] ?? ''));
-        $username = isset($from['username']) ? '@' . $from['username'] : $name;
+        $name = trim(($from['first_name'] ?? '').' '.($from['last_name'] ?? ''));
+        $username = isset($from['username']) ? '@'.$from['username'] : $name;
 
-        if (!str_starts_with($data, 'take_order:')) {
+        if (str_starts_with($data, 'confirm_chimney:')) {
+            return $this->confirmChimneyCalculation($data, $callbackId, $from, $messageId, $msgChatId);
+        }
+
+        if (! str_starts_with($data, 'take_order:')) {
             return response()->json(['ok' => true]);
         }
 
         $orderId = (int) str_replace('take_order:', '', $data);
-        $order   = Order::with('manager')->find($orderId);
+        $order = Order::with('manager')->find($orderId);
 
-        if (!$order) {
-            $tg->answerCallbackQuery($callbackId, '❌ Заказ не найден.', true);
+        if (! $order) {
+            $this->telegram->answerCallbackQuery($callbackId, '❌ Заказ не найден.', true);
+
             return response()->json(['ok' => true]);
         }
 
         // Уже назначен — из CRM или через Telegram
         if ($order->manager_id || $order->assigned_to) {
             $who = $order->manager?->name ?? $order->assigned_to ?? 'менеджер';
-            $tg->answerCallbackQuery($callbackId, "⚠️ Заказ уже взят: {$who}", true);
+            $this->telegram->answerCallbackQuery($callbackId, "⚠️ Заказ уже взят: {$who}", true);
+
             return response()->json(['ok' => true]);
         }
 
@@ -61,7 +73,7 @@ class TelegramWebhookController extends Controller
         // а не подтвердить наличие и не передать его в исполнение.
         $attributes = [
             'assigned_to' => $username,
-            'manager_id'  => $crmUser?->id,
+            'manager_id' => $crmUser?->id,
         ];
         if ($order->status === 'new') {
             $order->transitionTo('checking', 'Заказ принят через Telegram. Начата проверка наличия.', $attributes);
@@ -70,15 +82,72 @@ class TelegramWebhookController extends Controller
         }
 
         // Отвечаем на callback
-        $tg->answerCallbackQuery($callbackId, "✅ Вы взяли заказ {$order->number}");
+        $this->telegram->answerCallbackQuery($callbackId, "✅ Вы взяли заказ {$order->number}");
 
         // Убираем кнопку + reply-сообщение кто взял
         if ($messageId && $msgChatId) {
-            $tg->editMessageReplyMarkup($msgChatId, $messageId);
-            $tg->sendReply($msgChatId, $messageId, "✅ Взял: {$username}");
+            $this->telegram->editMessageReplyMarkup($msgChatId, $messageId);
+            $this->telegram->sendReply($msgChatId, $messageId, "✅ Взял: {$username}");
         }
 
         Log::info("Заказ {$order->number} взят: {$username}");
+
+        return response()->json(['ok' => true]);
+    }
+
+    private function confirmChimneyCalculation(
+        string $data,
+        string $callbackId,
+        array $from,
+        ?int $messageId,
+        string|int|null $chatId,
+    ): JsonResponse {
+        $allowedChats = array_values(array_filter([
+            (string) config('services.telegram.contact_requests_chat_id'),
+            (string) config('services.telegram.orders_chat_id'),
+        ]));
+        if ($allowedChats !== [] && ! in_array((string) $chatId, $allowedChats, true)) {
+            $this->telegram->answerCallbackQuery($callbackId, '⛔ Этот чат не может подтверждать расчёты.', true);
+
+            return response()->json(['ok' => true]);
+        }
+
+        $calculation = ChimneyCalculationRequest::find((int) str_replace('confirm_chimney:', '', $data));
+        if (! $calculation) {
+            $this->telegram->answerCallbackQuery($callbackId, '❌ Расчёт не найден.', true);
+
+            return response()->json(['ok' => true]);
+        }
+
+        $name = trim(($from['first_name'] ?? '').' '.($from['last_name'] ?? ''));
+        $username = isset($from['username']) ? '@'.$from['username'] : ($name ?: 'Менеджер Telegram');
+        $crmUser = isset($from['username'])
+            ? User::where('telegram_username', $from['username'])->first()
+            : null;
+
+        try {
+            $result = $this->chimneyCalculations->confirm($calculation, $username, $crmUser);
+        } catch (ValidationException $exception) {
+            $this->telegram->answerCallbackQuery($callbackId, $exception->getMessage(), true);
+
+            return response()->json(['ok' => true]);
+        }
+
+        $order = $result['order'];
+        $text = $result['created']
+            ? "✅ Заказ {$order->number} создан"
+            : "ℹ️ Заказ {$order->number} уже был создан";
+        $this->telegram->answerCallbackQuery($callbackId, $text, ! $result['created']);
+
+        if ($messageId && $chatId) {
+            $this->telegram->editMessageReplyMarkup($chatId, $messageId);
+            $this->telegram->sendReply($chatId, $messageId, $text." · подтвердил {$username}");
+        }
+
+        Log::info("Расчёт {$calculation->number} подтверждён, заказ {$order->number}", [
+            'confirmed_by' => $username,
+            'created' => $result['created'],
+        ]);
 
         return response()->json(['ok' => true]);
     }

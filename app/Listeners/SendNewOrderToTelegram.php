@@ -100,13 +100,15 @@ class SendNewOrderToTelegram implements ShouldQueue
 
         try {
             $tg = new TelegramApi;
-            $result = $tg->sendMessage($chatId, $text, [
-                'reply_markup' => json_encode([
+            $extra = [];
+            if (! $order->manager_id && ! $order->assigned_to) {
+                $extra['reply_markup'] = json_encode([
                     'inline_keyboard' => [[
                         ['text' => '✋ Взять заказ', 'callback_data' => 'take_order:'.$order->id],
                     ]],
-                ]),
-            ]);
+                ]);
+            }
+            $result = $tg->sendMessage($chatId, $text, $extra);
 
             $messageId = $result['result']['message_id'] ?? null;
             if ($messageId) {

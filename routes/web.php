@@ -11,6 +11,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CatalogIndexController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\ChimneyCalculationRequestController;
 use App\Http\Controllers\ChimneySelectorController;
 use App\Http\Controllers\CommercialDocumentPdfController;
 use App\Http\Controllers\CommercialDocumentPortalController;
@@ -589,6 +590,9 @@ Route::get('/otoplenie/{any}', fn () => redirect('/komplektuyushhie-dlya-otoplen
 // ===== Каталог =====
 Route::get('/catalog', [CatalogIndexController::class, 'index'])->name('catalog');
 Route::get('/podbor-dymohoda', ChimneySelectorController::class)->name('chimney-selector');
+Route::post('/chimney-calculation-requests', [ChimneyCalculationRequestController::class, 'store'])
+    ->middleware('throttle:4,1')
+    ->name('chimney-calculation-requests.store');
 
 // ===== Бренды =====
 Route::get('/brands', [BrandController::class, 'index'])->name('brands');
