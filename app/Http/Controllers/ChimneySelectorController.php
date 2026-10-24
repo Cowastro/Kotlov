@@ -181,7 +181,7 @@ class ChimneySelectorController extends Controller
 
     private function diameterFromText(string $text): ?string
     {
-        if (preg_match('/(?:D|Ø|ф|RP)\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\b/iu', $text, $match)) {
+        if (preg_match('/(?:D|Ø|ф|RP|SZK|KNSR?|KSR?|KS)\s*(80|100|110|115|120|130|140|150|160|180|200|220|250|300)\b/iu', $text, $match)) {
             return $match[1];
         }
         if (preg_match('/диаметр[^0-9]{0,20}(80|100|110|115|120|130|140|150|160|180|200|250|300)\b/iu', $text, $match)) {
