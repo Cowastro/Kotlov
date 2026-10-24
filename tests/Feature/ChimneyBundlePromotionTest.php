@@ -196,6 +196,7 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertSame('black_steel', $darcoItem['material'] ?? null);
         $this->assertSame('darco', $darcoItem['brand_slug'] ?? null);
         $this->assertSame('mono', $darcoItem['system'] ?? null);
+        $this->assertTrue($darcoItem['discount_eligible'] ?? false);
         $this->assertSame('115', $mcBlackItem['diameter'] ?? null);
         $this->assertSame(250, $mcBlackItem['length_mm'] ?? null);
         $this->assertSame('0.8', $mcBlackItem['thickness'] ?? null);
@@ -204,6 +205,7 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertSame('mono', $mcBlackDamperItem['system'] ?? null);
         $this->assertSame('115', $mcBlackDamperItem['diameter'] ?? null);
         $this->assertTrue($tankItem['preferred'] ?? false);
+        $this->assertFalse($tankItem['discount_eligible'] ?? true);
     }
 
     public function test_selector_distinguishes_regular_clamps_from_guy_wire_hardware(): void
@@ -214,11 +216,14 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertSame('clamp', $method->invoke($controller, 'krepleniya-dymohod', 'Хомут трубный КНТ-Р Ø180'));
         $this->assertSame('guy_wire', $method->invoke($controller, 'krepleniya-dymohod', 'Хомут растяжки Ø180'));
         $this->assertSame('elbow', $method->invoke($controller, 'kolena-sendvich', 'Отвод Термо 45° с хомутом'));
+        $this->assertSame('mount', $method->invoke($controller, 'krepleniya-dymohod', 'Хомут штанги регулируемой ХШР d200'));
+        $this->assertSame('adapter', $method->invoke($controller, 'perehody-adaptery-dymohod', 'Площадка монтажная термо ПМТ-Р D120/180'));
 
         $diameter = new \ReflectionMethod(ChimneySelectorController::class, 'diameterFromText');
         $this->assertSame('120', $diameter->invoke($controller, 'Шибер Darco SZK120-CZ2(ML) короткая ручка'));
         $this->assertSame('120', $diameter->invoke($controller, 'Колено поворотное Darco KNS120/45-CZ2 (ML)'));
         $this->assertSame('150', $diameter->invoke($controller, 'Колено фиксированное KS150/90-CZ2'));
+        $this->assertSame('210', $diameter->invoke($controller, 'Хомут трубный на болте D210'));
     }
 
     /** @return array{Product, Product} */

@@ -81,10 +81,34 @@ class ChimneySelectorController extends Controller
             ->unique('id')
             ->values();
 
-        $catalog = $products->map(function (Product $product): array {
+        $categoryIndex = Category::query()->get(['id', 'parent_id', 'slug'])->keyBy('id');
+        $eligibleCategorySlugs = array_flip((array) config('shop.chimney_bundle_discount.chimney_category_slugs', []));
+        $discountEligibleCategoryIds = $categoryIndex
+            ->filter(function (Category $category) use ($categoryIndex, $eligibleCategorySlugs): bool {
+                $categoryId = (int) $category->id;
+                $seen = [];
+                while ($categoryId > 0 && ! isset($seen[$categoryId])) {
+                    $seen[$categoryId] = true;
+                    $current = $categoryIndex->get($categoryId);
+                    if (! $current) {
+                        break;
+                    }
+                    if (isset($eligibleCategorySlugs[(string) $current->slug])) {
+                        return true;
+                    }
+                    $categoryId = (int) $current->parent_id;
+                }
+
+                return false;
+            })
+            ->keys()
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $catalog = $products->map(function (Product $product) use ($discountEligibleCategoryIds): array {
             $text = $product->name.' '.json_encode((array) $product->specs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             $diameter = $this->diameterFromText($text);
-            preg_match('/(?:D|Ø)?\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*[\/]\s*(120|130|150|160|180|200|210|220|230|250|260|280|300|310|350)/iu', $text, $diameterPair);
+            preg_match('/(?:D|Ø)?\s*(80|100|110|115|120|130|140|150|160|180|200|210|220|230|240|250|260|280|300|310|350)\s*(?:[\/]\s*|[xх-]\s*)(120|130|150|160|180|200|210|220|230|240|250|260|280|300|310|350)/iu', $text, $diameterPair);
             preg_match('/(?:AISI\s*)?(304|316|321|430)/iu', $text, $steel);
             preg_match('/(?:304|316|321|430)\s*[-,]\s*(0[.,][5-9]|1[.,]0)/iu', $text, $thickness);
             if (! isset($thickness[1])) {
@@ -128,6 +152,7 @@ class ChimneySelectorController extends Controller
                     : ($isMcBlack ? 'mc_black' : 'stainless'),
                 'category' => $product->category?->name,
                 'preferred' => $brandSlug === config('shop.chimney_bundle_discount.preferred_brand_slug'),
+                'discount_eligible' => in_array((int) $product->category_id, $discountEligibleCategoryIds, true),
             ];
         })->values();
 
@@ -163,8 +188,9 @@ class ChimneySelectorController extends Controller
             str_contains($slug, 'zonty') || str_contains($normalizedName, 'зонт') || str_contains($normalizedName, 'дефлектор') => 'umbrella',
             str_contains($normalizedName, 'ппу') || str_contains($normalizedName, 'проход через') || str_contains($normalizedName, 'проходной узел') => 'ceiling_pass',
             str_contains($normalizedName, 'растяж') => 'guy_wire',
+            str_contains($normalizedName, 'хомут штанги') || str_contains($normalizedName, 'хомуты штанги') => 'mount',
             (bool) preg_match('/(^|\s)хомут(?:\s|$)/u', $normalizedName) => 'clamp',
-            str_contains($normalizedName, 'моно/термо') || str_contains($normalizedName, 'моно термо') || str_contains($normalizedName, 'пмт') => 'transition',
+            str_contains($normalizedName, 'моно/термо') || str_contains($normalizedName, 'моно термо') => 'transition',
             str_contains($slug, 'truby') => 'pipe',
             str_contains($slug, 'troyniki') => 'tee',
             str_contains($slug, 'kolena') => 'elbow',
@@ -187,10 +213,10 @@ class ChimneySelectorController extends Controller
 
     private function diameterFromText(string $text): ?string
     {
-        if (preg_match('/(?:D|Ø|ф|RP|SZK|KNSR?|KSR?|KS)\s*(80|100|110|115|120|130|140|150|160|180|200|220|250|300)\b/iu', $text, $match)) {
+        if (preg_match('/(?:D|Ø|ф|RP|SZK|KNSR?|KSR?|KS)\s*(80|100|110|115|120|130|140|150|160|180|200|210|220|230|240|250|260|280|300|310|350)\b/iu', $text, $match)) {
             return $match[1];
         }
-        if (preg_match('/диаметр[^0-9]{0,20}(80|100|110|115|120|130|140|150|160|180|200|250|300)\b/iu', $text, $match)) {
+        if (preg_match('/диаметр[^0-9]{0,20}(80|100|110|115|120|130|140|150|160|180|200|210|220|230|240|250|260|280|300|310|350)\b/iu', $text, $match)) {
             return $match[1];
         }
 

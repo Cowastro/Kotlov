@@ -173,7 +173,7 @@
         }).slice(0, 8);
     }
     function choose(need, settings, used) {
-        function matches(product, ignoreSteel) {
+        function matches(product, ignoreSteel, allowMissingDiameter) {
             var targetDiameter = need.targetDiameter || (need.diameterMode === 'outer'
                 ? settings.outerDiameter
                 : (need.kind === 'adapter' ? settings.diameter : settings.chimneyDiameter));
@@ -181,9 +181,13 @@
             var adapterPairMatches = need.kind === 'adapter' && need.toDiameter
                 ? Array.isArray(product.diameter_pair) && product.diameter_pair.includes(settings.diameter) && product.diameter_pair.includes(need.toDiameter)
                 : null;
+            var diameterRangeMatches = need.kind === 'ceiling_pass' && targetDiameter && Array.isArray(product.diameter_pair)
+                ? Number(targetDiameter) >= Number(product.diameter_pair[0]) && Number(targetDiameter) <= Number(product.diameter_pair[1])
+                : false;
             return product.kind === need.kind && !used[product.id]
-                && (adapterPairMatches !== null ? adapterPairMatches : (!targetDiameter || productDiameter === targetDiameter || (!productDiameter && !need.exactDiameter)))
+                && (adapterPairMatches !== null ? adapterPairMatches : (diameterRangeMatches || !targetDiameter || productDiameter === targetDiameter || (allowMissingDiameter && !productDiameter && !need.exactDiameter)))
                 && (need.system === 'any' || product.system === need.system)
+                && (need.system !== 'sandwich' || !settings.outerDiameter || product.outer_diameter === settings.outerDiameter)
                 && (!need.brandSlug || product.brand_slug === need.brandSlug)
                 && (!need.material || product.material === need.material)
                 && (need.material === 'black_steel' || ignoreSteel || settings.steel === '' || product.steel === settings.steel || !product.steel)
@@ -191,8 +195,12 @@
                 && (!need.angle || product.angle === need.angle || (need.angle === '90' && product.angle === '87'))
                 && (!need.lengthMm || product.length_mm === need.lengthMm);
         }
-        var picked = catalog.find(function (product) { return matches(product, false); });
-        if (!picked && settings.steel !== '' && need.kind !== 'pipe') picked = catalog.find(function (product) { return matches(product, true); });
+        var picked = catalog.find(function (product) { return matches(product, false, false); })
+            || catalog.find(function (product) { return matches(product, false, true); });
+        if (!picked && settings.steel !== '' && need.kind !== 'pipe') {
+            picked = catalog.find(function (product) { return matches(product, true, false); })
+                || catalog.find(function (product) { return matches(product, true, true); });
+        }
         if (picked && need.kind !== 'pipe') used[picked.id] = true;
         return picked;
     }
@@ -238,10 +246,10 @@
             var elbowOptions = settings.system === 'sandwich' ? {material:'stainless'} : monoOptions;
             needs.push(Object.assign({kind:'elbow', quantity:settings.elbowAngle === '45' ? 2 : 1, system:settings.system === 'sandwich' ? 'sandwich' : 'mono', angle:settings.elbowAngle, label:'Колена для смещения · ' + settings.elbowAngle + '°'}, elbowOptions));
         }
-        if (settings.ceilingPasses > 0) needs.push({kind:'ceiling_pass', quantity:settings.ceilingPasses, system:'any', diameterMode:'outer', label:'ППУ · проход через перекрытие'});
+        if (settings.ceilingPasses > 0) needs.push({kind:'ceiling_pass', quantity:settings.ceilingPasses, system:'any', diameterMode:'outer', exactDiameter:true, label:'ППУ · проход через перекрытие'});
         if (settings.clamps > 0) needs.push({kind:'clamp', quantity:settings.clamps, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Обычные соединительные хомуты'});
         if (settings.guyWires) needs.push({kind:'guy_wire', quantity:1, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', label:'Хомут для растяжек высокой мачты'});
-        if (settings.umbrella) needs.push({kind:'umbrella', quantity:1, system:'any', label:'Зонт'});
+        if (settings.umbrella) needs.push({kind:'umbrella', quantity:1, system:settings.system === 'mono' ? 'mono' : 'sandwich', material:'stainless', label:'Зонт / завершение дымохода'});
         return needs;
     }
 
@@ -261,6 +269,7 @@
         var needs = buildNeeds(settings);
         var used = {};
         var matchedNeeds = 0;
+        var missingLabels = [];
         var rawRows = needs.map(function (need) {
             var product = choose(need, settings, used);
             var quantity = need.quantity;
@@ -279,8 +288,9 @@
                 quantity *= 2;
                 label = label.replace('0,5 м', 'секции 0,25 м');
             }
-            if (product && need.kind === 'pipe' && product.system === 'sandwich' && product.outer_diameter) settings.outerDiameter = product.outer_diameter;
+            if (product && product.system === 'sandwich' && product.outer_diameter && ['transition','pipe'].includes(need.kind)) settings.outerDiameter = product.outer_diameter;
             if (product) matchedNeeds++;
+            else missingLabels.push(label);
             return product ? {product:product, quantity:quantity, label:label} : null;
         }).filter(Boolean);
         var rows = rawRows.reduce(function (resultRows, row) {
@@ -293,7 +303,7 @@
             result.innerHTML = '<div class="cs-result__empty"><h2>Точных позиций пока не найдено</h2><p>Отправьте параметры менеджеру — он соберёт комплект вручную.</p><a href="#manager-check" class="tf-btn animate-btn">Передать менеджеру</a></div>';
             return;
         }
-        var missing = needs.length - matchedNeeds;
+        var missing = missingLabels.length;
         var monoLabel = settings.monoMaterial === 'black_darco'
             ? 'чёрный DARCO 2 мм'
             : (settings.monoMaterial === 'mc_black' ? 'окрашенный «Теплов и Сухов» MC Black' : 'моно из нержавеющей стали');
@@ -306,7 +316,8 @@
                 return;
             }
             var subtotal = rows.reduce(function (sum, row) { return sum + row.product.price * row.quantity; }, 0);
-            var saving = unlocked ? subtotal * discount / 100 : 0;
+            var eligibleSubtotal = rows.reduce(function (sum, row) { return sum + (row.product.discount_eligible ? row.product.price * row.quantity : 0); }, 0);
+            var saving = unlocked ? eligibleSubtotal * discount / 100 : 0;
             var total = subtotal - saving;
             var names = rows.map(function (row) { return row.label + ': ' + row.quantity + ' × ' + row.product.name; }).join('; ');
             message.value = 'Подбор дымохода: ' + diameterLabel + ', ' + systemLabel + ', сталь ' + (settings.steel || 'из доступных')
@@ -315,7 +326,7 @@
                 + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
                 + ', растяжки ' + (settings.guyWires ? 'да' : 'нет') + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
             result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">' + diameterLabel + ' · ' + systemLabel + ' · ' + settings.height + ' м</p>'
-                + (missing ? '<p class="cs-safety">Не все специальные узлы найдены в точном исполнении. Недостающие позиции добавит менеджер.</p>' : '')
+                + (missing ? '<p class="cs-safety"><strong>Нужно подобрать вручную:</strong> ' + esc(Array.from(new Set(missingLabels)).join(', ')) + '. Менеджер проверит эти позиции.</p>' : '')
                 + '<div class="cs-result__list">' + rows.map(function (row, index) {
                     return '<div class="cs-result__item"><img src="' + esc(row.product.image) + '" alt=""><div><a href="' + esc(row.product.url) + '">' + esc(row.product.name)
                         + '</a><small>' + esc(row.label) + '</small><div class="cs-result__controls"><button type="button" class="cs-result__control" data-row-decrease="' + index + '" aria-label="Уменьшить количество">−</button>'
