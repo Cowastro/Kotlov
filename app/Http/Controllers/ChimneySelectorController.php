@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Product;
 use App\Services\ChimneyBundlePromotion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ChimneySelectorController extends Controller
 {
@@ -191,15 +192,22 @@ class ChimneySelectorController extends Controller
         $cartPromotion = $promotion->quote(session('cart', []));
         $discountUnlocked = $equipment !== null || $cartPromotion['equipment_product_ids'] !== [];
         $equipmentInCart = $equipment !== null && isset(session('cart', [])[$equipment->id]);
+        $selectorToken = session('chimney_selector_token');
+        if (! is_string($selectorToken) || strlen($selectorToken) < 32) {
+            $selectorToken = Str::random(48);
+            session(['chimney_selector_token' => $selectorToken]);
+        }
 
         return view('pages.chimney-selector', [
             'catalog' => $catalog,
             'equipment' => $equipment,
             'defaultDiameter' => $defaultDiameter,
             'discountPercent' => (float) config('shop.chimney_bundle_discount.percent', 10),
+            'selfSelectionDiscountPercent' => (float) config('shop.chimney_bundle_discount.self_selection_percent', 5),
             'discountUnlocked' => $discountUnlocked,
             'equipmentInCart' => $equipmentInCart,
             'preferredBrandName' => 'Теплов и Сухов',
+            'selectorToken' => $selectorToken,
         ]);
     }
 

@@ -187,7 +187,7 @@
                                         <span class="fw-semibold" id="cart-online-discount">−{{ number_format($coupon['coupon_discount'], 2, '.', ' ') }} BYN</span>
                                     </div>
                                     <div id="cart-bundle-discount-row" class="d-flex justify-content-between align-items-center mb-12" @if ($coupon['bundle_discount'] <= 0) style="display:none" @endif>
-                                        <p class="fw-medium lh-24 mb-0">Дымоход с оборудованием −{{ number_format($coupon['bundle']['percent'], 0) }}%:</p>
+                                        <p class="fw-medium lh-24 mb-0" id="cart-bundle-discount-label">{{ $coupon['bundle']['mode'] === 'self_selection' ? 'Самостоятельный подбор' : 'Дымоход с оборудованием' }} −{{ number_format($coupon['bundle']['percent'], 0) }}%:</p>
                                         <span class="fw-semibold" id="cart-bundle-discount">−{{ number_format($coupon['bundle_discount'], 2, '.', ' ') }} BYN</span>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center mb-20">
@@ -325,6 +325,8 @@
             if (bundleRow) bundleRow.style.display = parseFloat(data.bundle_discount) > 0 ? '' : 'none';
             var bundleDiscount = document.getElementById('cart-bundle-discount');
             if (bundleDiscount) bundleDiscount.textContent = '−' + formatBYN(data.bundle_discount);
+            var bundleLabel = document.getElementById('cart-bundle-discount-label');
+            if (bundleLabel && data.bundle_mode) bundleLabel.textContent = (data.bundle_mode === 'self_selection' ? 'Самостоятельный подбор' : 'Дымоход с оборудованием') + ' −' + Number(data.bundle_percent).toLocaleString('ru-RU') + '%:';
             var total = document.getElementById('cart-total');
             if (total) total.textContent = formatBYN(data.total);
             updateHeaderCount(data.count);

@@ -327,6 +327,8 @@ class CheckoutController extends Controller
                     'online_order_discount' => $finalQuote['coupon_discount'],
                     'chimney_bundle_discount' => $finalQuote['bundle_discount'],
                     'chimney_bundle_percent' => $finalQuote['bundle']['percent'],
+                    'chimney_bundle_mode' => $finalQuote['bundle']['mode'],
+                    'chimney_self_selected_product_ids' => $finalQuote['bundle']['self_selected_product_ids'],
                     'chimney_product_ids' => $finalQuote['bundle']['chimney_product_ids'],
                     'equipment_product_ids' => $finalQuote['bundle']['equipment_product_ids'],
                 ],

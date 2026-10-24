@@ -28,6 +28,17 @@ final class KnowledgeBase
     {
         return collect([
             [
+                'slug' => 'kak-podobrat-dymohod',
+                'url' => '/podbor-dymohoda',
+                'title' => 'Как подобрать дымоход: инструкция и калькулятор',
+                'category' => 'tekhnicheskaya-informatsiya',
+                'date' => '2026-10-24',
+                'image' => '/img/popular/chimney.jpg',
+                'excerpt' => 'Расчёт диаметра, высоты, моно- и сэндвич-участков, проходов и креплений. Готовый комплект можно отправить менеджеру на проверку.',
+                'tags' => ['Дымоходы', 'Подбор оборудования', 'Теплов и Сухов', 'Для дома'],
+                'downloads' => [],
+            ],
+            [
                 'slug' => 'kak-podobrat-schetchik-gaza',
                 'url' => GasMeterSelectionGuide::PAGE_URL,
                 'title' => 'Как подобрать газовый счётчик: простая инструкция и подборщик',

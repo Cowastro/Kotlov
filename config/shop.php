@@ -4,6 +4,7 @@ return [
     'chimney_bundle_discount' => [
         'enabled' => true,
         'percent' => 10,
+        'self_selection_percent' => 5,
         'preferred_brand_slug' => 'teplov-i-suhov',
         'chimney_category_slugs' => [
             'dymohody', 'dymoxody-dlya-pechej', 'dymoxody-dlya-bani',

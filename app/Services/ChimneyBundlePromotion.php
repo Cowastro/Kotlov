@@ -10,7 +10,7 @@ use Illuminate\Support\Collection;
 class ChimneyBundlePromotion
 {
     /**
-     * @return array{active: bool, percent: float, equipment_product_ids: array<int>, chimney_product_ids: array<int>, eligible_subtotal: float, discount: float, line_discounts: array<int, float>}
+     * @return array{active: bool, mode: ?string, percent: float, equipment_product_ids: array<int>, chimney_product_ids: array<int>, self_selected_product_ids: array<int>, eligible_subtotal: float, discount: float, line_discounts: array<int, float>}
      */
     public function quote(array $items): array
     {
@@ -29,6 +29,7 @@ class ChimneyBundlePromotion
 
         $equipmentIds = [];
         $chimneyIds = [];
+        $selfSelectedIds = [];
         foreach ($items as $item) {
             if (($item['pricing_type'] ?? 'retail') === 'b2b') {
                 continue;
@@ -44,24 +45,33 @@ class ChimneyBundlePromotion
             }
             if ($this->slugsAreChimney($slugs) && ! $this->hasActiveSale($product)) {
                 $chimneyIds[] = (int) $item['id'];
+                if (($item['chimney_selector_selected'] ?? false) === true) {
+                    $selfSelectedIds[] = (int) $item['id'];
+                }
             }
         }
 
         $equipmentIds = array_values(array_unique($equipmentIds));
         $chimneyIds = array_values(array_unique($chimneyIds));
-        if ($equipmentIds === [] || $chimneyIds === []) {
+        $selfSelectedIds = array_values(array_unique($selfSelectedIds));
+        $equipmentBundle = $equipmentIds !== [] && $chimneyIds !== [];
+        $eligibleChimneyIds = $equipmentBundle ? $chimneyIds : $selfSelectedIds;
+        if ($eligibleChimneyIds === []) {
             return array_merge($empty, [
                 'equipment_product_ids' => $equipmentIds,
                 'chimney_product_ids' => $chimneyIds,
+                'self_selected_product_ids' => $selfSelectedIds,
             ]);
         }
 
-        $percent = (float) config('shop.chimney_bundle_discount.percent', 10);
+        $percent = $equipmentBundle
+            ? (float) config('shop.chimney_bundle_discount.percent', 10)
+            : (float) config('shop.chimney_bundle_discount.self_selection_percent', 5);
         $lineDiscounts = [];
         $eligibleSubtotal = 0.0;
         foreach ($items as $item) {
             $id = (int) ($item['id'] ?? 0);
-            if (! in_array($id, $chimneyIds, true)) {
+            if (! in_array($id, $eligibleChimneyIds, true)) {
                 continue;
             }
             $lineSubtotal = round((float) ($item['price'] ?? 0) * (int) ($item['quantity'] ?? 0), 2);
@@ -71,9 +81,11 @@ class ChimneyBundlePromotion
 
         return [
             'active' => true,
+            'mode' => $equipmentBundle ? 'equipment_bundle' : 'self_selection',
             'percent' => $percent,
             'equipment_product_ids' => $equipmentIds,
             'chimney_product_ids' => $chimneyIds,
+            'self_selected_product_ids' => $selfSelectedIds,
             'eligible_subtotal' => round($eligibleSubtotal, 2),
             'discount' => round(array_sum($lineDiscounts), 2),
             'line_discounts' => $lineDiscounts,
@@ -167,9 +179,11 @@ class ChimneyBundlePromotion
     {
         return [
             'active' => false,
+            'mode' => null,
             'percent' => (float) config('shop.chimney_bundle_discount.percent', 10),
             'equipment_product_ids' => [],
             'chimney_product_ids' => [],
+            'self_selected_product_ids' => [],
             'eligible_subtotal' => 0.0,
             'discount' => 0.0,
             'line_discounts' => [],

@@ -444,7 +444,7 @@
                                 @endif
                                 @if ($coupon['bundle_discount'] > 0)
                                     <li class="total-item lh-24 fw-medium">
-                                        <span>Дымоход с оборудованием −{{ number_format($coupon['bundle']['percent'], 0) }}%:</span>
+                                        <span>{{ $coupon['bundle']['mode'] === 'self_selection' ? 'Самостоятельный подбор' : 'Дымоход с оборудованием' }} −{{ number_format($coupon['bundle']['percent'], 0) }}%:</span>
                                         <span>−{{ number_format($coupon['bundle_discount'], 2, '.', ' ') }} BYN</span>
                                     </li>
                                 @endif

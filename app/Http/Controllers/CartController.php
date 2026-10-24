@@ -8,6 +8,7 @@ use App\Models\ProductWarehouseStock;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
+use App\Services\ChimneyBundlePromotion;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -15,7 +16,10 @@ class CartController extends Controller
     // ключ в сессии
     private const KEY = 'cart';
 
-    public function __construct(private readonly CartCouponService $couponService) {}
+    public function __construct(
+        private readonly CartCouponService $couponService,
+        private readonly ChimneyBundlePromotion $chimneyBundlePromotion,
+    ) {}
 
     // ─────────────────────────────────────────
     // Страница корзины
@@ -38,6 +42,7 @@ class CartController extends Controller
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'quantity' => ['sometimes', 'integer', 'min:1', 'max:999'],
             'warehouse_stock_id' => ['sometimes', 'nullable', 'integer', 'exists:product_warehouse_stocks,id'],
+            'chimney_selector_token' => ['sometimes', 'nullable', 'string', 'max:100'],
         ]);
 
         $product = Product::query()
@@ -85,6 +90,12 @@ class CartController extends Controller
         }
 
         $qty = max(1, (int) $request->input('quantity', 1));
+        $sessionSelectorToken = session('chimney_selector_token');
+        $requestSelectorToken = $request->input('chimney_selector_token');
+        $selectedInChimneyCalculator = is_string($sessionSelectorToken)
+            && is_string($requestSelectorToken)
+            && hash_equals($sessionSelectorToken, $requestSelectorToken)
+            && $this->chimneyBundlePromotion->productIsChimney($product);
 
         $warehouseStock = null;
         if ($b2bOffer) {
@@ -144,6 +155,8 @@ class CartController extends Controller
             $cart[$id]['quantity'] = min($cart[$id]['quantity'] + $qty, 999);
             $cart[$id]['price'] = $price;
             $cart[$id] = array_merge($cart[$id], $pricing);
+            $cart[$id]['chimney_selector_selected'] = ($cart[$id]['chimney_selector_selected'] ?? false)
+                || $selectedInChimneyCalculator;
         } else {
             $imgUrl = $product->image_url;
 
@@ -156,6 +169,7 @@ class CartController extends Controller
                 'image' => $imgUrl,
                 'category_slug' => $product->category->slug ?? 'catalog',
                 'quantity' => $qty,
+                'chimney_selector_selected' => $selectedInChimneyCalculator,
             ] + $pricing;
         }
 
@@ -172,6 +186,8 @@ class CartController extends Controller
                 'discount' => $coupon['discount'],
                 'coupon_discount' => $coupon['coupon_discount'],
                 'bundle_discount' => $coupon['bundle_discount'],
+                'bundle_percent' => $coupon['bundle']['percent'],
+                'bundle_mode' => $coupon['bundle']['mode'],
                 'total' => $coupon['total'],
             ]);
         }
@@ -253,6 +269,8 @@ class CartController extends Controller
                 'discount' => $coupon['discount'],
                 'coupon_discount' => $coupon['coupon_discount'],
                 'bundle_discount' => $coupon['bundle_discount'],
+                'bundle_percent' => $coupon['bundle']['percent'],
+                'bundle_mode' => $coupon['bundle']['mode'],
                 'total' => $coupon['total'],
                 'item_total' => isset($cart[$id])
                     ? round($cart[$id]['price'] * $cart[$id]['quantity'], 2)
@@ -300,6 +318,8 @@ class CartController extends Controller
                 'discount' => $coupon['discount'],
                 'coupon_discount' => $coupon['coupon_discount'],
                 'bundle_discount' => $coupon['bundle_discount'],
+                'bundle_percent' => $coupon['bundle']['percent'],
+                'bundle_mode' => $coupon['bundle']['mode'],
                 'total' => $coupon['total'],
             ]);
         }
@@ -341,6 +361,8 @@ class CartController extends Controller
             'discount' => $coupon['discount'],
             'coupon_discount' => $coupon['coupon_discount'],
             'bundle_discount' => $coupon['bundle_discount'],
+            'bundle_percent' => $coupon['bundle']['percent'],
+            'bundle_mode' => $coupon['bundle']['mode'],
             'total' => $coupon['total'],
             'threshold' => $threshold,
             'remaining' => $remaining,
@@ -423,6 +445,8 @@ class CartController extends Controller
                 'discount' => $coupon['discount'],
                 'coupon_discount' => $coupon['coupon_discount'],
                 'bundle_discount' => $coupon['bundle_discount'],
+                'bundle_percent' => $coupon['bundle']['percent'],
+                'bundle_mode' => $coupon['bundle']['mode'],
                 'total' => $coupon['total'],
             ]);
         }

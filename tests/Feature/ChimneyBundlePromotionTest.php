@@ -6,8 +6,11 @@ use App\Http\Controllers\ChimneySelectorController;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Services\CartCouponService;
 use App\Services\ChimneyBundlePromotion;
+use App\Support\KnowledgeBase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -33,20 +36,29 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertSame(1150.0, $quote['total']);
     }
 
-    public function test_bundle_discount_remains_without_online_coupon_and_requires_both_sides(): void
+    public function test_self_selection_gets_five_percent_and_equipment_upgrades_it_to_ten(): void
     {
         [$equipment, $chimney] = $this->products();
         $service = app(CartCouponService::class);
 
         $equipmentOnly = $service->quoteForCart(null, [$equipment->id => $this->cartItem($equipment, 1000)]);
         $chimneyOnly = $service->quoteForCart(null, [$chimney->id => $this->cartItem($chimney, 200)]);
+        $selfSelectedItem = $this->cartItem($chimney, 200) + ['chimney_selector_selected' => true];
+        $selfSelected = $service->quoteForCart('ONLINE3', [$chimney->id => $selfSelectedItem]);
         $bundle = $service->quoteForCart(null, [
             $equipment->id => $this->cartItem($equipment, 1000),
-            $chimney->id => $this->cartItem($chimney, 200),
+            $chimney->id => $selfSelectedItem,
         ]);
 
         $this->assertSame(0.0, $equipmentOnly['bundle_discount']);
         $this->assertSame(0.0, $chimneyOnly['bundle_discount']);
+        $this->assertSame('self_selection', $selfSelected['bundle']['mode']);
+        $this->assertSame(5.0, $selfSelected['bundle']['percent']);
+        $this->assertSame(10.0, $selfSelected['bundle_discount']);
+        $this->assertSame(0.0, $selfSelected['coupon_discount']);
+        $this->assertSame(190.0, $selfSelected['total']);
+        $this->assertSame('equipment_bundle', $bundle['bundle']['mode']);
+        $this->assertSame(10.0, $bundle['bundle']['percent']);
         $this->assertSame(20.0, $bundle['bundle_discount']);
         $this->assertSame(1180.0, $bundle['total']);
     }
@@ -171,6 +183,8 @@ class ChimneyBundlePromotionTest extends TestCase
         $response
             ->assertOk()
             ->assertSeeText('Соберите дымоход под своё оборудование')
+            ->assertSeeText('за самостоятельный подбор комплекта')
+            ->assertSeeText('Бесплатно проверить')
             ->assertSeeText('Марка стали')
             ->assertSeeText('Толщина стали трубы')
             ->assertSeeText('Материал моно-участка')
@@ -208,6 +222,7 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Расстояние от трубы до конька')
             ->assertSee('data-share-kit', false)
             ->assertSee('recommendMaterial', false)
+            ->assertSee('chimney_selector_token', false)
             ->assertSee("kind:'support'", false)
             ->assertSee("kind:'wall_mount'", false)
             ->assertSee("kind:'roof_flashing'", false)
@@ -247,6 +262,49 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertSame(['178', '330'], $masterFlashItem['diameter_pair'] ?? null);
         $this->assertSame('wall_mount', $adjustableMountItem['kind'] ?? null);
         $this->assertSame(1000, $adjustableMountItem['mount_length_mm'] ?? null);
+    }
+
+    public function test_chimney_selector_is_listed_in_the_existing_knowledge_base(): void
+    {
+        $this->get(KnowledgeBase::URL)
+            ->assertOk()
+            ->assertSeeText('Как подобрать дымоход')
+            ->assertSee('/podbor-dymohoda', false);
+    }
+
+    public function test_cart_accepts_self_selection_only_with_the_session_selector_token(): void
+    {
+        [, $chimney] = $this->products();
+        $supplier = Supplier::query()->create([
+            'code' => 'chimney-selector-test',
+            'name' => 'Поставщик теста подбора',
+            'is_active' => true,
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $chimney->id,
+            'supplier_article' => 'SELECTOR-PIPE',
+            'price_byn' => 150,
+            'in_stock' => false,
+            'stock_status' => 'unknown',
+        ]);
+
+        $this->get(route('chimney-selector'))->assertOk();
+        $token = session('chimney_selector_token');
+        $this->assertIsString($token);
+
+        $this->postJson(route('cart.add'), [
+            'product_id' => $chimney->id,
+            'chimney_selector_token' => 'invalid-token',
+        ])->assertOk()->assertJsonPath('bundle_discount', 0);
+        $this->assertFalse(session('cart')[$chimney->id]['chimney_selector_selected']);
+
+        $this->postJson(route('cart.clear'))->assertOk();
+        $this->postJson(route('cart.add'), [
+            'product_id' => $chimney->id,
+            'chimney_selector_token' => $token,
+        ])->assertOk()->assertJsonPath('bundle_discount', 10);
+        $this->assertTrue(session('cart')[$chimney->id]['chimney_selector_selected']);
     }
 
     public function test_selector_distinguishes_regular_clamps_from_guy_wire_hardware(): void
