@@ -17,6 +17,7 @@ class ChimneySelectorController extends Controller
             ->pluck('id');
         $preferredBrandSlug = (string) config('shop.chimney_bundle_discount.preferred_brand_slug', 'teplov-i-suhov');
         $preferredBrandId = Brand::query()->where('slug', $preferredBrandSlug)->value('id');
+        $darcoBrandId = Brand::query()->where('slug', 'darco')->value('id');
 
         $catalogQuery = Product::query()
             ->whereIn('category_id', $categoryIds)
@@ -44,7 +45,38 @@ class ChimneySelectorController extends Controller
             })
             ->limit(300)
             ->get();
-        $products = $products->merge($pipeSections)->unique('id')->values();
+        $darcoSections = $darcoBrandId
+            ? (clone $catalogQuery)->where('brand_id', $darcoBrandId)
+                ->limit(500)
+                ->get()
+            : collect();
+        $mcBlackSections = $preferredBrandId
+            ? (clone $catalogQuery)->where('brand_id', $preferredBrandId)
+                ->where('name', 'like', '%MC Black%')
+                ->limit(500)
+                ->get()
+            : collect();
+        $preferredAccessories = $preferredBrandId
+            ? Product::query()->where('brand_id', $preferredBrandId)
+                ->orderable()
+                ->withSupplierChannels()
+                ->with(['category', 'brand'])
+                ->where(function ($query) {
+                    $query->where('name', 'like', '%теплообмен%')
+                        ->orWhere('name', 'like', '%регистр%')
+                        ->orWhere('name', 'like', '%бак печной%')
+                        ->orWhere('name', 'like', '%бак на трубе%');
+                })
+                ->limit(200)
+                ->get()
+            : collect();
+        $products = $products
+            ->merge($pipeSections)
+            ->merge($darcoSections)
+            ->merge($mcBlackSections)
+            ->merge($preferredAccessories)
+            ->unique('id')
+            ->values();
 
         $catalog = $products->map(function (Product $product): array {
             $text = $product->name.' '.json_encode((array) $product->specs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -52,8 +84,17 @@ class ChimneySelectorController extends Controller
             preg_match('/(?:D|Ø)?\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\s*[\/]\s*(120|130|150|160|180|200|210|220|230|250|260|280|300|310|350)/iu', $text, $diameterPair);
             preg_match('/(?:AISI\s*)?(304|316|321|430)/iu', $text, $steel);
             preg_match('/(?:304|316|321|430)\s*[-,]\s*(0[.,][5-9]|1[.,]0)/iu', $text, $thickness);
-            preg_match('/\bL\s*(250|500|750|1000)\b/iu', $text, $length);
+            if (! isset($thickness[1])) {
+                preg_match('/\b(2(?:[.,]0)?)\s*мм\b/iu', $text, $thickness);
+            }
+            preg_match('/(?:\bL\s*|\/)(250|500|750|1000)\b/iu', $text, $length);
+            preg_match('/[\/\s](45|87|90)(?:\s*[°*]|\s*-|\s+(?=[A-ZА-Я]))/iu', $text, $angle);
             $slug = (string) $product->category?->slug;
+            $brandSlug = (string) $product->brand?->slug;
+            $normalizedText = mb_strtolower($text);
+            $thicknessValue = isset($thickness[1])
+                ? rtrim(rtrim(str_replace(',', '.', $thickness[1]), '0'), '.')
+                : ($brandSlug === 'darco' ? '2' : null);
 
             return [
                 'id' => $product->id,
@@ -65,8 +106,9 @@ class ChimneySelectorController extends Controller
                 'outer_diameter' => $diameterPair[2] ?? null,
                 'diameter_pair' => isset($diameterPair[1], $diameterPair[2]) ? [$diameterPair[1], $diameterPair[2]] : null,
                 'steel' => $steel[1] ?? null,
-                'thickness' => isset($thickness[1]) ? str_replace(',', '.', $thickness[1]) : null,
+                'thickness' => $thicknessValue,
                 'length_mm' => isset($length[1]) ? (int) $length[1] : null,
+                'angle' => $angle[1] ?? null,
                 'system' => str_contains($slug, 'sendvich')
                     || str_contains(mb_strtolower($text), 'сэндвич')
                     || str_contains(mb_strtolower($text), 'термо')
@@ -74,7 +116,12 @@ class ChimneySelectorController extends Controller
                         ? 'sandwich'
                         : 'mono',
                 'kind' => $this->kind($slug, $product->name),
-                'preferred' => $product->brand?->slug === config('shop.chimney_bundle_discount.preferred_brand_slug'),
+                'brand_slug' => $brandSlug,
+                'material' => $brandSlug === 'darco'
+                    ? 'black_steel'
+                    : (str_contains($normalizedText, 'mc black') ? 'mc_black' : 'stainless'),
+                'category' => $product->category?->name,
+                'preferred' => $brandSlug === config('shop.chimney_bundle_discount.preferred_brand_slug'),
             ];
         })->values();
 
@@ -134,7 +181,7 @@ class ChimneySelectorController extends Controller
 
     private function diameterFromText(string $text): ?string
     {
-        if (preg_match('/(?:D|Ø|ф)\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\b/iu', $text, $match)) {
+        if (preg_match('/(?:D|Ø|ф|RP)\s*(80|100|110|115|120|130|140|150|160|180|200|250|300)\b/iu', $text, $match)) {
             return $match[1];
         }
         if (preg_match('/диаметр[^0-9]{0,20}(80|100|110|115|120|130|140|150|160|180|200|250|300)\b/iu', $text, $match)) {

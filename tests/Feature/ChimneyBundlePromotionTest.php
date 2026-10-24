@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\ChimneySelectorController;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\CartCouponService;
@@ -80,8 +81,11 @@ class ChimneyBundlePromotionTest extends TestCase
             'name' => 'Труба сэндвич AISI 304 Ø115 мм',
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+        $tisBrand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
+        $darcoBrand = Brand::query()->create(['name' => 'DARCO', 'slug' => 'darco']);
         $metrePipe = Product::query()->create([
             'category_id' => $chimney->category_id,
+            'brand_id' => $tisBrand->id,
             'name' => 'Труба Теплов и Сухов моно ТМ-Р L1000, 430, 0.8, Ø 120',
             'slug' => 'test-l1000-430-08-d120',
             'sku' => 'TEST-L1000-430-08-D120',
@@ -90,12 +94,52 @@ class ChimneyBundlePromotionTest extends TestCase
             'is_archived' => false,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+        $monoCategory = Category::query()->create(['name' => 'Трубы моно', 'slug' => 'truby-mono', 'parent_id' => $chimney->category->parent_id]);
+        $darcoPipe = Product::query()->create([
+            'category_id' => $monoCategory->id,
+            'brand_id' => $darcoBrand->id,
+            'name' => 'DARCO Труба RP120/1000-CZ2 (ML)',
+            'slug' => 'test-darco-rp120-1000-cz2',
+            'sku' => 'TEST-DARCO-RP120-1000',
+            'price' => 134,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $mcBlackPipe = Product::query()->create([
+            'category_id' => $monoCategory->id,
+            'brand_id' => $tisBrand->id,
+            'name' => 'Теплов и Сухов Труба L250 ТМ-Р (430-0,8) MC Black D115',
+            'slug' => 'test-tis-mc-black-l250-d115',
+            'sku' => 'TEST-TIS-MCB-L250-D115',
+            'price' => 80,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $tankCategory = Category::query()->create(['name' => 'Баки для воды', 'slug' => 'test-water-tanks', 'parent_id' => 0]);
+        $tank = Product::query()->create([
+            'category_id' => $tankCategory->id,
+            'brand_id' => $tisBrand->id,
+            'name' => 'Бак печной овальный ТиС Феррит 50, D115/115 (430)',
+            'slug' => 'test-tis-water-tank',
+            'sku' => 'TEST-TIS-TANK',
+            'price' => 350,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
 
-        $this->get(route('chimney-selector', ['equipment' => $equipment->id]))
+        $response = $this->get(route('chimney-selector', ['equipment' => $equipment->id]));
+        $response
             ->assertOk()
             ->assertSeeText('Соберите дымоход под своё оборудование')
             ->assertSeeText('Марка стали')
             ->assertSeeText('Толщина стали трубы')
+            ->assertSeeText('Материал моно-участка')
+            ->assertSeeText('Чёрная сталь DARCO, 2 мм')
+            ->assertSeeText('Окрашенная система «Теплов и Сухов» MC Black')
+            ->assertSeeText('0,25 м')
             ->assertSee('<option value="430" selected>AISI 430</option>', false)
             ->assertSee('<option value="0.8" selected>0,8 мм</option>', false)
             ->assertSeeText('Моно + утеплённый')
@@ -118,10 +162,29 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Растяжки для высокой мачты')
             ->assertSeeText('Зонт')
             ->assertSeeText('Схема и высота')
+            ->assertSeeText('Угол колен для смещения')
             ->assertSeeText('Теплов и Сухов')
             ->assertSeeText('−10%')
             ->assertSeeText('Передайте схему менеджеру')
+            ->assertSee('data-addon-toggle', false)
+            ->assertSee('Умный поиск: теплообменник, бак, шибер…', false)
             ->assertSee('test-chimney-bundle-pipe', false);
+
+        preg_match('/var catalog = (\[.*?\]);\s*var unlocked/s', $response->getContent(), $catalogJson);
+        $catalog = collect(json_decode($catalogJson[1] ?? '[]', true));
+        $darcoItem = $catalog->firstWhere('id', $darcoPipe->id);
+        $mcBlackItem = $catalog->firstWhere('id', $mcBlackPipe->id);
+        $tankItem = $catalog->firstWhere('id', $tank->id);
+        $this->assertSame('120', $darcoItem['diameter'] ?? null);
+        $this->assertSame(1000, $darcoItem['length_mm'] ?? null);
+        $this->assertSame('2', $darcoItem['thickness'] ?? null);
+        $this->assertSame('black_steel', $darcoItem['material'] ?? null);
+        $this->assertSame('darco', $darcoItem['brand_slug'] ?? null);
+        $this->assertSame('115', $mcBlackItem['diameter'] ?? null);
+        $this->assertSame(250, $mcBlackItem['length_mm'] ?? null);
+        $this->assertSame('0.8', $mcBlackItem['thickness'] ?? null);
+        $this->assertSame('mc_black', $mcBlackItem['material'] ?? null);
+        $this->assertTrue($tankItem['preferred'] ?? false);
     }
 
     public function test_selector_distinguishes_regular_clamps_from_guy_wire_hardware(): void
