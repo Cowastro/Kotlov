@@ -55,7 +55,7 @@ class ChimneySelectorController extends Controller
                 ->orderable()
                 ->withSupplierChannels()
                 ->with(['category', 'brand'])
-                ->where('name', 'like', '%MC Black%')
+                ->where('name', 'like', '%MC%Black%')
                 ->limit(500)
                 ->get()
             : collect();
@@ -95,6 +95,7 @@ class ChimneySelectorController extends Controller
             $slug = (string) $product->category?->slug;
             $brandSlug = (string) $product->brand?->slug;
             $normalizedText = mb_strtolower($text);
+            $isMcBlack = (bool) preg_match('/mc(?:\s|\x{00A0})*black/iu', $normalizedText);
             $thicknessValue = isset($thickness[1])
                 ? rtrim(rtrim(str_replace(',', '.', $thickness[1]), '0'), '.')
                 : ($brandSlug === 'darco' ? '2' : null);
@@ -124,7 +125,7 @@ class ChimneySelectorController extends Controller
                 'brand_slug' => $brandSlug,
                 'material' => $brandSlug === 'darco'
                     ? 'black_steel'
-                    : (str_contains($normalizedText, 'mc black') ? 'mc_black' : 'stainless'),
+                    : ($isMcBlack ? 'mc_black' : 'stainless'),
                 'category' => $product->category?->name,
                 'preferred' => $brandSlug === config('shop.chimney_bundle_discount.preferred_brand_slug'),
             ];

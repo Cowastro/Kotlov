@@ -124,7 +124,7 @@ class ChimneyBundlePromotionTest extends TestCase
         $mcBlackDamper = Product::query()->create([
             'category_id' => $tankCategory->id,
             'brand_id' => $tisBrand->id,
-            'name' => 'Теплов и Сухов Шибер-задвижка (430-0,8) MC Black D115',
+            'name' => "Теплов и Сухов Шибер-задвижка (430-0,8) MC\u{00A0}Black D115",
             'slug' => 'test-tis-mc-black-damper-d115',
             'sku' => 'TEST-TIS-MCB-DAMPER-D115',
             'price' => 130,
