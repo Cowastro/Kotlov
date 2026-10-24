@@ -81,8 +81,8 @@ class ChimneyBundlePromotionTest extends TestCase
             'name' => 'Труба сэндвич AISI 304 Ø115 мм',
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
-        $tisBrand = Brand::query()->create(['name' => 'Теплов и Сухов', 'slug' => 'teplov-i-suhov']);
-        $darcoBrand = Brand::query()->create(['name' => 'DARCO', 'slug' => 'darco']);
+        $tisBrand = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
+        $darcoBrand = Brand::query()->firstOrCreate(['slug' => 'darco'], ['name' => 'DARCO']);
         $metrePipe = Product::query()->create([
             'category_id' => $chimney->category_id,
             'brand_id' => $tisBrand->id,
@@ -94,7 +94,10 @@ class ChimneyBundlePromotionTest extends TestCase
             'is_archived' => false,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
-        $monoCategory = Category::query()->create(['name' => 'Трубы моно', 'slug' => 'truby-mono', 'parent_id' => $chimney->category->parent_id]);
+        $monoCategory = Category::query()->firstOrCreate(
+            ['slug' => 'truby-mono'],
+            ['name' => 'Трубы моно', 'parent_id' => $chimney->category->parent_id]
+        );
         $darcoPipe = Product::query()->create([
             'category_id' => $monoCategory->id,
             'brand_id' => $darcoBrand->id,
