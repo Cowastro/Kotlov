@@ -155,6 +155,17 @@ class ChimneyBundlePromotionTest extends TestCase
             'is_archived' => false,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+        $adjustableMount = Product::query()->create([
+            'category_id' => $chimney->category_id,
+            'brand_id' => $tisBrand->id,
+            'name' => 'Крепление регулируемое Теплов и Сухов КР 1000',
+            'slug' => 'test-adjustable-wall-mount-1000',
+            'sku' => 'TEST-WALL-MOUNT-1000',
+            'price' => 120,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
 
         $response = $this->get(route('chimney-selector', ['equipment' => $equipment->id]));
         $response
@@ -189,6 +200,8 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Схема и высота')
             ->assertSeeText('Угол колен для смещения')
             ->assertSeeText('Горизонтальный участок через стену')
+            ->assertSeeText('Проход через стену (ППУ)')
+            ->assertSeeText('Вылет трубы от стены')
             ->assertSeeText('Длина участка между коленами')
             ->assertSeeText('Стеновые крепления')
             ->assertSeeText('Свободная высота над последним креплением')
@@ -213,6 +226,7 @@ class ChimneyBundlePromotionTest extends TestCase
         $mcBlackDamperItem = $catalog->firstWhere('id', $mcBlackDamper->id);
         $tankItem = $catalog->firstWhere('id', $tank->id);
         $masterFlashItem = $catalog->firstWhere('id', $masterFlash->id);
+        $adjustableMountItem = $catalog->firstWhere('id', $adjustableMount->id);
         $this->assertSame('120', $darcoItem['diameter'] ?? null);
         $this->assertSame(1000, $darcoItem['length_mm'] ?? null);
         $this->assertSame('2', $darcoItem['thickness'] ?? null);
@@ -231,6 +245,8 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertFalse($tankItem['discount_eligible'] ?? true);
         $this->assertSame('roof_flashing', $masterFlashItem['kind'] ?? null);
         $this->assertSame(['178', '330'], $masterFlashItem['diameter_pair'] ?? null);
+        $this->assertSame('wall_mount', $adjustableMountItem['kind'] ?? null);
+        $this->assertSame(1000, $adjustableMountItem['mount_length_mm'] ?? null);
     }
 
     public function test_selector_distinguishes_regular_clamps_from_guy_wire_hardware(): void

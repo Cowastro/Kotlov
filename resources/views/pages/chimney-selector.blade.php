@@ -56,6 +56,8 @@
                         <label data-elbows-field>Угол колен для смещения<select name="elbow_angle"><option value="45" selected>2 × 45°</option><option value="90">1 × 90°</option></select></label>
                         <label>Общая вертикальная высота, м<input type="number" name="height" value="5" min="1" max="20" step="0.25" inputmode="decimal"></label>
                         <label data-tee-field>Горизонтальный участок через стену, м<input type="number" name="horizontal_length" value="0.5" min="0.25" max="3" step="0.25" inputmode="decimal"></label>
+                        <label data-tee-field>Проход через стену (ППУ)<select name="wall_pass"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
+                        <label data-tee-field>Вылет трубы от стены<select name="wall_mount_reach"><option value="0" selected>Обычное крепление</option><option value="700">Регулируемое до 700 мм</option><option value="1000">Регулируемое до 1000 мм</option><option value="1200">Регулируемое до 1200 мм</option></select></label>
                         <label data-elbows-field>Длина участка между коленами, м<input type="number" name="offset_length" value="0.5" min="0.25" max="3" step="0.25" inputmode="decimal"></label>
                         <label data-elbows-field>Где находится смещение<select name="offset_system"><option value="mono">Внутри — моно</option><option value="sandwich">Снаружи — утеплённый</option></select></label>
                         <label>Шибер<select name="damper"><option value="no" selected>Не нужен</option><option value="yes">Нужен</option></select></label>
@@ -247,6 +249,8 @@
                 && (need.kind !== 'pipe' || (need.thickness || settings.thickness) === '' || product.thickness === (need.thickness || settings.thickness))
                 && (!need.angle || product.angle === need.angle || (need.angle === '90' && product.angle === '87'))
                 && (!need.lengthMm || product.length_mm === need.lengthMm)
+                && (!need.mountLengthMm || product.mount_length_mm === need.mountLengthMm)
+                && (!need.nameIncludes || productName.includes(normalizeSearch(need.nameIncludes)))
                 && (!need.roofType || need.roofType === 'pitched_metal' || productName.includes('master flash') || productName.includes('мастер флеш'))
                 && (need.roofType !== 'flat' || productName.includes('прямой'));
         }
@@ -306,7 +310,12 @@
             needs.push({kind:'tee', quantity:1, system:teeSystem, label:'Тройник 87°'});
             needs.push({kind:'condensate', quantity:1, system:'any', label:'Ревизия / конденсатоотвод'});
             needs.push({kind:'support', quantity:1, system:teeSystem, material:teeSystem === 'mono' ? monoOptions.material : 'stainless', diameterMode:teeSystem === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Опорная монтажная площадка под тройник'});
-            if (settings.wallMounts > 0) needs.push({kind:'wall_mount', quantity:settings.wallMounts, system:'any', material:'stainless', diameterMode:teeSystem === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Стеновые крепления наружной трассы'});
+            if (settings.wallMounts > 0 && settings.wallMountReach > 0) {
+                needs.push({kind:'wall_mount', quantity:settings.wallMounts, system:'any', material:'stainless', mountLengthMm:settings.wallMountReach, label:'Регулируемые стеновые крепления · ' + settings.wallMountReach + ' мм'});
+                needs.push({kind:'mount', quantity:settings.wallMounts, system:'any', material:'stainless', nameIncludes:'хомут штанги регулируемой', diameterMode:teeSystem === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Хомуты для регулируемых стеновых креплений'});
+            } else if (settings.wallMounts > 0) {
+                needs.push({kind:'wall_mount', quantity:settings.wallMounts, system:'any', material:'stainless', diameterMode:teeSystem === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Стеновые крепления наружной трассы'});
+            }
         }
         if (settings.scheme === 'elbows') {
             var offsetSystem = settings.offsetSystem === 'sandwich' ? 'sandwich' : 'mono';
@@ -314,7 +323,8 @@
             needs.push(Object.assign({kind:'elbow', quantity:settings.elbowAngle === '45' ? 2 : 1, system:offsetSystem, angle:settings.elbowAngle, label:'Колена для смещения · ' + settings.elbowAngle + '°'}, elbowOptions));
             addPipeNeeds(needs, settings.offsetLength, offsetSystem, 'Участок между коленами', elbowOptions);
         }
-        if (settings.ceilingPasses > 0) needs.push({kind:'ceiling_pass', quantity:settings.ceilingPasses, system:'any', material:settings.system === 'mono' ? monoOptions.material : 'stainless', diameterMode:'outer', exactDiameter:true, label:'ППУ · проход через перекрытие'});
+        var totalPasses = settings.ceilingPasses + (settings.scheme === 'tee' && settings.wallPass ? 1 : 0);
+        if (totalPasses > 0) needs.push({kind:'ceiling_pass', quantity:totalPasses, system:'any', material:settings.system === 'mono' ? monoOptions.material : 'stainless', diameterMode:'outer', exactDiameter:true, label:'ППУ · проходы через перекрытие / стену'});
         if (settings.clamps > 0) needs.push({kind:'clamp', quantity:settings.clamps, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Обычные соединительные хомуты'});
         if (settings.guyWires) needs.push({kind:'guy_wire', quantity:1, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', label:'Хомут для растяжек высокой мачты'});
         if (settings.roofType !== 'none') needs.push({kind:'roof_flashing', quantity:1, system:'any', material:'stainless', roofType:settings.roofType, diameterMode:settings.system === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Фартук / проход кровли · ' + settings.roofAngle + '°'});
@@ -336,7 +346,7 @@
         var settings = {
             diameter:data.get('diameter'), system:data.get('system'), fuel:data.get('fuel'), operation:data.get('operation'), steel:selectedSteel, thickness:selectedThickness, scheme:data.get('scheme'),
             height:height, monoLength:Number(data.get('mono_length')), monoMaterial:data.get('mono_material'), stoveAdapter:data.get('stove_adapter') === 'yes', elbowAngle:data.get('elbow_angle'),
-            horizontalLength:Number(data.get('horizontal_length')), offsetLength:Number(data.get('offset_length')), offsetSystem:data.get('offset_system'),
+            horizontalLength:Number(data.get('horizontal_length')), wallPass:data.get('wall_pass') === 'yes', wallMountReach:Number(data.get('wall_mount_reach')), offsetLength:Number(data.get('offset_length')), offsetSystem:data.get('offset_system'),
             damper:data.get('damper') === 'yes', ceilingPasses:Number(data.get('ceiling_passes')),
             clamps:clampValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(clampValue),
             wallMounts:wallMountValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(wallMountValue),
@@ -411,7 +421,7 @@
             if (settings.system === 'combined') nodes.push(monoLabel + ' ' + settings.monoLength.toLocaleString('ru-RU') + ' м');
             if (settings.damper) nodes.push('Шибер');
             if (settings.system === 'combined' || (settings.system === 'sandwich' && settings.damper)) nodes.push('Переход на термо');
-            if (settings.scheme === 'tee') nodes.push('Горизонталь ' + settings.horizontalLength.toLocaleString('ru-RU') + ' м', 'Тройник + опора');
+            if (settings.scheme === 'tee') nodes.push('Горизонталь ' + settings.horizontalLength.toLocaleString('ru-RU') + ' м' + (settings.wallPass ? ' + ППУ' : ''), 'Тройник + опора' + (settings.wallMountReach ? ' + крепление ' + settings.wallMountReach + ' мм' : ''));
             if (settings.scheme === 'elbows') nodes.push(settings.elbowAngle + '° → ' + settings.offsetLength.toLocaleString('ru-RU') + ' м → ' + settings.elbowAngle + '°');
             nodes.push('Вертикаль ' + settings.height.toLocaleString('ru-RU') + ' м');
             if (settings.ceilingPasses) nodes.push('ППУ × ' + settings.ceilingPasses);
@@ -446,7 +456,7 @@
             message.value = 'Подбор дымохода: ' + diameterLabel + ', ' + systemLabel + ', сталь ' + (settings.steel || 'из доступных')
                 + ', толщина трубы ' + (settings.thickness ? settings.thickness.replace('.', ',') + ' мм' : 'из доступных')
                 + ', рекомендация: ' + settings.recommendation + ' ' + settings.roofAdvice + ', схема ' + settings.scheme
-                + (settings.scheme === 'tee' ? ', горизонталь ' + settings.horizontalLength + ' м' : '')
+                + (settings.scheme === 'tee' ? ', горизонталь ' + settings.horizontalLength + ' м, проход стены ' + (settings.wallPass ? 'да' : 'нет') + ', вылет крепления ' + (settings.wallMountReach || 'обычное') : '')
                 + (settings.scheme === 'elbows' ? ', колена ' + settings.elbowAngle + '°, участок ' + settings.offsetLength + ' м' : '')
                 + ', высота ' + settings.height + ' м, кровля ' + settings.roofType + ' ' + settings.roofAngle + '°, до конька ' + settings.ridgeDistance + ' м, свободная мачта ' + settings.freeMastHeight + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
                 + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps

@@ -138,6 +138,7 @@ class ChimneySelectorController extends Controller
             }
             preg_match('/(?:\bL\s*|\/)(250|500|750|1000)\b/iu', $text, $length);
             preg_match('/[\/\s](45|87|90)(?:\s*[°*]|\s*-|\s+(?=[A-ZА-Я]))/iu', $text, $angle);
+            preg_match('/(?:КР|регулируемое).*?\b(700|1000|1200)\b/iu', $text, $mountLength);
             $slug = (string) $product->category?->slug;
             $brandSlug = (string) $product->brand?->slug;
             $normalizedText = mb_strtolower($text);
@@ -159,6 +160,7 @@ class ChimneySelectorController extends Controller
                 'thickness' => $thicknessValue,
                 'length_mm' => isset($length[1]) ? (int) $length[1] : null,
                 'angle' => $angle[1] ?? null,
+                'mount_length_mm' => isset($mountLength[1]) ? (int) $mountLength[1] : null,
                 'system' => $brandSlug === 'darco'
                     ? 'mono'
                     : (str_contains($slug, 'sendvich')
