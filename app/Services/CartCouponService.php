@@ -20,9 +20,9 @@ class CartCouponService
             : null;
         $valid = $coupon !== null && $coupon->isValid($subtotal);
         $base = min($subtotal, max(0, $discountBase ?? $subtotal));
-        $discount = $valid
+        $discount = (float) ($valid
             ? min($base, round($coupon->calculateDiscount($base), 2))
-            : 0.0;
+            : 0.0);
 
         return [
             'code' => $valid ? $normalizedCode : null,
