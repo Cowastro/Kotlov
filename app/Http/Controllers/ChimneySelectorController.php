@@ -77,11 +77,26 @@ class ChimneySelectorController extends Controller
                 ->limit(200)
                 ->get()
             : collect();
+        $roofAccessories = Product::query()
+            ->orderable()
+            ->withSupplierChannels()
+            ->with(['category', 'brand'])
+            ->where(function ($query) {
+                $query->where('name', 'like', '%Master Flash%')
+                    ->orWhere('name', 'like', '%master flash%')
+                    ->orWhere('name', 'like', '%Мастер-флеш%')
+                    ->orWhere('name', 'like', '%мастер-флеш%')
+                    ->orWhere('name', 'like', '%Мастер флеш%')
+                    ->orWhere('name', 'like', '%мастер флеш%');
+            })
+            ->limit(100)
+            ->get();
         $products = $products
             ->merge($pipeSections)
             ->merge($darcoSections)
             ->merge($mcBlackSections)
             ->merge($preferredAccessories)
+            ->merge($roofAccessories)
             ->unique('id')
             ->values();
 
@@ -113,6 +128,9 @@ class ChimneySelectorController extends Controller
             $text = $product->name.' '.json_encode((array) $product->specs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             $diameter = $this->diameterFromText($text);
             preg_match('/(?:D|Ø)?\s*(80|100|110|115|120|130|140|150|160|180|200|210|220|230|240|250|260|280|300|310|350)\s*(?:[\/]\s*|[xх-]\s*)(120|130|150|160|180|200|210|220|230|240|250|260|280|300|310|350)/iu', $text, $diameterPair);
+            if (! isset($diameterPair[1], $diameterPair[2])) {
+                preg_match('/\b(50|60|70|75|80|90|100|110|115|120|130|140|150|160|170|175|178|180|200|210|220|230|240|250|254|260|275|280|300|310|330|350|400|450|467)\s*[–—-]\s*(75|80|90|100|110|115|120|130|140|150|160|170|175|178|180|200|210|220|230|240|250|254|260|275|280|300|310|330|350|400|450|467)\s*мм\b/iu', $text, $diameterPair);
+            }
             preg_match('/(?:AISI\s*)?(304|316|321|430)/iu', $text, $steel);
             preg_match('/(?:304|316|321|430)\s*[-,]\s*(0[.,][5-9]|1[.,]0)/iu', $text, $thickness);
             if (! isset($thickness[1])) {
@@ -199,6 +217,7 @@ class ChimneySelectorController extends Controller
             str_contains($normalizedName, 'фартук')
                 || str_contains($normalizedName, 'master flash')
                 || str_contains($normalizedName, 'мастер флеш')
+                || str_contains($normalizedName, 'мастер-флеш')
                 || str_contains($normalizedName, 'крышная разделка') => 'roof_flashing',
             str_contains($normalizedName, 'растяж') => 'guy_wire',
             str_contains($normalizedName, 'хомут штанги') || str_contains($normalizedName, 'хомуты штанги') => 'mount',

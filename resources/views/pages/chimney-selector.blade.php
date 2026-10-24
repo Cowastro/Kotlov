@@ -233,7 +233,7 @@
             var adapterPairMatches = need.kind === 'adapter' && need.toDiameter
                 ? Array.isArray(product.diameter_pair) && product.diameter_pair.includes(settings.diameter) && product.diameter_pair.includes(need.toDiameter)
                 : null;
-            var diameterRangeMatches = need.kind === 'ceiling_pass' && targetDiameter && Array.isArray(product.diameter_pair)
+            var diameterRangeMatches = ['ceiling_pass','roof_flashing'].includes(need.kind) && targetDiameter && Array.isArray(product.diameter_pair)
                 ? Number(targetDiameter) >= Number(product.diameter_pair[0]) && Number(targetDiameter) <= Number(product.diameter_pair[1])
                 : false;
             var productName = normalizeSearch(product.name);
@@ -247,7 +247,8 @@
                 && (need.kind !== 'pipe' || (need.thickness || settings.thickness) === '' || product.thickness === (need.thickness || settings.thickness))
                 && (!need.angle || product.angle === need.angle || (need.angle === '90' && product.angle === '87'))
                 && (!need.lengthMm || product.length_mm === need.lengthMm)
-                && (!need.roofType || need.roofType !== 'pitched_soft' || productName.includes('master flash') || productName.includes('мастер флеш'));
+                && (!need.roofType || need.roofType === 'pitched_metal' || productName.includes('master flash') || productName.includes('мастер флеш'))
+                && (need.roofType !== 'flat' || productName.includes('прямой'));
         }
         var picked = catalog.find(function (product) { return matches(product, false, false); })
             || catalog.find(function (product) { return matches(product, false, true); });

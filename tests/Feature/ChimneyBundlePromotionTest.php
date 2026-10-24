@@ -83,6 +83,7 @@ class ChimneyBundlePromotionTest extends TestCase
         ]);
         $tisBrand = Brand::query()->firstOrCreate(['slug' => 'teplov-i-suhov'], ['name' => 'Теплов и Сухов']);
         $darcoBrand = Brand::query()->firstOrCreate(['slug' => 'darco'], ['name' => 'DARCO']);
+        $firewayBrand = Brand::query()->firstOrCreate(['slug' => 'fireway'], ['name' => 'Fireway']);
         $metrePipe = Product::query()->create([
             'category_id' => $chimney->category_id,
             'brand_id' => $tisBrand->id,
@@ -139,6 +140,17 @@ class ChimneyBundlePromotionTest extends TestCase
             'slug' => 'test-tis-water-tank',
             'sku' => 'TEST-TIS-TANK',
             'price' => 350,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $masterFlash = Product::query()->create([
+            'category_id' => $chimney->category_id,
+            'brand_id' => $firewayBrand->id,
+            'name' => 'Master Flash №8 прямой (178–330 мм) Fireway',
+            'slug' => 'test-fireway-master-flash-8',
+            'sku' => 'TEST-FIREWAY-MASTER-FLASH-8',
+            'price' => 85,
             'is_active' => true,
             'is_archived' => false,
             'availability_status' => Product::AVAILABILITY_CHECK,
@@ -200,6 +212,7 @@ class ChimneyBundlePromotionTest extends TestCase
         $mcBlackItem = $catalog->firstWhere('id', $mcBlackPipe->id);
         $mcBlackDamperItem = $catalog->firstWhere('id', $mcBlackDamper->id);
         $tankItem = $catalog->firstWhere('id', $tank->id);
+        $masterFlashItem = $catalog->firstWhere('id', $masterFlash->id);
         $this->assertSame('120', $darcoItem['diameter'] ?? null);
         $this->assertSame(1000, $darcoItem['length_mm'] ?? null);
         $this->assertSame('2', $darcoItem['thickness'] ?? null);
@@ -216,6 +229,8 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertSame('115', $mcBlackDamperItem['diameter'] ?? null);
         $this->assertTrue($tankItem['preferred'] ?? false);
         $this->assertFalse($tankItem['discount_eligible'] ?? true);
+        $this->assertSame('roof_flashing', $masterFlashItem['kind'] ?? null);
+        $this->assertSame(['178', '330'], $masterFlashItem['diameter_pair'] ?? null);
     }
 
     public function test_selector_distinguishes_regular_clamps_from_guy_wire_hardware(): void
@@ -230,6 +245,7 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertSame('support', $method->invoke($controller, 'perehody-adaptery-dymohod', 'Площадка монтажная термо ПМТ-Р D120/180'));
         $this->assertSame('wall_mount', $method->invoke($controller, 'krepleniya-dymohod', 'Крепление настенное Ø180'));
         $this->assertSame('roof_flashing', $method->invoke($controller, 'zaglushki-dymohod', 'Фартук D180'));
+        $this->assertSame('roof_flashing', $method->invoke($controller, 'krepleniya-dymohod', 'Мастер-флеш 178–330 мм'));
 
         $diameter = new \ReflectionMethod(ChimneySelectorController::class, 'diameterFromText');
         $this->assertSame('120', $diameter->invoke($controller, 'Шибер Darco SZK120-CZ2(ML) короткая ручка'));
