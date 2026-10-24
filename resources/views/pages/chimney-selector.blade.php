@@ -246,7 +246,7 @@
             var elbowOptions = settings.system === 'sandwich' ? {material:'stainless'} : monoOptions;
             needs.push(Object.assign({kind:'elbow', quantity:settings.elbowAngle === '45' ? 2 : 1, system:settings.system === 'sandwich' ? 'sandwich' : 'mono', angle:settings.elbowAngle, label:'Колена для смещения · ' + settings.elbowAngle + '°'}, elbowOptions));
         }
-        if (settings.ceilingPasses > 0) needs.push({kind:'ceiling_pass', quantity:settings.ceilingPasses, system:'any', diameterMode:'outer', exactDiameter:true, label:'ППУ · проход через перекрытие'});
+        if (settings.ceilingPasses > 0) needs.push({kind:'ceiling_pass', quantity:settings.ceilingPasses, system:'any', material:settings.system === 'mono' ? monoOptions.material : 'stainless', diameterMode:'outer', exactDiameter:true, label:'ППУ · проход через перекрытие'});
         if (settings.clamps > 0) needs.push({kind:'clamp', quantity:settings.clamps, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Обычные соединительные хомуты'});
         if (settings.guyWires) needs.push({kind:'guy_wire', quantity:1, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', label:'Хомут для растяжек высокой мачты'});
         if (settings.umbrella) needs.push({kind:'umbrella', quantity:1, system:settings.system === 'mono' ? 'mono' : 'sandwich', material:'stainless', label:'Зонт / завершение дымохода'});
