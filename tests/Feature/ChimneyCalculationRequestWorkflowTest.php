@@ -17,6 +17,7 @@ use App\Services\ChimneyCalculationRequestTelegramNotifier;
 use App\Services\TelegramApi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Livewire\Livewire;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
@@ -143,6 +144,14 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
             ->assertRedirect(ChimneyCalculator::getUrl(['requests' => 1]));
         $this->get(ChimneyCalculationRequestResource::getUrl('view', ['record' => $calculation]))
             ->assertRedirect(ChimneyCalculator::getUrl(['calculation' => $calculation->id]));
+
+        Livewire::withQueryParams(['calculation' => $calculation->id])
+            ->test(ChimneyCalculator::class)
+            ->assertSet('calculationId', $calculation->id)
+            ->call('startNewCalculation')
+            ->assertSet('calculationId', null)
+            ->assertSet('showRequests', false)
+            ->assertRedirect(ChimneyCalculator::getUrl(['fresh' => 1]));
     }
 
     public function test_manager_can_create_and_revise_a_calculation_in_the_standalone_calculator(): void

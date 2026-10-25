@@ -65,7 +65,7 @@ class ChimneyCalculator extends Page implements HasTable
             Action::make('newCalculation')
                 ->label('Новый расчёт')
                 ->icon('heroicon-o-plus')
-                ->url(static::getUrl())
+                ->action(fn () => $this->startNewCalculation())
                 ->visible(fn (): bool => $this->calculationId !== null || $this->showRequests),
             Action::make('savedCalculations')
                 ->label(fn (): string => 'Заявки'.(($count = ChimneyCalculationRequest::query()->where('status', 'pending')->count()) ? " ({$count})" : ''))
@@ -128,9 +128,19 @@ class ChimneyCalculator extends Page implements HasTable
             : null;
     }
 
+    public function startNewCalculation(): void
+    {
+        $this->calculationId = null;
+        $this->showRequests = false;
+        $this->redirect(static::getUrl(['fresh' => 1]), navigate: false);
+    }
+
     public function calculatorUrl(): string
     {
         $parameters = ['manager_mode' => 1];
+        if (request()->boolean('fresh')) {
+            $parameters['fresh'] = 1;
+        }
         if (! $this->calculationId) {
             return route('chimney-selector', $parameters);
         }
