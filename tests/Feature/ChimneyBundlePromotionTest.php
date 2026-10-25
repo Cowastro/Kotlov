@@ -268,6 +268,7 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSee('recommendMaterial', false)
             ->assertSee('chimney_selector_token', false)
             ->assertSee("kind:'support'", false)
+            ->assertSee("kind:'tee', quantity:1, system:teeSystem, angle:'87'", false)
             ->assertSee("kind:'wall_mount'", false)
             ->assertSee("kind:'roof_flashing'", false)
             ->assertSee("sharedParams.get('items')", false)

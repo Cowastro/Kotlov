@@ -365,7 +365,7 @@
             var teeSystem = settings.system === 'mono' ? 'mono' : 'sandwich';
             var teeOptions = teeSystem === 'mono' ? monoOptions : {material:'stainless'};
             addPipeNeeds(needs, settings.horizontalLength, teeSystem, 'Горизонтальный участок через стену', teeOptions);
-            needs.push({kind:'tee', quantity:1, system:teeSystem, label:'Тройник 87°'});
+            needs.push({kind:'tee', quantity:1, system:teeSystem, angle:'87', label:'Тройник 87°'});
             needs.push({kind:'condensate', quantity:1, system:'any', label:'Ревизия / конденсатоотвод'});
             needs.push({kind:'support', quantity:1, system:teeSystem, material:teeSystem === 'mono' ? monoOptions.material : 'stainless', diameterMode:teeSystem === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Опорная монтажная площадка под тройник'});
             if (settings.wallMounts > 0 && settings.wallMountReach > 0) {
