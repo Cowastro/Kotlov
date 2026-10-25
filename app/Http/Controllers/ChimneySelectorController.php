@@ -70,10 +70,16 @@ class ChimneySelectorController extends Controller
                         ->orWhere('name', 'like', '%Теплообмен%')
                         ->orWhere('name', 'like', '%регистр%')
                         ->orWhere('name', 'like', '%Регистр%')
+                        ->orWhere('name', 'like', '%теплосъ%')
+                        ->orWhere('name', 'like', '%Теплосъ%')
                         ->orWhere('name', 'like', '%бак печной%')
                         ->orWhere('name', 'like', '%Бак печной%')
                         ->orWhere('name', 'like', '%бак на трубе%')
-                        ->orWhere('name', 'like', '%Бак на трубе%');
+                        ->orWhere('name', 'like', '%Бак на трубе%')
+                        ->orWhere('name', 'like', '%бак навес%')
+                        ->orWhere('name', 'like', '%Бак навес%')
+                        ->orWhere('name', 'like', '%бак самовар%')
+                        ->orWhere('name', 'like', '%Бак самовар%');
                 })
                 ->limit(200)
                 ->get()
@@ -144,6 +150,7 @@ class ChimneySelectorController extends Controller
             $brandSlug = (string) $product->brand?->slug;
             $normalizedText = mb_strtolower($text);
             $isMcBlack = (bool) preg_match('/mc(?:\s|\x{00A0})*black/iu', $normalizedText);
+            $kind = $this->kind($slug, $product->name);
             $thicknessValue = isset($thickness[1])
                 ? rtrim(rtrim(str_replace(',', '.', $thickness[1]), '0'), '.')
                 : ($brandSlug === 'darco' ? '2' : null);
@@ -162,15 +169,17 @@ class ChimneySelectorController extends Controller
                 'length_mm' => isset($length[1]) ? (int) $length[1] : null,
                 'angle' => $angle[1] ?? null,
                 'mount_length_mm' => isset($mountLength[1]) ? (int) $mountLength[1] : null,
-                'system' => $brandSlug === 'darco'
+                'system' => in_array($kind, ['water_tank', 'heat_exchanger'], true)
+                    ? 'mono'
+                    : ($brandSlug === 'darco'
                     ? 'mono'
                     : (str_contains($slug, 'sendvich')
                         || str_contains($normalizedText, 'сэндвич')
                         || str_contains($normalizedText, 'термо')
                         || (bool) preg_match('/D?\s*\d{2,3}\s*[\/]\s*\d{2,3}\b/iu', $text)
                             ? 'sandwich'
-                            : 'mono'),
-                'kind' => $this->kind($slug, $product->name),
+                            : 'mono')),
+                'kind' => $kind,
                 'brand_slug' => $brandSlug,
                 'material' => $brandSlug === 'darco'
                     ? 'black_steel'
@@ -216,6 +225,13 @@ class ChimneySelectorController extends Controller
         $normalizedName = mb_strtolower($name);
 
         return match (true) {
+            str_contains($normalizedName, 'теплообмен')
+                || str_contains($normalizedName, 'теплосъ')
+                || str_contains($normalizedName, 'регистр') => 'heat_exchanger',
+            str_contains($normalizedName, 'бак печной')
+                || str_contains($normalizedName, 'бак на трубе')
+                || str_contains($normalizedName, 'бак навес')
+                || str_contains($normalizedName, 'бак самовар') => 'water_tank',
             str_contains($slug, 'shibery') || str_contains($normalizedName, 'шибер') => 'damper',
             str_contains($slug, 'zonty') || str_contains($normalizedName, 'зонт') || str_contains($normalizedName, 'дефлектор') => 'umbrella',
             str_contains($normalizedName, 'ппу') || str_contains($normalizedName, 'проход через') || str_contains($normalizedName, 'проходной узел') => 'ceiling_pass',

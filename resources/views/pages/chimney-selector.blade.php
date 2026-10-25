@@ -47,9 +47,11 @@
                         <label data-combined-field>Длина моно-участка<select name="mono_length"><option value="0.25">0,25 м</option><option value="0.5">0,5 м</option><option value="0.75">0,75 м</option><option value="1" selected>1 м</option><option value="1.25">1,25 м</option><option value="1.5">1,5 м</option><option value="1.75">1,75 м</option><option value="2">2 м</option></select></label>
                         <label>Адаптер на печь<select name="stove_adapter"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
                         <label>Диаметр трассы после адаптера<select name="chimney_diameter" data-chimney-diameter></select></label>
+                        <label>Нагрев воды<select name="water_heating"><option value="none" selected>Не нужен</option><option value="water_tank">Бак на трубе</option><option value="heat_exchanger">Теплообменник / регистр для выносного бака</option></select></label>
                     </div>
                     <p class="cs-recommendation" data-material-recommendation>Для дровяной печи рекомендуем AISI 430, 0,8 мм.</p>
                     <p class="cs-field-note">Складские диаметры трассы: Ø120, Ø150, Ø180 и Ø200. Для патрубка Ø130 можно выбрать адаптер на Ø120 или Ø150.</p>
+                    <p class="cs-field-note">Бак на трубе и теплообменник — альтернативные решения. Выбранный элемент ставится на стартовом моно-участке до перехода на утеплённый дымоход.</p>
 
                     <div class="cs-step"><span>03</span><div><h2>Схема и высота</h2><p>Выберите основные элементы трассы. Точный состав проверит специалист.</p></div></div>
                     <div class="cs-fields">
@@ -292,6 +294,13 @@
         if (remainder >= 2) { add(500, 1, '0,5 м'); remainder -= 2; }
         if (remainder === 1) add(250, 1, '0,25 м');
     }
+    function addWaterHeatingNeed(needs, settings) {
+        if (settings.waterHeating === 'water_tank') {
+            needs.push({kind:'water_tank', quantity:1, system:'mono', brandSlug:'teplov-i-suhov', label:'Бак на трубе для нагрева воды'});
+        } else if (settings.waterHeating === 'heat_exchanger') {
+            needs.push({kind:'heat_exchanger', quantity:1, system:'mono', brandSlug:'teplov-i-suhov', label:'Теплообменник / регистр для выносного бака'});
+        }
+    }
     function buildNeeds(settings) {
         var needs = [];
         var height = Math.max(1, Math.round(settings.height * 4) / 4);
@@ -309,16 +318,21 @@
         if (settings.system === 'combined') {
             addPipeNeeds(needs, monoLength, 'mono', monoSectionLabel, monoOptions);
             if (settings.damper) needs.push(Object.assign({kind:'damper', quantity:1, system:'mono', label:'Шибер'}, monoOptions));
+            addWaterHeatingNeed(needs, settings);
             needs.push({kind:'transition', quantity:1, system:'any', label:'Переход моно / термо'});
             addPipeNeeds(needs, Math.max(0.5, height - monoLength), 'sandwich', 'Наружная трасса · утеплённая', {material:'stainless'});
         } else {
             var fullSystemOptions = settings.system === 'mono' ? monoOptions : {material:'stainless'};
-            if (settings.damper && settings.system === 'sandwich') {
-                needs.push({kind:'damper', quantity:1, system:'mono', material:'stainless', label:'Шибер у печи · моно'});
-                needs.push({kind:'transition', quantity:1, system:'any', label:'Переход после шибера на утеплённую систему'});
+            if (settings.system === 'sandwich') {
+                if (settings.damper) needs.push({kind:'damper', quantity:1, system:'mono', material:'stainless', label:'Шибер у печи · моно'});
+                addWaterHeatingNeed(needs, settings);
+                if (settings.damper || settings.waterHeating !== 'none') {
+                    needs.push({kind:'transition', quantity:1, system:'any', label:'Переход стартового моно-участка на утеплённую систему'});
+                }
             } else if (settings.damper) {
                 needs.push(Object.assign({kind:'damper', quantity:1, system:settings.system, label:'Шибер'}, fullSystemOptions));
             }
+            if (settings.system === 'mono') addWaterHeatingNeed(needs, settings);
             addPipeNeeds(needs, height, settings.system, settings.system === 'sandwich' ? 'Утеплённая трасса' : monoSectionLabel, fullSystemOptions);
         }
         if (settings.scheme === 'tee') {
@@ -365,7 +379,7 @@
             diameter:data.get('diameter'), system:data.get('system'), fuel:data.get('fuel'), operation:data.get('operation'), steel:selectedSteel, thickness:selectedThickness, scheme:data.get('scheme'),
             height:height, monoLength:Number(data.get('mono_length')), monoMaterial:data.get('mono_material'), stoveAdapter:data.get('stove_adapter') === 'yes', elbowAngle:data.get('elbow_angle'),
             horizontalLength:Number(data.get('horizontal_length')), wallPass:data.get('wall_pass') === 'yes', wallMountReach:Number(data.get('wall_mount_reach')), offsetLength:Number(data.get('offset_length')), offsetSystem:data.get('offset_system'),
-            damper:data.get('damper') === 'yes', ceilingPasses:Number(data.get('ceiling_passes')),
+            damper:data.get('damper') === 'yes', waterHeating:data.get('water_heating') || 'none', ceilingPasses:Number(data.get('ceiling_passes')),
             clamps:clampValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(clampValue),
             wallMounts:wallMountValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(wallMountValue),
             freeMastHeight:freeMastHeight, guyWires:guyWireValue === 'yes' || (guyWireValue === 'auto' && freeMastHeight > 1.5),
@@ -437,6 +451,7 @@
             ? 'чёрный DARCO 2 мм'
             : (settings.monoMaterial === 'mc_black' ? 'окрашенный «Теплов и Сухов» MC Black' : 'моно из нержавеющей стали');
         var systemLabel = settings.system === 'combined' ? monoLabel + ' ' + settings.monoLength.toLocaleString('ru-RU') + ' м + утеплённый' : (settings.system === 'sandwich' ? 'полностью утеплённый' : 'полностью ' + monoLabel);
+        var waterHeatingLabel = settings.waterHeating === 'water_tank' ? 'бак на трубе' : (settings.waterHeating === 'heat_exchanger' ? 'теплообменник / регистр' : 'не нужен');
         var diameterLabel = settings.diameter === settings.chimneyDiameter ? 'Ø ' + settings.diameter + ' мм' : 'патрубок Ø ' + settings.diameter + ' → дымоход Ø ' + settings.chimneyDiameter + ' мм';
         function diagramHtml() {
             var stackX = settings.scheme === 'tee' ? 292 : (settings.scheme === 'elbows' ? 258 : 220);
@@ -517,6 +532,18 @@
 
             if (settings.stoveAdapter) svg.push(part(['adapter'], '<path class="cs-schematic__hotspot" d="M' + (equipmentX - 13) + ' 423 L' + (equipmentX - 8) + ' 404 L' + (equipmentX + 8) + ' 404 L' + (equipmentX + 13) + ' 423 Z" fill="#fff" stroke="#e34234" stroke-width="3"/>', 'Адаптер Ø' + settings.chimneyDiameter));
             if (settings.damper) svg.push(part(['damper'], '<rect class="cs-schematic__hotspot" x="' + (equipmentX - 18) + '" y="365" width="36" height="16" rx="3" fill="#fff" stroke="#e34234" stroke-width="3"/><line x1="' + (equipmentX + 18) + '" y1="373" x2="' + (equipmentX + 34) + '" y2="373" stroke="#34383a" stroke-width="3"/>', 'Шибер'));
+            var waterHeatingX = settings.scheme === 'tee' ? (equipmentX + 184) / 2 : (settings.scheme === 'elbows' ? (equipmentX + stackX) / 2 : equipmentX);
+            var waterHeatingY = settings.scheme === 'tee' ? 366 : (settings.scheme === 'elbows' ? 300 : 328);
+            var waterCalloutX = settings.scheme === 'tee' ? 52 : 400;
+            var waterCalloutY = settings.scheme === 'tee' ? 320 : 342;
+            var waterCalloutAnchor = settings.scheme === 'tee' ? 'start' : 'end';
+            if (settings.waterHeating === 'water_tank') {
+                svg.push(part(['water_tank'], '<rect class="cs-schematic__hotspot" x="' + (waterHeatingX - 27) + '" y="' + waterHeatingY + '" width="54" height="32" rx="8" fill="#c1c9cc" stroke="#687176" stroke-width="2"/><rect x="' + (waterHeatingX - 7) + '" y="' + (waterHeatingY - 2) + '" width="14" height="36" rx="5" fill="#f7f8f8" stroke="#687176" stroke-width="2"/>', 'Бак на трубе'));
+                svg.push(callout(waterCalloutX, waterCalloutY, 'Бак на трубе', 'стартовый моно-участок', waterCalloutAnchor));
+            } else if (settings.waterHeating === 'heat_exchanger') {
+                svg.push(part(['heat_exchanger'], '<rect class="cs-schematic__hotspot" x="' + (waterHeatingX - 23) + '" y="' + (waterHeatingY - 2) + '" width="46" height="36" rx="7" fill="#fff" stroke="#e34234" stroke-width="3"/><path d="M' + (waterHeatingX - 14) + ' ' + (waterHeatingY + 8) + ' H' + (waterHeatingX + 14) + ' M' + (waterHeatingX - 14) + ' ' + (waterHeatingY + 16) + ' H' + (waterHeatingX + 14) + ' M' + (waterHeatingX - 14) + ' ' + (waterHeatingY + 24) + ' H' + (waterHeatingX + 14) + '" stroke="#687176" stroke-width="3"/>', 'Теплообменник для выносного бака'));
+                svg.push(callout(waterCalloutX, waterCalloutY, 'Теплообменник', 'для выносного бака', waterCalloutAnchor));
+            }
 
             for (var passIndex = 0; passIndex < settings.ceilingPasses; passIndex++) {
                 var passY = 248 + passIndex * 54;
@@ -563,6 +590,7 @@
                 if (kind === 'mount' || kind === 'wall_mount') return 28;
                 if (kind === 'ceiling_pass') return 30;
                 if (kind === 'transition') return 40;
+                if (kind === 'water_tank' || kind === 'heat_exchanger') return 55;
                 if (kind === 'tee') return 58;
                 if (kind === 'damper') return 60;
                 if (kind === 'condensate') return 70;
@@ -650,7 +678,7 @@
                 + (settings.scheme === 'elbows' ? ', колена ' + settings.elbowAngle + '°, участок ' + settings.offsetLength + ' м' : '')
                 + ', высота ' + settings.height + ' м, кровля ' + settings.roofType + ' ' + settings.roofAngle + '°, до конька ' + settings.ridgeDistance + ' м, свободная мачта ' + settings.freeMastHeight + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
                 + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
-                + ', растяжки ' + (settings.guyWires ? 'да' : 'нет') + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
+                + ', нагрев воды: ' + waterHeatingLabel + ', растяжки ' + (settings.guyWires ? 'да' : 'нет') + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
             result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">' + diameterLabel + ' · ' + systemLabel + ' · ' + settings.height + ' м</p>'
                 + '<p class="cs-recommendation">' + esc(settings.recommendation + ' ' + settings.roofAdvice) + '</p>' + diagramHtml()
                 + (missing ? '<p class="cs-safety"><strong>Нужно подобрать вручную:</strong> ' + esc(Array.from(new Set(missingLabels)).join(', ')) + '. Менеджер проверит эти позиции.</p>' : '')

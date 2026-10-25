@@ -156,6 +156,17 @@ class ChimneyBundlePromotionTest extends TestCase
             'is_archived' => false,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+        $heatExchanger = Product::query()->create([
+            'category_id' => $tankCategory->id,
+            'brand_id' => $tisBrand->id,
+            'name' => 'Теплообменник-регистр Теплов и Сухов D115',
+            'slug' => 'test-tis-heat-exchanger-d115',
+            'sku' => 'TEST-TIS-HEAT-EXCHANGER',
+            'price' => 290,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
         $masterFlash = Product::query()->create([
             'category_id' => $chimney->category_id,
             'brand_id' => $firewayBrand->id,
@@ -196,6 +207,10 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Длина моно-участка')
             ->assertSeeText('Адаптер на печь')
             ->assertSeeText('Диаметр трассы после адаптера')
+            ->assertSeeText('Нагрев воды')
+            ->assertSeeText('Бак на трубе')
+            ->assertSeeText('Теплообменник / регистр для выносного бака')
+            ->assertSeeText('альтернативные решения')
             ->assertSeeText('Для патрубка Ø130 можно выбрать адаптер на Ø120 или Ø150.')
             ->assertSee('settings.chimneyDiameter', false)
             ->assertSee('data-row-decrease', false)
@@ -214,6 +229,9 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSee('СХЕМА СБОРКИ МОДУЛЬНОГО ДЫМОХОДА', false)
             ->assertSee('assemblySequenceRank', false)
             ->assertSee("system === 'sandwich' ? 20 : 50", false)
+            ->assertSee("kind:'water_tank'", false)
+            ->assertSee("kind:'heat_exchanger'", false)
+            ->assertSee('addWaterHeatingNeed', false)
             ->assertSeeText('Скачать монтажную схему SVG')
             ->assertSeeText('Комплект пересчитывается автоматически')
             ->assertSee('form.requestSubmit();', false)
@@ -257,6 +275,7 @@ class ChimneyBundlePromotionTest extends TestCase
         $mcBlackItem = $catalog->firstWhere('id', $mcBlackPipe->id);
         $mcBlackDamperItem = $catalog->firstWhere('id', $mcBlackDamper->id);
         $tankItem = $catalog->firstWhere('id', $tank->id);
+        $heatExchangerItem = $catalog->firstWhere('id', $heatExchanger->id);
         $masterFlashItem = $catalog->firstWhere('id', $masterFlash->id);
         $adjustableMountItem = $catalog->firstWhere('id', $adjustableMount->id);
         $this->assertSame('120', $darcoItem['diameter'] ?? null);
@@ -274,7 +293,12 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertSame('mono', $mcBlackDamperItem['system'] ?? null);
         $this->assertSame('115', $mcBlackDamperItem['diameter'] ?? null);
         $this->assertTrue($tankItem['preferred'] ?? false);
+        $this->assertSame('water_tank', $tankItem['kind'] ?? null);
+        $this->assertSame('mono', $tankItem['system'] ?? null);
         $this->assertFalse($tankItem['discount_eligible'] ?? true);
+        $this->assertSame('heat_exchanger', $heatExchangerItem['kind'] ?? null);
+        $this->assertSame('115', $heatExchangerItem['diameter'] ?? null);
+        $this->assertSame('mono', $heatExchangerItem['system'] ?? null);
         $this->assertSame('roof_flashing', $masterFlashItem['kind'] ?? null);
         $this->assertSame(['178', '330'], $masterFlashItem['diameter_pair'] ?? null);
         $this->assertSame('wall_mount', $adjustableMountItem['kind'] ?? null);
