@@ -466,10 +466,10 @@
             }
 
             var svg = [];
-            svg.push('<svg class="cs-schematic" data-route-schematic viewBox="0 0 440 560" role="img" aria-labelledby="chimney-schematic-title chimney-schematic-desc">');
+            svg.push('<svg class="cs-schematic" data-route-schematic viewBox="0 0 440 620" role="img" aria-labelledby="chimney-schematic-title chimney-schematic-desc">');
             svg.push('<title id="chimney-schematic-title">Техническая схема подобранного дымохода</title><desc id="chimney-schematic-desc">Схема показывает оборудование, трассу дымохода, проходы, кровлю, крепления и основные размеры.</desc>');
             svg.push('<defs><marker id="cs-arrow" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto-start-reverse"><path d="M0,0 L7,3.5 L0,7 Z" fill="#6d767a"/></marker><pattern id="cs-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#d6dcdf" stroke-width="2"/></pattern></defs>');
-            svg.push('<rect x="1" y="1" width="438" height="558" rx="12" fill="#fff" stroke="#e0e5e7"/>');
+            svg.push('<rect x="1" y="1" width="438" height="618" rx="12" fill="#fff" stroke="#e0e5e7"/>');
             svg.push('<text x="22" y="28" fill="#111" font-size="14" font-weight="700">Эскиз монтажа · вид сбоку</text><text x="22" y="45" fill="#788186" font-size="10">Предварительная схема — размеры и пожарные отступы проверяет специалист</text>');
             svg.push('<line x1="40" y1="496" x2="402" y2="496" stroke="#a8afb2" stroke-width="3"/><text x="402" y="512" text-anchor="end" fill="#7a8387" font-size="10">уровень пола</text>');
 
@@ -483,7 +483,7 @@
             }
 
             svg.push(part(['other'], '<path class="cs-schematic__hotspot" d="M' + (equipmentX - 35) + ' 486 L' + (equipmentX - 31) + ' 425 Q' + equipmentX + ' 398 ' + (equipmentX + 31) + ' 425 L' + (equipmentX + 35) + ' 486 Z" fill="#282c2e" stroke="#111" stroke-width="2"/><rect x="' + (equipmentX - 23) + '" y="440" width="46" height="30" rx="4" fill="#454b4e"/>', 'Печь, камин или котёл'));
-            svg.push(callout(equipmentX, 526, 'Оборудование', 'патрубок Ø' + settings.diameter + ' мм', 'middle'));
+            svg.push(callout(equipmentX, 525, 'Оборудование', 'патрубок Ø' + settings.diameter + ' мм', 'middle'));
 
             var lowerPath;
             var upperPath;
@@ -539,9 +539,9 @@
             if (settings.umbrella) svg.push(part(['umbrella'], '<path class="cs-schematic__hotspot" d="M' + (stackX - 28) + ' ' + (topY - 8) + ' Q' + stackX + ' ' + (topY - 34) + ' ' + (stackX + 28) + ' ' + (topY - 8) + ' Z" fill="#34383a" stroke="#34383a" stroke-width="3"/><line x1="' + stackX + '" y1="' + (topY - 8) + '" x2="' + stackX + '" y2="' + (topY + 5) + '" stroke="#34383a" stroke-width="4"/>', 'Завершение дымохода'));
 
             svg.push('<line x1="28" y1="420" x2="28" y2="' + topY + '" stroke="#6d767a" stroke-width="1.5" marker-start="url(#cs-arrow)" marker-end="url(#cs-arrow)"/><text x="20" y="' + ((420 + topY) / 2) + '" transform="rotate(-90 20 ' + ((420 + topY) / 2) + ')" text-anchor="middle" fill="#374044" font-size="11" font-weight="700">Высота ' + esc(settings.height.toLocaleString('ru-RU')) + ' м</text>');
-            if (settings.scheme === 'tee') svg.push('<line x1="' + equipmentX + '" y1="535" x2="' + stackX + '" y2="535" stroke="#6d767a" marker-start="url(#cs-arrow)" marker-end="url(#cs-arrow)"/><text x="' + ((equipmentX + stackX) / 2) + '" y="551" text-anchor="middle" fill="#374044" font-size="10">' + esc(settings.horizontalLength.toLocaleString('ru-RU')) + ' м</text>');
+            if (settings.scheme === 'tee') svg.push('<line x1="' + equipmentX + '" y1="558" x2="' + stackX + '" y2="558" stroke="#6d767a" marker-start="url(#cs-arrow)" marker-end="url(#cs-arrow)"/><text x="' + ((equipmentX + stackX) / 2) + '" y="574" text-anchor="middle" fill="#374044" font-size="10">' + esc(settings.horizontalLength.toLocaleString('ru-RU')) + ' м</text>');
             svg.push('<text x="418" y="28" text-anchor="end" fill="#e34234" font-size="12" font-weight="700">Ø ' + settings.chimneyDiameter + ' мм</text>');
-            svg.push('<rect x="55" y="538" width="14" height="6" rx="3" fill="#34383a"/><text x="75" y="545" fill="#687176" font-size="9">моно</text><rect x="116" y="536" width="18" height="10" rx="5" fill="#aeb8bd"/><rect x="121" y="538" width="8" height="6" rx="3" fill="#3e4548"/><text x="141" y="545" fill="#687176" font-size="9">утеплённый</text><rect x="225" y="536" width="12" height="10" rx="2" fill="#fff" stroke="#e34234" stroke-width="2"/><text x="244" y="545" fill="#687176" font-size="9">узел / крепление</text>');
+            svg.push('<line x1="22" y1="588" x2="418" y2="588" stroke="#e0e5e7"/><rect x="55" y="601" width="14" height="6" rx="3" fill="#34383a"/><text x="75" y="608" fill="#687176" font-size="9">моно</text><rect x="116" y="599" width="18" height="10" rx="5" fill="#aeb8bd"/><rect x="121" y="601" width="8" height="6" rx="3" fill="#3e4548"/><text x="141" y="608" fill="#687176" font-size="9">утеплённый</text><rect x="225" y="599" width="12" height="10" rx="2" fill="#fff" stroke="#e34234" stroke-width="2"/><text x="244" y="608" fill="#687176" font-size="9">узел / крепление</text>');
             svg.push('</svg>');
 
             function assemblySequenceRank(row) {

@@ -205,6 +205,7 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSee('Добавляем ', false)
             ->assertSee('Открыть корзину — добавлено ', false)
             ->assertSee('data-route-schematic', false)
+            ->assertSee('viewBox="0 0 440 620"', false)
             ->assertSee('data-chimney-schematic', false)
             ->assertSee('data-download-schematic', false)
             ->assertSee('data-diagram-row', false)
