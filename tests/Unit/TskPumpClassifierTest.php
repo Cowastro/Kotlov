@@ -41,6 +41,9 @@ class TskPumpClassifierTest extends TestCase
             ['Скважинный многоступенчатый насос 4SDm 3/12', 'skvajinnye-nasosy'],
             ['Многоступенчатый насос Wellmix CV 1- 4-0-HQCV', 'mnogostupenchatye-nasosy'],
             ['ECO 2-73 (кабель - 40 м)', 'skvajinnye-nasosy'],
+            ['Гидроаккумулятор 150л вер. с манометром UNIPUMP', 'membrannyie-baki'],
+            ['Расширительный бак M1500RV UNIGB', 'membrannyie-baki'],
+            ['Манометр для гидроаккумулятора UNIPUMP', 'komplektuyushchie-dlya-nasosov'],
             ['Консоль JY1000', null],
             ['Шланг напорный', null],
         ];

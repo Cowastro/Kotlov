@@ -21,6 +21,12 @@ final class TskPumpClassifier
             return 'filtry';
         }
 
+        // A tank «с манометром» is a tank; a manometer, relay or bracket for a tank is an accessory.
+        if (self::containsAny($value, ['гидроаккум', 'расширительн', 'мембранный бак'])
+            && ! preg_match('/^(?:\S+\s)?(?:манометр|реле|датчик|кронштейн|группа|мембрана|комплект)/u', $value)) {
+            return 'membrannyie-baki';
+        }
+
         // Spare parts of a pump («Рабочий винт в обойме для ECO VINT», «Ротор JET 60 S»).
         if (self::containsAny($value, ['рабочий винт', 'рабочее колесо', 'ремкомплект', 'корпус насоса', 'трубка вентури', 'уплотнительное кольцо', 'запчаст'])
             || preg_match('/(?:^|\s)(?:ротор|статор|конденсатор|диффузор)\s/u', $value)) {
