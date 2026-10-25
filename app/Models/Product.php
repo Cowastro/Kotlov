@@ -17,6 +17,9 @@ class Product extends Model
     /** Card created from a supplier price row while writing a КП; hidden until checked. */
     public const CREATED_VIA_COMMERCIAL_OFFER = 'commercial_offer';
 
+    /** Supplier card without any photo source: hidden until a photo is found. */
+    public const CREATED_VIA_AWAITING_PHOTOS = 'awaiting_photos';
+
     public const AVAILABILITY_CHECK = 'check';
 
     public const AVAILABILITY_OUT_OF_STOCK = 'out_of_stock';

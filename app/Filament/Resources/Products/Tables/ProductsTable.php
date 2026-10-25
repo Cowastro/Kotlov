@@ -38,6 +38,7 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
@@ -371,6 +372,10 @@ class ProductsTable
                         true: fn (Builder $query): Builder => $query->where('created_via', Product::CREATED_VIA_COMMERCIAL_OFFER)->where('is_active', false),
                         false: fn (Builder $query): Builder => $query->where('created_via', Product::CREATED_VIA_COMMERCIAL_OFFER)->where('is_active', true),
                     ),
+
+                Filter::make('awaiting_photos')
+                    ->label('Скрыты до фото')
+                    ->query(fn (Builder $query): Builder => $query->where('created_via', Product::CREATED_VIA_AWAITING_PHOTOS)),
 
                 TernaryFilter::make('in_stock')
                     ->label('Наличие')

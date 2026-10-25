@@ -465,6 +465,11 @@ jobs:
             grep -E '^audit\.web_sources\.error=[a-z0-9-]+$' "$detail_log" || true
             echo "safe_web_sources_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:hide-cards-awaiting-photos" ]]; then
+            echo "safe_awaiting_photos_metrics_begin"
+            grep -E '^metric\.awaiting_photos\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            echo "safe_awaiting_photos_metrics_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:fill-specs-from-web" ]]; then
             echo "safe_web_specs_metrics_begin"
             grep -E '^metric\.web_specs\.[a-z_]+=[0-9]+$' "$detail_log" || true
