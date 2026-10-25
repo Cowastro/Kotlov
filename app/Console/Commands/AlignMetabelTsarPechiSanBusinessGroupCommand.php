@@ -73,6 +73,9 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
             'metabel_links_to_verify' => 0,
             'tsar_verified_products' => 0,
             'tsar_links_to_create' => 0,
+            'teplov_products' => 0,
+            'teplov_links_to_create' => 0,
+            'teplov_links_to_repair' => 0,
             'brand_links_to_create' => 0,
             'links_written' => 0,
         ];
@@ -110,6 +113,33 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
                 ->exists();
         })->count();
 
+        $teplovProducts = DB::table('products')
+            ->where(function ($query) use ($teplovBrand): void {
+                if ($teplovBrand) {
+                    $query->where('brand_id', $teplovBrand->id)
+                        ->orWhere('name', 'like', '%Теплов и Сухов%');
+                } else {
+                    $query->where('name', 'like', '%Теплов и Сухов%');
+                }
+            })
+            ->where('is_active', true)
+            ->where('is_archived', false)
+            ->get(['id', 'sku', 'name', 'content_source_url']);
+        $teplovLinks = DB::table('supplier_products')
+            ->where('supplier_id', $sbg->id)
+            ->whereIn('product_id', $teplovProducts->pluck('id'))
+            ->get()
+            ->keyBy('product_id');
+        $metrics['teplov_products'] = $teplovProducts->count();
+        $metrics['teplov_links_to_create'] = $teplovProducts
+            ->reject(fn (object $product): bool => $teplovLinks->has($product->id))
+            ->count();
+        $metrics['teplov_links_to_repair'] = $teplovLinks
+            ->filter(fn (object $link): bool => $link->match_confidence !== 'manual_price_list'
+                && ! ($link->match_confidence === 'official_source' && (float) $link->price_byn > 0)
+                && $link->match_confidence !== 'brand_assignment')
+            ->count();
+
         foreach ([$metaBrand, $tsarBrand, $teplovBrand] as $brand) {
             if ($brand && ! DB::table('brand_supplier')->where('brand_id', $brand->id)->where('supplier_id', $sbg->id)->exists()) {
                 $metrics['brand_links_to_create']++;
@@ -117,7 +147,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
         }
 
         if ($apply) {
-            DB::transaction(function () use ($sbg, $metaBrand, $tsarBrand, $teplovBrand, $legacyMetaSupplier, $metaLinks, $tsarProducts, &$metrics): void {
+            DB::transaction(function () use ($sbg, $metaBrand, $tsarBrand, $teplovBrand, $legacyMetaSupplier, $metaLinks, $tsarProducts, $teplovProducts, $teplovLinks, &$metrics): void {
                 $now = now();
                 DB::table('suppliers')->where('id', $sbg->id)->update([
                     'is_active' => true,
@@ -207,6 +237,63 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
                         ['supplier_id' => $sbg->id, 'supplier_article' => $article],
                         array_merge($payload, ['created_at' => $now]),
                     );
+                    $metrics['links_written']++;
+                }
+
+                foreach ($teplovProducts as $product) {
+                    $existing = $teplovLinks->get($product->id);
+                    if ($existing) {
+                        $alreadyOperational = $existing->match_confidence === 'manual_price_list'
+                            || ($existing->match_confidence === 'official_source' && (float) $existing->price_byn > 0)
+                            || $existing->match_confidence === 'brand_assignment';
+                        if (! $alreadyOperational) {
+                            DB::table('supplier_products')->where('id', $existing->id)->update([
+                                'match_status' => 'matched',
+                                'match_confidence' => 'brand_assignment',
+                                'updated_at' => $now,
+                            ]);
+                            $metrics['links_written']++;
+                        }
+
+                        continue;
+                    }
+
+                    $article = 'TEPLOV-SUKHOV-'.$product->id;
+                    $payload = [
+                        'supplier_id' => $sbg->id,
+                        'product_id' => $product->id,
+                        'product_sku' => $product->sku,
+                        'supplier_article' => $article,
+                        'supplier_name' => $product->name,
+                        'source_url' => $product->content_source_url,
+                        'price' => null,
+                        'currency' => 'BYN',
+                        'in_stock' => false,
+                        'match_status' => 'matched',
+                        'match_confidence' => 'brand_assignment',
+                        'raw' => json_encode([
+                            'brand' => 'Теплов и Сухов',
+                            'supplier' => 'ООО «СанБизнесГруп»',
+                            'assignment' => 'confirmed_brand_supplier',
+                        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                        'last_synced_at' => $now,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    foreach ([
+                        'supplier_article_normalized' => $article,
+                        'supplier_article_compact' => str_replace('-', '', $article),
+                        'price_byn' => null,
+                        'stock_quantity' => null,
+                        'stock_status' => 'unknown',
+                        'stock_text' => 'Наличие и закупочная цена по запросу у ООО «СанБизнесГруп»',
+                        'warehouse_name' => 'ООО «СанБизнесГруп»',
+                    ] as $column => $value) {
+                        if (Schema::hasColumn('supplier_products', $column)) {
+                            $payload[$column] = $value;
+                        }
+                    }
+                    DB::table('supplier_products')->insert($payload);
                     $metrics['links_written']++;
                 }
 

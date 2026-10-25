@@ -56,6 +56,9 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
         $tsarProduct = $this->product($category->id, $tsar->id, 9906, 'TSAR-TEST');
         $teplovProduct = $this->product($category->id, $teplov->id, 15002, 'TIS-OFFICIAL');
         $teplovWithoutPrice = $this->product($category->id, $teplov->id, 15003, 'TIS-NO-PRICE');
+        $teplovWithoutLink = $this->product($category->id, $teplov->id, 15004, 'TIS-NO-LINK');
+        $teplovByName = $this->product($category->id, $meta->id, 15005, 'TIS-BY-NAME');
+        $teplovByName->update(['name' => 'ППУ Теплов и Сухов 500 × 500']);
         SupplierProduct::query()->create([
             'supplier_id' => $legacy->id,
             'product_id' => $metaProduct->id,
@@ -86,6 +89,8 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
         $this->artisan('supplier:align-metabel-tsarpechi-sbg')
             ->expectsOutputToContain('metric.metabel_links_to_move=1')
             ->expectsOutputToContain('metric.tsar_links_to_create=1')
+            ->expectsOutputToContain('metric.teplov_links_to_create=2')
+            ->expectsOutputToContain('metric.teplov_links_to_repair=1')
             ->assertSuccessful();
         $this->assertDatabaseMissing('supplier_products', [
             'supplier_id' => $sbg->id,
@@ -98,7 +103,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
 
         $this->artisan('supplier:align-metabel-tsarpechi-sbg', ['--apply' => true])
             ->expectsOutputToContain('metric.status=applied')
-            ->expectsOutputToContain('metric.links_written=2')
+            ->expectsOutputToContain('metric.links_written=5')
             ->assertSuccessful();
 
         $this->assertDatabaseHas('supplier_products', [
@@ -115,13 +120,25 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
         $this->assertDatabaseHas('brand_supplier', ['brand_id' => $meta->id, 'supplier_id' => $sbg->id]);
         $this->assertDatabaseHas('brand_supplier', ['brand_id' => $tsar->id, 'supplier_id' => $sbg->id]);
         $this->assertDatabaseHas('brand_supplier', ['brand_id' => $teplov->id, 'supplier_id' => $sbg->id]);
+        $this->assertDatabaseHas('supplier_products', [
+            'supplier_id' => $sbg->id,
+            'product_id' => $teplovWithoutLink->id,
+            'match_confidence' => 'brand_assignment',
+        ]);
+        $this->assertDatabaseHas('supplier_products', [
+            'supplier_id' => $sbg->id,
+            'product_id' => $teplovByName->id,
+            'match_confidence' => 'brand_assignment',
+        ]);
         $this->assertTrue($sbg->fresh()->is_active);
         // A specifically verified online price-list link remains operational
         // alongside 1C. Generic stale legacy links are still rejected.
         $this->assertTrue($metaProduct->fresh()->hasAssignedSupplier());
         $this->assertTrue($tsarProduct->fresh()->hasAssignedSupplier());
         $this->assertTrue($teplovProduct->fresh()->hasAssignedSupplier());
-        $this->assertFalse($teplovWithoutPrice->fresh()->hasAssignedSupplier());
+        $this->assertTrue($teplovWithoutPrice->fresh()->hasAssignedSupplier());
+        $this->assertTrue($teplovWithoutLink->fresh()->hasAssignedSupplier());
+        $this->assertTrue($teplovByName->fresh()->hasAssignedSupplier());
     }
 
     private function product(int $categoryId, int $brandId, int $id, string $sku): Product

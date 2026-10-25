@@ -280,6 +280,7 @@ class Product extends Model
         return $items
             ->filter(fn (SupplierProduct $item): bool => $item->supplier?->is_active === true
                 && ($item->match_confidence === 'manual_price_list'
+                    || $item->match_confidence === 'brand_assignment'
                     || ($item->match_confidence === 'official_source' && (float) $item->price_byn > 0)
                     || $item->supplier->usesLegacyChannel()))
             ->values();
