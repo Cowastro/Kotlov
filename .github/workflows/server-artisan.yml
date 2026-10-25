@@ -469,6 +469,7 @@ jobs:
             echo "safe_name_specs_metrics_begin"
             grep -E '^metric\.name_specs\.[a-z_]+=[0-9]+$' "$detail_log" || true
             grep -E '^audit\.name_specs\.card=[0-9]+:[a-z0-9._(),-]+:[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.name_specs\.unknown=[0-9]+:[a-z0-9._(),-]+$' "$detail_log" || true
             echo "safe_name_specs_metrics_end"
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:check-supplier-links" ]]; then

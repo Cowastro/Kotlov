@@ -39,6 +39,7 @@ class FillSpecsFromNameCommand extends Command
             $specs = $this->specs((string) $card->name);
             if ($specs === []) {
                 $stats['unknown']++;
+                $this->line("audit.name_specs.unknown={$card->id}:{$card->slug}");
 
                 continue;
             }
@@ -73,7 +74,8 @@ class FillSpecsFromNameCommand extends Command
 
             return $specs;
         }
-        if (preg_match('/оголовок.*?(?:аос|aos)\s*(\d{2,3})\s*-\s*(\d{2,3})/iu', $n, $m)) {
+        // «АОС» may be typed with Latin letters, «133-40» also as «133/40» or «133*40».
+        if (preg_match('/оголовок.*?[аa][оo][сc]\s*-?\s*(\d{2,3})\s*[-\/*]\s*(\d{2,3})/iu', $n, $m)) {
             // The material is written only when the name states it.
             return array_filter([
                 'Диаметр обсадной трубы, мм' => $m[1],
