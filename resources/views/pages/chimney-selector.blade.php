@@ -108,7 +108,7 @@
 .cs-addon{margin-top:14px}.cs-addon__toggle{width:100%;height:48px;border:1px dashed #aaa;border-radius:12px;background:#fff;font-weight:800}.cs-addon__panel{margin-top:10px;padding:12px;border:1px solid var(--cs-line);border-radius:14px;background:#fafaf8}.cs-addon__panel[hidden]{display:none}.cs-addon__search{width:100%;height:46px;padding:0 14px;border:1px solid #ccc;border-radius:10px;background:#fff}.cs-addon__results{display:grid;gap:7px;margin-top:10px}.cs-addon__result{display:grid;grid-template-columns:42px 1fr auto;gap:9px;align-items:center;padding:8px;border:1px solid #e3e3df;border-radius:10px;background:#fff;text-align:left}.cs-addon__result img{width:42px;height:42px;object-fit:contain}.cs-addon__result strong{display:block;font-size:12px;line-height:1.25}.cs-addon__result small{color:#777}.cs-addon__add{width:32px;height:32px;border:0;border-radius:50%;background:#111;color:#fff;font-size:20px}.cs-addon__empty{padding:10px;color:#777;font-size:12px;text-align:center}
 .cs-cart-feedback{margin-top:12px;padding:13px 14px;border-radius:12px;font-size:13px;line-height:1.45}.cs-cart-feedback[hidden]{display:none}.cs-cart-feedback--partial{border:1px solid #f0c36a;background:#fff7df;color:#654b00}.cs-cart-feedback strong{display:block;margin-bottom:5px}.cs-cart-feedback ul{margin:6px 0 0;padding-left:18px}.cs-cart-feedback a{color:inherit;font-weight:800;text-decoration:underline}
 .cs-live-status{display:flex;gap:8px;align-items:center;margin-top:10px;color:#687176;font-size:12px}.cs-live-status span{width:8px;height:8px;border-radius:50%;background:#1d9b55;box-shadow:0 0 0 4px #e7f5ed}.cs-live-status.is-updating span{background:#e09b19;box-shadow:0 0 0 4px #fff2d8}.cs-live-status.is-error span{background:#d94135;box-shadow:0 0 0 4px #fde7e5}
-.cs-diagram{margin:16px 0;padding:16px;border:1px solid #dfe4e6;border-radius:14px;background:#f5f7f8;color:#111}.cs-diagram__head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}.cs-diagram__title{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.cs-diagram__hint{color:#777;font-size:11px}.cs-schematic{display:block;width:100%;height:auto;max-height:570px;border-radius:10px;background:#fff}.cs-schematic text{font-family:Arial,sans-serif}.cs-schematic__part{cursor:pointer}.cs-schematic__part:hover .cs-schematic__hotspot,.cs-schematic__part:focus .cs-schematic__hotspot{stroke:var(--cs-red)!important;filter:drop-shadow(0 0 3px rgba(227,66,52,.35))}.cs-diagram__toolbar{display:flex;justify-content:flex-end;margin-top:10px}.cs-diagram__download{padding:8px 11px;border:1px solid #cfd4d6;border-radius:8px;background:#fff;color:#111;font-size:12px;font-weight:700}.cs-diagram__download:hover{border-color:#111}.cs-result__item{transition:background .2s,box-shadow .2s}.cs-result__item.is-diagram-highlight,.cs-result__item:target{margin:-7px;padding:7px 7px 19px;border-radius:10px;background:#fff4df;box-shadow:0 0 0 2px #f0b84b}.cs-share{width:100%;margin-top:10px}.cs-recommendation{margin:8px 0 0;color:#666;font-size:12px}@media(max-width:575px){.cs-diagram{padding:10px}.cs-diagram__head{align-items:flex-start;flex-direction:column}.cs-schematic{max-height:none}}
+.cs-diagram{margin:16px 0;padding:16px;border:1px solid #dfe4e6;border-radius:14px;background:#f5f7f8;color:#111}.cs-diagram__head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}.cs-diagram__title{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.cs-diagram__hint{color:#777;font-size:11px}.cs-schematic{display:block;width:100%;height:auto;max-height:570px;border-radius:10px;background:#fff}.cs-schematic--assembly{max-height:none;margin-top:12px;border:1px solid #e1e5e6}.cs-schematic text{font-family:Arial,sans-serif}.cs-schematic__part{cursor:pointer}.cs-schematic__part:hover .cs-schematic__hotspot,.cs-schematic__part:focus .cs-schematic__hotspot{stroke:var(--cs-red)!important;filter:drop-shadow(0 0 3px rgba(227,66,52,.35))}.cs-schematic__part:hover image,.cs-schematic__part:focus image{filter:drop-shadow(0 3px 5px rgba(227,66,52,.45))}.cs-diagram__subtitle{margin:14px 0 7px;color:#111;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.cs-diagram__toolbar{display:flex;justify-content:flex-end;margin-top:10px}.cs-diagram__download{padding:8px 11px;border:1px solid #cfd4d6;border-radius:8px;background:#fff;color:#111;font-size:12px;font-weight:700}.cs-diagram__download:hover{border-color:#111}.cs-result__item{transition:background .2s,box-shadow .2s}.cs-result__item.is-diagram-highlight,.cs-result__item:target{margin:-7px;padding:7px 7px 19px;border-radius:10px;background:#fff4df;box-shadow:0 0 0 2px #f0b84b}.cs-share{width:100%;margin-top:10px}.cs-recommendation{margin:8px 0 0;color:#666;font-size:12px}@media(max-width:575px){.cs-diagram{padding:10px}.cs-diagram__head{align-items:flex-start;flex-direction:column}.cs-schematic{max-height:none}}
 .cs-hero__actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.cs-hero__actions .tf-btn{min-width:190px}.cs-discount{gap:0}.cs-discount>div{display:flex;flex-direction:column;padding:18px 0}.cs-discount>div+div{border-top:1px solid rgba(255,255,255,.35)}.cs-discount strong{font-size:46px}.cs-discount span{display:block;margin-top:7px}@media(max-width:575px){.cs-hero__actions{display:grid}.cs-discount{max-width:none}}
 </style>
 @endpush
@@ -466,7 +466,7 @@
             }
 
             var svg = [];
-            svg.push('<svg class="cs-schematic" data-chimney-schematic viewBox="0 0 440 560" role="img" aria-labelledby="chimney-schematic-title chimney-schematic-desc">');
+            svg.push('<svg class="cs-schematic" data-route-schematic viewBox="0 0 440 560" role="img" aria-labelledby="chimney-schematic-title chimney-schematic-desc">');
             svg.push('<title id="chimney-schematic-title">Техническая схема подобранного дымохода</title><desc id="chimney-schematic-desc">Схема показывает оборудование, трассу дымохода, проходы, кровлю, крепления и основные размеры.</desc>');
             svg.push('<defs><marker id="cs-arrow" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto-start-reverse"><path d="M0,0 L7,3.5 L0,7 Z" fill="#6d767a"/></marker><pattern id="cs-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#d6dcdf" stroke-width="2"/></pattern></defs>');
             svg.push('<rect x="1" y="1" width="438" height="558" rx="12" fill="#fff" stroke="#e0e5e7"/>');
@@ -544,8 +544,53 @@
             svg.push('<rect x="55" y="538" width="14" height="6" rx="3" fill="#34383a"/><text x="75" y="545" fill="#687176" font-size="9">моно</text><rect x="116" y="536" width="18" height="10" rx="5" fill="#aeb8bd"/><rect x="121" y="538" width="8" height="6" rx="3" fill="#3e4548"/><text x="141" y="545" fill="#687176" font-size="9">утеплённый</text><rect x="225" y="536" width="12" height="10" rx="2" fill="#fff" stroke="#e34234" stroke-width="2"/><text x="244" y="545" fill="#687176" font-size="9">узел / крепление</text>');
             svg.push('</svg>');
 
+            var assemblyRank = {umbrella:0, roof_flashing:10, guy_wire:20, clamp:30, pipe:40, mount:45, wall_mount:46, ceiling_pass:50, elbow:60, transition:70, damper:80, tee:90, condensate:100, support:110, adapter:120};
+            var assemblyRows = rows.map(function (row, index) { return {row:row, rowIndex:index}; }).sort(function (a, b) {
+                return (assemblyRank[a.row.product.kind] ?? 65) - (assemblyRank[b.row.product.kind] ?? 65) || a.rowIndex - b.rowIndex;
+            });
+            var assemblyHeight = Math.max(540, 116 + assemblyRows.length * 76);
+            var assembly = [];
+            function labelLines(value) {
+                var words = String(value || '').split(/\s+/);
+                var lines = ['', ''];
+                words.forEach(function (word) {
+                    var target = lines[0].length < 31 ? 0 : 1;
+                    if (target === 1 && (lines[1] + ' ' + word).trim().length > 34) return;
+                    lines[target] = (lines[target] + ' ' + word).trim();
+                });
+                return lines.filter(Boolean);
+            }
+            assembly.push('<svg class="cs-schematic cs-schematic--assembly" data-chimney-schematic viewBox="0 0 720 ' + assemblyHeight + '" role="img" aria-labelledby="chimney-assembly-title chimney-assembly-desc">');
+            assembly.push('<title id="chimney-assembly-title">Схема сборки модульного дымохода</title><desc id="chimney-assembly-desc">Взрыв-схема показывает реальные элементы выбранного комплекта, их количество и последовательность сборки.</desc>');
+            assembly.push('<defs><pattern id="cs-brick" width="30" height="16" patternUnits="userSpaceOnUse"><path d="M0 0H30M0 16H30M0 0V16M15 0V8M7.5 8V16M30 0V16" fill="none" stroke="#e8c99f" stroke-width="1"/></pattern><linearGradient id="cs-shaft" x1="0" x2="1"><stop offset="0" stop-color="#92999c"/><stop offset=".48" stop-color="#f4f6f6"/><stop offset="1" stop-color="#737b7f"/></linearGradient></defs>');
+            assembly.push('<rect x="1" y="1" width="718" height="' + (assemblyHeight - 2) + '" rx="12" fill="#fff" stroke="#e0e5e7"/>');
+            assembly.push('<text x="28" y="34" fill="#25292b" font-size="17" font-weight="800">СХЕМА СБОРКИ МОДУЛЬНОГО ДЫМОХОДА</text><path d="M28 48H692" stroke="#d9dddf"/><text x="692" y="34" text-anchor="end" fill="#e2a900" font-size="12" font-weight="700">ТЕПЛОВ И СУХОВ · Ø ' + settings.chimneyDiameter + ' ММ</text>');
+            assembly.push('<rect x="305" y="68" width="110" height="' + (assemblyHeight - 108) + '" fill="#fffaf0"/><rect x="305" y="68" width="110" height="' + (assemblyHeight - 108) + '" fill="url(#cs-brick)" opacity=".72"/><line x1="360" y1="74" x2="360" y2="' + (assemblyHeight - 54) + '" stroke="#e2a900" stroke-width="3" stroke-dasharray="7 7"/>');
+            assemblyRows.forEach(function (entry, assemblyIndex) {
+                var row = entry.row;
+                var index = entry.rowIndex;
+                var y = 86 + assemblyIndex * 76;
+                var left = assemblyIndex % 2 === 0;
+                var imageX = 329;
+                var textX = left ? 276 : 444;
+                var lineStart = left ? 328 : 392;
+                var lineEnd = left ? 286 : 434;
+                var anchor = left ? 'end' : 'start';
+                var lines = labelLines(row.label || row.product.name);
+                var imageMarkup = '<rect class="cs-schematic__hotspot" x="326" y="' + (y - 4) + '" width="68" height="68" rx="8" fill="#fff" stroke="#cbd1d3" stroke-width="1.5"/><image href="' + esc(row.product.image) + '" x="' + imageX + '" y="' + y + '" width="62" height="60" preserveAspectRatio="xMidYMid meet"/><circle cx="360" cy="' + (y + 67) + '" r="4" fill="#e2a900"/>';
+                assembly.push('<a href="#cs-kit-row-' + index + '" class="cs-schematic__part" data-diagram-row="' + index + '" aria-label="' + esc(row.label) + '">' + imageMarkup + '</a>');
+                assembly.push('<path d="M' + lineStart + ' ' + (y + 25) + ' L' + lineEnd + ' ' + (y + 25) + '" stroke="#70777a" stroke-width="1"/><circle cx="' + lineStart + '" cy="' + (y + 25) + '" r="2.5" fill="#34393b"/>');
+                lines.forEach(function (line, lineIndex) {
+                    assembly.push('<text x="' + textX + '" y="' + (y + 18 + lineIndex * 15) + '" text-anchor="' + anchor + '" fill="#272b2d" font-size="12" font-weight="' + (lineIndex === 0 ? '700' : '400') + '">' + esc(line) + '</text>');
+                });
+                assembly.push('<text x="' + textX + '" y="' + (y + 52) + '" text-anchor="' + anchor + '" fill="#7a8285" font-size="10">' + row.quantity + ' шт. · позиция ' + (index + 1) + '</text>');
+            });
+            assembly.push('<path d="M30 ' + (assemblyHeight - 38) + 'H690" stroke="#b7bec1"/><text x="30" y="' + (assemblyHeight - 18) + '" fill="#6f777a" font-size="10">Схема предварительная. Очерёдность, опоры, проходы и пожарные отступы проверяет специалист.</text>');
+            assembly.push('</svg>');
+
             return '<div class="cs-diagram"><div class="cs-diagram__head"><div class="cs-diagram__title">Схема трассы</div><div class="cs-diagram__hint">Нажмите на элемент, чтобы перейти к позиции комплекта</div></div>'
-                + svg.join('') + '<div class="cs-diagram__toolbar"><button type="button" class="cs-diagram__download" data-download-schematic>Скачать схему SVG</button></div></div>';
+                + svg.join('') + '<div class="cs-diagram__subtitle">Комплектующие и последовательность сборки</div>' + assembly.join('')
+                + '<div class="cs-diagram__toolbar"><button type="button" class="cs-diagram__download" data-download-schematic>Скачать монтажную схему SVG</button></div></div>';
         }
         function shareUrl() {
             var url = new URL(window.location.href);
