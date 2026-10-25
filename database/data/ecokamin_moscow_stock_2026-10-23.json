@@ -1,0 +1,2106 @@
+{
+    "as_of_date": "2026-10-23",
+    "warehouse_code": "ecokamin-moscow",
+    "warehouse_name": "Склад Москва",
+    "delivery_days": 7,
+    "source_file": "остатки Экокамин на 23.10.xls",
+    "items": [
+        {
+            "article": "KM203",
+            "name": "Камин МАДРИД на дровнике",
+            "unit": "шт",
+            "total": 8.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 8.0
+        },
+        {
+            "article": "KM205L",
+            "name": "Камин МАДРИД на дровнике Гигант слева",
+            "unit": "шт",
+            "total": 12.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 12.0
+        },
+        {
+            "article": "KM215GLB",
+            "name": "Камин МАДРИД на дровнике Гигант слева графит, черный шамот",
+            "unit": "шт",
+            "total": 21.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 21.0
+        },
+        {
+            "article": "KM210LB",
+            "name": "Камин МАДРИД на дровнике Гигант слева черный шамот",
+            "unit": "шт",
+            "total": 8.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 8.0
+        },
+        {
+            "article": "KM204R",
+            "name": "Камин МАДРИД на дровнике Гигант справа",
+            "unit": "шт",
+            "total": 11.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 11.0
+        },
+        {
+            "article": "KM213RB",
+            "name": "Камин МАДРИД на дровнике Гигант справа черный шамот",
+            "unit": "шт",
+            "total": 9.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 9.0
+        },
+        {
+            "article": "KM212C",
+            "name": "Камин МАДРИД на дровнике Гигант центральный",
+            "unit": "шт",
+            "total": 8.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 8.0
+        },
+        {
+            "article": "KM214СB",
+            "name": "Камин МАДРИД на дровнике Гигант центральный черный шамот",
+            "unit": "шт",
+            "total": 13.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 12.0
+        },
+        {
+            "article": "KM211B",
+            "name": "Камин МАДРИД на дровнике черный шамот",
+            "unit": "шт",
+            "total": 7.0,
+            "reserved": 2.0,
+            "shipping": 2.0,
+            "available": 3.0
+        },
+        {
+            "article": "KM207LCH",
+            "name": "Камин МАДРИД чугун на дровнике левый",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "PKN195",
+            "name": "Камин МЮНХЕН ГИГАНТ графит",
+            "unit": "шт",
+            "total": 11.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 11.0
+        },
+        {
+            "article": "PKN194",
+            "name": "Камин МЮНХЕН ГИГАНТ черный",
+            "unit": "шт",
+            "total": 17.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 16.0
+        },
+        {
+            "article": "PKN219B",
+            "name": "Камин МЮНХЕН ГИГАНТ черный, шамот черный",
+            "unit": "шт",
+            "total": 8.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 8.0
+        },
+        {
+            "article": "PKN176",
+            "name": "Камин МЮНХЕН ПРИСТЕННО УГЛОВОЙ графит",
+            "unit": "шт",
+            "total": 9.0,
+            "reserved": 3.0,
+            "shipping": 0.0,
+            "available": 6.0
+        },
+        {
+            "article": "PKN176K",
+            "name": "Камин МЮНХЕН ПРИСТЕННО УГЛОВОЙ КОМПАКТ графит",
+            "unit": "шт",
+            "total": 14.0,
+            "reserved": 3.0,
+            "shipping": 0.0,
+            "available": 11.0
+        },
+        {
+            "article": "PKN174K",
+            "name": "Камин МЮНХЕН ПРИСТЕННО УГЛОВОЙ КОМПАКТ черный",
+            "unit": "шт",
+            "total": 11.0,
+            "reserved": 4.0,
+            "shipping": 0.0,
+            "available": 7.0
+        },
+        {
+            "article": "PKN176M",
+            "name": "Камин МЮНХЕН ПРИСТЕННО УГЛОВОЙ МИНИ графит",
+            "unit": "шт",
+            "total": 7.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 7.0
+        },
+        {
+            "article": "PKN174M",
+            "name": "Камин МЮНХЕН ПРИСТЕННО УГЛОВОЙ МИНИ черный",
+            "unit": "шт",
+            "total": 11.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 10.0
+        },
+        {
+            "article": "PKN174",
+            "name": "Камин МЮНХЕН ПРИСТЕННО УГЛОВОЙ черный",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "PK174",
+            "name": "Камин МЮНХЕН ПРИСТЕННО УГЛОВОЙ черный",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "PK177",
+            "name": "Камин МЮНХЕН УГЛОВОЙ графит",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KK004",
+            "name": "Камин КРИТ черный",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "KPN202",
+            "name": "Камин ПРАГА ТРИ СТЕКЛА NEW черный",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "KPN202B",
+            "name": "Камин ПРАГА ТРИ СТЕКЛА NEW черный, шамот черный",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "KP001",
+            "name": "Камин ПРАГА ТРИ СТЕКЛА черный",
+            "unit": "шт",
+            "total": 10.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 9.0
+        },
+        {
+            "article": "KP204GL",
+            "name": "Камин ПРАГА УГЛОВОЙ левый графит, шамот белый",
+            "unit": "шт",
+            "total": 7.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 7.0
+        },
+        {
+            "article": "KP194L",
+            "name": "Камин ПРАГА УГЛОВОЙ левый черный, шамот белый",
+            "unit": "шт",
+            "total": 5.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 5.0
+        },
+        {
+            "article": "KP196R",
+            "name": "Камин ПРАГА УГЛОВОЙ правый черный, шамот белый",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KR206",
+            "name": "Камин РИО",
+            "unit": "шт",
+            "total": 13.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 11.0
+        },
+        {
+            "article": "KR216S",
+            "name": "Камин РИО \"Абсолют блэк\"",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KR223G",
+            "name": "Камин РИО графит",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KR224G",
+            "name": "Камин РИО графит на дровнике",
+            "unit": "шт",
+            "total": 6.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 6.0
+        },
+        {
+            "article": "KR221",
+            "name": "Камин РИО на дровнике",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "KRN800GB",
+            "name": "Камин РОДОС 800 графит, шамот черный",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "KRN800SKW",
+            "name": "Камин РОДОС 800 слоновая кость, шамот белый",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "KRN800SKB",
+            "name": "Камин РОДОС 800 слоновая кость, шамот черный",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "KRN800BB",
+            "name": "Камин РОДОС 800 черный, шамот черный",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "KRN900GW",
+            "name": "Камин РОДОС 900 графит, шамот белый",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KRN900GB",
+            "name": "Камин РОДОС 900 графит, шамот черный",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KRN900SKW",
+            "name": "Камин РОДОС 900 слоновая кость, шамот белый",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KRN900SKB",
+            "name": "Камин РОДОС 900 слоновая кость, шамот черный",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "KТ209",
+            "name": "Камин ТОКИО",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "PKP 002",
+            "name": "Камин ТОРОНТО майолика кремовая",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "PK139",
+            "name": "Камин БАВАРИЯ ТРИ СТЕКЛА графит",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "PK031",
+            "name": "Камин БАВАРИЯ ТРИ СТЕКЛА черный",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 2.0,
+            "shipping": 1.0,
+            "available": 0.0
+        },
+        {
+            "article": "KTS201",
+            "name": "Камин ПАНОРАМА ТРИ СТЕКЛА графит",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KTS220B",
+            "name": "Камин ПАНОРАМА ТРИ СТЕКЛА графит с черным шамотом",
+            "unit": "шт",
+            "total": 10.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 10.0
+        },
+        {
+            "article": "KTS200",
+            "name": "Камин ПАНОРАМА ТРИ СТЕКЛА черный",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 3.0,
+            "shipping": 1.0,
+            "available": 0.0
+        },
+        {
+            "article": "KTS200B",
+            "name": "Камин ПАНОРАМА ТРИ СТЕКЛА черный с черным шамотом",
+            "unit": "шт",
+            "total": 9.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 9.0
+        },
+        {
+            "article": "КМS217",
+            "name": "Камин чугунный МЕСНИЛ",
+            "unit": "шт",
+            "total": 5.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 5.0
+        },
+        {
+            "article": "КМS216",
+            "name": "Камин чугунный ШАМАН",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 31.0,
+            "shipping": 1.0,
+            "available": 0.0
+        },
+        {
+            "article": "K181",
+            "name": "Камин ЭКЛИПС ОСТРОВНОЙ 4D",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 2.0,
+            "shipping": 1.0,
+            "available": 0.0
+        },
+        {
+            "article": "K185",
+            "name": "Камин ЭКЛИПС ОСТРОВНОЙ 4D графит",
+            "unit": "шт",
+            "total": 5.0,
+            "reserved": 2.0,
+            "shipping": 2.0,
+            "available": 1.0
+        },
+        {
+            "article": "K186",
+            "name": "Камин ЭКЛИПС ОСТРОВНОЙ ГИГАНТ 4D",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "K186B",
+            "name": "Камин ЭКЛИПС ОСТРОВНОЙ ГИГАНТ 4D с черным шамотом",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "KDMN176-g",
+            "name": "Кожух дополнительный графит для Мюнхена PKN 176 пристенно-угловой с монтажной муфтой, h=1230 мм",
+            "unit": "шт",
+            "total": 5.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 5.0
+        },
+        {
+            "article": "KDPKN195",
+            "name": "Кожух дополнительный графит для Мюнхена ГИГАНТ, h=1200 мм",
+            "unit": "шт",
+            "total": 9.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 9.0
+        },
+        {
+            "article": "KDPKN176K",
+            "name": "Кожух дополнительный графит для Мюнхена Компакт пристенно-угловой с крепежной муфтой,h=1230 мм",
+            "unit": "шт",
+            "total": 10.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 8.0
+        },
+        {
+            "article": "KDPKN176M",
+            "name": "Кожух дополнительный графит для Мюнхена МИНИ пристенно-угловой с крепежной муфтой,h=1230 мм",
+            "unit": "шт",
+            "total": 9.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 9.0
+        },
+        {
+            "article": "KD031-g",
+            "name": "Кожух дополнительный для Бавария три стекла графит с крепежной муфтой,h=1230 мм",
+            "unit": "шт",
+            "total": 9.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 9.0
+        },
+        {
+            "article": "KD031",
+            "name": "Кожух дополнительный для Бавария три стекла черный с крепёжной муфтой, h=1230 мм",
+            "unit": "шт",
+            "total": 17.0,
+            "reserved": 2.0,
+            "shipping": 1.0,
+            "available": 14.0
+        },
+        {
+            "article": "KDRSK900",
+            "name": "Кожух дополнительный для камина РОДОС 900 слоновая кость",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KDKTS201",
+            "name": "Кожух дополнительный для ПАНОРАМА ТРИ СТЕКЛА графит с крепёжной муфтой, h=1230 мм",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 3.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KDKTS200",
+            "name": "Кожух дополнительный для ПАНОРАМА ТРИ СТЕКЛА черный с крепёжной муфтой, h=1230 мм",
+            "unit": "шт",
+            "total": 5.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "KDP-g",
+            "name": "Кожух дополнительный для Прага графит с крепежной муфтой h=1230",
+            "unit": "шт",
+            "total": 10.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 10.0
+        },
+        {
+            "article": "KDPB195L",
+            "name": "Кожух дополнительный для Прага угловая левая черный h = 1230 мм",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "KDP",
+            "name": "Кожух дополнительный для Прага черный с крепежной муфтой h=1230",
+            "unit": "шт",
+            "total": 11.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 11.0
+        },
+        {
+            "article": "KD4D_G-g",
+            "name": "Кожух дополнительный для ЭКЛИПС ОСТРОВНОЙ ГИГАНТ графит с крепежной муфтой , h=1230 мм",
+            "unit": "шт",
+            "total": 8.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 8.0
+        },
+        {
+            "article": "KD4D_G",
+            "name": "Кожух дополнительный для ЭКЛИПС ОСТРОВНОЙ ГИГАНТ черный с муфтой",
+            "unit": "шт",
+            "total": 11.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 10.0
+        },
+        {
+            "article": "KD4D-g",
+            "name": "Кожух дополнительный для ЭКЛИПС ОСТРОВНОЙ графит с крепежной муфтой, h = 1230 мм",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 2.0,
+            "shipping": 2.0,
+            "available": 0.0
+        },
+        {
+            "article": "KD4D",
+            "name": "Кожух дополнительный для ЭКЛИПС ОСТРОВНОЙ черный с крепежной муфтой, h = 1230 мм",
+            "unit": "шт",
+            "total": 16.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 15.0
+        },
+        {
+            "article": "KDKM203",
+            "name": "Кожух дополнительный черный для Мадрида с крепежной муфтой, h=1230",
+            "unit": "шт",
+            "total": 11.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 9.0
+        },
+        {
+            "article": "KDMN174",
+            "name": "Кожух дополнительный черный для Мюнхена PKN 174 пристенно-угловой с крепежной муфтой, h=1230 мм",
+            "unit": "шт",
+            "total": 6.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 6.0
+        },
+        {
+            "article": "KDPKN194",
+            "name": "Кожух дополнительный черный для Мюнхена ГИГАНТ пристенно-угловой с крепежной муфтой, h=1200 мм",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "KDPKN174K",
+            "name": "Кожух дополнительный черный для Мюнхена Компакт пристенно-угловой с крепежной муфтой, h=1230 мм",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "KDPKN174M",
+            "name": "Кожух дополнительный черный для Мюнхена МИНИ пристенно-угловой с крепежной муфтой, h=1230 мм",
+            "unit": "шт",
+            "total": 9.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 9.0
+        },
+        {
+            "article": "KDKPN 202",
+            "name": "Кожух дополнительный черный для ПРАГА ТРИ СТЕКЛА NEW с крепежной муфтой h=1230",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "KO031",
+            "name": "Кожух основной для Камин БАВАРИЯ ТРИ СТЕКЛА черный h = 1230 мм",
+            "unit": "шт",
+            "total": 10.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 9.0
+        },
+        {
+            "article": "KOPKN174",
+            "name": "Кожух основной для камина МЮНХЕН ПРИСТЕННО-УГЛОВОЙ черный PKN174 h-1230 мм",
+            "unit": "шт",
+            "total": 10.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 10.0
+        },
+        {
+            "article": "LP001",
+            "name": "Лист каминный №1 650х990 мм для Бавария угловая, Эко угловая",
+            "unit": "шт",
+            "total": 9.0,
+            "reserved": 3.0,
+            "shipping": 0.0,
+            "available": 6.0
+        },
+        {
+            "article": "LP002",
+            "name": "Лист каминный №2 600х800 мм. для Бавария Оптима, РК 004, 007, ЭКО",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 0.0,
+            "shipping": 2.0,
+            "available": 0.0
+        },
+        {
+            "article": "LP003",
+            "name": "Лист каминный №3 710х800 мм для Бавария ЭКО 2 конфорки, три стекла, призматик",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 1.0,
+            "shipping": 2.0,
+            "available": 0.0
+        },
+        {
+            "article": "LP005",
+            "name": "Лист каминный №5 710х800 прямоугольный под РИО",
+            "unit": "шт",
+            "total": 10.0,
+            "reserved": 3.0,
+            "shipping": 0.0,
+            "available": 7.0
+        },
+        {
+            "article": "PO 001",
+            "name": "ПЕЧЬ отопительная ОГОНЕК",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "PK222\/2",
+            "name": "Печь-камин АРМАГЕДДОН 2",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "PK004",
+            "name": "Печь-камин БАВАРИЯ",
+            "unit": "шт",
+            "total": 31.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 31.0
+        },
+        {
+            "article": "PK187",
+            "name": "Печь-камин БАВАРИЯ 12",
+            "unit": "шт",
+            "total": 19.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 19.0
+        },
+        {
+            "article": "PK138",
+            "name": "Печь-камин БАВАРИЯ ОПТИМА",
+            "unit": "шт",
+            "total": 53.0,
+            "reserved": 1.0,
+            "shipping": 1.0,
+            "available": 51.0
+        },
+        {
+            "article": "PK049",
+            "name": "Печь-камин БАВАРИЯ ОПТИМА с плитой",
+            "unit": "шт",
+            "total": 14.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 13.0
+        },
+        {
+            "article": "PK189",
+            "name": "Печь-камин БАВАРИЯ ПАНОРАМА ПРИЗМА с плитой",
+            "unit": "шт",
+            "total": 12.0,
+            "reserved": 0.0,
+            "shipping": 2.0,
+            "available": 10.0
+        },
+        {
+            "article": "PK147",
+            "name": "Печь-камин БАВАРИЯ ПРИЗМАТИК пристенно угловой",
+            "unit": "шт",
+            "total": 30.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 30.0
+        },
+        {
+            "article": "PK186",
+            "name": "Печь-камин БАВАРИЯ ПРИЗМАТИК с плитой",
+            "unit": "шт",
+            "total": 7.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 6.0
+        },
+        {
+            "article": "PK007",
+            "name": "Печь-камин БАВАРИЯ с плитой",
+            "unit": "шт",
+            "total": 10.0,
+            "reserved": 2.0,
+            "shipping": 1.0,
+            "available": 7.0
+        },
+        {
+            "article": "PK145",
+            "name": "Печь-камин БАВАРИЯ УГЛОВАЯ",
+            "unit": "шт",
+            "total": 44.0,
+            "reserved": 5.0,
+            "shipping": 1.0,
+            "available": 38.0
+        },
+        {
+            "article": "PK123",
+            "name": "Печь-камин БАВАРИЯ УГЛОВАЯ с плитой",
+            "unit": "шт",
+            "total": 31.0,
+            "reserved": 2.0,
+            "shipping": 2.0,
+            "available": 27.0
+        },
+        {
+            "article": "PK179",
+            "name": "Печь-камин БАВАРИЯ ЭКО с духовкой и плитой",
+            "unit": "шт",
+            "total": 17.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 15.0
+        },
+        {
+            "article": "PK168M",
+            "name": "Печь-камин БАВАРИЯ ЭКО с плитой две конфорки",
+            "unit": "шт",
+            "total": 28.0,
+            "reserved": 4.0,
+            "shipping": 0.0,
+            "available": 24.0
+        },
+        {
+            "article": "PK165M",
+            "name": "Печь-камин БАВАРИЯ ЭКО с плитой одна конфорка",
+            "unit": "шт",
+            "total": 18.0,
+            "reserved": 6.0,
+            "shipping": 0.0,
+            "available": 12.0
+        },
+        {
+            "article": "PK166M",
+            "name": "Печь-камин БАВАРИЯ ЭКО УГЛОВАЯ с плитой",
+            "unit": "шт",
+            "total": 10.0,
+            "reserved": 3.0,
+            "shipping": 0.0,
+            "available": 7.0
+        },
+        {
+            "article": "PK193",
+            "name": "Печь-камин ДЕРЕВЕНЬКА две плиты без т\/о",
+            "unit": "шт",
+            "total": 35.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 35.0
+        },
+        {
+            "article": "PK192",
+            "name": "Печь-камин БАВАРИЯ одна плита",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "PK007N",
+            "name": "Печь-камин БАВАРИЯ с плитой NEW",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "PK145N",
+            "name": "Печь-камин БАВАРИЯ УГЛОВАЯ 145 NEW",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "PK 166",
+            "name": "Печь-камин БАВАРИЯ ЭКО угловая с плитой",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "PCA 001",
+            "name": "Парогенератор с ароматерапией",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "RK9\/100\/45\/SС",
+            "name": "Решетка каминная 9*100 серый чугун",
+            "unit": "шт",
+            "total": 45.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 45.0
+        },
+        {
+            "article": "RK9\/100\/45\/SL",
+            "name": "Решетка каминная 9*100 слоновая кость",
+            "unit": "шт",
+            "total": 22.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 22.0
+        },
+        {
+            "article": "RK9\/100\/45\/B",
+            "name": "Решетка каминная 9*100 черный",
+            "unit": "шт",
+            "total": 45.0,
+            "reserved": 6.0,
+            "shipping": 1.0,
+            "available": 38.0
+        },
+        {
+            "article": "RK9\/40\/45\/SС",
+            "name": "Решетка каминная 9*40 серый чугун",
+            "unit": "шт",
+            "total": 41.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 41.0
+        },
+        {
+            "article": "RK9\/40\/45\/SL",
+            "name": "Решетка каминная 9*40 слоновая кость",
+            "unit": "шт",
+            "total": 12.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 12.0
+        },
+        {
+            "article": "RK9\/40\/45\/B",
+            "name": "Решетка каминная 9*40 черный",
+            "unit": "шт",
+            "total": 45.0,
+            "reserved": 0.0,
+            "shipping": 1.0,
+            "available": 44.0
+        },
+        {
+            "article": "RK9\/40\/45\/BM",
+            "name": "Решетка каминная 9*40 черный муар",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "RK9\/60\/45\/SС",
+            "name": "Решетка каминная 9*60 серый чугун",
+            "unit": "шт",
+            "total": 32.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 32.0
+        },
+        {
+            "article": "RK9\/60\/45\/SL",
+            "name": "Решетка каминная 9*60 слоновая кость",
+            "unit": "шт",
+            "total": 27.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 27.0
+        },
+        {
+            "article": "RK9\/60\/45\/B",
+            "name": "Решетка каминная 9*60 черный",
+            "unit": "шт",
+            "total": 56.0,
+            "reserved": 1.0,
+            "shipping": 2.0,
+            "available": 53.0
+        },
+        {
+            "article": "RK9\/80\/45\/SС",
+            "name": "Решетка каминная 9*80 серый чугун",
+            "unit": "шт",
+            "total": 28.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 28.0
+        },
+        {
+            "article": "RK9\/80\/45\/SL",
+            "name": "Решетка каминная 9*80 слоновая кость",
+            "unit": "шт",
+            "total": 36.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 36.0
+        },
+        {
+            "article": "RK9\/80\/45\/B",
+            "name": "Решетка каминная 9*80 черный",
+            "unit": "шт",
+            "total": 44.0,
+            "reserved": 3.0,
+            "shipping": 2.0,
+            "available": 39.0
+        },
+        {
+            "article": "RK9\/40\/80\/45\/LB",
+            "name": "Решетка каминная угловая левая 9*40*80 черный",
+            "unit": "шт",
+            "total": 11.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 10.0
+        },
+        {
+            "article": "RK9\/40\/80\/45\/RB",
+            "name": "Решетка каминная угловая правая 9*40*80 черный",
+            "unit": "шт",
+            "total": 19.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 17.0
+        },
+        {
+            "article": "TO09",
+            "name": "Теплообменник для PK186 (9 литров)",
+            "unit": "шт",
+            "total": 6.0,
+            "reserved": 3.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "TO05",
+            "name": "Теплообменник для PK193",
+            "unit": "шт",
+            "total": 5.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "AS250",
+            "name": "Адаптер шибера 250 мм",
+            "unit": "шт",
+            "total": 7.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 6.0
+        },
+        {
+            "article": "PS200",
+            "name": "Шибер 200 мм на жесткой тяге",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "PS200-118",
+            "name": "Шибер 200 мм на жесткой тяге стандарт",
+            "unit": "шт",
+            "total": 24.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 24.0
+        },
+        {
+            "article": "PS250-298",
+            "name": "Шибер 250 мм на жесткой тяге высокий",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "PS250-149",
+            "name": "Шибер 250 мм на жесткой тяге стандарт",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 2.0,
+            "shipping": 1.0,
+            "available": 0.0
+        },
+        {
+            "article": "PT700",
+            "name": "Подставка под топку 700",
+            "unit": "шт",
+            "total": 14.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 14.0
+        },
+        {
+            "article": "PT800",
+            "name": "Подставка под топку 800",
+            "unit": "шт",
+            "total": 23.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 23.0
+        },
+        {
+            "article": "RM VEGA1000",
+            "name": "Рамка монтажная для топок ВЕГА 1000",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TA1000",
+            "name": "Топка АЛЬФА 1000",
+            "unit": "шт",
+            "total": 26.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 24.0
+        },
+        {
+            "article": "TA1000B",
+            "name": "Топка АЛЬФА 1000B черный шамот",
+            "unit": "шт",
+            "total": 9.0,
+            "reserved": 1.0,
+            "shipping": 1.0,
+            "available": 7.0
+        },
+        {
+            "article": "TA1000L",
+            "name": "Топка АЛЬФА 1000L два стекла левая",
+            "unit": "шт",
+            "total": 23.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 23.0
+        },
+        {
+            "article": "TA1000LB",
+            "name": "Топка АЛЬФА 1000LB два стекла левая черный шамот",
+            "unit": "шт",
+            "total": 16.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 14.0
+        },
+        {
+            "article": "TA1000R",
+            "name": "Топка АЛЬФА 1000R два стекла правая",
+            "unit": "шт",
+            "total": 22.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 22.0
+        },
+        {
+            "article": "TA1000RB",
+            "name": "Топка АЛЬФА 1000RB два стекла правая черный шамот",
+            "unit": "шт",
+            "total": 12.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 10.0
+        },
+        {
+            "article": "TA700-3G",
+            "name": "Топка АЛЬФА 700 три стекла подовая",
+            "unit": "шт",
+            "total": 22.0,
+            "reserved": 4.0,
+            "shipping": 0.0,
+            "available": 18.0
+        },
+        {
+            "article": "TA700-3GB",
+            "name": "Топка АЛЬФА 700 три стекла черный шамот подовая",
+            "unit": "шт",
+            "total": 8.0,
+            "reserved": 1.0,
+            "shipping": 2.0,
+            "available": 5.0
+        },
+        {
+            "article": "TA700-1",
+            "name": "Топка АЛЬФА 700-150",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TAN700-1",
+            "name": "Топка АЛЬФА 700-150 принтинг",
+            "unit": "шт",
+            "total": 24.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 23.0
+        },
+        {
+            "article": "TAN700-1B",
+            "name": "Топка АЛЬФА 700-150B с черным шамотом принтинг",
+            "unit": "шт",
+            "total": 15.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 13.0
+        },
+        {
+            "article": "TA700K",
+            "name": "Топка АЛЬФА 700K с контргрузом",
+            "unit": "шт",
+            "total": 20.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 20.0
+        },
+        {
+            "article": "TA700KB",
+            "name": "Топка АЛЬФА 700KВ с контргрузом черный шамот",
+            "unit": "шт",
+            "total": 15.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 15.0
+        },
+        {
+            "article": "TAN700L",
+            "name": "Топка АЛЬФА 700L NEW два стекла левая",
+            "unit": "шт",
+            "total": 23.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 21.0
+        },
+        {
+            "article": "TAN700LB",
+            "name": "Топка АЛЬФА 700LB NEW два стекла левая черный шамот",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 3.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TAN700R",
+            "name": "Топка АЛЬФА 700R NEW два стекла правая",
+            "unit": "шт",
+            "total": 25.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 24.0
+        },
+        {
+            "article": "TAN700RB",
+            "name": "Топка АЛЬФА 700RB NEW два стекла правая черный шамот",
+            "unit": "шт",
+            "total": 19.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 19.0
+        },
+        {
+            "article": "TA800",
+            "name": "Топка АЛЬФА 800",
+            "unit": "шт",
+            "total": 5.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "TA800B",
+            "name": "Топка АЛЬФА 800B черный шамот",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 4.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TA800K",
+            "name": "Топка АЛЬФА 800K с контргрузом",
+            "unit": "шт",
+            "total": 23.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 23.0
+        },
+        {
+            "article": "TA800KB",
+            "name": "Топка АЛЬФА 800KВ с контргрузом черный шамот",
+            "unit": "шт",
+            "total": 14.0,
+            "reserved": 1.0,
+            "shipping": 2.0,
+            "available": 11.0
+        },
+        {
+            "article": "TA800L",
+            "name": "Топка АЛЬФА 800L два стекла левая",
+            "unit": "шт",
+            "total": 32.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 30.0
+        },
+        {
+            "article": "TA800LB",
+            "name": "Топка АЛЬФА 800LB два стекла левая черный шамот",
+            "unit": "шт",
+            "total": 6.0,
+            "reserved": 3.0,
+            "shipping": 4.0,
+            "available": 0.0
+        },
+        {
+            "article": "TA800R",
+            "name": "Топка АЛЬФА 800R два стекла правая",
+            "unit": "шт",
+            "total": 26.0,
+            "reserved": 3.0,
+            "shipping": 0.0,
+            "available": 23.0
+        },
+        {
+            "article": "TA800RB",
+            "name": "Топка АЛЬФА 800RB два стекла правая черный шамот",
+            "unit": "шт",
+            "total": 12.0,
+            "reserved": 5.0,
+            "shipping": 2.0,
+            "available": 5.0
+        },
+        {
+            "article": "TA600",
+            "name": "Топка АЛЬФА 600",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TA700RB",
+            "name": "Топка АЛЬФА 700RB два стекла правая с черным шамотом",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TBN1000K",
+            "name": "Топка ВЕГА 1000K",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "TBN1000Kк",
+            "name": "Топка ВЕГА 1000K футеровка под кирпич",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "TBN1000KB",
+            "name": "Топка ВЕГА 1000KB черный шамот",
+            "unit": "шт",
+            "total": 7.0,
+            "reserved": 0.0,
+            "shipping": 1.0,
+            "available": 6.0
+        },
+        {
+            "article": "TBN1000KBk",
+            "name": "Топка ВЕГА 1000KB черный шамот футеровка под кирпич",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TBN1000M",
+            "name": "Топка ВЕГА 1000M принтинг",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "TBN1000MB",
+            "name": "Топка ВЕГА 1000MB принтинг черный шамот",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "TBN1000TB",
+            "name": "Топка ВЕГА 1000TВ туннельная черный шамот принтинг",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 0.0,
+            "shipping": 1.0,
+            "available": 2.0
+        },
+        {
+            "article": "TBN800",
+            "name": "Топка ВЕГА 800 принтинг",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "TBN800В",
+            "name": "Топка ВЕГА 800B принтинг черный шамот",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 1.0,
+            "shipping": 1.0,
+            "available": 2.0
+        },
+        {
+            "article": "TBN800TB",
+            "name": "Топка ВЕГА 800TВ туннельная черный шамот принтинг",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "TBN1000MP",
+            "name": "Топка ВЕГА 1000MP подовое горение принтинг",
+            "unit": "шт",
+            "total": 5.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 5.0
+        },
+        {
+            "article": "TBN1000MPBк",
+            "name": "Топка ВЕГА 1000MPB подовое горение принтинг черный шамот футеровка под кирпич",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TBN1200Pk",
+            "name": "Топка ВЕГА 1200P принтинг футеровка под кирпич",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TBN1200РBk",
+            "name": "Топка ВЕГА 1200PB принтинг черный шамот футеровка под кирпич",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 3.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TBN1600",
+            "name": "Топка ВЕГА 1600 подовая",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TBN1600B",
+            "name": "Топка ВЕГА 1600B черный шамот подовая",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TBN800P",
+            "name": "Топка ВЕГА 800P подовое горение принтинг",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TBN800PB",
+            "name": "Топка ВЕГА 800PB подовое горение принтинг черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TBN1000MB\/Sh",
+            "name": "Топка ВЕГА 1000MB\/Sh принтинг шибер черный шамот",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TBN1000К\/Sh",
+            "name": "Топка Вега 1000К\/Sh шибер",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "TBN1000КB\/Sh",
+            "name": "Топка Вега 1000КB\/Sh шибер черный шамот",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TBN1200РBk\/Sh",
+            "name": "Топка ВЕГА 1200PB шибер принт черный шамот футер. кирпич",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TBN1600B\/Sh",
+            "name": "Топка ВЕГА 1600B\/Sh подовая шибер черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TBN800B\/Sh",
+            "name": "Топка Вега 800B\/Sh шибер черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TBN800PB\/Sh",
+            "name": "Топка Вега 800PB\/Sh подовая шибер черный шамот",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TBPr1000\/Sh\/Bl80B",
+            "name": "Топка ВЕГА ПРАЙМ 1000 шибер встроенный, рамка декоративная, черный шамот TB1000\/Sh\/Bl80B",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TBPr1000P\/Sh\/Bl80",
+            "name": "Топка ВЕГА ПРАЙМ 1000 подовое горение шибер встроенный, рамка декоративная",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDN1000",
+            "name": "Топка ДЕЛЬТА 1000 три стекла принтинг",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TDNP1000L",
+            "name": "Топка ДЕЛЬТА 1000L два стекла левая принтинг",
+            "unit": "шт",
+            "total": 7.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 7.0
+        },
+        {
+            "article": "TDNP1000LB",
+            "name": "Топка ДЕЛЬТА 1000LB два стекла левая принтинг черный шамот",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TDNP1000R",
+            "name": "Топка ДЕЛЬТА 1000R два стекла правая принтинг",
+            "unit": "шт",
+            "total": 5.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 5.0
+        },
+        {
+            "article": "TDNP1000RB",
+            "name": "Топка ДЕЛЬТА 1000RB два стекла правая принтинг черный шамот",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "TDN1000V",
+            "name": "Топка ДЕЛЬТА 1000V три стекла принтинг, вертикальная ламель",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "TDN1000KB",
+            "name": "Топка ДЕЛЬТА 1000КB три стекла черный шамот",
+            "unit": "шт",
+            "total": 6.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 6.0
+        },
+        {
+            "article": "TDN1200",
+            "name": "Топка ДЕЛЬТА 1200 три стекла принтинг",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "TDN1200B",
+            "name": "Топка ДЕЛЬТА 1200B три стекла принтинг черный шамот",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 1.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDN800",
+            "name": "Топка ДЕЛЬТА 800 три  стекла принтинг",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TDN800B",
+            "name": "Топка ДЕЛЬТА 800B три стекла черный шамот",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TDN800BV",
+            "name": "Топка ДЕЛЬТА 800BV три стекла принтинг черный шамот, вертикальная ламель",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 1.0,
+            "shipping": 1.0,
+            "available": 0.0
+        },
+        {
+            "article": "TDN800L",
+            "name": "Топка ДЕЛЬТА 800L два стекла левая принтинг",
+            "unit": "шт",
+            "total": 5.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 5.0
+        },
+        {
+            "article": "TDN800LB",
+            "name": "Топка ДЕЛЬТА 800LB  два стекла левая принтинг черный шамот",
+            "unit": "шт",
+            "total": 6.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 5.0
+        },
+        {
+            "article": "TDN800R",
+            "name": "Топка ДЕЛЬТА 800R два стекла правая принтинг",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "TDN800RB",
+            "name": "Топка ДЕЛЬТА 800RB два стекла правая принтинг черный шамот",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TDN900",
+            "name": "Топка ДЕЛЬТА 900 три стекла принтинг",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TDN1000P",
+            "name": "Топка ДЕЛЬТА 1000 три стекла принтинг подовое горение",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TDN1000PB",
+            "name": "Топка ДЕЛЬТА 1000PВ три стекла принтинг подовое горение черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDN1000PBV",
+            "name": "Топка ДЕЛЬТА 1000PВV три стекла принтинг подовое горение черный шамот вертикальная ламель",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "TDN1100PCH",
+            "name": "Топка ДЕЛЬТА 1100 три стекла подовое горение футеровка чугун",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDN1200-800P",
+            "name": "Топка ДЕЛЬТА 1200х800х450P три стекла подовая",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TDN700P",
+            "name": "Топка ДЕЛЬТА 700P три стекла подовое горение принтинг",
+            "unit": "шт",
+            "total": 4.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 4.0
+        },
+        {
+            "article": "TDN700PB",
+            "name": "Топка ДЕЛЬТА 700PB три стекла подовое горение принтинг черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDN800PB",
+            "name": "Топка ДЕЛЬТА 800PВ три  стекла принтинг подовое горение черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TDN800PBV",
+            "name": "Топка ДЕЛЬТА 800PВV три  стекла принтинг подовое горение черный шамот вертикальная ламель",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TDN800RPB",
+            "name": "Топка ДЕЛЬТА 800RРB  два стекла правая принтинг подовое горение черный шамот",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "TDN900P",
+            "name": "Топка ДЕЛЬТА 900P три стекла принтинг подовая",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TD1000",
+            "name": "Топка ДЕЛЬТА 1000 три стекла",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 2.0
+        },
+        {
+            "article": "TDN1000LB",
+            "name": "Топка ДЕЛЬТА 1000LB два стекла левая черный шамот",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TD800",
+            "name": "Топка ДЕЛЬТА 800 три стекла",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TD800B",
+            "name": "Топка ДЕЛЬТА 800B три стекла черный шамот",
+            "unit": "шт",
+            "total": 3.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 3.0
+        },
+        {
+            "article": "TDN1000LB\/Sh",
+            "name": "Топка ДЕЛЬТА 1000LB\/Sh два стекла шибер принтинг черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TDN1000PBV\/Sh",
+            "name": "Топка ДЕЛЬТА 1000PВV\/Sh три стекла шибер принтинг подовая черная вертикаль",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TDN1200B\/Sh",
+            "name": "Топка ДЕЛЬТА 1200B три стекла шибер принтинг черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDN1200-800PB\/Sh",
+            "name": "Топка ДЕЛЬТА 1200х800х450PB три стекла подовая шибер  черный шамот",
+            "unit": "шт",
+            "total": 2.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDN1400BV\/Sh",
+            "name": "Топка ДЕЛЬТА 1400BV три стекла шибер  черный шамот вертикальная ламель",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDN1400PBV\/Sh",
+            "name": "Топка ДЕЛЬТА 1400РBV три стекла шибер подовое горение черный шамот вертикальная ламель",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TD800k\/Sh",
+            "name": "Топка Дельта 800\/Sh три стекла футеровка под кирпич со встроенным шибером",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDN800B\/Sh",
+            "name": "Топка Дельта 800B\/Sh три стекла шибер черный шамот футеровка под кирпич",
+            "unit": "шт",
+            "total": 0.0,
+            "reserved": 2.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TDN800BV-200\/Sh",
+            "name": "Топка Дельта 800BV-200\/Sh три стекла шибер черный шамот вертикальная ламель D-200",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 1.0,
+            "available": 0.0
+        },
+        {
+            "article": "TDN800PBV\/Sh",
+            "name": "Топка ДЕЛЬТА 800PВV\/Sh три стекла шибер принтинг подовая черная вертикаль",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 1.0,
+            "shipping": 0.0,
+            "available": 0.0
+        },
+        {
+            "article": "TD800RPB\/Sh",
+            "name": "Топка ДЕЛЬТА 800RРB\/Sh два стекла правая шибер подовое горение черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDPr1000\/Sh\/Bl80",
+            "name": "Топка ДЕЛЬТА ПРАЙМ 1000 шибер встроенный, рамка декоративная",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDPr1000\/Sh\/Bl80B",
+            "name": "Топка ДЕЛЬТА ПРАЙМ 1000 шибер встроенный, рамка декоративная, черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TDPr1000P\/Sh\/Bl80B",
+            "name": "Топка ДЕЛЬТА ПРАЙМ 1000 подовое горение шибер встроенный, рамка декоративная, черный шамот",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        },
+        {
+            "article": "TO 700",
+            "name": "Топка Омега 700",
+            "unit": "шт",
+            "total": 24.0,
+            "reserved": 0.0,
+            "shipping": 3.0,
+            "available": 21.0
+        },
+        {
+            "article": "TP700",
+            "name": "Топка чугунная PRIMO 700",
+            "unit": "шт",
+            "total": 104.0,
+            "reserved": 5.0,
+            "shipping": 0.0,
+            "available": 99.0
+        },
+        {
+            "article": "1016330",
+            "name": "Топка SPARTHERM VARIA Sh-4S LINEAR",
+            "unit": "шт",
+            "total": 1.0,
+            "reserved": 0.0,
+            "shipping": 0.0,
+            "available": 1.0
+        }
+    ]
+}
