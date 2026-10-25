@@ -296,6 +296,9 @@ trait ScrapesAqualiderCard
         $stored = [];
         $seenHashes = [];
         $idx = 0;
+        // Some aqualider.by models have one 276 px photo only: kept as a last resort.
+        $smallest = 200;
+        $fallback = null;
         foreach ($urls as $url) {
             if (count($stored) >= $max) {
                 break;
@@ -314,6 +317,9 @@ trait ScrapesAqualiderCard
             $body = $resp->body();
             $size = @getimagesizefromstring($body);
             if ($size === false || $size[0] < $minPx || $size[1] < $minPx) {
+                if ($size !== false && min($size[0], $size[1]) >= $smallest && ($fallback === null || $size[0] * $size[1] > $fallback['area'])) {
+                    $fallback = ['body' => $body, 'url' => $url, 'area' => $size[0] * $size[1]];
+                }
                 continue; // thumbnail / icon / corrupt — reject
             }
             $hash = md5($body);
@@ -332,6 +338,12 @@ trait ScrapesAqualiderCard
             $stored[] = $rel;
         }
 
+        if ($stored === [] && $fallback !== null) {
+            $ext = str_contains($fallback['url'], '.png') ? 'png' : (str_contains($fallback['url'], '.webp') ? 'webp' : 'jpg');
+            $rel = $imageDir . '/aq-' . $productId . '-1.' . $ext;
+            file_put_contents(public_path($rel), $fallback['body']);
+            $stored[] = $rel;
+        }
         if ($stored === []) {
             return 0;
         }
