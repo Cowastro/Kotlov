@@ -25,6 +25,11 @@ class RepairTskPumpCategoriesCommand extends Command
         'nasosnyie-stantsii' => 251,
         'skvajinnye-nasosy' => 272,
         'komplektuyushchie-dlya-nasosov' => 0,
+        'filtry' => 0,
+        'mnogostupenchatye-nasosy' => 0,
+        'konsolnye-i-monoblochnye-nasosy' => 0,
+        'in-lain-nasosy' => 0,
+        'kanalizatsionnye-nasosy-sukhoy-ustanovki' => 0,
     ];
 
     public function handle(): int

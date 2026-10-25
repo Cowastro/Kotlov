@@ -16,6 +16,17 @@ final class TskPumpClassifier
             return null;
         }
 
+        // Water filters: «Фильтр-грязевик» is not a mud pump, «фильтрующий элемент» not an accessory.
+        if (str_contains($value, 'фильтр') && ! str_contains($value, 'насос')) {
+            return 'filtry';
+        }
+
+        // Spare parts of a pump («Рабочий винт в обойме для ECO VINT», «Ротор JET 60 S»).
+        if (self::containsAny($value, ['рабочий винт', 'рабочее колесо', 'ремкомплект', 'корпус насоса', 'трубка вентури', 'уплотнительное кольцо', 'запчаст'])
+            || preg_match('/(?:^|\s)(?:ротор|статор|конденсатор|диффузор)\s/u', $value)) {
+            return 'komplektuyushchie-dlya-nasosov';
+        }
+
         if (self::containsAny($value, [
             'блок управления', 'манометр', 'реле давления', 'датчик сухого хода',
             'рукав напорный', 'муфта для шланга', 'соединительная муфта',
@@ -23,7 +34,7 @@ final class TskPumpClassifier
             'скважинный адаптер', 'крышка скважины', 'оголовок скважинный',
             'зажим для троса', 'трос из нержавеющей', 'трехвыводной штуцер',
             'пятивыводной штуцер', 'обратный клапан', 'кабель для насоса',
-            'мембрана', 'кронштейн', 'гибкий шланг', 'кабель круглый', 'фильтрующий элемент',
+            'мембрана', 'кронштейн', 'гибкий шланг', 'кабель круглый',
             'винтовое соединение', 'кабель квв', 'кабель плоский', 'трос ', 'соединитель пластиков',
             'тройник', 'шланг поливочн', 'частотный преобразовател',
         ])) {
@@ -54,7 +65,7 @@ final class TskPumpClassifier
 
         // Model-only rows of the ТСК price («ECO 2-73 (кабель - 40 м)», «AUTO JET 60 S»,
         // «CP 25-60 180», «NMTD MAX II U 50/80»).
-        if (str_contains($value, 'станция авт') || preg_match('/(?:^|\s)auto\s+(?:jet|js|qb|eco|dp)/u', $value)) {
+        if (str_contains($value, 'станция авт') || preg_match('/(?:^|\s)(?:auto\s+(?:jet|js|qb|eco|dp)|aups)/u', $value)) {
             return 'nasosnyie-stantsii';
         }
         if (preg_match('/(?:^|\s)(?:upc3?|ups|lpa|cp|nmtd?|ghn)[\s-]*\d/u', $value) || preg_match('/(?:^|\s)(?:upс|nmtd?\s+(?:max|smart|plus|eco))/u', $value)) {
@@ -78,8 +89,8 @@ final class TskPumpClassifier
 
         if (self::containsAny($value, [
             'циркуляц', 'циркул', ' nmt', 'nmt ', ' upc', 'upc ',
-            ' lpa', 'lpa ', 'ups ', 'ups-', 'ups25', 'ups32',
-        ]) || preg_match('/(?:^|\s)(?:wrs|wre)(?:\s|-|$)/u', $value)) {
+            ' lpa', 'lpa ',
+        ]) || preg_match('/(?:^|\s)(?:wrs|wre|ups)(?:\s|-|\d|$)/u', $value)) {
             return 'tsirkulyatsionnyie';
         }
 

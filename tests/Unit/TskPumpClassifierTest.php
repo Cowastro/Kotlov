@@ -28,6 +28,13 @@ class TskPumpClassifierTest extends TestCase
             ['Блок управления насосом ТУРБИПРЕСС 1,5 кВт', 'komplektuyushchie-dlya-nasosov'],
             ['UNIPUMP Рукав напорный (65мм; 50м)', 'komplektuyushchie-dlya-nasosov'],
             ['Манометр UNIPUMP (радиальный)', 'komplektuyushchie-dlya-nasosov'],
+            ['UNIPUMP Рабочий винт в обойме для ECO VINT 1 D', 'komplektuyushchie-dlya-nasosov'],
+            ['Ротор JET 60 S (d-55 мм, вал-14 мм)', 'komplektuyushchie-dlya-nasosov'],
+            ['UNIPUMP Фильтр-грязевик Y-образный 1/2"', 'filtry'],
+            ['UNIPUMP Фильтрующий элемент ВП-BB10 20М веревочный', 'filtry'],
+            ['UNIPUMP AUPS 1100', 'nasosnyie-stantsii'],
+            ['Циркуляционный насос с мокрым ротором UNIPUMP UPS 25-40', 'tsirkulyatsionnyie'],
+            ['Грязевой насос ГНОМ 10-10', 'drenajnyie'],
             ['Консоль JY1000', null],
             ['Шланг напорный', null],
         ];
