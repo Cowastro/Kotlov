@@ -13,6 +13,7 @@ on:
           - artisan-apply
           - artisan-background
           - tail-log
+          - diagnose-error-kinds
           - ps-artisan
           - stop-varmega-image-repair
           - stop-product-image-repair
@@ -56,7 +57,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|audit-gas-meter-demand|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|configure-deal-by|enable-deal-by-orders|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|diagnose-error-kinds|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|audit-gas-meter-demand|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|configure-deal-by|enable-deal-by-orders|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -198,6 +199,16 @@ jobs:
                 echo "source_bytes=$(wc -c < "$LOG_FILE" | tr -d ' ')"
                 echo "source_errors=$(grep -Eic 'error|exception|failed|critical' "$LOG_FILE" || true)"
                 echo "source_warnings=$(grep -Eic 'warning|warn' "$LOG_FILE" || true)"
+                ;;
+              diagnose-error-kinds)
+                test -f storage/logs/laravel.log
+                recent_log="$(tail -n 200 storage/logs/laravel.log)"
+                echo "parse_errors=$(grep -Eic 'ParseError|syntax error|unexpected token' <<< "$recent_log" || true)"
+                echo "view_errors=$(grep -Eic 'ViewException|chimney-selector' <<< "$recent_log" || true)"
+                echo "type_errors=$(grep -Eic 'TypeError|ArgumentCountError' <<< "$recent_log" || true)"
+                echo "memory_errors=$(grep -Eic 'allowed memory size|memory exhausted|out of memory' <<< "$recent_log" || true)"
+                echo "undefined_errors=$(grep -Eic 'undefined (variable|property|method)|call to undefined' <<< "$recent_log" || true)"
+                echo "database_errors=$(grep -Eic 'SQLSTATE|QueryException' <<< "$recent_log" || true)"
                 ;;
               ps-artisan)
                 echo "artisan_processes=$(pgrep -fc '[a]rtisan' || true)"
