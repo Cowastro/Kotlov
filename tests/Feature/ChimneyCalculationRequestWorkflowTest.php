@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Events\NewOrderCreated;
 use App\Filament\Resources\ChimneyCalculationRequests\Pages\ViewChimneyCalculationRequest;
+use App\Filament\Resources\ChimneyCalculationRequests\Schemas\ChimneyCalculationRequestInfolist;
 use App\Models\Category;
 use App\Models\ChimneyCalculationRequest;
 use App\Models\Order;
@@ -151,6 +152,20 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
         $this->assertSame(3, $calculation->items[0]['quantity']);
         $this->assertSame('600.00', $calculation->subtotal);
         $this->assertSame('570.00', $calculation->total);
+    }
+
+    public function test_admin_schematic_orders_specific_transition_and_adapter_names_correctly(): void
+    {
+        $rank = new \ReflectionMethod(ChimneyCalculationRequestInfolist::class, 'assemblyRank');
+
+        $thermo = $rank->invoke(null, ['name' => 'Труба Термо L1000']);
+        $transition = $rank->invoke(null, ['name' => 'Переход Моно/Термо']);
+        $mono = $rank->invoke(null, ['name' => 'Труба Моно L1000']);
+        $adapter = $rank->invoke(null, ['name' => 'Адаптер-переход на патрубок']);
+
+        $this->assertLessThan($transition, $thermo);
+        $this->assertLessThan($mono, $transition);
+        $this->assertLessThan($adapter, $mono);
     }
 
     private function chimneyProduct(): Product

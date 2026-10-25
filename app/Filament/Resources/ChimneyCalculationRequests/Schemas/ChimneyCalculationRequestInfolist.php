@@ -98,12 +98,12 @@ class ChimneyCalculationRequestInfolist
             str_contains($name, 'растяж'), str_contains($name, 'креплен') => 30,
             str_contains($name, 'хомут') => 40,
             str_contains($name, 'ппу'), str_contains($name, 'проход перекры') => 50,
-            str_contains($name, 'термо'), str_contains($name, 'сэндвич'), str_contains($name, 'утепл') => 60,
-            str_contains($name, 'переход') => 70,
-            str_contains($name, 'бак'), str_contains($name, 'теплообмен') => 80,
-            str_contains($name, 'труба'), str_contains($name, 'моно') => 85,
-            str_contains($name, 'шибер') => 90,
             str_contains($name, 'адаптер') => 100,
+            str_contains($name, 'шибер') => 90,
+            str_contains($name, 'бак'), str_contains($name, 'теплообмен') => 80,
+            str_contains($name, 'переход') => 70,
+            str_contains($name, 'термо'), str_contains($name, 'сэндвич'), str_contains($name, 'утепл') => 60,
+            str_contains($name, 'моно'), str_contains($name, 'труба') => 85,
             default => 75,
         };
     }
