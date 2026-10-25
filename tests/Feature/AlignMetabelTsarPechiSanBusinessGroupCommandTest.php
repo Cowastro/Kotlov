@@ -57,6 +57,10 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
         $teplovProduct = $this->product($category->id, $teplov->id, 15002, 'TIS-OFFICIAL');
         $teplovWithoutPrice = $this->product($category->id, $teplov->id, 15003, 'TIS-NO-PRICE');
         $teplovWithoutLink = $this->product($category->id, $teplov->id, 15004, 'TIS-NO-LINK');
+        $teplovWithoutLink->update([
+            'availability_status' => Product::AVAILABILITY_OUT_OF_STOCK,
+            'requires_price_confirmation' => true,
+        ]);
         $teplovByName = $this->product($category->id, $meta->id, 15005, 'TIS-BY-NAME');
         $teplovByName->update(['name' => 'ППУ Теплов и Сухов 500 × 500']);
         SupplierProduct::query()->create([
@@ -91,6 +95,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
             ->expectsOutputToContain('metric.tsar_links_to_create=1')
             ->expectsOutputToContain('metric.teplov_links_to_create=2')
             ->expectsOutputToContain('metric.teplov_links_to_repair=1')
+            ->expectsOutputToContain('metric.teplov_products_to_release=1')
             ->assertSuccessful();
         $this->assertDatabaseMissing('supplier_products', [
             'supplier_id' => $sbg->id,
@@ -139,6 +144,9 @@ class AlignMetabelTsarPechiSanBusinessGroupCommandTest extends TestCase
         $this->assertTrue($teplovWithoutPrice->fresh()->hasAssignedSupplier());
         $this->assertTrue($teplovWithoutLink->fresh()->hasAssignedSupplier());
         $this->assertTrue($teplovByName->fresh()->hasAssignedSupplier());
+        $this->assertTrue($teplovWithoutLink->fresh()->canBeAddedToCart());
+        $this->assertSame(Product::AVAILABILITY_CHECK, $teplovWithoutLink->fresh()->availability_status);
+        $this->assertFalse($teplovWithoutLink->fresh()->requires_price_confirmation);
     }
 
     private function product(int $categoryId, int $brandId, int $id, string $sku): Product

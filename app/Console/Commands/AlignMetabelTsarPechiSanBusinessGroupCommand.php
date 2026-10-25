@@ -76,6 +76,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
             'teplov_products' => 0,
             'teplov_links_to_create' => 0,
             'teplov_links_to_repair' => 0,
+            'teplov_products_to_release' => 0,
             'brand_links_to_create' => 0,
             'links_written' => 0,
         ];
@@ -124,7 +125,7 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
             })
             ->where('is_active', true)
             ->where('is_archived', false)
-            ->get(['id', 'sku', 'name', 'content_source_url']);
+            ->get(['id', 'sku', 'name', 'content_source_url', 'price', 'availability_status', 'requires_price_confirmation']);
         $teplovLinks = DB::table('supplier_products')
             ->where('supplier_id', $sbg->id)
             ->whereIn('product_id', $teplovProducts->pluck('id'))
@@ -138,6 +139,11 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
             ->filter(fn (object $link): bool => $link->match_confidence !== 'manual_price_list'
                 && ! ($link->match_confidence === 'official_source' && (float) $link->price_byn > 0)
                 && $link->match_confidence !== 'brand_assignment')
+            ->count();
+        $metrics['teplov_products_to_release'] = $teplovProducts
+            ->filter(fn (object $product): bool => (float) $product->price > 0
+                && ((bool) $product->requires_price_confirmation
+                    || ! in_array($product->availability_status, [Product::AVAILABILITY_IN_STOCK, Product::AVAILABILITY_CHECK], true)))
             ->count();
 
         foreach ([$metaBrand, $tsarBrand, $teplovBrand] as $brand) {
@@ -295,6 +301,22 @@ class AlignMetabelTsarPechiSanBusinessGroupCommand extends Command
                     }
                     DB::table('supplier_products')->insert($payload);
                     $metrics['links_written']++;
+                }
+
+                // «Теплов и Сухов» is the owner's regular chimney assortment.
+                // A missing live balance means "available to order", not a hard
+                // storefront block. Keep real confirmed stock intact, but release
+                // priced cards from stale price/out-of-stock holds.
+                foreach ($teplovProducts->filter(fn (object $product): bool => (float) $product->price > 0) as $product) {
+                    $changes = [
+                        'requires_price_confirmation' => false,
+                        'updated_at' => $now,
+                    ];
+                    if (! in_array($product->availability_status, [Product::AVAILABILITY_IN_STOCK, Product::AVAILABILITY_CHECK], true)) {
+                        $changes['availability_status'] = Product::AVAILABILITY_CHECK;
+                    }
+
+                    DB::table('products')->where('id', $product->id)->update($changes);
                 }
 
                 if ($legacyMetaSupplier && (int) $legacyMetaSupplier->id !== (int) $sbg->id
