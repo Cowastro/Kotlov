@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Filament\Resources\ChimneyCalculationRequests\ChimneyCalculationRequestResource;
+use App\Filament\Pages\ChimneyCalculator;
 use App\Models\ChimneyCalculationRequest;
 use App\Rules\PhoneNotSpam;
 use App\Services\ChimneyCalculationRequestService;
@@ -69,7 +69,7 @@ class AdminChimneyCalculationController extends Controller
             'success' => true,
             'message' => $message,
             'request_id' => $calculation->id,
-            'admin_url' => ChimneyCalculationRequestResource::getUrl('view', ['record' => $calculation]),
+            'admin_url' => ChimneyCalculator::getUrl(['calculation' => $calculation->id]),
         ]);
     }
 }

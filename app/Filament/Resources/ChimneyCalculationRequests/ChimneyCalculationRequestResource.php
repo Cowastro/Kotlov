@@ -4,12 +4,10 @@ namespace App\Filament\Resources\ChimneyCalculationRequests;
 
 use App\Filament\Resources\ChimneyCalculationRequests\Pages\ListChimneyCalculationRequests;
 use App\Filament\Resources\ChimneyCalculationRequests\Pages\ViewChimneyCalculationRequest;
-use App\Filament\Resources\ChimneyCalculationRequests\Schemas\ChimneyCalculationRequestInfolist;
 use App\Filament\Resources\ChimneyCalculationRequests\Tables\ChimneyCalculationRequestsTable;
 use App\Models\ChimneyCalculationRequest;
 use BackedEnum;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 
@@ -39,11 +37,6 @@ class ChimneyCalculationRequestResource extends Resource
         $count = static::getModel()::where('status', 'pending')->count();
 
         return $count ? (string) $count : null;
-    }
-
-    public static function infolist(Schema $schema): Schema
-    {
-        return ChimneyCalculationRequestInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table

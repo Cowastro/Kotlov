@@ -11,7 +11,7 @@
             <div class="cs-hero__grid">
                 <div>
                     <span class="cs-kicker">{{ ($managerMode ?? false) ? 'Рабочий инструмент менеджера' : 'Подбор за несколько минут' }}</span>
-                    <h1>{{ ($managerMode ?? false) ? (($managerCalculation ?? null) ? 'Корректировка расчёта '.$managerCalculation->number : 'Новый расчёт дымохода') : 'Соберите дымоход под своё оборудование' }}</h1>
+                    <h1>{{ ($managerMode ?? false) ? (($managerCalculation ?? null) ? (($managerCalculation->status === 'pending' ? 'Работа с заявкой ' : 'Расчёт ').$managerCalculation->number) : 'Новый расчёт дымохода') : 'Соберите дымоход под своё оборудование' }}</h1>
                     <p>{{ ($managerMode ?? false) ? 'Задайте параметры, скорректируйте комплект и сохраните расчёт в CRM.' : 'Соберите комплект «'.$preferredBrandName.'», получите скидку за самостоятельный подбор и отправьте схему менеджеру на бесплатную проверку.' }}</p>
                     <div class="cs-hero__actions"><a href="{{ \App\Support\KnowledgeBase::URL }}" class="tf-btn btn-white btn-stroke">База знаний</a><a href="#calculator" class="tf-btn animate-btn">Рассчитать комплект</a></div>
                     @if ($equipment)
@@ -141,6 +141,7 @@
     var discount = {{ (float) $discountPercent }};
     var selfDiscount = {{ (float) $selfSelectionDiscountPercent }};
     var managerMode = @json((bool) ($managerMode ?? false));
+    var managerCanEdit = @json(!($managerCalculation ?? null) || $managerCalculation->status === 'pending');
     var selectorToken = @json($selectorToken);
     var equipmentId = @json(($equipmentInCart ?? false) ? null : $equipment?->id);
     var equipmentName = @json($equipment?->name);
@@ -707,7 +708,7 @@
                 + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
                 + ', нагрев воды: ' + waterHeatingLabel + ', растяжки ' + (settings.guyWires ? 'да' : 'нет') + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
             var resultActions = managerMode
-                ? '<button type="button" class="tf-btn animate-btn" data-bs-toggle="modal" data-bs-target="#chimneyCheckModal">' + (@json(($managerCalculation ?? null) ? 'Сохранить изменения' : 'Создать расчёт')) + '</button>'
+                ? (managerCanEdit ? '<button type="button" class="tf-btn animate-btn" data-bs-toggle="modal" data-bs-target="#chimneyCheckModal">' + (@json(($managerCalculation ?? null) ? 'Сохранить изменения' : 'Создать расчёт')) + '</button>' : '<div class="cs-safety">Расчёт уже преобразован в заказ и доступен только для просмотра.</div>')
                 : '<button type="button" class="tf-btn animate-btn" data-add-kit>' + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><button type="button" class="tf-btn btn-white btn-stroke" data-bs-toggle="modal" data-bs-target="#chimneyCheckModal">Бесплатно проверить</button>';
             result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">' + diameterLabel + ' · ' + systemLabel + ' · ' + settings.height + ' м</p>'
                 + '<p class="cs-recommendation">' + esc(settings.recommendation + ' ' + settings.roofAdvice) + '</p>' + diagramHtml()

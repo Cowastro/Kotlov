@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Filament\Pages\ChimneyCalculator;
 use App\Models\ChimneyCalculationRequest;
 use App\Models\User;
 use Filament\Notifications\Notification;
@@ -28,7 +29,7 @@ class ChimneyCalculationRequestTelegramNotifier
             ['_', '*', '`', '['], ['\_', '\*', '\`', '\['], (string) $value
         );
         $itemsCount = count($calculation->items ?? []);
-        $url = url('/admin/chimney-calculation-requests/'.$calculation->id);
+        $url = ChimneyCalculator::getUrl(['calculation' => $calculation->id]);
         $lines = [
             "🏗 *Новый запрос на расчёт {$calculation->number}*",
             '',
@@ -37,16 +38,11 @@ class ChimneyCalculationRequestTelegramNotifier
             $calculation->customer_email ? '*Email:* '.$escape($calculation->customer_email) : null,
             '*Позиций в комплекте:* '.$itemsCount,
             '*Итого:* '.number_format((float) $calculation->total, 2, '.', ' ').' BYN',
-            "[Открыть расчёт в админке]({$url})",
+            "[Открыть заявку в калькуляторе]({$url})",
         ];
 
         try {
-            $result = $this->telegram->sendMessage($chatId, implode("\n", array_filter($lines, fn ($line) => $line !== null)), [
-                'reply_markup' => json_encode(['inline_keyboard' => [[[
-                    'text' => '✅ Подтвердить и создать заказ',
-                    'callback_data' => 'confirm_chimney:'.$calculation->id,
-                ]]]], JSON_UNESCAPED_UNICODE),
-            ]);
+            $result = $this->telegram->sendMessage($chatId, implode("\n", array_filter($lines, fn ($line) => $line !== null)));
             $messageId = $result['result']['message_id'] ?? null;
             if ($messageId) {
                 $calculation->update(['telegram_message_id' => $messageId, 'telegram_notified_at' => now()]);

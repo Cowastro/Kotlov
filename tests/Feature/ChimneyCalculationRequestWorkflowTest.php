@@ -4,8 +4,7 @@ namespace Tests\Feature;
 
 use App\Events\NewOrderCreated;
 use App\Filament\Pages\ChimneyCalculator;
-use App\Filament\Resources\ChimneyCalculationRequests\Pages\ViewChimneyCalculationRequest;
-use App\Filament\Resources\ChimneyCalculationRequests\Schemas\ChimneyCalculationRequestInfolist;
+use App\Filament\Resources\ChimneyCalculationRequests\ChimneyCalculationRequestResource;
 use App\Models\Category;
 use App\Models\ChimneyCalculationRequest;
 use App\Models\Order;
@@ -13,11 +12,11 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
+use App\Services\ChimneyCalculationRequestService;
 use App\Services\ChimneyCalculationRequestTelegramNotifier;
 use App\Services\TelegramApi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use Livewire\Livewire;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
@@ -25,7 +24,7 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_request_is_priced_server_side_and_telegram_confirmation_creates_one_order(): void
+    public function test_request_is_priced_server_side_and_notification_opens_unified_calculator(): void
     {
         Event::fake([NewOrderCreated::class]);
         config([
@@ -58,36 +57,22 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
         $this->assertSame('self_selection', $calculation->promotion_mode);
 
         $notificationApi = \Mockery::mock(TelegramApi::class);
-        $notificationApi->shouldReceive('sendMessage')->once()->withArgs(function ($chatId, $text, $extra) use ($calculation): bool {
-            $markup = json_decode($extra['reply_markup'] ?? '', true);
-
+        $notificationApi->shouldReceive('sendMessage')->once()->withArgs(function ($chatId, $text, $extra = []) use ($calculation): bool {
             return (string) $chatId === '12345'
                 && str_contains($text, 'Новый запрос на расчёт')
                 && str_contains($text, 'Позиций в комплекте:')
                 && str_contains($text, 'Итого:')
-                && str_contains($text, 'Открыть расчёт в админке')
+                && str_contains($text, 'Открыть заявку в калькуляторе')
+                && str_contains($text, 'calculation='.$calculation->id)
                 && ! str_contains($text, 'Ø120, высота 5 м')
                 && ! str_contains($text, '*Состав:*')
-                && ($markup['inline_keyboard'][0][0]['callback_data'] ?? null) === 'confirm_chimney:'.$calculation->id;
+                && ! isset($extra['reply_markup']);
         })->andReturn(['ok' => true, 'result' => ['message_id' => 55]]);
         (new ChimneyCalculationRequestTelegramNotifier($notificationApi))->notify($calculation);
         $this->assertSame(55, $calculation->fresh()->telegram_message_id);
 
-        $telegram = $this->mock(TelegramApi::class);
-        $telegram->shouldReceive('answerCallbackQuery')->twice()->andReturn(['ok' => true]);
-        $telegram->shouldReceive('editMessageReplyMarkup')->twice()->andReturn(['ok' => true]);
-        $telegram->shouldReceive('sendReply')->twice()->andReturn(['ok' => true]);
-        $payload = [
-            'callback_query' => [
-                'id' => 'callback-1',
-                'data' => 'confirm_chimney:'.$calculation->id,
-                'from' => ['first_name' => 'Менеджер', 'username' => 'manager'],
-                'message' => ['message_id' => 77, 'chat' => ['id' => 12345]],
-            ],
-        ];
-
-        $this->postJson('/telegram/webhook', $payload)->assertOk()->assertJson(['ok' => true]);
-        $this->postJson('/telegram/webhook', $payload)->assertOk()->assertJson(['ok' => true]);
+        $result = app(ChimneyCalculationRequestService::class)->confirm($calculation, 'Менеджер CRM');
+        app(ChimneyCalculationRequestService::class)->confirm($calculation->fresh(), 'Менеджер CRM');
 
         $this->assertDatabaseCount('orders', 1);
         $this->assertDatabaseCount('order_items', 1);
@@ -96,6 +81,7 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
         $this->assertSame(2, $order->items->first()->quantity);
         $this->assertSame($order->id, $calculation->fresh()->order_id);
         $this->assertSame('converted', $calculation->fresh()->status);
+        $this->assertTrue($result['created']);
         Event::assertDispatchedTimes(NewOrderCreated::class, 1);
     }
 
@@ -113,7 +99,7 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
         $this->assertDatabaseCount('chimney_calculation_requests', 0);
     }
 
-    public function test_admin_can_open_calculation_with_itemized_bundle(): void
+    public function test_admin_manages_requests_inside_the_unified_calculator(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $product = $this->chimneyProduct();
@@ -138,14 +124,25 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
 
         $this->actingAs($admin);
 
-        Livewire::test(ViewChimneyCalculationRequest::class, ['record' => $calculation->getRouteKey()])
+        $this->get(ChimneyCalculator::getUrl(['requests' => 1]))
             ->assertOk()
-            ->assertSee('Схема сборки дымохода')
-            ->assertSee('Верх дымохода')
-            ->assertSee('Печь / оборудование')
-            ->assertSee('Корректировать в калькуляторе')
-            ->assertSee('Труба сэндвич Ø120 мм × 2 — 400.00 BYN')
-            ->assertDontSee('Добавить элемент «Теплов и Сухов»');
+            ->assertSee('Все клиентские заявки и расчёты менеджеров')
+            ->assertSee($calculation->number)
+            ->assertSee('Тестовый клиент');
+
+        $this->get(ChimneyCalculator::getUrl(['calculation' => $calculation->id]))
+            ->assertOk()
+            ->assertSee($calculation->number)
+            ->assertSee('Тестовый клиент')
+            ->assertSee('Создать заказ')
+            ->assertSee('manager_mode=1', false)
+            ->assertSee('calculation='.$calculation->id, false)
+            ->assertDontSee('Схема сборки дымохода');
+
+        $this->get(ChimneyCalculationRequestResource::getUrl('index'))
+            ->assertRedirect(ChimneyCalculator::getUrl(['requests' => 1]));
+        $this->get(ChimneyCalculationRequestResource::getUrl('view', ['record' => $calculation]))
+            ->assertRedirect(ChimneyCalculator::getUrl(['calculation' => $calculation->id]));
     }
 
     public function test_manager_can_create_and_revise_a_calculation_in_the_standalone_calculator(): void
@@ -188,20 +185,6 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
         $this->assertSame(3, $calculation->items[0]['quantity']);
         $this->assertSame('600.00', $calculation->subtotal);
         $this->assertSame('570.00', $calculation->total);
-    }
-
-    public function test_admin_schematic_orders_specific_transition_and_adapter_names_correctly(): void
-    {
-        $rank = new \ReflectionMethod(ChimneyCalculationRequestInfolist::class, 'assemblyRank');
-
-        $thermo = $rank->invoke(null, ['name' => 'Труба Термо L1000']);
-        $transition = $rank->invoke(null, ['name' => 'Переход Моно/Термо']);
-        $mono = $rank->invoke(null, ['name' => 'Труба Моно L1000']);
-        $adapter = $rank->invoke(null, ['name' => 'Адаптер-переход на патрубок']);
-
-        $this->assertLessThan($transition, $thermo);
-        $this->assertLessThan($mono, $transition);
-        $this->assertLessThan($adapter, $mono);
     }
 
     private function chimneyProduct(): Product
