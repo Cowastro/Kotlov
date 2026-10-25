@@ -147,18 +147,23 @@ class CommercialContractGeneratorTest extends TestCase
             'template_version' => 1,
             'source_template_path' => 'commercial-contracts/1/source.doc',
             'generated_docx_path' => 'commercial-contracts/1/contract.docx',
+            // The generator always stores these snapshots; the table requires them.
+            'seller_snapshot' => (array) config('legal.commercial_documents', []),
+            'buyer_snapshot' => ['client_name' => 'Тестовый клиент'],
+            'terms_snapshot' => [],
         ]);
 
         $response = $this->actingAs($manager)->get(route('admin.commercial-contracts.docx', $contract));
 
         $response->assertOk();
-        $response->assertDownload('Договор-'.$contract->number.'.docx');
+        // Browsers take the Cyrillic name from filename*; plain filename= is Laravel's ASCII fallback.
+        $this->assertStringContainsString("filename*=utf-8''".rawurlencode('Договор-'.$contract->number.'.docx'), (string) $response->headers->get('content-disposition'));
         $this->assertSame('docx-content', $response->streamedContent());
 
         $sourceResponse = $this->actingAs($manager)->get(route('admin.commercial-contracts.source', $contract));
 
         $sourceResponse->assertOk();
-        $sourceResponse->assertDownload('Исходная-форма-'.$contract->number.'.doc');
+        $this->assertStringContainsString("filename*=utf-8''".rawurlencode('Исходная-форма-'.$contract->number.'.doc'), (string) $sourceResponse->headers->get('content-disposition'));
         $this->assertSame('doc-content', $sourceResponse->streamedContent());
     }
 }

@@ -202,15 +202,16 @@ jobs:
                 ;;
               diagnose-error-kinds)
                 test -f storage/logs/laravel.log
-                recent_log="$(tail -n 200 storage/logs/laravel.log)"
+                # Last 200 log lines, kept in a variable: only counts and a line number are printed.
+                recent_log="$(awk '{line[NR % 200] = $0} END {for (i = NR - 199; i <= NR; i++) if (i > 0) print line[i % 200]}' storage/logs/laravel.log)"
                 echo "parse_errors=$(grep -Eic 'ParseError|syntax error|unexpected token' <<< "$recent_log" || true)"
                 echo "view_errors=$(grep -Eic 'ViewException|chimney-selector' <<< "$recent_log" || true)"
                 echo "type_errors=$(grep -Eic 'TypeError|ArgumentCountError' <<< "$recent_log" || true)"
                 echo "memory_errors=$(grep -Eic 'allowed memory size|memory exhausted|out of memory' <<< "$recent_log" || true)"
                 echo "undefined_errors=$(grep -Eic 'undefined (variable|property|method)|call to undefined' <<< "$recent_log" || true)"
                 echo "database_errors=$(grep -Eic 'SQLSTATE|QueryException' <<< "$recent_log" || true)"
-                latest_parse="$(grep -E 'ParseError|syntax error|unexpected token|Unclosed [\[({]' <<< "$recent_log" | tail -n 1 || true)"
-                echo "parse_line=$(sed -nE 's/.* on line ([0-9]+).*/\1/p' <<< "$latest_parse" | tail -n 1)"
+                latest_parse="$(grep -E 'ParseError|syntax error|unexpected token|Unclosed [\[({]' <<< "$recent_log" | awk 'END {print}' || true)"
+                echo "parse_line=$(sed -nE 's/.* on line ([0-9]+).*/\1/p' <<< "$latest_parse" | awk 'END {print}')"
                 echo "unexpected_end=$(grep -Eic 'unexpected (end of file|token .end)' <<< "$latest_parse" || true)"
                 echo "unclosed_delimiter=$(grep -Eic 'Unclosed [\[({]' <<< "$latest_parse" || true)"
                 echo "unexpected_identifier=$(grep -Eic 'unexpected (identifier|variable|string content)' <<< "$latest_parse" || true)"

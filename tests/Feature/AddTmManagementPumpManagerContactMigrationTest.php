@@ -61,6 +61,7 @@ class AddTmManagementPumpManagerContactMigrationTest extends TestCase
         $this->assertSame('Андрей Логацкий — насосный отдел ТМ', $point->label);
         $this->assertFalse($point->is_primary);
         $this->assertTrue($point->is_active);
-        $this->assertSame(['+375 17 290-82-78', '+375445920920'], $supplier->fresh()->contactPhoneNumbers());
+        // The manager's direct number comes before the general company phone.
+        $this->assertSame(['+375445920920', '+375 17 290-82-78'], $supplier->fresh()->contactPhoneNumbers());
     }
 }

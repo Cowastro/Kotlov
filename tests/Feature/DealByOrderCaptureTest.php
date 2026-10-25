@@ -141,7 +141,15 @@ class DealByOrderCaptureTest extends TestCase
 
         Http::fake([
             'https://my.deal.test/api/v1/orders/list*' => Http::sequence()
-                ->push(['orders' => [$this->orderPayload(['price' => 'Цена по запросу'])]])
+                // First the shop has no price yet («Цена по запросу» on the order and the line), then sends it.
+                ->push(['orders' => [$this->orderPayload(['price' => 'Цена по запросу', 'full_price' => 'Цена по запросу', 'products' => [[
+                    'id' => 111,
+                    'sku' => 'test-product',
+                    'name' => 'Тестовый товар',
+                    'price' => 'Цена по запросу',
+                    'total_price' => 'Цена по запросу',
+                    'quantity' => 7,
+                ]]])]])
                 ->push(['orders' => [$formattedPayload]]),
             'https://my.deal.test/api/v1/orders/set_status' => Http::response([
                 'processed_ids' => [987654],
