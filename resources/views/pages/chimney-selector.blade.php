@@ -965,7 +965,8 @@
         if (equipment) cleanUrl.searchParams.set('equipment', equipment);
         window.history.replaceState({}, '', cleanUrl);
     });
-    form.requestSubmit();
+    if (sharedParams.get('fresh') === '1' && clearButton) clearButton.click();
+    else form.requestSubmit();
 })();
 </script>
 @endpush

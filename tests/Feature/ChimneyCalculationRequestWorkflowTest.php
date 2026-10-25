@@ -165,6 +165,10 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
         $this->get(route('chimney-selector', ['manager_mode' => 1]))
             ->assertOk()
             ->assertSee('Новый расчёт дымохода');
+        $this->get(route('chimney-selector', ['manager_mode' => 1, 'fresh' => 1]))
+            ->assertOk()
+            ->assertSee("sharedParams.get('fresh') === '1'", false)
+            ->assertSee('clearButton.click()', false);
 
         $token = session('chimney_selector_token');
         $created = $this->postJson(route('admin.chimney-calculator.save'), [
