@@ -17,6 +17,8 @@ class ChimneyCalculationRequestResource extends Resource
 {
     protected static ?string $model = ChimneyCalculationRequest::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
 
     protected static ?string $navigationLabel = 'Расчёты дымоходов';

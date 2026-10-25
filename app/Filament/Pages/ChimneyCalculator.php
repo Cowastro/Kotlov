@@ -2,8 +2,10 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\ChimneyCalculationRequests\ChimneyCalculationRequestResource;
 use App\Models\ChimneyCalculationRequest;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 
@@ -44,6 +46,21 @@ class ChimneyCalculator extends Page
     public function getMaxContentWidth(): Width|string|null
     {
         return Width::Full;
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('newCalculation')
+                ->label('Новый расчёт')
+                ->icon('heroicon-o-plus')
+                ->url(static::getUrl())
+                ->visible(fn (): bool => $this->calculationId !== null),
+            Action::make('savedCalculations')
+                ->label(fn (): string => 'Сохранённые расчёты'.(($count = ChimneyCalculationRequest::query()->where('status', 'pending')->count()) ? " ({$count})" : ''))
+                ->icon('heroicon-o-archive-box')
+                ->url(ChimneyCalculationRequestResource::getUrl('index')),
+        ];
     }
 
     public function calculatorUrl(): string
