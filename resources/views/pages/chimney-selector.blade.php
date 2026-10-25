@@ -544,9 +544,34 @@
             svg.push('<rect x="55" y="538" width="14" height="6" rx="3" fill="#34383a"/><text x="75" y="545" fill="#687176" font-size="9">моно</text><rect x="116" y="536" width="18" height="10" rx="5" fill="#aeb8bd"/><rect x="121" y="538" width="8" height="6" rx="3" fill="#3e4548"/><text x="141" y="545" fill="#687176" font-size="9">утеплённый</text><rect x="225" y="536" width="12" height="10" rx="2" fill="#fff" stroke="#e34234" stroke-width="2"/><text x="244" y="545" fill="#687176" font-size="9">узел / крепление</text>');
             svg.push('</svg>');
 
-            var assemblyRank = {umbrella:0, roof_flashing:10, guy_wire:20, clamp:30, pipe:40, mount:45, wall_mount:46, ceiling_pass:50, elbow:60, transition:70, damper:80, tee:90, condensate:100, support:110, adapter:120};
+            function assemblySequenceRank(row) {
+                var kind = row.product.kind;
+                var system = row.product.system;
+                var combined = settings.system === 'combined';
+                if (kind === 'umbrella') return 0;
+                if (kind === 'roof_flashing') return 10;
+                if (kind === 'guy_wire') return 18;
+                if (kind === 'pipe') {
+                    if (!combined) return 20;
+                    return system === 'sandwich' ? 20 : 50;
+                }
+                if (kind === 'elbow') {
+                    if (!combined) return 24;
+                    return system === 'sandwich' ? 24 : 54;
+                }
+                if (kind === 'clamp') return 27;
+                if (kind === 'mount' || kind === 'wall_mount') return 28;
+                if (kind === 'ceiling_pass') return 30;
+                if (kind === 'transition') return 40;
+                if (kind === 'tee') return 58;
+                if (kind === 'damper') return 60;
+                if (kind === 'condensate') return 70;
+                if (kind === 'support') return 80;
+                if (kind === 'adapter') return settings.scheme === 'tee' ? 65 : 90;
+                return 55;
+            }
             var assemblyRows = rows.map(function (row, index) { return {row:row, rowIndex:index}; }).sort(function (a, b) {
-                return (assemblyRank[a.row.product.kind] ?? 65) - (assemblyRank[b.row.product.kind] ?? 65) || a.rowIndex - b.rowIndex;
+                return assemblySequenceRank(a.row) - assemblySequenceRank(b.row) || a.rowIndex - b.rowIndex;
             });
             var assemblyHeight = Math.max(540, 116 + assemblyRows.length * 76);
             var assembly = [];

@@ -211,6 +211,8 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSee('cs-schematic--assembly', false)
             ->assertSeeText('Комплектующие и последовательность сборки')
             ->assertSee('СХЕМА СБОРКИ МОДУЛЬНОГО ДЫМОХОДА', false)
+            ->assertSee('assemblySequenceRank', false)
+            ->assertSee("system === 'sandwich' ? 20 : 50", false)
             ->assertSeeText('Скачать монтажную схему SVG')
             ->assertSeeText('Комплект пересчитывается автоматически')
             ->assertSee('form.requestSubmit();', false)
