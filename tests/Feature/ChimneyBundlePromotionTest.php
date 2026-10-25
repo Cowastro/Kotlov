@@ -275,6 +275,7 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('−10%')
             ->assertSeeText('Передайте схему менеджеру')
             ->assertSee('data-addon-toggle', false)
+            ->assertSee('.cs-addon__toggle{display:flex;width:100%;height:48px', false)
             ->assertSee('Умный поиск: теплообменник, бак, шибер…', false)
             ->assertSee('test-chimney-bundle-pipe', false);
 
