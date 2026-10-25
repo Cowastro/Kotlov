@@ -89,21 +89,31 @@
         </div>
     </section>
 
-    <section class="cs-manager" id="manager-check">
-        <div class="container"><div class="cs-manager__box">
-            <div><span class="cs-kicker">Проверка специалистом</span><h2>Передайте схему менеджеру</h2><p>Сначала соберите комплект выше. Проверим совместимость, доберём недостающие узлы и после подтверждения создадим заказ.</p></div>
-            <form action="{{ route('chimney-calculation-requests.store') }}" method="POST" data-cs-manager-form>@csrf<x-form-protection />
-                <input type="hidden" name="source_url" value="{{ url()->current() }}">
-                <input type="hidden" name="selector_token" value="{{ $selectorToken }}">
-                @if($equipment)<input type="hidden" name="equipment_product_id" value="{{ $equipment->id }}">@endif
-                <input type="hidden" name="configuration" value="Нужна проверка комплекта дымохода" data-cs-message>
-                <span data-cs-items hidden></span>
-                <input type="text" name="customer_name" value="{{ old('customer_name') }}" placeholder="Ваше имя" required>
-                <input type="tel" name="customer_phone" value="{{ old('customer_phone') }}" placeholder="+375 (XX) XXX-XX-XX" required>
-                <button class="tf-btn btn-white" data-cs-request-submit disabled>Отправить расчёт</button>
-            </form>
-        </div></div>
-    </section>
+    <div class="modal modalCentered fade cs-check-modal" id="chimneyCheckModal" tabindex="-1" aria-labelledby="chimneyCheckModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <button type="button" class="icon-close-popup" data-bs-dismiss="modal" aria-label="Закрыть"><i class="icon-X2"></i></button>
+                <div class="modal-heading">
+                    <span class="cs-kicker">Проверка специалистом</span>
+                    <h3 class="title-pop" id="chimneyCheckModalTitle">Передайте схему менеджеру</h3>
+                    <p class="desc-pop cl-text-2">Оставьте имя и телефон. Создадим лид с выбранной схемой и составом комплекта, проверим совместимость и свяжемся с вами.</p>
+                </div>
+                <div class="modal-main">
+                    <form action="{{ route('chimney-calculation-requests.store') }}" method="POST" data-cs-manager-form>@csrf<x-form-protection />
+                        <input type="hidden" name="source_url" value="{{ url()->current() }}">
+                        <input type="hidden" name="selector_token" value="{{ $selectorToken }}">
+                        @if($equipment)<input type="hidden" name="equipment_product_id" value="{{ $equipment->id }}">@endif
+                        <input type="hidden" name="configuration" value="Нужна проверка комплекта дымохода" data-cs-message>
+                        <span data-cs-items hidden></span>
+                        <label>Ваше имя<input type="text" name="customer_name" value="{{ old('customer_name') }}" placeholder="Как к вам обращаться" required autocomplete="name"></label>
+                        <label>Телефон<input type="tel" name="customer_phone" value="{{ old('customer_phone') }}" placeholder="+375 (XX) XXX-XX-XX" required autocomplete="tel"></label>
+                        <div class="cs-check-modal__feedback" data-cs-request-feedback hidden aria-live="polite"></div>
+                        <button class="tf-btn animate-btn w-100" data-cs-request-submit disabled>Создать заявку на проверку</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 @endsection
 
@@ -114,6 +124,7 @@
 .cs-cart-feedback{margin-top:12px;padding:13px 14px;border-radius:12px;font-size:13px;line-height:1.45}.cs-cart-feedback[hidden]{display:none}.cs-cart-feedback--partial{border:1px solid #f0c36a;background:#fff7df;color:#654b00}.cs-cart-feedback strong{display:block;margin-bottom:5px}.cs-cart-feedback ul{margin:6px 0 0;padding-left:18px}.cs-cart-feedback a{color:inherit;font-weight:800;text-decoration:underline}
 .cs-live-status{display:flex;gap:8px;align-items:center;margin-top:10px;color:#687176;font-size:12px}.cs-live-status span{width:8px;height:8px;border-radius:50%;background:#1d9b55;box-shadow:0 0 0 4px #e7f5ed}.cs-live-status.is-updating span{background:#e09b19;box-shadow:0 0 0 4px #fff2d8}.cs-live-status.is-error span{background:#d94135;box-shadow:0 0 0 4px #fde7e5}
 .cs-diagram{margin:16px 0;padding:16px;border:1px solid #dfe4e6;border-radius:14px;background:#f5f7f8;color:#111}.cs-diagram__head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}.cs-diagram__title{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.cs-diagram__hint{color:#777;font-size:11px}.cs-schematic{display:block;width:100%;height:auto;max-height:570px;border-radius:10px;background:#fff}.cs-schematic--assembly{max-height:none;margin-top:12px;border:1px solid #e1e5e6}.cs-schematic text{font-family:Arial,sans-serif}.cs-schematic__part{cursor:pointer}.cs-schematic__part:hover .cs-schematic__hotspot,.cs-schematic__part:focus .cs-schematic__hotspot{stroke:var(--cs-red)!important;filter:drop-shadow(0 0 3px rgba(227,66,52,.35))}.cs-schematic__part:hover image,.cs-schematic__part:focus image{filter:drop-shadow(0 3px 5px rgba(227,66,52,.45))}.cs-diagram__subtitle{margin:14px 0 7px;color:#111;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.cs-diagram__toolbar{display:flex;justify-content:flex-end;margin-top:10px}.cs-diagram__download{padding:8px 11px;border:1px solid #cfd4d6;border-radius:8px;background:#fff;color:#111;font-size:12px;font-weight:700}.cs-diagram__download:hover{border-color:#111}.cs-result__item{transition:background .2s,box-shadow .2s}.cs-result__item.is-diagram-highlight,.cs-result__item:target{margin:-7px;padding:7px 7px 19px;border-radius:10px;background:#fff4df;box-shadow:0 0 0 2px #f0b84b}.cs-share{width:100%;margin-top:10px}.cs-recommendation{margin:8px 0 0;color:#666;font-size:12px}@media(max-width:575px){.cs-diagram{padding:10px}.cs-diagram__head{align-items:flex-start;flex-direction:column}.cs-schematic{max-height:none}}
+.cs-result__actions .tf-btn{display:flex;min-width:0;min-height:58px;padding:12px 14px;align-items:center;justify-content:center;line-height:1.2;text-align:center}.cs-check-modal .modal-content{padding:30px;border:0;border-radius:22px}.cs-check-modal .modal-heading{padding-right:30px}.cs-check-modal .title-pop{margin:7px 0 8px}.cs-check-modal form{display:grid;gap:14px}.cs-check-modal form label{font-size:13px;font-weight:700}.cs-check-modal form input{width:100%;height:52px;margin-top:7px;padding:0 14px;border:1px solid var(--cs-line);border-radius:10px;background:#fff}.cs-check-modal__feedback{padding:12px 14px;border-radius:10px;background:#fff3dc;color:#654b00;font-size:13px}.cs-check-modal__feedback.is-success{background:#e8f6ed;color:#176b39}.cs-check-modal__feedback.is-error{background:#fdebea;color:#a52a21}@media(max-width:575px){.cs-result__actions .tf-btn{min-height:52px}.cs-check-modal .modal-content{padding:22px}}
 .cs-hero__actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.cs-hero__actions .tf-btn{min-width:190px}.cs-discount{gap:0}.cs-discount>div{display:flex;flex-direction:column;padding:18px 0}.cs-discount>div+div{border-top:1px solid rgba(255,255,255,.35)}.cs-discount strong{font-size:46px}.cs-discount span{display:block;margin-top:7px}@media(max-width:575px){.cs-hero__actions{display:grid}.cs-discount{max-width:none}}
 </style>
 @endpush
@@ -133,6 +144,8 @@
     var message = document.querySelector('[data-cs-message]');
     var requestItems = document.querySelector('[data-cs-items]');
     var requestSubmit = document.querySelector('[data-cs-request-submit]');
+    var managerForm = document.querySelector('[data-cs-manager-form]');
+    var requestFeedback = document.querySelector('[data-cs-request-feedback]');
     var calculateButton = form ? form.querySelector('[data-calculate-button]') : null;
     var clearButton = form ? form.querySelector('[data-clear-calculation]') : null;
     var liveStatus = form ? form.querySelector('[data-live-status]') : null;
@@ -697,7 +710,7 @@
                 + '<div class="cs-result__row cs-result__saving"><span>' + (unlocked ? 'Дымоход с оборудованием' : 'Самостоятельный подбор') + ' −' + effectiveDiscount + '%</span><strong>−' + money(saving) + '</strong></div>'
                 + (!unlocked ? '<p class="cs-safety">Добавьте печь, камин или котёл — скидка на дымоход станет −' + discount + '%.</p>' : '')
                 + '<div class="cs-result__row cs-result__row--total"><span>Итого</span><span>' + money(total) + '</span></div></div><div class="cs-result__actions"><button type="button" class="tf-btn animate-btn" data-add-kit>'
-                + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><a href="#manager-check" class="tf-btn btn-white btn-stroke">Бесплатно проверить</a></div>'
+                + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><button type="button" class="tf-btn btn-white btn-stroke" data-bs-toggle="modal" data-bs-target="#chimneyCheckModal">Бесплатно проверить</button></div>'
                 + '<div class="cs-cart-feedback" data-cart-feedback hidden aria-live="polite"></div>'
                 + '<div class="cs-addon"><button type="button" class="cs-addon__toggle" data-addon-toggle>+ Добавить элемент «Теплов и Сухов»</button><div class="cs-addon__panel" data-addon-panel hidden>'
                 + '<input type="search" class="cs-addon__search" data-addon-search placeholder="Умный поиск: теплообменник, бак, шибер…" autocomplete="off"><div class="cs-addon__results" data-addon-results></div></div></div>'
@@ -831,14 +844,14 @@
                     if (cartCount !== null && typeof window.updateCartCount === 'function') window.updateCartCount(cartCount);
 
                     if (!failed.length) {
-                        add.textContent = 'Комплект добавлен — открываем корзину…';
+                        add.textContent = 'Открываем корзину…';
                         window.location = @json(route('cart'));
                         return;
                     }
 
                     add.disabled = false;
                     add.dataset.openCart = '1';
-                    add.textContent = 'Открыть корзину — добавлено ' + added.length + ' из ' + additions.length;
+                    add.textContent = 'Открыть корзину · ' + added.length + ' из ' + additions.length;
                     cartFeedback.className = 'cs-cart-feedback cs-cart-feedback--partial';
                     cartFeedback.hidden = false;
                     cartFeedback.innerHTML = '<strong>В корзину добавлено ' + added.length + ' из ' + additions.length + ' позиций.</strong>'
@@ -873,6 +886,48 @@
     }
     form.addEventListener('change', scheduleRecalculation);
     form.querySelectorAll('input[type="number"]').forEach(function (input) { input.addEventListener('input', scheduleRecalculation); });
+    if (managerForm) managerForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        if (!managerForm.checkValidity() || requestSubmit.disabled) {
+            managerForm.reportValidity();
+            return;
+        }
+        requestSubmit.disabled = true;
+        requestSubmit.textContent = 'Создаём заявку…';
+        requestFeedback.hidden = true;
+        requestFeedback.className = 'cs-check-modal__feedback';
+        fetch(managerForm.action, {
+            method:'POST',
+            headers:{'Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},
+            body:new FormData(managerForm)
+        }).then(function (response) {
+            return response.json().catch(function () { return {}; }).then(function (payload) {
+                if (!response.ok) {
+                    var errors = payload.errors || {};
+                    var firstError = Object.keys(errors).length ? [].concat(errors[Object.keys(errors)[0]])[0] : null;
+                    throw new Error(firstError || payload.message || 'Не удалось создать заявку. Проверьте данные и попробуйте ещё раз.');
+                }
+                return payload;
+            });
+        }).then(function (payload) {
+            requestFeedback.className = 'cs-check-modal__feedback is-success';
+            requestFeedback.textContent = payload.message || 'Заявка создана. Менеджер свяжется с вами.';
+            requestFeedback.hidden = false;
+            requestSubmit.textContent = 'Заявка создана';
+            managerForm.querySelectorAll('input:not([type="hidden"])').forEach(function (input) { input.disabled = true; });
+        }).catch(function (error) {
+            requestFeedback.className = 'cs-check-modal__feedback is-error';
+            requestFeedback.textContent = error.message;
+            requestFeedback.hidden = false;
+            requestSubmit.disabled = false;
+            requestSubmit.textContent = 'Создать заявку на проверку';
+        });
+    });
+    var managerModal = document.getElementById('chimneyCheckModal');
+    if (managerModal) managerModal.addEventListener('shown.bs.modal', function () {
+        var nameInput = managerForm && managerForm.querySelector('[name="customer_name"]');
+        if (nameInput && !nameInput.disabled) nameInput.focus();
+    });
     if (clearButton) clearButton.addEventListener('click', function () {
         clearTimeout(recalculateTimer);
         calculationActive = false;
