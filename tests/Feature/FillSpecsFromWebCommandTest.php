@@ -24,7 +24,7 @@ class FillSpecsFromWebCommandTest extends TestCase
         Http::fake(['*' => Http::response('<html><body><h1>PM5</h1></body></html>')]);
 
         $this->artisan('catalog:fill-specs-from-web', ['--products' => (string) $relay->id])
-            ->expectsOutputToContain("audit.web_specs.card={$relay->id}:rele-pm5:pumps-by:product-unipump-pm5-rele-davleniya")
+            ->expectsOutputToContain("audit.web_specs.card={$relay->id}:rele-pm5:pumpsby:productunipump-pm5-rele-davleniya")
             ->expectsOutputToContain('metric.web_specs.page_found=1')
             ->assertSuccessful();
     }
