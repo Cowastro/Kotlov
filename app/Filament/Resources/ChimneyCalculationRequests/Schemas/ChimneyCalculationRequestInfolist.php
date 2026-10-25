@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\ChimneyCalculationRequests\Schemas;
 
 use App\Models\ChimneyCalculationRequest;
+use App\Models\Product;
 use App\Support\AdminPhoneLinks;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
@@ -34,6 +36,13 @@ class ChimneyCalculationRequestInfolist
                 TextEntry::make('total')->label('Итого')->money('BYN')->weight('bold'),
             ]),
             Section::make('Состав комплекта')->columnSpanFull()->schema([
+                ViewEntry::make('assembly_schematic')
+                    ->hiddenLabel()
+                    ->view('filament.chimney-calculation-requests.assembly-schematic', fn (ChimneyCalculationRequest $record): array => [
+                        'items' => self::assemblyItems($record),
+                        'editable' => $record->status === 'pending',
+                    ])
+                    ->columnSpanFull(),
                 TextEntry::make('items')->label('Позиции')
                     ->state(fn (ChimneyCalculationRequest $record): array => collect($record->items ?? [])
                         ->map(fn (array $item): string => ($item['name'] ?? 'Товар').' × '.(int) ($item['quantity'] ?? 0).' — '.number_format((float) ($item['total'] ?? 0), 2, '.', ' ').' BYN')
@@ -47,5 +56,55 @@ class ChimneyCalculationRequestInfolist
                 TextEntry::make('order.number')->label('Созданный заказ')->url(fn ($record) => $record->order_id ? url('/admin/orders/'.$record->order_id) : null)->placeholder('Заказ ещё не создан'),
             ]),
         ]);
+    }
+
+    private static function assemblyItems(ChimneyCalculationRequest $record): array
+    {
+        $items = collect($record->items ?? [])->filter(fn ($item): bool => is_array($item));
+        $products = Product::query()
+            ->whereIn('id', $items->pluck('product_id')->filter()->map(fn ($id): int => (int) $id))
+            ->get()
+            ->keyBy('id');
+
+        return $items
+            ->map(function (array $item, int $index) use ($products): array {
+                $product = $products->get((int) ($item['product_id'] ?? 0));
+
+                return [
+                    'name' => (string) ($item['name'] ?? 'Товар'),
+                    'sku' => (string) ($item['sku'] ?? ''),
+                    'quantity' => max(1, (int) ($item['quantity'] ?? 1)),
+                    'image' => $product?->image_url ?? asset('img/products/product-placeholder.jpg'),
+                    'rank' => self::assemblyRank($item),
+                    'index' => $index,
+                ];
+            })
+            ->sortBy([['rank', 'asc'], ['index', 'asc']])
+            ->values()
+            ->all();
+    }
+
+    private static function assemblyRank(array $item): int
+    {
+        if (($item['chimney_selector_selected'] ?? true) === false) {
+            return 110;
+        }
+
+        $name = mb_strtolower((string) (($item['name'] ?? '').' '.($item['sku'] ?? '')));
+
+        return match (true) {
+            str_contains($name, 'зонт'), str_contains($name, 'дефлектор') => 10,
+            str_contains($name, 'фартук'), str_contains($name, 'проход кров') => 20,
+            str_contains($name, 'растяж'), str_contains($name, 'креплен') => 30,
+            str_contains($name, 'хомут') => 40,
+            str_contains($name, 'ппу'), str_contains($name, 'проход перекры') => 50,
+            str_contains($name, 'термо'), str_contains($name, 'сэндвич'), str_contains($name, 'утепл') => 60,
+            str_contains($name, 'переход') => 70,
+            str_contains($name, 'бак'), str_contains($name, 'теплообмен') => 80,
+            str_contains($name, 'труба'), str_contains($name, 'моно') => 85,
+            str_contains($name, 'шибер') => 90,
+            str_contains($name, 'адаптер') => 100,
+            default => 75,
+        };
     }
 }

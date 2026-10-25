@@ -114,14 +114,19 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
     public function test_admin_can_open_calculation_with_itemized_bundle(): void
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $product = $this->chimneyProduct();
         $calculation = ChimneyCalculationRequest::query()->create([
             'number' => 'CHM-TEST-0001',
             'customer_name' => 'Тестовый клиент',
             'customer_phone' => '+375291112233',
             'items' => [[
-                'name' => 'Труба сэндвич Ø120 мм',
+                'product_id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'price' => 200,
                 'quantity' => 2,
                 'total' => 400,
+                'chimney_selector_selected' => true,
             ]],
             'subtotal' => 400,
             'discount_percent' => 5,
@@ -133,7 +138,19 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
 
         Livewire::test(ViewChimneyCalculationRequest::class, ['record' => $calculation->getRouteKey()])
             ->assertOk()
-            ->assertSee('Труба сэндвич Ø120 мм × 2 — 400.00 BYN');
+            ->assertSee('Схема сборки дымохода')
+            ->assertSee('Верх дымохода')
+            ->assertSee('Печь / оборудование')
+            ->assertSee('Добавить элемент «Теплов и Сухов»')
+            ->assertSee('Труба сэндвич Ø120 мм × 2 — 400.00 BYN')
+            ->call('changeItemQuantity', 0, 1)
+            ->assertHasNoErrors()
+            ->assertSee('3 шт.');
+
+        $calculation->refresh();
+        $this->assertSame(3, $calculation->items[0]['quantity']);
+        $this->assertSame('600.00', $calculation->subtotal);
+        $this->assertSame('570.00', $calculation->total);
     }
 
     private function chimneyProduct(): Product

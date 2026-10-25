@@ -86,6 +86,64 @@ class ChimneyCalculationRequestService
         ]);
     }
 
+    public function revise(ChimneyCalculationRequest $calculation, array $submittedItems): ChimneyCalculationRequest
+    {
+        if ($calculation->status !== 'pending') {
+            throw ValidationException::withMessages(['items' => 'Изменять можно только неподтверждённый расчёт.']);
+        }
+
+        $submitted = collect($submittedItems)->take(80);
+        $quantities = $submitted->mapWithKeys(fn (array $item): array => [
+            (int) ($item['product_id'] ?? 0) => max(1, min(99, (int) ($item['quantity'] ?? 1))),
+        ])->filter(fn (int $quantity, int $id): bool => $id > 0);
+
+        if ($quantities->isEmpty()) {
+            throw ValidationException::withMessages(['items' => 'В комплекте должна остаться хотя бы одна позиция.']);
+        }
+
+        $products = Product::query()->with(['category', 'brand'])->whereIn('id', $quantities->keys())->get()->keyBy('id');
+        if ($products->count() !== $quantities->count()) {
+            throw ValidationException::withMessages(['items' => 'Одна из позиций комплекта больше недоступна.']);
+        }
+
+        $existing = collect($calculation->items ?? [])->keyBy(fn (array $item): int => (int) ($item['product_id'] ?? 0));
+        $cart = [];
+        foreach ($quantities as $id => $quantity) {
+            $product = $products->get($id);
+            if (! $product->canBeAddedToCart() || ! $this->isAllowedSelectorProduct($product)) {
+                throw ValidationException::withMessages(['items' => "Позиция «{$product->name}» недоступна для расчёта."]);
+            }
+
+            $selected = (bool) ($existing->get($id)['chimney_selector_selected'] ?? true);
+            if ((int) $calculation->equipment_product_id === $id) {
+                $selected = false;
+            }
+            $cart[$id] = $this->cartItem($product, $quantity, $selected);
+        }
+
+        $quote = $this->coupons->quoteForCart(null, $cart);
+        $items = collect($cart)->map(fn (array $item): array => [
+            'product_id' => $item['id'],
+            'name' => $item['name'],
+            'sku' => $item['sku'],
+            'price' => $item['price'],
+            'quantity' => $item['quantity'],
+            'total' => round($item['price'] * $item['quantity'], 2),
+            'chimney_selector_selected' => $item['chimney_selector_selected'],
+        ])->values()->all();
+
+        $calculation->update([
+            'items' => $items,
+            'subtotal' => collect($items)->sum('total'),
+            'discount_percent' => $quote['bundle']['active'] ? $quote['bundle']['percent'] : 0,
+            'discount' => $quote['discount'],
+            'total' => $quote['total'],
+            'promotion_mode' => $quote['bundle']['mode'],
+        ]);
+
+        return $calculation->fresh();
+    }
+
     /** @return array{order: Order, created: bool} */
     public function confirm(ChimneyCalculationRequest $calculation, string $confirmedBy, ?User $user = null): array
     {
