@@ -237,6 +237,8 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Очистить')
             ->assertSee('data-clear-calculation', false)
             ->assertSeeText('Расчёт очищен')
+            ->assertSee('calculationActive = false', false)
+            ->assertSeeText('Параметры изменены. Нажмите «Рассчитать и показать комплект».')
             ->assertSee('form.requestSubmit();', false)
             ->assertSeeText('Перейти в корзину и продолжить')
             ->assertSee('"id":'.$metrePipe->id, false)

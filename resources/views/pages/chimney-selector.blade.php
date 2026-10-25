@@ -148,6 +148,7 @@
     var sharedParams = new URLSearchParams(window.location.search);
     var sharedChimneyDiameter = sharedParams.get('chimney_diameter');
     var restoreSharedItems = sharedParams.get('kit') === '1';
+    var calculationActive = true;
     Array.from(form.elements).forEach(function (field) {
         if (!field.name || field.name === 'chimney_diameter' || !sharedParams.has(field.name)) return;
         var value = sharedParams.get(field.name);
@@ -370,6 +371,7 @@
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
+        calculationActive = true;
         var data = new FormData(form);
         var height = Number(data.get('height'));
         var clampValue = data.get('clamps');
@@ -851,6 +853,12 @@
     });
     var recalculateTimer;
     function scheduleRecalculation() {
+        if (!calculationActive) {
+            clearTimeout(recalculateTimer);
+            if (liveStatus) { liveStatus.className = 'cs-live-status'; liveStatus.lastChild.textContent = 'Параметры изменены. Нажмите «Рассчитать и показать комплект».'; }
+            if (calculateButton) calculateButton.textContent = 'Рассчитать и показать комплект';
+            return;
+        }
         if (liveStatus) { liveStatus.className = 'cs-live-status is-updating'; liveStatus.lastChild.textContent = 'Обновляем комплект и схему…'; }
         if (calculateButton) calculateButton.textContent = 'Пересчитываем…';
         clearTimeout(recalculateTimer);
@@ -867,6 +875,7 @@
     form.querySelectorAll('input[type="number"]').forEach(function (input) { input.addEventListener('input', scheduleRecalculation); });
     if (clearButton) clearButton.addEventListener('click', function () {
         clearTimeout(recalculateTimer);
+        calculationActive = false;
         restoreSharedItems = false;
         sharedChimneyDiameter = null;
         form.reset();
