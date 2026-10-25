@@ -3,16 +3,19 @@
 namespace Tests\Feature;
 
 use App\Events\NewOrderCreated;
+use App\Filament\Resources\ChimneyCalculationRequests\Pages\ViewChimneyCalculationRequest;
 use App\Models\Category;
 use App\Models\ChimneyCalculationRequest;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
+use App\Models\User;
 use App\Services\ChimneyCalculationRequestTelegramNotifier;
 use App\Services\TelegramApi;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Livewire\Livewire;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
@@ -101,6 +104,31 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
         ])->assertRedirect(route('chimney-selector'))->assertSessionHasErrors('items');
 
         $this->assertDatabaseCount('chimney_calculation_requests', 0);
+    }
+
+    public function test_admin_can_open_calculation_with_itemized_bundle(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $calculation = ChimneyCalculationRequest::query()->create([
+            'number' => 'CHM-TEST-0001',
+            'customer_name' => 'Тестовый клиент',
+            'customer_phone' => '+375291112233',
+            'items' => [[
+                'name' => 'Труба сэндвич Ø120 мм',
+                'quantity' => 2,
+                'total' => 400,
+            ]],
+            'subtotal' => 400,
+            'discount_percent' => 5,
+            'discount' => 20,
+            'total' => 380,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(ViewChimneyCalculationRequest::class, ['record' => $calculation->getRouteKey()])
+            ->assertOk()
+            ->assertSee('Труба сэндвич Ø120 мм × 2 — 400.00 BYN');
     }
 
     private function chimneyProduct(): Product

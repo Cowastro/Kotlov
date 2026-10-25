@@ -34,9 +34,12 @@ class ChimneyCalculationRequestInfolist
                 TextEntry::make('total')->label('Итого')->money('BYN')->weight('bold'),
             ]),
             Section::make('Состав комплекта')->columnSpanFull()->schema([
-                TextEntry::make('items')->label('Позиции')->listWithLineBreaks()->bulleted()
-                    ->formatStateUsing(fn (array $state): array => collect($state)->map(fn (array $item): string => $item['name'].' × '.(int) $item['quantity'].' — '.number_format((float) $item['total'], 2, '.', ' ').' BYN'
-                    )->all()),
+                TextEntry::make('items')->label('Позиции')
+                    ->state(fn (ChimneyCalculationRequest $record): array => collect($record->items ?? [])
+                        ->map(fn (array $item): string => ($item['name'] ?? 'Товар').' × '.(int) ($item['quantity'] ?? 0).' — '.number_format((float) ($item['total'] ?? 0), 2, '.', ' ').' BYN')
+                        ->all())
+                    ->listWithLineBreaks()
+                    ->bulleted(),
                 TextEntry::make('configuration')->label('Параметры расчёта')->prose()->placeholder('—'),
             ]),
             Section::make('Связи')->columns(2)->columnSpanFull()->collapsed()->schema([
