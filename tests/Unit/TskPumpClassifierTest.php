@@ -35,6 +35,12 @@ class TskPumpClassifierTest extends TestCase
             ['UNIPUMP AUPS 1100', 'nasosnyie-stantsii'],
             ['Циркуляционный насос с мокрым ротором UNIPUMP UPS 25-40', 'tsirkulyatsionnyie'],
             ['Грязевой насос ГНОМ 10-10', 'drenajnyie'],
+            ['Насосная станция UNIPUMP АКВАРОБОТ JET 100 L (r/a 2л)', 'nasosnyie-stantsii'],
+            ['Гидроаккумулятор 100л гор. нерж. сталь, мембрана EPDM UNIPUMP', 'membrannyie-baki'],
+            ['Мембрана 150-200 л EPDM проходная', 'komplektuyushchie-dlya-nasosov'],
+            ['Скважинный многоступенчатый насос 4SDm 3/12', 'skvajinnye-nasosy'],
+            ['Многоступенчатый насос Wellmix CV 1- 4-0-HQCV', 'mnogostupenchatye-nasosy'],
+            ['ECO 2-73 (кабель - 40 м)', 'skvajinnye-nasosy'],
             ['Консоль JY1000', null],
             ['Шланг напорный', null],
         ];

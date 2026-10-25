@@ -82,6 +82,12 @@ class RepairTskPumpCategoriesCommand extends Command
                 continue;
             }
 
+            // Only cards in pump sections move: a Watts safety group keeps its own category.
+            if ($row->current_category_slug !== null && ! isset($categories[$row->current_category_slug]) && $row->current_category_slug !== 'membrannye-baki') {
+                $stats['unclassified']++;
+                continue;
+            }
+
             $stats['classified']++;
             $byType[$targetSlug] = ($byType[$targetSlug] ?? 0) + 1;
             $update = [];

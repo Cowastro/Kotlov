@@ -34,10 +34,15 @@ final class TskPumpClassifier
             'скважинный адаптер', 'крышка скважины', 'оголовок скважинный',
             'зажим для троса', 'трос из нержавеющей', 'трехвыводной штуцер',
             'пятивыводной штуцер', 'обратный клапан', 'кабель для насоса',
-            'мембрана', 'кронштейн', 'гибкий шланг', 'кабель круглый',
+            'кронштейн', 'гибкий шланг', 'кабель круглый',
             'винтовое соединение', 'кабель квв', 'кабель плоский', 'трос ', 'соединитель пластиков',
             'тройник', 'шланг поливочн', 'частотный преобразовател',
         ])) {
+            return 'komplektuyushchie-dlya-nasosov';
+        }
+
+        // A spare membrane, not a hydroaccumulator that names its EPDM membrane.
+        if (str_contains($value, 'мембрана') && ! self::containsAny($value, ['гидроаккум', 'бак '])) {
             return 'komplektuyushchie-dlya-nasosov';
         }
 
@@ -54,28 +59,13 @@ final class TskPumpClassifier
         if (preg_match('/(?:^|\s)(?:td|tg)\s*\d/u', $value)) {
             return 'in-lain-nasosy';
         }
-        if (! str_contains($value, 'поверхност')) {
+        if (! self::containsAny($value, ['поверхност', 'скважин', 'погружн'])) {
             if (str_contains($value, 'многоступенчат') || preg_match('/(?:^|\s)(?:cmi|cuc|cvf?)\s*\d/u', $value)) {
                 return 'mnogostupenchatye-nasosy';
             }
             if (self::containsAny($value, ['моноблочн', 'консольн'])) {
                 return 'konsolnye-i-monoblochnye-nasosy';
             }
-        }
-
-        // Model-only rows of the ТСК price («ECO 2-73 (кабель - 40 м)», «AUTO JET 60 S»,
-        // «CP 25-60 180», «NMTD MAX II U 50/80»).
-        if (str_contains($value, 'станция авт') || preg_match('/(?:^|\s)(?:auto\s+(?:jet|js|qb|eco|dp)|aups)/u', $value)) {
-            return 'nasosnyie-stantsii';
-        }
-        if (preg_match('/(?:^|\s)(?:upc3?|ups|lpa|cp|nmtd?|ghn)[\s-]*\d/u', $value) || preg_match('/(?:^|\s)(?:upс|nmtd?\s+(?:max|smart|plus|eco))/u', $value)) {
-            return 'tsirkulyatsionnyie';
-        }
-        if (preg_match('/(?:^|\s)(?:eco\s+jet|jet|js|qb|cpm|pkm|mhi?|мн)[\s-]*\d/u', $value)) {
-            return 'poverhnostnyie';
-        }
-        if (preg_match('/(?:^|\s)(?:mini\s+|slim\s+|rus\s+|midi\s+)?eco(?:\s+(?:slim|rus|midi|maxi|vint))?[\s-]*\d/u', $value)) {
-            return 'skvajinnye-nasosy';
         }
 
         // Drainage/sewage submersibles must be checked before the generic
@@ -114,6 +104,21 @@ final class TskPumpClassifier
             'скважин', 'глубин', 'водомет', 'эцв', 'eco vint', 'eco maxi',
             'винтовой насос', 'погружной насос для чистой воды',
         ]) || preg_match('/\b(?:3stm|4stm|3sdm|4sdm|4skm)\b/i', $value)) {
+            return 'skvajinnye-nasosy';
+        }
+
+        // Model-only rows of the ТСК price, when no word above named the type («ECO 2-73 (кабель - 40 м)», «AUTO JET 60 S»,
+        // «CP 25-60 180», «NMTD MAX II U 50/80»).
+        if (str_contains($value, 'станция авт') || preg_match('/(?:^|\s)(?:auto\s+(?:jet|js|qb|eco|dp)|aups)/u', $value)) {
+            return 'nasosnyie-stantsii';
+        }
+        if (preg_match('/(?:^|\s)(?:upc3?|ups|lpa|cp|nmtd?|ghn)[\s-]*\d/u', $value) || preg_match('/(?:^|\s)(?:upс|nmtd?\s+(?:max|smart|plus|eco))/u', $value)) {
+            return 'tsirkulyatsionnyie';
+        }
+        if (preg_match('/(?:^|\s)(?:eco\s+jet|jet|js|qb|cpm|pkm|mhi?|мн)[\s-]*\d/u', $value)) {
+            return 'poverhnostnyie';
+        }
+        if (preg_match('/(?:^|\s)(?:mini\s+|slim\s+|rus\s+|midi\s+)?eco(?:\s+(?:slim|rus|midi|maxi|vint))?[\s-]*\d/u', $value)) {
             return 'skvajinnye-nasosy';
         }
 
