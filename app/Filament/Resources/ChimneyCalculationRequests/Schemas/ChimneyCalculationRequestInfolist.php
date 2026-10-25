@@ -40,7 +40,7 @@ class ChimneyCalculationRequestInfolist
                     ->hiddenLabel()
                     ->view('filament.chimney-calculation-requests.assembly-schematic', fn (ChimneyCalculationRequest $record): array => [
                         'items' => self::assemblyItems($record),
-                        'editable' => $record->status === 'pending',
+                        'editable' => false,
                     ])
                     ->columnSpanFull(),
                 TextEntry::make('items')->label('Позиции')

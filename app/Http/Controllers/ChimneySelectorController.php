@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\Brand;
+use App\Models\Category;
+use App\Models\ChimneyCalculationRequest;
 use App\Models\Product;
 use App\Services\ChimneyBundlePromotion;
 use Illuminate\Http\Request;
@@ -13,6 +14,15 @@ class ChimneySelectorController extends Controller
 {
     public function __invoke(Request $request, ChimneyBundlePromotion $promotion)
     {
+        $managerMode = $request->boolean('manager_mode');
+        $managerCalculation = null;
+        if ($managerMode) {
+            abort_unless($request->user()?->isManager() === true, 403);
+            if ($request->integer('calculation')) {
+                $managerCalculation = ChimneyCalculationRequest::query()->findOrFail($request->integer('calculation'));
+            }
+        }
+
         $categoryIds = Category::query()
             ->whereIn('slug', (array) config('shop.chimney_bundle_discount.chimney_category_slugs', []))
             ->pluck('id');
@@ -217,6 +227,9 @@ class ChimneySelectorController extends Controller
             'equipmentInCart' => $equipmentInCart,
             'preferredBrandName' => 'Теплов и Сухов',
             'selectorToken' => $selectorToken,
+            'managerMode' => $managerMode,
+            'managerCalculation' => $managerCalculation,
+            'minimalLayout' => $managerMode,
         ]);
     }
 

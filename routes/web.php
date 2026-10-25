@@ -4,6 +4,7 @@ use App\Http\Controllers\A1CallRecordingController;
 use App\Http\Controllers\A1TelephonyWebhookController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AccountOrderController;
+use App\Http\Controllers\AdminChimneyCalculationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BrandController;
@@ -593,6 +594,9 @@ Route::get('/podbor-dymohoda', ChimneySelectorController::class)->name('chimney-
 Route::post('/chimney-calculation-requests', [ChimneyCalculationRequestController::class, 'store'])
     ->middleware('throttle:4,1')
     ->name('chimney-calculation-requests.store');
+Route::post('/admin/chimney-calculator/save', [AdminChimneyCalculationController::class, 'store'])
+    ->middleware(['auth', 'throttle:30,1'])
+    ->name('admin.chimney-calculator.save');
 
 // ===== Бренды =====
 Route::get('/brands', [BrandController::class, 'index'])->name('brands');

@@ -240,7 +240,7 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSeeText('Комплект пересчитывается автоматически')
             ->assertSeeText('Очистить')
             ->assertSee('data-clear-calculation', false)
-            ->assertSeeText('Расчёт очищен')
+            ->assertSee('Расчёт очищен', false)
             ->assertSee('calculationActive = false', false)
             ->assertSeeText('Параметры изменены. Нажмите «Рассчитать и показать комплект».')
             ->assertSee('form.requestSubmit();', false)

@@ -137,16 +137,20 @@
 
 <body class="@yield('body-class')">
 
-    @include('partials.yandex-metrika-noscript')
-    @include('partials.amerce-header')
-    @include('partials.online-order-promo')
+    @unless($minimalLayout ?? false)
+        @include('partials.yandex-metrika-noscript')
+        @include('partials.amerce-header')
+        @include('partials.online-order-promo')
+    @endunless
 
     @yield('content')
 
-    @include('partials.footer')
-    @include('partials.modals')
-    @include('partials.ai-product-selector')
-    @include('partials.online-order-reminder')
+    @unless($minimalLayout ?? false)
+        @include('partials.footer')
+        @include('partials.modals')
+        @include('partials.ai-product-selector')
+        @include('partials.online-order-reminder')
+    @endunless
 
     <script src="{{ asset('assets/js/plugin/jquery.min.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/bootstrap.min.js') }}"></script>

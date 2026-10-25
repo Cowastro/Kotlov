@@ -2,16 +2,17 @@
 
 @section('title', 'Подбор дымохода из нержавеющей стали | KOTLOV.BY')
 @section('meta_description', 'Пошаговый подбор дымохода по диаметру, стали, схеме и высоте. Скидка 5% за самостоятельный подбор и 10% на дымоход с печью, камином или котлом.')
+@section('body-class', ($managerMode ?? false) ? 'chimney-manager-mode' : '')
 
 @section('content')
-<main class="chimney-selector-page">
+<main class="chimney-selector-page {{ ($managerMode ?? false) ? 'chimney-selector-page--manager' : '' }}">
     <section class="cs-hero">
         <div class="container">
             <div class="cs-hero__grid">
                 <div>
-                    <span class="cs-kicker">Подбор за несколько минут</span>
-                    <h1>Соберите дымоход под своё оборудование</h1>
-                    <p>Соберите комплект «{{ $preferredBrandName }}», получите скидку за самостоятельный подбор и отправьте схему менеджеру на бесплатную проверку.</p>
+                    <span class="cs-kicker">{{ ($managerMode ?? false) ? 'Рабочий инструмент менеджера' : 'Подбор за несколько минут' }}</span>
+                    <h1>{{ ($managerMode ?? false) ? (($managerCalculation ?? null) ? 'Корректировка расчёта '.$managerCalculation->number : 'Новый расчёт дымохода') : 'Соберите дымоход под своё оборудование' }}</h1>
+                    <p>{{ ($managerMode ?? false) ? 'Задайте параметры, скорректируйте комплект и сохраните расчёт в CRM.' : 'Соберите комплект «'.$preferredBrandName.'», получите скидку за самостоятельный подбор и отправьте схему менеджеру на бесплатную проверку.' }}</p>
                     <div class="cs-hero__actions"><a href="{{ \App\Support\KnowledgeBase::URL }}" class="tf-btn btn-white btn-stroke">База знаний</a><a href="#calculator" class="tf-btn animate-btn">Рассчитать комплект</a></div>
                     @if ($equipment)
                         <div class="cs-equipment"><strong>Выбрано оборудование:</strong> {{ $equipment->name }}@if($defaultDiameter) · патрубок {{ $defaultDiameter }} мм @endif</div>
@@ -94,21 +95,23 @@
             <div class="modal-content">
                 <button type="button" class="icon-close-popup" data-bs-dismiss="modal" aria-label="Закрыть"><i class="icon-X2"></i></button>
                 <div class="modal-heading">
-                    <span class="cs-kicker">Проверка специалистом</span>
-                    <h3 class="title-pop" id="chimneyCheckModalTitle">Передайте схему менеджеру</h3>
-                    <p class="desc-pop cl-text-2">Оставьте имя и телефон. Создадим лид с выбранной схемой и составом комплекта, проверим совместимость и свяжемся с вами.</p>
+                    <span class="cs-kicker">{{ ($managerMode ?? false) ? 'Сохранение в CRM' : 'Проверка специалистом' }}</span>
+                    <h3 class="title-pop" id="chimneyCheckModalTitle">{{ ($managerMode ?? false) ? (($managerCalculation ?? null) ? 'Сохранить изменения' : 'Создать расчёт') : 'Передайте схему менеджеру' }}</h3>
+                    <p class="desc-pop cl-text-2">{{ ($managerMode ?? false) ? 'Укажите данные клиента. Состав, схема, цена и скидка сохранятся в расчёте.' : 'Оставьте имя и телефон. Создадим лид с выбранной схемой и составом комплекта, проверим совместимость и свяжемся с вами.' }}</p>
                 </div>
                 <div class="modal-main">
-                    <form action="{{ route('chimney-calculation-requests.store') }}" method="POST" data-cs-manager-form>@csrf<x-form-protection />
-                        <input type="hidden" name="source_url" value="{{ url()->current() }}">
+                    <form action="{{ ($managerMode ?? false) ? route('admin.chimney-calculator.save') : route('chimney-calculation-requests.store') }}" method="POST" data-cs-manager-form>@csrf<x-form-protection />
+                        @if($managerCalculation ?? null)<input type="hidden" name="calculation_id" value="{{ $managerCalculation->id }}">@endif
+                        <input type="hidden" name="source_url" value="{{ url()->current() }}" data-cs-source-url>
                         <input type="hidden" name="selector_token" value="{{ $selectorToken }}">
                         @if($equipment)<input type="hidden" name="equipment_product_id" value="{{ $equipment->id }}">@endif
                         <input type="hidden" name="configuration" value="Нужна проверка комплекта дымохода" data-cs-message>
                         <span data-cs-items hidden></span>
-                        <label>Ваше имя<input type="text" name="customer_name" value="{{ old('customer_name') }}" placeholder="Как к вам обращаться" required autocomplete="name"></label>
-                        <label>Телефон<input type="tel" name="customer_phone" value="{{ old('customer_phone') }}" placeholder="+375 (XX) XXX-XX-XX" required autocomplete="tel"></label>
+                        <label>{{ ($managerMode ?? false) ? 'Имя клиента' : 'Ваше имя' }}<input type="text" name="customer_name" value="{{ old('customer_name', $managerCalculation?->customer_name ?? '') }}" placeholder="Как обращаться к клиенту" required autocomplete="name"></label>
+                        <label>Телефон<input type="tel" name="customer_phone" value="{{ old('customer_phone', $managerCalculation?->customer_phone ?? '') }}" placeholder="+375 (XX) XXX-XX-XX" required autocomplete="tel"></label>
+                        @if($managerMode ?? false)<label>Email клиента<input type="email" name="customer_email" value="{{ old('customer_email', $managerCalculation?->customer_email ?? '') }}" placeholder="client@example.by" autocomplete="email"></label>@endif
                         <div class="cs-check-modal__feedback" data-cs-request-feedback hidden aria-live="polite"></div>
-                        <button class="tf-btn animate-btn w-100" data-cs-request-submit disabled>Создать заявку на проверку</button>
+                        <button class="tf-btn animate-btn w-100" data-cs-request-submit disabled>{{ ($managerMode ?? false) ? (($managerCalculation ?? null) ? 'Сохранить изменения' : 'Создать расчёт') : 'Создать заявку на проверку' }}</button>
                     </form>
                 </div>
             </div>
@@ -126,6 +129,7 @@
 .cs-diagram{margin:16px 0;padding:16px;border:1px solid #dfe4e6;border-radius:14px;background:#f5f7f8;color:#111}.cs-diagram__head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px}.cs-diagram__title{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.cs-diagram__hint{color:#777;font-size:11px}.cs-schematic{display:block;width:100%;height:auto;max-height:570px;border-radius:10px;background:#fff}.cs-schematic--assembly{max-height:none;margin-top:12px;border:1px solid #e1e5e6}.cs-schematic text{font-family:Arial,sans-serif}.cs-schematic__part{cursor:pointer}.cs-schematic__part:hover .cs-schematic__hotspot,.cs-schematic__part:focus .cs-schematic__hotspot{stroke:var(--cs-red)!important;filter:drop-shadow(0 0 3px rgba(227,66,52,.35))}.cs-schematic__part:hover image,.cs-schematic__part:focus image{filter:drop-shadow(0 3px 5px rgba(227,66,52,.45))}.cs-diagram__subtitle{margin:14px 0 7px;color:#111;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase}.cs-diagram__toolbar{display:flex;justify-content:flex-end;margin-top:10px}.cs-diagram__download{padding:8px 11px;border:1px solid #cfd4d6;border-radius:8px;background:#fff;color:#111;font-size:12px;font-weight:700}.cs-diagram__download:hover{border-color:#111}.cs-result__item{transition:background .2s,box-shadow .2s}.cs-result__item.is-diagram-highlight,.cs-result__item:target{margin:-7px;padding:7px 7px 19px;border-radius:10px;background:#fff4df;box-shadow:0 0 0 2px #f0b84b}.cs-share{width:100%;margin-top:10px}.cs-recommendation{margin:8px 0 0;color:#666;font-size:12px}@media(max-width:575px){.cs-diagram{padding:10px}.cs-diagram__head{align-items:flex-start;flex-direction:column}.cs-schematic{max-height:none}}
 .cs-result__actions .tf-btn{display:flex;min-width:0;min-height:58px;padding:12px 14px;align-items:center;justify-content:center;line-height:1.2;text-align:center}.cs-check-modal .modal-content{padding:30px;border:0;border-radius:22px}.cs-check-modal .modal-heading{padding-right:30px}.cs-check-modal .title-pop{margin:7px 0 8px}.cs-check-modal form{display:grid;gap:14px}.cs-check-modal form label{font-size:13px;font-weight:700}.cs-check-modal form input{width:100%;height:52px;margin-top:7px;padding:0 14px;border:1px solid var(--cs-line);border-radius:10px;background:#fff}.cs-check-modal__feedback{padding:12px 14px;border-radius:10px;background:#fff3dc;color:#654b00;font-size:13px}.cs-check-modal__feedback.is-success{background:#e8f6ed;color:#176b39}.cs-check-modal__feedback.is-error{background:#fdebea;color:#a52a21}@media(max-width:575px){.cs-result__actions .tf-btn{min-height:52px}.cs-check-modal .modal-content{padding:22px}}
 .cs-hero__actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.cs-hero__actions .tf-btn{min-width:190px}.cs-discount{gap:0}.cs-discount>div{display:flex;flex-direction:column;padding:18px 0}.cs-discount>div+div{border-top:1px solid rgba(255,255,255,.35)}.cs-discount strong{font-size:46px}.cs-discount span{display:block;margin-top:7px}@media(max-width:575px){.cs-hero__actions{display:grid}.cs-discount{max-width:none}}
+.chimney-selector-page--manager .cs-hero{padding:28px 0}.chimney-selector-page--manager .cs-hero h1{font-size:clamp(28px,3vw,42px)}.chimney-selector-page--manager .cs-hero__actions{display:none}.chimney-selector-page--manager .flat-spacing{padding-top:28px;padding-bottom:28px}.chimney-selector-page--manager .cs-result{top:18px}.chimney-selector-page--manager .cs-result__actions{grid-template-columns:1fr}.chimney-manager-mode{background:#fafaf8}
 </style>
 @endpush
 
@@ -136,6 +140,7 @@
     var unlocked = @json($discountUnlocked);
     var discount = {{ (float) $discountPercent }};
     var selfDiscount = {{ (float) $selfSelectionDiscountPercent }};
+    var managerMode = @json((bool) ($managerMode ?? false));
     var selectorToken = @json($selectorToken);
     var equipmentId = @json(($equipmentInCart ?? false) ? null : $equipment?->id);
     var equipmentName = @json($equipment?->name);
@@ -145,10 +150,12 @@
     var requestItems = document.querySelector('[data-cs-items]');
     var requestSubmit = document.querySelector('[data-cs-request-submit]');
     var managerForm = document.querySelector('[data-cs-manager-form]');
+    var sourceUrlInput = document.querySelector('[data-cs-source-url]');
     var requestFeedback = document.querySelector('[data-cs-request-feedback]');
     var calculateButton = form ? form.querySelector('[data-calculate-button]') : null;
     var clearButton = form ? form.querySelector('[data-clear-calculation]') : null;
     var liveStatus = form ? form.querySelector('[data-live-status]') : null;
+    var currentCalculationUrl = window.location.href;
     if (!form || !result) return;
 
     var standardDiameters = {
@@ -678,6 +685,7 @@
             requestItems.innerHTML = rows.map(function (row, index) {
                 return '<input type="hidden" name="items[' + index + '][product_id]" value="' + row.product.id + '"><input type="hidden" name="items[' + index + '][quantity]" value="' + row.quantity + '">';
             }).join('');
+            currentCalculationUrl = shareUrl();
             requestSubmit.disabled = rows.length === 0;
             if (!rows.length) {
                 message.value = 'Подбор дымохода очищен пользователем.';
@@ -698,6 +706,9 @@
                 + ', высота ' + settings.height + ' м, кровля ' + settings.roofType + ' ' + settings.roofAngle + '°, до конька ' + settings.ridgeDistance + ' м, свободная мачта ' + settings.freeMastHeight + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
                 + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
                 + ', нагрев воды: ' + waterHeatingLabel + ', растяжки ' + (settings.guyWires ? 'да' : 'нет') + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
+            var resultActions = managerMode
+                ? '<button type="button" class="tf-btn animate-btn" data-bs-toggle="modal" data-bs-target="#chimneyCheckModal">' + (@json(($managerCalculation ?? null) ? 'Сохранить изменения' : 'Создать расчёт')) + '</button>'
+                : '<button type="button" class="tf-btn animate-btn" data-add-kit>' + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><button type="button" class="tf-btn btn-white btn-stroke" data-bs-toggle="modal" data-bs-target="#chimneyCheckModal">Бесплатно проверить</button>';
             result.innerHTML = '<h2>Предварительный комплект</h2><p class="text-caption-01 cl-text-2">' + diameterLabel + ' · ' + systemLabel + ' · ' + settings.height + ' м</p>'
                 + '<p class="cs-recommendation">' + esc(settings.recommendation + ' ' + settings.roofAdvice) + '</p>' + diagramHtml()
                 + (missing ? '<p class="cs-safety"><strong>Нужно подобрать вручную:</strong> ' + esc(Array.from(new Set(missingLabels)).join(', ')) + '. Менеджер проверит эти позиции.</p>' : '')
@@ -709,8 +720,7 @@
                 }).join('') + '</div><div class="cs-result__totals"><div class="cs-result__row"><span>Стоимость товаров</span><strong>' + money(subtotal) + '</strong></div>'
                 + '<div class="cs-result__row cs-result__saving"><span>' + (unlocked ? 'Дымоход с оборудованием' : 'Самостоятельный подбор') + ' −' + effectiveDiscount + '%</span><strong>−' + money(saving) + '</strong></div>'
                 + (!unlocked ? '<p class="cs-safety">Добавьте печь, камин или котёл — скидка на дымоход станет −' + discount + '%.</p>' : '')
-                + '<div class="cs-result__row cs-result__row--total"><span>Итого</span><span>' + money(total) + '</span></div></div><div class="cs-result__actions"><button type="button" class="tf-btn animate-btn" data-add-kit>'
-                + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><button type="button" class="tf-btn btn-white btn-stroke" data-bs-toggle="modal" data-bs-target="#chimneyCheckModal">Бесплатно проверить</button></div>'
+                + '<div class="cs-result__row cs-result__row--total"><span>Итого</span><span>' + money(total) + '</span></div></div><div class="cs-result__actions">' + resultActions + '</div>'
                 + '<div class="cs-cart-feedback" data-cart-feedback hidden aria-live="polite"></div>'
                 + '<div class="cs-addon"><button type="button" class="cs-addon__toggle" data-addon-toggle>+ Добавить элемент «Теплов и Сухов»</button><div class="cs-addon__panel" data-addon-panel hidden>'
                 + '<input type="search" class="cs-addon__search" data-addon-search placeholder="Умный поиск: теплообменник, бак, шибер…" autocomplete="off"><div class="cs-addon__results" data-addon-results></div></div></div>'
@@ -802,7 +812,7 @@
             });
             var add = result.querySelector('[data-add-kit]');
             var cartFeedback = result.querySelector('[data-cart-feedback]');
-            add.addEventListener('click', function () {
+            if (add) add.addEventListener('click', function () {
                 if (add.dataset.openCart === '1') {
                     window.location = @json(route('cart'));
                     return;
@@ -893,9 +903,10 @@
             return;
         }
         requestSubmit.disabled = true;
-        requestSubmit.textContent = 'Создаём заявку…';
+        requestSubmit.textContent = managerMode ? 'Сохраняем расчёт…' : 'Создаём заявку…';
         requestFeedback.hidden = true;
         requestFeedback.className = 'cs-check-modal__feedback';
+        if (sourceUrlInput) sourceUrlInput.value = currentCalculationUrl.length <= 1000 ? currentCalculationUrl : @json(route('chimney-selector'));
         fetch(managerForm.action, {
             method:'POST',
             headers:{'Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},
@@ -910,6 +921,10 @@
                 return payload;
             });
         }).then(function (payload) {
+            if (managerMode && payload.admin_url) {
+                window.top.location.href = payload.admin_url;
+                return;
+            }
             requestFeedback.className = 'cs-check-modal__feedback is-success';
             requestFeedback.textContent = payload.message || 'Заявка создана. Менеджер свяжется с вами.';
             requestFeedback.hidden = false;
@@ -920,7 +935,7 @@
             requestFeedback.textContent = error.message;
             requestFeedback.hidden = false;
             requestSubmit.disabled = false;
-            requestSubmit.textContent = 'Создать заявку на проверку';
+            requestSubmit.textContent = managerMode ? @json(($managerCalculation ?? null) ? 'Сохранить изменения' : 'Создать расчёт') : 'Создать заявку на проверку';
         });
     });
     var managerModal = document.getElementById('chimneyCheckModal');

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Events\NewOrderCreated;
+use App\Filament\Pages\ChimneyCalculator;
 use App\Filament\Resources\ChimneyCalculationRequests\Pages\ViewChimneyCalculationRequest;
 use App\Filament\Resources\ChimneyCalculationRequests\Schemas\ChimneyCalculationRequestInfolist;
 use App\Models\Category;
@@ -142,11 +143,46 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
             ->assertSee('Схема сборки дымохода')
             ->assertSee('Верх дымохода')
             ->assertSee('Печь / оборудование')
-            ->assertSee('Добавить элемент «Теплов и Сухов»')
+            ->assertSee('Корректировать в калькуляторе')
             ->assertSee('Труба сэндвич Ø120 мм × 2 — 400.00 BYN')
-            ->call('changeItemQuantity', 0, 1)
-            ->assertHasNoErrors()
-            ->assertSee('3 шт.');
+            ->assertDontSee('Добавить элемент «Теплов и Сухов»');
+    }
+
+    public function test_manager_can_create_and_revise_a_calculation_in_the_standalone_calculator(): void
+    {
+        config(['shop.chimney_bundle_discount.chimney_category_slugs' => ['dymohody', 'truby-sendvich']]);
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $product = $this->chimneyProduct();
+        $this->actingAs($admin);
+
+        $this->get(ChimneyCalculator::getUrl())->assertOk()->assertSee('Калькулятор дымохода');
+        $this->get(route('chimney-selector', ['manager_mode' => 1]))
+            ->assertOk()
+            ->assertSee('Новый расчёт дымохода');
+
+        $token = session('chimney_selector_token');
+        $created = $this->postJson(route('admin.chimney-calculator.save'), [
+            'customer_name' => 'Клиент менеджера',
+            'customer_phone' => '+375291234567',
+            'source_url' => route('chimney-selector', ['kit' => 1, 'items' => $product->id.':2']),
+            'configuration' => 'Прямая схема, высота 5 м',
+            'selector_token' => $token,
+            'items' => [['product_id' => $product->id, 'quantity' => 2]],
+        ])->assertOk()->assertJson(['success' => true]);
+
+        $calculation = ChimneyCalculationRequest::query()->findOrFail($created->json('request_id'));
+        $this->assertSame('400.00', $calculation->subtotal);
+        $this->assertNull($calculation->telegram_notified_at);
+
+        $this->postJson(route('admin.chimney-calculator.save'), [
+            'calculation_id' => $calculation->id,
+            'customer_name' => 'Клиент менеджера',
+            'customer_phone' => '+375291234567',
+            'source_url' => route('chimney-selector', ['kit' => 1, 'items' => $product->id.':3']),
+            'configuration' => 'Прямая схема, высота 6 м',
+            'selector_token' => $token,
+            'items' => [['product_id' => $product->id, 'quantity' => 3]],
+        ])->assertOk()->assertJson(['success' => true, 'request_id' => $calculation->id]);
 
         $calculation->refresh();
         $this->assertSame(3, $calculation->items[0]['quantity']);
