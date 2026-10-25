@@ -37,6 +37,8 @@ class SyncTskNasosyCommand extends Command
         {--create-new : Create products for rows with no match}
         {--create-brand= : With --create-new: only rows of this brand (e.g. WELLMIX)}
         {--create-with-aqualider : With --create-new: only rows that have a card on aqualider.by (photos and specs to enrich from)}
+        {--create-categories= : With --create-new: only rows classified into these category slugs (comma-separated)}
+        {--create-exclude-brands= : With --create-new: skip these brands (comma-separated, e.g. armature and fittings)}
         {--trace=* : Product ids: print their model key and the price rows with the same model numbers}';
 
     protected $description = 'Sync ТСК Насосы prices & stock from Google Sheets into supplier_products.';
@@ -922,6 +924,14 @@ class SyncTskNasosyCommand extends Command
         }
         $brand = trim((string) $this->option('create-brand'));
         if ($brand !== '' && mb_strtolower(trim($r['brand'])) !== mb_strtolower($brand)) {
+            return false;
+        }
+        $excluded = array_filter(array_map(fn (string $b): string => mb_strtolower(trim($b)), explode(',', (string) $this->option('create-exclude-brands'))));
+        if (in_array(mb_strtolower(trim($r['brand'])), $excluded, true)) {
+            return false;
+        }
+        $categories = array_filter(array_map('trim', explode(',', (string) $this->option('create-categories'))));
+        if ($categories !== [] && ! in_array(TskPumpClassifier::categorySlug((string) $r['name']), $categories, true)) {
             return false;
         }
         if (! $this->option('create-with-aqualider')) {

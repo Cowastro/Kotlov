@@ -62,7 +62,8 @@ final class TskPumpClassifier
         if (str_contains($value, 'сухой установки')) {
             return 'kanalizatsionnye-nasosy-sukhoy-ustanovki';
         }
-        if (preg_match('/(?:^|\s)(?:td|tg)\s*\d/u', $value)) {
+        // Wellmix TD/TG and IMP ECL/ECLD are in-line pumps.
+        if (preg_match('/(?:^|\s)(?:td|tg|ecld?)\s*\d/u', $value)) {
             return 'in-lain-nasosy';
         }
         if (! self::containsAny($value, ['поверхност', 'скважин', 'погружн'])) {
@@ -86,7 +87,7 @@ final class TskPumpClassifier
         if (self::containsAny($value, [
             'циркуляц', 'циркул', ' nmt', 'nmt ', ' upc', 'upc ',
             ' lpa', 'lpa ',
-        ]) || preg_match('/(?:^|\s)(?:wrs|wre|ups)(?:\s|-|\d|$)/u', $value)) {
+        ]) || preg_match('/(?:^|\s)(?:wrs|wre|ups|grs)(?:\s|-|\d|$)/u', $value)) {
             return 'tsirkulyatsionnyie';
         }
 

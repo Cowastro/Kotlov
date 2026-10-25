@@ -44,6 +44,9 @@ class TskPumpClassifierTest extends TestCase
             ['Гидроаккумулятор 150л вер. с манометром UNIPUMP', 'membrannyie-baki'],
             ['Расширительный бак M1500RV UNIGB', 'membrannyie-baki'],
             ['Манометр для гидроаккумулятора UNIPUMP', 'komplektuyushchie-dlya-nasosov'],
+            ['Центробежный насос ECL 40-160/4K-I-D', 'in-lain-nasosy'],
+            ['Центробежный насос ECLD 50-200/7,5A/L-D', 'in-lain-nasosy'],
+            ['GRS32-9F (3 скорости, стандартный круглый фланец)', 'tsirkulyatsionnyie'],
             ['Консоль JY1000', null],
             ['Шланг напорный', null],
         ];
