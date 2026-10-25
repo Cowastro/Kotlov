@@ -105,6 +105,7 @@
 <style>
 .chimney-selector-page{--cs-red:#e34234;--cs-dark:#111;--cs-line:#e6e6e3;background:#fafaf8}.cs-hero{padding:70px 0;background:#111;color:#fff}.cs-hero__grid{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:48px;align-items:center}.cs-hero h1{max-width:780px;margin:12px 0 16px;color:#fff;font-size:clamp(38px,5vw,68px);line-height:1.02}.cs-hero p{max-width:700px;margin:0;color:#c8c8c8;font-size:18px;line-height:1.6}.cs-kicker{color:#ff7065;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.cs-equipment{margin-top:24px;padding:15px 18px;border:1px solid #383838;border-radius:14px;background:#1b1b1b}.cs-discount{display:flex;flex-direction:column;padding:30px;border-radius:24px;background:var(--cs-red)}.cs-discount strong{font-size:58px;line-height:1}.cs-discount span{margin-top:10px;line-height:1.4}.cs-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:32px;align-items:start}.cs-form,.cs-result{padding:30px;border:1px solid var(--cs-line);border-radius:24px;background:#fff}.cs-result{position:sticky;top:110px;min-height:350px}.cs-step{display:flex;gap:16px;margin:0 0 18px}.cs-step:not(:first-child){margin-top:34px;padding-top:28px;border-top:1px solid var(--cs-line)}.cs-step>span{display:grid;flex:0 0 38px;height:38px;place-items:center;border-radius:50%;background:#111;color:#fff;font-size:12px;font-weight:700}.cs-step h2{margin:0 0 4px;font-size:23px}.cs-step p{margin:0;color:#777;font-size:14px}.cs-options{display:flex;flex-wrap:wrap;gap:8px}.cs-options input{position:absolute;opacity:0}.cs-options span{display:block;padding:11px 14px;border:1px solid var(--cs-line);border-radius:10px;cursor:pointer}.cs-options input:checked+span{border-color:#111;background:#111;color:#fff}.cs-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.cs-fields label{font-size:13px;font-weight:700}.cs-fields select,.cs-fields input{width:100%;height:50px;margin-top:7px;padding:0 14px;border:1px solid var(--cs-line);border-radius:10px;background:#fff}.cs-fields [hidden]{display:none}.cs-field-note{margin:0 0 26px;color:#777;font-size:12px}.cs-safety{margin:14px 0 0;color:#777;font-size:12px;line-height:1.5}.cs-result__empty{padding:60px 15px;text-align:center;color:#777}.cs-result__empty span{font-size:42px}.cs-result h2{font-size:24px}.cs-result__list{display:grid;gap:12px;margin:20px 0}.cs-result__item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--cs-line)}.cs-result__item img{width:58px;height:58px;object-fit:contain}.cs-result__item a{color:#111;font-size:13px;font-weight:700}.cs-result__item small{display:block;color:#777}.cs-result__controls{display:flex;align-items:center;gap:4px;margin-top:8px}.cs-result__quantity{min-width:28px;text-align:center;font-size:13px;font-weight:800}.cs-result__control{display:grid;width:30px;height:30px;padding:0;place-items:center;border:1px solid #ddd;border-radius:8px;background:#fff;color:#111;font-size:18px;line-height:1}.cs-result__control:hover{border-color:#111}.cs-result__remove{margin-left:5px;padding:5px;border:0;background:transparent;color:#777;font-size:12px;text-decoration:underline}.cs-result__price{font-weight:700;white-space:nowrap}.cs-result__totals{padding:18px;border-radius:14px;background:#f5f5f2}.cs-result__row{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px}.cs-result__row--total{margin:14px 0 0;padding-top:14px;border-top:1px solid #ddd;font-size:18px;font-weight:800}.cs-result__saving{color:var(--cs-red);font-weight:700}.cs-result__actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.cs-manager{padding:55px 0;background:#eeeae4}.cs-manager__box{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}.cs-manager h2{margin:8px 0}.cs-manager p{margin:0;color:#666}.cs-manager form{display:grid;grid-template-columns:1fr 1fr auto;gap:10px}.cs-manager input{height:54px;padding:0 16px;border:1px solid #ccc;border-radius:10px;background:#fff}@media(max-width:991px){.cs-hero__grid,.cs-layout,.cs-manager__box{grid-template-columns:1fr}.cs-discount{max-width:330px}.cs-result{position:static}.cs-manager form{grid-template-columns:1fr}}@media(max-width:575px){.cs-hero{padding:42px 0}.cs-hero h1{font-size:38px}.cs-form,.cs-result{padding:20px;border-radius:18px}.cs-fields,.cs-result__actions{grid-template-columns:1fr}.cs-result__item{grid-template-columns:48px 1fr}.cs-result__price{grid-column:2}.cs-options span{padding:9px 11px;font-size:13px}}
 .cs-addon{margin-top:14px}.cs-addon__toggle{width:100%;height:48px;border:1px dashed #aaa;border-radius:12px;background:#fff;font-weight:800}.cs-addon__panel{margin-top:10px;padding:12px;border:1px solid var(--cs-line);border-radius:14px;background:#fafaf8}.cs-addon__panel[hidden]{display:none}.cs-addon__search{width:100%;height:46px;padding:0 14px;border:1px solid #ccc;border-radius:10px;background:#fff}.cs-addon__results{display:grid;gap:7px;margin-top:10px}.cs-addon__result{display:grid;grid-template-columns:42px 1fr auto;gap:9px;align-items:center;padding:8px;border:1px solid #e3e3df;border-radius:10px;background:#fff;text-align:left}.cs-addon__result img{width:42px;height:42px;object-fit:contain}.cs-addon__result strong{display:block;font-size:12px;line-height:1.25}.cs-addon__result small{color:#777}.cs-addon__add{width:32px;height:32px;border:0;border-radius:50%;background:#111;color:#fff;font-size:20px}.cs-addon__empty{padding:10px;color:#777;font-size:12px;text-align:center}
+.cs-cart-feedback{margin-top:12px;padding:13px 14px;border-radius:12px;font-size:13px;line-height:1.45}.cs-cart-feedback[hidden]{display:none}.cs-cart-feedback--partial{border:1px solid #f0c36a;background:#fff7df;color:#654b00}.cs-cart-feedback strong{display:block;margin-bottom:5px}.cs-cart-feedback ul{margin:6px 0 0;padding-left:18px}.cs-cart-feedback a{color:inherit;font-weight:800;text-decoration:underline}
 .cs-diagram{margin:16px 0;padding:16px;border-radius:14px;background:#171717;color:#fff}.cs-diagram__title{margin-bottom:12px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.cs-diagram__flow{display:flex;flex-wrap:wrap;gap:7px;align-items:center}.cs-diagram__node{padding:8px 10px;border:1px solid #444;border-radius:8px;background:#242424;font-size:11px}.cs-diagram__arrow{color:#ff7065;font-weight:900}.cs-share{width:100%;margin-top:10px}.cs-recommendation{margin:8px 0 0;color:#666;font-size:12px}
 .cs-hero__actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.cs-hero__actions .tf-btn{min-width:190px}.cs-discount{gap:0}.cs-discount>div{display:flex;flex-direction:column;padding:18px 0}.cs-discount>div+div{border-top:1px solid rgba(255,255,255,.35)}.cs-discount strong{font-size:46px}.cs-discount span{display:block;margin-top:7px}@media(max-width:575px){.cs-hero__actions{display:grid}.cs-discount{max-width:none}}
 </style>
@@ -119,6 +120,7 @@
     var selfDiscount = {{ (float) $selfSelectionDiscountPercent }};
     var selectorToken = @json($selectorToken);
     var equipmentId = @json(($equipmentInCart ?? false) ? null : $equipment?->id);
+    var equipmentName = @json($equipment?->name);
     var form = document.querySelector('[data-cs-form]');
     var result = document.querySelector('[data-cs-result]');
     var message = document.querySelector('[data-cs-message]');
@@ -490,6 +492,7 @@
                 + (!unlocked ? '<p class="cs-safety">Добавьте печь, камин или котёл — скидка на дымоход станет −' + discount + '%.</p>' : '')
                 + '<div class="cs-result__row cs-result__row--total"><span>Итого</span><span>' + money(total) + '</span></div></div><div class="cs-result__actions"><button type="button" class="tf-btn animate-btn" data-add-kit>'
                 + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><a href="#manager-check" class="tf-btn btn-white btn-stroke">Бесплатно проверить</a></div>'
+                + '<div class="cs-cart-feedback" data-cart-feedback hidden aria-live="polite"></div>'
                 + '<div class="cs-addon"><button type="button" class="cs-addon__toggle" data-addon-toggle>+ Добавить элемент «Теплов и Сухов»</button><div class="cs-addon__panel" data-addon-panel hidden>'
                 + '<input type="search" class="cs-addon__search" data-addon-search placeholder="Умный поиск: теплообменник, бак, шибер…" autocomplete="off"><div class="cs-addon__results" data-addon-results></div></div></div>'
                 + '<button type="button" class="tf-btn btn-white btn-stroke cs-share" data-share-kit>Скопировать ссылку на комплект</button>';
@@ -550,18 +553,64 @@
                 });
             });
             var add = result.querySelector('[data-add-kit]');
+            var cartFeedback = result.querySelector('[data-cart-feedback]');
             add.addEventListener('click', function () {
+                if (add.dataset.openCart === '1') {
+                    window.location = @json(route('cart'));
+                    return;
+                }
+
                 add.disabled = true;
+                cartFeedback.hidden = true;
+                cartFeedback.className = 'cs-cart-feedback';
+                cartFeedback.innerHTML = '';
                 var csrf = document.querySelector('meta[name="csrf-token"]').content;
                 var additions = rows.slice();
-                if (equipmentId) additions.unshift({product:{id:equipmentId}, quantity:1});
-                additions.reduce(function (chain, row) {
+                if (equipmentId) additions.unshift({product:{id:equipmentId, name:equipmentName || 'Выбранное оборудование'}, quantity:1});
+                var added = [];
+                var failed = [];
+                var cartCount = null;
+
+                additions.reduce(function (chain, row, index) {
                     return chain.then(function () {
+                        add.textContent = 'Добавляем ' + (index + 1) + ' из ' + additions.length + '…';
                         return fetch(@json(route('cart.add')), {method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':csrf}, body:JSON.stringify({product_id:row.product.id,quantity:row.quantity,chimney_selector_token:selectorToken})})
-                            .then(function (response) { if (!response.ok) throw new Error(); return response.json(); });
+                            .then(function (response) {
+                                return response.json().catch(function () { return {}; }).then(function (payload) {
+                                    if (!response.ok) throw new Error(payload.message || 'Товар временно нельзя добавить');
+                                    return payload;
+                                });
+                            })
+                            .then(function (payload) {
+                                added.push(row);
+                                if (typeof payload.count === 'number') cartCount = payload.count;
+                            })
+                            .catch(function (error) {
+                                failed.push({
+                                    name: row.product.name || ('Товар #' + row.product.id),
+                                    message: error.message || 'Товар временно нельзя добавить'
+                                });
+                            });
                     });
-                }, Promise.resolve()).then(function () { window.location = @json(route('cart')); })
-                    .catch(function () { add.disabled = false; add.textContent = 'Не всё добавилось — проверить корзину'; });
+                }, Promise.resolve()).then(function () {
+                    if (cartCount !== null && typeof window.updateCartCount === 'function') window.updateCartCount(cartCount);
+
+                    if (!failed.length) {
+                        add.textContent = 'Комплект добавлен — открываем корзину…';
+                        window.location = @json(route('cart'));
+                        return;
+                    }
+
+                    add.disabled = false;
+                    add.dataset.openCart = '1';
+                    add.textContent = 'Открыть корзину — добавлено ' + added.length + ' из ' + additions.length;
+                    cartFeedback.className = 'cs-cart-feedback cs-cart-feedback--partial';
+                    cartFeedback.hidden = false;
+                    cartFeedback.innerHTML = '<strong>В корзину добавлено ' + added.length + ' из ' + additions.length + ' позиций.</strong>'
+                        + '<span>Не удалось добавить:</span><ul>' + failed.map(function (failure) {
+                            return '<li>' + esc(failure.name) + ' — ' + esc(failure.message) + '</li>';
+                        }).join('') + '</ul><a href="' + @json(route('cart')) + '">Перейти в корзину и продолжить</a>';
+                });
             });
         }
         renderBundle();
