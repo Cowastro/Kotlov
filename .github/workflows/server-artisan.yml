@@ -209,6 +209,10 @@ jobs:
                 echo "memory_errors=$(grep -Eic 'allowed memory size|memory exhausted|out of memory' <<< "$recent_log" || true)"
                 echo "undefined_errors=$(grep -Eic 'undefined (variable|property|method)|call to undefined' <<< "$recent_log" || true)"
                 echo "database_errors=$(grep -Eic 'SQLSTATE|QueryException' <<< "$recent_log" || true)"
+                latest_parse="$(grep -E 'ParseError|syntax error|unexpected token|Unclosed [\[({]' <<< "$recent_log" | tail -n 1 || true)"
+                echo "parse_line=$(sed -nE 's/.* on line ([0-9]+).*/\1/p' <<< "$latest_parse" | tail -n 1)"
+                echo "unexpected_end=$(grep -Eic 'unexpected (end of file|token .end)' <<< "$latest_parse" || true)"
+                echo "unclosed_delimiter=$(grep -Eic 'Unclosed [\[({]' <<< "$latest_parse" || true)"
                 ;;
               ps-artisan)
                 echo "artisan_processes=$(pgrep -fc '[a]rtisan' || true)"
@@ -329,7 +333,7 @@ jobs:
           echo "warning_lines=$(grep -Eic 'warning|warn' "$detail_log" || true)"
           echo "detail_log=$detail_log"
           if [[ "$TASK" == "diagnose-error-kinds" ]]; then
-            grep -E '^(parse_errors|view_errors|type_errors|memory_errors|undefined_errors|database_errors)=[0-9]+$' "$detail_log" || true
+            grep -E '^(parse_errors|view_errors|type_errors|memory_errors|undefined_errors|database_errors|parse_line|unexpected_end|unclosed_delimiter)=[0-9]*$' "$detail_log" || true
           fi
           if [[ "$TASK" == "deploy-safe" && "$status" -ne 0 ]]; then
             echo "safe_deploy_diagnostic_begin"
