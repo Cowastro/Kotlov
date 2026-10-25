@@ -465,6 +465,12 @@ jobs:
             grep -E '^audit\.web_sources\.error=[a-z0-9-]+$' "$detail_log" || true
             echo "safe_web_sources_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:fill-specs-from-web" ]]; then
+            echo "safe_web_specs_metrics_begin"
+            grep -E '^metric\.web_specs\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.web_specs\.card=[0-9]+:[a-z0-9._(),-]+:[a-z0-9-]+:[a-z0-9-]+$' "$detail_log" || true
+            echo "safe_web_specs_metrics_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:fill-specs-from-name" ]]; then
             echo "safe_name_specs_metrics_begin"
             grep -E '^metric\.name_specs\.[a-z_]+=[0-9]+$' "$detail_log" || true
