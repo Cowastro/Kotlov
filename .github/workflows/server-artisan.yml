@@ -328,6 +328,9 @@ jobs:
           echo "error_lines=$(grep -Eic 'error|exception|failed|critical' "$detail_log" || true)"
           echo "warning_lines=$(grep -Eic 'warning|warn' "$detail_log" || true)"
           echo "detail_log=$detail_log"
+          if [[ "$TASK" == "diagnose-error-kinds" ]]; then
+            grep -E '^(parse_errors|view_errors|type_errors|memory_errors|undefined_errors|database_errors)=[0-9]+$' "$detail_log" || true
+          fi
           if [[ "$TASK" == "deploy-safe" && "$status" -ne 0 ]]; then
             echo "safe_deploy_diagnostic_begin"
             # Keep deployment diagnostics aggregate-only. Raw output can contain
