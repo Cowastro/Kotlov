@@ -27,11 +27,7 @@ class ChimneyCalculationRequestTelegramNotifier
         $escape = fn (?string $value): string => str_replace(
             ['_', '*', '`', '['], ['\_', '\*', '\`', '\['], (string) $value
         );
-        $items = collect($calculation->items)->map(fn (array $item): string => '• '.$escape($item['name']).' × '.(int) $item['quantity'].' = '.number_format((float) $item['total'], 2, '.', ' ').' BYN'
-        )->join("\n");
-        $mode = $calculation->promotion_mode === 'equipment_bundle'
-            ? 'оборудование + дымоход'
-            : 'самостоятельный подбор дымохода';
+        $itemsCount = count($calculation->items ?? []);
         $url = url('/admin/chimney-calculation-requests/'.$calculation->id);
         $lines = [
             "🏗 *Новый запрос на расчёт {$calculation->number}*",
@@ -39,16 +35,8 @@ class ChimneyCalculationRequestTelegramNotifier
             '*Клиент:* '.$escape($calculation->customer_name),
             '*Телефон:* '.$escape($calculation->customer_phone),
             $calculation->customer_email ? '*Email:* '.$escape($calculation->customer_email) : null,
-            '*Условие:* '.$escape($mode).' −'.number_format((float) $calculation->discount_percent, 0).'%',
-            '',
-            '*Состав:*',
-            $items,
-            '',
-            '*Сумма товаров:* '.number_format((float) $calculation->subtotal, 2, '.', ' ').' BYN',
-            '*Скидка:* −'.number_format((float) $calculation->discount, 2, '.', ' ').' BYN',
+            '*Позиций в комплекте:* '.$itemsCount,
             '*Итого:* '.number_format((float) $calculation->total, 2, '.', ' ').' BYN',
-            '',
-            $calculation->configuration ? '*Параметры:*'."\n".$escape($calculation->configuration) : null,
             "[Открыть расчёт в админке]({$url})",
         ];
 

@@ -61,6 +61,11 @@ class ChimneyCalculationRequestWorkflowTest extends TestCase
 
             return (string) $chatId === '12345'
                 && str_contains($text, 'Новый запрос на расчёт')
+                && str_contains($text, 'Позиций в комплекте:')
+                && str_contains($text, 'Итого:')
+                && str_contains($text, 'Открыть расчёт в админке')
+                && ! str_contains($text, 'Ø120, высота 5 м')
+                && ! str_contains($text, '*Состав:*')
                 && ($markup['inline_keyboard'][0][0]['callback_data'] ?? null) === 'confirm_chimney:'.$calculation->id;
         })->andReturn(['ok' => true, 'result' => ['message_id' => 55]]);
         (new ChimneyCalculationRequestTelegramNotifier($notificationApi))->notify($calculation);
