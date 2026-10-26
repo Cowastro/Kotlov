@@ -32,4 +32,33 @@ class DeliveryPageTest extends TestCase
             ->assertSeeText('Самовывоз: по предварительному согласованию с консультантом')
             ->assertDontSeeText('Пн–Пт: 9:00–18:00');
     }
+
+    public function test_homepage_shows_payment_systems_working_hours_and_compliance_link(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSeeText('Оплата картой и режим работы')
+            ->assertSeeText('Онлайн-заказы — круглосуточно, 24/7')
+            ->assertSeeText('Консультации — ежедневно до 20:00')
+            ->assertSee('assets/images/payment/webpay.svg', false)
+            ->assertSee('assets/images/payment/belkart.svg', false)
+            ->assertSee('https://www.webpay.by/', false)
+            ->assertSee('/dostavka#order-procedure', false);
+    }
+
+    public function test_delivery_page_contains_required_webpay_order_delivery_and_receipt_information(): void
+    {
+        $this->get('/dostavka')
+            ->assertOk()
+            ->assertSeeText('Как оформить заказ')
+            ->assertSeeText('Когда и как будет доставлен оплаченный заказ')
+            ->assertSeeText('Безопасный сервер WEBPAY устанавливает шифрованное соединение по защищенному протоколу TLS')
+            ->assertSeeText('сохранять полученные карт-чеки')
+            ->assertSeeText('+375 (29) 354-40-41')
+            ->assertSeeText('info@kotlov.by')
+            ->assertSeeText('возврат денежных средств осуществляется на карточку, с которой была произведена оплата')
+            ->assertSeeText('Образец документа, подтверждающего оплату')
+            ->assertSeeText('п. 11 ст. 7 Закона о защите прав потребителей')
+            ->assertSee('https://www.webpay.by/', false);
+    }
 }

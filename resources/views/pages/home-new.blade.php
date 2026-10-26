@@ -603,6 +603,8 @@
             <!-- /Lookbook -->
      
 
+@include('partials.home-webpay-info')
+
 {{-- Testimonials -- отзывы клиентов KOTLOV --}}
 {{-- Вместо "Loved By Happy Parents" --}}
 <section class="flat-spacing">

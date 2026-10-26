@@ -15,9 +15,9 @@
                 <div class="breadcrumbs">
                     <a href="/" class="text-caption-01 cl-text-3 link">Главная</a>
                     <i class="icon icon-CaretRightThin cl-text-3"></i>
-                    <p class="text-caption-01">Доставка и оплата</p>
+                    <p class="text-caption-01">Доставка, оплата и возврат</p>
                 </div>
-                <h3>Доставка и оплата</h3>
+                <h3>Доставка, оплата и возврат</h3>
             </div>
         </div>
     </section>
@@ -26,6 +26,10 @@
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-12">
+
+                    @include('partials.webpay-compliance')
+
+                    <div class="br-line mb-40"></div>
 
                     {{-- ===== ДОСТАВКА ===== --}}
                     <div class="tf-rte mb-40">

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 72" role="img" aria-labelledby="title">
+  <title id="title">WEBPAY</title>
+  <rect width="240" height="72" rx="12" fill="#ffffff"/>
+  <path d="M22 22h10l6 26 7-19h9l7 19 6-26h10L66 52H56l-7-18-7 18H32L22 22Z" fill="#ee2b45"/>
+  <text x="84" y="48" font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="700" fill="#1d2433">WEBPAY</text>
+</svg>
