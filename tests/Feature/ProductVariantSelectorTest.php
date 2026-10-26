@@ -164,6 +164,25 @@ class ProductVariantSelectorTest extends TestCase
         $this->assertSame(['Ø80 мм', 'Ø120 мм', 'Ø150 мм'], $selector['variants']->pluck('label')->all());
     }
 
+    public function test_chimney_parts_switch_between_diameters_of_the_same_element_whatever_the_naming(): void
+    {
+        $category = Category::query()->create(['name' => 'Трубы моно', 'slug' => 'truby-mono', 'is_active' => true]);
+        $card = fn (string $name, string $slug) => Product::query()->create([
+            'category_id' => $category->id, 'name' => $name, 'slug' => $slug, 'price' => 50, 'is_active' => true, 'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]);
+        $d150 = $card('Теплов и Сухов Труба L1000 ТМ-Р 430-0.8 D150', 'tis-l1000-150');
+        $card('Труба Теплов и Сухов Моно ТМ-Р L1000 430-0.8 Ø120', 'tis-l1000-120');
+        $card('Теплов и Сухов Труба L500 ТМ-Р 430-0.8 D130', 'tis-l500-130');
+        $card('Теплов и Сухов Труба L1000 ТМ-Р 430-0.8 D130 (MC Black)', 'tis-l1000-130-black');
+        $card('Ferrum Труба L1000 430-0.8 D130', 'ferrum-l1000-130');
+
+        $selector = app(ProductVariantSelector::class)->forProduct($d150->fresh('category'));
+
+        $this->assertSame('Выберите диаметр:', $selector['title']);
+        $this->assertSame(['Ø120', 'Ø150'], $selector['variants']->pluck('label')->all());
+    }
+
     private function tank(Category $category, Brand $brand, int $volume, string $availability, bool $inStock = false): Product
     {
         return Product::query()->create([

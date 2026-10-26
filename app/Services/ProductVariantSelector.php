@@ -39,6 +39,10 @@ class ProductVariantSelector
             return $this->buildPackagedFluid($product, $forAdmin);
         }
 
+        if (in_array($product->category?->slug, self::CHIMNEY_CATEGORIES, true) && self::chimneyDiameter((string) $product->name) !== null) {
+            return $this->buildChimneyDiameter($product, $forAdmin);
+        }
+
         if ($product->category?->slug !== 'membrannye-baki') {
             return null;
         }
@@ -175,6 +179,108 @@ class ProductVariantSelector
             ->values();
 
         if ($variants->count() < 2) {
+            return null;
+        }
+
+        return [
+            'type' => 'diameter',
+            'title' => 'Выберите диаметр:',
+            'variants' => $variants,
+        ];
+    }
+
+    /** Chimney part categories where one element comes in a row of diameters. */
+    private const CHIMNEY_CATEGORIES = [
+        'truby-mono', 'truby-sendvich', 'troyniki-mono', 'troyniki-sendvich', 'kolena-mono', 'kolena-sendvich',
+        'perehody-adaptery-dymohod', 'kondensatootvody', 'zaglushki-dymohod', 'zonty-deflektory', 'shibery-dymohod',
+        'krepleniya-dymohod', 'dymohody-nerzhaveyushchie', 'prochie-dymohod',
+    ];
+
+    /**
+     * «D150», «Ø150», «ф150», «D150/210», «D 130-150»: the diameter(s) of a chimney part, as a label.
+     *
+     * @return array{label:string, sort:array<int,int>, numbers:array<int,string>}|null
+     */
+    public static function chimneyDiameter(string $name): ?array
+    {
+        if (! preg_match('/(?:(?<![\pL])[DdДдØøФф]|диаметр)\s*\.?\s*(\d{2,3})(?:\s*[\/\-–]\s*(\d{2,3}))?(?!\d)/u', $name, $m)) {
+            return null;
+        }
+        $numbers = array_values(array_filter([$m[1], $m[2] ?? null]));
+
+        return ['label' => 'Ø'.implode('/', $numbers), 'sort' => array_map('intval', $numbers), 'numbers' => $numbers];
+    }
+
+    /**
+     * The element without its diameter: «Труба L1000 ТМ-Р 430-0.8 D150» and «Труба … Моно ТМ-Р L1000 430-0.8 Ø150»
+     * give one family, any other number (length, steel, thickness, angle) or the paint keeps families apart.
+     */
+    public static function chimneyFamily(string $name): ?string
+    {
+        $diameter = self::chimneyDiameter($name);
+        $signature = \App\Console\Commands\LinkOneCByParametersCommand::signature($name);
+        if ($diameter === null || $signature === '') {
+            return null;
+        }
+        $parts = explode('|', $signature);
+        foreach ($diameter['numbers'] as $number) {
+            $index = array_search($number, $parts, true);
+            if ($index !== false && $index > 0) {
+                unset($parts[$index]);
+            }
+        }
+        $painted = preg_match('/mc\s*black|ч[её]рн/iu', $name) ? 'painted' : 'bare';
+
+        return implode('|', $parts).'|'.$painted;
+    }
+
+    private function buildChimneyDiameter(Product $product, bool $forAdmin): ?array
+    {
+        $family = self::chimneyFamily((string) $product->name);
+        if ($family === null) {
+            return null;
+        }
+
+        // One maker: the same brand, or «Теплов и Сухов / ТИС» in both names (old and new cards differ in brand records).
+        $tis = fn (string $name) => (bool) preg_match('/теплов|(?<!\pL)тис(?!\pL)/iu', $name);
+        $variants = Product::query()
+            ->where('category_id', $product->category_id)
+            ->when(! $forAdmin, fn ($query) => $query
+                ->where('variant_selector_excluded', false)
+                ->where('is_active', true)
+                ->where('is_archived', false)
+                ->where('price', '>', 0))
+            ->withSupplierChannels()
+            ->with(['category:id,name,slug', 'brand:id,name,slug'])
+            ->get()
+            ->map(function (Product $candidate) use ($family, $product, $tis): ?array {
+                $sameMaker = $tis((string) $product->name)
+                    ? $tis((string) $candidate->name)
+                    : (int) $candidate->brand_id === (int) $product->brand_id && ! $tis((string) $candidate->name);
+                $diameter = self::chimneyDiameter((string) $candidate->name);
+                if (! $sameMaker || $diameter === null || self::chimneyFamily((string) $candidate->name) !== $family) {
+                    return null;
+                }
+
+                return [
+                    'product' => $candidate,
+                    'value' => $diameter['label'],
+                    'sort' => $diameter['sort'],
+                    'label' => $diameter['label'],
+                    'url' => url('/'.$candidate->category->slug.'/'.$candidate->slug),
+                    'availability_status' => $candidate->publicAvailabilityStatus(),
+                    'availability_label' => $candidate->publicAvailabilityLabel(),
+                    'is_current' => $candidate->is($product),
+                    'is_excluded' => (bool) $candidate->variant_selector_excluded,
+                ];
+            })
+            ->filter()
+            // The open card first among equal diameters, so it is the one that stays.
+            ->sortBy(fn (array $variant) => [$variant['sort'], $variant['is_current'] ? 0 : 1])
+            ->unique('value')
+            ->values();
+
+        if ($variants->count() < 2 || ! $variants->contains('is_current', true)) {
             return null;
         }
 
