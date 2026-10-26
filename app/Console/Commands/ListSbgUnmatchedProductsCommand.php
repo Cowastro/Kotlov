@@ -9,7 +9,9 @@ use Illuminate\Console\Command;
 class ListSbgUnmatchedProductsCommand extends Command
 {
     protected $signature = 'integration:list-sbg-unmatched
-        {--limit=10 : Number of current queue rows to print (1-50)}';
+        {--limit=10 : Number of current queue rows to print (1-50)}
+        {--offset=0 : Skip this many rows (to page through the queue)}
+        {--all-open : Also list suggested and ambiguous rows that have no card yet}';
 
     protected $description = 'Read-only list of the current positive-stock SanBusinessGroup 1C unmatched queue.';
 
@@ -33,7 +35,8 @@ class ListSbgUnmatchedProductsCommand extends Command
         $queue = IntegrationProduct::query()
             ->whereBelongsTo($source, 'source')
             ->inStock()
-            ->where('match_status', 'unmatched');
+            ->whereNull('product_id')
+            ->whereIn('match_status', $this->option('all-open') ? ['unmatched', 'suggested', 'ambiguous'] : ['unmatched']);
 
         $this->line('source_found=1');
         $this->line('source_id='.$source->id);
@@ -44,12 +47,14 @@ class ListSbgUnmatchedProductsCommand extends Command
             ->with(['integrationCategory:id,path', 'targetCategory:id,name,slug'])
             ->orderByDesc('last_seen_at')
             ->orderByDesc('id')
+            ->offset(max(0, (int) $this->option('offset')))
             ->limit($limit)
             ->get();
 
         foreach ($items->values() as $index => $item) {
             $this->line('item.'.($index + 1).'='.json_encode([
                 'id' => $item->id,
+                'match_status' => $item->match_status,
                 'external_id' => $this->singleLine($item->external_id),
                 'external_code' => $this->singleLine($item->external_code),
                 'external_sku' => $this->singleLine($item->external_sku),
