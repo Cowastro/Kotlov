@@ -158,6 +158,10 @@ class CreateOneCChimneyCardsCommand extends Command
 
     public static function categorySlug(string $title): string
     {
+        // «Титан 16», «ППШ-Б» are heat exchangers worn on the chimney pipe.
+        if (preg_match('/титан|ппш/iu', $title)) {
+            return 'teplosyomniki';
+        }
         $signature = explode('|', LinkOneCByParametersCommand::signature($title));
         $type = $signature[0] ?? '';
         $termo = in_array('термо', $signature, true);
