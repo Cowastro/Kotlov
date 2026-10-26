@@ -47,8 +47,8 @@ class ReleaseNotesTest extends TestCase
         $this->actingAs($manager)->get('/releases/2026-01-01')->assertNotFound();
     }
 
-    public function test_guest_is_sent_to_login_for_the_list(): void
+    public function test_guest_is_sent_to_the_admin_login_for_the_list(): void
     {
-        $this->get('/admin/releases')->assertRedirect();
+        $this->get('/admin/releases')->assertRedirect(url('/admin/login'));
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Filament\Facades\Filament;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
@@ -24,8 +26,12 @@ class ReleaseNotesController extends Controller
         ],
     ];
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
+        // Staff sign in through the admin, which then brings them back here.
+        if (! $request->user()) {
+            return redirect()->guest(Filament::getPanel('admin')->getLoginUrl());
+        }
         abort_unless($this->isStaff($request->user()), 403);
 
         $releases = collect(self::RELEASES)->sortKeysDesc()

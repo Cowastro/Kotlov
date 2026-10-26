@@ -124,7 +124,6 @@ Route::get('/admin/orders/{order}/procurement', OrderProcurementController::clas
 
 // Внутренние релизы: список для сотрудников, релиз — по ссылке на 48 часов без входа.
 Route::get('/admin/releases', [ReleaseNotesController::class, 'index'])
-    ->middleware('auth')
     ->name('admin.releases.index');
 Route::get('/releases/{date}', [ReleaseNotesController::class, 'show'])
     ->where('date', '\d{4}-\d{2}-\d{2}')
