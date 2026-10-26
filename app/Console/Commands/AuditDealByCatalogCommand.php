@@ -33,11 +33,27 @@ class AuditDealByCatalogCommand extends Command
             ['Связано по external_id', $summary['matched_by_external_id']],
             ['Однозначно найдено по slug', $summary['matched_by_slug']],
             ['Однозначно найдено по SKU', $summary['matched_by_sku']],
+            ['Однозначно найдено по названию', $summary['matched_by_name']],
             ['Неоднозначный SKU в KOTLOV.BY', $summary['ambiguous_local_sku']],
             ['Не найдено', $summary['unmatched']],
             ['Повторяющийся SKU в Deal.by', $summary['duplicate_remote_sku']],
             ['Цена отличается', $summary['price_mismatch']],
         ]);
+        foreach (['brands' => 'brand', 'categories' => 'category'] as $key => $type) {
+            foreach (array_slice($result['groups'][$key], 0, 40) as $group) {
+                $name = preg_replace('/[|\r\n]+/u', ' ', (string) $group['name']) ?: 'Без группы';
+                $this->line(sprintf(
+                    'group.deal_linkability=%s|%s|%d|%d|%d|%d|%d',
+                    $type,
+                    $name,
+                    $group['linked'],
+                    $group['auto'],
+                    $group['conflicts'],
+                    $group['price_mismatch'],
+                    $group['total'],
+                ));
+            }
+        }
         $this->line('CSV: '.$result['report_path']);
         $this->info('Аудит завершён. Deal.by не изменялся.');
 
