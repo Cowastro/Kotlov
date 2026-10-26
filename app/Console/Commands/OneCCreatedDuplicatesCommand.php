@@ -23,6 +23,7 @@ class OneCCreatedDuplicatesCommand extends Command
     protected $signature = 'integration:onec-duplicates
         {--source=onec : Integration source code}
         {--redirect-folded : Add 301 redirects for duplicates archived in the last 24 hours}
+        {--slug-prefix=* : With --redirect-folded, only archived cards whose slug starts so}
         {--apply : Move the 1C row to the older card and archive the duplicate}';
 
     protected $description = 'Find (and fold) cards created from 1C that duplicate an older card';
@@ -33,7 +34,13 @@ class OneCCreatedDuplicatesCommand extends Command
         $items = IntegrationProduct::query()->where('integration_source_id', $source?->id)->where('match_method', 'manual_created')
             ->whereNotNull('product_id')->get()->keyBy('product_id');
         $created = $this->option('redirect-folded')
-            ? Product::query()->where('is_archived', true)->where('updated_at', '>=', now()->subDay())->get(['id', 'name', 'slug', 'price', 'images', 'brand_id', 'category_id'])
+            ? Product::query()->where('is_archived', true)->where('updated_at', '>=', now()->subDay())
+                ->where(function ($q): void {
+                    foreach ((array) $this->option('slug-prefix') as $prefix) {
+                        $q->orWhere('slug', 'like', $prefix.'%');
+                    }
+                })
+                ->get(['id', 'name', 'slug', 'price', 'images', 'brand_id', 'category_id'])
             : Product::query()->whereIn('id', $items->keys())->where('is_archived', false)->get(['id', 'name', 'slug', 'price', 'images', 'brand_id', 'category_id']);
 
         // Every other card by signature (computed once).
