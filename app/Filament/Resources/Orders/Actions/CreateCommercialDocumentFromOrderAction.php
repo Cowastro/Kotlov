@@ -24,7 +24,7 @@ final class CreateCommercialDocumentFromOrderAction
                 && auth()->user()->isManager()
                 && CommercialDocumentResource::canCreate())
             ->modalHeading('Создать документ из заказа')
-            ->modalDescription('Клиент, товары, количество, цены, скидка и доставка будут перенесены из заказа. Перед сохранением всё можно проверить и изменить.')
+            ->modalDescription('Клиент, товары, цены, скидка и доставка будут перенесены из заказа. Для розничного клиента включится быстрый режим без закупочных и CRM-проверок.')
             ->schema([
                 Select::make('type')
                     ->label('Документ')
@@ -71,7 +71,10 @@ final class CreateCommercialDocumentFromOrderAction
 
         app(CommercialDocumentClientResolver::class)->sync($document);
 
-        return redirect(CommercialDocumentResource::getUrl('edit', ['record' => $document]));
+        return redirect(CommercialDocumentResource::getUrl(
+            $document->retail_quick ? 'view' : 'edit',
+            ['record' => $document],
+        ));
     }
 
     /** @return array<string, mixed> */
@@ -84,6 +87,7 @@ final class CreateCommercialDocumentFromOrderAction
             $order->planned_delivery_date?->format('d.m.Y'),
         ])->filter()->implode(' · ');
         $payment = Order::PAYMENT_TYPES[$order->payment_type] ?? $order->payment_type;
+        $retailQuick = blank($order->company_name) && blank($order->company_unp);
 
         return [
             'type' => $type,
@@ -100,6 +104,8 @@ final class CreateCommercialDocumentFromOrderAction
             'discount_total' => round((float) $order->discount, 2),
             'delivery_price' => round((float) $order->delivery_price, 2),
             'delivery_to_client' => $order->delivery_type !== 'pickup',
+            'retail_quick' => $retailQuick,
+            'allow_unconfirmed_purchase_price' => $retailQuick,
             'payment_terms' => $payment ? 'Способ оплаты: '.$payment.'.' : 'Условия оплаты согласовываются с менеджером.',
             'delivery_terms' => $deliveryDetails ?: 'Срок и способ поставки согласовываются с менеджером.',
             'notes' => 'Создано из заказа '.$order->number.'.',

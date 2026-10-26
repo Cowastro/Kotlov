@@ -65,7 +65,7 @@ class CommercialDocument extends Model
         'issued_at', 'valid_until', 'currency', 'subtotal', 'discount_total', 'delivery_price', 'delivery_to_client', 'total',
         'vat_rate', 'payment_terms', 'delivery_terms', 'notes', 'seller_snapshot', 'sent_at', 'accepted_at', 'closed_at',
         'last_contacted_at', 'next_follow_up_at', 'follow_up_note', 'contact_history',
-        'last_control_notified_at', 'allow_unconfirmed_purchase_price',
+        'last_control_notified_at', 'allow_unconfirmed_purchase_price', 'retail_quick',
     ];
 
     protected $casts = [
@@ -81,6 +81,7 @@ class CommercialDocument extends Model
         'ai_assisted' => 'boolean',
         'delivery_to_client' => 'boolean',
         'allow_unconfirmed_purchase_price' => 'boolean',
+        'retail_quick' => 'boolean',
         'seller_snapshot' => 'array',
         'subtotal' => 'decimal:2',
         'discount_total' => 'decimal:2',

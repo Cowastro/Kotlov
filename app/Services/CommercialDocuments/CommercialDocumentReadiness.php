@@ -29,7 +29,7 @@ class CommercialDocumentReadiness
             || filled($document->client_legal_name)
             || filled($document->client_unp);
 
-        if (! $document->crm_counterparty_id) {
+        if (! $document->retail_quick && ! $document->crm_counterparty_id) {
             $issues[] = 'клиент не связан с карточкой CRM';
         }
         if ($isOrganization && blank($document->client_legal_name) && blank($document->client_company)) {
@@ -58,7 +58,7 @@ class CommercialDocumentReadiness
             $issues[] = 'есть позиции без количества или цены';
         }
         $document->loadMissing('items.product');
-        foreach ($document->items as $item) {
+        foreach ($document->retail_quick ? [] : $document->items as $item) {
             if (! $item->product) {
                 if ($document->allow_unconfirmed_purchase_price) {
                     $warnings[] = 'нет подтверждённой входной цены: '.$item->name;
@@ -104,7 +104,7 @@ class CommercialDocumentReadiness
         if ($document->valid_until?->isPast()) {
             $issues[] = 'срок действия документа уже истёк';
         }
-        if ($document->allow_unconfirmed_purchase_price && $warnings === []) {
+        if (! $document->retail_quick && $document->allow_unconfirmed_purchase_price && $warnings === []) {
             $warnings[] = 'КП создано без обязательного подтверждения входной цены';
         }
 

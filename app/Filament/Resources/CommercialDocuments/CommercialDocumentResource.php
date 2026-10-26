@@ -702,6 +702,7 @@ class CommercialDocumentResource extends Resource
                 Section::make('Готовность к отправке')
                     ->icon('heroicon-o-shield-check')
                     ->columnSpanFull()
+                    ->hidden(fn (CommercialDocument $record): bool => $record->retail_quick)
                     ->schema([
                         ViewEntry::make('readiness_overview')
                             ->hiddenLabel()
@@ -711,6 +712,7 @@ class CommercialDocumentResource extends Resource
                 Section::make('Основания закупочной цены')
                     ->icon('heroicon-o-document-check')
                     ->columnSpanFull()
+                    ->hidden(fn (CommercialDocument $record): bool => $record->retail_quick)
                     ->schema([
                         ViewEntry::make('purchase_price_sources')
                             ->hiddenLabel()
@@ -807,15 +809,19 @@ class CommercialDocumentResource extends Resource
                             })
                             ->formatStateUsing(fn (CommercialDocument $record): string => $record->statusLabel()),
                         TextEntry::make('follow_up_stage')->label('Стадия работы')->badge()->placeholder('Не задана')
+                            ->hidden(fn (CommercialDocument $record): bool => $record->retail_quick)
                             ->formatStateUsing(fn (?string $state): string => CommercialDocument::FOLLOW_UP_STAGES[$state] ?? (string) $state),
                         TextEntry::make('last_contact_result')->label('Последний контакт')->badge()->placeholder('Не было')
+                            ->hidden(fn (CommercialDocument $record): bool => $record->retail_quick)
                             ->formatStateUsing(fn (?string $state): string => CommercialDocument::CONTACT_RESULTS[$state] ?? (string) $state),
                         TextEntry::make('next_follow_up_at')->label('Следующий контакт')->dateTime('d.m.Y H:i', 'Europe/Minsk')->placeholder('Не назначен')
+                            ->hidden(fn (CommercialDocument $record): bool => $record->retail_quick)
                             ->color(fn (CommercialDocument $record): string => $record->next_follow_up_at?->isPast() ? 'danger' : 'info'),
                         TextEntry::make('follow_up_note')->label('Договорённость / следующий шаг')->placeholder('Не заполнено')->columnSpan(2)
                             ->formatStateUsing(fn (?string $state): string => trim((string) $state, " \t\n\r\0\x0B,.;:–—-"))
                             ->visible(fn (CommercialDocument $record): bool => self::shouldShowStandaloneContactNote($record, $record->follow_up_note)),
                         TextEntry::make('mailThread.subject')->label('Связанная переписка')->placeholder('Не связана')
+                            ->hidden(fn (CommercialDocument $record): bool => $record->retail_quick)
                             ->url(fn (CommercialDocument $record): ?string => $record->mailThread
                                 ? CrmMailThreadResource::getUrl('view', ['record' => $record->mailThread])
                                 : null)
@@ -931,7 +937,7 @@ class CommercialDocumentResource extends Resource
             ->columns([
                 TextColumn::make('number')->label('Номер')->searchable()->sortable()->weight('bold')
                     ->description(fn (CommercialDocument $record): string => 'Редакция №'.($record->revision_number ?: 1)
-                        .($record->allow_unconfirmed_purchase_price ? ' · ⚠ Нет входной цены' : '')),
+                        .($record->retail_quick ? ' · Розница' : ($record->allow_unconfirmed_purchase_price ? ' · ⚠ Нет входной цены' : ''))),
                 TextColumn::make('type')->label('Тип')->badge()->formatStateUsing(fn (string $state): string => match ($state) {
                     'quote' => 'КП',
                     'invoice' => 'Счёт',
