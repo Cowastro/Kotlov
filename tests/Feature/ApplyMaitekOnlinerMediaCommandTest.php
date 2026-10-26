@@ -79,6 +79,31 @@ class ApplyMaitekOnlinerMediaCommandTest extends TestCase
         $this->assertNull($product->content_source_url);
     }
 
+    public function test_heater_takes_the_photos_of_its_series_and_keeps_its_name(): void
+    {
+        $category = Category::query()->create(['name' => 'ТЭНы', 'slug' => 'teny', 'is_active' => true]);
+        Product::query()->create([
+            'category_id' => $category->id, 'name' => 'СТЭН ТЭНБ - 3 - 1 1/2" - Ч с колпаком', 'slug' => 'sten-tenb-3-1-12-c-s-kolpakom',
+            'sku' => 'MT-TENB-G112', 'price' => 100, 'images' => ['/img/products/sten-tenb.webp'], 'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id, 'name' => 'СТЭН ТЭНБ - 3 - G2" - Ч с колпаком', 'slug' => 'sten-tenb-3-g2-c-s-kolpakom',
+            'sku' => 'MT-TENB-G2', 'price' => 110, 'is_active' => false,
+        ]);
+        $supplierId = DB::table('suppliers')->insertGetId(['code' => 'maitek-group', 'name' => 'Майтек Групп', 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('supplier_products')->insert([
+            'supplier_id' => $supplierId, 'product_id' => $product->id,
+            'supplier_article' => 'СТЭН ТЭНБ - 3 - G2" - Ч с колпаком', 'supplier_article_normalized' => 'TENB-3-G2',
+            'supplier_name' => 'СТЭН ТЭНБ - 3 - G2" - Ч с колпаком', 'match_status' => 'matched', 'created_at' => now(), 'updated_at' => now(),
+        ]);
+
+        $this->artisan('catalog:apply-maitek-onliner-media --apply')->assertSuccessful();
+        $product->refresh();
+
+        $this->assertSame('СТЭН ТЭНБ - 3 - G2" - Ч с колпаком', $product->name);
+        $this->assertSame(['/img/products/sten-tenb.webp'], $product->images);
+    }
+
     public function test_key_ignores_look_alike_letters(): void
     {
         $this->assertSame(

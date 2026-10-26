@@ -59,13 +59,17 @@ class ApplyMaitekOnlinerMediaCommand extends Command
 
             $changes = [];
             // A name still as the price sync wrote it («HOTEX HOTEX BE 4 кВт…»): give it a catalogue title.
-            if ($product->name === $item['supplier_name']) {
+            // СТЭН rows keep the naming of the other СТЭН cards; ТЭНБ and ПУЭ are not boilers.
+            if ($product->name === $item['supplier_name'] && ($item['rename'] ?? true)) {
                 $changes['name'] = $changes['h1'] = self::title($item['supplier_name']);
                 $changes['meta_title'] = $changes['name'].' купить в %city%';
                 $stats['renamed']++;
             }
-            if (empty($product->images)) {
-                $changes['images'] = $item['images'];
+            // A model with no page of its own takes the photos of the same-series card already in the catalogue.
+            $images = $item['images'] !== [] ? $item['images']
+                : (array) (Product::query()->where('slug', $item['images_from_slug'] ?? '')->first(['id', 'images'])?->images ?? []);
+            if (empty($product->images) && $images !== []) {
+                $changes['images'] = $images;
                 $stats['images_set']++;
             }
             if (empty($product->specs) && $item['specs'] !== []) {

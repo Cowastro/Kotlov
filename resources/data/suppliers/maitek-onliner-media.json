@@ -5222,5 +5222,373 @@
    "/img/products/maitek/hotexbe5s-1420df-4.webp"
   ],
   "specs": []
+ },
+ {
+  "supplier_name": "СТЭН Котел \"СТЭН СТАНДАРТ 60\" 380",
+  "onliner": "https://catalog.onliner.by/boiler/sten/stenstand60",
+  "images": [
+   "/img/products/maitek/stenstand60-c444c0-1.webp"
+  ],
+  "specs": [
+   [
+    "Мощность обогрева",
+    "60 кВт"
+   ],
+   [
+    "Площадь обогрева",
+    "600 м2"
+   ],
+   [
+    "Вид",
+    "электрический"
+   ],
+   [
+    "Напряжение питания электрокотла",
+    "380V"
+   ],
+   [
+    "Тип",
+    "одноконтурный"
+   ],
+   [
+    "Расположение",
+    "настенный"
+   ],
+   [
+    "Цвет",
+    "белый"
+   ],
+   [
+    "Температура в контуре отопления",
+    "0 — 85 °C"
+   ],
+   [
+    "Давление в контуре отопления",
+    "4.5 бар"
+   ],
+   [
+    "Высота",
+    "77.5 см"
+   ],
+   [
+    "Ширина",
+    "44 см"
+   ],
+   [
+    "Глубина",
+    "24 см"
+   ],
+   [
+    "Вес",
+    "38 кг"
+   ]
+  ],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН Котел \"СТЭН СТАНДАРТ 70\" 380",
+  "onliner": "https://catalog.onliner.by/boiler/sten/stenstand70",
+  "images": [
+   "/img/products/maitek/stenstand70-cf0d72-1.webp"
+  ],
+  "specs": [
+   [
+    "Мощность обогрева",
+    "72 кВт"
+   ],
+   [
+    "Площадь обогрева",
+    "720 м2"
+   ],
+   [
+    "Вид",
+    "электрический"
+   ],
+   [
+    "Напряжение питания электрокотла",
+    "380V"
+   ],
+   [
+    "Тип",
+    "одноконтурный"
+   ],
+   [
+    "Расположение",
+    "настенный"
+   ],
+   [
+    "Цвет",
+    "белый"
+   ],
+   [
+    "Температура в контуре отопления",
+    "0 — 85 °C"
+   ],
+   [
+    "Давление в контуре отопления",
+    "4.5 бар"
+   ],
+   [
+    "Высота",
+    "77.5 см"
+   ],
+   [
+    "Ширина",
+    "44 см"
+   ],
+   [
+    "Глубина",
+    "24 см"
+   ],
+   [
+    "Вес",
+    "40 кг"
+   ]
+  ],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН Котел \"СТЭН СТАНДАРТ 80\" 380",
+  "onliner": "https://catalog.onliner.by/boiler/sten/stenstand80",
+  "images": [
+   "/img/products/maitek/stenstand80-c444c0-1.webp"
+  ],
+  "specs": [
+   [
+    "Мощность обогрева",
+    "80 кВт"
+   ],
+   [
+    "Площадь обогрева",
+    "800 м2"
+   ],
+   [
+    "Вид",
+    "электрический"
+   ],
+   [
+    "Напряжение питания электрокотла",
+    "380V"
+   ],
+   [
+    "Тип",
+    "одноконтурный"
+   ],
+   [
+    "Расположение",
+    "настенный"
+   ],
+   [
+    "Цвет",
+    "белый"
+   ],
+   [
+    "Температура в контуре отопления",
+    "0 — 85 °C"
+   ],
+   [
+    "Давление в контуре отопления",
+    "4.5 бар"
+   ],
+   [
+    "Высота",
+    "77.5 см"
+   ],
+   [
+    "Ширина",
+    "44 см"
+   ],
+   [
+    "Глубина",
+    "24 см"
+   ],
+   [
+    "Вес",
+    "40 кг"
+   ]
+  ],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН Котел \"СТЭН СТАНДАРТ 90\" 380",
+  "onliner": "https://catalog.onliner.by/boiler/sten/stenstand90",
+  "images": [
+   "/img/products/maitek/stenstand90-cf0d72-1.webp"
+  ],
+  "specs": [
+   [
+    "Мощность обогрева",
+    "90 кВт"
+   ],
+   [
+    "Площадь обогрева",
+    "900 м2"
+   ],
+   [
+    "Вид",
+    "электрический"
+   ],
+   [
+    "Напряжение питания электрокотла",
+    "380V"
+   ],
+   [
+    "Тип",
+    "одноконтурный"
+   ],
+   [
+    "Расположение",
+    "настенный"
+   ],
+   [
+    "Цвет",
+    "белый"
+   ],
+   [
+    "Температура в контуре отопления",
+    "0 — 85 °C"
+   ],
+   [
+    "Давление в контуре отопления",
+    "4.5 бар"
+   ],
+   [
+    "Высота",
+    "77.5 см"
+   ],
+   [
+    "Ширина",
+    "44 см"
+   ],
+   [
+    "Глубина",
+    "24 см"
+   ],
+   [
+    "Вес",
+    "40 кг"
+   ]
+  ],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН Котел \"СТЭН ЭВПМ 4\" 220/380",
+  "onliner": null,
+  "images": [
+   "/img/products/maitek/stenevpm45-a92d48-1.webp",
+   "/img/products/maitek/stenevpm45-230cd2-2.webp",
+   "/img/products/maitek/stenevpm45-d90ca3-3.webp",
+   "/img/products/maitek/stenevpm45-df1723-4.webp",
+   "/img/products/maitek/stenevpm45-78b12d-5.webp",
+   "/img/products/maitek/stenevpm45-226588-6.webp"
+  ],
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН Котел \"СТЭН ЭВПМ 5\" 220/380",
+  "onliner": null,
+  "images": [
+   "/img/products/maitek/stenevpm45-a92d48-1.webp",
+   "/img/products/maitek/stenevpm45-230cd2-2.webp",
+   "/img/products/maitek/stenevpm45-d90ca3-3.webp",
+   "/img/products/maitek/stenevpm45-df1723-4.webp",
+   "/img/products/maitek/stenevpm45-78b12d-5.webp",
+   "/img/products/maitek/stenevpm45-226588-6.webp"
+  ],
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН Котел \"СТЭН ЭВПМ 7\" 220/380",
+  "onliner": null,
+  "images": [
+   "/img/products/maitek/stenevpm75-8b6e69-1.webp",
+   "/img/products/maitek/stenevpm75-e258a7-2.webp",
+   "/img/products/maitek/stenevpm75-d90ca3-3.webp",
+   "/img/products/maitek/stenevpm75-df1723-4.webp",
+   "/img/products/maitek/stenevpm75-78b12d-5.webp",
+   "/img/products/maitek/stenevpm75-226588-6.webp"
+  ],
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН Котел \"СТЭН ЭВПМ 8\" 220/380",
+  "onliner": null,
+  "images": [
+   "/img/products/maitek/stenevpm75-8b6e69-1.webp",
+   "/img/products/maitek/stenevpm75-e258a7-2.webp",
+   "/img/products/maitek/stenevpm75-d90ca3-3.webp",
+   "/img/products/maitek/stenevpm75-df1723-4.webp",
+   "/img/products/maitek/stenevpm75-78b12d-5.webp",
+   "/img/products/maitek/stenevpm75-226588-6.webp"
+  ],
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН ТЭНБ - 3 - G2\" - Ч с колпаком",
+  "onliner": null,
+  "images": [],
+  "images_from_slug": "sten-tenb-3-1-12-c-s-kolpakom",
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН ТЭНБ - 4,5 - G2\" - Ч с колпаком",
+  "onliner": null,
+  "images": [],
+  "images_from_slug": "sten-tenb-45-1-12-c-s-kolpakom",
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН ТЭНБ - 6 - G2\" - Ч с колпаком",
+  "onliner": null,
+  "images": [],
+  "images_from_slug": "sten-tenb-6-1-12-c-s-kolpakom",
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН ТЭНБ - 7,5 - G2\" - Ч с колпаком",
+  "onliner": null,
+  "images": [],
+  "images_from_slug": "sten-tenb-75-1-12-c-s-kolpakom",
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН ТЭНБ - 9 - G2\" - Ч с колпаком",
+  "onliner": null,
+  "images": [],
+  "images_from_slug": "sten-tenb-9-1-12-c-s-kolpakom",
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН ТЭНБ - 10,5 - G2\" - Ч с колпаком",
+  "onliner": null,
+  "images": [],
+  "images_from_slug": "sten-tenb-105-1-12-c-s-kolpakom",
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН ТЭНБ - 12 - G2\" - Ч с колпаком",
+  "onliner": null,
+  "images": [],
+  "images_from_slug": "sten-tenb-12-1-12-c-s-kolpakom",
+  "specs": [],
+  "rename": false
+ },
+ {
+  "supplier_name": "СТЭН ПУЭ-15",
+  "onliner": null,
+  "images": [],
+  "images_from_slug": "sten-pue-602",
+  "specs": [],
+  "rename": false
  }
 ]
