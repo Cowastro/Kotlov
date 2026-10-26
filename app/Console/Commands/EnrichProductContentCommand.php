@@ -15,6 +15,7 @@ class EnrichProductContentCommand extends Command
         {--category= : Category ID}
         {--sku= : Single product SKU}
         {--sku-prefix= : Products whose SKU starts with this prefix (e.g. ATMOS- for cards created from one supplier price)}
+        {--ids= : Comma-separated product IDs}
         {--all : Process all non-archived products (no brand/category filter)}
         {--only= : Which fields to fill: content | short | both (default: both)}
         {--force : Re-generate even if content already exists}
@@ -88,6 +89,8 @@ class EnrichProductContentCommand extends Command
 
         if ($sku = $this->option('sku')) {
             $query->where('p.sku', $sku);
+        } elseif ($ids = $this->option('ids')) {
+            $query->whereIn('p.id', array_filter(array_map('intval', explode(',', (string) $ids))));
         } elseif ($skuPrefix = $this->option('sku-prefix')) {
             $query->where('p.sku', 'like', str_replace(['%', '_'], ['\%', '\_'], $skuPrefix).'%');
         } elseif ($brandSlug = $this->option('brand')) {
