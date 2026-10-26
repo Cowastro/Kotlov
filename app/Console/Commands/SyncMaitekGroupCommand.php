@@ -1252,7 +1252,8 @@ class SyncMaitekGroupCommand extends Command
     private function createProduct(array $row, $now): int
     {
         $brandId = $row['brand_id'] ?? $this->findOrCreateBrand($row['brand'], $now);
-        $name = trim($row['brand'] . ' ' . $row['name']);
+        // «HOTEX BE 4 кВт», «ЭВПМ-3 Сангай» already name the brand: do not put it in front twice.
+        $name = str_contains(mb_strtolower($row['name']), mb_strtolower($row['brand'])) ? $row['name'] : trim($row['brand'] . ' ' . $row['name']);
 
         return (int) DB::table('products')->insertGetId([
             'category_id' => (int) $row['category_id'],

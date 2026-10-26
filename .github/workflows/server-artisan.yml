@@ -415,6 +415,12 @@ jobs:
             grep -E '^audit\.atmos_cards\.item=[0-9]+:[a-z]+:[0-9]+:[a-z0-9-]+$' "$detail_log" | sort | uniq -c | awk '{print $2}' | sed -E 's/^audit\.atmos_cards\.item=([0-9]+):([a-z]+):[0-9]+:/audit.atmos_cards.group=\1:\2:/' | sort | uniq -c | sed -E 's/^ *([0-9]+) (.*)$/\2:\1/' || true
             echo "safe_atmos_cards_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:apply-maitek-onliner-media" ]]; then
+            echo "safe_maitek_media_metrics_begin"
+            grep -E '^metric\.maitek_media\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.maitek_media\.(card=[0-9]+:[a-z0-9-]+:[a-z_.]+|missing=[a-z0-9-]+)$' "$detail_log" || true
+            echo "safe_maitek_media_metrics_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:brand-suppliers" ]]; then
             echo "safe_brand_suppliers_metrics_begin"
             grep -E '^metric\.brand_suppliers\.[a-z0-9_]+=[0-9]+$' "$detail_log" || true
