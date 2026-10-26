@@ -34,7 +34,8 @@ class CreateOneCChimneyCardsCommand extends Command
     protected $signature = 'integration:create-onec-chimneys
         {--source=onec : Integration source code}
         {--apply : Create and link the cards}
-        {--fill-missing-photos : Give the chimney cards created from 1C without a photo the closest card\'s photos}';
+        {--fill-missing-photos : Give the chimney cards created from 1C without a photo the closest card\'s photos}
+        {--clean-specs : Drop «Картинки: Array» and the name specs the maker states better on cards created from 1C}';
 
     protected $description = 'Create complete cards for the stainless chimney parts of the 1C stock';
 
@@ -55,6 +56,9 @@ class CreateOneCChimneyCardsCommand extends Command
         }
         if ($this->option('fill-missing-photos')) {
             return $this->fillMissingPhotos($source);
+        }
+        if ($this->option('clean-specs')) {
+            return $this->cleanSpecs($source);
         }
         $items = IntegrationProduct::query()->where('integration_source_id', $source->id)->inStock()
             ->whereNull('product_id')->whereIn('match_status', ['unmatched', 'suggested', 'ambiguous'])
@@ -102,7 +106,7 @@ class CreateOneCChimneyCardsCommand extends Command
             if ($page && $page['price_rub'] && $priceFrom !== 'maker_price') {
                 $stats['maker_below_cost']++;
             }
-            $specs = array_merge(self::specs($title), $page ? self::makerSpecs($page['specs']) : []);
+            $specs = self::mergeSpecs(self::specs($title), $page ? self::makerSpecs($page['specs']) : []);
             $categorySlug = self::categorySlug($title);
             $this->line(sprintf('audit.onec_chimneys.plan=%d:%s:%s:%s:%d:%s', $item->id, Str::slug(Str::limit($title, 70, '')),
                 $page ? 'maker' : 'sibling-'.$sibling->id, $categorySlug, (int) round($retail), $priceFrom));
@@ -174,6 +178,26 @@ class CreateOneCChimneyCardsCommand extends Command
     }
 
     /** teplov.ru props as card specs: «Толщина изоляции: 40» → «Толщина изоляции: 40 мм». */
+    /**
+     * The maker's own specs win; from the name stay only what the maker does not state
+     * (element, design, length, angle, clamp, colour).
+     */
+    public static function mergeSpecs(array $fromName, array $fromMaker): array
+    {
+        $fromMaker = array_filter($fromMaker, fn ($value, $key) => ! preg_match('/^картинк/iu', (string) $key) && ! str_contains((string) $value, 'Array'), ARRAY_FILTER_USE_BOTH);
+        if ($fromMaker === []) {
+            return $fromName;
+        }
+        $makerHas = mb_strtolower(implode(' ', array_keys($fromMaker)));
+        foreach (['Марка стали' => 'марка стали', 'Толщина стали' => 'толщина металла', 'Внутренний диаметр' => 'диаметр', 'Внешний диаметр' => 'диаметр', 'Диаметр' => 'диаметр'] as $key => $needle) {
+            if (str_contains($makerHas, $needle)) {
+                unset($fromName[$key]);
+            }
+        }
+
+        return array_merge($fromName, $fromMaker);
+    }
+
     public static function makerSpecs(array $props): array
     {
         $specs = [];
@@ -214,6 +238,42 @@ class CreateOneCChimneyCardsCommand extends Command
                 $product->forceFill(['images' => array_values((array) $sibling->images)])->save();
                 $stats['filled']++;
             }
+        }
+        foreach ($stats as $key => $value) {
+            $this->line("metric.onec_chimneys.{$key}={$value}");
+        }
+
+        return self::SUCCESS;
+    }
+
+    /** Specs read from the 1C name; every other key on these cards came from the maker's page. */
+    private const NAME_SPEC_KEYS = ['Элемент дымохода', 'Исполнение', 'Марка стали', 'Толщина стали', 'Внутренний диаметр', 'Внешний диаметр',
+        'Диаметр', 'Длина', 'Угол', 'Хомут в комплекте', 'Утеплитель', 'Цвет'];
+
+    private function cleanSpecs(IntegrationSource $source): int
+    {
+        $products = Product::query()->whereIn('id', IntegrationProduct::query()->where('integration_source_id', $source->id)
+            ->where('match_method', 'manual_created')->whereNotNull('product_id')->select('product_id'))->get();
+        $stats = ['cards' => $products->count(), 'cleaned' => 0, 'attributes_removed' => 0];
+        foreach ($products as $product) {
+            $specs = collect((array) $product->specs)->mapWithKeys(fn ($spec) => [(string) ($spec['key'] ?? '') => (string) ($spec['value'] ?? '')])->all();
+            $fromName = array_intersect_key($specs, array_flip(self::NAME_SPEC_KEYS));
+            $fromMaker = array_diff_key($specs, $fromName);
+            $clean = self::mergeSpecs($fromName, $fromMaker);
+            $removed = array_keys(array_diff_key($specs, $clean));
+            if ($removed === []) {
+                continue;
+            }
+            $stats['cleaned']++;
+            $this->line(sprintf('audit.onec_chimneys.cleaned=%d:%d', $product->id, count($removed)));
+            if (! $this->option('apply')) {
+                continue;
+            }
+            $product->forceFill(['specs' => collect($clean)->map(fn ($value, $key) => ['key' => $key, 'value' => $value])->values()->all()])->save();
+            $stats['attributes_removed'] += \Illuminate\Support\Facades\DB::table('product_attribute_values')->where('product_id', $product->id)
+                ->whereIn('attribute_id', \Illuminate\Support\Facades\DB::table('attributes')->where('category_id', $product->category_id)
+                    ->whereIn('name', $removed)->select('id'))
+                ->delete();
         }
         foreach ($stats as $key => $value) {
             $this->line("metric.onec_chimneys.{$key}={$value}");

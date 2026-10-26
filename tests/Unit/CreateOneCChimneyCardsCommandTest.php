@@ -21,5 +21,9 @@ class CreateOneCChimneyCardsCommandTest extends TestCase
         $this->assertSame('1000 мм', $specs['Длина']);
 
         $this->assertSame(25.42, C::retailFromWholesale(20.88));
+
+        $merged = C::mergeSpecs(['Элемент дымохода' => 'Отвод', 'Толщина стали' => '0.8 мм', 'Угол' => '87°'],
+            ['Толщина металла (внутренняя)' => '0.8 мм', 'Картинки' => 'Array']);
+        $this->assertSame(['Элемент дымохода' => 'Отвод', 'Угол' => '87°', 'Толщина металла (внутренняя)' => '0.8 мм'], $merged);
     }
 }
