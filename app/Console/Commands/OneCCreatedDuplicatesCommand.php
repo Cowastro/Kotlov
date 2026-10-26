@@ -22,6 +22,7 @@ class OneCCreatedDuplicatesCommand extends Command
 {
     protected $signature = 'integration:onec-duplicates
         {--source=onec : Integration source code}
+        {--redirect-folded : Add 301 redirects for duplicates archived in the last 24 hours}
         {--apply : Move the 1C row to the older card and archive the duplicate}';
 
     protected $description = 'Find (and fold) cards created from 1C that duplicate an older card';
@@ -31,12 +32,14 @@ class OneCCreatedDuplicatesCommand extends Command
         $source = IntegrationSource::query()->where('code', $this->option('source'))->first();
         $items = IntegrationProduct::query()->where('integration_source_id', $source?->id)->where('match_method', 'manual_created')
             ->whereNotNull('product_id')->get()->keyBy('product_id');
-        $created = Product::query()->whereIn('id', $items->keys())->where('is_archived', false)->get(['id', 'name', 'slug', 'price', 'images', 'brand_id']);
+        $created = $this->option('redirect-folded')
+            ? Product::query()->where('is_archived', true)->where('updated_at', '>=', now()->subDay())->get(['id', 'name', 'slug', 'price', 'images', 'brand_id', 'category_id'])
+            : Product::query()->whereIn('id', $items->keys())->where('is_archived', false)->get(['id', 'name', 'slug', 'price', 'images', 'brand_id', 'category_id']);
 
         // Every other card by signature (computed once).
         $index = [];
         Product::query()->where('is_archived', false)->whereNotIn('id', $items->keys())
-            ->select(['id', 'name', 'slug', 'price', 'images', 'brand_id'])->orderBy('id')
+            ->select(['id', 'name', 'slug', 'price', 'images', 'brand_id', 'category_id'])->orderBy('id')
             ->chunk(2000, function ($chunk) use (&$index): void {
                 foreach ($chunk as $product) {
                     $signature = LinkOneCByParametersCommand::signature((string) $product->name);
@@ -68,12 +71,18 @@ class OneCCreatedDuplicatesCommand extends Command
             if (! $this->option('apply')) {
                 continue;
             }
+            if ($this->option('redirect-folded')) {
+                $stats['folded'] += $this->redirect($new, $old);
+
+                continue;
+            }
             DB::transaction(function () use ($items, $new, $old): void {
                 $item = $items->get($new->id);
                 $item->forceFill(['product_id' => $old->id, 'match_method' => 'manual_search', 'target_category_id' => null])->save();
                 DB::table('supplier_product_mappings')->where('product_id', $new->id)->update(['product_id' => $old->id, 'updated_at' => now()]);
                 Product::query()->whereKey($new->id)->update(['is_archived' => true, 'is_active' => false, 'updated_at' => now()]);
             });
+            $this->redirect($new, $old);
             $stats['folded']++;
         }
         foreach ($stats as $key => $value) {
@@ -81,6 +90,23 @@ class OneCCreatedDuplicatesCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /** The archived card's addresses lead to the card that stays. */
+    private function redirect(Product $new, Product $old): int
+    {
+        $categories = DB::table('categories')->whereIn('id', [$new->category_id, $old->category_id])->pluck('slug', 'id');
+        $target = '/'.($categories[$old->category_id] ?? '').'/'.$old->slug;
+        $added = 0;
+        foreach (array_filter(['/'.($categories[$new->category_id] ?? '').'/'.$new->slug, '/'.$new->slug]) as $from) {
+            if ($from === $target) {
+                continue;
+            }
+            DB::table('redirects')->updateOrInsert(['from_url' => $from], ['to_url' => $target, 'status_code' => 301, 'is_active' => 1, 'updated_at' => now(), 'created_at' => now()]);
+            $added++;
+        }
+
+        return $added > 0 ? 1 : 0;
     }
 
     private static function sameMaker(string $new, string $old, mixed $newBrand, mixed $oldBrand): bool
