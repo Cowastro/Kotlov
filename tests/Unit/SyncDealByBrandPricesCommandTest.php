@@ -50,6 +50,22 @@ class SyncDealByBrandPricesCommandTest extends TestCase
         $this->assertSame(0, $plan['unmatched']);
     }
 
+    public function test_it_extracts_only_safe_numeric_price_fields_for_diagnostics(): void
+    {
+        $method = new ReflectionMethod(SyncDealByBrandPricesCommand::class, 'priceFields');
+        $fields = $method->invoke(new SyncDealByBrandPricesCommand(), [
+            'name' => 'Private product name',
+            'price' => '2719.50',
+            'discount' => ['value' => 5, 'price' => '2590.00'],
+            'contact' => ['sale_email' => 'private@example.test'],
+        ]);
+
+        $this->assertSame([
+            'price' => 2719.5,
+            'discount.price' => 2590.0,
+        ], $fields);
+    }
+
     private function product(int $id, string $sku, string $slug, string $name, float $price, string $brandName): Product
     {
         $product = new Product([

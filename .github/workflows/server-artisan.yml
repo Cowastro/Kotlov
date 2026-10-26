@@ -742,6 +742,7 @@ jobs:
             echo "safe_deal_brand_prices_begin"
             grep -E '^metric\.deal_brand_prices\.[a-z_]+=[0-9]+$' "$detail_log" || true
             grep -E '^audit\.deal_brand_prices=[0-9]+:[0-9]+:(vezuviy|tatra_boilers|bania):[0-9]+:[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.deal_brand_prices\.field=[0-9]+:[a-zA-Z0-9_.-]+:-?[0-9]+$' "$detail_log" || true
             echo "safe_deal_brand_prices_end"
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:hold-unlinked-products" ]]; then

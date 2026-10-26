@@ -19,6 +19,7 @@ class SyncDealByBrandPricesCommand extends Command
 
     protected $signature = 'deal:sync-brand-prices
         {--supplier= : Audit products linked to an allowed supplier code instead of the default brands}
+        {--inspect-id= : Emit safe price and discount fields for one Deal.by product ID}
         {--apply : Update matched Deal.by product prices}';
 
     protected $description = 'Safely audit or synchronize selected KOTLOV.BY prices to Deal.by';
@@ -29,6 +30,11 @@ class SyncDealByBrandPricesCommand extends Command
             $this->supplierCode = $this->resolveSupplierCode();
             $localProducts = $this->targetProducts();
             $remoteProducts = $this->loadRemoteProducts($client);
+
+            if (filled($this->option('inspect-id'))) {
+                return $this->inspectRemoteProduct($remoteProducts, (int) $this->option('inspect-id'));
+            }
+
             $plan = $this->buildPlan($localProducts, $remoteProducts);
 
             $this->metrics($localProducts, $remoteProducts, $plan);
@@ -392,5 +398,53 @@ class SyncDealByBrandPricesCommand extends Command
         }
 
         return $supplierCode;
+    }
+
+    /** @param Collection<int, array<string, mixed>> $remoteProducts */
+    private function inspectRemoteProduct(Collection $remoteProducts, int $dealId): int
+    {
+        if ($dealId <= 0) {
+            throw new RuntimeException('--inspect-id должен быть положительным ID товара Deal.by.');
+        }
+
+        $product = $remoteProducts->first(fn (array $item): bool => (int) ($item['id'] ?? 0) === $dealId);
+        $this->line('metric.deal_brand_prices.inspect_found='.($product === null ? '0' : '1'));
+
+        if ($product === null) {
+            return self::FAILURE;
+        }
+
+        foreach ($this->priceFields($product) as $path => $value) {
+            $this->line(sprintf(
+                'audit.deal_brand_prices.field=%d:%s:%d',
+                $dealId,
+                $path,
+                (int) round($value * 100),
+            ));
+        }
+
+        return self::SUCCESS;
+    }
+
+    /** @return array<string, float> */
+    private function priceFields(array $payload, string $prefix = ''): array
+    {
+        $fields = [];
+
+        foreach ($payload as $key => $value) {
+            $segment = preg_replace('/[^a-z0-9_-]+/i', '_', (string) $key) ?: 'field';
+            $path = $prefix === '' ? $segment : $prefix.'.'.$segment;
+
+            if (is_array($value)) {
+                $fields += $this->priceFields($value, $path);
+                continue;
+            }
+
+            if (preg_match('/(?:price|discount|cost|sale)/i', (string) $key) === 1 && is_numeric($value)) {
+                $fields[$path] = (float) $value;
+            }
+        }
+
+        return $fields;
     }
 }
