@@ -13,26 +13,36 @@ class SyncDealByBrandPricesCommand extends Command
 {
     private const PAGE_SIZE = 100;
 
+    private const SUPPORTED_SUPPLIERS = ['bania'];
+
+    private ?string $supplierCode = null;
+
     protected $signature = 'deal:sync-brand-prices
+        {--supplier= : Audit products linked to an allowed supplier code instead of the default brands}
         {--apply : Update matched Deal.by product prices}';
 
-    protected $description = 'Safely synchronize Vezuviy and Tatra boiler prices from KOTLOV.BY to Deal.by';
+    protected $description = 'Safely audit or synchronize selected KOTLOV.BY prices to Deal.by';
 
     public function handle(DealByClient $client): int
     {
         try {
+            $this->supplierCode = $this->resolveSupplierCode();
             $localProducts = $this->targetProducts();
             $remoteProducts = $this->loadRemoteProducts($client);
             $plan = $this->buildPlan($localProducts, $remoteProducts);
 
             $this->metrics($localProducts, $remoteProducts, $plan);
 
-            $localVezuviy = $localProducts->filter(
-                fn (Product $product): bool => $this->normalize((string) $product->brand?->name) === 'везувий'
-            )->count();
-            $localTatra = $localProducts->count() - $localVezuviy;
-            if ($localVezuviy === 0 || $localTatra === 0) {
-                throw new RuntimeException('Безопасная остановка: в рабочей базе не найдена одна из целевых групп товаров.');
+            if ($this->supplierCode === null) {
+                $localVezuviy = $localProducts->filter(
+                    fn (Product $product): bool => $this->normalize((string) $product->brand?->name) === 'везувий'
+                )->count();
+                $localTatra = $localProducts->count() - $localVezuviy;
+                if ($localVezuviy === 0 || $localTatra === 0) {
+                    throw new RuntimeException('Безопасная остановка: в рабочей базе не найдена одна из целевых групп товаров.');
+                }
+            } elseif ($localProducts->isEmpty()) {
+                throw new RuntimeException('Безопасная остановка: у поставщика нет активных товаров с ценой.');
             }
 
             if (! $this->option('apply')) {
@@ -66,7 +76,9 @@ class SyncDealByBrandPricesCommand extends Command
                 throw new RuntimeException('Повторная проверка Deal.by обнаружила оставшиеся расхождения цен.');
             }
 
-            $this->info('Цены «Везувий» и котлов Tatra обновлены и проверены на Deal.by.');
+            $this->info($this->supplierCode === null
+                ? 'Цены «Везувий» и котлов Tatra обновлены и проверены на Deal.by.'
+                : 'Цены товаров поставщика обновлены и проверены на Deal.by.');
 
             return self::SUCCESS;
         } catch (Throwable $exception) {
@@ -80,14 +92,27 @@ class SyncDealByBrandPricesCommand extends Command
     /** @return Collection<int, Product> */
     private function targetProducts(): Collection
     {
-        return Product::query()
+        $query = Product::query()
             ->with(['brand:id,name'])
             ->where('is_active', true)
             ->where(function ($query): void {
                 $query->where('is_archived', false)->orWhereNull('is_archived');
             })
-            ->where('price', '>', 0)
-            ->get(['id', 'brand_id', 'name', 'sku', 'slug', 'price'])
+            ->where('price', '>', 0);
+
+        if ($this->supplierCode !== null) {
+            $query->whereHas('supplierProducts.supplier', function ($supplier): void {
+                $supplier->where('code', $this->supplierCode)->where('is_active', true);
+            });
+        }
+
+        $products = $query->get(['id', 'brand_id', 'name', 'sku', 'slug', 'price']);
+
+        if ($this->supplierCode !== null) {
+            return $products->values();
+        }
+
+        return $products
             ->filter(function (Product $product): bool {
                 $brand = $this->normalize((string) $product->brand?->name);
 
@@ -184,7 +209,8 @@ class SyncDealByBrandPricesCommand extends Command
                 continue;
             }
 
-            $group = $this->normalize((string) $local->brand?->name) === 'везувий' ? 'vezuviy' : 'tatra_boilers';
+            $group = $this->supplierCode
+                ?? ($this->normalize((string) $local->brand?->name) === 'везувий' ? 'vezuviy' : 'tatra_boilers');
             $updates->push([
                 'deal_id' => (int) ($remote['id'] ?? 0),
                 'local_id' => (int) $local->id,
@@ -216,6 +242,9 @@ class SyncDealByBrandPricesCommand extends Command
     private function metrics(Collection $localProducts, Collection $remoteProducts, array $plan): void
     {
         $this->line('metric.deal_brand_prices.remote_products='.$remoteProducts->count());
+        if ($this->supplierCode !== null) {
+            $this->line('metric.deal_brand_prices.local_supplier_'.$this->supplierCode.'='.$localProducts->count());
+        }
         $this->line('metric.deal_brand_prices.local_vezuviy='.$localProducts->filter(
             fn (Product $product): bool => $this->normalize((string) $product->brand?->name) === 'везувий'
         )->count());
@@ -281,5 +310,19 @@ class SyncDealByBrandPricesCommand extends Command
     private function normalizeName(mixed $value): string
     {
         return mb_strtolower(trim(preg_replace('/\s+/u', ' ', (string) $value) ?? (string) $value));
+    }
+
+    private function resolveSupplierCode(): ?string
+    {
+        $supplierCode = $this->normalize((string) $this->option('supplier'));
+        if ($supplierCode === '') {
+            return null;
+        }
+
+        if (! in_array($supplierCode, self::SUPPORTED_SUPPLIERS, true)) {
+            throw new RuntimeException('Безопасная остановка: этот код поставщика не разрешён для сверки Deal.by.');
+        }
+
+        return $supplierCode;
     }
 }
