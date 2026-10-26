@@ -415,6 +415,12 @@ jobs:
             grep -E '^audit\.atmos_cards\.item=[0-9]+:[a-z]+:[0-9]+:[a-z0-9-]+$' "$detail_log" | sort | uniq -c | awk '{print $2}' | sed -E 's/^audit\.atmos_cards\.item=([0-9]+):([a-z]+):[0-9]+:/audit.atmos_cards.group=\1:\2:/' | sort | uniq -c | sed -E 's/^ *([0-9]+) (.*)$/\2:\1/' || true
             echo "safe_atmos_cards_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-cooper-doors" ]]; then
+            echo "safe_cooper_doors_begin"
+            grep -E '^metric\.cooper_doors\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.cooper_doors\.(no_price=[0-9]+|unlinked=[0-9]+|create=[0-9]+:[a-z0-9-]+:[0-9]+)$' "$detail_log" || true
+            echo "safe_cooper_doors_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:category-cards" ]]; then
             echo "safe_category_cards_begin"
             grep -E '^metric\.category_cards\.[a-z0-9_]+=[0-9]+$' "$detail_log" || true

@@ -145,6 +145,15 @@ Schedule::command('supplier:sync-maitek-group --apply --sync-retail-prices')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/maitek-group-price-stock-sync.log'));
 
+// ООО «СаунаОпт»: двери для бани Cooper с cooper.by — розничная цена и наличие.
+// Новые карточки создаются только ручным запуском с --create-new.
+Schedule::command('supplier:sync-cooper-doors --apply')
+    ->dailyAt('07:50')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/saunaopt-cooper-doors-sync.log'));
+
 // Термокрафт: live-прайс UNIVAT и ТЭНов TENKO/СТЭН. Новые карточки
 // создаются только в первом проверенном ручном запуске; cron обновляет связи.
 Schedule::command('supplier:sync-thermokraft --apply --all-sheets --sync-retail-prices')
