@@ -599,6 +599,17 @@ class SyncMaitekGroupCommand extends Command
             return $this->categoryBySlug['komplektuyushhie-dlya-otopleniya'] ?? null;
         }
 
+        // Control units of electric boilers (ПУЭ, ПЭУ) and the electric boiler lines (ЭВПМ, Стандарт, Эко, 220/380 В),
+        // judged by the title alone: a ТЭН description also talks about boilers and 220 V.
+        $title = mb_strtolower($row['name']);
+        if (preg_match('/(?:^|[^\\pL])(?:пуэ|пэу)-/u', $title) === 1) {
+            return $this->categoryBySlug['elektricheskie'] ?? null;
+        }
+
+        if (preg_match('/котел|котёл/u', $title) === 1 && preg_match('/эвпм|стандарт|(?:^|[^\\pL])эко(?:[^\\pL]|$)|220|380/u', $title) === 1) {
+            return $this->categoryBySlug['elektricheskie'] ?? null;
+        }
+
         if (preg_match('/(?:^|[^\\pL])(?:тэн|тнбр)/u', $name) === 1) {
             return $this->categoryBySlug['elektricheskie-teny-dlya-otopleniya'] ?? null;
         }
