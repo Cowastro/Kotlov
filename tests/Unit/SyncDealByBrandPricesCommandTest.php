@@ -31,6 +31,25 @@ class SyncDealByBrandPricesCommandTest extends TestCase
         $this->assertSame(0, $plan['unmatched']);
     }
 
+    public function test_it_matches_legacy_tatra_names_by_unique_model(): void
+    {
+        $boiler = $this->product(31, 'PS-31', 'tatra-kt30-nl1', 'Tatra КТ30-НЛ1 Сталь 6мм левый одноконтурный', 3312.00, 'Татра');
+        $stove = $this->product(32, 'PS-32', 'pec-bannaia-tatra-t16-s-bakom-80l', 'Печь банная Tatra T16 с баком 80 л', 1482.00, 'Татра');
+
+        $remote = collect([
+            ['id' => 401, 'external_id' => '', 'sku' => 'OLD-31', 'name' => 'Котел длительного горения Татра KT30 NL1', 'price' => 3000.00],
+            ['id' => 402, 'external_id' => '', 'sku' => 'OLD-32', 'name' => 'Печь-каменка Татра Т-16 с баком 80 литров', 'price' => 1300.00],
+        ]);
+
+        $method = new ReflectionMethod(SyncDealByBrandPricesCommand::class, 'buildPlan');
+        $plan = $method->invoke(new SyncDealByBrandPricesCommand(), collect([$boiler, $stove]), $remote);
+
+        $this->assertSame(2, $plan['matched']);
+        $this->assertSame([401, 402], $plan['updates']->pluck('deal_id')->all());
+        $this->assertSame([3312.0, 1482.0], $plan['updates']->pluck('new_price')->all());
+        $this->assertSame(0, $plan['unmatched']);
+    }
+
     private function product(int $id, string $sku, string $slug, string $name, float $price, string $brandName): Product
     {
         $product = new Product([
@@ -41,6 +60,7 @@ class SyncDealByBrandPricesCommandTest extends TestCase
         ]);
         $product->id = $id;
         $product->setRelation('brand', new Brand(['name' => $brandName]));
+        $product->setRelation('supplierProducts', collect());
 
         return $product;
     }

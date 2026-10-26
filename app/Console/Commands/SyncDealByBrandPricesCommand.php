@@ -93,7 +93,7 @@ class SyncDealByBrandPricesCommand extends Command
     private function targetProducts(): Collection
     {
         $query = Product::query()
-            ->with(['brand:id,name'])
+            ->with(['brand:id,name', 'supplierProducts:id,product_id,supplier_article'])
             ->where('is_active', true)
             ->where(function ($query): void {
                 $query->where('is_archived', false)->orWhereNull('is_archived');
@@ -120,8 +120,7 @@ class SyncDealByBrandPricesCommand extends Command
                     return true;
                 }
 
-                return in_array($brand, ['tatra', 'татра'], true)
-                    && preg_match('/(кот[её]л|boiler)/ui', (string) $product->name) === 1;
+                return in_array($brand, ['tatra', 'татра'], true);
             })
             ->values();
     }
@@ -143,12 +142,31 @@ class SyncDealByBrandPricesCommand extends Command
         $localByName = $localProducts
             ->filter(fn (Product $product): bool => $this->normalizeName($product->name) !== '')
             ->groupBy(fn (Product $product): string => $this->normalizeName($product->name));
+        $localByTatraModel = $localProducts
+            ->filter(fn (Product $product): bool => $this->isTatra($product))
+            ->mapToGroups(fn (Product $product): array => [
+                $this->tatraModelKey(
+                    $product->name,
+                    $product->slug,
+                    $product->sku,
+                    ...$product->supplierProducts->pluck('supplier_article')->all(),
+                ) ?? '' => $product,
+            ])
+            ->forget('');
         $remoteSkuCounts = $remoteProducts
             ->map(fn (array $product): string => $this->normalizeSku($product['sku'] ?? null))
             ->filter()
             ->countBy();
         $remoteNameCounts = $remoteProducts
             ->map(fn (array $product): string => $this->normalizeName($product['name'] ?? null))
+            ->filter()
+            ->countBy();
+        $remoteTatraModelCounts = $remoteProducts
+            ->filter(fn (array $product): bool => $this->looksLikeTatra($product['name'] ?? null))
+            ->map(fn (array $product): ?string => $this->tatraModelKey(
+                $product['name'] ?? null,
+                $product['sku'] ?? null,
+            ))
             ->filter()
             ->countBy();
 
@@ -186,6 +204,17 @@ class SyncDealByBrandPricesCommand extends Command
                 if ($nameCandidates->count() === 1) {
                     $local = $nameCandidates->first();
                 } elseif ($nameCandidates->count() > 1) {
+                    $ambiguous++;
+                }
+            }
+
+            if (! $local && $this->looksLikeTatra($remote['name'] ?? null)) {
+                $model = $this->tatraModelKey($remote['name'] ?? null, $remote['sku'] ?? null);
+                $modelCandidates = $model !== null ? $localByTatraModel->get($model, collect()) : collect();
+
+                if ($model !== null && ($remoteTatraModelCounts[$model] ?? 0) === 1 && $modelCandidates->count() === 1) {
+                    $local = $modelCandidates->first();
+                } elseif ($modelCandidates->count() > 1) {
                     $ambiguous++;
                 }
             }
@@ -310,6 +339,45 @@ class SyncDealByBrandPricesCommand extends Command
     private function normalizeName(mixed $value): string
     {
         return mb_strtolower(trim(preg_replace('/\s+/u', ' ', (string) $value) ?? (string) $value));
+    }
+
+    private function isTatra(Product $product): bool
+    {
+        return in_array($this->normalize((string) $product->brand?->name), ['tatra', 'татра'], true);
+    }
+
+    private function looksLikeTatra(mixed $value): bool
+    {
+        return preg_match('/(?:tatra|татра)/ui', (string) $value) === 1;
+    }
+
+    private function tatraModelKey(mixed ...$values): ?string
+    {
+        $value = mb_strtoupper(implode(' ', array_map(static fn (mixed $item): string => (string) $item, $values)));
+        $value = strtr($value, [
+            'А' => 'A', 'Б' => 'B', 'К' => 'K', 'Л' => 'L', 'М' => 'M',
+            'Н' => 'N', 'О' => 'O', 'П' => 'P', 'Р' => 'R', 'Т' => 'T',
+        ]);
+        $compact = preg_replace('/[^A-Z0-9]+/', '', $value) ?? '';
+
+        if (preg_match('/KT(\d{2,3})(N(?:L|P)[12]?|N|TR)?/', $compact, $match) === 1) {
+            return 'KT'.$match[1].($match[2] ?? '');
+        }
+
+        if (preg_match('/K(\d{2,3})TR/', $compact, $match) === 1) {
+            return 'K'.$match[1].'TR';
+        }
+
+        if (preg_match('/TATRA.*?T(10|16|24|30|32|36)(T)?/', $compact, $match) === 1) {
+            $model = 'T'.$match[1].($match[2] ?? '');
+            if (preg_match('/(?:BAKOM?|TANK)(50|80|100)L?/', $compact, $tank) === 1) {
+                $model .= 'TANK'.$tank[1];
+            }
+
+            return $model;
+        }
+
+        return null;
     }
 
     private function resolveSupplierCode(): ?string
