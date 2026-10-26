@@ -23,6 +23,7 @@ class SbgSitePricesCommand extends Command
     protected $signature = 'integration:sbg-site-prices
         {--source=onec : Integration source code}
         {--all-linked : Every card linked to a 1C row, not only the ones created from 1C}
+        {--show-site= : Only list the sbg.by products whose name has this word (slug, article, price)}
         {--apply : Set the sbg.by price on the cards}';
 
     protected $description = 'Compare (and set) card prices with the sbg.by price of the same 1C article';
@@ -39,6 +40,15 @@ class SbgSitePricesCommand extends Command
         $source = IntegrationSource::query()->where('code', $this->option('source'))->first();
         $remote = $this->remotePrices($client);
         $this->line('metric.sbg_prices.site_products='.$remote->count());
+        if ($word = $this->option('show-site')) {
+            foreach ($this->siteProducts as $site) {
+                if (mb_stripos($site['name'], $word) !== false) {
+                    $this->line(sprintf('audit.sbg_prices.site=%s:%s:%s', Str::slug(Str::limit($site['name'], 90, '')), Str::slug($site['sku']) ?: 'none', number_format($site['price'], 2, '.', '')));
+                }
+            }
+
+            return self::SUCCESS;
+        }
 
         $items = IntegrationProduct::query()->where('integration_source_id', $source?->id)->whereNotNull('product_id')
             ->whereNotNull('external_sku')->where('external_sku', '!=', '')
@@ -79,6 +89,9 @@ class SbgSitePricesCommand extends Command
         return self::SUCCESS;
     }
 
+    /** @var array<int,array{name:string,sku:string,price:float}> */
+    private array $siteProducts = [];
+
     /** @return Collection<string,float> 1C article => sbg.by price */
     private function remotePrices(DealByClient $client): Collection
     {
@@ -88,6 +101,9 @@ class SbgSitePricesCommand extends Command
             $items = collect($client->listProducts(self::PAGE_SIZE, $lastId)['products'] ?? [])->filter(fn ($item) => is_array($item))->values();
             foreach ($items as $item) {
                 $sku = Str::upper(trim((string) ($item['sku'] ?? '')));
+                if (is_numeric($item['price'] ?? null) && (float) $item['price'] > 0) {
+                    $this->siteProducts[] = ['name' => (string) ($item['name'] ?? ''), 'sku' => $sku, 'price' => round((float) $item['price'], 2)];
+                }
                 if ($sku !== '' && is_numeric($item['price'] ?? null) && (float) $item['price'] > 0) {
                     $prices[$sku] = round((float) $item['price'], 2);
                 }
