@@ -34,6 +34,7 @@ use App\Http\Controllers\OrderProcurementController;
 use App\Http\Controllers\OrderPortalController;
 use App\Http\Controllers\PartnerApplicationController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReleaseNotesController;
 use App\Http\Controllers\ProductPurchasePriceSourceAttachmentController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\PublicAiSelectionController;
@@ -120,6 +121,14 @@ Route::get('/admin/orders/{order}/procurement', OrderProcurementController::clas
     ->whereNumber('order')
     ->middleware('auth')
     ->name('admin.orders.procurement');
+
+// Внутренние релизы: список для сотрудников, релиз — по ссылке на 48 часов без входа.
+Route::get('/admin/releases', [ReleaseNotesController::class, 'index'])
+    ->middleware('auth')
+    ->name('admin.releases.index');
+Route::get('/releases/{date}', [ReleaseNotesController::class, 'show'])
+    ->where('date', '\d{4}-\d{2}-\d{2}')
+    ->name('releases.show');
 
 Route::get('/admin/orders/{order}/online-preview', [OrderPortalController::class, 'preview'])
     ->whereNumber('order')

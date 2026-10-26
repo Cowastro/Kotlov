@@ -47,6 +47,10 @@ class AdminPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->navigationItems([
+                NavigationItem::make('Что нового')
+                    ->icon('heroicon-o-megaphone')
+                    ->sort(100)
+                    ->url(fn (): string => route('admin.releases.index')),
                 NavigationItem::make('Резервы поставщиков')
                     ->group('Продажи')
                     ->icon('heroicon-o-envelope')
