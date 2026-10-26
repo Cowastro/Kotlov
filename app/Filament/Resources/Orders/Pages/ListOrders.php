@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders\Pages;
 
+use App\Filament\Resources\Orders\Actions\QuickOrderAction;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use Filament\Actions\CreateAction;
@@ -22,6 +23,7 @@ class ListOrders extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            QuickOrderAction::make(),
             CreateAction::make(),
         ];
     }
