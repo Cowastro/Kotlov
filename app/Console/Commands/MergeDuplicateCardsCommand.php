@@ -97,6 +97,8 @@ class MergeDuplicateCardsCommand extends Command
     /** Both cards must name the same model numbers, so a wrong pair is never merged. */
     private function digits(string $name): string
     {
+        // «ТиС Стандарт 50» names the series, not the model.
+        $name = (string) preg_replace('/стандарт\s*\d+/iu', '', $name);
         preg_match_all('/\d+/', $name, $m);
 
         return implode(' ', $m[0]);
