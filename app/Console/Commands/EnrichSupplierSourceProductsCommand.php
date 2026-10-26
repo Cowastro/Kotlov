@@ -26,6 +26,7 @@ class EnrichSupplierSourceProductsCommand extends Command
         {--force : Process even products that already have photos, specs and content}
         {--quality-issues-only : Process only products with thin or legacy content}
         {--content-only : Update only content, short description and meta description}
+        {--images-only : Take only photos from the source (its specs or text are in another language)}
         {--overwrite-images : Replace existing product images instead of appending}
         {--replace-specs : Delete existing product attributes and replace specs from source}
         {--min-specs-to-replace=0 : When replacing specs, skip replacement if fewer specs were found; 0 disables the guard}
@@ -48,6 +49,7 @@ class EnrichSupplierSourceProductsCommand extends Command
         $force = (bool) $this->option('force');
         $qualityIssuesOnly = (bool) $this->option('quality-issues-only');
         $contentOnly = (bool) $this->option('content-only');
+        $imagesOnly = (bool) $this->option('images-only');
 
         $this->line($apply
             ? '<fg=red;options=bold>APPLY: source enrichment will be written.</>'
@@ -222,14 +224,14 @@ class EnrichSupplierSourceProductsCommand extends Command
                     'preview_only' => ! $apply,
                     'replace_images' => ! $contentOnly && (bool) $this->option('overwrite-images'),
                     'update_images' => ! $contentOnly,
-                    'update_specs' => ! $contentOnly,
-                    'replace_specs' => ! $contentOnly && ((bool) $this->option('replace-specs') || $force),
+                    'update_specs' => ! $contentOnly && ! $imagesOnly,
+                    'replace_specs' => ! $contentOnly && ! $imagesOnly && ((bool) $this->option('replace-specs') || $force),
                     'min_specs_to_replace' => max(0, (int) $this->option('min-specs-to-replace')),
-                    'update_service' => ! $contentOnly,
-                    'update_documents' => ! $contentOnly && ! (bool) $this->option('skip-documents'),
+                    'update_service' => ! $contentOnly && ! $imagesOnly,
+                    'update_documents' => ! $contentOnly && ! $imagesOnly && ! (bool) $this->option('skip-documents'),
                     'clear_documents' => ! $contentOnly && (bool) $this->option('clear-documents'),
-                    'update_video' => ! $contentOnly,
-                    'update_content' => ! (bool) $this->option('skip-ai'),
+                    'update_video' => ! $contentOnly && ! $imagesOnly,
+                    'update_content' => ! $imagesOnly && ! (bool) $this->option('skip-ai'),
                     'source_content' => (bool) $this->option('source-content'),
                     'min_specs_for_ai' => max(0, (int) $this->option('min-specs-for-ai')),
                     'require_images_for_ai' => (bool) $this->option('require-images-for-ai'),

@@ -389,7 +389,7 @@ class SyncMaitekGroupCommand extends Command
         $stockText = $this->clean($cells[6] ?? '');
         $stockQuantity = $this->stockQuantity($stockText);
         $article = $code !== '' ? $code : $this->supplierArticle($brand, $name, $sourceUrl);
-        $sourceUrl = $sourceUrl ?: $this->greolitSourceUrl($brand, $name);
+        $sourceUrl = $sourceUrl ?: $this->greolitSourceUrl($brand, $name) ?: $this->innowarmSourceUrl($brand, $name);
 
         return [
             'gid' => $gid,
@@ -464,6 +464,22 @@ class SyncMaitekGroupCommand extends Command
         }
 
         return $brand . ' ' . $name;
+    }
+
+    /** The maker's page of an INNOWARM towel-rail heater (HP003, HP015…): one page per series, all colours and powers. */
+    private function innowarmSourceUrl(string $brand, string $name): ?string
+    {
+        if ($brand !== 'INNOWARM' || preg_match('/^\s*(HP0\d\d)/i', $name, $match) !== 1) {
+            return null;
+        }
+
+        $slug = match (strtoupper($match[1])) {
+            'HP007', 'HP008' => 'hp007-hp008',
+            'HP017' => 'hp017-mira',
+            default => strtolower($match[1]),
+        };
+
+        return 'https://innowarm.com/wordpress/index.php/product/' . $slug . '/';
     }
 
     private function greolitSourceUrl(string $brand, string $name): ?string

@@ -2318,6 +2318,15 @@ class ProductSourceEnricher
 
     private function extractImages(string $html, string $pageUrl): array
     {
+        if ((string) parse_url($pageUrl, PHP_URL_HOST) === 'innowarm.com') {
+            // Elementor page without «entry-summary»: the full-size photos are the gallery links.
+            preg_match_all('~woocommerce-product-gallery__image"[^>]*>\s*<a href="([^"]+)"~iu', $html, $matches);
+            $galleryImages = array_values(array_unique(array_map(fn (string $src): string => $this->absoluteUrl($src, $pageUrl), $matches[1] ?? [])));
+            if ($galleryImages !== []) {
+                return array_slice($galleryImages, 0, $this->sourceImageLimit($pageUrl));
+            }
+        }
+
         if ($this->isEliconUrl($pageUrl) || $this->isPkMercuryUrl($pageUrl)) {
             $galleryImages = $this->extractWooCommerceProductGalleryImages($html, $pageUrl);
             if ($galleryImages !== []) {
@@ -2479,6 +2488,12 @@ class ProductSourceEnricher
 
         if (($host === 'teplo.by' || $host === 'bio-tep.ru' || str_ends_with($host, 'pkmercury.by')) && str_starts_with($path, '/uploads/')) {
             $url = str_replace('://' . $host . '/uploads/', '://' . $host . '/wp-content/uploads/', $url);
+            $path = (string) parse_url($url, PHP_URL_PATH);
+        }
+
+        // innowarm.com lives under /wordpress/ but its gallery links drop that prefix (and 500).
+        if ($host === 'innowarm.com' && str_starts_with($path, '/uploads/')) {
+            $url = str_replace('://innowarm.com/uploads/', '://innowarm.com/wordpress/wp-content/uploads/', $url);
             $path = (string) parse_url($url, PHP_URL_PATH);
         }
 
