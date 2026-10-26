@@ -3,12 +3,16 @@
 namespace App\Console\Commands;
 
 use App\Models\Brand;
+use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
 use App\Services\Integrations\IntegrationProductCreator;
+use App\Services\ProductSourceEnricher;
+use App\Services\Suppliers\TeplovSiteCatalog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 /**
@@ -55,8 +59,12 @@ class CreateOneCChimneyCardsCommand extends Command
             ->values();
         $pool = $this->siblingPool();
         $brand = Brand::query()->where('name', 'like', 'Теплов%')->orderByDesc('is_active')->first();
+        $categories = Category::query()->whereIn('slug', array_unique(array_merge(array_values(self::CATEGORY_BY_TYPE), ['prochie-dymohod'])))->pluck('id', 'slug');
+        $rubRate = $this->rubRate();
+        $this->line('metric.onec_chimneys.rub_rate_x10000='.(int) round($rubRate * 10000));
 
-        $stats = ['rows' => $items->count(), 'not_for_sale' => 0, 'no_sibling' => 0, 'planned' => 0, 'created' => 0, 'with_price' => 0];
+        $stats = ['rows' => $items->count(), 'not_for_sale' => 0, 'from_maker' => 0, 'from_sibling' => 0, 'no_source' => 0,
+            'maker_price' => 0, 'maker_below_cost' => 0, 'rule_price' => 0, 'no_price' => 0, 'created' => 0, 'images_saved' => 0];
         foreach ($items as $item) {
             $name = (string) $item->name;
             if (Str::contains(mb_strtolower($name), self::NOT_FOR_SALE)) {
@@ -66,39 +74,61 @@ class CreateOneCChimneyCardsCommand extends Command
             }
             $isTis = str_contains((string) $item->integrationCategory?->path, 'Теплов и Сухов');
             $title = self::title($name, $isTis);
-            $sibling = self::closestSibling($title, $pool);
-            if (! $sibling) {
-                $stats['no_sibling']++;
-                $this->line(sprintf('audit.onec_chimneys.no_sibling=%d:%s', $item->id, Str::slug(Str::limit($title, 70, ''))));
+            // The maker's own page first: exact photo, description, specs and retail price.
+            $url = $this->teplov->find($name);
+            $page = $url ? $this->teplov->page($url) : null;
+            $sibling = $page ? null : self::closestSibling($title, $pool);
+            if (! $page && ! $sibling) {
+                $stats['no_source']++;
+                $this->line(sprintf('audit.onec_chimneys.no_source=%d:%s', $item->id, Str::slug(Str::limit($title, 70, ''))));
 
                 continue;
             }
+            $stats[$page ? 'from_maker' : 'from_sibling']++;
+
             $wholesale = (float) $item->normalizedPriceByn();
-            $retail = $wholesale > 0 ? self::retailFromWholesale($wholesale) : 0.0;
-            $stats['with_price'] += (int) ($retail > 0);
-            $stats['planned']++;
-            $this->line(sprintf('audit.onec_chimneys.plan=%d:%s:%d:%s:%d:%s', $item->id, Str::slug(Str::limit($title, 70, '')), $sibling->id,
-                Str::slug((string) $sibling->category?->slug) ?: 'none', (int) round($retail), Str::slug(Str::limit((string) $sibling->name, 70, ''))));
+            [$retail, $priceFrom] = match (true) {
+                // The maker's Russian retail, unless it would sell below our own wholesale + 5 %.
+                $page && $page['price_rub'] && $rubRate > 0 && ($wholesale <= 0 || $page['price_rub'] * $rubRate >= $wholesale * 1.05)
+                    => [round($page['price_rub'] * $rubRate, 2), 'maker_price'],
+                $wholesale > 0 => [self::retailFromWholesale($wholesale), 'rule_price'],
+                default => [0.0, 'no_price'],
+            };
+            $stats[$priceFrom]++;
+            if ($page && $page['price_rub'] && $priceFrom !== 'maker_price') {
+                $stats['maker_below_cost']++;
+            }
+            $specs = array_merge(self::specs($title), $page ? self::makerSpecs($page['specs']) : []);
+            $categorySlug = self::categorySlug($title);
+            $this->line(sprintf('audit.onec_chimneys.plan=%d:%s:%s:%s:%d:%s', $item->id, Str::slug(Str::limit($title, 70, '')),
+                $page ? 'maker' : 'sibling-'.$sibling->id, $categorySlug, (int) round($retail), $priceFrom));
             if (! $this->option('apply')) {
                 continue;
             }
 
-            $specs = self::specs($title);
             $product = $creator->createAndLink($item, [
                 'name' => $title,
                 'h1' => $title,
-                'category_id' => $sibling->category_id,
+                'category_id' => $categories[$categorySlug] ?? $categories['prochie-dymohod'] ?? $sibling?->category_id,
                 'retail_price' => $retail,
                 'brand_id' => $isTis ? $brand?->id : null,
-                'images' => array_values((array) $sibling->images),
+                'images' => $page ? [] : array_values((array) $sibling->images),
                 'specs' => collect($specs)->map(fn ($value, $key) => ['key' => $key, 'value' => $value])->values()->all(),
-                'short_description' => self::shortDescription($title, $specs),
+                'short_description' => $page && $page['description'] !== '' ? Str::limit($page['description'], 300, '…') : self::shortDescription($title, $specs),
+                'content_source_url' => $url,
                 'meta_title' => Str::limit($title, 60, '').' — купить в %city%',
                 'meta_description' => Str::limit($title.'. Элемент дымохода из нержавеющей стали. Цена, наличие и доставка по Беларуси.', 175, ''),
             ]);
-            if ($product) {
-                $product->forceFill(['requires_price_confirmation' => $retail <= 0])->save();
-                $stats['created']++;
+            if (! $product) {
+                continue;
+            }
+            $product->forceFill(['requires_price_confirmation' => $retail <= 0])->save();
+            $stats['created']++;
+            if ($page && $page['images'] !== []) {
+                $stats['images_saved'] += (int) (app(ProductSourceEnricher::class)->enrichFromParsed($product, $url, ['images' => []], [
+                    'verified_images' => $page['images'], 'update_images' => true, 'update_specs' => false, 'update_service' => false,
+                    'update_documents' => false, 'update_video' => false, 'update_content' => false,
+                ])['images_saved'] ?? 0);
             }
         }
         foreach ($stats as $key => $value) {
@@ -106,6 +136,57 @@ class CreateOneCChimneyCardsCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /** Element type and design → the chimney category of the site. */
+    private const CATEGORY_BY_TYPE = [
+        'труба|термо' => 'truby-sendvich', 'труба' => 'truby-mono',
+        'тройник|термо' => 'troyniki-sendvich', 'тройник' => 'troyniki-mono',
+        'отвод|термо' => 'kolena-sendvich', 'отвод' => 'kolena-mono',
+        'конус' => 'perehody-adaptery-dymohod', 'переход' => 'perehody-adaptery-dymohod', 'адаптер' => 'perehody-adaptery-dymohod',
+        'юбка' => 'perehody-adaptery-dymohod', 'конденсатоотвод' => 'kondensatootvody', 'заглушка' => 'zaglushki-dymohod',
+        'зонт' => 'zonty-deflektory', 'дефлектор' => 'zonty-deflektory', 'шибер' => 'shibery-dymohod',
+        'хомут' => 'krepleniya-dymohod', 'крепление' => 'krepleniya-dymohod', 'кронштейн' => 'krepleniya-dymohod',
+        'площадка' => 'krepleniya-dymohod', 'лист' => 'krepleniya-dymohod', 'проход' => 'krepleniya-dymohod',
+        'проходка' => 'krepleniya-dymohod', 'фартук' => 'krepleniya-dymohod',
+    ];
+
+    public function __construct(private readonly TeplovSiteCatalog $teplov)
+    {
+        parent::__construct();
+    }
+
+    public static function categorySlug(string $title): string
+    {
+        $signature = explode('|', LinkOneCByParametersCommand::signature($title));
+        $type = $signature[0] ?? '';
+        $termo = in_array('термо', $signature, true);
+
+        return self::CATEGORY_BY_TYPE[$type.($termo ? '|термо' : '')] ?? self::CATEGORY_BY_TYPE[$type] ?? 'prochie-dymohod';
+    }
+
+    /** teplov.ru props as card specs: «Толщина изоляции: 40» → «Толщина изоляции: 40 мм». */
+    public static function makerSpecs(array $props): array
+    {
+        $specs = [];
+        foreach ($props as $key => $value) {
+            $unit = preg_match('/толщина|диаметр|длина|высота|ширина/iu', $key) && is_numeric(str_replace(',', '.', $value)) ? ' мм' : '';
+            $specs[$key] = (preg_match('/марка стали/iu', $key) && ctype_digit($value) ? 'AISI ' : '').$value.$unit;
+        }
+
+        return $specs;
+    }
+
+    /** BYN for one Russian rouble, from the National Bank of Belarus. */
+    private function rubRate(): float
+    {
+        try {
+            $rate = Http::timeout(15)->get('https://api.nbrb.by/exrates/rates/RUB?parammode=2')->json();
+
+            return (float) ($rate['Cur_OfficialRate'] ?? 0) / max(1, (int) ($rate['Cur_Scale'] ?? 100));
+        } catch (\Throwable) {
+            return 0.0;
+        }
     }
 
     public static function retailFromWholesale(float $wholesale): float
