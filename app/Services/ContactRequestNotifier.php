@@ -55,6 +55,7 @@ class ContactRequestNotifier
         );
         $sourceLabels = [
             'product_page' => 'Карточка товара',
+            'product_availability_request' => 'Уточнение наличия товара',
             'consultation_form' => 'Форма консультации',
             'quick_callback' => 'Быстрый звонок за 5 минут',
             'ai_selection' => 'AI-подбор',
@@ -81,7 +82,21 @@ class ContactRequestNotifier
         try {
             $result = $this->telegram->sendMessage(
                 $chatId,
-                implode("\n", array_filter($lines, fn ($line) => $line !== null))
+                implode("\n", array_filter($lines, fn ($line) => $line !== null)),
+                [
+                    'reply_markup' => json_encode([
+                        'inline_keyboard' => [
+                            [[
+                                'text' => '✋ Взять заявку',
+                                'callback_data' => 'take_contact_request:'.$contactRequest->id,
+                            ]],
+                            [[
+                                'text' => '🗂 Открыть заявку в CRM',
+                                'url' => url('/admin/contact-requests/'.$contactRequest->id),
+                            ]],
+                        ],
+                    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                ]
             );
             if (! ($result['ok'] ?? false)) {
                 Log::error('Telegram consultation notification failed.', [

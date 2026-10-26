@@ -33,13 +33,16 @@ class ContactRequestNotifierTest extends TestCase
 
         $telegram = Mockery::mock(TelegramApi::class);
         $telegram->shouldReceive('sendMessage')->once()->withArgs(
-            fn ($chatId, string $message): bool => $chatId === '-100987654321'
+            fn ($chatId, string $message, array $extra): bool => $chatId === '-100987654321'
                 && str_contains($message, 'Нужна помощь с AI-подбором')
                 && str_contains($message, 'Иван')
                 && str_contains($message, '+375 29 123-45-67')
                 && str_contains($message, 'Электрические котлы')
                 && str_contains($message, 'электрокотёл 30 кВт')
                 && str_contains($message, 'power: 30')
+                && str_contains((string) ($extra['reply_markup'] ?? ''), 'Взять заявку')
+                && str_contains((string) ($extra['reply_markup'] ?? ''), 'take_contact_request:55')
+                && str_contains((string) ($extra['reply_markup'] ?? ''), '/admin/contact-requests/55')
         )->andReturn(['ok' => true, 'result' => ['message_id' => 777]]);
 
         (new ContactRequestNotifier($telegram))->notify($request);
@@ -63,7 +66,9 @@ class ContactRequestNotifierTest extends TestCase
 
         $telegram = Mockery::mock(TelegramApi::class);
         $telegram->shouldReceive('sendMessage')->once()
-            ->withArgs(fn ($chatId, string $message): bool => $chatId === '-100111111111' && str_contains($message, 'Анна'))
+            ->withArgs(fn ($chatId, string $message, array $extra): bool => $chatId === '-100111111111'
+                && str_contains($message, 'Анна')
+                && str_contains((string) ($extra['reply_markup'] ?? ''), 'take_contact_request:56'))
             ->andReturn(['ok' => true]);
 
         (new ContactRequestNotifier($telegram))->notify($request);

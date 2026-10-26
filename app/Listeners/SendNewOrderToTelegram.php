@@ -60,7 +60,12 @@ class SendNewOrderToTelegram implements ShouldQueue
             $order->delivery_address,
         ]));
 
-        $viewUrl = url('/admin/orders/'.$order->id);
+        // Deal.by lives in its own filtered admin resource. Its regular order
+        // URL intentionally returns 404, so the Telegram link must follow the
+        // same unified workspace while using the correct resource path.
+        $viewUrl = $isDealByOrder
+            ? url('/admin/deal-by-orders/'.$order->id)
+            : url('/admin/orders/'.$order->id);
 
         $escape = fn (?string $s) => $s ? str_replace(['_', '*', '`', '['], ['\_', '\*', '\`', '\['], $s) : '';
 
