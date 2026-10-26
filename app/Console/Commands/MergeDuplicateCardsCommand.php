@@ -26,7 +26,7 @@ class MergeDuplicateCardsCommand extends Command
     public function handle(): int
     {
         $apply = (bool) $this->option('apply');
-        $stats = ['pairs' => 0, 'skipped' => 0, 'images_taken' => 0, 'reviews_moved' => 0, 'attributes_moved' => 0, 'links_moved' => 0, 'archived' => 0, 'redirects' => 0];
+        $stats = ['pairs' => 0, 'skipped' => 0, 'images_taken' => 0, 'reviews_moved' => 0, 'attributes_moved' => 0, 'links_moved' => 0, 'integration_moved' => 0, 'archived' => 0, 'redirects' => 0];
 
         $run = function () use (&$stats, $apply): void {
             foreach ((array) $this->argument('pairs') as $pair) {
@@ -57,6 +57,9 @@ class MergeDuplicateCardsCommand extends Command
                 // Every link moves, also a second article of the same supplier (the price lists the model twice).
                 $links = DB::table('supplier_products')->where('product_id', $dupeId);
                 $stats['links_moved'] += (clone $links)->count();
+                // 1C (and other integration) rows of the duplicate move too, so the next import still finds the card.
+                $integration = DB::table('integration_products')->where('product_id', $dupeId);
+                $stats['integration_moved'] += (clone $integration)->count();
 
                 if (! $apply) {
                     continue;
@@ -68,6 +71,7 @@ class MergeDuplicateCardsCommand extends Command
                 $reviews->update(['reviewable_id' => $keepId, 'updated_at' => now()]);
                 $attributes->update(['product_id' => $keepId, 'updated_at' => now()]);
                 $links->update(['product_id' => $keepId, 'product_sku' => $keep->sku, 'updated_at' => now()]);
+                $integration->update(['product_id' => $keepId, 'updated_at' => now()]);
 
                 $from = '/'.$dupe->category?->slug.'/'.$dupe->slug;
                 $to = '/'.$keep->category?->slug.'/'.$keep->slug;
