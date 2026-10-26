@@ -77,8 +77,8 @@ class CreateOneCChimneyCardsCommand extends Command
             $retail = $wholesale > 0 ? self::retailFromWholesale($wholesale) : 0.0;
             $stats['with_price'] += (int) ($retail > 0);
             $stats['planned']++;
-            $this->line(sprintf('audit.onec_chimneys.plan=%d:%s:%d:%s:%d', $item->id, Str::slug(Str::limit($title, 70, '')), $sibling->id,
-                Str::slug((string) $sibling->category?->slug) ?: 'none', (int) round($retail)));
+            $this->line(sprintf('audit.onec_chimneys.plan=%d:%s:%d:%s:%d:%s', $item->id, Str::slug(Str::limit($title, 70, '')), $sibling->id,
+                Str::slug((string) $sibling->category?->slug) ?: 'none', (int) round($retail), Str::slug(Str::limit((string) $sibling->name, 70, ''))));
             if (! $this->option('apply')) {
                 continue;
             }
@@ -188,11 +188,15 @@ class CreateOneCChimneyCardsCommand extends Command
     /** @return Collection<int,Product> chimney cards with photos to borrow from */
     private function siblingPool(): Collection
     {
+        // Chimney parts by their marks, wherever their category is (ТиС cards sit in several).
         return Product::query()->where('is_archived', false)->where('is_active', true)
             ->whereNotNull('images')->where('images', '!=', '[]')
-            ->whereHas('category', fn ($q) => $q->where('slug', 'like', '%dymohod%')->orWhere('name', 'like', '%ымоход%'))
+            ->where(fn ($q) => $q->where('name', 'like', '%Теплов%')->orWhere('name', 'like', '%ТИС%')
+                ->orWhere('name', 'like', '%нерж%')->orWhere('name', 'like', '%430%')->orWhere('name', 'like', '%304%')
+                ->orWhere('name', 'like', '%Термо%')->orWhere('name', 'like', '%Моно%'))
+            ->whereHas('category', fn ($q) => $q->where('slug', 'not like', '%koaks%')->where('slug', 'not like', '%koaxial%'))
             ->with('category:id,slug,name')
-            ->get(['id', 'name', 'category_id', 'images']);
+            ->get(['id', 'name', 'slug', 'category_id', 'images']);
     }
 
     /** Same element type and design, then same steel, then the nearest diameter. */
@@ -213,6 +217,10 @@ class CreateOneCChimneyCardsCommand extends Command
                 return null;
             }
             $score = 0;
+            // The same maker first: a ТиС part borrows a ТиС photo.
+            if (preg_match('/теплов|тис/iu', (string) $product->name)) {
+                $score += 2000;
+            }
             if ($steel !== null && preg_match('/\b'.$steel.'\b/u', (string) $product->name)) {
                 $score += 1000;
             }
