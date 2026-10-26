@@ -34,7 +34,10 @@ class SyncMaitekGroupCommand extends Command
     private const SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1Cucw7U8f2Qs6U7kcWZvrdwZitXgP17j5W0TcujUFiN8/edit';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1Cucw7U8f2Qs6U7kcWZvrdwZitXgP17j5W0TcujUFiN8/edit?pli=1&gid=1879571452#gid=1879571452';
 
-    private const DEFAULT_BRANDS = ['СТЭН', 'КАРАКАН', 'GREOLIT', 'FERROLI'];
+    private const DEFAULT_BRANDS = ['СТЭН', 'КАРАКАН', 'GREOLIT', 'FERROLI', 'HOTEX', 'SKAT', 'Сангай', 'INNOWARM'];
+
+    /** Brands whose missing models are not created from this price (their category cannot be told from the row). */
+    private const NO_CREATE_BRANDS = ['ferroli'];
 
     /** @var array<string,int> */
     private array $brandByKey = [];
@@ -65,6 +68,9 @@ class SyncMaitekGroupCommand extends Command
 
     /** @var array<string,int> brand_id|latin model («vitabelhf32») => card */
     private array $indexByLatinModel = [];
+
+    /** @var array<int,float> cheapest positive cost of the other suppliers of a card */
+    private array $otherCostByProduct = [];
 
     /** @var array<int,true> cards linked to a supplier other than Maitek */
     private array $sharedProductIds = [];
@@ -142,6 +148,8 @@ class SyncMaitekGroupCommand extends Command
 
         $rows = [];
         $seen = [];
+        $seenNames = [];
+        $flatRows = [];
 
         foreach ($gids as $gid) {
             $csv = $this->fetch("https://docs.google.com/spreadsheets/d/{$sheetId}/export?format=csv&gid={$gid}");
@@ -151,17 +159,26 @@ class SyncMaitekGroupCommand extends Command
 
             $csvRows = $this->csvRows($csv);
             if ($this->isFlatExportSheet($csvRows[0] ?? [])) {
+                // Read last, only for what no other tab has (SKAT has no tab of its own).
+                $flatRows[$gid] = $csvRows;
                 continue;
             }
             $hasCodeColumn = $this->hasCodeColumn($csvRows);
 
             $linksByRow = $this->loadLinksByRow($sheetId, $gid);
+            $section = '';
             foreach ($csvRows as $rowIndex => $cells) {
                 $sheetRow = $rowIndex + 1;
+                $title = $this->sectionTitle($cells);
+                if ($title !== null) {
+                    $section = $title;
+                    continue;
+                }
                 $item = $this->normaliseRow($cells, $gid, $sheetRow, $linksByRow[$sheetRow] ?? null, $hasCodeColumn);
                 if ($item === null) {
                     continue;
                 }
+                $item['section'] = $section;
 
                 $nameKey = $this->nameKey($item['brand'] . ' ' . $item['name']);
                 $dedupe = $item['norm_article'] ?: $nameKey;
@@ -176,11 +193,52 @@ class SyncMaitekGroupCommand extends Command
                 }
 
                 $seen[$dedupe] = $nameKey;
+                $seenNames[$nameKey] = true;
+                $rows[] = $item;
+            }
+        }
+
+        foreach ($flatRows as $gid => $csvRows) {
+            foreach (array_slice($csvRows, 1, null, true) as $rowIndex => $cells) {
+                // Лист | Раздел | Модель | ОПТ BYN | РРЦ BYN | Кол-во | Гарантия | Бренд | Страна | Описание
+                $item = $this->normaliseRow(
+                    ['', $cells[2] ?? '', '', '', $cells[3] ?? '', $cells[4] ?? '', $cells[5] ?? '', $cells[6] ?? '', $cells[7] ?? '', $cells[8] ?? '', $cells[9] ?? ''],
+                    (string) $gid, $rowIndex + 1, null,
+                );
+                if ($item === null) {
+                    continue;
+                }
+                $nameKey = $this->nameKey($item['brand'] . ' ' . $item['name']);
+                if (isset($seenNames[$nameKey]) || isset($seen[$item['norm_article']])) {
+                    continue;
+                }
+                $item['section'] = $this->clean($cells[1] ?? '');
+                $seen[$item['norm_article']] = $nameKey;
+                $seenNames[$nameKey] = true;
                 $rows[] = $item;
             }
         }
 
         return $rows;
+    }
+
+    /**
+     * A section heading row («Электрические котлы HOTEX BE …»): text in A or B and no BYN price.
+     *
+     * @param  array<int,string>  $cells
+     */
+    private function sectionTitle(array $cells): ?string
+    {
+        $title = $this->firstNonEmpty($cells[0] ?? '', $cells[1] ?? '');
+        if ($title === '' || $this->money($cells[4] ?? '') !== null || $this->money($cells[5] ?? '') !== null) {
+            return null;
+        }
+        $low = mb_strtolower($title);
+        if (str_contains($low, 'отдел продаж') || str_contains($low, 'модель')) {
+            return null;
+        }
+
+        return $title;
     }
 
     /**
@@ -322,9 +380,9 @@ class SyncMaitekGroupCommand extends Command
             return null;
         }
 
-        // Columns C/D are a second currency on the Ferroli sheet (EUR): never read them as BYN there.
-        $price = $this->money($cells[4] ?? '') ?? ($hasCodeColumn ? null : $this->money($cells[2] ?? ''));
-        $retail = $this->money($cells[5] ?? '') ?? ($hasCodeColumn ? null : $this->money($cells[3] ?? ''));
+        // Columns C/D hold another currency (USD on HOTEX, EUR on Ferroli): only E/F are BYN.
+        $price = $this->money($cells[4] ?? '');
+        $retail = $this->money($cells[5] ?? '');
         if ($price !== null && $retail !== null && $retail < $price) {
             $retail = null;
         }
@@ -377,6 +435,15 @@ class SyncMaitekGroupCommand extends Command
 
         if (str_contains($text, 'стэн') || str_contains($text, 'sten')) {
             return 'СТЭН';
+        }
+
+        $raw = mb_strtolower(trim($rawBrand));
+        if (in_array($raw, ['innowrm', 'innowarm'], true)) {
+            return 'INNOWARM';
+        }
+
+        if ($raw === 'skat') {
+            return 'SKAT';
         }
 
         return trim($rawBrand);
@@ -528,9 +595,13 @@ class SyncMaitekGroupCommand extends Command
         DB::table('supplier_products')
             ->where('supplier_id', '!=', $supplierId)
             ->whereNotNull('product_id')
-            ->get(['supplier_article', 'product_id'])
+            ->get(['supplier_article', 'product_id', 'price_byn'])
             ->each(function ($row) {
                 $this->sharedProductIds[(int) $row->product_id] = true;
+                if ((float) $row->price_byn > 0) {
+                    $current = $this->otherCostByProduct[(int) $row->product_id] ?? null;
+                    $this->otherCostByProduct[(int) $row->product_id] = $current === null ? (float) $row->price_byn : min($current, (float) $row->price_byn);
+                }
                 $key = $this->factoryCode((string) $row->supplier_article);
                 if ($key !== '') {
                     $this->indexByForeignArticle[$key] ??= (int) $row->product_id;
@@ -664,6 +735,11 @@ class SyncMaitekGroupCommand extends Command
             return $this->categoryBySlug['komplektuyushhie-dlya-otopleniya'] ?? null;
         }
 
+        $section = mb_strtolower((string) ($row['section'] ?? ''));
+        if (preg_match('/электрические котлы|(?:^|[^\pL])эвпм/u', $section) === 1) {
+            return $this->categoryBySlug['elektricheskie'] ?? null;
+        }
+
         // Control units of electric boilers (ПУЭ, ПЭУ) and the electric boiler lines (ЭВПМ, Стандарт, Эко, 220/380 В),
         // judged by the title alone: a ТЭН description also talks about boilers and 220 V.
         $title = mb_strtolower($row['name']);
@@ -727,7 +803,7 @@ class SyncMaitekGroupCommand extends Command
         }
 
         $this->printOverlap($rows);
-        $this->line('metric.maitek.reseller_rows=' . count(array_filter($rows, fn ($row) => isset($this->sharedProductIds[(int) ($row['matched_product_id'] ?? 0)]))));
+        $this->line('metric.maitek.reseller_rows=' . count(array_filter($rows, fn ($row) => (int) ($row['matched_product_id'] ?? 0) > 0 && $this->isResold($row, (int) $row['matched_product_id']))));
 
         $supplierId = $this->supplierId();
         $this->line('metric.maitek.supplier_exists=' . ($supplierId > 0 ? 1 : 0));
@@ -1007,7 +1083,7 @@ class SyncMaitekGroupCommand extends Command
         $now = now();
         $supplierId = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
-        $stats = array_fill_keys(['matched', 'created', 'updated_retail', 'skipped', 'skipped_reseller', 'errors'], 0);
+        $stats = array_fill_keys(['matched', 'created', 'updated_retail', 'retail_left_to_other', 'skipped', 'skipped_reseller', 'detached_reseller', 'errors'], 0);
         $touchedProductIds = [];
         $keptProductIds = [];
 
@@ -1015,7 +1091,7 @@ class SyncMaitekGroupCommand extends Command
             try {
                 $productId = (int) ($row['matched_product_id'] ?? 0);
                 $created = false;
-                if ($productId <= 0 && $createNew && $row['action'] === 'create_candidate') {
+                if ($productId <= 0 && $createNew && $row['action'] === 'create_candidate' && ! in_array($this->brandKey($row['brand']), self::NO_CREATE_BRANDS, true)) {
                     $productId = $this->createProduct($row, $now);
                     $row['matched_product_id'] = $productId;
                     $row['match_confidence'] = 'created_from_price';
@@ -1028,10 +1104,11 @@ class SyncMaitekGroupCommand extends Command
                     continue;
                 }
 
-                if (! $created && isset($this->sharedProductIds[$productId])) {
-                    // Maitek resells what another supplier delivers directly: that supplier keeps the card.
+                if (! $created && $this->isResold($row, $productId)) {
+                    // Another supplier sells this card cheaper: Maitek only resells it, so it is not needed here.
                     $keptProductIds[] = $productId;
                     $stats['skipped_reseller']++;
+                    $stats['detached_reseller'] += DB::table('supplier_products')->where('supplier_id', $supplierId)->where('product_id', $productId)->delete();
                     continue;
                 }
 
@@ -1039,7 +1116,10 @@ class SyncMaitekGroupCommand extends Command
                 $touchedProductIds[] = $productId;
                 $stats['matched']++;
 
-                if ((bool) $this->option('sync-retail-prices') && $row['retail_byn'] !== null) {
+                if ((bool) $this->option('sync-retail-prices') && $row['retail_byn'] !== null && isset($this->sharedProductIds[$productId])) {
+                    // The other supplier of the card sets its retail; two would overwrite each other every run.
+                    $stats['retail_left_to_other']++;
+                } elseif ((bool) $this->option('sync-retail-prices') && $row['retail_byn'] !== null) {
                     DB::table('products')->where('id', $productId)->update([
                         'price' => $row['retail_byn'],
                         'updated_at' => $now,
@@ -1260,6 +1340,17 @@ class SyncMaitekGroupCommand extends Command
         );
 
         return (int) DB::table('supplier_syncs')->where('key', self::SYNC_KEY)->value('id');
+    }
+
+    /** Maitek is a reseller of a card when another supplier carries it at a lower (or equal) cost. */
+    private function isResold(array $row, int $productId): bool
+    {
+        if (! isset($this->sharedProductIds[$productId])) {
+            return false;
+        }
+        $other = $this->otherCostByProduct[$productId] ?? null;
+
+        return $other === null || $row['price_byn'] === null || $other <= (float) $row['price_byn'];
     }
 
     /** Only a run over the whole default price may decide that a stored link has left it. */
