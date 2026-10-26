@@ -29,6 +29,7 @@ use App\Services\Telephony\PhoneNumber;
 use App\Support\AdminPhoneLinks;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
@@ -82,6 +83,13 @@ class CommercialDocumentResource extends Resource
     public static function canEdit($record): bool
     {
         return parent::canEdit($record) && $record->status === 'draft';
+    }
+
+    public static function canDelete($record): bool
+    {
+        return parent::canDelete($record)
+            && $record->status === 'draft'
+            && (! $record->exists || ! $record->order()->exists());
     }
 
     public static function getEloquentQuery(): Builder
@@ -1022,6 +1030,12 @@ class CommercialDocumentResource extends Resource
                     ->iconButton()
                     ->tooltip('Редактировать документ')
                     ->visible(fn (CommercialDocument $record): bool => $record->status === 'draft'),
+                DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip('Удалить черновик')
+                    ->modalHeading(fn (CommercialDocument $record): string => 'Удалить '.$record->number.'?')
+                    ->modalDescription('Черновик и его позиции будут удалены без возможности восстановления.')
+                    ->successNotificationTitle('Черновик удалён'),
             ])
             ->defaultSort('created_at', 'desc');
     }

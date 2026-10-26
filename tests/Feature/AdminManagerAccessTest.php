@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Pages\AiAssistant;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Pages\OneCSetup;
+use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Filament\Resources\IntegrationSources\IntegrationSourceResource;
 use App\Filament\Resources\Orders\OrderResource;
@@ -17,6 +18,7 @@ use App\Filament\Resources\SupplierSyncRuns\SupplierSyncRunResource;
 use App\Filament\Resources\SupportConversations\SupportConversationResource;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\Category;
+use App\Models\CommercialDocument;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\PublicAiSelectionRun;
@@ -50,6 +52,8 @@ class AdminManagerAccessTest extends TestCase
         $this->assertFalse(OrderResource::canCreate());
         $this->assertTrue(OrderResource::canEdit(new Order));
         $this->assertFalse(OrderResource::canDelete(new Order));
+        $this->assertTrue(CommercialDocumentResource::canDelete(new CommercialDocument(['status' => 'draft'])));
+        $this->assertFalse(CommercialDocumentResource::canDelete(new CommercialDocument(['status' => 'sent'])));
 
         $this->assertFalse(UserResource::canViewAny());
         $this->assertTrue(ProductResource::canViewAny());

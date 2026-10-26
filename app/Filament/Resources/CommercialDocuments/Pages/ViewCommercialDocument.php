@@ -17,6 +17,7 @@ use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
 use App\Services\Pricing\ConfirmedPurchasePriceService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -65,6 +66,12 @@ class ViewCommercialDocument extends ViewRecord
                 ->icon('heroicon-o-pencil-square')
                 ->color('gray')
                 ->visible(fn (): bool => $this->record->status === 'draft'),
+            DeleteAction::make()
+                ->label('Удалить черновик')
+                ->icon('heroicon-o-trash')
+                ->modalHeading(fn (): string => 'Удалить '.$this->record->number.'?')
+                ->modalDescription('Черновик и его позиции будут удалены без возможности восстановления.')
+                ->successNotificationTitle('Черновик удалён'),
             ActionGroup::make([
                 Action::make('confirm_purchase_price')
                     ->label('Добавить счёт поставщика')

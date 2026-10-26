@@ -55,7 +55,7 @@ final class AdminRoleAccess
      * @var array<class-string<Model>, list<string>>
      */
     private const MANAGER_ABILITIES = [
-        CommercialDocument::class => ['viewAny', 'view', 'create', 'update'],
+        CommercialDocument::class => ['viewAny', 'view', 'create', 'update', 'delete'],
         Order::class => ['viewAny', 'view', 'update'],
         ContactRequest::class => ['viewAny', 'view', 'update'],
         CrmCounterparty::class => ['viewAny', 'view', 'create', 'update'],
