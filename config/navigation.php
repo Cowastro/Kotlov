@@ -206,6 +206,7 @@ return [
             [
                 'title' => 'Применение',
                 'links' => [
+                    ['name' => 'Калькулятор: собрать дымоход', 'url' => '/podbor-dymohoda'],
                     ['name' => 'Для котлов',  'url' => '/dymohody?filter=kotly'],
                     ['name' => 'Для каминов', 'url' => '/dymohody?filter=kaminy'],
                     ['name' => 'Для бани',    'url' => '/dymohody?filter=banya'],

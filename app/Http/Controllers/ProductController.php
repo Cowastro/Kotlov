@@ -94,6 +94,8 @@ class ProductController extends Controller
 
         $chimneyPromotion = app(ChimneyBundlePromotion::class);
         $showsChimneyOffer = $chimneyPromotion->productIsEligibleEquipment($product);
+        // A chimney part: point to the calculator that assembles the whole kit.
+        $isChimneyProduct = $chimneyPromotion->productIsChimney($product);
         $chimneyProducts = $showsChimneyOffer
             ? $chimneyPromotion->recommendedChimneys(8)
             : collect();
@@ -352,6 +354,7 @@ class ProductController extends Controller
             'attributeValues',
             'relatedProducts',
             'showsChimneyOffer',
+            'isChimneyProduct',
             'chimneyProducts',
             'analogProducts',
             'reviews',

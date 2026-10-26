@@ -534,6 +534,13 @@
                                                 </a>
                                             @endif
                                         </div>
+                                        @if ($isChimneyProduct ?? false)
+                                            <a class="chimney-product-calc-hint" href="{{ route('chimney-selector') }}">
+                                                <strong>Не знаете, какие элементы нужны?</strong>
+                                                <span>Соберите весь дымоход в калькуляторе — он подберёт трубы, колена и крепления под ваш котёл или печь</span>
+                                            </a>
+                                            <style>.chimney-product-calc-hint{display:block;margin-top:12px;padding:12px 14px;border:1px dashed #df4145;border-radius:12px;color:inherit;font-size:13px;line-height:1.45}.chimney-product-calc-hint strong{display:block;color:#df4145;font-size:14px}.chimney-product-calc-hint:hover{background:#fff5f5}</style>
+                                        @endif
                                         @if (! $b2bOffer && in_array('installment_6', config('shop.checkout_payment_methods', []), true))
                                             <p class="text-caption-01 cl-text-2 text-center mt-8 mb-0">
                                                 Менеджер подтвердит доступность и продолжит оформление

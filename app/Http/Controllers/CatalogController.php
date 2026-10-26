@@ -114,6 +114,9 @@ class CatalogController extends Controller
             $curr = Category::find($curr->parent_id);
         }
         $attrCategoryIds = $activeCategoryIds->merge($ancestorCategoryIds)->unique();
+        // Any level under «Дымоходы» (Моно → Трубы Моно too): calculator banner and chimney quick filters.
+        $isChimneySection = $category->slug === 'dymohody'
+            || Category::query()->whereIn('id', $ancestorCategoryIds)->where('slug', 'dymohody')->exists();
 
         $pelletPowerAttributeIds = collect();
         $pelletPowerRanges = collect();
@@ -328,7 +331,7 @@ class CatalogController extends Controller
         $chimneyDiameterGroups = collect();
         $monoChimneyDiameterGroups = collect();
         $chimneySteelGroups = collect();
-        if ($category->slug === 'dymohody' || $category->parent?->slug === 'dymohody') {
+        if ($isChimneySection) {
             $chimneyDiameterGroups = app(ChimneyDiameterQuickFilter::class)->groups($query);
             $monoChimneyDiameterGroups = app(ChimneyDiameterQuickFilter::class)->groups($query, mono: true);
             if (request()->filled('chimney_diameter')) {
@@ -863,6 +866,7 @@ class CatalogController extends Controller
         $ecokaminPromoMaxDiscount = $ecokaminPromo[$discountKey] ?? 0;
 
         return view('pages.catalog', compact(
+            'isChimneySection',
             'ecokaminPromoHits',
             'ecokaminPromoMaxDiscount',
             'ecokaminPromoVariant',

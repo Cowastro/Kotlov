@@ -85,6 +85,10 @@
         </section>
     @endif
 
+    @if ($isChimneySection ?? false)
+        @include('partials.chimney-selector-cta')
+    @endif
+
     @if (in_array($category->slug, ['dymohody', 'dymohody-mono', 'dymohody-sendvich'], true))
         <section class="catalog-brand-note" aria-labelledby="tis-standard-title">
             <div class="container">
