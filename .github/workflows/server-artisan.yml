@@ -418,7 +418,7 @@ jobs:
           if [[ "${ARTISAN_ARGV[0]:-}" == "integration:audit-onec-queue" ]]; then
             echo "safe_onec_queue_begin"
             grep -E '^metric\.onec_queue\.[a-z_]+=[0-9]+$' "$detail_log" || true
-            grep -E '^audit\.onec_queue\.(row=[0-9]+:[a-z0-9-]+:[a-z0-9-]+:[a-z0-9-]+:[a-z]+:[0-9]+:-?[0-9]+:[a-z_]+:[0-9]+:[0-9]+|group=[a-z0-9_]+:[a-z_~0-9,]+)$' "$detail_log" || true
+            grep -E '^audit\.onec_queue\.(row=[0-9]+:[a-z0-9-]+:[a-z0-9-]+:[a-z0-9-]+:[a-z]+:[0-9]+:-?[0-9]+:[a-z_]+:[0-9]+:[0-9]+|group=[a-z0-9_]+:[a-z_~0-9,]+|price_supplier=[a-z0-9_]+:[0-9]+)$' "$detail_log" || true
             echo "safe_onec_queue_end"
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "integration:onec-items" ]]; then

@@ -42,6 +42,15 @@ class AuditOneCQueueCommand extends Command
             + DB::table('products')->where('is_archived', false)->whereIn(DB::raw('UPPER(TRIM(sku))'), $articles)
                 ->pluck('id', DB::raw('UPPER(TRIM(sku))'))->all();
 
+        // The same article in a supplier price without a card (the row could become a card from it).
+        $inPrice = DB::table('supplier_products as sp')->join('suppliers as s', 's.id', '=', 'sp.supplier_id')->whereNull('sp.product_id')
+            ->whereIn(DB::raw('UPPER(TRIM(sp.supplier_article))'), $articles)
+            ->get([DB::raw('UPPER(TRIM(sp.supplier_article)) as article'), 's.code'])->groupBy('article');
+        $this->line('metric.onec_queue.article_in_price_unlinked='.$inPrice->count());
+        foreach ($inPrice->map(fn ($rows) => $rows->first()->code)->countBy() as $code => $count) {
+            $this->line('audit.onec_queue.price_supplier='.Str::slug((string) $code, '_').':'.$count);
+        }
+
         $stats = ['rows' => 0, 'same_article' => 0, 'strong_candidate' => 0, 'weak_candidate' => 0, 'no_candidate' => 0, 'with_price' => 0];
         $groups = [];
         foreach ($items as $item) {
