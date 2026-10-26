@@ -155,6 +155,8 @@ class SbgSitePricesCommand extends Command
                 $images = array_values(array_filter(array_merge([(string) ($item['main_image'] ?? '')],
                     array_map(fn ($image) => is_array($image) ? (string) ($image['url'] ?? '') : (string) $image, (array) ($item['images'] ?? [])))));
                 if ($sku !== '' && $images !== []) {
+                    // The API gives previews («…_w328_h250_name.jpg»); the same URL without the size is the full photo.
+                    $images = array_map(fn (string $url) => (string) preg_replace('/_w\d+_h\d+_/', '_', $url), $images);
                     $this->siteImages[$sku] = array_values(array_unique($images));
                 }
                 if (is_numeric($item['price'] ?? null) && (float) $item['price'] > 0) {
