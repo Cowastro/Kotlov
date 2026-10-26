@@ -644,6 +644,9 @@ class SyncMaitekGroupCommand extends Command
 
         $matchedTimes = array_count_values(array_filter(array_map(fn ($row) => (int) ($row['matched_product_id'] ?? 0), $rows)));
         $this->line('metric.maitek.products_matched_twice=' . count(array_filter($matchedTimes, fn ($times) => $times > 1)));
+        foreach (array_keys(array_filter($matchedTimes, fn ($times) => $times > 1)) as $productId) {
+            $this->line(sprintf('audit.maitek.twice=%d:%s', $productId, (string) DB::table('products')->where('id', $productId)->value('slug')));
+        }
 
         $supplierId = $this->supplierId();
         $this->line('metric.maitek.supplier_exists=' . ($supplierId > 0 ? 1 : 0));

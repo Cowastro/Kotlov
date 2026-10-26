@@ -420,6 +420,7 @@ jobs:
             grep -E '^metric\.maitek\.[a-z0-9_]+=[0-9]+$' "$detail_log" || true
             grep -E '^audit\.maitek\.unmatched=[0-9]+:[0-9]+:[a-z0-9-]*:[a-z0-9-]*:[01]$' "$detail_log" || true
             grep -E '^audit\.maitek\.missing=[0-9]+:[a-z0-9-]+:[01]$' "$detail_log" || true
+            grep -E '^audit\.maitek\.twice=[0-9]+:[a-z0-9-]+$' "$detail_log" || true
             grep -E '^audit\.maitek\.matched=[0-9]+:[0-9]+:[0-9]+:[a-z-]+:[a-z0-9-]*$' "$detail_log" || true
             echo "safe_maitek_metrics_end"
           fi
