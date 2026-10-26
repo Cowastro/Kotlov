@@ -17,6 +17,7 @@ class SyncMaitekGroupCommand extends Command
         {--sheet-url= : Google Sheets URL}
         {--gid=* : Process only selected Google Sheet gid values}
         {--brand=* : Process only selected brands, repeatable or comma-separated}
+        {--all-brands : Read every brand of the price (review of brands not synced yet)}
         {--available-only : Keep only rows with positive stock}
         {--create-new : Create products that do not match existing catalog items}
         {--enrich-created : Parse source_url after product creation}
@@ -85,7 +86,7 @@ class SyncMaitekGroupCommand extends Command
             }
 
             $brandKey = $this->brandKey($row['brand']);
-            if (! isset($brandFilter[$brandKey])) {
+            if (! (bool) $this->option('all-brands') && ! isset($brandFilter[$brandKey])) {
                 return false;
             }
 
@@ -637,8 +638,9 @@ class SyncMaitekGroupCommand extends Command
             if ($row['action'] === 'matched') {
                 $this->line(sprintf('audit.maitek.matched=%s:%d:%d:%s:%s', $row['gid'], $row['sheet_row'], $row['matched_product_id'], Str::slug((string) $row['match_confidence']), Str::slug(Str::limit((string) $row['name'], 60, ''))));
             } else {
-                $this->line(sprintf('audit.maitek.unmatched=%s:%d:%s:%s:%d',
-                    $row['gid'], $row['sheet_row'], Str::slug((string) $row['brand']), Str::slug(Str::limit((string) $row['name'], 60, '')), $row['in_stock'] ? 1 : 0));
+                $this->line(sprintf('audit.maitek.unmatched=%s:%d:%s:%s:%d:%s',
+                    $row['gid'], $row['sheet_row'], Str::slug((string) $row['brand']), Str::slug(Str::limit((string) $row['name'], 60, '')), $row['in_stock'] ? 1 : 0,
+                    $row['category_id'] ? (string) array_search($row['category_id'], $this->categoryBySlug, true) : 'none'));
             }
         }
 
@@ -647,6 +649,8 @@ class SyncMaitekGroupCommand extends Command
         foreach (array_keys(array_filter($matchedTimes, fn ($times) => $times > 1)) as $productId) {
             $this->line(sprintf('audit.maitek.twice=%d:%s', $productId, (string) DB::table('products')->where('id', $productId)->value('slug')));
         }
+
+        $this->printOverlap($rows);
 
         $supplierId = $this->supplierId();
         $this->line('metric.maitek.supplier_exists=' . ($supplierId > 0 ? 1 : 0));
@@ -674,6 +678,64 @@ class SyncMaitekGroupCommand extends Command
             $product = $products->firstWhere('id', (int) $link->product_id);
             $this->line(sprintf('audit.maitek.missing=%d:%s:%d', $link->product_id, (string) ($product->slug ?? 'none'), $link->in_stock ? 1 : 0));
         }
+    }
+
+    /**
+     * For price rows that found a card: which other suppliers already carry that card and at what cost,
+     * so a brand is taken from Maitek only where they are the better (or the only) source.
+     *
+     * @param  array<int,array<string,mixed>>  $rows
+     */
+    private function printOverlap(array $rows): void
+    {
+        $matched = array_filter($rows, fn ($row) => (int) ($row['matched_product_id'] ?? 0) > 0);
+        $supplierId = $this->supplierId();
+        $others = DB::table('supplier_products as sp')
+            ->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
+            ->whereIn('sp.product_id', array_map(fn ($row) => (int) $row['matched_product_id'], $matched))
+            ->where('sp.supplier_id', '!=', $supplierId)
+            ->get(['sp.product_id', 's.code', 'sp.price_byn', 'sp.in_stock'])
+            ->groupBy('product_id');
+        $cards = DB::table('products')->whereIn('id', array_map(fn ($row) => (int) $row['matched_product_id'], $matched))
+            ->get(['id', 'price', 'is_active'])->keyBy('id');
+
+        $brands = [];
+        foreach ($rows as $row) {
+            $brand = Str::slug((string) $row['brand'], '_') ?: 'none';
+            $brands[$brand] ??= ['rows' => 0, 'in_stock' => 0, 'matched' => 0, 'shared' => 0, 'maitek_cheaper' => 0, 'other_cheaper' => 0];
+            $brands[$brand]['rows']++;
+            $brands[$brand]['in_stock'] += (int) $row['in_stock'];
+            $productId = (int) ($row['matched_product_id'] ?? 0);
+            if ($productId <= 0) {
+                continue;
+            }
+            $brands[$brand]['matched']++;
+            $card = $cards->get($productId);
+            $list = $others->get($productId, collect());
+            if ($list->isNotEmpty()) {
+                $brands[$brand]['shared']++;
+                $cheapest = $list->filter(fn ($item) => (float) $item->price_byn > 0)->min(fn ($item) => (float) $item->price_byn);
+                if ($cheapest && $row['price_byn']) {
+                    $brands[$brand][(float) $row['price_byn'] <= $cheapest ? 'maitek_cheaper' : 'other_cheaper']++;
+                }
+            }
+            foreach ($list->isEmpty() ? [null] : $list as $other) {
+                $this->line(sprintf('audit.maitek.overlap=%d:%s:%s:%s:%s:%s:%s:%s:%d:%d',
+                    $productId, Str::slug((string) $row['brand']), Str::slug((string) $row['match_confidence']), $other ? Str::slug((string) $other->code) : 'only',
+                    $this->moneyText($other?->price_byn), $this->moneyText($row['price_byn']), $this->moneyText($row['retail_byn']), $this->moneyText($card?->price),
+                    $other ? (int) $other->in_stock : 0, (int) $row['in_stock']));
+            }
+        }
+        foreach ($brands as $brand => $counts) {
+            foreach ($counts as $key => $value) {
+                $this->line("metric.maitek.b_{$brand}_{$key}={$value}");
+            }
+        }
+    }
+
+    private function moneyText(mixed $value): string
+    {
+        return $value === null || (float) $value <= 0 ? '0' : (string) round((float) $value);
     }
 
     private function report(array $rows): int
@@ -1118,7 +1180,8 @@ class SyncMaitekGroupCommand extends Command
     /** Only a run over the whole default price may decide that a stored link has left it. */
     private function isFullRun(): bool
     {
-        return $this->csvOption('gid') === []
+        return ! (bool) $this->option('all-brands')
+            && $this->csvOption('gid') === []
             && $this->csvOption('brand') === []
             && ! (bool) $this->option('available-only')
             && $this->option('limit') === null
