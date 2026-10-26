@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Actions\CreateCommercialDocumentFromOrderAction;
 use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
 use App\Models\Order;
 use App\Models\OrderAccountingRequest;
@@ -85,6 +86,7 @@ class ViewOrder extends ViewRecord
     {
         return [
             ActionGroup::make([
+                CreateCommercialDocumentFromOrderAction::make(),
                 Action::make('printProcurement')
                 ->label('Печать для закупок')
                 ->icon('heroicon-o-printer')
