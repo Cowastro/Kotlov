@@ -201,11 +201,11 @@
     <div class="footer-legal" id="legal-info">
         <div class="container-full">
             <p>
-                Продавец товаров: {{ $seller['name'] }}, УНП {{ $seller['unp'] }}, государственная регистрация {{ $seller['registration_date'] }}, {{ $seller['registration_authority'] }}. Адрес: {{ $seller['address'] }}. Обращения покупателей рассматривает {{ $seller['appeals_person'] }}.
+                Продавец товаров: {{ $seller['name'] }}, УНП {{ $seller['unp'] }}, ОКПО {{ $seller['okpo'] }}. Юридический адрес: {{ $seller['address'] }}. Обращения покупателей рассматривает {{ $seller['appeals_person'] }}.
                 Телефоны: {{ implode(', ', $seller['phones']) }}. E-mail: <a href="mailto:{{ $seller['email'] }}">{{ $seller['email'] }}</a>.
             </p>
             <p>
-                Интернет-магазин {{ $resourceOwner['domain'] }} используется {{ $seller['short_name'] }} на основании дилерского договора с {{ $resourceOwner['name'] }}. Владелец интернет-ресурса: {{ $resourceOwner['name'] }}. Регистрация в БелГИЭ: ресурс N {{ $resourceOwner['belgie_number'] }}, дата {{ $resourceOwner['belgie_registration_date'] }}, статус: {{ $resourceOwner['belgie_status'] }}. Торговый реестр Республики Беларусь: {{ $tradeRegistry['shop'] }}, дата включения {{ $tradeRegistry['registration_date'] }}, регистрационный номер {{ $tradeRegistry['registration_number'] }}.
+                Интернет-магазин {{ $resourceOwner['domain'] }} принадлежит и используется {{ $seller['short_name'] }}. Владелец интернет-ресурса: {{ $resourceOwner['name'] }}. Регистрация в БелГИЭ: ресурс N {{ $resourceOwner['belgie_number'] }}, дата {{ $resourceOwner['belgie_registration_date'] }}, статус: {{ $resourceOwner['belgie_status'] }}. Торговый реестр Республики Беларусь: {{ $tradeRegistry['shop'] }}, дата включения {{ $tradeRegistry['registration_date'] }}, регистрационный номер {{ $tradeRegistry['registration_number'] }}. <a href="{{ url('/rekvizity') }}">Полные реквизиты продавца</a>.
             </p>
             <p>
                 Способы оплаты: {{ $payments['cash']['name'] ?? 'наличными' }}, {{ $payments['card']['name'] ?? 'банковской картой' }}, {{ $payments['bank_transfer']['name'] ?? 'безналичный расчет' }}, рассрочка по заявке через менеджера, кредит, оплата по счету для организаций.

@@ -60,4 +60,16 @@ class DeliveryPageTest extends TestCase
             ->assertSeeText('п. 11 ст. 7 Закона о защите прав потребителей')
             ->assertSee('https://www.webpay.by/', false);
     }
+
+    public function test_public_checkout_information_uses_san_business_group_as_the_only_seller(): void
+    {
+        foreach (['/', '/dostavka', '/privacy'] as $path) {
+            $this->get($path)
+                ->assertOk()
+                ->assertSeeText('ООО «СанБизнесГруп»')
+                ->assertSeeText('191355768')
+                ->assertDontSeeText('ООО «СБГ бай»')
+                ->assertDontSeeText('193265863');
+        }
+    }
 }
