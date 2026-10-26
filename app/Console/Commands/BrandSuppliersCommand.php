@@ -15,7 +15,8 @@ use Illuminate\Support\Str;
  */
 class BrandSuppliersCommand extends Command
 {
-    protected $signature = 'catalog:brand-suppliers {brands* : Brand slugs or words of brand names}';
+    protected $signature = 'catalog:brand-suppliers {brands* : Brand slugs or words of brand names}
+        {--cards : Also list every card with its supplier articles}';
 
     protected $description = 'Cards of each brand and the suppliers linked to them';
 
@@ -49,6 +50,19 @@ class BrandSuppliersCommand extends Command
                     $age = $row->last_synced ? (int) abs(now()->diffInDays($row->last_synced)) : 9999;
                     $this->line(sprintf('audit.brand_suppliers.link=%s:%s:%d:%d:%d', $key, Str::slug((string) $row->code, '_'), $row->links, (int) $row->in_stock, $age));
                 });
+
+            if ($this->option('cards')) {
+                $articles = DB::table('supplier_products as sp')->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
+                    ->whereIn('sp.product_id', (clone $cards)->pluck('id'))
+                    ->get(['sp.product_id', 's.code', 'sp.supplier_article', 'sp.price_byn'])->groupBy('product_id');
+                foreach ((clone $cards)->orderBy('id')->get(['id', 'slug', 'sku', 'price', 'is_active']) as $card) {
+                    $links = $articles->get($card->id, collect())
+                        ->map(fn ($link) => Str::slug((string) $link->code, '_').'~'.Str::slug((string) $link->supplier_article).'~'.(int) round((float) $link->price_byn))
+                        ->implode(',');
+                    $this->line(sprintf('audit.brand_suppliers.card=%s:%d:%s:%s:%d:%d:%s', $key, $card->id, $card->slug, Str::slug((string) $card->sku) ?: 'none',
+                        (int) round((float) $card->price), (int) $card->is_active, $links !== '' ? $links : 'none'));
+                }
+            }
         }
 
         return self::SUCCESS;
