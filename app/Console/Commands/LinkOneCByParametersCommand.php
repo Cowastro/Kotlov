@@ -89,6 +89,8 @@ class LinkOneCByParametersCommand extends Command
         // «150х250», «150×250»: a multiplication sign only between digits («хомут» keeps its «х»).
         $text = preg_replace('/(?<=\d)\s*[×хx]\s*(?=\d)/u', ' ', $text) ?? $text;
         $text = preg_replace('/(?<=\d)\s*мм\b/u', '', $text) ?? $text;
+        // Site cards carry the series «ТИС Стандарт 30/50» — the insulation, already given by D150/250.
+        $text = preg_replace('/(?<!\pL)стандарт\s+\d+/u', ' ', $text) ?? $text;
         $type = collect(self::TYPES)->first(fn (string $word) => str_contains($text, $word)) ?? '';
         $type = match ($type) { 'кондесатоотвод' => 'конденсатоотвод', 'колено' => 'отвод', 'котёл' => 'котел', default => $type };
         if ($type === '') {
