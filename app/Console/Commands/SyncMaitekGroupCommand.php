@@ -727,17 +727,20 @@ class SyncMaitekGroupCommand extends Command
     {
         $name = mb_strtolower($row['name'] . ' ' . $row['short_description']);
 
+        // The section heading first: a model's long description mentions valves and adapters too.
+        // Within an electric boiler section only the boilers themselves are electric boilers.
+        $section = mb_strtolower((string) ($row['section'] ?? ''));
+        if (preg_match('/клапан|регулятор|анод|термостат/u', mb_strtolower($row['name'])) !== 1
+            && preg_match('/электрические котлы|(?:^|[^\pL])эвпм/u', $section) === 1) {
+            return $this->categoryBySlug['elektricheskie'] ?? null;
+        }
+
         if (str_contains($name, 'дымоход')) {
             return $this->categoryBySlug['dymohody'] ?? $this->categoryBySlug['prochie-dymohod'] ?? null;
         }
 
         if (str_contains($name, 'клапан') || str_contains($name, 'заглуш') || str_contains($name, 'переходник')) {
             return $this->categoryBySlug['komplektuyushhie-dlya-otopleniya'] ?? null;
-        }
-
-        $section = mb_strtolower((string) ($row['section'] ?? ''));
-        if (preg_match('/электрические котлы|(?:^|[^\pL])эвпм/u', $section) === 1) {
-            return $this->categoryBySlug['elektricheskie'] ?? null;
         }
 
         // Control units of electric boilers (ПУЭ, ПЭУ) and the electric boiler lines (ЭВПМ, Стандарт, Эко, 220/380 В),
