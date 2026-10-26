@@ -6,6 +6,7 @@ use App\Enums\ClientType;
 use App\Notifications\ResetPasswordNotification;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -220,6 +221,14 @@ class User extends Authenticatable implements FilamentUser
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    public function scopeCrmStaff(Builder $query): Builder
+    {
+        return $query
+            ->where('is_crm_user', true)
+            ->where('is_active', true)
+            ->whereIn('role', ['admin', 'manager', 'sales_manager']);
     }
 
     public function sendPasswordResetNotification($token): void

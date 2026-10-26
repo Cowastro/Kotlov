@@ -20,11 +20,13 @@ class CrmMailAssignmentTest extends TestCase
             'name' => 'Диспетчер',
             'role' => 'manager',
             'is_active' => true,
+            'is_crm_user' => true,
         ]);
         $assignee = User::factory()->create([
             'name' => 'Анатолий',
             'role' => 'manager',
             'is_active' => true,
+            'is_crm_user' => true,
         ]);
         $mailbox = CrmMailbox::query()->create([
             'name' => 'Общая почта',
@@ -57,5 +59,31 @@ class CrmMailAssignmentTest extends TestCase
         $this->assertSame('in_progress', $thread->fresh()->status);
         $this->assertSame(1, $assignee->notifications()->count());
         $this->assertSame('Вам назначена переписка', $assignee->notifications()->first()->data['title']);
+    }
+
+    public function test_crm_staff_scope_excludes_customers_inactive_users_and_non_crm_managers(): void
+    {
+        $crmManager = User::factory()->create([
+            'role' => 'manager',
+            'is_active' => true,
+            'is_crm_user' => true,
+        ]);
+        User::factory()->create([
+            'role' => 'client',
+            'is_active' => true,
+            'is_crm_user' => true,
+        ]);
+        User::factory()->create([
+            'role' => 'manager',
+            'is_active' => false,
+            'is_crm_user' => true,
+        ]);
+        User::factory()->create([
+            'role' => 'manager',
+            'is_active' => true,
+            'is_crm_user' => false,
+        ]);
+
+        $this->assertEquals([$crmManager->id], User::query()->crmStaff()->pluck('id')->all());
     }
 }

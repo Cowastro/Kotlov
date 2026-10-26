@@ -77,8 +77,7 @@ final class AssignMailThreadAction
     private static function availableManagers(CrmMailThread $record): Collection
     {
         return User::query()
-            ->whereIn('role', ['admin', 'manager', 'sales_manager'])
-            ->where('is_active', true)
+            ->crmStaff()
             ->orderBy('name')
             ->get()
             ->filter(fn (User $user): bool => $record->mailbox === null

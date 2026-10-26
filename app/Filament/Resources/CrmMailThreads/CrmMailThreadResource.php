@@ -129,8 +129,8 @@ class CrmMailThreadResource extends Resource
                 DateTimePicker::make('next_follow_up_at')->label('Следующий контроль')
                     ->seconds(false)->native(false)->nullable(),
                 Select::make('assigned_user_id')->label('Ответственный')
-                    ->options(fn (): array => User::query()->whereIn('role', ['admin', 'manager', 'sales_manager'])
-                        ->where('is_active', true)->orderBy('name')->pluck('name', 'id')->all())
+                    ->options(fn (): array => User::query()->crmStaff()
+                        ->orderBy('name')->pluck('name', 'id')->all())
                     ->searchable()->nullable(),
                 Select::make('crm_counterparty_id')->label('Контрагент CRM')
                     ->relationship('counterparty', 'name')->searchable()->preload()->nullable(),
@@ -282,7 +282,8 @@ class CrmMailThreadResource extends Resource
                 TextColumn::make('assignedUser.name')->label('Ответственный')->placeholder('Не назначен')
                     ->limit(24)
                     ->width('7.5rem')
-                    ->grow(false),
+                    ->grow(false)
+                    ->sortable(),
                 TextColumn::make('priority')->label('Приоритет')->badge()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::PRIORITIES[$state] ?? $state)
                     ->color(fn (string $state): string => match ($state) {
@@ -310,7 +311,12 @@ class CrmMailThreadResource extends Resource
                 SelectFilter::make('status')->label('Статус')->options(CrmMailThread::STATUSES),
                 SelectFilter::make('sales_stage')->label('Стадия сделки')->options(CrmMailThread::SALES_STAGES),
                 SelectFilter::make('priority')->label('Приоритет')->options(CrmMailThread::PRIORITIES),
-                SelectFilter::make('assigned_user_id')->label('Ответственный')->relationship('assignedUser', 'name')->searchable()->preload(),
+                SelectFilter::make('assigned_user_id')
+                    ->label('Ответственный')
+                    ->options(fn (): array => User::query()->crmStaff()
+                        ->orderBy('name')->pluck('name', 'id')->all())
+                    ->searchable()
+                    ->preload(),
                 SelectFilter::make('mailbox_id')->label('Ящик')->relationship('mailbox', 'email'),
                 SelectFilter::make('product_id')->label('Товар')->relationship('product', 'name')->searchable(),
             ])
