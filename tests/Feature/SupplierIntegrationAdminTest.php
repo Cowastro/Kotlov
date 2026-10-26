@@ -361,6 +361,8 @@ class SupplierIntegrationAdminTest extends TestCase
 
     public function test_ecokamin_admin_list_uses_fifteen_percent_partner_discount_from_current_sale_price(): void
     {
+        // «обновлено HH:MM» is compared with now(): a minute boundary during the request made the test flaky.
+        $this->travelTo(now()->startOfMinute()->addSeconds(5));
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $brand = Brand::query()->create(['name' => 'ЭкоКамин', 'slug' => 'eko-kamin-production']);
         $category = Category::query()->create([

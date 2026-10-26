@@ -336,3 +336,5 @@
         }
     }
 </style>
+
+@include('partials.ios-input-zoom-fix')
