@@ -415,6 +415,12 @@ jobs:
             grep -E '^audit\.atmos_cards\.item=[0-9]+:[a-z]+:[0-9]+:[a-z0-9-]+$' "$detail_log" | sort | uniq -c | awk '{print $2}' | sed -E 's/^audit\.atmos_cards\.item=([0-9]+):([a-z]+):[0-9]+:/audit.atmos_cards.group=\1:\2:/' | sort | uniq -c | sed -E 's/^ *([0-9]+) (.*)$/\2:\1/' || true
             echo "safe_atmos_cards_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "integration:audit-onec-queue" ]]; then
+            echo "safe_onec_queue_begin"
+            grep -E '^metric\.onec_queue\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.onec_queue\.(row=[0-9]+:[a-z0-9-]+:[a-z0-9-]+:[a-z0-9-]+:[a-z]+:[0-9]+:-?[0-9]+:[a-z_]+:[0-9]+:[0-9]+|group=[a-z0-9_]+:[a-z_~0-9,]+)$' "$detail_log" || true
+            echo "safe_onec_queue_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "integration:onec-items" ]]; then
             echo "safe_onec_items_begin"
             grep -E '^metric\.onec_items\.[a-z_]+=[0-9]+$' "$detail_log" || true
