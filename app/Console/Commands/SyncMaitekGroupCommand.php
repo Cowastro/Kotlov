@@ -105,6 +105,7 @@ class SyncMaitekGroupCommand extends Command
 
         $this->buildIndexes();
         $classified = array_map(fn (array $row) => $this->classify($row), $rows);
+        $this->printMetrics($classified);
 
         return $apply
             ? $this->applyRows($classified, $createNew)
@@ -129,8 +130,13 @@ class SyncMaitekGroupCommand extends Command
                 continue;
             }
 
+            $csvRows = $this->csvRows($csv);
+            if ($this->isFlatExportSheet($csvRows[0] ?? [])) {
+                continue;
+            }
+
             $linksByRow = $this->loadLinksByRow($sheetId, $gid);
-            foreach ($this->csvRows($csv) as $rowIndex => $cells) {
+            foreach ($csvRows as $rowIndex => $cells) {
                 $sheetRow = $rowIndex + 1;
                 $item = $this->normaliseRow($cells, $gid, $sheetRow, $linksByRow[$sheetRow] ?? null);
                 if ($item === null) {
@@ -148,6 +154,17 @@ class SyncMaitekGroupCommand extends Command
         }
 
         return $rows;
+    }
+
+    /**
+     * The «Выгрузка» tab repeats every sheet as one table headed «Лист, Раздел, Модель…».
+     *
+     * @param  array<int,string>  $header
+     */
+    private function isFlatExportSheet(array $header): bool
+    {
+        return mb_strtolower(trim((string) ($header[0] ?? ''))) === 'лист'
+            && mb_strtolower(trim((string) ($header[1] ?? ''))) === 'раздел';
     }
 
     private function sheetId(string $url): string
@@ -581,6 +598,57 @@ class SyncMaitekGroupCommand extends Command
         }
 
         return $this->categoryBySlug['komplektuyushhie-dlya-otopleniya'] ?? null;
+    }
+
+    /**
+     * ASCII-only metric/audit lines for the GitHub Actions log: what the price holds now
+     * and how the stored supplier links compare to it.
+     *
+     * @param  array<int,array<string,mixed>>  $rows
+     */
+    private function printMetrics(array $rows): void
+    {
+        $this->line('metric.maitek.rows=' . count($rows));
+        $this->line('metric.maitek.rows_in_stock=' . count(array_filter($rows, fn ($row) => $row['in_stock'])));
+        foreach ($this->counts($rows, 'action') as [$action, $count]) {
+            $this->line('metric.maitek.action_' . Str::slug((string) $action, '_') . '=' . $count);
+        }
+        foreach ($this->counts($rows, 'brand') as [$brand, $count]) {
+            $this->line('metric.maitek.brand_' . Str::slug((string) $brand, '_') . '=' . $count);
+        }
+        foreach ($rows as $row) {
+            if ($row['action'] !== 'matched') {
+                $this->line(sprintf('audit.maitek.unmatched=%s:%d:%s:%s:%d',
+                    $row['gid'], $row['sheet_row'], Str::slug((string) $row['brand']), Str::slug(Str::limit((string) $row['name'], 60, '')), $row['in_stock'] ? 1 : 0));
+            }
+        }
+
+        $supplierId = $this->supplierId();
+        $this->line('metric.maitek.supplier_exists=' . ($supplierId > 0 ? 1 : 0));
+        if ($supplierId <= 0) {
+            return;
+        }
+
+        $links = DB::table('supplier_products')->where('supplier_id', $supplierId);
+        $this->line('metric.maitek.links_total=' . (clone $links)->count());
+        $this->line('metric.maitek.links_with_product=' . (clone $links)->whereNotNull('product_id')->count());
+        $this->line('metric.maitek.links_in_stock=' . (clone $links)->where('in_stock', true)->count());
+        $this->line('metric.maitek.links_synced_36h=' . (clone $links)->where('last_synced_at', '>=', now()->subHours(36))->count());
+        $this->line('metric.maitek.links_stale_7d=' . (clone $links)->where(fn ($q) => $q->whereNull('last_synced_at')->orWhere('last_synced_at', '<', now()->subDays(7)))->count());
+        $last = (clone $links)->max('last_synced_at');
+        $this->line('metric.maitek.last_sync_age_hours=' . ($last ? (int) abs(now()->diffInHours($last)) : 99999));
+
+        $matchedIds = array_flip(array_filter(array_map(fn ($row) => (int) ($row['matched_product_id'] ?? 0), $rows)));
+        $linked = (clone $links)->whereNotNull('product_id')->get(['product_id', 'in_stock']);
+        $missing = $linked->filter(fn ($link) => ! isset($matchedIds[(int) $link->product_id]));
+        $this->line('metric.maitek.links_missing_from_price=' . $missing->count());
+        $this->line('metric.maitek.links_missing_from_price_in_stock=' . $missing->where('in_stock', true)->count());
+        $products = DB::table('products')->whereIn('id', $linked->pluck('product_id'))->get(['id', 'slug', 'is_active', 'price']);
+        $this->line('metric.maitek.products_active=' . $products->where('is_active', true)->count());
+        foreach ($missing as $link) {
+            $product = $products->firstWhere('id', (int) $link->product_id);
+            $this->line(sprintf('audit.maitek.missing=%d:%s:%d', $link->product_id, (string) ($product->slug ?? 'none'), $link->in_stock ? 1 : 0));
+        }
     }
 
     private function report(array $rows): int
