@@ -129,7 +129,8 @@ class ApplyMaitekCatalogFiltersCommand extends Command
         if (preg_match('/(\d+)\s*(?:W\b|Вт)/u', $text, $m)) {
             return (int) $m[1] / 1000;
         }
-        if (preg_match('/(?:ЭВПМ|ТЭНБ-П)-(\d+(?:[.,]\d+)?)/u', $text, $m)) {
+        // «ЭВПМ-7.5», «ЭВПМ 4», «ТЭНБ-П-4.8», «ТЭНБ - 4,5 - G2"».
+        if (preg_match('/(?:ЭВПМ|ТЭНБ(?:-П)?)\s*-?\s*(\d+(?:[.,]\d+)?)/u', $text, $m)) {
             return (float) str_replace(',', '.', $m[1]);
         }
 

@@ -36,6 +36,9 @@ class ApplyMaitekCatalogFiltersCommandTest extends TestCase
         $this->assertSame(['Мощность' => '1.5 кВт', 'Крепление' => 'Фланец', 'Форма' => 'Гнутый', 'Посадка под анод' => 'M6'],
             ApplyMaitekCatalogFiltersCommand::innowarmSpecs('INNOWARM ТЭН 1,5 кВт, фланец, гнутый, под анод М6'));
         $this->assertSame(7.5, ApplyMaitekCatalogFiltersCommand::powerKw('Электрический котел ЭВПМ-7.5 Сангай (ТЭН нерж)'));
+        $this->assertSame(4.0, ApplyMaitekCatalogFiltersCommand::powerKw('СТЭН Котел "СТЭН ЭВПМ 4" 220/380'));
+        $this->assertSame(4.5, ApplyMaitekCatalogFiltersCommand::powerKw('СТЭН ТЭНБ - 4,5 - G2" - Ч с колпаком'));
+        $this->assertSame(4.8, ApplyMaitekCatalogFiltersCommand::powerKw('ТЭНБ-П-4.8 Сангай'));
     }
 
     public function test_cards_get_brand_power_and_area_filter_options(): void
