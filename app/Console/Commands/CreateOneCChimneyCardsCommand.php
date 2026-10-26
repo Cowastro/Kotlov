@@ -194,7 +194,8 @@ class CreateOneCChimneyCardsCommand extends Command
         $pool = $this->siblingPool();
         $products = Product::query()->whereIn('id', IntegrationProduct::query()->where('integration_source_id', $source->id)
             ->where('match_method', 'manual_created')->whereNotNull('product_id')->select('product_id'))
-            ->where(fn ($q) => $q->whereNull('images')->orWhere('images', '[]'))
+            // images is a JSON column: «= '[]'» never matches an empty array there.
+            ->whereRaw('COALESCE(JSON_LENGTH(images), 0) = 0')
             ->get();
         $stats = ['without_photo' => $products->count(), 'filled' => 0, 'no_sibling' => 0];
         foreach ($products as $product) {
