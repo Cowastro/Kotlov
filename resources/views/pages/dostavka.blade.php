@@ -163,6 +163,15 @@
 
                             <div class="col-md-6">
                                 <div class="payment-info-card">
+                                    <h6 class="fw-semibold mb-8">ЕРИП</h6>
+                                    <p class="cl-text-2 mb-0">
+                                        Оплата по номеру заказа через систему «Расчёт» (ЕРИП). <a href="#erip" class="text-decoration-underline">Инструкция по оплате</a>.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="payment-info-card">
                                     <h6 class="fw-semibold mb-8">🏦 Безналичный расчёт</h6>
                                     <p class="cl-text-2 mb-0">
                                         100% предоплата на расчётный счёт.

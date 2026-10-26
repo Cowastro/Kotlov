@@ -61,6 +61,49 @@
 
 <div class="br-line mb-40"></div>
 
+<section class="tf-rte mb-40" id="erip">
+    <span class="compliance-kicker">Оплата по номеру заказа</span>
+    <h4 class="mb-16">Оплата через систему «Расчёт» (ЕРИП)</h4>
+    <div class="erip-logo">
+        <img src="{{ asset('assets/images/payment/erip-logo-color.svg') }}" alt="Система «Расчёт» ЕРИП" width="1773" height="600">
+    </div>
+
+    <p class="cl-text-2 mb-12">Оплату Вы можете произвести в любом банке:</p>
+    <ul class="erip-options mb-20">
+        <li>в интернет-банкинге;</li>
+        <li>в мобильном банкинге;</li>
+        <li>в инфокиоске;</li>
+        <li>в банкомате;</li>
+        <li>в кассе банка и т. д.</li>
+    </ul>
+
+    <p class="cl-text-2 mb-12">Совершить оплату можно с использованием:</p>
+    <ul class="erip-options mb-24">
+        <li>наличных денежных средств;</li>
+        <li>любых электронных денег;</li>
+        <li>банковских платёжных карточек.</li>
+    </ul>
+
+    <h5 class="mb-16">Для проведения платежа необходимо:</h5>
+    <ol class="erip-steps">
+        <li>
+            <strong>Выберите последовательно:</strong>
+            <span>Система «Расчёт» (ЕРИП) → Интернет-магазины/сервисы → A–Z Латинские домены → K → KOTLOV.BY.</span>
+        </li>
+        <li><strong>Введите номер заказа.</strong><span>Для оплаты товара или услуги укажите номер, полученный после оформления заказа.</span></li>
+        <li><strong>Введите сумму платежа,</strong><span>если она не указана автоматически.</span></li>
+        <li><strong>Проверьте корректность информации.</strong><span>Сверьте номер заказа, получателя и сумму.</span></li>
+        <li><strong>Совершите платёж.</strong><span>Сохраните подтверждение об оплате.</span></li>
+    </ol>
+
+    <div class="notice-box mt-20">
+        <i class="icon icon-Info me-8 text-primary"></i>
+        <span>Если Вы осуществляете платёж в кассе банка, пожалуйста, сообщите кассиру о необходимости проведения платежа через систему «Расчёт» (ЕРИП).</span>
+    </div>
+</section>
+
+<div class="br-line mb-40"></div>
+
 <section class="tf-rte mb-40" id="receipt-sample">
     <span class="compliance-kicker">Подтверждение оплаты</span>
     <h4 class="mb-16">Образец документа, подтверждающего оплату</h4>
@@ -82,8 +125,8 @@
 @once
 @push('styles')
 <style>
-.compliance-kicker{display:block;margin-bottom:7px;color:#e43d30;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.order-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0!important;padding:0!important;counter-reset:step;list-style:none!important}.order-steps li{position:relative;min-height:116px;margin:0!important;padding:20px 20px 18px 68px!important;border:1px solid #e7e7e7;border-radius:14px;background:#fff;counter-increment:step;list-style:none!important}.order-steps li::marker{content:""}.order-steps li:before{position:absolute;top:18px;left:18px;display:grid;width:34px;height:34px;place-items:center;border-radius:50%;background:#111;color:#fff;font-weight:700;content:counter(step)}.order-steps strong,.order-steps span{display:block}.order-steps span{margin-top:5px;color:#666;font-size:14px;line-height:1.55}.delivery-terms-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.delivery-terms-grid>div{padding:20px;border:1px solid #e7e7e7;border-radius:12px;background:#fafafa}.delivery-terms-grid strong,.delivery-terms-grid span{display:block}.delivery-terms-grid span{margin-top:6px;color:#666;font-size:14px;line-height:1.55}.payment-logos{display:block;max-width:920px;padding:13px 16px;border:1px solid #e7e7e7;border-radius:10px;background:#fff}.payment-logos--page{margin:0 0 20px}.payment-logos img{display:block;width:100%;height:auto}.webpay-rules{padding:24px;border:1px solid #dce7e1;border-radius:14px;background:#f5faf7}.webpay-rules p{margin-bottom:16px;color:#36443d;line-height:1.7}.webpay-rules p:last-child{margin-bottom:0}.receipt-sample{position:relative;max-width:460px;margin:0 auto;padding:32px;border:1px dashed #9ca3af;border-radius:4px;background:#fff;box-shadow:0 12px 34px rgba(0,0,0,.08);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#202020}.receipt-sample__badge{position:absolute;top:14px;right:14px;padding:4px 8px;border:1px solid #e43d30;border-radius:4px;color:#e43d30;font-size:10px;font-weight:700;letter-spacing:.08em}.receipt-sample__title{padding-right:80px;font-weight:800}.receipt-sample__rule{margin:16px 0;border-top:1px dashed #777}.receipt-sample__line{display:flex;justify-content:space-between;gap:20px}.receipt-sample__total{font-size:18px}.receipt-sample small{display:block;margin-top:18px;color:#6b7280;line-height:1.45}
-@media(max-width:767px){.order-steps,.delivery-terms-grid{grid-template-columns:1fr}.order-steps li{min-height:0}.webpay-rules{padding:18px}.receipt-sample{padding:24px 18px}.payment-logos{padding:9px 10px}}
+.compliance-kicker{display:block;margin-bottom:7px;color:#e43d30;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.order-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0!important;padding:0!important;counter-reset:step;list-style:none!important}.order-steps li{position:relative;min-height:116px;margin:0!important;padding:20px 20px 18px 68px!important;border:1px solid #e7e7e7;border-radius:14px;background:#fff;counter-increment:step;list-style:none!important}.order-steps li::marker{content:""}.order-steps li:before{position:absolute;top:18px;left:18px;display:grid;width:34px;height:34px;place-items:center;border-radius:50%;background:#111;color:#fff;font-weight:700;content:counter(step)}.order-steps strong,.order-steps span{display:block}.order-steps span{margin-top:5px;color:#666;font-size:14px;line-height:1.55}.delivery-terms-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.delivery-terms-grid>div{padding:20px;border:1px solid #e7e7e7;border-radius:12px;background:#fafafa}.delivery-terms-grid strong,.delivery-terms-grid span{display:block}.delivery-terms-grid span{margin-top:6px;color:#666;font-size:14px;line-height:1.55}.payment-logos{display:block;max-width:920px;padding:13px 16px;border:1px solid #e7e7e7;border-radius:10px;background:#fff}.payment-logos--page{margin:0 0 20px}.payment-logos img{display:block;width:100%;height:auto}.webpay-rules{padding:24px;border:1px solid #dce7e1;border-radius:14px;background:#f5faf7}.webpay-rules p{margin-bottom:16px;color:#36443d;line-height:1.7}.webpay-rules p:last-child{margin-bottom:0}.erip-logo{display:flex;width:280px;max-width:100%;margin-bottom:20px;padding:16px 20px;border:1px solid #e7e7e7;border-radius:12px;background:#fff}.erip-logo img{display:block;width:100%;height:auto}.erip-options{padding-left:22px!important}.erip-options li{margin-bottom:5px;list-style:disc!important}.erip-steps{display:grid;gap:10px;margin:0!important;padding:0!important;counter-reset:erip-step;list-style:none!important}.erip-steps li{position:relative;margin:0!important;padding:17px 18px 17px 58px!important;border:1px solid #e7e7e7;border-radius:12px;background:#fafafa;counter-increment:erip-step;list-style:none!important}.erip-steps li:before{position:absolute;top:14px;left:16px;display:grid;width:30px;height:30px;place-items:center;border-radius:50%;background:#174f8b;color:#fff;font-weight:700;content:counter(erip-step)}.erip-steps strong,.erip-steps span{display:block}.erip-steps span{margin-top:4px;color:#666;line-height:1.55}.receipt-sample{position:relative;max-width:460px;margin:0 auto;padding:32px;border:1px dashed #9ca3af;border-radius:4px;background:#fff;box-shadow:0 12px 34px rgba(0,0,0,.08);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#202020}.receipt-sample__badge{position:absolute;top:14px;right:14px;padding:4px 8px;border:1px solid #e43d30;border-radius:4px;color:#e43d30;font-size:10px;font-weight:700;letter-spacing:.08em}.receipt-sample__title{padding-right:80px;font-weight:800}.receipt-sample__rule{margin:16px 0;border-top:1px dashed #777}.receipt-sample__line{display:flex;justify-content:space-between;gap:20px}.receipt-sample__total{font-size:18px}.receipt-sample small{display:block;margin-top:18px;color:#6b7280;line-height:1.45}
+@media(max-width:767px){.order-steps,.delivery-terms-grid{grid-template-columns:1fr}.order-steps li{min-height:0}.webpay-rules{padding:18px}.receipt-sample{padding:24px 18px}.payment-logos{padding:9px 10px}.erip-logo{width:220px}.erip-steps li{padding:16px 15px 16px 54px!important}}
 </style>
 @endpush
 @endonce

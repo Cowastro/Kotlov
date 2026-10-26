@@ -37,10 +37,12 @@ class DeliveryPageTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSeeText('Оплата картой и режим работы')
+            ->assertSeeText('Онлайн-оплата и режим работы')
             ->assertSeeText('Онлайн-заказы — круглосуточно, 24/7')
             ->assertSeeText('Консультации — ежедневно до 20:00')
             ->assertSee('assets/images/payment/webpay-payment-systems.png', false)
+            ->assertSee('assets/images/payment/erip-logo-color.svg', false)
+            ->assertSee('/dostavka#erip', false)
             ->assertSee('https://www.webpay.by/', false)
             ->assertSee('/dostavka#order-procedure', false);
     }
@@ -58,6 +60,10 @@ class DeliveryPageTest extends TestCase
             ->assertSeeText('возврат денежных средств осуществляется на карточку, с которой была произведена оплата')
             ->assertSeeText('Образец документа, подтверждающего оплату')
             ->assertSeeText('п. 11 ст. 7 Закона о защите прав потребителей')
+            ->assertSeeText('Оплата через систему «Расчёт» (ЕРИП)')
+            ->assertSeeText('Интернет-магазины/сервисы → A–Z Латинские домены → K → KOTLOV.BY')
+            ->assertSeeText('Если Вы осуществляете платёж в кассе банка')
+            ->assertSee('assets/images/payment/erip-logo-color.svg', false)
             ->assertSee('https://www.webpay.by/', false);
     }
 
