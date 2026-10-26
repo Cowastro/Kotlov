@@ -34,7 +34,7 @@ class SyncMaitekGroupCommand extends Command
     private const SOURCE_URL = 'https://docs.google.com/spreadsheets/d/1Cucw7U8f2Qs6U7kcWZvrdwZitXgP17j5W0TcujUFiN8/edit';
     private const DEFAULT_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1Cucw7U8f2Qs6U7kcWZvrdwZitXgP17j5W0TcujUFiN8/edit?pli=1&gid=1879571452#gid=1879571452';
 
-    private const DEFAULT_BRANDS = ['СТЭН', 'КАРАКАН', 'GREOLIT'];
+    private const DEFAULT_BRANDS = ['СТЭН', 'КАРАКАН', 'GREOLIT', 'FERROLI'];
 
     /** @var array<string,int> */
     private array $brandByKey = [];
@@ -59,6 +59,15 @@ class SyncMaitekGroupCommand extends Command
 
     /** @var array<string,int> */
     private array $categoryBySlug = [];
+
+    /** @var array<string,int> other suppliers' compact articles (factory codes) => card */
+    private array $indexByForeignArticle = [];
+
+    /** @var array<string,int> brand_id|latin model («vitabelhf32») => card */
+    private array $indexByLatinModel = [];
+
+    /** @var array<int,true> cards linked to a supplier other than Maitek */
+    private array $sharedProductIds = [];
 
     /** @var array<string,int> how many price rows point at each source page */
     private array $sourceUrlRows = [];
@@ -144,11 +153,12 @@ class SyncMaitekGroupCommand extends Command
             if ($this->isFlatExportSheet($csvRows[0] ?? [])) {
                 continue;
             }
+            $hasCodeColumn = $this->hasCodeColumn($csvRows);
 
             $linksByRow = $this->loadLinksByRow($sheetId, $gid);
             foreach ($csvRows as $rowIndex => $cells) {
                 $sheetRow = $rowIndex + 1;
-                $item = $this->normaliseRow($cells, $gid, $sheetRow, $linksByRow[$sheetRow] ?? null);
+                $item = $this->normaliseRow($cells, $gid, $sheetRow, $linksByRow[$sheetRow] ?? null, $hasCodeColumn);
                 if ($item === null) {
                     continue;
                 }
@@ -171,6 +181,22 @@ class SyncMaitekGroupCommand extends Command
         }
 
         return $rows;
+    }
+
+    /**
+     * Ferroli-style sheets: «Модель | Код / артикул | …» — column B holds the factory code, not the name.
+     *
+     * @param  array<int,array<int,string>>  $rows
+     */
+    private function hasCodeColumn(array $rows): bool
+    {
+        foreach (array_slice($rows, 0, 8) as $cells) {
+            if (str_starts_with(mb_strtolower(trim((string) ($cells[1] ?? ''))), 'код')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -283,9 +309,10 @@ class SyncMaitekGroupCommand extends Command
      * @param array<int,string> $cells
      * @return array<string,mixed>|null
      */
-    private function normaliseRow(array $cells, string $gid, int $sheetRow, ?string $sourceUrl): ?array
+    private function normaliseRow(array $cells, string $gid, int $sheetRow, ?string $sourceUrl, bool $hasCodeColumn = false): ?array
     {
-        $name = $this->firstNonEmpty($cells[1] ?? '', $cells[0] ?? '');
+        $code = $hasCodeColumn ? $this->clean($cells[1] ?? '') : '';
+        $name = $hasCodeColumn ? $this->clean($cells[0] ?? '') : $this->firstNonEmpty($cells[1] ?? '', $cells[0] ?? '');
         if ($name === '' || $this->isHeaderLike($name)) {
             return null;
         }
@@ -302,7 +329,7 @@ class SyncMaitekGroupCommand extends Command
         }
         $stockText = $this->clean($cells[6] ?? '');
         $stockQuantity = $this->stockQuantity($stockText);
-        $article = $this->supplierArticle($brand, $name, $sourceUrl);
+        $article = $code !== '' ? $code : $this->supplierArticle($brand, $name, $sourceUrl);
         $sourceUrl = $sourceUrl ?: $this->greolitSourceUrl($brand, $name);
 
         return [
@@ -497,6 +524,31 @@ class SyncMaitekGroupCommand extends Command
                 });
         }
 
+        DB::table('supplier_products')
+            ->where('supplier_id', '!=', $supplierId)
+            ->whereNotNull('product_id')
+            ->get(['supplier_article', 'product_id'])
+            ->each(function ($row) {
+                $this->sharedProductIds[(int) $row->product_id] = true;
+                $key = $this->factoryCode((string) $row->supplier_article);
+                if ($key !== '') {
+                    $this->indexByForeignArticle[$key] ??= (int) $row->product_id;
+                }
+            });
+
+        // Cards linked to a supplier go last, so of duplicate cards the supplied one wins the latin-model key.
+        DB::table('products')
+            ->where('is_archived', false)
+            ->get(['id', 'name', 'brand_id'])
+            ->sortBy(fn ($product) => [isset($this->sharedProductIds[(int) $product->id]) ? 1 : 0, -(int) $product->id])
+            ->each(function ($product) {
+                $brandId = (int) $product->brand_id;
+                $latin = $brandId > 0 && isset($this->brandNameById[$brandId]) ? $this->latinModel((string) $product->name, $this->brandNameById[$brandId]) : '';
+                if ($latin !== '') {
+                    $this->indexByLatinModel[$brandId . '|' . $latin] = (int) $product->id;
+                }
+            });
+
         DB::table('products')
             ->where('is_archived', false)
             ->get(['id', 'name', 'brand_id'])
@@ -550,6 +602,11 @@ class SyncMaitekGroupCommand extends Command
             return ['product_id' => $this->indexBySupplierArticle[$row['norm_article']], 'confidence' => 'supplier_article'];
         }
 
+        $code = $this->factoryCode((string) $row['supplier_article']);
+        if ($code !== '' && isset($this->indexByForeignArticle[$code])) {
+            return ['product_id' => $this->indexByForeignArticle[$code], 'confidence' => 'factory_code'];
+        }
+
         $sourceKey = $this->sourceKey((string) $row['source_url']);
         // One page often covers several versions (с автоматикой / без): only a page unique to this row identifies it.
         if ($sourceKey !== '' && ($this->sourceUrlRows[$sourceKey] ?? 0) <= 1 && isset($this->indexBySourceUrl[$sourceKey])) {
@@ -574,6 +631,13 @@ class SyncMaitekGroupCommand extends Command
         $plainSignature = $this->modelSignature($row['name']);
         if ($plainSignature !== '' && isset($this->indexByModelSignature[$plainSignature])) {
             return ['product_id' => $this->indexByModelSignature[$plainSignature], 'confidence' => 'plain_model_signature'];
+        }
+
+        if ($brandId !== null) {
+            $latin = $this->latinModel($row['name'], $this->brandNameById[$brandId] ?? $row['brand']);
+            if ($latin !== '' && isset($this->indexByLatinModel[$brandId . '|' . $latin])) {
+                return ['product_id' => $this->indexByLatinModel[$brandId . '|' . $latin], 'confidence' => 'latin_model'];
+            }
         }
 
         if ($brandId !== null) {
@@ -662,6 +726,7 @@ class SyncMaitekGroupCommand extends Command
         }
 
         $this->printOverlap($rows);
+        $this->line('metric.maitek.reseller_rows=' . count(array_filter($rows, fn ($row) => isset($this->sharedProductIds[(int) ($row['matched_product_id'] ?? 0)]))));
 
         $supplierId = $this->supplierId();
         $this->line('metric.maitek.supplier_exists=' . ($supplierId > 0 ? 1 : 0));
@@ -941,8 +1006,9 @@ class SyncMaitekGroupCommand extends Command
         $now = now();
         $supplierId = $this->ensureSupplier($now);
         $syncId = $this->ensureSync($now);
-        $stats = array_fill_keys(['matched', 'created', 'updated_retail', 'skipped', 'errors'], 0);
+        $stats = array_fill_keys(['matched', 'created', 'updated_retail', 'skipped', 'skipped_reseller', 'errors'], 0);
         $touchedProductIds = [];
+        $keptProductIds = [];
 
         foreach ($rows as $row) {
             try {
@@ -958,6 +1024,13 @@ class SyncMaitekGroupCommand extends Command
 
                 if ($productId <= 0) {
                     $stats['skipped']++;
+                    continue;
+                }
+
+                if (! $created && isset($this->sharedProductIds[$productId])) {
+                    // Maitek resells what another supplier delivers directly: that supplier keeps the card.
+                    $keptProductIds[] = $productId;
+                    $stats['skipped_reseller']++;
                     continue;
                 }
 
@@ -994,7 +1067,7 @@ class SyncMaitekGroupCommand extends Command
             $missing = DB::table('supplier_products')
                 ->where('supplier_id', $supplierId)
                 ->whereNotNull('product_id')
-                ->whereNotIn('product_id', array_unique($touchedProductIds))
+                ->whereNotIn('product_id', array_unique(array_merge($touchedProductIds, $keptProductIds)))
                 ->where(fn ($q) => $q->where('in_stock', true)->orWhere('stock_quantity', '>', 0));
             $missingProductIds = (clone $missing)->pluck('product_id')->map(fn ($id) => (int) $id)->all();
             $stats['missing_marked_out'] = (clone $missing)->update([
@@ -1334,6 +1407,27 @@ class SyncMaitekGroupCommand extends Command
         $path = trim((string) ($parts['path'] ?? ''), '/');
 
         return $host . '/' . $path;
+    }
+
+    /** A factory code such as GCDG8K6A / 0DAC4YYA: latin letters and digits, both present, 6+ chars. */
+    private function factoryCode(string $value): string
+    {
+        $value = strtoupper(preg_replace('/[^A-Za-z0-9]+/', '', $value) ?? '');
+
+        return strlen($value) >= 6 && preg_match('/[A-Z]/', $value) && preg_match('/\d/', $value) ? $value : '';
+    }
+
+    /**
+     * The latin model of a title without the brand: «Газовый котел Ferroli Vitabel HF32» and «VITABEL HF 32»
+     * both give «vitabelhf32». Empty for titles without a latin model with a digit.
+     */
+    private function latinModel(string $name, string $brand): string
+    {
+        $value = mb_strtolower($name);
+        $value = str_replace(mb_strtolower(trim($brand)), ' ', $value);
+        $value = preg_replace('/[^a-z0-9]+/', '', $value) ?? '';
+
+        return preg_match('/[a-z]{2}/', $value) && preg_match('/\d/', $value) ? $value : '';
     }
 
     private function nameKey(string $value): string
