@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
  * and «Сангай-МК») from the Onliner catalogue: the makers have no site of their own.
  * Data: resources/data/suppliers/maitek-onliner-media.json, keyed by the Maitek price
  * row (supplier_products.supplier_name); photos in public/img/products/maitek.
+ * SKAT is sold as the same boilers as HOTEX (same prices) and gets the HOTEX photos only.
  * Only empty photos, specs and short descriptions are filled; the cards hidden until
  * a photo is found are published by catalog:hide-cards-awaiting-photos --publish.
  *
@@ -75,7 +76,8 @@ class ApplyMaitekOnlinerMediaCommand extends Command
                 $changes['short_description'] = $short;
                 $stats['short_set']++;
             }
-            if ($changes !== [] && blank($product->content_source_url)) {
+            // SKAT rows borrow the HOTEX photos (same boilers, same prices) but not a page of their own.
+            if ($changes !== [] && blank($product->content_source_url) && ! empty($item['onliner'])) {
                 $changes['content_source_url'] = $item['onliner'];
             }
             $this->line(sprintf('audit.maitek_media.card=%d:%s:%s', $product->id, $product->slug, $changes === [] ? 'filled' : implode('.', array_keys($changes))));
