@@ -322,8 +322,9 @@ class SyncMaitekGroupCommand extends Command
             return null;
         }
 
-        $price = $this->money($cells[4] ?? '') ?? $this->money($cells[2] ?? '');
-        $retail = $this->money($cells[5] ?? '') ?? $this->money($cells[3] ?? '');
+        // Columns C/D are a second currency on the Ferroli sheet (EUR): never read them as BYN there.
+        $price = $this->money($cells[4] ?? '') ?? ($hasCodeColumn ? null : $this->money($cells[2] ?? ''));
+        $retail = $this->money($cells[5] ?? '') ?? ($hasCodeColumn ? null : $this->money($cells[3] ?? ''));
         if ($price !== null && $retail !== null && $retail < $price) {
             $retail = null;
         }
