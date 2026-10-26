@@ -115,8 +115,15 @@ class SyncDealByBrandPricesCommand extends Command
         $localBySlug = $localProducts
             ->filter(fn (Product $product): bool => filled($product->slug))
             ->groupBy(fn (Product $product): string => $this->normalizeSku($product->slug));
+        $localByName = $localProducts
+            ->filter(fn (Product $product): bool => $this->normalizeName($product->name) !== '')
+            ->groupBy(fn (Product $product): string => $this->normalizeName($product->name));
         $remoteSkuCounts = $remoteProducts
             ->map(fn (array $product): string => $this->normalizeSku($product['sku'] ?? null))
+            ->filter()
+            ->countBy();
+        $remoteNameCounts = $remoteProducts
+            ->map(fn (array $product): string => $this->normalizeName($product['name'] ?? null))
             ->filter()
             ->countBy();
 
@@ -144,6 +151,16 @@ class SyncDealByBrandPricesCommand extends Command
                 if ($candidates->count() === 1) {
                     $local = $candidates->first();
                 } elseif ($candidates->count() > 1) {
+                    $ambiguous++;
+                }
+            }
+
+            $remoteName = $this->normalizeName($remote['name'] ?? null);
+            if (! $local && $remoteName !== '' && ($remoteNameCounts[$remoteName] ?? 0) === 1) {
+                $nameCandidates = $localByName->get($remoteName, collect());
+                if ($nameCandidates->count() === 1) {
+                    $local = $nameCandidates->first();
+                } elseif ($nameCandidates->count() > 1) {
                     $ambiguous++;
                 }
             }
@@ -259,5 +276,10 @@ class SyncDealByBrandPricesCommand extends Command
     private function normalizeSku(mixed $value): string
     {
         return mb_strtoupper(trim((string) $value));
+    }
+
+    private function normalizeName(mixed $value): string
+    {
+        return mb_strtolower(trim(preg_replace('/\s+/u', ' ', (string) $value) ?? (string) $value));
     }
 }
