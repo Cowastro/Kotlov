@@ -775,13 +775,13 @@ class SyncThermostudioPricelistCommand extends Command
                     continue;
                 }
 
-                if ($row['price_byn'] !== null) {
+                if ($this->hasPricelistPayload($row)) {
                     $this->upsertSupplierProduct($row, $productId, $supplierId, $syncId, $now);
                     $touchedProductIds[] = $productId;
                 }
                 $stats['matched']++;
 
-                if ((bool) $this->option('sync-retail-prices') && $row['retail_byn'] !== null && (float) $row['retail_byn'] > 0) {
+                if ((bool) $this->option('sync-retail-prices') && $this->canSyncRetailPrice($row)) {
                     DB::table('products')->where('id', $productId)->update([
                         'price' => $row['retail_byn'],
                         'updated_at' => $now,
@@ -835,6 +835,24 @@ class SyncThermostudioPricelistCommand extends Command
             && (int) $this->option('offset') === 0
             && blank($this->option('price-file'))
             && blank($this->option('sheet-url'));
+    }
+
+    /** @param array<string, mixed> $row */
+    private function hasPricelistPayload(array $row): bool
+    {
+        return $row['price_byn'] !== null || $row['retail_byn'] !== null;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function canSyncRetailPrice(array $row): bool
+    {
+        // A retail-only value cannot be checked against purchase cost and may
+        // be an obsolete or shifted cell. Keep it visible in raw supplier data,
+        // but do not let it overwrite a separately confirmed storefront price.
+        return $row['price_byn'] !== null
+            && (float) $row['price_byn'] > 0
+            && $row['retail_byn'] !== null
+            && (float) $row['retail_byn'] > 0;
     }
 
     /** @return array<string, mixed> */
@@ -1247,7 +1265,9 @@ class SyncThermostudioPricelistCommand extends Command
             'in_stock' => $row['in_stock'],
             'stock_quantity' => $row['stock_quantity'],
             'stock_status' => $row['stock_status'],
-            'stock_text' => $row['stock_text'] !== '' ? $row['stock_text'] : null,
+            'stock_text' => $row['stock_text'] !== ''
+                ? $row['stock_text']
+                : ($row['stock_status'] === 'unknown' ? 'Наличие не указано в прайсе' : null),
             'delivery_days' => $row['stock_status'] === 'preorder' ? 7 : ($row['in_stock'] ? 0 : null),
             'last_stock_synced_at' => $now,
             'match_status' => 'matched',

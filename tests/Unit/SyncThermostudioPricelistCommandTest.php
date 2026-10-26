@@ -182,6 +182,14 @@ class SyncThermostudioPricelistCommandTest extends TestCase
         $this->assertFalse($payload['in_stock']);
     }
 
+    public function test_retail_only_row_is_seen_but_cannot_overwrite_confirmed_storefront_price(): void
+    {
+        $row = ['price_byn' => null, 'retail_byn' => 1739.0];
+
+        $this->assertTrue($this->invoke('hasPricelistPayload', [$row]));
+        $this->assertFalse($this->invoke('canSyncRetailPrice', [$row]));
+    }
+
     public function test_it_keeps_coaxial_chimneys_in_their_own_category(): void
     {
         $this->setCategoryMap([
