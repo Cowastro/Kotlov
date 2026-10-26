@@ -66,6 +66,23 @@ class SyncDealByBrandPricesCommandTest extends TestCase
         ], $fields);
     }
 
+    public function test_it_maps_legacy_tatra_left_and_right_names_to_nl1_and_np1(): void
+    {
+        $left = $this->product(41, 'PS-41', 'tatra-kt15-nl1', 'Tatra КТ15-НЛ1 Сталь 6мм левый', 2719.50, 'Татра');
+        $right = $this->product(42, 'PS-42', 'tatra-kt15-np1', 'Tatra КТ15-НП1 Сталь 6мм правый', 2719.50, 'Татра');
+        $remote = collect([
+            ['id' => 181870867, 'external_id' => '', 'sku' => 'КТ15-Н левый', 'name' => 'Твердотопливный котел Татра КТ15-Н левый', 'price' => 2590.00],
+            ['id' => 181870868, 'external_id' => '', 'sku' => 'КТ15-Н правый', 'name' => 'Твердотопливный котел Татра КТ15-Н правый', 'price' => 2590.00],
+        ]);
+
+        $method = new ReflectionMethod(SyncDealByBrandPricesCommand::class, 'buildPlan');
+        $plan = $method->invoke(new SyncDealByBrandPricesCommand(), collect([$left, $right]), $remote);
+
+        $this->assertSame(2, $plan['matched']);
+        $this->assertSame([181870867, 181870868], $plan['updates']->pluck('deal_id')->all());
+        $this->assertSame([2719.5, 2719.5], $plan['updates']->pluck('new_price')->all());
+    }
+
     private function product(int $id, string $sku, string $slug, string $name, float $price, string $brandName): Product
     {
         $product = new Product([

@@ -359,7 +359,8 @@ class SyncDealByBrandPricesCommand extends Command
 
     private function tatraModelKey(mixed ...$values): ?string
     {
-        $value = mb_strtoupper(implode(' ', array_map(static fn (mixed $item): string => (string) $item, $values)));
+        $original = mb_strtoupper(implode(' ', array_map(static fn (mixed $item): string => (string) $item, $values)));
+        $value = $original;
         $value = strtr($value, [
             'А' => 'A', 'Б' => 'B', 'К' => 'K', 'Л' => 'L', 'М' => 'M',
             'Н' => 'N', 'О' => 'O', 'П' => 'P', 'Р' => 'R', 'Т' => 'T',
@@ -367,7 +368,14 @@ class SyncDealByBrandPricesCommand extends Command
         $compact = preg_replace('/[^A-Z0-9]+/', '', $value) ?? '';
 
         if (preg_match('/KT(\d{2,3})(N(?:L|P)[12]?|N|TR)?/', $compact, $match) === 1) {
-            return 'KT'.$match[1].($match[2] ?? '');
+            $suffix = $match[2] ?? '';
+            if (in_array($suffix, ['N', 'NL'], true) && preg_match('/(?:ЛЕВ|LEFT)/u', $original) === 1) {
+                $suffix = 'NL1';
+            } elseif (in_array($suffix, ['N', 'NP'], true) && preg_match('/(?:ПРАВ|RIGHT)/u', $original) === 1) {
+                $suffix = 'NP1';
+            }
+
+            return 'KT'.$match[1].$suffix;
         }
 
         if (preg_match('/K(\d{2,3})TR/', $compact, $match) === 1) {
