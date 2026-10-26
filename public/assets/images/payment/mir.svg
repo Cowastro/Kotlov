@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 72" role="img" aria-labelledby="title">
-  <title id="title">МИР</title>
-  <rect width="240" height="72" rx="12" fill="#ffffff"/>
-  <path d="M30 22h14c2 0 4 1 5 3l10 18h2V22h13v30H60c-2 0-4-1-5-3L45 31h-2v21H30V22Zm50 0h13v18h2l11-18h15L104 47c-2 3-5 5-9 5H80V22Z" fill="#087c58"/>
-  <path d="M126 22h20c12 0 19 5 19 15s-7 15-19 15h-20V22Zm13 9v12h7c4 0 6-2 6-6s-2-6-6-6h-7Z" fill="#159bd7"/>
-  <path d="m165 22 18 15-18 15h19l18-15-18-15h-19Z" fill="#25a7df"/>
-</svg>

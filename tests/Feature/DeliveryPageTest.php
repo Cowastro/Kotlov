@@ -40,8 +40,7 @@ class DeliveryPageTest extends TestCase
             ->assertSeeText('Оплата картой и режим работы')
             ->assertSeeText('Онлайн-заказы — круглосуточно, 24/7')
             ->assertSeeText('Консультации — ежедневно до 20:00')
-            ->assertSee('assets/images/payment/webpay.svg', false)
-            ->assertSee('assets/images/payment/belkart.svg', false)
+            ->assertSee('assets/images/payment/webpay-payment-systems.png', false)
             ->assertSee('https://www.webpay.by/', false)
             ->assertSee('/dostavka#order-procedure', false);
     }
