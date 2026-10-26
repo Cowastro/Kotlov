@@ -739,21 +739,63 @@
                 diagramPart.addEventListener('focus', function () { highlight(true); });
                 diagramPart.addEventListener('blur', function () { highlight(false); });
             });
-            result.querySelector('[data-download-schematic]').addEventListener('click', function () {
+            function blobAsDataUrl(blob) {
+                return new Promise(function (resolve, reject) {
+                    var reader = new FileReader();
+                    reader.onload = function () { resolve(reader.result); };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+            function schematicImageFallback() {
+                var fallback = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 62 60"><rect width="62" height="60" rx="7" fill="#f4f6f6"/><path d="M25 9h12v11l5 7v24H20V27l5-7z" fill="#c4cbce" stroke="#687176" stroke-width="2"/><path d="M25 20h12M21 31h20" stroke="#fff" stroke-width="2"/></svg>';
+                return 'data:image/svg+xml;base64,' + btoa(fallback);
+            }
+            async function embedSchematicImages(svg) {
+                var images = Array.from(svg.querySelectorAll('image'));
+                await Promise.all(images.map(async function (image) {
+                    var source = image.getAttribute('href') || image.getAttribute('xlink:href');
+                    if (!source || source.indexOf('data:') === 0) return;
+                    try {
+                        var response = await fetch(new URL(source, window.location.origin).href, {credentials:'same-origin'});
+                        if (!response.ok) throw new Error('Image request failed: ' + response.status);
+                        image.setAttribute('href', await blobAsDataUrl(await response.blob()));
+                    } catch (error) {
+                        image.setAttribute('href', schematicImageFallback());
+                    }
+                    image.removeAttribute('xlink:href');
+                }));
+            }
+            result.querySelector('[data-download-schematic]').addEventListener('click', async function () {
+                var button = this;
                 var source = result.querySelector('[data-chimney-schematic]');
                 if (!source) return;
                 var copy = source.cloneNode(true);
                 copy.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                copy.setAttribute('width', '720');
+                copy.setAttribute('height', String(Math.ceil(source.viewBox.baseVal.height)));
+                copy.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
                 copy.querySelectorAll('a').forEach(function (link) { link.removeAttribute('href'); link.removeAttribute('data-diagram-row'); });
-                var blob = new Blob(['<' + '?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(copy)], {type:'image/svg+xml;charset=utf-8'});
-                var downloadUrl = URL.createObjectURL(blob);
-                var link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = 'shema-dymohoda-' + settings.chimneyDiameter + 'mm.svg';
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                setTimeout(function () { URL.revokeObjectURL(downloadUrl); }, 1000);
+                button.disabled = true;
+                button.textContent = 'Подготавливаем схему…';
+                try {
+                    await embedSchematicImages(copy);
+                    var style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+                    style.textContent = 'text{font-family:Arial,Helvetica,sans-serif}';
+                    copy.insertBefore(style, copy.firstChild);
+                    var blob = new Blob(['<' + '?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(copy)], {type:'image/svg+xml;charset=utf-8'});
+                    var downloadUrl = URL.createObjectURL(blob);
+                    var link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = 'shema-dymohoda-' + settings.chimneyDiameter + 'mm.svg';
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    setTimeout(function () { URL.revokeObjectURL(downloadUrl); }, 1000);
+                } finally {
+                    button.disabled = false;
+                    button.textContent = 'Скачать монтажную схему SVG';
+                }
             });
 
             var addonPanel = result.querySelector('[data-addon-panel]');
