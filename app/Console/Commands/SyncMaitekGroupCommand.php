@@ -143,12 +143,19 @@ class SyncMaitekGroupCommand extends Command
                     continue;
                 }
 
-                $dedupe = $item['norm_article'] ?: $this->nameKey($item['brand'] . ' ' . $item['name']);
+                $nameKey = $this->nameKey($item['brand'] . ' ' . $item['name']);
+                $dedupe = $item['norm_article'] ?: $nameKey;
+                if ($dedupe !== '' && isset($seen[$dedupe]) && $seen[$dedupe] !== $nameKey) {
+                    // Sizes of one family share a source page (G 1¼ / G 1½): tell them apart by name.
+                    $item['supplier_article'] = $item['brand'] . ' ' . $item['name'];
+                    $item['norm_article'] = $this->normArticle($item['supplier_article']);
+                    $dedupe = $item['norm_article'];
+                }
                 if ($dedupe === '' || isset($seen[$dedupe])) {
                     continue;
                 }
 
-                $seen[$dedupe] = true;
+                $seen[$dedupe] = $nameKey;
                 $rows[] = $item;
             }
         }
@@ -617,7 +624,9 @@ class SyncMaitekGroupCommand extends Command
             $this->line('metric.maitek.brand_' . Str::slug((string) $brand, '_') . '=' . $count);
         }
         foreach ($rows as $row) {
-            if ($row['action'] !== 'matched') {
+            if ($row['action'] === 'matched') {
+                $this->line(sprintf('audit.maitek.matched=%s:%d:%d:%s', $row['gid'], $row['sheet_row'], $row['matched_product_id'], Str::slug((string) $row['match_confidence'])));
+            } else {
                 $this->line(sprintf('audit.maitek.unmatched=%s:%d:%s:%s:%d',
                     $row['gid'], $row['sheet_row'], Str::slug((string) $row['brand']), Str::slug(Str::limit((string) $row['name'], 60, '')), $row['in_stock'] ? 1 : 0));
             }
@@ -890,7 +899,31 @@ class SyncMaitekGroupCommand extends Command
             }
         }
 
+        $stats['missing_marked_out'] = 0;
+        if ($this->isFullRun() && $touchedProductIds !== []) {
+            // A row gone from the price means the supplier no longer offers it: keep the link, drop the stock.
+            $missing = DB::table('supplier_products')
+                ->where('supplier_id', $supplierId)
+                ->whereNotNull('product_id')
+                ->whereNotIn('product_id', array_unique($touchedProductIds))
+                ->where(fn ($q) => $q->where('in_stock', true)->orWhere('stock_quantity', '>', 0));
+            $missingProductIds = (clone $missing)->pluck('product_id')->map(fn ($id) => (int) $id)->all();
+            $stats['missing_marked_out'] = (clone $missing)->update([
+                'in_stock' => false,
+                'stock_quantity' => 0,
+                'stock_status' => 'out_of_stock',
+                'stock_text' => 'нет в прайсе',
+                'delivery_days' => null,
+                'last_stock_synced_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $touchedProductIds = array_merge($touchedProductIds, $missingProductIds);
+        }
+
         app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
+        foreach ($stats as $key => $value) {
+            $this->line('metric.maitek.apply_' . $key . '=' . $value);
+        }
 
         $this->table(['metric', 'count'], array_map(fn ($key, $value) => [$key, $value], array_keys($stats), array_values($stats)));
 
@@ -1066,6 +1099,17 @@ class SyncMaitekGroupCommand extends Command
         return (int) DB::table('supplier_syncs')->where('key', self::SYNC_KEY)->value('id');
     }
 
+    /** Only a run over the whole default price may decide that a stored link has left it. */
+    private function isFullRun(): bool
+    {
+        return $this->csvOption('gid') === []
+            && $this->csvOption('brand') === []
+            && ! (bool) $this->option('available-only')
+            && $this->option('limit') === null
+            && (int) $this->option('offset') === 0
+            && ! $this->option('sheet-url');
+    }
+
     private function supplierId(): int
     {
         return (int) (DB::table('suppliers')->where('code', self::SUPPLIER_CODE)->value('id') ?? 0);
@@ -1205,7 +1249,7 @@ class SyncMaitekGroupCommand extends Command
     private function nameKey(string $value): string
     {
         $value = mb_strtolower($value);
-        $value = str_replace(['ё', '"', "'", '«', '»'], ['е', '', '', '', ''], $value);
+        $value = str_replace(['ё', '"', "'", '«', '»', '¼', '½', '¾'], ['е', '', '', '', '', ' 1/4', ' 1/2', ' 3/4'], $value);
         $value = preg_replace('/[^a-zа-я0-9]+/u', ' ', $value) ?? $value;
 
         return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
