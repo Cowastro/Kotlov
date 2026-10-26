@@ -310,6 +310,10 @@ class EnrichProductContentCommand extends Command
         );
 
         $remaining = $total - $offset - $products->count();
+        // ASCII summary for the GitHub Actions log (the text itself stays in the database).
+        foreach ($stats + ['candidates' => $total, 'remaining' => max(0, $remaining)] as $key => $value) {
+            $this->line("metric.enrich_content.{$key}={$value}");
+        }
         if ($remaining > 0) {
             $nextOffset = $offset + $products->count();
             $this->line(sprintf("\n<fg=yellow>%d more remain. Continue with --offset=%d</>", $remaining, $nextOffset));
