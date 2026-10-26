@@ -31,7 +31,7 @@ class OneCCreatedDuplicatesCommand extends Command
         $source = IntegrationSource::query()->where('code', $this->option('source'))->first();
         $items = IntegrationProduct::query()->where('integration_source_id', $source?->id)->where('match_method', 'manual_created')
             ->whereNotNull('product_id')->get()->keyBy('product_id');
-        $created = Product::query()->whereIn('id', $items->keys())->where('is_archived', false)->get(['id', 'name', 'slug', 'price', 'images']);
+        $created = Product::query()->whereIn('id', $items->keys())->where('is_archived', false)->get(['id', 'name', 'slug', 'price', 'images', 'brand_id']);
 
         // Every other card by signature (computed once).
         $index = [];
@@ -49,7 +49,9 @@ class OneCCreatedDuplicatesCommand extends Command
         $stats = ['created' => $created->count(), 'duplicates' => 0, 'ambiguous' => 0, 'folded' => 0];
         foreach ($created as $new) {
             $signature = LinkOneCByParametersCommand::signature((string) $new->name);
-            $older = $index[$signature] ?? [];
+            // The same maker and the same steels: Darco, КПД, Ferrum or Parkanex parts of one size are not duplicates.
+            $older = array_values(array_filter($index[$signature] ?? [], fn ($old) => self::sameMaker((string) $new->name, (string) $old->name, $new->brand_id, $old->brand_id)
+                && self::steels((string) $new->name) === self::steels((string) $old->name)));
             if ($older === []) {
                 continue;
             }
@@ -79,5 +81,25 @@ class OneCCreatedDuplicatesCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private static function sameMaker(string $new, string $old, mixed $newBrand, mixed $oldBrand): bool
+    {
+        $tis = fn (string $name) => (bool) preg_match('/теплов|(?<!\pL)тис(?!\pL)/iu', $name);
+        if ($tis($new) || $tis($old)) {
+            return $tis($new) && $tis($old);
+        }
+
+        return $newBrand !== null && (int) $newBrand === (int) $oldBrand;
+    }
+
+    /** @return array<int,string> steel grades named in the title, sorted */
+    private static function steels(string $name): array
+    {
+        preg_match_all('/(?<!\d)(201|304|316|321|409|430|439)(?!\d)/', $name, $m);
+        $steels = array_values(array_unique($m[1]));
+        sort($steels);
+
+        return $steels;
     }
 }
