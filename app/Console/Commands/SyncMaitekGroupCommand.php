@@ -59,6 +59,9 @@ class SyncMaitekGroupCommand extends Command
     /** @var array<string,int> */
     private array $categoryBySlug = [];
 
+    /** @var array<string,int> how many price rows point at each source page */
+    private array $sourceUrlRows = [];
+
     public function handle(): int
     {
         $apply = (bool) $this->option('apply') && ! (bool) $this->option('dry-run');
@@ -104,6 +107,12 @@ class SyncMaitekGroupCommand extends Command
         }
 
         $this->buildIndexes();
+        foreach ($rows as $row) {
+            $sourceKey = $this->sourceKey((string) $row['source_url']);
+            if ($sourceKey !== '') {
+                $this->sourceUrlRows[$sourceKey] = ($this->sourceUrlRows[$sourceKey] ?? 0) + 1;
+            }
+        }
         $classified = array_map(fn (array $row) => $this->classify($row), $rows);
         $this->printMetrics($classified);
 
@@ -541,7 +550,8 @@ class SyncMaitekGroupCommand extends Command
         }
 
         $sourceKey = $this->sourceKey((string) $row['source_url']);
-        if ($sourceKey !== '' && isset($this->indexBySourceUrl[$sourceKey])) {
+        // One page often covers several versions (с автоматикой / без): only a page unique to this row identifies it.
+        if ($sourceKey !== '' && ($this->sourceUrlRows[$sourceKey] ?? 0) <= 1 && isset($this->indexBySourceUrl[$sourceKey])) {
             return ['product_id' => $this->indexBySourceUrl[$sourceKey], 'confidence' => 'source_url'];
         }
 
@@ -625,12 +635,15 @@ class SyncMaitekGroupCommand extends Command
         }
         foreach ($rows as $row) {
             if ($row['action'] === 'matched') {
-                $this->line(sprintf('audit.maitek.matched=%s:%d:%d:%s', $row['gid'], $row['sheet_row'], $row['matched_product_id'], Str::slug((string) $row['match_confidence'])));
+                $this->line(sprintf('audit.maitek.matched=%s:%d:%d:%s:%s', $row['gid'], $row['sheet_row'], $row['matched_product_id'], Str::slug((string) $row['match_confidence']), Str::slug(Str::limit((string) $row['name'], 60, ''))));
             } else {
                 $this->line(sprintf('audit.maitek.unmatched=%s:%d:%s:%s:%d',
                     $row['gid'], $row['sheet_row'], Str::slug((string) $row['brand']), Str::slug(Str::limit((string) $row['name'], 60, '')), $row['in_stock'] ? 1 : 0));
             }
         }
+
+        $matchedTimes = array_count_values(array_filter(array_map(fn ($row) => (int) ($row['matched_product_id'] ?? 0), $rows)));
+        $this->line('metric.maitek.products_matched_twice=' . count(array_filter($matchedTimes, fn ($times) => $times > 1)));
 
         $supplierId = $this->supplierId();
         $this->line('metric.maitek.supplier_exists=' . ($supplierId > 0 ? 1 : 0));
