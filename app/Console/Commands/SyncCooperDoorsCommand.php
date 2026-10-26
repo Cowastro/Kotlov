@@ -27,7 +27,8 @@ class SyncCooperDoorsCommand extends Command
 {
     protected $signature = 'supplier:sync-cooper-doors
         {--apply : Write links, prices and stock}
-        {--create-new : Create cards for doors that have none}';
+        {--create-new : Create cards for doors that have none}
+        {--refresh-images : Reload the photos of cards that have fewer than the site}';
 
     protected $description = 'Sync Cooper sauna doors of ООО «СаунаОпт» from cooper.by';
 
@@ -83,16 +84,20 @@ class SyncCooperDoorsCommand extends Command
                     }
                     $product = $this->createCard($row);
                     $stats['created']++;
-                    $stats['images_saved'] += (int) (app(ProductSourceEnricher::class)->enrichFromParsed($product, $row['url'], [
-                        'images' => $row['images'],
-                    ], [
-                        'update_images' => true, 'update_specs' => false, 'update_service' => false, 'update_documents' => false,
-                        'update_video' => false, 'update_content' => false,
-                    ])['images_saved'] ?? 0);
                 }
                 $stats['linked']++;
                 if (! $apply) {
                     continue;
+                }
+                $refresh = (bool) $this->option('refresh-images') && count((array) $product->images) < count($row['images']);
+                if ((empty($product->images) || $refresh) && $row['images'] !== []) {
+                    // The shop's own photos of this door: «изображение_viber_….jpg» would fail the generic
+                    // image filter (it drops messenger icons), so they go in as verified product photos.
+                    $stats['images_saved'] += (int) (app(ProductSourceEnricher::class)->enrichFromParsed($product, $row['url'], ['images' => []], [
+                        'verified_images' => $row['images'],
+                        'update_images' => true, 'replace_images' => $refresh, 'update_specs' => false, 'update_service' => false, 'update_documents' => false,
+                        'update_video' => false, 'update_content' => false,
+                    ])['images_saved'] ?? 0);
                 }
 
                 SupplierProduct::query()->updateOrCreate([
