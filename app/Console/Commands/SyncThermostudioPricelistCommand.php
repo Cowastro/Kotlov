@@ -809,16 +809,7 @@ class SyncThermostudioPricelistCommand extends Command
                 $missingProductIds = $missingQuery->pluck('product_id')->map(fn ($id) => (int) $id)->all();
 
                 if ($missingProductIds !== []) {
-                    $missingQuery->update([
-                        'in_stock' => false,
-                        'stock_quantity' => null,
-                        'stock_status' => 'missing_from_feed',
-                        'stock_text' => 'Нет в актуальном прайсе поставщика',
-                        'delivery_days' => null,
-                        'last_stock_synced_at' => $now,
-                        'last_synced_at' => $now,
-                        'updated_at' => $now,
-                    ]);
+                    $missingQuery->update($this->missingFromFeedPayload($now));
                     $stats['missing_from_feed'] = count($missingProductIds);
                     $touchedProductIds = array_merge($touchedProductIds, $missingProductIds);
                 }
@@ -844,6 +835,25 @@ class SyncThermostudioPricelistCommand extends Command
             && (int) $this->option('offset') === 0
             && blank($this->option('price-file'))
             && blank($this->option('sheet-url'));
+    }
+
+    /** @return array<string, mixed> */
+    private function missingFromFeedPayload($now): array
+    {
+        return [
+            // A row absent from the current complete feed must not keep looking
+            // like a valid purchase-price source in margin calculations.
+            'price' => null,
+            'price_byn' => null,
+            'in_stock' => false,
+            'stock_quantity' => null,
+            'stock_status' => 'missing_from_feed',
+            'stock_text' => 'Нет в актуальном прайсе поставщика',
+            'delivery_days' => null,
+            'last_stock_synced_at' => $now,
+            'last_synced_at' => $now,
+            'updated_at' => $now,
+        ];
     }
 
     /**

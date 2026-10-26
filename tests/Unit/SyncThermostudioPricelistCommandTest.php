@@ -172,6 +172,16 @@ class SyncThermostudioPricelistCommandTest extends TestCase
         $this->assertFalse($this->invoke('canMarkMissingFromFeed', []));
     }
 
+    public function test_missing_feed_clears_stale_purchase_price(): void
+    {
+        $payload = $this->invoke('missingFromFeedPayload', [now()]);
+
+        $this->assertNull($payload['price']);
+        $this->assertNull($payload['price_byn']);
+        $this->assertSame('missing_from_feed', $payload['stock_status']);
+        $this->assertFalse($payload['in_stock']);
+    }
+
     public function test_it_keeps_coaxial_chimneys_in_their_own_category(): void
     {
         $this->setCategoryMap([

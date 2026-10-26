@@ -115,6 +115,28 @@ class ManagerStorefrontExperienceTest extends TestCase
         $this->assertSame('7 шт.', $offers->first()['stock']);
     }
 
+    public function test_missing_price_list_offer_does_not_show_stale_purchase_price_or_margin(): void
+    {
+        [$product, $offer] = $this->makeProductWithSupplierOffer();
+        $offer->update([
+            'stock_status' => 'missing_from_feed',
+            'stock_text' => 'Нет в актуальном прайсе поставщика',
+            'stock_quantity' => null,
+            'in_stock' => false,
+            'price' => 4,
+            'price_byn' => 4,
+        ]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        $context = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager)->first();
+
+        $this->assertNull($context['purchase_price']);
+        $this->assertNull($context['margin']);
+        $this->assertNull($context['margin_percent']);
+        $this->assertSame('Нет в актуальном прайсе поставщика', $context['stock']);
+        $this->assertFalse($product->fresh()->hasAssignedSupplier());
+    }
+
     public function test_duplicate_links_from_the_same_supplier_are_collapsed_to_the_best_offer(): void
     {
         [$product, $offer] = $this->makeProductWithSupplierOffer();

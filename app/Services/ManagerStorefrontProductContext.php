@@ -58,7 +58,9 @@ class ManagerStorefrontProductContext
             ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin): array {
                 $quantity = $offer->stock_quantity;
                 $inStock = (float) $quantity > 0 || $offer->in_stock === true;
-                $purchasePrice = (float) $offer->price_byn > 0 ? (float) $offer->price_byn : null;
+                $purchasePrice = $offer->stock_status !== 'missing_from_feed' && (float) $offer->price_byn > 0
+                    ? (float) $offer->price_byn
+                    : null;
 
                 return [
                     'supplier_key' => $this->supplierKey($offer->supplier?->name),
