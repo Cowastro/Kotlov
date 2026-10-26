@@ -19,6 +19,7 @@ class AttachProductPhotosCommand extends Command
     protected $signature = 'catalog:attach-photos
         {--copy=* : TARGET_ID:SOURCE_ID — copy the photos of the source card}
         {--url=* : TARGET_ID:IMAGE_URL — download this image}
+        {--replace : Also cards that already have photos (a stub picture): the new photos replace them}
         {--apply : Write the photos}';
 
     protected $description = 'Give cards without photos the photos of another card or a given image';
@@ -30,7 +31,7 @@ class AttachProductPhotosCommand extends Command
             [$targetId, $sourceId] = array_map('intval', array_pad(explode(':', (string) $pair, 2), 2, 0));
             $target = Product::query()->find($targetId);
             $source = Product::query()->find($sourceId);
-            if (! $target || ! $source || ! empty($target->images) || empty($source->images)) {
+            if (! $target || ! $source || (! empty($target->images) && ! $this->option('replace')) || empty($source->images)) {
                 $stats['skipped']++;
                 $this->line("audit.attach_photos.skipped={$targetId}");
 
@@ -45,7 +46,7 @@ class AttachProductPhotosCommand extends Command
         foreach ((array) $this->option('url') as $pair) {
             [$targetId, $url] = array_pad(explode(':', (string) $pair, 2), 2, '');
             $target = Product::query()->find((int) $targetId);
-            if (! $target || ! empty($target->images) || ! filter_var($url, FILTER_VALIDATE_URL)) {
+            if (! $target || (! empty($target->images) && ! $this->option('replace')) || ! filter_var($url, FILTER_VALIDATE_URL)) {
                 $stats['skipped']++;
                 $this->line('audit.attach_photos.skipped='.(int) $targetId);
 
@@ -54,7 +55,7 @@ class AttachProductPhotosCommand extends Command
             $saved = 0;
             if ($this->option('apply')) {
                 $saved = (int) ($enricher->enrichFromParsed($target, $url, ['images' => []], [
-                    'verified_images' => [$url], 'update_images' => true, 'update_specs' => false, 'update_service' => false,
+                    'verified_images' => [$url], 'update_images' => true, 'replace_images' => (bool) $this->option('replace'), 'update_specs' => false, 'update_service' => false,
                     'update_documents' => false, 'update_video' => false, 'update_content' => false,
                 ])['images_saved'] ?? 0);
             }
