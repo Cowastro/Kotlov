@@ -1166,7 +1166,8 @@ class SyncMaitekGroupCommand extends Command
             $touchedProductIds = array_merge($touchedProductIds, $missingProductIds);
         }
 
-        app(SupplierProductAvailabilityService::class)->refreshMany($touchedProductIds, $now);
+        // Cards Maitek was taken off also need their availability recounted from the remaining suppliers.
+        app(SupplierProductAvailabilityService::class)->refreshMany(array_merge($touchedProductIds, $keptProductIds), $now);
         foreach ($stats as $key => $value) {
             $this->line('metric.maitek.apply_' . $key . '=' . $value);
         }
