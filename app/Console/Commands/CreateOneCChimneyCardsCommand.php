@@ -33,7 +33,8 @@ class CreateOneCChimneyCardsCommand extends Command
 {
     protected $signature = 'integration:create-onec-chimneys
         {--source=onec : Integration source code}
-        {--apply : Create and link the cards}';
+        {--apply : Create and link the cards}
+        {--fill-missing-photos : Give the chimney cards created from 1C without a photo the closest card\'s photos}';
 
     protected $description = 'Create complete cards for the stainless chimney parts of the 1C stock';
 
@@ -51,6 +52,9 @@ class CreateOneCChimneyCardsCommand extends Command
             $this->line('metric.onec_chimneys.source=0');
 
             return self::FAILURE;
+        }
+        if ($this->option('fill-missing-photos')) {
+            return $this->fillMissingPhotos($source);
         }
         $items = IntegrationProduct::query()->where('integration_source_id', $source->id)->inStock()
             ->whereNull('product_id')->whereIn('match_status', ['unmatched', 'suggested', 'ambiguous'])
@@ -179,6 +183,42 @@ class CreateOneCChimneyCardsCommand extends Command
         }
 
         return $specs;
+    }
+
+    /**
+     * teplov.ru serves some product photos as 404: those cards take the photos of the closest card
+     * of the same element, like the parts the maker does not list.
+     */
+    private function fillMissingPhotos(IntegrationSource $source): int
+    {
+        $pool = $this->siblingPool();
+        $products = Product::query()->whereIn('id', IntegrationProduct::query()->where('integration_source_id', $source->id)
+            ->where('match_method', 'manual_created')->whereNotNull('product_id')->select('product_id'))
+            ->where(fn ($q) => $q->whereNull('images')->orWhere('images', '[]'))
+            ->get();
+        $stats = ['without_photo' => $products->count(), 'filled' => 0, 'no_sibling' => 0];
+        foreach ($products as $product) {
+            if (self::categorySlug((string) $product->name) === 'prochie-dymohod' && ! preg_match('/дымоход|нерж|430|304/iu', (string) $product->name)) {
+                continue;
+            }
+            $sibling = self::closestSibling((string) $product->name, $pool->where('id', '!=', $product->id));
+            if (! $sibling) {
+                $stats['no_sibling']++;
+                $this->line(sprintf('audit.onec_chimneys.no_source=%d:%s', $product->id, Str::slug(Str::limit((string) $product->name, 70, ''))));
+
+                continue;
+            }
+            $this->line(sprintf('audit.onec_chimneys.photo=%d:%s:%d', $product->id, Str::slug(Str::limit((string) $product->name, 70, '')), $sibling->id));
+            if ($this->option('apply')) {
+                $product->forceFill(['images' => array_values((array) $sibling->images)])->save();
+                $stats['filled']++;
+            }
+        }
+        foreach ($stats as $key => $value) {
+            $this->line("metric.onec_chimneys.{$key}={$value}");
+        }
+
+        return self::SUCCESS;
     }
 
     /** BYN for one Russian rouble, from the National Bank of Belarus. */
