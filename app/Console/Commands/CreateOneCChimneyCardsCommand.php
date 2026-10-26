@@ -35,6 +35,7 @@ class CreateOneCChimneyCardsCommand extends Command
         {--source=onec : Integration source code}
         {--apply : Create and link the cards}
         {--fill-missing-photos : Give the chimney cards created from 1C without a photo the closest card\'s photos}
+        {--series-photos : Replace borrowed photos with the maker photo of the part or of its series (teplov.ru)}
         {--clean-specs : Drop «Картинки: Array» and the name specs the maker states better on cards created from 1C}';
 
     protected $description = 'Create complete cards for the stainless chimney parts of the 1C stock';
@@ -59,6 +60,9 @@ class CreateOneCChimneyCardsCommand extends Command
         }
         if ($this->option('clean-specs')) {
             return $this->cleanSpecs($source);
+        }
+        if ($this->option('series-photos')) {
+            return $this->seriesPhotos($source);
         }
         $items = IntegrationProduct::query()->where('integration_source_id', $source->id)->inStock()
             ->whereNull('product_id')->whereIn('match_status', ['unmatched', 'suggested', 'ambiguous'])
@@ -246,6 +250,51 @@ class CreateOneCChimneyCardsCommand extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * Cards whose photo files do not carry their own SKU borrowed them from another card. The maker's
+     * photo of the part, or of the same series in the nearest diameter, shows the real element.
+     */
+    private function seriesPhotos(IntegrationSource $source): int
+    {
+        $items = IntegrationProduct::query()->where('integration_source_id', $source->id)->where('match_method', 'manual_created')
+            ->whereNotNull('product_id')->with(['integrationCategory:id,path'])->get()
+            ->filter(fn (IntegrationProduct $item) => str_contains((string) $item->integrationCategory?->path, 'Теплов и Сухов'));
+        $products = Product::query()->whereIn('id', $items->pluck('product_id'))->get()->keyBy('id');
+        $stats = ['cards' => $items->count(), 'borrowed' => 0, 'found' => 0, 'replaced' => 0, 'not_found' => 0];
+        foreach ($items as $item) {
+            $product = $products->get($item->product_id);
+            if (! $product) {
+                continue;
+            }
+            $own = Str::lower(Str::slug((string) $product->sku));
+            if ((array) $product->images !== [] && collect((array) $product->images)->contains(fn ($path) => str_contains(Str::lower((string) $path), $own))) {
+                continue;
+            }
+            $stats['borrowed']++;
+            $photos = $this->teplov->workingPhotos((string) $item->name);
+            if ($photos === []) {
+                $stats['not_found']++;
+                $this->line(sprintf('audit.onec_chimneys.no_source=%d:%s', $product->id, Str::slug(Str::limit((string) $product->name, 70, ''))));
+
+                continue;
+            }
+            $stats['found']++;
+            $this->line(sprintf('audit.onec_chimneys.photo=%d:%s:%d', $product->id, Str::slug(Str::limit((string) $product->name, 70, '')), count($photos)));
+            if ($this->option('apply')) {
+                $saved = (int) (app(ProductSourceEnricher::class)->enrichFromParsed($product, $photos[0], ['images' => []], [
+                    'verified_images' => $photos, 'update_images' => true, 'replace_images' => true, 'update_specs' => false,
+                    'update_service' => false, 'update_documents' => false, 'update_video' => false, 'update_content' => false,
+                ])['images_saved'] ?? 0);
+                $stats['replaced'] += (int) ($saved > 0);
+            }
+        }
+        foreach ($stats as $key => $value) {
+            $this->line("metric.onec_chimneys.series_{$key}={$value}");
+        }
+
+        return self::SUCCESS;
+    }
+
     /** Specs read from the 1C name; every other key on these cards came from the maker's page. */
     private const NAME_SPEC_KEYS = ['Элемент дымохода', 'Исполнение', 'Марка стали', 'Толщина стали', 'Внутренний диаметр', 'Внешний диаметр',
         'Диаметр', 'Длина', 'Угол', 'Хомут в комплекте', 'Утеплитель', 'Цвет'];
@@ -397,7 +446,12 @@ class CreateOneCChimneyCardsCommand extends Command
         $steel = preg_match('/\b(304|316|430|439)\b/u', $title, $m) ? $m[1] : null;
         $diameter = preg_match('/[DdДдФф]\s*(\d{2,3})/u', $title, $d) ? (int) $d[1] : null;
 
-        return $pool->map(function (Product $product) use ($type, $design, $steel, $diameter): ?array {
+        return $pool->map(function (Product $product) use ($type, $design, $steel, $diameter, $title): ?array {
+            // A painted (MC Black) card is no picture of bare stainless steel, and the other way round.
+            $painted = fn (string $text) => (bool) preg_match('/mc\s*black|ч[её]рн/iu', $text);
+            if ($painted((string) $product->name) !== $painted($title)) {
+                return null;
+            }
             $other = explode('|', LinkOneCByParametersCommand::signature((string) $product->name));
             if (($other[0] ?? '') !== $type || array_values(array_intersect($other, ['термо', 'моно'])) !== $design || empty($product->images)) {
                 return null;

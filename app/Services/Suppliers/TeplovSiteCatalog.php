@@ -83,6 +83,72 @@ class TeplovSiteCatalog
         ];
     }
 
+    /**
+     * A working photo for a part: its own page's photo, else the photo of the same series in the
+     * nearest diameter (teplov.ru serves many photos as 404; «Труба L250 ТМ-Р 430-0.8» D250 and D200
+     * are broken, D120 is fine — the same pipe, steel, thickness and length).
+     *
+     * @return array<int,string>
+     */
+    public function workingPhotos(string $name): array
+    {
+        $url = $this->find($name);
+        if ($url === null) {
+            return [];
+        }
+        $own = $this->page($url)['images'] ?? [];
+        $working = array_values(array_filter($own, fn (string $image) => $this->opens($image)));
+        if ($working !== []) {
+            return $working;
+        }
+        $slug = basename(rtrim($url, '/'));
+        $diameter = self::firstDiameter($slug);
+        // The same series first, then the same series with any of the «У / У2 / ТС / М» marks.
+        foreach ([fn (string $s) => self::seriesPattern($s), fn (string $s) => (string) preg_replace('/(_(u2?|u3|ts|m|fm|tf))+$/', '', self::seriesPattern($s))] as $key) {
+            $pattern = $key($slug);
+            $series = collect(array_keys($this->slugs()))
+                ->filter(fn (string $other) => $other !== $slug && $key($other) === $pattern)
+                ->sortBy(fn (string $other) => abs(self::firstDiameter($other) - $diameter))
+                ->take(15);
+            foreach ($series as $other) {
+                $images = array_values(array_filter($this->page(self::SITE.'/catalog/detail/'.$other.'/')['images'] ?? [], fn (string $image) => $this->opens($image)));
+                if ($images !== []) {
+                    return $images;
+                }
+            }
+        }
+
+        return [];
+    }
+
+    /** «truba_l250_tm_r_430_0_8_d250» → «truba_l250_tm_r_430_0_8_d#»: the series without its diameters. */
+    public static function seriesPattern(string $slug): string
+    {
+        return (string) preg_replace('/_d_?\d+(?:_\d+)*/', '_d#', $slug);
+    }
+
+    private static function firstDiameter(string $slug): int
+    {
+        return preg_match('/_d_?(\d+)/', $slug, $m) ? (int) $m[1] : 0;
+    }
+
+    /** @var array<string,bool> */
+    private array $opens = [];
+
+    private function opens(string $image): bool
+    {
+        if (! isset($this->opens[$image])) {
+            try {
+                $response = Http::timeout(30)->withUserAgent('Mozilla/5.0 (compatible; KotlovBot)')->get($image);
+                $this->opens[$image] = $response->successful() && str_contains(strtolower((string) $response->header('Content-Type')), 'image');
+            } catch (\Throwable) {
+                $this->opens[$image] = false;
+            }
+        }
+
+        return $this->opens[$image];
+    }
+
     /** @return array<string,string> every product slug of the catalogue (from the section pages of the menu) */
     private function slugs(): array
     {
