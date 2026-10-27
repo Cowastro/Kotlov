@@ -227,7 +227,7 @@ class IntegrationSourceResource extends Resource
                         ->searchable()
                         ->preload()
                         ->required(fn (callable $get): bool => (bool) $get('settings.b2b_enabled'))
-                        ->helperText('Пустой список ничего не публикует. Выбор родительской категории разрешает также все её дочерние разделы.')
+                        ->helperText('Для СанБизнесГруп публикуется весь ассортимент с ценой и наличием. Для остальных поставщиков пустой список ничего не публикует; родительская категория включает дочерние разделы.')
                         ->columnSpanFull(),
                     Select::make('price_currency')
                         ->label('Валюта входной цены')

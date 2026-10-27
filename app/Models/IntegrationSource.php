@@ -133,6 +133,16 @@ class IntegrationSource extends Model
             ->all();
     }
 
+    /**
+     * SanBusinessGroup is our own full assortment. Its sellable 1C offers are
+     * not limited by the historical chimney pilot category allowlist.
+     */
+    public function publishesAllB2bCategories(): bool
+    {
+        return $this->code === 'onec'
+            || $this->supplier?->code === 'sanbusinessgroup';
+    }
+
     public function priceTaxMode(): string
     {
         return data_get($this->settings, 'price_tax_mode') === self::PRICE_TAX_INCLUSIVE

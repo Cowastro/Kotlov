@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\B2bClient;
 use App\Models\Category;
+use App\Models\ContactRequest;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\ContactRequestNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -158,7 +160,7 @@ class B2bMarketplaceTest extends TestCase
             'requested_quantity' => 12,
             'status' => 'new',
         ]);
-        $this->assertStringContainsString('ООО «Монтаж»', (string) \App\Models\ContactRequest::query()->value('message'));
+        $this->assertStringContainsString('ООО «Монтаж»', (string) ContactRequest::query()->value('message'));
 
         $this->actingAs($user)
             ->postJson(route('b2b.price-requests.store'), [
@@ -170,7 +172,7 @@ class B2bMarketplaceTest extends TestCase
 
         $this->assertDatabaseCount('contact_requests', 1);
 
-        \App\Models\ContactRequest::query()->update([
+        ContactRequest::query()->update([
             'status' => 'done',
             'client_response' => 'Оптовая цена 105 BYN, поставка 3 дня.',
         ]);
@@ -387,7 +389,14 @@ class B2bMarketplaceTest extends TestCase
 
     private function source(string $code, Category $category, ?string $partnerName = null): IntegrationSource
     {
+        $supplier = Supplier::query()->create([
+            'code' => $code.'-supplier',
+            'name' => $partnerName ?: $code,
+            'is_active' => true,
+        ]);
+
         return IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
             'code' => $code,
             'name' => $code,
             'is_active' => true,

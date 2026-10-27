@@ -256,16 +256,20 @@ class B2bCatalogOfferResolver
     private function loadPublishableOffers(Builder $query): Collection
     {
         return $query
-            ->with(['source', 'product.brand', 'product.category', 'product.warehouseStocks'])
+            ->with(['source.supplier', 'product.brand', 'product.category', 'product.warehouseStocks'])
             ->whereNotNull('product_id')
             ->where('match_status', 'matched')
             ->withUsablePrice()
             ->whereHas('source', fn ($query) => $query->where('is_active', true))
             ->get()
             ->filter(fn (IntegrationProduct $offer): bool => $offer->source?->isB2bEnabled() === true
+                && $offer->source?->supplier?->is_active === true
                 && $offer->source->hasPublishableB2bPrice()
                 && $offer->allowsB2bPublication()
                 && $offer->normalizedPriceByn() !== null
+                && $offer->product?->is_active === true
+                && $offer->product?->is_archived === false
+                && (float) $offer->product?->price > 0
                 && ($this->isProcurementOffer($offer)
                     || $this->hasFreshStock($offer)
                     || $offer->product?->warehouseStocks->contains(
@@ -277,6 +281,10 @@ class B2bCatalogOfferResolver
 
     private function sourceAllowsCategory(IntegrationProduct $offer): bool
     {
+        if ($offer->source?->publishesAllB2bCategories() === true) {
+            return true;
+        }
+
         $allowed = $offer->source?->b2bCategoryIds() ?? [];
         $categoryId = (int) ($offer->product?->category_id ?? 0);
 

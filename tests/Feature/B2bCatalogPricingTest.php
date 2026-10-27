@@ -2,14 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
 use App\Models\Brand;
+use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\IntegrationWarehouse;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductWarehouseStock;
+use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -90,7 +91,7 @@ class B2bCatalogPricingTest extends TestCase
         }
     }
 
-    public function test_explicitly_allowed_offer_still_requires_source_category_and_stock_rules(): void
+    public function test_explicitly_allowed_offer_still_requires_fresh_stock(): void
     {
         [$product, $user] = $this->catalogFixture(approved: true);
         IntegrationProduct::query()->where('product_id', $product->id)->update([
@@ -98,6 +99,17 @@ class B2bCatalogPricingTest extends TestCase
             'stock_quantity' => 0,
             'stock_confirmed_at' => null,
         ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»');
+    }
+
+    public function test_sanbusinessgroup_offer_requires_retail_price_even_with_wholesale_price_and_stock(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        $product->update(['price' => 0]);
 
         $this->actingAs($user)
             ->get('/'.$product->category->slug.'/'.$product->slug)
@@ -412,7 +424,7 @@ class B2bCatalogPricingTest extends TestCase
         );
     }
 
-    public function test_partner_catalog_is_deny_by_default_without_allowed_categories(): void
+    public function test_sanbusinessgroup_catalog_is_automatic_without_category_allowlist(): void
     {
         [$product, $user] = $this->catalogFixture(approved: true);
         $source = IntegrationProduct::query()->where('product_id', $product->id)->firstOrFail()->source;
@@ -429,16 +441,41 @@ class B2bCatalogPricingTest extends TestCase
         $this->actingAs($user)
             ->get('/'.$product->category->slug.'/'.$product->slug)
             ->assertOk()
-            ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
-            ->assertSeeText('120.00 BYN');
+            ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
+            ->assertSeeText('96.00 BYN');
 
         $this->actingAs($user)
             ->get('/account')
             ->assertOk()
-            ->assertDontSeeText('Дымоходы');
+            ->assertSeeText('Дымоходы');
     }
 
-    public function test_allowed_parent_category_includes_children_but_excludes_other_branches(): void
+    public function test_other_supplier_still_requires_an_allowed_category(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        $supplier = Supplier::query()->create([
+            'code' => 'other-b2b-supplier',
+            'name' => 'Другой B2B-поставщик',
+            'is_active' => true,
+        ]);
+        $offer = IntegrationProduct::query()->where('product_id', $product->id)->firstOrFail();
+        $source = $offer->source;
+        $settings = $source->settings;
+        $settings['b2b_category_ids'] = [];
+        $settings['partner_name'] = $supplier->name;
+        $source->update([
+            'code' => 'other-b2b-source',
+            'supplier_id' => $supplier->id,
+            'settings' => $settings,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertDontSeeText('Партнёрская цена от '.$supplier->name);
+    }
+
+    public function test_sanbusinessgroup_catalog_is_not_limited_to_the_chimney_branch(): void
     {
         [$product, $user] = $this->catalogFixture(approved: true);
         $source = IntegrationProduct::query()->where('product_id', $product->id)->firstOrFail()->source;
@@ -486,14 +523,13 @@ class B2bCatalogPricingTest extends TestCase
         $this->actingAs($user)
             ->get('/'.$blockedCategory->slug.'/'.$blockedProduct->slug)
             ->assertOk()
-            ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
-            ->assertSeeText('200.00 BYN');
+            ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»');
 
         $this->actingAs($user)
             ->get('/account')
             ->assertOk()
             ->assertSeeText('Дымоходы')
-            ->assertDontSeeText('Котлы вне пилота');
+            ->assertSeeText('Котлы вне пилота');
     }
 
     public function test_source_edit_explains_required_partner_catalog_scope(): void
@@ -509,7 +545,7 @@ class B2bCatalogPricingTest extends TestCase
             ->get('/admin/integration-sources/'.$source->id.'/edit')
             ->assertOk()
             ->assertSeeText('Разрешённые категории партнёрского каталога')
-            ->assertSeeText('Пустой список ничего не публикует')
+            ->assertSeeText('Для СанБизнесГруп публикуется весь ассортимент с ценой и наличием')
             ->assertSeeText('Остатки и склад')
             ->assertSeeText('Склад из CommerceML')
             ->assertSeeText('Склады, найденные в последних обменах')

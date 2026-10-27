@@ -112,6 +112,10 @@ class B2bProductPublicationManager
     /** @param array<int, int> $categoryParents */
     private function sourceAllowsCategory(IntegrationProduct $offer, array $categoryParents): bool
     {
+        if ($offer->source?->publishesAllB2bCategories() === true) {
+            return true;
+        }
+
         $allowed = array_fill_keys($offer->source?->b2bCategoryIds() ?? [], true);
         $categoryId = (int) ($offer->product?->category_id ?? 0);
         $visited = [];
