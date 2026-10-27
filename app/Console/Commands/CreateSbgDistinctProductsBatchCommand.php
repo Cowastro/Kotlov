@@ -5842,7 +5842,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'template' => 'PS-011.846',
             'allow_unmatched' => true,
             'external_id' => 'dc461558-b92e-11e9-a205-1c1b0d1de7c2',
-            'category_slug' => 'krany-i-zapornaya-armatura',
+            'category_slug' => 'smesitelnye-klapany-i-uzly',
             'fragments' => ['OKM-F-25-10-10'],
             'link_existing_sku' => 'PS-011.846',
             'link_fragments' => ['OKM-F-25-10-10'],
