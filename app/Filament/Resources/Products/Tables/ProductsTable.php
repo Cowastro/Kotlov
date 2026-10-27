@@ -72,7 +72,7 @@ class ProductsTable
                     ->sortable()
                     ->weight('bold')
                     ->wrap()
-                    ->width('20rem')
+                    ->width('17.5rem')
                     ->grow(false)
                     ->url(fn (Product $record): string => ProductResource::getUrl(
                         'view',
@@ -98,7 +98,7 @@ class ProductsTable
                     ->copyable()
                     ->limit(18)
                     ->tooltip(fn (Product $record): ?string => $record->sku)
-                    ->width('7.5rem')
+                    ->width('7rem')
                     ->grow(false)
                     ->toggleable(),
 
@@ -107,7 +107,7 @@ class ProductsTable
                     ->sortable()
                     ->badge()
                     ->limit(22)
-                    ->width('9rem')
+                    ->width('8rem')
                     ->grow(false)
                     ->tooltip(fn ($record): ?string => $record->category?->name)
                     ->toggleable(),
@@ -116,7 +116,7 @@ class ProductsTable
                     ->label('Бренд')
                     ->sortable()
                     ->placeholder('—')
-                    ->width('6.5rem')
+                    ->width('6rem')
                     ->grow(false)
                     ->toggleable(),
 
@@ -126,7 +126,7 @@ class ProductsTable
                         ? '—'
                         : number_format($stock, 0, ',', ' '))
                     ->alignCenter()
-                    ->width('5.5rem')
+                    ->width('5rem')
                     ->grow(false)
                     ->toggleable(),
 
@@ -135,7 +135,7 @@ class ProductsTable
                     ->getStateUsing(fn ($record): string => ($price = self::wholesalePrice($record))
                         ? number_format($price, 2, ',', ' ').' BYN'
                         : '—')
-                    ->width('7rem')
+                    ->width('6.5rem')
                     ->grow(false)
                     ->toggleable(),
 
@@ -158,7 +158,7 @@ class ProductsTable
                         'Справочно' => 'Товар виден в справочном B2B-каталоге; оптовик может запросить цену',
                         default => 'Товар не показывается в B2B-каталоге',
                     })
-                    ->width('6.5rem')
+                    ->width('6rem')
                     ->grow(false),
 
                 TextColumn::make('price')
@@ -168,7 +168,7 @@ class ProductsTable
                         ? number_format((float) $state, 2).' '.($record->currency ?: 'BYN')
                         : '<span class="text-danger-500 font-bold">— не задана</span>'
                     )
-                    ->width('7rem')
+                    ->width('6.5rem')
                     ->grow(false)
                     ->html(),
 
@@ -214,7 +214,7 @@ class ProductsTable
                             default => 'success',
                         };
                     })
-                    ->width('8rem')
+                    ->width('7.5rem')
                     ->grow(false)
                     ->toggleable(),
 
@@ -224,7 +224,7 @@ class ProductsTable
                     ->description(fn ($record): ?HtmlString => self::supplierContacts($record))
                     ->limit(30)
                     ->lineClamp(1)
-                    ->width('14rem')
+                    ->width('12rem')
                     ->grow(false)
                     ->tooltip(fn ($record): string => self::supplierNames($record))
                     ->searchable(query: fn (Builder $query, string $search) => $query->where(

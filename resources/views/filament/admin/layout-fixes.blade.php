@@ -100,25 +100,25 @@
 
     /* Product management must stay scan-friendly even with long supplier data. */
     .products-workspace .fi-ta-header-cell {
-        padding: 0.5rem;
+        padding: 0.5rem 0.375rem;
     }
 
     .products-workspace .fi-ta-text:not(.fi-inline),
     .products-workspace .fi-ta-icon,
     .products-workspace .fi-ta-image {
-        padding: 0.625rem 0.5rem;
+        padding: 0.625rem 0.375rem;
     }
 
     .products-workspace .fi-ta-cell-name,
     .products-workspace .fi-ta-header-cell-name {
-        min-width: 20rem;
-        max-width: 20rem;
+        min-width: 17.5rem;
+        max-width: 17.5rem;
     }
 
     .products-workspace .fi-ta-cell-suppliers-list,
     .products-workspace .fi-ta-header-cell-suppliers-list {
-        min-width: 14rem;
-        max-width: 14rem;
+        min-width: 12rem;
+        max-width: 12rem;
     }
 
     /* Mail is reviewed on narrower office displays. Keep operational columns
