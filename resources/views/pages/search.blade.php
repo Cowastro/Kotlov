@@ -1,7 +1,7 @@
 @extends('layouts.amerce')
 
 @section('content')
-<main id="wrapper">
+<main id="wrapper" class="search-page">
 
     {{-- Заголовок --}}
     <section class="section-page-title text-center flat-spacing-2 pb-0">
@@ -12,7 +12,7 @@
                     <i class="icon icon-CaretRightThin cl-text-3"></i>
                     <p class="text-caption-01">Поиск</p>
                 </div>
-                <h3>
+                <h3 class="search-page__title">
                     @if ($q)
                         Результаты поиска: «{{ $q }}»
                     @else
@@ -33,7 +33,8 @@
                             <input type="text" name="q" id="searchpage-search-input"
                                 value="{{ $q }}"
                                 placeholder="Товар, артикул или категория"
-                                autofocus required autocomplete="off">
+                                @if (!$q) autofocus @endif
+                                required autocomplete="off">
                             <div id="searchpage-search-suggest" class="search-suggest-dropdown"></div>
                         </fieldset>
                         <button type="submit" class="btn-action">
@@ -70,7 +71,7 @@
                 @if ($total > 0)
                     {{-- Шапка с количеством и сортировкой --}}
                     <div class="tf-shop-control mb-24">
-                        <div class="text-body-1 cl-text-2">
+                        <div class="search-results-summary text-body-1 cl-text-2">
                             Найдено <strong>{{ $total }}</strong> товаров по запросу «{{ $q }}»
                         </div>
                         <div class="tf-control-sorting">

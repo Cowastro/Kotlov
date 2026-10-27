@@ -479,6 +479,33 @@ body {
 }
 
 /* Автодополнение поиска */
+.search-page {
+    min-width: 0;
+    overflow-x: clip;
+}
+.search-page .container,
+.search-page .row,
+.search-page .row > *,
+.search-page .main-page-title,
+.search-page .tf-shop-control,
+.search-page .tf-grid-layout,
+.search-page .tf-grid-layout > * {
+    min-width: 0;
+}
+.search-page__title,
+.search-results-summary {
+    width: 100%;
+    max-width: 100%;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+}
+.search-page__title {
+    text-wrap: pretty;
+}
+.search-results-summary {
+    flex: 1 1 320px;
+}
+
 .suggest-item {
     display: flex;
     align-items: center;

@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Builder;
 
 class StorefrontProductSearch
 {
-    private const MAX_TOKENS = 8;
+    private const MAX_TOKENS = 10;
+
+    /** @var list<string> */
+    private const STOP_TOKENS = [
+        'и', 'или', 'в', 'во', 'на', 'для', 'по', 'с', 'со', 'из', 'от', 'к', 'у', 'под', 'над',
+    ];
 
     /**
      * Common catalogue word forms that cannot be matched by merely changing
@@ -48,6 +53,9 @@ class StorefrontProductSearch
         'дымоходный' => ['дымоход'],
         'дымоходные' => ['дымоход'],
         'дымохода' => ['дымоход'],
+        'вытяжная' => ['труба'],
+        'вытяжной' => ['труба'],
+        'вытяжные' => ['труба'],
     ];
 
     public function apply(Builder $query, string $search, bool $includeInternal = false): Builder
@@ -105,7 +113,12 @@ class StorefrontProductSearch
      * that common path unnecessarily expensive. The controller falls back to
      * apply() when this pass finds nothing, so typo/layout support is preserved.
      */
-    public function applyForSuggestions(Builder $query, string $search, bool $includeInternal = false): Builder
+    public function applyForSuggestions(
+        Builder $query,
+        string $search,
+        bool $includeInternal = false,
+        bool $includeCategoryMatches = true
+    ): Builder
     {
         $tokens = array_slice($this->directTokens($search), 0, self::MAX_TOKENS);
         $heatingElementQuery = $this->isHeatingElementQuery($search);
@@ -114,19 +127,22 @@ class StorefrontProductSearch
             return $query;
         }
 
-        return $query->where(function (Builder $matches) use ($search, $tokens, $includeInternal, $heatingElementQuery): void {
+        return $query->where(function (Builder $matches) use ($search, $tokens, $includeInternal, $includeCategoryMatches, $heatingElementQuery): void {
             if (! $heatingElementQuery) {
-                // Keep cross-script brands/model codes in the fast pass, but do
-                // not multiply every value by three case variants. Production
-                // uses a case-insensitive MySQL collation.
+                // Keep cross-script brands/model codes in the fast pass. Expand
+                // case only for Cyrillic values: this keeps the query compact,
+                // while remaining correct on databases with a case-sensitive
+                // Unicode LIKE implementation.
                 foreach ($this->variants($search) as $variant) {
-                    $this->addTermMatches($matches, $variant, $includeInternal);
+                    foreach ($this->fastCaseVariants($variant) as $caseVariant) {
+                        $this->addTermMatches($matches, $caseVariant, $includeInternal);
+                    }
                 }
             }
 
-            $matches->orWhere(function (Builder $allTokens) use ($tokens, $includeInternal): void {
+            $matches->orWhere(function (Builder $allTokens) use ($tokens, $includeInternal, $includeCategoryMatches): void {
                 foreach ($tokens as $alternatives) {
-                    $allTokens->where(function (Builder $tokenMatch) use ($alternatives, $includeInternal): void {
+                    $allTokens->where(function (Builder $tokenMatch) use ($alternatives, $includeInternal, $includeCategoryMatches): void {
                         if ($this->isHeatingElementToken($alternatives)) {
                             $tokenMatch->whereHas('category', fn (Builder $category) => $category
                                 ->where('slug', 'elektricheskie-teny-dlya-otopleniya'));
@@ -135,7 +151,9 @@ class StorefrontProductSearch
                         }
 
                         foreach ($alternatives as $alternative) {
-                            $this->addTermMatches($tokenMatch, $alternative, $includeInternal, true);
+                            foreach ($this->fastCaseVariants($alternative) as $caseVariant) {
+                                $this->addTermMatches($tokenMatch, $caseVariant, $includeInternal, $includeCategoryMatches);
+                            }
                         }
                     });
                 }
@@ -152,9 +170,16 @@ class StorefrontProductSearch
     public function applyForResults(Builder $query, string $search, bool $includeInternal = false): Builder
     {
         $fastQuery = clone $query;
-        $this->applyForSuggestions($fastQuery, $search, $includeInternal);
+        $this->applyForSuggestions($fastQuery, $search, $includeInternal, false);
 
         if ($fastQuery->exists()) {
+            return $this->applyForSuggestions($query, $search, $includeInternal, false);
+        }
+
+        $categoryQuery = clone $query;
+        $this->applyForSuggestions($categoryQuery, $search, $includeInternal);
+
+        if ($categoryQuery->exists()) {
             return $this->applyForSuggestions($query, $search, $includeInternal);
         }
 
@@ -304,12 +329,22 @@ class StorefrontProductSearch
         return array_values(array_unique([$value, mb_convert_case($value, MB_CASE_TITLE), mb_strtoupper($value)]));
     }
 
+    /** @return list<string> */
+    private function fastCaseVariants(string $value): array
+    {
+        if (! preg_match('/[а-яё]/u', $value)) {
+            return [$value];
+        }
+
+        return $this->caseVariants($value);
+    }
+
     /** @return list<list<string>> */
     private function tokens(string $search): array
     {
         $normalized = $this->normalize($search);
         $normalized = preg_replace('/гидравлическ\S*\s+разделител\S*/u', 'гидрострелка', $normalized) ?? $normalized;
-        $tokens = preg_split('/[^\pL\pN]+/u', $normalized, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $tokens = $this->searchableTokens($normalized);
 
         return array_map(fn (string $token): array => $this->variants($token), $tokens);
     }
@@ -317,7 +352,7 @@ class StorefrontProductSearch
     /** @return list<list<string>> */
     private function directTokens(string $search): array
     {
-        $tokens = preg_split('/[^\pL\pN]+/u', $this->normalize($search), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $tokens = $this->searchableTokens($this->normalize($search));
 
         return array_map(function (string $token): array {
             $alternatives = [$token];
@@ -334,6 +369,23 @@ class StorefrontProductSearch
 
             return array_values(array_unique($alternatives));
         }, $tokens);
+    }
+
+    /** @return list<string> */
+    private function searchableTokens(string $normalizedSearch): array
+    {
+        $tokens = preg_split('/[^\pL\pN]+/u', $normalizedSearch, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return array_values(array_filter($tokens, function (string $token): bool {
+            if (in_array($token, self::STOP_TOKENS, true)) {
+                return false;
+            }
+
+            // Однобуквенные части составных обозначений вроде «ТМ-Р» дают
+            // слишком широкий SQL-фильтр. Одиночные цифры сохраняем: они
+            // нужны для толщины металла в запросах вида 430-0.8.
+            return mb_strlen($token) > 1 || ctype_digit($token);
+        }));
     }
 
     private function normalize(string $value): string

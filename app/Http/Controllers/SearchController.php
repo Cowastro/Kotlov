@@ -43,7 +43,9 @@ class SearchController extends Controller
                     break;
                 case 'new':        $query->orderByDesc('id');
                     break;
-                default:           $query->orderByDesc('is_featured')->orderByDesc('rating');
+                default:           $query->orderByDesc('is_featured')
+                    ->orderByDesc('rating')
+                    ->orderByDesc('id');
             }
 
             $products = $query->paginate(24)->withQueryString();

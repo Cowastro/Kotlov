@@ -25,6 +25,17 @@ class StorefrontProductSearchTest extends TestCase
             ->assertDontSee('id="home-search-input"', false);
     }
 
+    public function test_long_results_query_uses_bounded_wrapping_layout_without_autofocus(): void
+    {
+        $query = 'труба 115 Теплов и Сухов L1000 0.8 моно';
+
+        $this->get('/search?'.http_build_query(['q' => $query]))
+            ->assertOk()
+            ->assertSee('class="search-page"', false)
+            ->assertSee('class="search-page__title"', false)
+            ->assertDontSee('autofocus', false);
+    }
+
     public function test_fast_suggestion_pass_handles_normal_queries_without_expensive_variants(): void
     {
         $category = Category::create([
@@ -79,6 +90,34 @@ class StorefrontProductSearchTest extends TestCase
         app(StorefrontProductSearch::class)->applyForResults($query, 'Wilo');
 
         $this->assertSame([$product->id], $query->pluck('id')->all());
+    }
+
+    public function test_long_chimney_query_matches_catalog_punctuation_and_an_extra_descriptor(): void
+    {
+        $category = Category::create([
+            'name' => 'Трубы моно',
+            'slug' => 'search-chimney-pipes',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Теплов и Сухов Труба L1000 ТМ-Р (430-0,8) MC Black D115',
+            'slug' => 'search-teplov-suhov-pipe',
+            'sku' => 'TS-TM-R-430-08-D115',
+            'price' => 117.82,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $query = 'Труба вытяжная Теплов и Сухов L1000 ТМ-Р 430-0.8 D115';
+
+        $matches = Product::query();
+        app(StorefrontProductSearch::class)->applyForResults($matches, $query);
+
+        $this->assertSame([$product->id], $matches->pluck('id')->all());
+        $this->get('/search?'.http_build_query(['q' => $query]))
+            ->assertOk()
+            ->assertSeeText($product->name);
     }
 
     public function test_category_suggestions_explain_identical_names_with_their_parent_section(): void
