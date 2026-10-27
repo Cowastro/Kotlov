@@ -48,8 +48,8 @@ class MergeRizonDuplicatesCommand extends Command
                 $stats['pairs']++;
                 $this->line("audit.rizon_merge.pair={$keepId}:{$dupeId}:{$keep->slug}:{$dupe->slug}");
 
-                $keepImages = array_values(array_filter((array) $keep->images));
-                $dupeImages = array_values(array_filter((array) $dupe->images));
+                $keepImages = $keep->portableImagePaths();
+                $dupeImages = $dupe->portableImagePaths();
                 $takeImages = count($dupeImages) > count($keepImages);
                 $stats['images_taken'] += (int) $takeImages;
 

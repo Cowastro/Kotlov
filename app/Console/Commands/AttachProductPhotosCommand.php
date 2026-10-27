@@ -39,7 +39,7 @@ class AttachProductPhotosCommand extends Command
             }
             $this->line("audit.attach_photos.copy={$targetId}:{$sourceId}:".count((array) $source->images));
             if ($this->option('apply')) {
-                $target->forceFill(['images' => array_values((array) $source->images)])->save();
+                $target->forceFill(['images' => $source->portableImagePaths()])->save();
             }
             $stats['copied']++;
         }

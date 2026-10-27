@@ -6968,23 +6968,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
     /** @return list<string> */
     private function portableImages(Product $template): array
     {
-        return collect($template->imagePaths())
-            ->map(function (string $path, int $index) use ($template): string {
-                if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')
-                    || str_starts_with($path, 'product/') || str_starts_with($path, 'products/')
-                    || str_starts_with($path, 'img/')) {
-                    return $path;
-                }
-
-                $resolved = $template->imageUrl($index);
-
-                return str_starts_with($resolved, '/proxy-image/')
-                    ? substr($resolved, strlen('/proxy-image/'))
-                    : '';
-            })
-            ->filter()
-            ->values()
-            ->all();
+        return $template->portableImagePaths();
     }
 
     /** @param list<string> $images */

@@ -594,6 +594,30 @@ class Product extends Model
         ));
     }
 
+    /**
+     * Photo paths that point at the same files from any card. A bare file name of an old card
+     * («konus.jpeg») is resolved by that card's id, so copied as is to another card it shows the stub.
+     *
+     * @return list<string>
+     */
+    public function portableImagePaths(): array
+    {
+        return collect($this->imagePaths())
+            ->map(function (string $path, int $index): string {
+                if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')
+                    || str_starts_with($path, 'product/') || str_starts_with($path, 'products/')
+                    || str_starts_with($path, 'img/') || str_starts_with($path, '/img/')) {
+                    return $path;
+                }
+                $resolved = $this->imageUrl($index);
+
+                return str_starts_with($resolved, '/proxy-image/') ? substr($resolved, strlen('/proxy-image/')) : '';
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
     // URL первого фото через proxy (или placeholder)
     public function getImageUrlAttribute(): string
     {

@@ -435,6 +435,12 @@ jobs:
             grep -E '^audit\.sbg_prices\.photo=[0-9]+:[a-z0-9-]+:[0-9]+$' "$detail_log" || true
             echo "safe_sbg_prices_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:fix-stub-photos" ]]; then
+            echo "safe_stub_photos_begin"
+            grep -E '^metric\.stub_photos\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.stub_photos\.card=[0-9]+:[a-z0-9-]+:(relinked|sibling|none)$' "$detail_log" || true
+            echo "safe_stub_photos_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:attach-photos" ]]; then
             echo "safe_attach_photos_begin"
             grep -E '^metric\.attach_photos\.[a-z_]+=[0-9]+$' "$detail_log" || true

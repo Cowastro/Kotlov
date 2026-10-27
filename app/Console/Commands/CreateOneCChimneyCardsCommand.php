@@ -124,7 +124,7 @@ class CreateOneCChimneyCardsCommand extends Command
                 'category_id' => $categories[$categorySlug] ?? $categories['prochie-dymohod'] ?? $sibling?->category_id,
                 'retail_price' => $retail,
                 'brand_id' => $isTis ? $brand?->id : null,
-                'images' => $page ? [] : array_values((array) $sibling->images),
+                'images' => $page ? [] : $sibling->portableImagePaths(),
                 'specs' => collect($specs)->map(fn ($value, $key) => ['key' => $key, 'value' => $value])->values()->all(),
                 'short_description' => $page && $page['description'] !== '' ? Str::limit($page['description'], 300, '…') : self::shortDescription($title, $specs),
                 'content_source_url' => $url,
@@ -239,7 +239,7 @@ class CreateOneCChimneyCardsCommand extends Command
             }
             $this->line(sprintf('audit.onec_chimneys.photo=%d:%s:%d', $product->id, Str::slug(Str::limit((string) $product->name, 70, '')), $sibling->id));
             if ($this->option('apply')) {
-                $product->forceFill(['images' => array_values((array) $sibling->images)])->save();
+                $product->forceFill(['images' => $sibling->portableImagePaths()])->save();
                 $stats['filled']++;
             }
         }
