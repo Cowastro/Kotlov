@@ -24,7 +24,8 @@ class SyncBaniaPricelistCommand extends Command
         {--create-missing-products : Disabled for BANIA; unmatched price rows are reported without creating catalog products}
         {--limit= : Process only the first N price rows}
         {--mark-missing-out-of-stock : Mark linked BANIA rows missing from the price list as out_of_stock}
-        {--archive-missing-products : Archive products whose BANIA wholesale rows disappeared and which have no other supplier links}';
+        {--archive-missing-products : Archive products whose BANIA wholesale rows disappeared and which have no other supplier links}
+        {--audit-links : Read-only: list BANIA rows whose supplier title names another model than the card they feed}';
 
     protected $description = 'Sync BANIA supplier cost/stock and optionally catalogue RRP from the named Drive workbooks.';
 
@@ -138,6 +139,9 @@ class SyncBaniaPricelistCommand extends Command
             $this->error('BANIA supplier is not registered.');
 
             return self::FAILURE;
+        }
+        if ($this->option('audit-links')) {
+            return $this->auditLinks((int) $supplier->id);
         }
 
         try {
@@ -1013,6 +1017,34 @@ class SyncBaniaPricelistCommand extends Command
 
         return $this->modelIdentity((string) ($row['name'] ?? '')) !== ''
             && $this->modelIdentity((string) ($row['name'] ?? '')) === $this->modelIdentity($candidateName);
+    }
+
+    /**
+     * A row keeps feeding the card it was once linked to: its own article finds it in every price list.
+     * When the supplier title names another model (e.g. «Мини-1» on the card «АОГТ 01»), the card
+     * gets that model's cost and retail price.
+     */
+    private function auditLinks(int $supplierId): int
+    {
+        $rows = DB::table('supplier_products as sp')->join('products as p', 'p.id', '=', 'sp.product_id')
+            ->where('sp.supplier_id', $supplierId)->where('p.is_archived', false)
+            ->get(['sp.id', 'sp.product_id', 'sp.supplier_name', 'sp.price_byn', 'p.name', 'p.slug', 'p.price']);
+        $stats = ['linked' => $rows->count(), 'differs' => 0];
+        foreach ($rows as $row) {
+            $supplierIdentity = $this->modelIdentity((string) $row->supplier_name);
+            if ($supplierIdentity === '' || $supplierIdentity === $this->modelIdentity((string) $row->name)) {
+                continue;
+            }
+            $stats['differs']++;
+            $this->line(sprintf('audit.bania_links.differs=%d:%d:%s:%s:%s:%s', $row->id, $row->product_id,
+                number_format((float) $row->price_byn, 2, '.', ''), number_format((float) $row->price, 2, '.', ''),
+                Str::slug(Str::limit((string) $row->supplier_name, 70, '')) ?: 'none', Str::limit((string) $row->slug, 70, '')));
+        }
+        foreach ($stats as $key => $value) {
+            $this->line("metric.bania_links.{$key}={$value}");
+        }
+
+        return self::SUCCESS;
     }
 
     private function modelIdentity(string $value): string
