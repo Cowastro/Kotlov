@@ -151,6 +151,99 @@ class B2bMarketplaceTest extends TestCase
             ->assertSeeText('Оптовая цена 105 BYN, поставка 3 дня.');
     }
 
+    public function test_multiple_price_sources_of_one_partner_are_grouped_into_one_supplier_filter(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Дымоходы',
+            'slug' => 'b2b-supplier-group-category',
+            'is_active' => true,
+        ]);
+        $firstProduct = $this->product($category, 'Товар из 1С', 'GROUP-1');
+        $secondProduct = $this->product($category, 'Товар из отдельного прайса', 'GROUP-2');
+        $firstSource = $this->source('group-source-1', $category, 'ООО «СанБизнесГруп»');
+        $secondSource = $this->source('group-source-2', $category, 'ООО «СанБизнесГруп»');
+        $otherSource = $this->source('group-source-3', $category, 'Другой поставщик');
+        $this->offer($firstSource, $firstProduct, 80, 5);
+        $this->offer($secondSource, $secondProduct, 70, 8);
+        $otherProduct = $this->product($category, 'Товар другого поставщика', 'GROUP-3');
+        $this->offer($otherSource, $otherProduct, 60, 4);
+        $user = $this->approvedUser([$firstSource->id, $secondSource->id, $otherSource->id]);
+
+        $response = $this->actingAs($user)->get(route('b2b.catalog'));
+        $sourceKey = substr(sha1(mb_strtolower('ООО «СанБизнесГруп»')), 0, 12);
+
+        $response->assertOk()
+            ->assertSeeText('Товар из 1С')
+            ->assertSeeText('Товар из отдельного прайса');
+        $this->assertSame(1, substr_count($response->getContent(), '<option value="'.$sourceKey.'"'));
+
+        $this->actingAs($user)
+            ->get(route('b2b.catalog', ['source' => $sourceKey]))
+            ->assertOk()
+            ->assertSeeText('Товар из 1С')
+            ->assertSeeText('Товар из отдельного прайса')
+            ->assertDontSeeText('Товар другого поставщика');
+    }
+
+    public function test_category_tree_filters_the_whole_selected_branch(): void
+    {
+        $root = Category::query()->create([
+            'name' => 'Дымоходы',
+            'slug' => 'b2b-tree-root',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $child = Category::query()->create([
+            'name' => 'Трубы моно',
+            'slug' => 'b2b-tree-child',
+            'parent_id' => $root->id,
+            'is_active' => true,
+        ]);
+        $other = Category::query()->create([
+            'name' => 'Котлы',
+            'slug' => 'b2b-tree-other',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $childProduct = $this->product($child, 'Труба в ветке', 'TREE-1');
+        $otherProduct = $this->product($other, 'Котёл вне ветки', 'TREE-2');
+        $source = $this->source('tree-source', $root);
+        $this->offer($source, $childProduct, 80, 5);
+        $this->offer($source, $otherProduct, 70, 8);
+        $user = $this->approvedUser([$source->id]);
+
+        $this->actingAs($user)
+            ->get(route('b2b.catalog', ['category' => $root->id]))
+            ->assertOk()
+            ->assertSeeText('Дымоходы')
+            ->assertSeeText('Трубы моно')
+            ->assertSeeText('Труба в ветке')
+            ->assertDontSeeText('Котёл вне ветки');
+    }
+
+    public function test_marketplace_uses_compact_localized_pagination(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Пагинация',
+            'slug' => 'b2b-pagination-category',
+            'is_active' => true,
+        ]);
+        $source = $this->source('pagination-source', $category);
+        for ($index = 1; $index <= 31; $index++) {
+            $product = $this->product($category, 'Позиция '.str_pad((string) $index, 2, '0', STR_PAD_LEFT), 'PAGE-'.$index);
+            $this->offer($source, $product, 50 + $index, 3);
+        }
+        $user = $this->approvedUser([$source->id]);
+
+        $this->actingAs($user)
+            ->get(route('b2b.catalog'))
+            ->assertOk()
+            ->assertSeeText('Товары 1–30 из 31')
+            ->assertSee('aria-label="Следующая страница"', false)
+            ->assertDontSeeText('pagination.previous')
+            ->assertDontSeeText('pagination.next');
+    }
+
     private function product(Category $category, string $name, string $sku): Product
     {
         return Product::query()->create([
@@ -165,7 +258,7 @@ class B2bMarketplaceTest extends TestCase
         ]);
     }
 
-    private function source(string $code, Category $category): IntegrationSource
+    private function source(string $code, Category $category, ?string $partnerName = null): IntegrationSource
     {
         return IntegrationSource::query()->create([
             'code' => $code,
@@ -177,8 +270,28 @@ class B2bMarketplaceTest extends TestCase
                 'b2b_category_ids' => [$category->id],
                 'price_tax_mode' => 'inclusive',
                 'vat_rate' => 20,
+                'partner_name' => $partnerName ?: $code,
             ],
         ]);
+    }
+
+    /** @param list<int> $sourceIds */
+    private function approvedUser(array $sourceIds): User
+    {
+        $user = User::factory()->create([
+            'client_type' => 'wholesale',
+            'b2b_approved' => true,
+            'is_active' => true,
+        ]);
+        B2bClient::query()->create([
+            'user_id' => $user->id,
+            'status' => 'approved',
+            'partner_type' => 'wholesale',
+            'company_name' => 'ООО «Тест»',
+            'allowed_integration_source_ids' => $sourceIds,
+        ]);
+
+        return $user;
     }
 
     private function offer(IntegrationSource $source, Product $product, float $price, int $stock): void

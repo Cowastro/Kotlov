@@ -35,15 +35,7 @@
                     <span>Поиск</span>
                     <input type="search" name="q" value="{{ $query }}" placeholder="Название, артикул, бренд">
                 </label>
-                <label>
-                    <span>Категория</span>
-                    <select name="category">
-                        <option value="">Все категории</option>
-                        @foreach ($categories as $category)
-                            <option value="{{ $category->id }}" @selected($categoryId === (int) $category->id)>{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                </label>
+                @if ($categoryId > 0)<input type="hidden" name="category" value="{{ $categoryId }}">@endif
                 <label>
                     <span>Бренд</span>
                     <select name="brand">
@@ -53,13 +45,13 @@
                         @endforeach
                     </select>
                 </label>
-                @if ($mode === 'orderable' && $sources->count() > 1)
+                @if ($mode === 'orderable' && $sourceGroups->count() > 1)
                     <label>
-                        <span>Прайс</span>
+                        <span>Поставщик</span>
                         <select name="source">
-                            <option value="">Все прайсы</option>
-                            @foreach ($sources as $source)
-                                <option value="{{ $source->id }}" @selected($sourceId === (int) $source->id)>{{ $source->partnerName() }}</option>
+                            <option value="">Все поставщики</option>
+                            @foreach ($sourceGroups as $sourceGroup)
+                                <option value="{{ $sourceGroup['key'] }}" @selected($sourceKey === $sourceGroup['key'])>{{ $sourceGroup['label'] }}</option>
                             @endforeach
                         </select>
                     </label>
@@ -78,15 +70,32 @@
                 <button class="tf-btn btn-primary" type="submit"><i class="icon icon-MagnifyingGlass"></i> Найти</button>
             </form>
 
-            <div class="d-flex align-items-center justify-content-between gap-12 mb-16">
-                <p class="mb-0 cl-text-2">Найдено: <strong>{{ $products->total() }}</strong></p>
-                @if ($mode === 'reference')
-                    <p class="mb-0 text-caption-01 cl-text-3">Эти позиции показаны для информации и не добавляются в B2B-заявку.</p>
-                @endif
-            </div>
+            <div class="b2b-catalog-layout">
+                <aside class="b2b-category-panel">
+                    <div class="b2b-category-panel__heading">
+                        <strong>Каталог</strong>
+                        @if ($categoryId > 0)
+                            <a href="{{ request()->fullUrlWithQuery(['category' => null, 'page' => null]) }}">Сбросить</a>
+                        @endif
+                    </div>
+                    <a href="{{ request()->fullUrlWithQuery(['category' => null, 'page' => null]) }}" class="b2b-category-all {{ $categoryId === 0 ? 'active' : '' }}">
+                        <span>Все категории</span>
+                    </a>
+                    <div class="b2b-category-tree">
+                        @include('partials.b2b-category-tree', ['nodes' => $categoryTree, 'level' => 0])
+                    </div>
+                </aside>
 
-            @if ($products->count())
-                <div class="b2b-marketplace__list">
+                <div class="b2b-catalog-results">
+                    <div class="d-flex align-items-center justify-content-between gap-12 mb-16">
+                        <p class="mb-0 cl-text-2">Найдено: <strong>{{ $products->total() }}</strong></p>
+                        @if ($mode === 'reference')
+                            <p class="mb-0 text-caption-01 cl-text-3">Эти позиции показаны для информации и не добавляются в B2B-заявку.</p>
+                        @endif
+                    </div>
+
+                    @if ($products->count())
+                        <div class="b2b-marketplace__list">
                     @foreach ($products as $item)
                         @php
                             $product = $mode === 'orderable' ? $item['product'] : $item;
@@ -153,17 +162,19 @@
                             @endif
                         </article>
                     @endforeach
-                </div>
+                        </div>
 
-                <div class="mt-28">{{ $products->links() }}</div>
-            @else
-                <div class="b2b-marketplace__empty">
-                    <i class="icon icon-MagnifyingGlass"></i>
-                    <h5>Позиции не найдены</h5>
-                    <p>Измените запрос или сбросьте фильтры.</p>
-                    <a href="{{ route('b2b.catalog', ['mode' => $mode]) }}" class="tf-btn btn-primary">Сбросить фильтры</a>
+                        @include('partials.b2b-pagination', ['paginator' => $products])
+                    @else
+                        <div class="b2b-marketplace__empty">
+                            <i class="icon icon-MagnifyingGlass"></i>
+                            <h5>Позиции не найдены</h5>
+                            <p>Измените запрос или сбросьте фильтры.</p>
+                            <a href="{{ route('b2b.catalog', ['mode' => $mode]) }}" class="tf-btn btn-primary">Сбросить фильтры</a>
+                        </div>
+                    @endif
                 </div>
-            @endif
+            </div>
         </div>
     </section>
 </main>
@@ -176,7 +187,7 @@
 .b2b-marketplace__tabs { display:flex; gap:8px; padding:5px; width:fit-content; border-radius:12px; background:#f1f3f5; }
 .b2b-marketplace__tabs a { padding:10px 16px; border-radius:9px; color:#555; font-weight:700; }
 .b2b-marketplace__tabs a.active { background:#111; color:#fff; }
-.b2b-marketplace__filters { display:grid; grid-template-columns:minmax(230px,2fr) repeat(4,minmax(145px,1fr)) auto; align-items:end; gap:10px; padding:16px; border:1px solid #e6e8eb; border-radius:14px; background:#fafbfc; }
+.b2b-marketplace__filters { display:grid; grid-template-columns:minmax(280px,2fr) repeat(3,minmax(160px,1fr)) auto; align-items:end; gap:10px; padding:16px; border:1px solid #e6e8eb; border-radius:14px; background:#fafbfc; }
 .b2b-marketplace__filters label span,.b2b-marketplace__price span,.b2b-marketplace__stock span,.b2b-marketplace__reference-price span { display:block; margin-bottom:5px; color:#777; font-size:12px; }
 .b2b-marketplace__filters input,.b2b-marketplace__filters select { width:100%; height:44px; padding:0 12px; border:1px solid #dfe2e6; border-radius:8px; background:#fff; }
 .b2b-marketplace__list { border:1px solid #e6e8eb; border-radius:14px; overflow:hidden; }
@@ -199,8 +210,35 @@
 .b2b-price-request-form small { flex-basis:100%; color:#777; }
 .b2b-marketplace__empty { padding:56px 20px; border:1px dashed #d9dde1; border-radius:14px; text-align:center; }
 .b2b-marketplace__empty i { display:block; margin-bottom:14px; font-size:42px; color:#aaa; }
-@media(max-width:1199px){.b2b-marketplace__filters{grid-template-columns:repeat(3,1fr)}.b2b-marketplace__row{grid-template-columns:64px minmax(190px,2fr) 1fr 1fr}.b2b-marketplace__buy,.b2b-marketplace__reference-badge{grid-column:2/-1;justify-self:start}.b2b-marketplace__image{width:64px;height:64px}}
-@media(max-width:767px){.b2b-marketplace__filters{grid-template-columns:1fr}.b2b-marketplace__tabs{width:100%;overflow:auto}.b2b-marketplace__tabs a{white-space:nowrap}.b2b-marketplace__row{grid-template-columns:58px 1fr;gap:12px}.b2b-marketplace__image{width:58px;height:58px}.b2b-marketplace__price,.b2b-marketplace__stock,.b2b-marketplace__reference-price,.b2b-marketplace__buy,.b2b-marketplace__reference-badge{grid-column:1/-1}.b2b-marketplace__buy .tf-btn{flex:1}}
+.b2b-catalog-layout { display:grid; grid-template-columns:260px minmax(0,1fr); align-items:start; gap:20px; }
+.b2b-category-panel { position:sticky; top:20px; max-height:calc(100vh - 40px); padding:14px; border:1px solid #e6e8eb; border-radius:14px; background:#fff; overflow:auto; }
+.b2b-category-panel__heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.b2b-category-panel__heading strong { font-size:18px; }
+.b2b-category-panel__heading a { color:#d93d3d; font-size:12px; }
+.b2b-category-all,.b2b-category-leaf,.b2b-category-branch summary { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:36px; padding:7px 9px; border-radius:8px; color:#25282b; cursor:pointer; }
+.b2b-category-all:hover,.b2b-category-leaf:hover,.b2b-category-branch summary:hover { background:#f5f6f7; }
+.b2b-category-all.active,.b2b-category-leaf.active,.b2b-category-branch.selected > summary { color:#fff; background:#17191b; }
+.b2b-category-tree { margin-top:4px; }
+.b2b-category-tree__nested { margin-left:12px; padding-left:9px; border-left:1px solid #e4e6e8; }
+.b2b-category-branch summary { list-style:none; font-weight:650; }
+.b2b-category-branch summary::-webkit-details-marker { display:none; }
+.b2b-category-branch summary::before { content:'›'; flex:0 0 auto; transition:transform .15s ease; }
+.b2b-category-branch[open] > summary::before { transform:rotate(90deg); }
+.b2b-category-branch summary span:first-of-type { flex:1; }
+.b2b-category-count { flex:0 0 auto; min-width:24px; color:#777; font-size:11px; text-align:right; }
+.b2b-category-branch.selected > summary .b2b-category-count { color:#fff; }
+.b2b-category-section-link { display:block; margin:3px 0 3px 19px; padding:5px 8px; color:#d93d3d; font-size:12px; }
+.b2b-pagination { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:24px; }
+.b2b-pagination__summary { color:#74787d; font-size:13px; }
+.b2b-pagination__pages { display:flex; align-items:center; gap:5px; }
+.b2b-pagination__link,.b2b-pagination__current,.b2b-pagination__disabled { display:grid; place-items:center; min-width:40px; height:40px; padding:0 10px; border:1px solid #dfe2e6; border-radius:9px; background:#fff; color:#222; }
+.b2b-pagination__link:hover { border-color:#e44343; color:#e44343; }
+.b2b-pagination__current { border-color:#17191b; color:#fff; background:#17191b; }
+.b2b-pagination__disabled { color:#b6b9bd; background:#f7f8f9; }
+.b2b-pagination__ellipsis { padding:0 4px; color:#8b8e92; }
+@media(max-width:1199px){.b2b-marketplace__filters{grid-template-columns:repeat(3,1fr)}.b2b-catalog-layout{grid-template-columns:220px minmax(0,1fr)}.b2b-marketplace__row{grid-template-columns:64px minmax(190px,2fr) 1fr 1fr}.b2b-marketplace__buy,.b2b-marketplace__reference-badge{grid-column:2/-1;justify-self:start}.b2b-marketplace__image{width:64px;height:64px}}
+@media(max-width:900px){.b2b-catalog-layout{grid-template-columns:1fr}.b2b-category-panel{position:static;max-height:340px}.b2b-category-tree{columns:2}.b2b-category-branch,.b2b-category-leaf{break-inside:avoid}}
+@media(max-width:767px){.b2b-marketplace__filters{grid-template-columns:1fr}.b2b-marketplace__tabs{width:100%;overflow:auto}.b2b-marketplace__tabs a{white-space:nowrap}.b2b-category-tree{columns:1}.b2b-marketplace__row{grid-template-columns:58px 1fr;gap:12px}.b2b-marketplace__image{width:58px;height:58px}.b2b-marketplace__price,.b2b-marketplace__stock,.b2b-marketplace__reference-price,.b2b-marketplace__buy,.b2b-marketplace__reference-badge{grid-column:1/-1}.b2b-marketplace__buy .tf-btn{flex:1}.b2b-pagination{align-items:flex-start;flex-direction:column}.b2b-pagination__pages{max-width:100%;overflow:auto}}
 </style>
 @endpush
 

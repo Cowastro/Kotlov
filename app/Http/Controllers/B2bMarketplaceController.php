@@ -22,39 +22,62 @@ class B2bMarketplaceController extends Controller
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
         $categoryId = max(0, $request->integer('category'));
         $brandId = max(0, $request->integer('brand'));
-        $sourceId = max(0, $request->integer('source'));
+        $sourceKey = mb_substr(trim($request->string('source')->toString()), 0, 40);
         $sort = in_array($request->string('sort')->toString(), ['name', 'price_asc', 'price_desc', 'stock'], true)
             ? $request->string('sort')->toString()
             : 'name';
 
         $allOffers = $resolver->offersForUser($user);
         $orderableProductIds = $allOffers->pluck('product_id')->unique()->map(fn ($id): int => (int) $id);
-        $sourceProductIds = $sourceId > 0
-            ? $allOffers->where('integration_source_id', $sourceId)->pluck('product_id')->unique()
-            : collect();
-        $offers = $allOffers
-            ->groupBy('product_id')
-            ->map(fn (Collection $items) => $items->sortBy(fn ($offer): float => $resolver->priceWithTax($offer))->first())
-            ->when($sourceId > 0, fn (Collection $items) => $items->only($sourceProductIds->all()));
+        $sourceGroups = $allOffers
+            ->groupBy(fn ($offer): string => mb_strtolower(trim($offer->source->partnerName())))
+            ->map(function (Collection $items, string $normalizedName): array {
+                return [
+                    'key' => substr(sha1($normalizedName), 0, 12),
+                    'label' => $items->first()->source->partnerName(),
+                    'source_ids' => $items->pluck('integration_source_id')->map(fn ($id): int => (int) $id)->unique()->values(),
+                ];
+            })
+            ->sortBy('label')
+            ->values();
+        $selectedSource = $sourceGroups->firstWhere('key', $sourceKey);
+        if (! $selectedSource) {
+            $sourceKey = '';
+        }
 
-        $categories = $mode === 'reference'
-            ? Category::query()->where('is_active', true)->orderBy('name')->get()
-            : $allOffers->pluck('product.category')->filter()->unique('id')->sortBy('name')->values();
+        $listingOffers = $selectedSource
+            ? $allOffers->whereIn('integration_source_id', $selectedSource['source_ids'])
+            : $allOffers;
+        $offers = $listingOffers
+            ->groupBy('product_id')
+            ->map(fn (Collection $items) => $items->sortBy(fn ($offer): float => $resolver->priceWithTax($offer))->first());
+
+        $categoryIndex = Category::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'parent_id', 'name'])
+            ->keyBy('id');
+        $categoryFilterIds = $this->categoryBranchIds($categoryIndex, $categoryId);
+
         $brands = $mode === 'reference'
             ? Brand::query()->whereHas('products', fn ($query) => $query->active()->notArchived())->orderBy('name')->get()
             : $allOffers->pluck('product.brand')->filter()->unique('id')->sortBy('name')->values();
-        $sources = $allOffers->pluck('source')->filter()->unique('id')->sortBy('name')->values();
 
         if ($mode === 'reference') {
-            $productsQuery = Product::query()
+            $referenceBaseQuery = Product::query()
                 ->active()
                 ->notArchived()
-                ->with(['category', 'brand'])
                 ->whereNotIn('id', $orderableProductIds);
+            $availableCategoryIds = (clone $referenceBaseQuery)->pluck('category_id');
+            $productsQuery = $referenceBaseQuery->with(['category', 'brand']);
 
-            $this->applyProductFilters($productsQuery, $query, $categoryId, $brandId);
+            $this->applyProductFilters($productsQuery, $query, $categoryId, $categoryFilterIds, $brandId);
             $products = $productsQuery->orderBy('name')->paginate(30)->withQueryString();
         } else {
+            $availableCategoryIds = $listingOffers
+                ->unique('product_id')
+                ->pluck('product.category_id');
             $rows = $offers->map(function ($offer) use ($resolver): array {
                 $product = $offer->product;
 
@@ -68,7 +91,7 @@ class B2bMarketplaceController extends Controller
                         ? data_get($offer->source?->settings, 'warehouse_label', 'Под заказ')
                         : data_get($offer->source?->settings, 'warehouse_label', 'Основной').': '.$offer->formattedStockQuantity(),
                 ];
-            })->filter(function (array $row) use ($query, $categoryId, $brandId): bool {
+            })->filter(function (array $row) use ($query, $categoryId, $categoryFilterIds, $brandId): bool {
                 $product = $row['product'];
                 $haystack = mb_strtolower(implode(' ', [
                     $product->name,
@@ -78,7 +101,7 @@ class B2bMarketplaceController extends Controller
                 ]));
 
                 return ($query === '' || str_contains($haystack, mb_strtolower($query)))
-                    && ($categoryId === 0 || (int) $product->category_id === $categoryId)
+                    && ($categoryId === 0 || in_array((int) $product->category_id, $categoryFilterIds, true))
                     && ($brandId === 0 || (int) $product->brand_id === $brandId);
             });
 
@@ -91,6 +114,8 @@ class B2bMarketplaceController extends Controller
 
             $products = $this->paginate($rows, $request, 30);
         }
+
+        $categoryTree = $this->categoryTree($categoryIndex, $availableCategoryIds, $categoryId);
 
         $visibleProductIds = $mode === 'reference'
             ? $products->getCollection()->pluck('id')
@@ -105,12 +130,12 @@ class B2bMarketplaceController extends Controller
             ->keyBy('product_id');
 
         return view('pages.b2b-marketplace', compact(
-            'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceId', 'sort',
-            'categories', 'brands', 'sources', 'orderableProductIds', 'priceRequests',
+            'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceKey', 'sort',
+            'categoryTree', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests',
         ));
     }
 
-    private function applyProductFilters($builder, string $query, int $categoryId, int $brandId): void
+    private function applyProductFilters($builder, string $query, int $categoryId, array $categoryFilterIds, int $brandId): void
     {
         if ($query !== '') {
             $builder->where(function ($nested) use ($query): void {
@@ -122,11 +147,77 @@ class B2bMarketplaceController extends Controller
         }
 
         if ($categoryId > 0) {
-            $builder->where('category_id', $categoryId);
+            $builder->whereIn('category_id', $categoryFilterIds);
         }
         if ($brandId > 0) {
             $builder->where('brand_id', $brandId);
         }
+    }
+
+    /** @return list<int> */
+    private function categoryBranchIds(Collection $categories, int $categoryId): array
+    {
+        if ($categoryId <= 0) {
+            return [];
+        }
+
+        $ids = [$categoryId];
+        do {
+            $children = $categories
+                ->filter(fn (Category $category): bool => in_array((int) $category->parent_id, $ids, true))
+                ->pluck('id')
+                ->map(fn ($id): int => (int) $id)
+                ->diff($ids)
+                ->values()
+                ->all();
+            $ids = array_values(array_unique([...$ids, ...$children]));
+        } while ($children !== []);
+
+        return $ids;
+    }
+
+    private function categoryTree(Collection $categories, Collection $availableCategoryIds, int $selectedId): Collection
+    {
+        $directCounts = $availableCategoryIds
+            ->map(fn ($id): int => (int) $id)
+            ->filter()
+            ->countBy();
+        $branchCounts = [];
+
+        foreach ($directCounts as $categoryId => $count) {
+            $currentId = (int) $categoryId;
+            $visited = [];
+            while ($currentId > 0 && isset($categories[$currentId]) && ! isset($visited[$currentId])) {
+                $branchCounts[$currentId] = ($branchCounts[$currentId] ?? 0) + $count;
+                $visited[$currentId] = true;
+                $currentId = (int) $categories[$currentId]->parent_id;
+            }
+        }
+
+        $selectedPath = [];
+        $currentId = $selectedId;
+        while ($currentId > 0 && isset($categories[$currentId]) && ! isset($selectedPath[$currentId])) {
+            $selectedPath[$currentId] = true;
+            $currentId = (int) $categories[$currentId]->parent_id;
+        }
+
+        $visible = $categories->filter(fn (Category $category): bool => isset($branchCounts[$category->id]));
+        $children = $visible->groupBy(fn (Category $category): int => (int) $category->parent_id);
+        $build = function (Category $category) use (&$build, $children, $branchCounts, $selectedId, $selectedPath): array {
+            return [
+                'id' => (int) $category->id,
+                'name' => $category->name,
+                'count' => (int) ($branchCounts[$category->id] ?? 0),
+                'selected' => (int) $category->id === $selectedId,
+                'expanded' => isset($selectedPath[$category->id]),
+                'children' => $children->get((int) $category->id, collect())->map($build)->values(),
+            ];
+        };
+
+        return $visible
+            ->filter(fn (Category $category): bool => (int) $category->parent_id === 0 || ! isset($branchCounts[(int) $category->parent_id]))
+            ->map($build)
+            ->values();
     }
 
     private function paginate(Collection $items, Request $request, int $perPage): LengthAwarePaginator
