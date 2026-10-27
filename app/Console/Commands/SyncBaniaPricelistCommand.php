@@ -28,6 +28,7 @@ class SyncBaniaPricelistCommand extends Command
         {--audit-links : Read-only: list BANIA rows whose supplier title names another model than the card they feed}
         {--unlink-mismatched=* : Card ids: take BANIA rows of another model off them (with --apply), revoking their approvals}
         {--relink-own-model=* : Card ids: link the free BANIA row of the very model of each card (with --apply)}
+        {--attach-retail-only=* : CARD_ID:BANIA_ARTICLE — a retail-only BANIA row for a card the price lists miss (with --apply)}
         {--suggest-retail=* : Card ids: list the BANIA retail row of the own model of each card}';
 
     protected $description = 'Sync BANIA supplier cost/stock and optionally catalogue RRP from the named Drive workbooks.';
@@ -145,6 +146,19 @@ class SyncBaniaPricelistCommand extends Command
         }
         if ($this->option('audit-links')) {
             return $this->auditLinks((int) $supplier->id);
+        }
+        if ($this->option('attach-retail-only')) {
+            foreach ((array) $this->option('attach-retail-only') as $pair) {
+                [$productId, $article] = array_pad(explode(':', (string) $pair, 2), 2, '');
+                $product = DB::table('products')->where('id', (int) $productId)->first(['id', 'name', 'sku']);
+                $normalized = $this->normalizeArticle($article);
+                $this->line(sprintf('audit.bania_links.relink=%d:0:%d', (int) $productId, $product && $normalized !== '' ? 9 : 0));
+                if ($product && $normalized !== '' && ! $dryRun) {
+                    $this->createRetailOnlyRow((int) $supplier->id, $product, ['article' => $article, 'norm_article' => $normalized, 'name' => $product->name]);
+                }
+            }
+
+            return self::SUCCESS;
         }
         if ($this->option('unlink-mismatched')) {
             return $this->unlinkMismatched((int) $supplier->id, array_map('intval', (array) $this->option('unlink-mismatched')), ! $dryRun);
