@@ -13,6 +13,7 @@ use App\Models\TelephonyCall;
 use App\Models\TelephonyConnection;
 use App\Models\TelephonyEmployee;
 use App\Models\User;
+use App\Services\Telephony\A1OpenApiClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -135,6 +136,111 @@ class A1TelephonyIntegrationTest extends TestCase
         $call = TelephonyCall::firstOrFail();
         $this->assertSame($manager->id, $call->assigned_user_id);
         $this->assertSame($order->id, $call->order_id);
+    }
+
+    public function test_employee_sync_prefers_phone_and_preserves_manual_links_over_shared_email(): void
+    {
+        TelephonyConnection::query()->create([
+            'provider' => 'a1',
+            'company_id' => '732',
+            'is_enabled' => true,
+        ]);
+
+        $sharedAccount = User::factory()->create([
+            'name' => 'Daddy',
+            'email' => 'info@kotlov.by',
+            'phone' => '+375 29 000-00-00',
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+        $natalia = User::factory()->create([
+            'name' => 'Наталья Горбачевская',
+            'email' => 'natalia@example.test',
+            'phone' => '+375 29 156-21-02',
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+        $manualManager = User::factory()->create([
+            'name' => 'Ручная привязка',
+            'email' => 'manual@example.test',
+            'phone' => '+375 29 777-77-77',
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+
+        $nataliaEmployee = TelephonyEmployee::query()->create([
+            'provider' => 'a1',
+            'external_id' => 'natalia-a1',
+            'user_id' => $sharedAccount->id,
+            'name' => 'Наталья',
+            'full_number' => '375291562102',
+        ]);
+        $manualEmployee = TelephonyEmployee::query()->create([
+            'provider' => 'a1',
+            'external_id' => 'manual-a1',
+            'user_id' => $manualManager->id,
+            'name' => 'Менеджер',
+            'full_number' => '375291111111',
+        ]);
+
+        $client = $this->mock(A1OpenApiClient::class);
+        $client->shouldReceive('employees')->once()->andReturn([
+            [
+                'employeeId' => 'natalia-a1',
+                'name' => 'Наталья',
+                'surname' => 'Горбачевская',
+                'email' => 'info@kotlov.by',
+                'fullNumber' => '+375 29 156-21-02',
+            ],
+            [
+                'employeeId' => 'manual-a1',
+                'name' => 'Менеджер',
+                'email' => 'info@kotlov.by',
+                'fullNumber' => '+375 29 111-11-11',
+            ],
+        ]);
+        $client->shouldReceive('callHistory')->once()->andReturn([]);
+
+        $this->artisan('telephony:sync-a1')->assertSuccessful();
+
+        $this->assertSame($natalia->id, $nataliaEmployee->fresh()->user_id);
+        $this->assertSame($manualManager->id, $manualEmployee->fresh()->user_id);
+    }
+
+    public function test_natalia_data_correction_reassigns_existing_employee_and_calls(): void
+    {
+        $sharedAccount = User::factory()->create([
+            'email' => 'info@kotlov.by',
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+        $natalia = User::factory()->create([
+            'email' => 'natalia@example.test',
+            'phone' => '+375 29 156-21-02',
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+        $employee = TelephonyEmployee::query()->create([
+            'provider' => 'a1',
+            'external_id' => 'natalia-a1',
+            'user_id' => $sharedAccount->id,
+            'name' => 'Наталья',
+            'full_number' => '375291562102',
+        ]);
+        $call = TelephonyCall::query()->create([
+            'provider' => 'a1',
+            'external_uuid' => 'natalia-existing-call',
+            'employee_phone' => '375291562102',
+            'assigned_user_id' => $sharedAccount->id,
+            'direction' => 'outbound',
+            'status' => 'answered',
+        ]);
+
+        $migration = require database_path('migrations/2026_10_27_160000_fix_natalia_a1_telephony_assignment.php');
+        $migration->up();
+
+        $this->assertSame($natalia->id, $employee->fresh()->user_id);
+        $this->assertSame($natalia->id, $call->fresh()->assigned_user_id);
     }
 
     public function test_wrong_secret_and_wrong_company_are_rejected(): void

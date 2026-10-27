@@ -28,6 +28,11 @@ class SyncA1Telephony extends Command
         }
 
         try {
+            $staffUsers = User::query()
+                ->where('is_active', true)
+                ->whereIn('role', ['admin', 'manager', 'sales_manager'])
+                ->get(['id', 'email', 'phone']);
+
             $employees = $client->employees($connection);
             foreach ($employees as $employee) {
                 $externalId = (string) ($employee['employeeId'] ?? '');
@@ -37,21 +42,36 @@ class SyncA1Telephony extends Command
 
                 $fullNumber = PhoneNumber::normalize($employee['fullNumber'] ?? null);
                 $email = $employee['email'] ?? null;
-                $user = $email ? User::query()->where('email', $email)->first() : null;
+                $telephonyEmployee = TelephonyEmployee::query()->firstOrNew([
+                    'provider' => 'a1',
+                    'external_id' => $externalId,
+                ]);
 
-                TelephonyEmployee::query()->updateOrCreate(
-                    ['provider' => 'a1', 'external_id' => $externalId],
-                    [
-                        'user_id' => $user?->id,
-                        'name' => trim(($employee['name'] ?? '').' '.($employee['surname'] ?? '')) ?: 'Сотрудник A1',
-                        'email' => $email,
-                        'group_name' => $employee['groupName'] ?? null,
-                        'full_number' => $fullNumber,
-                        'short_number' => PhoneNumber::normalize($employee['shortNumber'] ?? null),
-                        'is_active' => true,
-                        'last_synced_at' => now(),
-                    ],
-                );
+                // A1 can expose the shared company email for several employees.
+                // Prefer a unique phone match and preserve an explicit manual link
+                // before using email for a previously unknown employee.
+                $phoneUser = $fullNumber
+                    ? $staffUsers->first(fn (User $candidate): bool => PhoneNumber::normalize($candidate->phone) === $fullNumber)
+                    : null;
+                $linkedUser = $telephonyEmployee->user_id
+                    ? $staffUsers->firstWhere('id', $telephonyEmployee->user_id)
+                    : null;
+                $normalizedEmail = mb_strtolower(trim((string) $email));
+                $emailUser = $normalizedEmail !== ''
+                    ? $staffUsers->first(fn (User $candidate): bool => mb_strtolower(trim((string) $candidate->email)) === $normalizedEmail)
+                    : null;
+                $user = $phoneUser ?? $linkedUser ?? $emailUser;
+
+                $telephonyEmployee->fill([
+                    'user_id' => $user?->id,
+                    'name' => trim(($employee['name'] ?? '').' '.($employee['surname'] ?? '')) ?: 'Сотрудник A1',
+                    'email' => $email,
+                    'group_name' => $employee['groupName'] ?? null,
+                    'full_number' => $fullNumber,
+                    'short_number' => PhoneNumber::normalize($employee['shortNumber'] ?? null),
+                    'is_active' => true,
+                    'last_synced_at' => now(),
+                ])->save();
             }
 
             $minutes = max(5, (int) ($this->option('minutes') ?: config('telephony.history_lookback_minutes', 15)));
