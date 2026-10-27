@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\IntegrationSources\Pages\CreateIntegrationSource;
+use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
@@ -282,6 +283,8 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertSeeText('Товар с двумя каналами и полным длинным наименованием без обрезания в списке')
             ->assertSeeText('Поставщик смешанного')
             ->assertSeeText('Цена опт')
+            ->assertSeeText('B2B')
+            ->assertSeeText('Справочно')
             ->assertSeeText('10,00 BYN')
             ->assertSeeText('140.00 BYN / 93.3%')
             ->assertSeeText('Розница')
@@ -359,6 +362,90 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertDontSeeText('Остаток: 0 шт.');
     }
 
+    public function test_product_list_shows_and_filters_the_effective_b2b_catalog_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Категория для B2B-статуса',
+            'slug' => 'admin-b2b-catalog-status',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'admin-b2b-status-supplier',
+            'name' => 'Поставщик B2B-статуса',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'admin-b2b-status-source',
+            'name' => 'Источник B2B-статуса',
+            'driver' => 'commerceml',
+            'is_active' => true,
+            'settings' => [
+                'b2b_enabled' => true,
+                'b2b_category_ids' => [$category->id],
+                'b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_SALE,
+            ],
+        ]);
+        $orderable = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'ADMIN-B2B-ORDERABLE',
+            'name' => 'Товар B2B для заказа',
+            'slug' => 'admin-b2b-orderable',
+            'price' => 150,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $reference = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'ADMIN-B2B-REFERENCE',
+            'name' => 'Справочный товар B2B',
+            'slug' => 'admin-b2b-reference',
+            'price' => 150,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $hidden = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'ADMIN-B2B-HIDDEN',
+            'name' => 'Товар вне B2B',
+            'slug' => 'admin-b2b-hidden',
+            'price' => 150,
+            'is_active' => false,
+            'is_archived' => false,
+        ]);
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $orderable->id,
+            'external_id' => 'admin-b2b-orderable-offer',
+            'price_byn' => 100,
+            'stock_quantity' => 2,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'matched',
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ListProducts::class)
+            ->assertTableColumnStateSet('b2b_catalog_status', 'Заказ', $orderable)
+            ->assertTableColumnStateSet('b2b_catalog_status', 'Справочно', $reference)
+            ->assertTableColumnStateSet('b2b_catalog_status', 'Нет', $hidden)
+            ->filterTable('b2b_catalog', 'orderable')
+            ->assertCanSeeTableRecords([$orderable])
+            ->assertCanNotSeeTableRecords([$reference, $hidden]);
+
+        Livewire::actingAs($admin)
+            ->test(ListProducts::class)
+            ->filterTable('b2b_catalog', 'reference')
+            ->assertCanSeeTableRecords([$reference])
+            ->assertCanNotSeeTableRecords([$orderable, $hidden]);
+
+        Livewire::actingAs($admin)
+            ->test(ListProducts::class)
+            ->filterTable('b2b_catalog', 'hidden')
+            ->assertCanSeeTableRecords([$hidden])
+            ->assertCanNotSeeTableRecords([$orderable, $reference]);
+    }
+
     public function test_ecokamin_admin_list_uses_fifteen_percent_partner_discount_from_current_sale_price(): void
     {
         // «обновлено HH:MM» is compared with now(): a minute boundary during the request made the test flaky.
@@ -390,6 +477,11 @@ class SupplierIntegrationAdminTest extends TestCase
             'code' => 'ecokamin-admin-pricing-source',
             'name' => '1С СанБизнесГруп',
             'driver' => 'commerceml',
+            'settings' => [
+                'b2b_enabled' => true,
+                'b2b_category_ids' => [$category->id],
+                'b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_SALE,
+            ],
         ]);
         IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
@@ -401,14 +493,15 @@ class SupplierIntegrationAdminTest extends TestCase
             'match_status' => 'matched',
         ]);
 
-        $this->actingAs($admin)
-            ->get(ProductResource::getUrl('index', panel: 'admin'))
-            ->assertOk()
-            ->assertSeeText('ЭкоКамин с действующей акционной ценой')
-            ->assertSeeText('170,00 BYN')
-            ->assertSeeText('30.00 BYN / 15.0%')
-            ->assertSeeText('В наличии: 1 шт.')
-            ->assertSeeText('обновлено '.now()->format('d.m.Y H:i'));
+        Livewire::actingAs($admin)
+            ->test(ListProducts::class)
+            ->set('tableSearch', $product->sku)
+            ->assertSee('ЭкоКамин с действующей акционной ценой')
+            ->assertSee('Заказ')
+            ->assertSee('170,00 BYN')
+            ->assertSee('30.00 BYN / 15.0%')
+            ->assertSee('В наличии: 1 шт.')
+            ->assertSee('обновлено '.now()->format('d.m.Y H:i'));
     }
 
     public function test_connect_1c_action_can_prefill_supplier_without_saving_anything(): void

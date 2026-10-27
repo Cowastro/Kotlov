@@ -18,6 +18,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
+use App\Services\B2bCatalogOfferResolver;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\Market\MarketPriceIndicator;
 use App\Services\Market\MarketWebResearchService;
@@ -136,6 +137,28 @@ class ProductsTable
                     ->width('7rem')
                     ->grow(false)
                     ->toggleable(),
+
+                TextColumn::make('b2b_catalog_status')
+                    ->label('B2B')
+                    ->state(fn (Product $record): string => self::b2bCatalogStatus($record))
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Заказ' => 'success',
+                        'Справочно' => 'info',
+                        default => 'gray',
+                    })
+                    ->icon(fn (string $state): string => match ($state) {
+                        'Заказ' => 'heroicon-o-shopping-cart',
+                        'Справочно' => 'heroicon-o-book-open',
+                        default => 'heroicon-o-minus-circle',
+                    })
+                    ->tooltip(fn (Product $record): string => match (self::b2bCatalogStatus($record)) {
+                        'Заказ' => 'Товар виден оптовику, имеет B2B-цену и доступен для добавления в корзину',
+                        'Справочно' => 'Товар виден в справочном B2B-каталоге; оптовик может запросить цену',
+                        default => 'Товар не показывается в B2B-каталоге',
+                    })
+                    ->width('6.5rem')
+                    ->grow(false),
 
                 TextColumn::make('price')
                     ->label('Розница')
@@ -362,6 +385,31 @@ class ProductsTable
                         ? self::applySupplierFilter($query, (int) $data['value'])
                         : $query
                     ),
+
+                SelectFilter::make('b2b_catalog')
+                    ->label('B2B')
+                    ->placeholder('Все статусы')
+                    ->options([
+                        'orderable' => 'Доступен к заказу',
+                        'reference' => 'Только справочно',
+                        'hidden' => 'Не участвует',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        $status = $data['value'] ?? null;
+                        $orderableIds = self::b2bOrderableProductIds();
+
+                        return match ($status) {
+                            'orderable' => $query->whereIn('products.id', $orderableIds),
+                            'reference' => $query
+                                ->where('is_active', true)
+                                ->where('is_archived', false)
+                                ->whereNotIn('products.id', $orderableIds),
+                            'hidden' => $query->where(fn (Builder $query): Builder => $query
+                                ->where('is_active', false)
+                                ->orWhere('is_archived', true)),
+                            default => $query,
+                        };
+                    }),
 
                 TernaryFilter::make('created_from_offer')
                     ->label('Созданы из КП')
@@ -1096,6 +1144,40 @@ class ProductsTable
         return (float) $record->manual_purchase_price_byn > 0
             ? (float) $record->manual_purchase_price_byn
             : null;
+    }
+
+    private static function b2bCatalogStatus(Product $record): string
+    {
+        if (in_array((int) $record->id, self::b2bOrderableProductIds(), true)) {
+            return 'Заказ';
+        }
+
+        return $record->is_active && ! $record->is_archived
+            ? 'Справочно'
+            : 'Нет';
+    }
+
+    /** @return list<int> */
+    private static function b2bOrderableProductIds(): array
+    {
+        $request = request();
+        $cacheKey = 'admin_products_b2b_orderable_ids';
+        $cached = $request->attributes->get($cacheKey);
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $ids = app(B2bCatalogOfferResolver::class)
+            ->offersForUser(auth()->user())
+            ->pluck('product_id')
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+        $request->attributes->set($cacheKey, $ids);
+
+        return $ids;
     }
 
     private static function supplierStock(object $record): ?int
