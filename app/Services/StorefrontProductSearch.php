@@ -152,6 +152,16 @@ class StorefrontProductSearch
 
     public function applyCategory(Builder $query, string $search): Builder
     {
+        return $this->applyNamedEntity($query, $search);
+    }
+
+    public function applyBrand(Builder $query, string $search): Builder
+    {
+        return $this->applyNamedEntity($query, $search);
+    }
+
+    private function applyNamedEntity(Builder $query, string $search): Builder
+    {
         $tokens = array_slice($this->tokens($search), 0, self::MAX_TOKENS);
 
         if ($tokens === []) {

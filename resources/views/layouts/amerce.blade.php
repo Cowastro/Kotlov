@@ -562,6 +562,27 @@
         var request = null;
         var cache = Object.create(null);
         var activeIndex = -1;
+        var sectionNames = {
+            category: 'Категории',
+            brand: 'Бренды',
+            product: 'Товары'
+        };
+
+        suggest.setAttribute('role', 'listbox');
+        suggest.setAttribute('aria-label', 'Результаты быстрого поиска');
+        input.setAttribute('aria-autocomplete', 'list');
+        input.setAttribute('aria-controls', suggestId);
+        input.setAttribute('aria-expanded', 'false');
+
+        function closeSuggestions() {
+            suggest.style.display = 'none';
+            input.setAttribute('aria-expanded', 'false');
+            var hasOpenSearch = Array.prototype.some.call(
+                document.querySelectorAll('.search-suggest-dropdown'),
+                function (dropdown) { return dropdown.style.display === 'block'; }
+            );
+            document.body.classList.toggle('search-suggest-open', hasOpenSearch);
+        }
 
         function setActive(index) {
             var links = suggest.querySelectorAll('.suggest-item');
@@ -586,52 +607,80 @@
 
         function renderSuggestions(data) {
             if (!data.length) {
-                suggest.style.display = 'none';
+                closeSuggestions();
                 suggest.replaceChildren();
-                input.setAttribute('aria-expanded', 'false');
                 return;
             }
 
             var fragment = document.createDocumentFragment();
-            data.forEach(function (item) {
-                var link = document.createElement('a');
-                link.href = item.url;
-                link.className = 'suggest-item ' + (item.type === 'category' ? 'suggest-category' : 'suggest-product');
-                link.setAttribute('role', 'option');
-                link.setAttribute('aria-selected', 'false');
+            ['category', 'brand', 'product'].forEach(function (type) {
+                var items = data.filter(function (item) { return item.type === type; });
+                if (!items.length) return;
 
-                if (item.type === 'category') {
-                    var icon = document.createElement('i');
-                    icon.className = 'icon icon-FolderOpen me-8';
-                    icon.setAttribute('aria-hidden', 'true');
-                    link.appendChild(icon);
+                var section = document.createElement('div');
+                section.className = 'suggest-section suggest-section--' + type;
+                appendText(section, 'suggest-section__title', sectionNames[type]);
+                var results = document.createElement('div');
+                results.className = 'suggest-section__results';
+                section.appendChild(results);
 
-                    var categoryText = appendText(link, 'suggest-category__text', '');
-                    appendText(categoryText, '', item.name);
-                    if (item.context) {
-                        var context = document.createElement('small');
-                        context.textContent = item.context;
-                        categoryText.appendChild(context);
+                items.forEach(function (item) {
+                    var link = document.createElement('a');
+                    link.href = item.url;
+                    link.className = 'suggest-item suggest-' + item.type;
+                    link.setAttribute('role', 'option');
+                    link.setAttribute('aria-selected', 'false');
+
+                    if (item.type === 'category') {
+                        var icon = document.createElement('i');
+                        icon.className = 'icon icon-FolderOpen me-8';
+                        icon.setAttribute('aria-hidden', 'true');
+                        link.appendChild(icon);
+
+                        var categoryText = appendText(link, 'suggest-category__text', '');
+                        appendText(categoryText, '', item.name);
+                        if (item.context) {
+                            var context = document.createElement('small');
+                            context.textContent = item.context;
+                            categoryText.appendChild(context);
+                        }
+                    } else if (item.type === 'brand') {
+                        var brandIcon = document.createElement('i');
+                        brandIcon.className = 'icon icon-Tag me-8';
+                        brandIcon.setAttribute('aria-hidden', 'true');
+                        link.appendChild(brandIcon);
+                        appendText(link, 'suggest-brand__name', item.name);
+                    } else {
+                        var imageWrap = appendText(link, 'suggest-product__image', '');
+                        var image = document.createElement('img');
+                        image.src = item.image;
+                        image.alt = '';
+                        image.loading = 'lazy';
+                        imageWrap.appendChild(image);
+
+                        var body = appendText(link, 'suggest-product__body', '');
+                        appendText(body, 'suggest-name', item.name);
+                        appendText(body, 'suggest-price cl-text-2', item.price);
                     }
-                } else {
-                    var imageWrap = appendText(link, 'suggest-product__image', '');
-                    var image = document.createElement('img');
-                    image.src = item.image;
-                    image.alt = '';
-                    image.loading = 'lazy';
-                    imageWrap.appendChild(image);
 
-                    var body = appendText(link, 'suggest-product__body', '');
-                    appendText(body, 'suggest-name', item.name);
-                    appendText(body, 'suggest-price cl-text-2', item.price);
-                }
-
-                fragment.appendChild(link);
+                    results.appendChild(link);
+                });
+                fragment.appendChild(section);
             });
+
+            var allResults = document.createElement('a');
+            allResults.className = 'suggest-item suggest-all-results';
+            allResults.href = '/search?q=' + encodeURIComponent(input.value.trim());
+            allResults.setAttribute('role', 'option');
+            allResults.setAttribute('aria-selected', 'false');
+            allResults.textContent = 'Показать все товары';
+            fragment.appendChild(allResults);
+
             suggest.replaceChildren(fragment);
             suggest.style.display = 'block';
             activeIndex = -1;
             input.setAttribute('aria-expanded', 'true');
+            document.body.classList.add('search-suggest-open');
         }
 
         input.addEventListener('input', function () {
@@ -639,9 +688,8 @@
             var q = this.value.trim();
             if (q.length < 2) {
                 if (request) request.abort();
-                suggest.style.display = 'none';
+                closeSuggestions();
                 suggest.replaceChildren();
-                input.setAttribute('aria-expanded', 'false');
                 return;
             }
 
@@ -678,20 +726,18 @@
                 event.preventDefault();
                 links[activeIndex].click();
             } else if (event.key === 'Escape') {
-                suggest.style.display = 'none';
-                input.setAttribute('aria-expanded', 'false');
+                closeSuggestions();
             }
         });
 
         document.addEventListener('click', function (e) {
             if (!input.contains(e.target) && !suggest.contains(e.target)) {
-                suggest.style.display = 'none';
-                input.setAttribute('aria-expanded', 'false');
+                closeSuggestions();
             }
         });
 
         input.closest('form').addEventListener('submit', function () {
-            suggest.style.display = 'none';
+            closeSuggestions();
         });
     }
 

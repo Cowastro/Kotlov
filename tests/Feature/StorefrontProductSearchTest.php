@@ -175,6 +175,8 @@ class StorefrontProductSearchTest extends TestCase
 
         $this->getJson('/search/suggest?q=Fenix')
             ->assertOk()
+            ->assertJsonFragment(['type' => 'brand', 'name' => $latinBrand->name, 'url' => '/brands/fenix-search'])
+            ->assertJsonFragment(['type' => 'brand', 'name' => $cyrillicBrand->name, 'url' => '/brands/feniks-search'])
             ->assertJsonFragment(['name' => $cyrillicBrandProduct->name]);
         $this->get('/search?q=APC-500')
             ->assertOk()
