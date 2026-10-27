@@ -63,6 +63,7 @@ class ContactRequestsTable
                         'product_page' => 'Карточка товара',
                         'consultation_form' => 'Форма консультации',
                         'ai_selection' => 'AI-подбор',
+                        'b2b_price_request' => 'B2B: цена',
                         default => $state ?: '—',
                     })
                     ->color(fn (?string $state) => $state === 'ai_selection' ? 'warning' : 'gray')

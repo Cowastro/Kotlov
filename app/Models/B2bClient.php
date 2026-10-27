@@ -27,11 +27,13 @@ class B2bClient extends Model
         'contact_name', 'contact_email', 'contact_phone',
         'responsible_user_id', 'reviewed_by', 'reviewed_at',
         'payment_terms', 'delivery_terms',
+        'allowed_integration_source_ids',
         'application_comment', 'manager_notes',
     ];
 
     protected $casts = [
         'reviewed_at' => 'datetime',
+        'allowed_integration_source_ids' => 'array',
     ];
 
     protected static function booted(): void

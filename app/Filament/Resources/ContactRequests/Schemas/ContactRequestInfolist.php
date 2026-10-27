@@ -72,12 +72,18 @@ class ContactRequestInfolist
                     ->schema([
                         TextEntry::make('message')->label('Что нужно клиенту')->prose()->columnSpanFull(),
                         TextEntry::make('product_name')->label('Товар')->placeholder('Не указан'),
+                        TextEntry::make('requested_quantity')->label('Запрошено, шт.')->placeholder('—'),
                         TextEntry::make('product_url')
                             ->label('Страница на сайте')
                             ->formatStateUsing(fn (?string $state): string => $state ? 'Открыть страницу товара' : 'Не указана')
                             ->url(fn (?string $state): ?string => $state)
                             ->openUrlInNewTab()
                             ->icon('heroicon-o-arrow-top-right-on-square'),
+                        TextEntry::make('client_response')
+                            ->label('Ответ для B2B-клиента')
+                            ->placeholder('Ответ ещё не подготовлен')
+                            ->prose()
+                            ->columnSpanFull(),
                     ]),
 
                 Section::make('Внутренняя работа')
@@ -106,6 +112,7 @@ class ContactRequestInfolist
                                 'consultation_form' => 'Форма консультации',
                                 'quick_callback' => 'Быстрый звонок',
                                 'ai_selection' => 'AI-подбор',
+                                'b2b_price_request' => 'B2B: оптовая цена',
                                 default => $state ?: 'Не указан',
                             }),
                         TextEntry::make('product_id')->label('ID товара')->placeholder('—'),

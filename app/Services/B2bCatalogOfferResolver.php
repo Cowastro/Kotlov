@@ -26,6 +26,7 @@ class B2bCatalogOfferResolver
         }
 
         return $this->offers()
+            ->filter(fn (IntegrationProduct $offer): bool => $this->userAllowsSource($user, $offer))
             ->where('product_id', $product->id)
             ->sortBy(fn (IntegrationProduct $offer): float => $this->priceWithTax($offer))
             ->first();
@@ -37,17 +38,18 @@ class B2bCatalogOfferResolver
             || ($user?->isAdmin() && request()->boolean('b2b-preview')));
     }
 
-    /** @return Collection<int, array{name:string,slug:string,count:int}> */
+    /** @return Collection<int, array{id:int,name:string,slug:string,count:int}> */
     public function catalogGroups(?User $user): Collection
     {
         if (! $this->canViewPartnerPrices($user)) {
             return collect();
         }
 
-        return $this->offers()
+        return $this->offersForUser($user)
             ->filter(fn (IntegrationProduct $offer): bool => filled($offer->product?->category?->slug))
             ->groupBy(fn (IntegrationProduct $offer): int => (int) $offer->product->category_id)
             ->map(fn (Collection $offers): array => [
+                'id' => (int) $offers->first()->product->category_id,
                 'name' => (string) $offers->first()->product->category->name,
                 'slug' => (string) $offers->first()->product->category->slug,
                 'count' => $offers->pluck('product_id')->unique()->count(),
@@ -63,9 +65,21 @@ class B2bCatalogOfferResolver
             return collect();
         }
 
-        return $this->offers()
+        return $this->offersForUser($user)
             ->map(fn (IntegrationProduct $offer): string => $offer->source->partnerName())
             ->unique()
+            ->values();
+    }
+
+    /** @return Collection<int, IntegrationProduct> */
+    public function offersForUser(?User $user): Collection
+    {
+        if (! $this->canViewPartnerPrices($user)) {
+            return collect();
+        }
+
+        return $this->offers()
+            ->filter(fn (IntegrationProduct $offer): bool => $this->userAllowsSource($user, $offer))
             ->values();
     }
 
@@ -211,5 +225,25 @@ class B2bCatalogOfferResolver
         }
 
         return false;
+    }
+
+    private function userAllowsSource(?User $user, IntegrationProduct $offer): bool
+    {
+        if (! $user || ($user->isAdmin() && request()->boolean('b2b-preview'))) {
+            return true;
+        }
+
+        $client = $user->relationLoaded('b2bClient')
+            ? $user->b2bClient
+            : $user->b2bClient()->first();
+
+        // Legacy approved accounts without a B2B profile retain their access.
+        if (! $client) {
+            return true;
+        }
+
+        $allowed = $client->allowed_integration_source_ids;
+
+        return is_array($allowed) && in_array((int) $offer->integration_source_id, array_map('intval', $allowed), true);
     }
 }

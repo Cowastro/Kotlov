@@ -25,7 +25,11 @@ class ContactRequestNotifier
         }
 
         Notification::make()
-            ->title($contactRequest->source === 'ai_selection' ? 'Клиент просит помочь с AI-подбором' : 'Новая заявка на консультацию')
+            ->title(match ($contactRequest->source) {
+                'ai_selection' => 'Клиент просит помочь с AI-подбором',
+                'b2b_price_request' => 'Оптовик запросил цену',
+                default => 'Новая заявка на консультацию',
+            })
             ->body(implode(' · ', array_filter([
                 $contactRequest->name,
                 $contactRequest->phone,
@@ -59,12 +63,17 @@ class ContactRequestNotifier
             'consultation_form' => 'Форма консультации',
             'quick_callback' => 'Быстрый звонок за 5 минут',
             'ai_selection' => 'AI-подбор',
+            'b2b_price_request' => 'B2B: запрос оптовой цены',
         ];
         $source = $contactRequest->source
             ? ($sourceLabels[$contactRequest->source] ?? $contactRequest->source)
             : null;
         $lines = [
-            $contactRequest->source === 'ai_selection' ? '🤖 *Нужна помощь с AI-подбором*' : '🔥 *Новая заявка на консультацию*',
+            match ($contactRequest->source) {
+                'ai_selection' => '🤖 *Нужна помощь с AI-подбором*',
+                'b2b_price_request' => '💰 *Оптовик запросил цену*',
+                default => '🔥 *Новая заявка на консультацию*',
+            },
             '',
             $source ? '*Источник:* '.$escape($source) : null,
             $contactRequest->city ? '*Город:* '.$escape($contactRequest->city) : null,

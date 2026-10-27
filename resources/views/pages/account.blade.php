@@ -407,6 +407,11 @@
                                             Тип: {{ $user->client_type_label }} · Компания: {{ $user->company_name ?: 'не указана' }}
                                         </p>
 
+                                        <a href="{{ route('b2b.catalog', $isB2bPreview ? ['b2b-preview' => 1] : []) }}" class="tf-btn btn-primary mb-24">
+                                            <i class="icon icon-SquaresFour"></i>
+                                            Открыть оптовый каталог
+                                        </a>
+
                                         <div class="d-flex align-items-end justify-content-between gap-12 mb-12">
                                             <div>
                                                 <p class="text-caption-01 cl-text-3 mb-2">Доступный ассортимент</p>
@@ -418,7 +423,7 @@
                                         @if ($b2bCatalogGroups->isNotEmpty())
                                             <div class="b2b-catalog-groups">
                                                 @foreach ($b2bCatalogGroups as $group)
-                                                    <a href="/{{ $group['slug'] }}{{ $isB2bPreview ? '?b2b-preview=1' : '' }}" class="b2b-catalog-group">
+                                                    <a href="{{ route('b2b.catalog', array_filter(['category' => $group['id'], 'b2b-preview' => $isB2bPreview ? 1 : null])) }}" class="b2b-catalog-group">
                                                         <span>
                                                             <strong>{{ $group['name'] }}</strong>
                                                             <small>{{ $group['count'] }} позиций в наличии</small>

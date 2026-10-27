@@ -57,7 +57,13 @@ class ContactRequestForm
                         TextInput::make('product_name')->label('Товар'),
                         TextInput::make('product_url')->label('Ссылка на страницу')->url(),
                         TextInput::make('product_id')->label('ID товара')->numeric(),
+                        TextInput::make('requested_quantity')->label('Запрошено, шт.')->numeric()->minValue(1),
                         TextInput::make('source')->label('Источник'),
+                        Textarea::make('client_response')
+                            ->label('Ответ для B2B-клиента')
+                            ->helperText('Клиент увидит этот текст в оптовом каталоге. Укажите цену, срок и условия.')
+                            ->rows(3)
+                            ->columnSpanFull(),
                     ]),
             ]);
     }

@@ -8,6 +8,8 @@ use App\Http\Controllers\AdminChimneyCalculationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\B2bMarketplaceController;
+use App\Http\Controllers\B2bPriceRequestController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CatalogIndexController;
@@ -725,6 +727,10 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 
 // ===== Личный кабинет =====
 Route::middleware('auth')->group(function () {
+    Route::get('/b2b/catalog', B2bMarketplaceController::class)->name('b2b.catalog');
+    Route::post('/b2b/price-requests', B2bPriceRequestController::class)
+        ->middleware('throttle:20,10')
+        ->name('b2b.price-requests.store');
     Route::get('/account', [AccountController::class, 'index'])->name('account');
     Route::get('/account/orders/{order}', [AccountOrderController::class, 'show'])->name('account.orders.show');
     Route::post('/account/orders/{order}/webpay', [WebpayPaymentController::class, 'start'])

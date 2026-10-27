@@ -10,6 +10,7 @@ class ContactRequest extends Model
 {
     protected $fillable = [
         'name',
+        'user_id',
         'phone',
         'email',
         'message',
@@ -18,6 +19,8 @@ class ContactRequest extends Model
         'next_follow_up_at',
         'admin_notes',
         'product_id',
+        'requested_quantity',
+        'client_response',
         'product_name',
         'product_url',
         'city',
@@ -26,6 +29,7 @@ class ContactRequest extends Model
 
     protected $casts = [
         'next_follow_up_at' => 'datetime',
+        'requested_quantity' => 'integer',
     ];
 
     public const OPEN_STATUSES = ['new', 'read', 'in_progress', 'waiting'];
@@ -42,6 +46,16 @@ class ContactRequest extends Model
     public function responsibleUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'responsible_user_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 
     public function telephonyCalls(): HasMany

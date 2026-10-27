@@ -4,6 +4,7 @@ namespace App\Filament\Resources\B2bClients\Schemas;
 
 use App\Enums\ClientType;
 use App\Models\B2bClient;
+use App\Models\IntegrationSource;
 use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -90,6 +91,18 @@ class B2bClientForm
                 ->schema([
                     Textarea::make('payment_terms')->label('Условия оплаты')->rows(3),
                     Textarea::make('delivery_terms')->label('Условия доставки')->rows(3),
+                    Select::make('allowed_integration_source_ids')
+                        ->label('Доступные прайсы и поставщики')
+                        ->options(fn (): array => IntegrationSource::query()
+                            ->where('is_active', true)
+                            ->orderBy('name')
+                            ->pluck('name', 'id')
+                            ->all())
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->helperText('Выбранные источники появятся в B2B-каталоге этого клиента. Пусто — не показывать ни один прайс.')
+                        ->columnSpanFull(),
                 ]),
             Section::make('Заявка и внутренние заметки')
                 ->columns(2)
