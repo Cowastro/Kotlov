@@ -19,6 +19,7 @@ use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bProductPublicationManager;
 use App\Services\CommercialDocuments\CommercialOfferCopilotService;
 use App\Services\Market\MarketPriceIndicator;
 use App\Services\Market\MarketWebResearchService;
@@ -589,6 +590,46 @@ class ProductsTable
                         ->icon('heroicon-o-archive-box-x-mark')
                         ->color('danger')
                         ->action(fn (Collection $records) => $records->each->update(['in_stock' => false]))
+                        ->deselectRecordsAfterCompletion(),
+
+                    BulkAction::make('publish_to_b2b')
+                        ->label('Добавить в B2B')
+                        ->icon('heroicon-o-building-storefront')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('Добавить выбранные товары в B2B')
+                        ->modalDescription(new HtmlString(
+                            '<div class="space-y-2 text-sm">'
+                            .'<p>Будут включены только товары, которые одновременно соответствуют всем условиям:</p>'
+                            .'<ul class="list-disc space-y-1 pl-5">'
+                            .'<li>товар активен и не находится в архиве;</li>'
+                            .'<li>назначен активный поставщик;</li>'
+                            .'<li>указана розничная цена;</li>'
+                            .'<li>есть привязанная оптовая цена продажи B2B — закупочная цена не публикуется;</li>'
+                            .'<li>источник и категория разрешены для B2B.</li>'
+                            .'</ul>'
+                            .'<p>При свежем остатке товар получит статус «Заказ», без остатка останется «Справочно».</p>'
+                            .'</div>'
+                        ))
+                        ->modalSubmitActionLabel('Добавить подходящие')
+                        ->action(function (Collection $records): void {
+                            $result = app(B2bProductPublicationManager::class)->publish($records);
+                            $reasons = collect([
+                                'неактивные/архив' => $result['skipped']['inactive'],
+                                'нет поставщика' => $result['skipped']['missing_supplier'],
+                                'нет розничной цены' => $result['skipped']['missing_retail_price'],
+                                'нет разрешённой оптовой цены продажи' => $result['skipped']['missing_b2b_price'],
+                                'источник или категория не разрешены' => $result['skipped']['source_or_category_not_allowed'],
+                            ])->filter()->map(fn (int $count, string $label): string => $label.': '.$count);
+                            $notification = Notification::make()
+                                ->title('B2B: добавлено '.$result['published_products'].' из '.$result['selected'])
+                                ->body('Опубликовано предложений: '.$result['published_offers']
+                                    .($reasons->isNotEmpty() ? '. Пропущено — '.$reasons->implode('; ').'.' : '.'));
+
+                            $result['published_products'] === $result['selected']
+                                ? $notification->success()->send()
+                                : $notification->warning()->send();
+                        })
                         ->deselectRecordsAfterCompletion(),
 
                     BulkAction::make('mark_featured')

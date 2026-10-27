@@ -446,6 +446,108 @@ class SupplierIntegrationAdminTest extends TestCase
             ->assertCanNotSeeTableRecords([$orderable, $reference]);
     }
 
+    public function test_bulk_b2b_publication_only_enables_products_with_supplier_retail_and_sale_price(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $category = Category::query()->create([
+            'name' => 'Категория массовой публикации B2B',
+            'slug' => 'bulk-b2b-publication',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'bulk-b2b-supplier',
+            'name' => 'Поставщик массовой публикации',
+            'is_active' => true,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'bulk-b2b-source',
+            'name' => 'Источник массовой публикации',
+            'is_active' => true,
+            'settings' => [
+                'b2b_enabled' => true,
+                'b2b_category_ids' => [$category->id],
+                'b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_SALE,
+                'price_tax_mode' => IntegrationSource::PRICE_TAX_INCLUSIVE,
+            ],
+        ]);
+        $purchaseSource = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'bulk-b2b-purchase-source',
+            'name' => 'Источник закупочной цены',
+            'is_active' => true,
+            'settings' => [
+                'b2b_enabled' => true,
+                'b2b_category_ids' => [$category->id],
+                'b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_PURCHASE,
+                'price_tax_mode' => IntegrationSource::PRICE_TAX_INCLUSIVE,
+            ],
+        ]);
+        $valid = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'BULK-B2B-VALID',
+            'name' => 'Подходящий товар B2B',
+            'slug' => 'bulk-b2b-valid',
+            'price' => 150,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $withoutRetail = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'BULK-B2B-NO-RETAIL',
+            'name' => 'Товар без розницы',
+            'slug' => 'bulk-b2b-no-retail',
+            'price' => 0,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $purchaseOnly = Product::query()->create([
+            'category_id' => $category->id,
+            'sku' => 'BULK-B2B-PURCHASE-ONLY',
+            'name' => 'Товар только с закупочной ценой',
+            'slug' => 'bulk-b2b-purchase-only',
+            'price' => 180,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        foreach ([$valid, $withoutRetail] as $product) {
+            IntegrationProduct::query()->create([
+                'integration_source_id' => $source->id,
+                'product_id' => $product->id,
+                'external_id' => 'bulk-b2b-'.$product->id,
+                'price' => 100,
+                'price_byn' => 100,
+                'stock_quantity' => 2,
+                'stock_confirmed_at' => now(),
+                'match_status' => 'matched',
+                'b2b_enabled' => false,
+            ]);
+        }
+        IntegrationProduct::query()->create([
+            'integration_source_id' => $purchaseSource->id,
+            'product_id' => $purchaseOnly->id,
+            'external_id' => 'bulk-b2b-purchase-only',
+            'price' => 90,
+            'price_byn' => 90,
+            'stock_quantity' => 2,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'matched',
+            'b2b_enabled' => false,
+        ]);
+
+        Livewire::actingAs($admin)
+            ->test(ListProducts::class)
+            ->assertTableBulkActionExists('publish_to_b2b')
+            ->callTableBulkAction('publish_to_b2b', [$valid, $withoutRetail, $purchaseOnly])
+            ->assertHasNoTableBulkActionErrors();
+
+        $this->assertTrue(IntegrationProduct::query()->where('product_id', $valid->id)->firstOrFail()->b2b_enabled);
+        $this->assertFalse(IntegrationProduct::query()->where('product_id', $withoutRetail->id)->firstOrFail()->b2b_enabled);
+        $this->assertFalse(IntegrationProduct::query()->where('product_id', $purchaseOnly->id)->firstOrFail()->b2b_enabled);
+    }
+
     public function test_ecokamin_admin_list_uses_fifteen_percent_partner_discount_from_current_sale_price(): void
     {
         // «обновлено HH:MM» is compared with now(): a minute boundary during the request made the test flaky.
