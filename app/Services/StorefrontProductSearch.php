@@ -183,7 +183,54 @@ class StorefrontProductSearch
             return $this->applyForSuggestions($query, $search, $includeInternal);
         }
 
+        $exhaustiveQuery = clone $query;
+        $this->apply($exhaustiveQuery, $search, $includeInternal);
+
+        if ($exhaustiveQuery->exists()) {
+            return $this->apply($query, $search, $includeInternal);
+        }
+
+        $relaxedQuery = clone $query;
+        if ($this->applyRelaxedForResults($relaxedQuery, $search, $includeInternal)->exists()) {
+            return $this->applyRelaxedForResults($query, $search, $includeInternal);
+        }
+
         return $this->apply($query, $search, $includeInternal);
+    }
+
+    /**
+     * A long copied title can contain one specification that differs from our
+     * card (for example steel thickness 0.8 vs 1.0). Only after every exact
+     * strategy failed, allow one token to differ and keep all remaining tokens
+     * mandatory. Short queries stay strict to avoid noisy results.
+     */
+    private function applyRelaxedForResults(Builder $query, string $search, bool $includeInternal): Builder
+    {
+        $tokens = array_slice($this->directTokens($search), 0, self::MAX_TOKENS);
+
+        if (count($tokens) < 4) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where(function (Builder $matches) use ($tokens, $includeInternal): void {
+            foreach (array_keys($tokens) as $skippedIndex) {
+                $matches->orWhere(function (Builder $candidate) use ($tokens, $skippedIndex, $includeInternal): void {
+                    foreach ($tokens as $index => $alternatives) {
+                        if ($index === $skippedIndex) {
+                            continue;
+                        }
+
+                        $candidate->where(function (Builder $tokenMatch) use ($alternatives, $includeInternal): void {
+                            foreach ($alternatives as $alternative) {
+                                foreach ($this->fastCaseVariants($alternative) as $caseVariant) {
+                                    $this->addTermMatches($tokenMatch, $caseVariant, $includeInternal);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        });
     }
 
     public function isHeatingElementQuery(string $search): bool

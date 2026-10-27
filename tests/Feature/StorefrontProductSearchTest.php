@@ -120,6 +120,37 @@ class StorefrontProductSearchTest extends TestCase
             ->assertSeeText($product->name);
     }
 
+    public function test_long_copied_title_can_differ_by_one_specification(): void
+    {
+        $category = Category::create([
+            'name' => 'Трубы моно',
+            'slug' => 'search-nearby-chimney-pipes',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $brand = Brand::create([
+            'name' => 'Теплов и Сухов',
+            'slug' => 'search-teplov-suhov-brand',
+            'is_active' => true,
+        ]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Труба моно L1000 ТМ-Р (430-1,0) D115',
+            'slug' => 'search-nearby-teplov-suhov-pipe',
+            'sku' => 'TS-TM-R-430-10-D115',
+            'price' => 77.15,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $query = 'Труба вытяжная Теплов и Сухов L1000 ТМ-Р 430-0.8 D115';
+
+        $matches = Product::query();
+        app(StorefrontProductSearch::class)->applyForResults($matches, $query);
+
+        $this->assertContains($product->id, $matches->pluck('id')->all());
+    }
+
     public function test_category_suggestions_explain_identical_names_with_their_parent_section(): void
     {
         $boilers = Category::create(['name' => 'Котлы', 'slug' => 'search-boilers-parent', 'parent_id' => 0, 'is_active' => true]);
