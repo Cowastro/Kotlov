@@ -93,7 +93,11 @@ class TsarPechiB2bOfferPublisherTest extends TestCase
             ->assertSeeText('Печь Царь-Печи Ярило')
             ->assertSeeText('518,40')
             ->assertSeeText('Розница 648,00')
-            ->assertSeeText('Под заказ у СанБизнесГруп');
+            ->assertSeeText('Склад Москва · поставка 7 дней');
+
+        $this->assertSame(7, data_get($source->settings, 'delivery_days'));
+        $this->assertSame('Москва', data_get($offer->payload, 'warehouse'));
+        $this->assertSame(7, data_get($offer->payload, 'delivery_days'));
 
         $this->actingAs($user)
             ->postJson(route('cart.add'), ['product_id' => $product->id, 'quantity' => 2])

@@ -38,7 +38,7 @@ class TsarPechiB2bOfferPublisher
             $source = IntegrationSource::query()->firstOrNew(['code' => self::SOURCE_CODE]);
             $source->fill([
                 'supplier_id' => $supplier->id,
-                'name' => 'Царь-Печи · под заказ',
+                'name' => 'Царь-Печи · склад Москва',
                 'driver' => 'catalog',
                 'price_currency' => 'BYN',
                 'price_currency_rate' => 1,
@@ -52,7 +52,8 @@ class TsarPechiB2bOfferPublisher
                 'procurement_mode' => true,
                 'b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_SALE,
                 'partner_name' => 'ООО «СанБизнесГруп»',
-                'warehouse_label' => 'Под заказ у СанБизнесГруп',
+                'warehouse_label' => 'Склад Москва · поставка 7 дней',
+                'delivery_days' => 7,
                 'price_tax_mode' => IntegrationSource::PRICE_TAX_INCLUSIVE,
                 'vat_rate' => 20,
                 'allow_order_export' => false,
@@ -96,6 +97,8 @@ class TsarPechiB2bOfferPublisher
                         'payload' => [
                             'supplier' => 'ООО «СанБизнесГруп»',
                             'procurement_mode' => true,
+                            'warehouse' => 'Москва',
+                            'delivery_days' => 7,
                             'b2b_discount_percent' => 20,
                         ],
                         'matched_at' => now(),
