@@ -71,14 +71,16 @@ class A1WebhookProcessor
     private function initialAttributes(array $payload): array
     {
         $direction = strtolower((string) ($payload['crmCallType'] ?? 'inbound'));
+        [$customerPhone, $employeePhone] = $this->partyPhones($payload, $direction);
+        $lineNumber = $this->companyLine($payload, $direction, $employeePhone);
 
         return [
             'company_id' => isset($payload['companyId']) ? (string) $payload['companyId'] : null,
             'direction' => in_array($direction, ['inbound', 'outbound', 'internal'], true) ? $direction : 'inbound',
             'dial_type' => $payload['dialType'] ?? null,
-            'customer_phone' => PhoneNumber::normalize($payload['numberA'] ?? null),
-            'employee_phone' => PhoneNumber::normalize($payload['numberB'] ?? null),
-            'line_number' => PhoneNumber::normalize($payload['lineNumber'] ?? null),
+            'customer_phone' => $customerPhone,
+            'employee_phone' => $employeePhone,
+            'line_number' => $lineNumber,
             'status' => 'ringing',
             'handling_status' => 'unprocessed',
             'started_at' => $this->parseDate($payload['date'] ?? null) ?? now(),
@@ -89,12 +91,29 @@ class A1WebhookProcessor
     /** @param array<string, mixed> $payload */
     private function applyEvent(TelephonyCall $call, array $payload, string $type): void
     {
+        $direction = strtolower((string) ($payload['crmCallType'] ?? $call->direction ?? 'inbound'));
+        [$customerPhone, $employeePhone] = $this->partyPhones($payload, $direction);
+        $lineNumber = $this->companyLine($payload, $direction, $employeePhone);
+
+        if ($customerPhone && $call->customer_phone && $customerPhone !== $call->customer_phone) {
+            $this->clearCustomerContext($call);
+        }
+
+        if ($employeePhone && $call->employee_phone && $employeePhone !== $call->employee_phone) {
+            $call->assigned_user_id = null;
+        }
+
+        if ($this->employeeWasMatchedAsCustomer($call, $customerPhone, $employeePhone)) {
+            $this->clearCustomerContext($call);
+        }
+
         $call->fill(array_filter([
             'company_id' => isset($payload['companyId']) ? (string) $payload['companyId'] : null,
+            'direction' => in_array($direction, ['inbound', 'outbound', 'internal'], true) ? $direction : null,
             'dial_type' => $payload['dialType'] ?? null,
-            'customer_phone' => PhoneNumber::normalize($payload['numberA'] ?? null),
-            'employee_phone' => PhoneNumber::normalize($payload['numberB'] ?? null),
-            'line_number' => PhoneNumber::normalize($payload['lineNumber'] ?? null),
+            'customer_phone' => $customerPhone,
+            'employee_phone' => $employeePhone,
+            'line_number' => $lineNumber,
             'record_name' => $payload['recordName'] ?? null,
             'recording_url' => $payload['fullUrl'] ?? null,
             'failure_reason' => $payload['failedReason'] ?? null,
@@ -165,6 +184,66 @@ class A1WebhookProcessor
         if (! $call->crm_contact_id) {
             $this->crmContactMatcher->attachToCall($call);
         }
+    }
+
+    /** @param array<string, mixed> $payload
+     *  @return array{0: ?string, 1: ?string}
+     */
+    private function partyPhones(array $payload, string $direction): array
+    {
+        $numberA = PhoneNumber::normalize($payload['numberA'] ?? null);
+        $numberB = PhoneNumber::normalize($payload['numberB'] ?? null);
+
+        return $direction === 'outbound'
+            ? [$numberB, $numberA]
+            : [$numberA, $numberB];
+    }
+
+    private function clearCustomerContext(TelephonyCall $call): void
+    {
+        $call->order_id = null;
+        $call->matched_user_id = null;
+        $call->contact_request_id = null;
+        $call->crm_counterparty_id = null;
+        $call->crm_contact_id = null;
+    }
+
+    private function employeeWasMatchedAsCustomer(
+        TelephonyCall $call,
+        ?string $customerPhone,
+        ?string $employeePhone,
+    ): bool {
+        if (! $call->matched_user_id || ! $customerPhone || ! $employeePhone || $customerPhone === $employeePhone) {
+            return false;
+        }
+
+        return TelephonyEmployee::query()
+            ->where('provider', 'a1')
+            ->where('is_active', true)
+            ->where('user_id', $call->matched_user_id)
+            ->where(function (Builder $query) use ($employeePhone): void {
+                $query->where('full_number', $employeePhone)
+                    ->orWhere('short_number', $employeePhone);
+            })
+            ->exists();
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function companyLine(array $payload, string $direction, ?string $employeePhone): ?string
+    {
+        $provided = PhoneNumber::normalize($payload['lineNumber'] ?? null);
+
+        if ($direction !== 'outbound') {
+            return $provided;
+        }
+
+        if ($provided && array_key_exists($provided, config('telephony.company_lines', []))) {
+            return $provided;
+        }
+
+        return $employeePhone
+            ? config("telephony.employee_lines.{$employeePhone}", $provided)
+            : $provided;
     }
 
     private function digitsExpression(string $column): string

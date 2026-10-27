@@ -170,6 +170,9 @@ class TelephonyCallResource extends Resource
                         TextEntry::make('status')->label('Результат телефонии')->badge()
                             ->color(fn (?string $state): string => self::callStatusColor($state))
                             ->formatStateUsing(fn (string $state): string => TelephonyCall::STATUSES[$state] ?? $state),
+                        TextEntry::make('employee_phone')->label('Телефон сотрудника A1')->placeholder('—')->copyable(),
+                        TextEntry::make('line_number')->label('Многоканальная линия')->placeholder('—')->copyable()
+                            ->formatStateUsing(fn (?string $state): string => self::companyLineLabel($state)),
                         TextEntry::make('duration')->label('Общая длительность')
                             ->formatStateUsing(fn (?int $state): string => $state === null ? '—' : gmdate('i:s', $state)),
                         TextEntry::make('conversation_duration')->label('Разговор')
@@ -246,8 +249,10 @@ class TelephonyCallResource extends Resource
                         : $record->contact_name),
                 TextColumn::make('order.number')->label('Связь')->placeholder('Без заказа')
                     ->description(fn (TelephonyCall $record): ?string => $record->contactRequest ? 'Есть обращение с сайта' : null),
-                TextColumn::make('assignedUser.name')->label('Ответственный')->placeholder('Не назначен')
-                    ->description(fn (TelephonyCall $record): ?string => $record->employee_phone ? 'A1: '.$record->employee_phone : null),
+                TextColumn::make('employee_phone')->label('Телефон сотрудника')->placeholder('—')->copyable(),
+                TextColumn::make('line_number')->label('Линия')->placeholder('—')
+                    ->formatStateUsing(fn (?string $state): string => self::companyLineLabel($state)),
+                TextColumn::make('assignedUser.name')->label('Ответственный')->placeholder('Не назначен'),
                 TextColumn::make('duration')->label('Время')->formatStateUsing(fn (?int $state): string => $state === null ? '—' : gmdate('i:s', $state)),
                 TextColumn::make('handling_status')->label('Контроль')->badge()->sortable()
                     ->formatStateUsing(fn (string $state): string => TelephonyCall::HANDLING_STATUSES[$state] ?? $state)
@@ -465,6 +470,17 @@ class TelephonyCallResource extends Resource
             'missed', 'busy', 'denied', 'failed' => 'danger',
             default => 'warning',
         };
+    }
+
+    private static function companyLineLabel(?string $phone): string
+    {
+        if (! $phone) {
+            return '—';
+        }
+
+        $name = config("telephony.company_lines.{$phone}");
+
+        return $name ? $name.' · '.$phone : $phone;
     }
 
     /** @param array<string, mixed> $data */

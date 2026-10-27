@@ -74,9 +74,12 @@ class SyncA1Telephony extends Command
                 ])->save();
             }
 
-            $minutes = max(5, (int) ($this->option('minutes') ?: config('telephony.history_lookback_minutes', 15)));
-            $start = ($connection->history_synced_until ?? now()->subMinutes($minutes))->copy()->subMinutes(2);
             $end = now();
+            $requestedMinutes = $this->option('minutes');
+            $minutes = max(5, (int) ($requestedMinutes ?: config('telephony.history_lookback_minutes', 15)));
+            $start = $requestedMinutes !== null
+                ? $end->copy()->subMinutes($minutes)
+                : ($connection->history_synced_until ?? $end->copy()->subMinutes($minutes))->copy()->subMinutes(2);
             $history = $client->callHistory($connection, $start->timestamp, $end->timestamp);
 
             foreach ($history as $row) {

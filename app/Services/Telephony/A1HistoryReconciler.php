@@ -26,9 +26,12 @@ class A1HistoryReconciler
             'notificationType' => 'FINISH',
             'uuid' => $uuid,
             'crmCallType' => $outbound ? 'OUTBOUND' : ($callType === 'INTERNAL' ? 'INTERNAL' : 'INBOUND'),
-            'numberA' => $outbound ? ($row['calleeNumber'] ?? $row['destinationNumber'] ?? null) : ($row['callerNumber'] ?? null),
-            'numberB' => $outbound ? ($row['callerNumber'] ?? null) : ($row['calleeNumber'] ?? null),
-            'lineNumber' => $row['destinationNumber'] ?? null,
+            'numberA' => $row['callerNumber'] ?? null,
+            'numberB' => $row['calleeNumber'] ?? ($outbound ? ($row['destinationNumber'] ?? null) : null),
+            // For incoming calls destinationNumber is the originally dialled
+            // multichannel company line. For outgoing history it is the client,
+            // so keep the more precise lineNumber already received by webhook.
+            'lineNumber' => $outbound ? null : ($row['destinationNumber'] ?? null),
             'date' => isset($row['callTimestamp'])
                 ? CarbonImmutable::createFromTimestampUTC((int) $row['callTimestamp'])
                     ->setTimezone(config('telephony.timezone', 'Europe/Minsk'))->format('Y-m-d\TH:i:s')

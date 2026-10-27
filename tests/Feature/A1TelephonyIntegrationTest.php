@@ -13,6 +13,7 @@ use App\Models\TelephonyCall;
 use App\Models\TelephonyConnection;
 use App\Models\TelephonyEmployee;
 use App\Models\User;
+use App\Services\Telephony\A1HistoryReconciler;
 use App\Services\Telephony\A1OpenApiClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -136,6 +137,142 @@ class A1TelephonyIntegrationTest extends TestCase
         $call = TelephonyCall::firstOrFail();
         $this->assertSame($manager->id, $call->assigned_user_id);
         $this->assertSame($order->id, $call->order_id);
+    }
+
+    public function test_outbound_webhook_keeps_employee_client_and_company_line_separate(): void
+    {
+        $manager = User::factory()->create([
+            'name' => 'Никита Бостан',
+            'phone' => '+375 29 351-29-82',
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+        TelephonyEmployee::query()->create([
+            'user_id' => $manager->id,
+            'provider' => 'a1',
+            'external_id' => 'nikita-a1',
+            'name' => 'Никита Бостан',
+            'full_number' => '375293512982',
+            'short_number' => '9982',
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORD-OUTBOUND-CLIENT',
+            'status' => 'new',
+            'customer_name' => 'Внешний клиент',
+            'customer_phone' => '+375 29 684-44-29',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 100,
+            'total' => 100,
+        ]);
+
+        $this->postJson(route('telephony.a1.webhook', $this->secret), [
+            ...$this->startPayload(),
+            'uuid' => 'outbound-party-sides',
+            'crmCallType' => 'OUTBOUND',
+            'numberA' => '375293512982',
+            'numberB' => '375296844429',
+            'lineNumber' => '375293544041',
+        ])->assertOk();
+
+        $call = TelephonyCall::query()->where('external_uuid', 'outbound-party-sides')->firstOrFail();
+        $this->assertSame('375296844429', $call->customer_phone);
+        $this->assertSame('375293512982', $call->employee_phone);
+        $this->assertSame('375293544041', $call->line_number);
+        $this->assertSame($manager->id, $call->assigned_user_id);
+        $this->assertSame($order->id, $call->order_id);
+    }
+
+    public function test_outbound_history_uses_callee_as_client_and_restores_employee_company_line(): void
+    {
+        $manager = User::factory()->create([
+            'phone' => '+375 29 351-29-82',
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+        TelephonyEmployee::query()->create([
+            'user_id' => $manager->id,
+            'provider' => 'a1',
+            'external_id' => 'nikita-history-a1',
+            'name' => 'Никита Бостан',
+            'full_number' => '375293512982',
+        ]);
+
+        $call = app(A1HistoryReconciler::class)->reconcile([
+            'uuid' => 'outbound-history-sides',
+            'callType' => 'OUTGOING',
+            'callerNumber' => '375293512982',
+            'calleeNumber' => '375296844429',
+            'destinationNumber' => '375296844429',
+            'callTimestamp' => 1793091292,
+            'callDuration' => 45,
+            'conversationDuration' => 32,
+            'callStatus' => 'ANSWERED',
+        ]);
+
+        $this->assertNotNull($call);
+        $this->assertSame('375296844429', $call->customer_phone);
+        $this->assertSame('375293512982', $call->employee_phone);
+        $this->assertSame('375293544041', $call->line_number);
+        $this->assertSame($manager->id, $call->assigned_user_id);
+    }
+
+    public function test_history_removes_stale_employee_identity_from_outbound_client(): void
+    {
+        $manager = User::factory()->create([
+            'name' => 'Никита Бостан',
+            'phone' => '+375 29 351-29-82',
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+        TelephonyEmployee::query()->create([
+            'user_id' => $manager->id,
+            'provider' => 'a1',
+            'external_id' => 'nikita-stale-a1',
+            'name' => 'Никита Бостан',
+            'full_number' => '375293512982',
+        ]);
+        $order = Order::query()->create([
+            'number' => 'ORD-CORRECTED-CLIENT',
+            'status' => 'new',
+            'customer_name' => 'Настоящий клиент',
+            'customer_phone' => '+375 29 684-44-29',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'cash',
+            'payment_status' => 'pending',
+            'subtotal' => 100,
+            'total' => 100,
+        ]);
+        TelephonyCall::query()->create([
+            'provider' => 'a1',
+            'external_uuid' => 'stale-employee-client',
+            'direction' => 'outbound',
+            'customer_phone' => '375296844429',
+            'employee_phone' => '375293512982',
+            'line_number' => '375293544041',
+            'matched_user_id' => $manager->id,
+            'assigned_user_id' => $manager->id,
+            'status' => 'ringing',
+        ]);
+
+        $this->postJson(route('telephony.a1.webhook', $this->secret), [
+            ...$this->startPayload(),
+            'notificationType' => 'FINISH',
+            'uuid' => 'stale-employee-client',
+            'crmCallType' => 'OUTBOUND',
+            'numberA' => '375293512982',
+            'numberB' => '375296844429',
+            'lineNumber' => '375293544041',
+            'duration' => 45,
+            'crmCallFinishedStatus' => 'ANSWERED',
+        ])->assertOk();
+
+        $call = TelephonyCall::query()->where('external_uuid', 'stale-employee-client')->firstOrFail();
+        $this->assertNull($call->matched_user_id);
+        $this->assertSame($order->id, $call->order_id);
+        $this->assertSame($manager->id, $call->assigned_user_id);
+        $this->assertSame('375296844429', $call->customer_phone);
     }
 
     public function test_employee_sync_prefers_phone_and_preserves_manual_links_over_shared_email(): void
