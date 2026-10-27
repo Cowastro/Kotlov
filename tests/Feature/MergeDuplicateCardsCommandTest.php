@@ -27,6 +27,10 @@ class MergeDuplicateCardsCommandTest extends TestCase
             ->assertSuccessful();
         $this->assertFalse($bare->fresh()->is_archived);
 
+        $this->artisan('catalog:merge-duplicate-cards', ['pairs' => ["{$bare->id},{$full->id}"], '--keep' => [$bare->id]])
+            ->expectsOutputToContain("audit.merge_cards.pair={$bare->id}:{$full->id}:bare-qb-80-5:full-qb-80-5")
+            ->assertSuccessful();
+
         $this->artisan('catalog:merge-duplicate-cards', ['pairs' => ["{$bare->id},{$full->id}"], '--apply' => true])->assertSuccessful();
 
         $this->assertTrue($bare->fresh()->is_archived);

@@ -435,6 +435,12 @@ jobs:
             grep -E '^audit\.sbg_prices\.photo=[0-9]+:[a-z0-9-]+:[0-9]+$' "$detail_log" || true
             echo "safe_sbg_prices_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:replace-in-name" ]]; then
+            echo "safe_replace_in_name_begin"
+            grep -E '^metric\.replace_in_name\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.replace_in_name\.card=[0-9]+:[a-z_.]+$' "$detail_log" || true
+            echo "safe_replace_in_name_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:fix-stub-photos" ]]; then
             echo "safe_stub_photos_begin"
             grep -E '^metric\.stub_photos\.[a-z_]+=[0-9]+$' "$detail_log" || true

@@ -16,10 +16,11 @@ use Illuminate\Support\Facades\DB;
  *
  *   php artisan catalog:merge-duplicate-cards 8564,8696 8569,8697            # dry run
  *   php artisan catalog:merge-duplicate-cards 8564,8696 8569,8697 --apply
+ *   php artisan catalog:merge-duplicate-cards 23238,22617 --keep=23238 --apply   # this card stays
  */
 class MergeDuplicateCardsCommand extends Command
 {
-    protected $signature = 'catalog:merge-duplicate-cards {pairs* : id,id per duplicate pair} {--apply : Merge and archive the duplicates}';
+    protected $signature = 'catalog:merge-duplicate-cards {pairs* : id,id per duplicate pair} {--keep=* : Card ids that stay whatever their fullness} {--apply : Merge and archive the duplicates}';
 
     protected $description = 'Merge pairs of duplicate product cards (keep the fuller card, redirect the other)';
 
@@ -38,7 +39,8 @@ class MergeDuplicateCardsCommand extends Command
 
                     continue;
                 }
-                [$keep, $dupe] = $cards->sortByDesc(fn (Product $p) => [$this->fullness($p), -$p->id])->values()->all();
+                $keepIds = array_map('intval', (array) $this->option('keep'));
+                [$keep, $dupe] = $cards->sortByDesc(fn (Product $p) => [(int) in_array((int) $p->id, $keepIds, true), $this->fullness($p), -$p->id])->values()->all();
                 $keepId = (int) $keep->id;
                 $dupeId = (int) $dupe->id;
                 $stats['pairs']++;
