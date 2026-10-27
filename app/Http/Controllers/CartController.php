@@ -9,6 +9,7 @@ use App\Services\B2bCatalogOfferResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
 use App\Services\ChimneyBundlePromotion;
+use App\Services\EcokaminB2bOfferPublisher;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -109,7 +110,8 @@ class CartController extends Controller
                         ? response()->json(['message' => $message], 422)
                         : back()->with('error', $message);
                 }
-            } elseif (! $offerResolver->hasFreshStock($b2bOffer)) {
+            } elseif ($b2bOffer->source?->code === EcokaminB2bOfferPublisher::SOURCE_CODE
+                || ! $offerResolver->hasFreshStock($b2bOffer)) {
                 $warehouseStock = $product->warehouseStocks
                     ->filter(fn ($stock): bool => (float) $stock->available_quantity >= $qty)
                     ->sortBy('delivery_days')

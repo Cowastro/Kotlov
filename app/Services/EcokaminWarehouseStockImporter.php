@@ -107,6 +107,8 @@ class EcokaminWarehouseStockImporter
                 ]);
         }
 
+        app(EcokaminB2bOfferPublisher::class)->sync();
+
         return [
             'matched' => count($matchedProductIds),
             'unmatched' => count($unmatched),
