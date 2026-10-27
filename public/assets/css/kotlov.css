@@ -2715,6 +2715,15 @@ a.category-v05.subcat-tile:hover .cate-icon {
     font-size: 12px;
     line-height: 1.5;
 }
+.own-transport-schedule__benefit {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #eaf7ef;
+    color: #22663b;
+    font-size: 14px;
+    line-height: 1.5;
+}
 @media (max-width: 575px) {
     .own-transport-schedule__body { padding: 0 14px 16px; }
     .own-transport-schedule summary,

@@ -218,9 +218,12 @@
                                 <div class="d-flex justify-content-between align-items-center mb-20">
                                     <p class="fw-medium lh-24 mb-0">Доставка:</p>
                                     @if ($subtotal >= $threshold)
-                                        <span class="fw-semibold text-primary">Бесплатно</span>
+                                        <span class="text-caption-01 text-end">
+                                            <strong class="text-primary">По Минску — бесплатно</strong><br>
+                                            по городам графика — согласно тарифу
+                                        </span>
                                     @else
-                                        <span class="text-caption-01 cl-text-3">уточняется при оформлении</span>
+                                        <span class="text-caption-01 cl-text-3 text-end">от 10 BYN, точная цена при оформлении</span>
                                     @endif
                                 </div>
 

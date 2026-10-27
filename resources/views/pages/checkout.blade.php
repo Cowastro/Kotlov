@@ -132,14 +132,17 @@
                                         <div class="tf-select">
                                             <select name="delivery_type" id="delivery-type" required>
                                                 @foreach ($checkoutDelivery as $key => $method)
+                                                    @php
+                                                        $methodPrice = \App\Http\Controllers\CheckoutController::calcDelivery($key, (float) $subtotal);
+                                                    @endphp
                                                     <option value="{{ $key }}"
                                                         {{ old('delivery_type', 'courier') === $key ? 'selected' : '' }}>
                                                         {{ $method['name'] }}
-                                                        @if (isset($method['price']) && $method['price'] !== null && $method['price'] > 0)
-                                                            — {{ number_format($method['price'], 2, '.', ' ') }} BYN
-                                                        @elseif (isset($method['price']) && $method['price'] === 0)
+                                                        @if ($methodPrice === 0.0)
                                                             — Бесплатно
-                                                        @elseif (array_key_exists('price', $method) && $method['price'] === null)
+                                                        @elseif ($methodPrice !== null)
+                                                            — {{ number_format($methodPrice, 2, '.', ' ') }} BYN
+                                                        @else
                                                             — стоимость уточняется
                                                         @endif
                                                     </option>
@@ -428,9 +431,8 @@
 
                             {{-- Итоги --}}
                             @php
-                                use App\Http\Controllers\CheckoutController;
                                 $selectedDelivery = old('delivery_type', 'courier');
-                                $deliveryCost     = CheckoutController::calcDelivery($selectedDelivery, $subtotal);
+                                $deliveryCost     = \App\Http\Controllers\CheckoutController::calcDelivery($selectedDelivery, $subtotal);
                                 $effectiveDiscount = ($onlineOrderDiscountExcludedByPayment ? 0 : $coupon['coupon_discount']) + $coupon['bundle_discount'];
                                 $total            = $subtotal - $effectiveDiscount + ($deliveryCost ?? 0);
                             @endphp
@@ -455,9 +457,7 @@
                                 <li class="total-item lh-24 fw-medium">
                                     <span>Доставка:</span>
                                     <span id="checkout-delivery-cost">
-                                        @if ($subtotal >= $threshold)
-                                            <span class="text-primary fw-semibold">Бесплатно</span>
-                                        @elseif ($deliveryCost === null)
+                                        @if ($deliveryCost === null)
                                             <span class="cl-text-2">уточняется</span>
                                         @elseif ($deliveryCost === 0.0)
                                             <span class="text-primary fw-semibold">Бесплатно</span>
@@ -536,6 +536,16 @@
         if (!method) return null;
         var price    = method.price;     // number | null
         var freeFrom = method.free_from; // number | null
+        if (Array.isArray(method.price_tiers) && method.price_tiers.length) {
+            var tiers = method.price_tiers.slice().sort(function(a, b) {
+                return Number(b.from || 0) - Number(a.from || 0);
+            });
+            for (var i = 0; i < tiers.length; i++) {
+                if (subtotal >= Number(tiers[i].from || 0)) {
+                    return tiers[i].price === null ? null : Number(tiers[i].price);
+                }
+            }
+        }
         if (price === null) return null;           // уточняется
         if (price === 0)    return 0;              // самовывоз
         if (freeFrom !== null && subtotal >= freeFrom) return 0;

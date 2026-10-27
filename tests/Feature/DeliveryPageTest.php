@@ -30,7 +30,11 @@ class DeliveryPageTest extends TestCase
             ->assertSeeText('Четверг')
             ->assertSeeText('Верхнедвинск')
             ->assertSeeText('Пятница')
-            ->assertSeeText('Жодино');
+            ->assertSeeText('Жодино')
+            ->assertSeeText('Минск и Минский район: 10 BYN, от 400 BYN — бесплатно.')
+            ->assertSeeText('Города по графику: менее 500 BYN — 30 BYN; от 500 до 999 BYN — 20 BYN; от 1 000 BYN — бесплатно.')
+            ->assertDontSeeText('Международная доставка')
+            ->assertDontSeeText('ТК КИТ');
     }
 
     public function test_public_pages_show_round_the_clock_orders_and_daily_consultations_until_twenty(): void

@@ -72,14 +72,12 @@ class CheckoutController extends Controller
         $onlineOrderDiscountExcludedByPayment = $onlineOrderDiscountCoupon
             && ! $couponService->onlineOrderDiscountAppliesToPayment($selectedPayment);
         $user = Auth::user();
-        $threshold = (float) config('shop.free_delivery_threshold', 400);
 
         return view('pages.checkout', compact(
             'cart',
             'subtotal',
             'coupon',
             'user',
-            'threshold',
             'selectedPayment',
             'onlineOrderDiscountCoupon',
             'onlineOrderDiscountExcludedByPayment',
@@ -429,8 +427,22 @@ class CheckoutController extends Controller
             return null; // неизвестный тип — уточняется
         }
 
-        $price = $method['price'];    // float|null
-        $freeFrom = $method['free_from']; // float|null
+        $price = $method['price'] ?? null;    // float|null
+        $freeFrom = $method['free_from'] ?? null; // float|null
+
+        // Ступенчатый тариф: берём первую подходящую ступень, начиная с
+        // наибольшей суммы заказа. Например: менее 500 = 30, 500–999 = 20,
+        // от 1000 = бесплатно.
+        if (! empty($method['price_tiers']) && is_array($method['price_tiers'])) {
+            $tiers = collect($method['price_tiers'])
+                ->sortByDesc(fn (array $tier) => (float) ($tier['from'] ?? 0));
+
+            foreach ($tiers as $tier) {
+                if ($subtotal >= (float) ($tier['from'] ?? 0)) {
+                    return isset($tier['price']) ? (float) $tier['price'] : null;
+                }
+            }
+        }
 
         // null price = рассчитывается отдельно (КИТ и т.п.)
         if ($price === null) {

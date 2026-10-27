@@ -97,7 +97,7 @@
                                 <div>
                                     <p class="text-caption-01 cl-text-3 mb-4">Способ доставки</p>
                                     <p class="fw-medium lh-24">
-                                        {{ config("shop.delivery_methods.{$order->delivery_type}.name", $order->delivery_type) }}
+                                        {{ config("shop.delivery_methods.{$order->delivery_type}.name", \App\Models\Order::DELIVERY_TYPES[$order->delivery_type] ?? $order->delivery_type) }}
                                     </p>
                                     @php
                                         $addressParts = array_filter([

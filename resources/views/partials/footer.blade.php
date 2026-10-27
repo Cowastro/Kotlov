@@ -209,7 +209,7 @@
             </p>
             <p>
                 Способы оплаты: {{ $payments['cash']['name'] ?? 'наличными' }}, {{ $payments['card']['name'] ?? 'банковской картой' }}, {{ $payments['erip']['name'] ?? 'система «Расчёт» (ЕРИП)' }}, {{ $payments['bank_transfer']['name'] ?? 'безналичный расчет' }}, рассрочка по заявке через менеджера, кредит, оплата по счету для организаций.
-                Способы доставки: {{ $delivery['pickup']['name'] ?? 'самовывоз' }} по адресу {{ $delivery['pickup']['address'] ?? $seller['address'] }}, {{ $delivery['courier']['name'] ?? 'доставка курьером по г. Минску' }}, {{ $delivery['own_transport']['name'] ?? 'доставка своим транспортом по графику' }}, {{ $delivery['transport']['name'] ?? 'транспортная компания по Беларуси' }}, {{ $delivery['kit']['name'] ?? 'международная доставка ТК КИТ' }}.
+                Способы доставки: {{ $delivery['pickup']['name'] ?? 'самовывоз' }} по адресу {{ $delivery['pickup']['address'] ?? $seller['address'] }}, {{ $delivery['courier']['name'] ?? 'доставка курьером по г. Минску' }}, {{ $delivery['own_transport']['name'] ?? 'доставка своим транспортом по графику' }}, {{ $delivery['transport']['name'] ?? 'транспортная компания по Беларуси' }}.
             </p>
             <p>
                 Местный исполнительный и распорядительный орган по месту регистрации продавца: {{ $authority['name'] }}, {{ $authority['address'] }}, телефоны {{ implode(', ', $authority['phones']) }}, e-mail <a href="mailto:{{ $authority['email'] }}">{{ $authority['email'] }}</a>, сайт {{ $authority['site'] }}.

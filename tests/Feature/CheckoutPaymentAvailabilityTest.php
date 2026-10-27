@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\CheckoutController;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\Product;
@@ -45,10 +46,21 @@ class CheckoutPaymentAvailabilityTest extends TestCase
             ->get(route('checkout'))
             ->assertOk()
             ->assertSee('value="own_transport"', false)
-            ->assertSeeText('Доставка своим транспортом по графику')
+            ->assertSeeText('Нашим транспортом по Минску и Минскому району')
+            ->assertSeeText('Нашим транспортом в города по графику')
             ->assertSeeText('Минск, Минский район и города по маршрутам')
+            ->assertSeeText('Минск и Минский район: 10 BYN, от 400 BYN — бесплатно.')
+            ->assertSeeText('Города по графику: менее 500 BYN — 30 BYN; от 500 до 999 BYN — 20 BYN; от 1 000 BYN — бесплатно.')
             ->assertSeeText('Новополоцк')
-            ->assertSeeText('Барановичи');
+            ->assertSeeText('Барановичи')
+            ->assertDontSeeText('ТК КИТ');
+
+        $this->assertSame(10.0, CheckoutController::calcDelivery('courier', 399));
+        $this->assertSame(0.0, CheckoutController::calcDelivery('courier', 400));
+        $this->assertSame(30.0, CheckoutController::calcDelivery('own_transport', 499.99));
+        $this->assertSame(20.0, CheckoutController::calcDelivery('own_transport', 500));
+        $this->assertSame(20.0, CheckoutController::calcDelivery('own_transport', 999.99));
+        $this->assertSame(0.0, CheckoutController::calcDelivery('own_transport', 1000));
     }
 
     public function test_installment_button_target_preselects_six_month_installment(): void

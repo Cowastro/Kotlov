@@ -193,12 +193,12 @@
             if (!textEl || !remainEl || !barEl) return;
 
             if (data.remaining <= 0) {
-                textEl.innerHTML = '🎉 У вас <strong>бесплатная доставка</strong>!';
+                textEl.innerHTML = '🎉 <strong>Бесплатная доставка по Минску</strong>. По городам графика — бесплатно от 1 000 BYN.';
             } else {
                 var rem = parseFloat(data.remaining).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
                 textEl.innerHTML =
                     'Добавьте ещё на <span class="text-primary fw-7" id="cart-threshold-remaining">' +
-                    rem + ' BYN</span> для бесплатной доставки';
+                    rem + ' BYN</span> для бесплатной доставки по Минску';
             }
             var pct = data.progress || 0;
             barEl.style.width = pct + '%';
@@ -574,9 +574,31 @@
         input.setAttribute('aria-controls', suggestId);
         input.setAttribute('aria-expanded', 'false');
 
+        function closeOtherSuggestions() {
+            document.querySelectorAll('.search-suggest-dropdown').forEach(function (dropdown) {
+                if (dropdown === suggest) return;
+
+                dropdown.style.display = 'none';
+                var owner = document.querySelector('[aria-controls="' + dropdown.id + '"]');
+                if (owner) owner.setAttribute('aria-expanded', 'false');
+            });
+        }
+
+        function activateSuggestions() {
+            window.kotlovActiveSearchSuggestInput = input;
+            closeOtherSuggestions();
+            document.body.classList.toggle(
+                'search-suggest-open',
+                suggest.style.display === 'block'
+            );
+        }
+
         function closeSuggestions() {
             suggest.style.display = 'none';
             input.setAttribute('aria-expanded', 'false');
+            if (window.kotlovActiveSearchSuggestInput === input) {
+                window.kotlovActiveSearchSuggestInput = null;
+            }
             var hasOpenSearch = Array.prototype.some.call(
                 document.querySelectorAll('.search-suggest-dropdown'),
                 function (dropdown) { return dropdown.style.display === 'block'; }
@@ -606,6 +628,11 @@
         }
 
         function renderSuggestions(data) {
+            // На странице одновременно есть поиск в шапке, модальном окне и
+            // на странице результатов. Запоздавший ответ не должен повторно
+            // открывать уже неактивный dropdown поверх текущего.
+            if (window.kotlovActiveSearchSuggestInput !== input) return;
+
             if (!data.length) {
                 closeSuggestions();
                 suggest.replaceChildren();
@@ -676,6 +703,7 @@
             allResults.textContent = 'Показать все товары';
             fragment.appendChild(allResults);
 
+            closeOtherSuggestions();
             suggest.replaceChildren(fragment);
             suggest.style.display = 'block';
             activeIndex = -1;
@@ -684,6 +712,7 @@
         }
 
         input.addEventListener('input', function () {
+            activateSuggestions();
             clearTimeout(timer);
             var q = this.value.trim();
             if (q.length < 2) {
@@ -713,6 +742,14 @@
                         if (request === activeRequest) request = null;
                     });
             }, 120);
+        });
+
+        input.addEventListener('focus', function () {
+            activateSuggestions();
+            var cacheKey = input.value.trim().toLocaleLowerCase('ru');
+            if (cacheKey.length >= 2 && cache[cacheKey]) {
+                renderSuggestions(cache[cacheKey]);
+            }
         });
 
         input.addEventListener('keydown', function (event) {

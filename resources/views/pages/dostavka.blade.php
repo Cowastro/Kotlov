@@ -56,7 +56,7 @@
                             </div>
                         </div>
 
-                        {{-- Курьер Минск --}}
+                        {{-- Наш транспорт: Минск --}}
                         <div class="delivery-card mb-20">
                             <div class="d-flex align-items-start gap-16">
                                 <div class="delivery-icon flex-shrink-0">
@@ -64,11 +64,11 @@
                                 </div>
                                 <div>
                                     <h6 class="fw-semibold mb-8">
-                                        Доставка курьером по г. Минску
+                                        Нашим транспортом по Минску и Минскому району
                                         — {{ number_format($delivery['courier']['price'] ?? 10, 2, '.', ' ') }} BYN<sup>*</sup>
                                     </h6>
                                     <p class="cl-text-2 mb-4">
-                                        Заказ на сумму свыше
+                                        Заказ на сумму от
                                         <strong>{{ number_format($delivery['courier']['free_from'] ?? 400, 0, '.', ' ') }} BYN</strong>
                                         доставляется <strong class="text-primary">бесплатно</strong>.
                                     </p>
@@ -112,31 +112,6 @@
                             </span>
                         </div>
 
-                        {{-- Международная доставка --}}
-                        <div class="delivery-card mb-20">
-                            <div class="d-flex align-items-start gap-16">
-                                <div class="delivery-icon flex-shrink-0">
-                                    <i class="icon icon-Globe fs-28"></i>
-                                </div>
-                                <div>
-                                    <h6 class="fw-semibold mb-8">
-                                        Международная доставка — ТК КИТ
-                                    </h6>
-                                    <p class="cl-text-2 mb-4">
-                                        Доставка по России, Казахстану, Армении и Киргизии
-                                        через транспортную компанию КИТ.
-                                    </p>
-                                    <p class="cl-text-2 mb-4">
-                                        Рассчитать стоимость:
-                                        <a href="{{ $delivery['kit']['external_calculator'] ?? 'https://minsk.tk-kit.ru/clients/rates' }}"
-                                            target="_blank"
-                                            class="text-decoration-underline text-primary">
-                                            minsk.tk-kit.ru/clients/rates
-                                        </a>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="br-line mb-40"></div>

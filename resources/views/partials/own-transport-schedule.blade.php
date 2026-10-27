@@ -1,5 +1,6 @@
 @php
     $ownTransport = config('shop.delivery_methods.own_transport', []);
+    $minskTransport = config('shop.delivery_methods.courier', []);
     $routes = collect($ownTransport['routes'] ?? [])->filter(fn ($route) => !empty($route['days']) && !empty($route['destinations']));
     $collapsible = $collapsible ?? false;
 @endphp
@@ -34,6 +35,18 @@
                             <span>{{ implode(', ', $route['destinations']) }}</span>
                         </div>
                     @endforeach
+                </div>
+                <div class="own-transport-schedule__benefit">
+                    <p class="mb-4">
+                        <strong>Минск и Минский район:</strong>
+                        {{ number_format($minskTransport['price'] ?? 10, 0, '.', ' ') }} BYN,
+                        от {{ number_format($minskTransport['free_from'] ?? 400, 0, '.', ' ') }} BYN — <strong>бесплатно</strong>.
+                    </p>
+                    <p class="mb-0">
+                        <strong>Города по графику:</strong>
+                        менее 500 BYN — 30 BYN; от 500 до 999 BYN — 20 BYN;
+                        от 1 000 BYN — <strong>бесплатно</strong>.
+                    </p>
                 </div>
                 @if (!empty($ownTransport['schedule_note']))
                     <p class="own-transport-schedule__note mb-0">{{ $ownTransport['schedule_note'] }}</p>
