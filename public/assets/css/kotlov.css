@@ -503,7 +503,32 @@ body {
     font-size: 14px;
     font-weight: 600;
 }
-.suggest-brand .icon { color: #999; }
+.suggest-brand__logo {
+    display: grid;
+    width: 48px;
+    height: 40px;
+    flex: 0 0 48px;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: #fff;
+}
+.suggest-brand__logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.suggest-brand__logo.is-placeholder {
+    border-color: #f0f0f0;
+    background: #f7f7f7;
+    color: #777;
+}
+.suggest-brand__initials {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .04em;
+}
 .suggest-brand__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .suggest-category__text {
     display: flex;

@@ -672,10 +672,28 @@
                             categoryText.appendChild(context);
                         }
                     } else if (item.type === 'brand') {
-                        var brandIcon = document.createElement('i');
-                        brandIcon.className = 'icon icon-Tag me-8';
-                        brandIcon.setAttribute('aria-hidden', 'true');
-                        link.appendChild(brandIcon);
+                        var brandLogo = appendText(link, 'suggest-brand__logo', '');
+                        var brandInitials = String(item.name || '')
+                            .trim()
+                            .slice(0, 2)
+                            .toLocaleUpperCase('ru');
+
+                        function showBrandInitials() {
+                            brandLogo.replaceChildren();
+                            brandLogo.classList.add('is-placeholder');
+                            appendText(brandLogo, 'suggest-brand__initials', brandInitials);
+                        }
+
+                        if (item.image) {
+                            var brandImage = document.createElement('img');
+                            brandImage.src = item.image;
+                            brandImage.alt = '';
+                            brandImage.loading = 'lazy';
+                            brandImage.addEventListener('error', showBrandInitials, { once: true });
+                            brandLogo.appendChild(brandImage);
+                        } else {
+                            showBrandInitials();
+                        }
                         appendText(link, 'suggest-brand__name', item.name);
                     } else {
                         var imageWrap = appendText(link, 'suggest-product__image', '');

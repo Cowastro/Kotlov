@@ -128,7 +128,7 @@ class SearchController extends Controller
         $search->applyBrand($brands, $q);
         $brands = $brands
             ->whereHas('products', fn ($products) => $products->active()->notArchived())
-            ->select('id', 'name', 'slug')
+            ->select('id', 'name', 'slug', 'logo')
             ->orderBy('name')
             ->limit(3)
             ->get()
@@ -136,6 +136,7 @@ class SearchController extends Controller
                 'type' => 'brand',
                 'name' => $brand->name,
                 'url' => '/brands/'.strtolower($brand->slug),
+                'image' => $brand->logo ? $brand->image_url : null,
             ]);
 
         return response()->json($categories->concat($brands)->concat($products)->values());

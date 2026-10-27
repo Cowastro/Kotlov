@@ -106,6 +106,41 @@ class StorefrontProductSearchTest extends TestCase
             ->assertJsonFragment(['type' => 'category', 'name' => 'Газовые', 'context' => 'Водонагреватели']);
     }
 
+    public function test_brand_suggestion_includes_its_logo_url(): void
+    {
+        $category = Category::create([
+            'name' => 'Камины с логотипом бренда',
+            'slug' => 'search-brand-logo-category',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $brand = Brand::create([
+            'name' => 'EcoKamin Logo Test',
+            'slug' => 'ecokamin-logo-search-test',
+            'logo' => '/img/brands/teplodvor/ecokamin.png',
+            'is_active' => true,
+        ]);
+        Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Камин для проверки логотипа',
+            'slug' => 'brand-logo-search-product',
+            'sku' => 'BRAND-LOGO-SEARCH',
+            'price' => 1000,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $this->getJson('/search/suggest?'.http_build_query(['q' => 'EcoKamin Logo Test']))
+            ->assertOk()
+            ->assertJsonFragment([
+                'type' => 'brand',
+                'name' => $brand->name,
+                'url' => '/brands/ecokamin-logo-search-test',
+                'image' => '/img/brands/teplodvor/ecokamin.png',
+            ]);
+    }
+
     public function test_gas_meter_search_ignores_word_order_and_understands_word_forms(): void
     {
         $category = Category::create([
