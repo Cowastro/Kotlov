@@ -27,6 +27,7 @@ class SyncBaniaPricelistCommand extends Command
         {--archive-missing-products : Archive products whose BANIA wholesale rows disappeared and which have no other supplier links}
         {--audit-links : Read-only: list BANIA rows whose supplier title names another model than the card they feed}
         {--unlink-mismatched=* : Card ids: take BANIA rows of another model off them (with --apply), revoking their approvals}
+        {--relink-own-model=* : Card ids: link the free BANIA row of the very model of each card (with --apply)}
         {--suggest-retail=* : Card ids: list the BANIA retail row of the own model of each card}';
 
     protected $description = 'Sync BANIA supplier cost/stock and optionally catalogue RRP from the named Drive workbooks.';
@@ -144,6 +145,9 @@ class SyncBaniaPricelistCommand extends Command
         }
         if ($this->option('audit-links')) {
             return $this->auditLinks((int) $supplier->id);
+        }
+        if ($this->option('relink-own-model')) {
+            return $this->relinkOwnModel((int) $supplier->id, array_map('intval', (array) $this->option('relink-own-model')), ! $dryRun);
         }
         if ($this->option('unlink-mismatched')) {
             return $this->unlinkMismatched((int) $supplier->id, array_map('intval', (array) $this->option('unlink-mismatched')), ! $dryRun);
@@ -1158,6 +1162,39 @@ class SyncBaniaPricelistCommand extends Command
         }
         foreach ($stats as $key => $value) {
             $this->line("metric.bania_links.{$key}={$value}");
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * A card left without its BANIA row gets the free row (no card yet) of exactly its model.
+     *
+     * @param  list<int>  $productIds
+     */
+    private function relinkOwnModel(int $supplierId, array $productIds, bool $apply): int
+    {
+        $free = DB::table('supplier_products')->where('supplier_id', $supplierId)->whereNull('product_id')->get(['id', 'supplier_name']);
+        $products = DB::table('products')->whereIn('id', $productIds)->get(['id', 'name', 'sku']);
+        $stats = ['cards' => $products->count(), 'linked' => 0, 'none' => 0, 'many' => 0];
+        foreach ($products as $product) {
+            $identity = $this->modelIdentity((string) $product->name);
+            $rows = $free->filter(fn ($row) => $identity !== '' && $this->modelIdentity((string) $row->supplier_name) === $identity)->values();
+            if ($rows->count() !== 1) {
+                $stats[$rows->isEmpty() ? 'none' : 'many']++;
+                $this->line(sprintf('audit.bania_links.relink=%d:0:%d', $product->id, $rows->count()));
+
+                continue;
+            }
+            $stats['linked']++;
+            $this->line(sprintf('audit.bania_links.relink=%d:%d:1', $product->id, $rows[0]->id));
+            if ($apply) {
+                DB::table('supplier_products')->where('id', $rows[0]->id)->update(['product_id' => $product->id, 'product_sku' => $product->sku, 'updated_at' => now()]);
+                $this->refreshProductAvailability((int) $product->id, now());
+            }
+        }
+        foreach ($stats as $key => $value) {
+            $this->line("metric.bania_links.relink_{$key}={$value}");
         }
 
         return self::SUCCESS;
