@@ -1255,7 +1255,7 @@ class SyncBaniaPricelistCommand extends Command
             'stock_status' => 'preorder',
             'stock_text' => 'Под заказ',
             'match_status' => 'matched',
-            'match_confidence' => 'retail_own_model',
+            'match_confidence' => 'manual_price_list',
             'last_synced_at' => now(),
         ]);
         $this->refreshProductAvailability((int) $product->id, now());
