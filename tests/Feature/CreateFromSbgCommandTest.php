@@ -40,7 +40,7 @@ class CreateFromSbgCommandTest extends TestCase
 
         $sealant = IntegrationProduct::query()->create(['integration_source_id' => $source->id, 'external_id' => 'x-6644', 'external_code' => 'УТ-00006644',
             'name' => 'Герметик для печей Soudal', 'match_status' => 'unmatched']);
-        $this->artisan('integration:create-from-sbg', ['pairs' => ['УТ-00006644:@germetik-soudal-antracit-280-ml:aksessuary-dlya-bani'], '--apply' => true])
+        $this->artisan('integration:create-from-sbg', ['pairs' => ['УТ-00006644:=germetik-soudal-antracit-280-ml:aksessuary-dlya-bani'], '--apply' => true])
             ->expectsOutputToContain('metric.create_from_sbg.created=1')
             ->assertSuccessful();
         $this->assertSame(20.0, (float) Product::query()->find($sealant->fresh()->product_id)->price);
