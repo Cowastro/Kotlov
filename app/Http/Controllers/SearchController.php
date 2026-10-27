@@ -54,7 +54,7 @@ class SearchController extends Controller
         }
 
         $quickLinks = Category::whereIn('slug', [
-            'kotly', 'teplovye-nasosy', 'pechki', 'kaminy', 'dymohody', 'vodonagrevateli',
+            'kotly', 'teplovyie-nasosyi', 'pechki', 'kaminy', 'dymohody', 'vodonagrevateli',
         ])->where('is_active', true)->get();
 
         return view('pages.search', compact('products', 'q', 'total', 'quickLinks', 'sort', 'category'));

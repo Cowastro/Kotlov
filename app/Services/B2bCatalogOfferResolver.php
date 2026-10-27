@@ -103,7 +103,7 @@ class B2bCatalogOfferResolver
     public function priceWithTax(IntegrationProduct $offer): float
     {
         $brandRetailPrice = $offer->product
-            ? app(B2bBrandRetailPricing::class)->priceFor($offer->product)
+            ? app(B2bBrandRetailPricing::class)->priceFor($offer->product, $offer)
             : null;
 
         if ($brandRetailPrice !== null) {
@@ -259,14 +259,23 @@ class B2bCatalogOfferResolver
             ->with(['source.supplier', 'product.brand', 'product.category', 'product.warehouseStocks'])
             ->whereNotNull('product_id')
             ->where('match_status', 'matched')
-            ->withUsablePrice()
+            ->where(function (Builder $priced): void {
+                $priced->withUsablePrice()
+                    ->orWhereHas('product', fn (Builder $product): Builder => $product
+                        ->where('price', '>', 0)
+                        ->whereHas('category', fn (Builder $category): Builder => $category
+                            ->whereIn('slug', array_keys(
+                                (array) config('shop.b2b_supplier_category_retail_discounts.sanbusinessgroup', [])
+                            ))));
+            })
             ->whereHas('source', fn ($query) => $query->where('is_active', true))
             ->get()
             ->filter(fn (IntegrationProduct $offer): bool => $offer->source?->isB2bEnabled() === true
                 && $offer->source?->supplier?->is_active === true
                 && $offer->source->hasPublishableB2bPrice()
                 && $offer->allowsB2bPublication()
-                && $offer->normalizedPriceByn() !== null
+                && ($offer->normalizedPriceByn() !== null
+                    || app(B2bBrandRetailPricing::class)->priceFor($offer->product, $offer) !== null)
                 && $offer->product?->is_active === true
                 && $offer->product?->is_archived === false
                 && (float) $offer->product?->price > 0

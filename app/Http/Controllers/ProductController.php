@@ -6,8 +6,8 @@ use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
-use App\Services\HeatPumpProductPresenter;
 use App\Services\ChimneyBundlePromotion;
+use App\Services\HeatPumpProductPresenter;
 use App\Services\ProductPopularityService;
 use App\Services\ProductVariantSelector;
 use App\Services\SeoMetadataBuilder;
@@ -296,7 +296,7 @@ class ProductController extends Controller
         $heatPumpGuides = collect();
         $heatPumpProfile = null;
         $kotlovHeatPumpModels = collect();
-        if ($productCategory->slug === 'teplovyie-nasosyi') {
+        if (in_array($productCategory->slug, ['teplovyie-nasosyi', 'teplovye-nasosy-vozduh-voda'], true)) {
             $heatPumpPresenter = app(HeatPumpProductPresenter::class);
             $heatPumpProfile = $heatPumpPresenter->build($product);
 

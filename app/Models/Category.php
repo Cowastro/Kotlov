@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
@@ -57,7 +57,7 @@ class Category extends Model
                 return asset(ltrim($path, '/'));
             }
 
-            return asset('storage/' . ltrim($path, '/'));
+            return asset('storage/'.ltrim($path, '/'));
         }
 
         return asset(static::fallbackImagePath($this->slug) ?? 'img/popular/catalog.jpg');
@@ -74,6 +74,10 @@ class Category extends Model
             'komplektyi-dlya-tverdotoplivnyih-kotlov' => 'img/popular/boiler_img.jpg',
             'teplovyie-nasosyi' => 'img/popular/heatpump.jpg',
             'teplovye-nasosy' => 'img/popular/heatpump.jpg',
+            'teplovye-nasosy-vozduh-voda' => 'img/popular/heatpump.jpg',
+            'geotermalnye-teplovye-nasosy' => 'img/popular/heatpump.jpg',
+            'teplovye-nasosy-dlya-basseynov' => 'img/popular/heatpump.jpg',
+            'komplektuyushchie-dlya-teplovykh-nasosov' => 'img/popular/heatpump.jpg',
             'kaminy' => 'img/popular/fireplace.jpg',
             'topki' => 'img/popular/fireplace.jpg',
             'elektrokamini' => 'img/popular/fireplace.jpg',

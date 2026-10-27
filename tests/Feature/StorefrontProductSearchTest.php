@@ -93,6 +93,25 @@ class StorefrontProductSearchTest extends TestCase
         $this->assertSame([$product->id], $query->pluck('id')->all());
     }
 
+    public function test_plural_heat_pump_query_matches_singular_product_name(): void
+    {
+        $category = Category::query()->where('slug', 'teplovyie-nasosyi')->firstOrFail();
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Тепловой насос KOTLOV GE FLM30-R32 10 кВт',
+            'slug' => 'search-kotlov-ge-flm30-r32',
+            'sku' => 'KOTLOV-GE-FLM30-R32',
+            'price' => 12972,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $matches = Product::query();
+        app(StorefrontProductSearch::class)->applyForResults($matches, 'тепловые насосы');
+
+        $this->assertContains($product->id, $matches->pluck('id')->all());
+    }
+
     public function test_long_chimney_query_matches_catalog_punctuation_and_an_extra_descriptor(): void
     {
         $category = Category::create([

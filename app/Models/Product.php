@@ -439,7 +439,8 @@ class Product extends Model
 
     public function heatPumpCatalogMeta(): ?array
     {
-        if ($this->category?->slug !== 'teplovyie-nasosyi' || $this->brand?->slug !== 'kotlov-ge') {
+        if (! in_array($this->category?->slug, ['teplovyie-nasosyi', 'teplovye-nasosy-vozduh-voda'], true)
+            || $this->brand?->slug !== 'kotlov-ge') {
             return null;
         }
 

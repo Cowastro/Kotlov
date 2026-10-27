@@ -50,6 +50,15 @@ class StorefrontProductSearch
         'отопительная' => ['отоплен'],
         'отопительные' => ['отоплен'],
         'отопления' => ['отоплен'],
+        'тепловой' => ['теплов'],
+        'тепловая' => ['теплов'],
+        'тепловое' => ['теплов'],
+        'тепловые' => ['теплов'],
+        'теплового' => ['теплов'],
+        'насос' => ['насос'],
+        'насоса' => ['насос'],
+        'насосы' => ['насос'],
+        'насосов' => ['насос'],
         'дымоходный' => ['дымоход'],
         'дымоходные' => ['дымоход'],
         'дымохода' => ['дымоход'],
@@ -120,8 +129,7 @@ class StorefrontProductSearch
         string $search,
         bool $includeInternal = false,
         bool $includeCategoryMatches = true
-    ): Builder
-    {
+    ): Builder {
         $tokens = array_slice($this->directTokens($search), 0, self::MAX_TOKENS);
         $heatingElementQuery = $this->isHeatingElementQuery($search);
 

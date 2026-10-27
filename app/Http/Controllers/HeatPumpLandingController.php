@@ -86,11 +86,15 @@ class HeatPumpLandingController extends Controller
     {
         $page = self::PAGES[$landing] ?? abort(404);
         $category = Category::query()->where('slug', 'teplovyie-nasosyi')->where('is_active', true)->firstOrFail();
+        $categoryIds = Category::query()
+            ->where('id', $category->id)
+            ->orWhere('parent_id', $category->id)
+            ->pluck('id');
 
         $products = Product::query()
             ->orderable()
             ->withSupplierChannels()
-            ->where('category_id', $category->id)
+            ->whereIn('category_id', $categoryIds)
             ->when($page['product_filter'] === 'r290', fn ($query) => $query->where('name', 'like', '%R290%'))
             ->with(['category', 'brand'])
             ->orderByDesc('in_stock')

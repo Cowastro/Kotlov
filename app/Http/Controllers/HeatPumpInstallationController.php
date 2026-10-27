@@ -22,7 +22,8 @@ class HeatPumpInstallationController extends Controller
                 ->with(['brand', 'category'])
                 ->where('slug', $request->string('product')->toString())
                 ->whereHas('brand', fn ($query) => $query->where('slug', 'kotlov-ge'))
-                ->whereHas('category', fn ($query) => $query->where('slug', 'teplovyie-nasosyi'))
+                ->whereHas('category', fn ($query) => $query
+                    ->whereIn('slug', ['teplovyie-nasosyi', 'teplovye-nasosy-vozduh-voda']))
                 ->first();
         }
 

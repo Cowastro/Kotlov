@@ -1173,7 +1173,8 @@ class ProductsTable
 
         $prices = $record->usablePurchasePriceSources()->pluck('price_byn')
             ->concat(self::activeIntegrationItems($record)
-                ->map(fn ($item): ?float => $item->normalizedPriceByn()))
+                ->map(fn ($item): ?float => app(B2bBrandRetailPricing::class)->priceFor($record, $item)
+                    ?? $item->normalizedPriceByn()))
             ->concat($record->operationalSupplierProducts()->pluck('price_byn'))
             ->map(fn ($price): float => (float) $price)
             ->filter(fn (float $price): bool => $price > 0);

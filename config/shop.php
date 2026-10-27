@@ -55,6 +55,16 @@ return [
         'царьпечи' => 20,
     ],
 
+    // Цена B2B от розницы для отдельных веток конкретного поставщика.
+    'b2b_supplier_category_retail_discounts' => [
+        'sanbusinessgroup' => [
+            'teplovyie-nasosyi' => 15,
+            'teplovye-nasosy-vozduh-voda' => 15,
+            'geotermalnye-teplovye-nasosy' => 15,
+            'teplovye-nasosy-dlya-basseynov' => 15,
+        ],
+    ],
+
     // Автоматическая передача заявок поставщику всегда выключена по умолчанию.
     // Администратор может включить её отдельно только после успешной ручной выборки.
     'supplier_auto_transfer' => [

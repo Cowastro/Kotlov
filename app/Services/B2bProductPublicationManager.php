@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\Product;
+use App\Services\Pricing\B2bBrandRetailPricing;
 use Illuminate\Support\Facades\DB;
 
 class B2bProductPublicationManager
@@ -105,7 +106,8 @@ class B2bProductPublicationManager
             ->filter(fn (IntegrationProduct $offer): bool => $offer->source?->is_active === true
                 && $offer->source?->supplier?->is_active === true
                 && $offer->source->hasPublishableB2bPrice()
-                && $offer->normalizedPriceByn() !== null)
+                && ($offer->normalizedPriceByn() !== null
+                    || app(B2bBrandRetailPricing::class)->priceFor($product, $offer) !== null))
             ->values();
     }
 

@@ -246,6 +246,30 @@ class B2bCatalogPricingTest extends TestCase
         $this->assertSame(170.0, session('cart')[$product->id]['price']);
     }
 
+    public function test_sanbusinessgroup_heat_pump_uses_fifteen_percent_retail_discount_without_source_price(): void
+    {
+        [$product, $user] = $this->catalogFixture(approved: true);
+        $heatPumps = Category::query()->where('slug', 'teplovyie-nasosyi')->firstOrFail();
+        $product->update(['category_id' => $heatPumps->id, 'price' => 200]);
+
+        IntegrationProduct::query()->where('product_id', $product->id)->update([
+            'price' => null,
+            'price_byn' => null,
+            'b2b_enabled' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/'.$heatPumps->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertSeeText('170.00 BYN')
+            ->assertSeeText('Ваша скидка к рознице: 30.00 BYN (15.0%)');
+
+        $this->actingAs($user)
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+            ->assertOk()
+            ->assertJsonPath('subtotal', 170);
+    }
+
     public function test_stale_one_c_stock_is_hidden_and_rejected_for_b2b_ordering(): void
     {
         [$product, $user] = $this->catalogFixture(approved: true);
