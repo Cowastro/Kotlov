@@ -10,6 +10,7 @@ use App\Models\SupplierProduct;
 use App\Models\SupplierSync;
 use App\Services\ProductSourceEnricher;
 use App\Services\SupplierProductAvailabilityService;
+use App\Services\Suppliers\CooperWholesalePriceList;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -17,7 +18,9 @@ use Illuminate\Support\Str;
 /**
  * ООО «СаунаОпт»: glass sauna doors Cooper (cooper.by, series Лайт, Стандарт, PRO, PREMIUM).
  * Rows come from the shop's WooCommerce Store API. Until the wholesale price list arrives
- * the site price is the card's retail price and the supplier cost stays empty.
+ * the site price is the card's retail price. The cost comes from the wholesale price list of the
+ * supplier uploaded in the admin (CooperWholesalePriceList, series + colour + size); where its recommended
+ * retail differs from the site, the line audit.cooper_doors.rrc_differs says so — the site stays the retail.
  *
  *   php artisan supplier:sync-cooper-doors                         # dry run
  *   php artisan supplier:sync-cooper-doors --apply --create-new    # first import: cards, photos, specs
@@ -54,7 +57,10 @@ class SyncCooperDoorsCommand extends Command
             return self::FAILURE;
         }
 
-        $stats = ['rows' => count($rows), 'no_price' => 0, 'linked' => 0, 'created' => 0, 'would_create' => 0, 'retail_updated' => 0, 'images_saved' => 0, 'in_stock' => 0, 'errors' => 0];
+        $stats = ['rows' => count($rows), 'no_price' => 0, 'linked' => 0, 'created' => 0, 'would_create' => 0, 'retail_updated' => 0, 'images_saved' => 0, 'in_stock' => 0,
+            'with_cost' => 0, 'no_cost' => 0, 'rrc_differs' => 0, 'errors' => 0];
+        $wholesale = CooperWholesalePriceList::load();
+        $seenKeys = [];
         $supplier = $apply ? $this->supplier() : Supplier::query()->where('code', self::SUPPLIER_CODE)->first();
         $sync = $apply ? $this->sync($supplier) : null;
         $touched = [];
@@ -86,6 +92,20 @@ class SyncCooperDoorsCommand extends Command
                     $stats['created']++;
                 }
                 $stats['linked']++;
+                // The site names the series only in the category («Серия Стандарт»), not in the title.
+                $key = self::doorKey($row['series'].' '.$row['site_name']);
+                $seenKeys[$key] = true;
+                $offer = $wholesale[$key] ?? null;
+                if ($offer) {
+                    $stats['with_cost']++;
+                    if (abs($offer['rrc'] - (float) $row['retail']) > 0.5) {
+                        $stats['rrc_differs']++;
+                        $this->line(sprintf('audit.cooper_doors.rrc_differs=%d:%d:%d', $row['id'], (int) round($row['retail']), (int) round($offer['rrc'])));
+                    }
+                } else {
+                    $stats['no_cost']++;
+                    $this->line('audit.cooper_doors.no_cost='.$row['id']);
+                }
                 if (! $apply) {
                     continue;
                 }
@@ -111,9 +131,9 @@ class SyncCooperDoorsCommand extends Command
                     'supplier_article_compact' => Str::upper($row['article']),
                     'supplier_name' => $row['site_name'],
                     'source_url' => $row['url'],
-                    // Retail only for now: the cost arrives with the wholesale price list.
-                    'price' => null,
-                    'price_byn' => null,
+                    // The cost from the wholesale price list (with VAT); the retail is the site price.
+                    'price' => $offer['wholesale'] ?? null,
+                    'price_byn' => $offer['wholesale'] ?? null,
                     'currency' => 'BYN',
                     'currency_rate' => 1,
                     'in_stock' => $row['in_stock'],
@@ -123,7 +143,8 @@ class SyncCooperDoorsCommand extends Command
                     'last_stock_synced_at' => now(),
                     'match_status' => 'matched',
                     'match_confidence' => 'site_product_id',
-                    'raw' => ['retail' => $row['retail'], 'series' => $row['series'], 'woo_id' => $row['id']],
+                    'raw' => ['retail' => $row['retail'], 'series' => $row['series'], 'woo_id' => $row['id'],
+                        'wholesale_rrc' => $offer['rrc'] ?? null],
                     'last_synced_at' => now(),
                 ]);
                 $otherSupplier = $product->operationalSupplierProducts()->contains(fn (SupplierProduct $item): bool => (int) $item->supplier_id !== (int) $supplier->id);
@@ -141,6 +162,10 @@ class SyncCooperDoorsCommand extends Command
             }
         }
 
+        foreach (array_diff_key($wholesale, $seenKeys) as $key => $offer) {
+            $this->line('audit.cooper_doors.price_list_only='.Str::slug($key));
+        }
+
         if ($apply) {
             app(SupplierProductAvailabilityService::class)->refreshMany(array_values(array_unique($touched)));
             $sync->forceFill(['last_status' => $stats['errors'] ? 'partial' : 'updated', 'last_exit_code' => $stats['errors'] ? 1 : 0, 'last_run_at' => now()])->save();
@@ -150,6 +175,27 @@ class SyncCooperDoorsCommand extends Command
         }
 
         return $stats['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * One door, whatever the wording: «БДК "COOPER" Стандарт, бронза матовая, 190х70 ВР» and the site's
+     * «Дверь стеклянная для бани COOPER Стандарт 190×70 бронза матовая ВР» give «standart|bronze-matte|190x70|vr».
+     */
+    public static function doorKey(string $name): string
+    {
+        $text = mb_strtolower(str_replace(['×', 'x', '*'], 'х', $name));
+        $series = match (true) {
+            str_contains($text, 'premium') || str_contains($text, 'премиум') => 'premium',
+            (bool) preg_match('/\bpro\b|\bпро\b/u', $text) => 'pro',
+            str_contains($text, 'стандарт') || str_contains($text, 'standart') => 'standart',
+            str_contains($text, 'лайт') || str_contains($text, 'lite') => 'lite',
+            default => '',
+        };
+        $colour = (str_contains($text, 'графит') ? 'graphite' : 'bronze').(str_contains($text, 'матов') ? '-matte' : '');
+        $size = preg_match('/(\d{3})\s*х\s*(\d{2}(?:[.,]\d)?)/u', $text, $m) ? $m[1].'x'.str_replace(',', '.', $m[2]) : '';
+        $vertical = preg_match('/(?<!\pL)вр(?!\pL)|вертикал/u', $text) ? 'vr' : '';
+
+        return implode('|', array_filter([$series, $colour, $size, $vertical]));
     }
 
     /** @return array<int,array<string,mixed>> */
