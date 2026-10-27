@@ -600,7 +600,8 @@ class CatalogController extends Controller
                 'postuplenie-teplovyh-nasosov-kotlov-na-sklad',
                 'kak-vybrat-teplovoy-nasos',
                 'teplovye-nasosy-ge-r290-vysokotemperaturnye',
-                'montazh-teplovogo-nasosa-kotlov-ge-10-kvt-r290-smolevichskiy-rayon',
+                'montazh-teplovogo-nasosa-16-kvt-r290-loshany',
+                'montazh-teplovogo-nasosa-kotlov-ge-16-kvt-r290-smolevichskiy-rayon',
                 'teplovoy-nasos-kotlov-ge-24-kvt-r32-nareyki',
                 'teplovoy-nasos-115-kvt-r290-ostroshitskiy-gorodok',
             ];

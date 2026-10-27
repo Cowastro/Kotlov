@@ -331,7 +331,8 @@ class ProductController extends Controller
             $isR290 = str_contains(mb_strtoupper($nameFull), 'R290');
             $guideOrder = $isR290
                 ? [
-                    'montazh-teplovogo-nasosa-kotlov-ge-10-kvt-r290-smolevichskiy-rayon',
+                    'montazh-teplovogo-nasosa-16-kvt-r290-loshany',
+                    'montazh-teplovogo-nasosa-kotlov-ge-16-kvt-r290-smolevichskiy-rayon',
                     'teplovoy-nasos-115-kvt-r290-ostroshitskiy-gorodok',
                     'teplovoy-nasos-kotlov-ge-24-kvt-r32-nareyki',
                     'montazh-teplovogo-nasosa-hotta-30-kvt-i-rezervnogo-pelletnogo-kotla-biotep-25',

@@ -29,7 +29,8 @@ class HeatPumpInstallationController extends Controller
         $leadSource = $selectedProduct ? 'heat_pump_catalog' : 'heat_pump_installation';
 
         $caseSlugs = [
-            'montazh-teplovogo-nasosa-kotlov-ge-10-kvt-r290-smolevichskiy-rayon',
+            'montazh-teplovogo-nasosa-16-kvt-r290-loshany',
+            'montazh-teplovogo-nasosa-kotlov-ge-16-kvt-r290-smolevichskiy-rayon',
             'teplovoy-nasos-kotlov-ge-24-kvt-r32-nareyki',
             'teplovoy-nasos-115-kvt-r290-ostroshitskiy-gorodok',
             'montazh-teplovogo-nasosa-hotta-30-kvt-i-rezervnogo-pelletnogo-kotla-biotep-25',
