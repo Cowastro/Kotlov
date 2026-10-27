@@ -227,6 +227,9 @@
                                     $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
                                     $b2bOffer = $b2bComparison['offer'] ?? null;
                                     $isProcurementOffer = $b2bOffer && $b2bOffer->source?->isProcurementMode();
+                                    $b2bAvailability = $b2bOffer
+                                        ? app(\App\Services\B2bCatalogOfferResolver::class)->availabilityFor($b2bOffer, auth()->user())
+                                        : null;
                                     $hasAssignedSupplier = $product->hasAssignedSupplier();
                                     if (!$product->is_active || $product->is_archived) {
                                         $availabilityStatus = 'out_of_stock';
@@ -431,8 +434,8 @@
                                     @elseif ($b2bOffer)
                                         <span class="stock in-stock fw-medium text-success">
                                             <i class="icon icon-CheckCircle"></i>
-                                            @if ($isProcurementOffer)
-                                                {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Под заказ') }}
+                                            @if ($b2bAvailability)
+                                                {{ $b2bAvailability['label'] }}
                                             @elseif (!$showMinskB2bWarehouse && $b2bWarehouseStocks->isNotEmpty())
                                                 {{ $b2bWarehouseStocks->first()->warehouse_name }}:
                                                 {{ $b2bWarehouseStocks->first()->formattedAvailableQuantity() }}

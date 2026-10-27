@@ -79,18 +79,17 @@ class B2bMarketplaceController extends Controller
             $availableCategoryIds = $listingOffers
                 ->unique('product_id')
                 ->pluck('product.category_id');
-            $rows = $offers->map(function ($offer) use ($resolver): array {
+            $rows = $offers->map(function ($offer) use ($resolver, $user): array {
                 $product = $offer->product;
+                $availability = $resolver->availabilityFor($offer, $user);
 
                 return [
                     'product' => $product,
                     'offer' => $offer,
                     'price' => $resolver->priceWithTax($offer),
                     'retail_price' => (float) $product->price,
-                    'stock' => $resolver->isProcurementOffer($offer) ? null : (float) $offer->stock_quantity,
-                    'stock_label' => $resolver->isProcurementOffer($offer)
-                        ? data_get($offer->source?->settings, 'warehouse_label', 'Под заказ')
-                        : data_get($offer->source?->settings, 'warehouse_label', 'Основной').': '.$offer->formattedStockQuantity(),
+                    'stock' => $availability['stock'],
+                    'stock_label' => $availability['label'],
                 ];
             })->filter(function (array $row) use ($query, $categoryId, $categoryFilterIds, $brandId): bool {
                 $product = $row['product'];
@@ -214,8 +213,9 @@ class B2bMarketplaceController extends Controller
                 ];
             })
             ->take(8)
-            ->map(function ($offer) use ($resolver, $preview): array {
+            ->map(function ($offer) use ($resolver, $preview, $user): array {
                 $product = $offer->product;
+                $availability = $resolver->availabilityFor($offer, $user);
 
                 return [
                     'id' => (int) $product->id,
@@ -225,9 +225,7 @@ class B2bMarketplaceController extends Controller
                     'brand' => (string) ($product->brand?->name ?: ''),
                     'image' => (string) $product->image_url,
                     'price' => $resolver->priceWithTax($offer),
-                    'stock' => $resolver->isProcurementOffer($offer)
-                        ? 'Под заказ'
-                        : $offer->formattedStockQuantity(),
+                    'stock' => $availability['label'],
                     'url' => route('b2b.catalog', array_filter([
                         'mode' => 'orderable',
                         'q' => $product->sku ?: $product->name,

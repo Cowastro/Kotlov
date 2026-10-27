@@ -215,6 +215,63 @@ class B2bMarketplaceTest extends TestCase
             ->assertDontSeeText('Товар другого поставщика');
     }
 
+    public function test_procurement_price_uses_fresh_local_stock_before_delivery_fallback(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Печи',
+            'slug' => 'b2b-procurement-stock-category',
+            'is_active' => true,
+        ]);
+        $product = $this->product($category, 'Печь Царь-Печи Ярило', 'TSAR-LOCAL-1');
+        $localSource = $this->source('local-stock-test', $category, 'ООО «СанБизнесГруп»');
+        $localSettings = $localSource->settings;
+        $localSettings['warehouse_label'] = 'Основной';
+        $localSource->update(['settings' => $localSettings]);
+        $procurementSource = $this->source('tsar-pechi-test', $category, 'ООО «СанБизнесГруп»');
+        $procurementSettings = $procurementSource->settings;
+        $procurementSettings['procurement_mode'] = true;
+        $procurementSettings['warehouse_label'] = 'Склад Москва · поставка 7 дней';
+        $procurementSource->update(['settings' => $procurementSettings]);
+
+        $this->offer($localSource, $product, 110, 3);
+        $this->offer($procurementSource, $product, 80, 0);
+        $user = $this->approvedUser([$localSource->id, $procurementSource->id]);
+
+        $this->actingAs($user)
+            ->get(route('b2b.catalog', ['q' => 'TSAR-LOCAL-1']))
+            ->assertOk()
+            ->assertSeeText('80,00 BYN')
+            ->assertSeeText('Основной: 3 шт.')
+            ->assertDontSeeText('Склад Москва · поставка 7 дней');
+
+        $this->actingAs($user)
+            ->getJson(route('b2b.catalog.suggest', ['q' => 'TSAR-LOCAL-1']))
+            ->assertOk()
+            ->assertJsonPath('items.0.stock', 'Основной: 3 шт.');
+    }
+
+    public function test_procurement_delivery_is_shown_when_local_stock_is_empty(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Печи',
+            'slug' => 'b2b-procurement-fallback-category',
+            'is_active' => true,
+        ]);
+        $product = $this->product($category, 'Печь Царь-Печи Добрыня', 'TSAR-ORDER-1');
+        $source = $this->source('tsar-pechi-fallback', $category, 'ООО «СанБизнесГруп»');
+        $settings = $source->settings;
+        $settings['procurement_mode'] = true;
+        $settings['warehouse_label'] = 'Склад Москва · поставка 7 дней';
+        $source->update(['settings' => $settings]);
+        $this->offer($source, $product, 80, 0);
+        $user = $this->approvedUser([$source->id]);
+
+        $this->actingAs($user)
+            ->get(route('b2b.catalog', ['q' => 'TSAR-ORDER-1']))
+            ->assertOk()
+            ->assertSeeText('Склад Москва · поставка 7 дней');
+    }
+
     public function test_category_tree_filters_the_whole_selected_branch(): void
     {
         $root = Category::query()->create([

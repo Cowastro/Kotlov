@@ -13,6 +13,9 @@
     $b2bOffer = $b2bComparison['offer'] ?? null;
     $isB2bOffer = $b2bOffer !== null;
     $isProcurementOffer = $isB2bOffer && $b2bOffer->source?->isProcurementMode();
+    $b2bAvailability = $isB2bOffer
+        ? app(\App\Services\B2bCatalogOfferResolver::class)->availabilityFor($b2bOffer, auth()->user())
+        : null;
     $b2bMoscowStock = $isB2bOffer && !app(\App\Services\B2bCatalogOfferResolver::class)->hasFreshStock($b2bOffer)
         ? $b2bOffer->product?->warehouseStocks->first(fn ($stock) => (float) $stock->available_quantity > 0)
         : null;
@@ -178,8 +181,8 @@
             @if ($isB2bOffer)
                 <span class="text-caption-01 text-success">
                     <i class="icon icon-CheckCircle"></i>
-                    @if ($isProcurementOffer)
-                        {{ data_get($b2bOffer->source?->settings, 'warehouse_label', 'Под заказ') }}
+                    @if ($b2bAvailability)
+                        {{ $b2bAvailability['label'] }}
                     @elseif ($b2bMoscowStock)
                         {{ $b2bMoscowStock->warehouse_name }}:
                         {{ $b2bMoscowStock->formattedAvailableQuantity() }}

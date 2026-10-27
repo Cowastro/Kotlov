@@ -16,6 +16,9 @@ class B2bCatalogOfferResolver
     /** @var Collection<int, IntegrationProduct>|null */
     private ?Collection $offers = null;
 
+    /** @var Collection<int, IntegrationProduct>|null */
+    private ?Collection $stockOffers = null;
+
     /** @var array<int, int>|null */
     private ?array $categoryParents = null;
 
@@ -126,6 +129,59 @@ class B2bCatalogOfferResolver
         return $offer->source?->isProcurementMode() === true;
     }
 
+    /** @return array{stock: float|null, label: string, procurement_fallback: bool} */
+    public function availabilityFor(IntegrationProduct $offer, ?User $user = null): array
+    {
+        $stockOffer = $this->stockOffers()
+            ->filter(fn (IntegrationProduct $candidate): bool => (int) $candidate->product_id === (int) $offer->product_id
+                && $this->userAllowsSource($user, $candidate))
+            ->sortBy(fn (IntegrationProduct $candidate): array => [
+                $this->isProcurementOffer($candidate) ? 1 : 0,
+                $candidate->source?->code === 'onec' ? 0 : 1,
+                -(float) $candidate->stock_quantity,
+            ])
+            ->first();
+
+        if ($stockOffer) {
+            $warehouse = trim((string) data_get($stockOffer->source?->settings, 'warehouse_label', 'Основной'));
+
+            return [
+                'stock' => (float) $stockOffer->stock_quantity,
+                'label' => ($warehouse !== '' ? $warehouse : 'Основной').': '.$stockOffer->formattedStockQuantity(),
+                'procurement_fallback' => false,
+            ];
+        }
+
+        $warehouseStock = collect($offer->product?->warehouseStocks)
+            ->filter(fn ($stock): bool => (float) $stock->available_quantity > 0)
+            ->sortBy(fn ($stock): array => [(int) ($stock->delivery_days ?? 0), -(float) $stock->available_quantity])
+            ->first();
+
+        if ($warehouseStock) {
+            $warehouse = trim((string) $warehouseStock->warehouse_name);
+
+            return [
+                'stock' => (float) $warehouseStock->available_quantity,
+                'label' => ($warehouse !== '' ? $warehouse : 'Склад').': '.$warehouseStock->formattedAvailableQuantity(),
+                'procurement_fallback' => false,
+            ];
+        }
+
+        if ($this->isProcurementOffer($offer)) {
+            return [
+                'stock' => null,
+                'label' => (string) data_get($offer->source?->settings, 'warehouse_label', 'Под заказ'),
+                'procurement_fallback' => true,
+            ];
+        }
+
+        return [
+            'stock' => null,
+            'label' => 'Наличие уточняется',
+            'procurement_fallback' => false,
+        ];
+    }
+
     public function canOrder(IntegrationProduct $offer, int $quantity = 1): bool
     {
         if ($this->isProcurementOffer($offer)) {
@@ -174,6 +230,26 @@ class B2bCatalogOfferResolver
     private function offers(): Collection
     {
         return $this->offers ??= $this->loadPublishableOffers(IntegrationProduct::query());
+    }
+
+    /** @return Collection<int, IntegrationProduct> */
+    private function stockOffers(): Collection
+    {
+        if ($this->stockOffers !== null) {
+            return $this->stockOffers;
+        }
+
+        $productIds = $this->offers()->pluck('product_id')->filter()->unique()->values();
+
+        return $this->stockOffers = IntegrationProduct::query()
+            ->with('source')
+            ->whereIn('product_id', $productIds)
+            ->where('match_status', 'matched')
+            ->where('stock_quantity', '>', 0)
+            ->whereHas('source', fn ($query) => $query->where('is_active', true))
+            ->get()
+            ->filter(fn (IntegrationProduct $candidate): bool => $candidate->hasFreshPositiveStock())
+            ->values();
     }
 
     /** @return Collection<int, IntegrationProduct> */
