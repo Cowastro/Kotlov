@@ -72,6 +72,11 @@ class OneCItemsCommand extends Command
                 ->each(fn ($row) => $this->line(sprintf('audit.onec_items.article=%s:%s:%d:%s:%s', Str::slug((string) $article) ?: 'none',
                     Str::slug((string) $row->code, '_'), (int) $row->product_id, number_format((float) $row->price_byn, 2, '.', ''),
                     Str::slug(Str::limit((string) $row->supplier_name, 80, '')) ?: 'none')));
+            DB::table('supplier_product_mappings')->whereRaw('UPPER(TRIM(supplier_article)) = ?', [Str::upper(trim((string) $article))])->limit(10)
+                ->get(['supplier_code', 'product_id', 'confidence', 'created_at'])
+                ->each(fn ($row) => $this->line(sprintf('audit.onec_items.mapping=%s:%s:%d:%s:%s', Str::slug((string) $article) ?: 'none',
+                    Str::slug((string) $row->supplier_code, '_'), (int) $row->product_id, Str::slug((string) $row->confidence, '_') ?: 'none',
+                    $row->created_at ? date('Ymd', strtotime((string) $row->created_at)) : '0')));
         }
 
         $linked = 0;
