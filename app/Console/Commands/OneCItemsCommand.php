@@ -27,6 +27,7 @@ class OneCItemsCommand extends Command
         {--offers=* : Words in the name of supplier price rows without a card}
         {--articles=* : Supplier price rows with this article (which card each feeds)}
         {--link=* : 1C code (or external id) : product id}
+        {--relink : A row linked to another card leaves it (with its 1C price there) for the given one}
         {--apply : Write the links}';
 
     protected $description = 'Find 1C rows and the site cards they belong to; link them';
@@ -98,10 +99,16 @@ class OneCItemsCommand extends Command
 
                 continue;
             }
-            if ($item->product_id) {
+            if ($item->product_id && (! $this->option('relink') || (int) $item->product_id === (int) $productId)) {
                 $this->line(sprintf('audit.onec_items.already=%d:%d', $item->id, $item->product_id));
 
                 continue;
+            }
+            if ($item->product_id) {
+                $this->line(sprintf('audit.onec_items.relink=%d:%d:%d', $item->id, $item->product_id, (int) $productId));
+                if ($this->option('apply')) {
+                    $this->unlink($item);
+                }
             }
             if ($this->option('apply') && ! $decision->linkSelectedProduct($item, (int) $productId)) {
                 $this->line('audit.onec_items.link_failed='.$item->id);
@@ -114,5 +121,19 @@ class OneCItemsCommand extends Command
         $this->line('metric.onec_items.linked='.$linked);
 
         return self::SUCCESS;
+    }
+
+    /** The row leaves the wrong card, and so does the 1C price the sync put on it. */
+    private function unlink(IntegrationProduct $item): void
+    {
+        DB::transaction(function () use ($item): void {
+            $article = trim((string) ($item->external_sku ?: $item->external_code));
+            if ($supplierId = $item->source?->supplier_id) {
+                DB::table('supplier_products')->where('product_id', $item->product_id)->where('supplier_id', $supplierId)
+                    ->where('supplier_article', $article)->delete();
+            }
+            $item->forceFill(['product_id' => null, 'match_status' => 'unmatched', 'match_method' => null, 'match_confidence' => null, 'matched_at' => null])->save();
+        });
+        $item->refresh();
     }
 }
