@@ -95,12 +95,13 @@
                 <div class="catalog-brand-note__inner">
                     <div>
                         <span class="catalog-brand-note__eyebrow">Новая система дымоходов</span>
-                        <h2 id="tis-standard-title">ТиС «Стандарт 30» и «Стандарт 50»</h2>
-                        <p>Два удобных прайса по элементам и диаметрам, карточки AISI 304 и быстрый переход между типоразмерами. Поставка под заказ за 5–7 рабочих дней.</p>
+                        <h2 id="tis-standard-title">ТиС «Стандарт 30», «Стандарт 50» и «Феррит 1 мм»</h2>
+                        <p>Удобные прайсы по элементам и диаметрам: «Стандарт» из AISI 304 и банный «Феррит 1 мм» из AISI 430, быстрый переход между типоразмерами. Поставка под заказ за 5–7 рабочих дней.</p>
                     </div>
                     <div class="catalog-brand-note__actions">
                         <a href="{{ route('chimneys.tis-standard-30') }}" class="tf-btn btn-white btn-stroke">Прайс Стандарт 30</a>
                         <a href="{{ route('chimneys.tis-standard-50') }}" class="tf-btn btn-white btn-stroke">Прайс Стандарт 50</a>
+                        <a href="{{ route('chimneys.tis-ferrit-1mm') }}" class="tf-btn btn-white btn-stroke">Прайс Феррит 1 мм</a>
                     </div>
                 </div>
             </div>

@@ -219,6 +219,8 @@ class HandleRedirects
             '/dymohody/tis-standart-30.csv',
             '/dymohody/tis-standart-50',
             '/dymohody/tis-standart-50.csv',
+            '/dymohody/tis-ferrit-1-mm',
+            '/dymohody/tis-ferrit-1-mm.csv',
         ], true)) {
             return true;
         }

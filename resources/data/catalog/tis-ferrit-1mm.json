@@ -1,0 +1,547 @@
+{
+    "source_url": "https://teplov.ru/catalog/dymokhodnye_sistemy/sistema_tis_ferrit_1_mm/",
+    "source_currency": "RUB",
+    "source_price_note": "Рекомендованные розничные цены с НДС",
+    "captured_at": "2026-10-27",
+    "series": {
+        "mono": {
+            "title": "Система ТиС \"Феррит 1 мм\" Моно",
+            "items": [
+                {
+                    "source_id": "144664",
+                    "source_url": "https://teplov.ru/catalog/detail/otvod_45_om_r_430_1_0_d150_2s/",
+                    "source_image": "https://teplov.ru/upload/iblock/181/kt7ba3bkbvv842j902l84d3akbphq23n.jpeg",
+                    "name": "Отвод 45* ОМ-Р 430-1.0 D150 (2S)",
+                    "row_name": "Отвод моно 45* ОМ-Р (430-1,0)",
+                    "diameter": "150",
+                    "price_rub": 1358,
+                    "description": "Отвод Моно предназначен для изменения направления неутепленного дымового канала на 45*",
+                    "properties": {
+                        "298": {
+                            "NAME": "Марка стали",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI"
+                        }
+                    }
+                },
+                {
+                    "source_id": "129263",
+                    "source_url": "https://teplov.ru/catalog/detail/otvod_87_om_r_430_1_0_d150_3s/",
+                    "source_image": "https://teplov.ru/upload/iblock/b65/46d5fa00hpck2ciur0gyr6qbkqkswo84.jpeg",
+                    "name": "Отвод 87* ОМ-Р 430-1.0 D150 (3S)",
+                    "row_name": "Отвод моно 87* ОМ-Р (430-1,0)",
+                    "diameter": "150",
+                    "price_rub": 1771,
+                    "description": "Отвод Моно предназначен для изменения направления неутепленного дымового канала на 87*",
+                    "properties": {
+                        "298": {
+                            "NAME": "Марка стали",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI"
+                        }
+                    }
+                },
+                {
+                    "source_id": "129264",
+                    "source_url": "https://teplov.ru/catalog/detail/troynik_87_trm_m_r_430_1_0_d150/",
+                    "source_image": "https://teplov.ru/upload/iblock/af2/46hmt3rday270jmohd590dr693ge3x7c.jpeg",
+                    "name": "Тройник 87* ТРМ(М)-Р 430-1.0 D150",
+                    "row_name": "Тройник моно 87* TРМ(М)-Р (430-1,0)",
+                    "diameter": "150",
+                    "price_rub": 2755,
+                    "description": "Тройник Моно неутепленный предназначен для изменения направления дымового канала на&nbsp;&nbsp;87* и обслуживания дымохода - ревизии, чистки, отвода конденсата.<br />\nБлагодаря особенностям конструкции и применяемой технологии производства, тройник обладает&nbsp;&nbsp;повышенной газоплотностью, в дымовом канале отсутствуют прямые углы на пути следования исходящих дымовых газов, что способствует улучшенной тяге дымохода.",
+                    "properties": {
+                        "298": {
+                            "NAME": "Марка стали",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI"
+                        }
+                    }
+                },
+                {
+                    "source_id": "160250",
+                    "source_url": "https://teplov.ru/catalog/detail/truba_l250_tm_r_430_1_0_d115/",
+                    "source_image": "https://teplov.ru/upload/iblock/748/6u2pl2e7ntaxbf0stxmd5l1sl9td0gf0.jpeg",
+                    "name": "Труба L250 ТМ-Р 430-1.0 D115",
+                    "row_name": "Труба моно L250 ТМ-Р (430-1,0)",
+                    "diameter": "115",
+                    "price_rub": 698,
+                    "description": "Дымовая труба Моно неутепленная предназначена для отвода газов и продуктов сгорания топлива. Имеет три монтажных типоразмера: 197, 447 и 947 мм - вариативность размеров упрощает процесс проектирования и монтажа.",
+                    "properties": {
+                        "298": {
+                            "NAME": "Марка стали",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI"
+                        }
+                    }
+                },
+                {
+                    "source_id": "163052",
+                    "source_url": "https://teplov.ru/catalog/detail/adapter_mono_m_m_430_1_0_d115/",
+                    "source_image": "https://teplov.ru/upload/iblock/026/5y750m2wss1vt93zbagd814jgocnyfqq.jpeg",
+                    "name": "Адаптер Моно М-М 430-1.0 D115",
+                    "row_name": "Адаптер Моно М-М (430-1.0)",
+                    "diameter": "115",
+                    "price_rub": 439,
+                    "description": "Адаптер предназначен для соединения патрубка теплогенерирующего аппарата с дымоходом.<br />\n<br />\nВысота: 120 мм",
+                    "properties": {
+                        "298": {
+                            "NAME": "Марка стали",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI"
+                        }
+                    }
+                },
+                {
+                    "source_id": "136930",
+                    "source_url": "https://teplov.ru/catalog/detail/truba_l1000_tm_r_430_1_0_d115/",
+                    "source_image": "https://teplov.ru/upload/iblock/a34/vgbtn68vstmelelouwzupp3g7qw16mku.jpeg",
+                    "name": "Труба L1000 ТМ-Р 430-1.0 D115",
+                    "row_name": "Труба моно L1000 ТМ-Р (430-1,0)",
+                    "diameter": "115",
+                    "price_rub": 1994,
+                    "description": "Дымовая труба Моно неутепленная предназначена для отвода газов и продуктов сгорания топлива. Имеет три монтажных типоразмера: 197, 447 и 947 мм - вариативность размеров упрощает процесс проектирования и монтажа.",
+                    "properties": {
+                        "298": {
+                            "NAME": "Марка стали",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI"
+                        }
+                    }
+                },
+                {
+                    "source_id": "129265",
+                    "source_url": "https://teplov.ru/catalog/detail/truba_l1000_tm_r_430_1_0_d150/",
+                    "source_image": "https://teplov.ru/upload/iblock/c15/y10ro20augf0sodhwkbne2bdy0eoov27.jpeg",
+                    "name": "Труба L1000 ТМ-Р 430-1.0 D150",
+                    "row_name": "Труба моно L1000 ТМ-Р (430-1,0)",
+                    "diameter": "150",
+                    "price_rub": 2612,
+                    "description": "Дымовая труба Моно неутепленная предназначена для отвода газов и продуктов сгорания топлива. Имеет три монтажных типоразмера: 197, 447 и 947 мм - вариативность размеров упрощает процесс проектирования и монтажа.",
+                    "properties": {
+                        "298": {
+                            "NAME": "Марка стали",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI"
+                        }
+                    }
+                },
+                {
+                    "source_id": "202757",
+                    "source_url": "https://teplov.ru/catalog/detail/shiber_shm_r_m2_430_1_0_d115/",
+                    "source_image": "https://teplov.ru/upload/iblock/951/ze2ja1zcvy57bngf03oqt34nfylxhg3y.jpeg",
+                    "name": "Шибер ШМ-Р(М2) 430-1.0 D115",
+                    "row_name": "Шибер ШМ-Р (430-1,0)",
+                    "diameter": "115",
+                    "price_rub": 1408,
+                    "description": "Шибер предназначен&nbsp;&nbsp;для регулирования тяги, путем частичного перекрытия дымового канала, а также в качестве заслонки на неэксплуатируемом камине с открытой топкой для предотвращения оттока теплового воздуха из помещения через дымоход.<br />\n<br />\nПредставляет собой трубу с вмонтированной поворотной заслонкой-диффузором и выведенной наружу рукояткой-штоком.",
+                    "properties": {
+                        "298": {
+                            "NAME": "Марка стали",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI"
+                        }
+                    }
+                },
+                {
+                    "source_id": "202748",
+                    "source_url": "https://teplov.ru/catalog/detail/shiber_shm_r_m2_430_1_0_d150/",
+                    "source_image": "https://teplov.ru/upload/iblock/be5/gqmxdxaqyte83wbfa8lw0uxahr2jfdft.jpeg",
+                    "name": "Шибер ШМ-Р(М2) 430-1.0 D150",
+                    "row_name": "Шибер ШМ-Р (430-1,0)",
+                    "diameter": "150",
+                    "price_rub": 1844,
+                    "description": "Шибер предназначен&nbsp;&nbsp;для регулирования тяги, путем частичного перекрытия дымового канала, а также в качестве заслонки на неэксплуатируемом камине с открытой топкой для предотвращения оттока теплового воздуха из помещения через дымоход.<br />\n<br />\nПредставляет собой трубу с вмонтированной поворотной заслонкой-диффузором и выведенной наружу рукояткой-штоком.",
+                    "properties": {
+                        "298": {
+                            "NAME": "Марка стали",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI"
+                        }
+                    }
+                }
+            ]
+        },
+        "thermo": {
+            "title": "Система ТиС \"Феррит 1 мм\" Термо",
+            "items": [
+                {
+                    "source_id": "128029",
+                    "source_url": "https://teplov.ru/catalog/detail/konus_termo_kt_r_430_0_5_430_d115_200_m/",
+                    "source_image": "https://teplov.ru/upload/iblock/072/7prmqs5joqalspyomxlgeosgx58y3sor.jpeg",
+                    "name": "Конус Термо КТ-Р 430-0.5/430 D115/200* (М)",
+                    "row_name": "Конус Термо КТ-Р (430-0,5/430)",
+                    "diameter": "115/200",
+                    "price_rub": 1465,
+                    "description": "",
+                    "properties": {
+                        "324": {
+                            "NAME": "Толщина металла (внутренняя)",
+                            "VALUE": "0.5",
+                            "CODE": "TOLSHCHINA_METALLA_VNUTRENNYAYA"
+                        },
+                        "325": {
+                            "NAME": "Толщина металла (наружная)",
+                            "VALUE": "0.4",
+                            "CODE": "TOLSHCHINA_METALLA_NARUZHNAYA"
+                        },
+                        "326": {
+                            "NAME": "Диаметр (наружный)",
+                            "VALUE": "195",
+                            "CODE": "DIAMETR_NARUZHNYY"
+                        },
+                        "371": {
+                            "NAME": "Марка стали (внутренняя)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_VNUTRENNYAYA"
+                        },
+                        "372": {
+                            "NAME": "Марка стали (наружная)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_NARUZHNAYA"
+                        },
+                        "329": {
+                            "NAME": "Диаметр (внутренний)",
+                            "VALUE": "115",
+                            "CODE": "DIAMETR_VNUTRENNIY"
+                        },
+                        "330": {
+                            "NAME": "Толщина изоляции",
+                            "VALUE": "40",
+                            "CODE": "TOLSHCHINA_IZOLYATSII"
+                        }
+                    }
+                },
+                {
+                    "source_id": "127909",
+                    "source_url": "https://teplov.ru/catalog/detail/konus_termo_kt_r_430_0_5_430_d150_210_m_tf/",
+                    "source_image": "https://teplov.ru/upload/iblock/410/de90eymlgl0qhv33oudwzwy3ofx1hzd1.jpeg",
+                    "name": "Конус Термо КТ-Р 430-0.5/430 D150/210 М -ТФ",
+                    "row_name": "Конус Термо КТ-Р (430-0,5/430)",
+                    "diameter": "150/210",
+                    "price_rub": 1641,
+                    "description": "Конус предназначен для защиты и изоляции утеплителя трубы Термо. <br />\nМонтируется на утепленную трубу термо и фиксируется с помощью хомута трубного.<br />\nКонус является финишным элементом термо-участка дымохода, и на него могут устанавливаться Зонт моно или Дефлектор моно.<br />\nДля начала термо-участка применяется Переход моно-термо. Конус термо и Переход моно-термо не взаимозаменяемы.",
+                    "properties": {
+                        "324": {
+                            "NAME": "Толщина металла (внутренняя)",
+                            "VALUE": "0.5",
+                            "CODE": "TOLSHCHINA_METALLA_VNUTRENNYAYA"
+                        },
+                        "325": {
+                            "NAME": "Толщина металла (наружная)",
+                            "VALUE": "0.4",
+                            "CODE": "TOLSHCHINA_METALLA_NARUZHNAYA"
+                        },
+                        "326": {
+                            "NAME": "Диаметр (наружный)",
+                            "VALUE": "210",
+                            "CODE": "DIAMETR_NARUZHNYY"
+                        },
+                        "371": {
+                            "NAME": "Марка стали (внутренняя)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_VNUTRENNYAYA"
+                        },
+                        "372": {
+                            "NAME": "Марка стали (наружная)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_NARUZHNAYA"
+                        },
+                        "329": {
+                            "NAME": "Диаметр (внутренний)",
+                            "VALUE": "150",
+                            "CODE": "DIAMETR_VNUTRENNIY"
+                        },
+                        "330": {
+                            "NAME": "Толщина изоляции",
+                            "VALUE": "30",
+                            "CODE": "TOLSHCHINA_IZOLYATSII"
+                        }
+                    }
+                },
+                {
+                    "source_id": "136933",
+                    "source_url": "https://teplov.ru/catalog/detail/perekhod_mono_termo_pmt_r_430_1_0_430_d115_200_m_keramovolokno/",
+                    "source_image": "https://teplov.ru/upload/iblock/4c0/xla79n3n4az2cxmym8qn3k642oe1z9h1.jpeg",
+                    "name": "Переход Моно/Термо ПМТ-Р 430-1.0/430 D115/200* (М) (керамоволокно)",
+                    "row_name": "Переход Моно/Термо ПМТ-Р (430-1,0) (керамоволокно)",
+                    "diameter": "115/200",
+                    "price_rub": 1761,
+                    "description": "Переход Моно-Термо предназначен для перехода с неутепленного дымового канала Моно на утепленный Термо. Переход Моно-Термо является стартовым элементом&nbsp;&nbsp;для утепленного дымохода Термо, изолирует утеплитель трубы Термо.",
+                    "properties": {
+                        "324": {
+                            "NAME": "Толщина металла (внутренняя)",
+                            "VALUE": "1",
+                            "CODE": "TOLSHCHINA_METALLA_VNUTRENNYAYA"
+                        },
+                        "325": {
+                            "NAME": "Толщина металла (наружная)",
+                            "VALUE": "0.5",
+                            "CODE": "TOLSHCHINA_METALLA_NARUZHNAYA"
+                        },
+                        "326": {
+                            "NAME": "Диаметр (наружный)",
+                            "VALUE": "195",
+                            "CODE": "DIAMETR_NARUZHNYY"
+                        },
+                        "371": {
+                            "NAME": "Марка стали (внутренняя)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_VNUTRENNYAYA"
+                        },
+                        "372": {
+                            "NAME": "Марка стали (наружная)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_NARUZHNAYA"
+                        },
+                        "329": {
+                            "NAME": "Диаметр (внутренний)",
+                            "VALUE": "115",
+                            "CODE": "DIAMETR_VNUTRENNIY"
+                        },
+                        "330": {
+                            "NAME": "Толщина изоляции",
+                            "VALUE": "40",
+                            "CODE": "TOLSHCHINA_IZOLYATSII"
+                        }
+                    }
+                },
+                {
+                    "source_id": "129266",
+                    "source_url": "https://teplov.ru/catalog/detail/perekhod_mono_termo_pmt_r_430_1_0_430_d150_210_m_keramovolokno/",
+                    "source_image": "https://teplov.ru/upload/iblock/00b/vb4357fwq9rp5pcx03dhzt5hgdanzk1z.jpeg",
+                    "name": "Переход Моно/Термо ПМТ-Р 430-1.0/430 D150/210 М (керамоволокно)",
+                    "row_name": "Переход Моно/Термо ПМТ-Р (430-1,0) (керамоволокно)",
+                    "diameter": "150/210",
+                    "price_rub": 1985,
+                    "description": "Переход Моно-Термо предназначен для перехода с неутепленного дымового канала Моно на утепленный Термо. Переход Моно-Термо является стартовым элементом&nbsp;&nbsp;для утепленного дымохода Термо, изолирует утеплитель трубы Термо.",
+                    "properties": {
+                        "324": {
+                            "NAME": "Толщина металла (внутренняя)",
+                            "VALUE": "1",
+                            "CODE": "TOLSHCHINA_METALLA_VNUTRENNYAYA"
+                        },
+                        "325": {
+                            "NAME": "Толщина металла (наружная)",
+                            "VALUE": "0.5",
+                            "CODE": "TOLSHCHINA_METALLA_NARUZHNAYA"
+                        },
+                        "326": {
+                            "NAME": "Диаметр (наружный)",
+                            "VALUE": "210",
+                            "CODE": "DIAMETR_NARUZHNYY"
+                        },
+                        "371": {
+                            "NAME": "Марка стали (внутренняя)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_VNUTRENNYAYA"
+                        },
+                        "372": {
+                            "NAME": "Марка стали (наружная)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_NARUZHNAYA"
+                        },
+                        "329": {
+                            "NAME": "Диаметр (внутренний)",
+                            "VALUE": "150",
+                            "CODE": "DIAMETR_VNUTRENNIY"
+                        },
+                        "330": {
+                            "NAME": "Толщина изоляции",
+                            "VALUE": "30",
+                            "CODE": "TOLSHCHINA_IZOLYATSII"
+                        }
+                    }
+                },
+                {
+                    "source_id": "160251",
+                    "source_url": "https://teplov.ru/catalog/detail/otvod_termo_45_ot_r_430_1_0_430_d115_200_2s_keramovolokno/",
+                    "source_image": "https://teplov.ru/upload/iblock/f75/lnqjz52hr1k6r0ugp1ivfxpktzrr1zsv.jpeg",
+                    "name": "Отвод Термо 45* ОТ-Р 430-1.0/430 D115/200* (2S) (керамоволокно)",
+                    "row_name": "Отвод Термо 45* ОТ-Р (430-1.0/430) (керамоволокно)",
+                    "diameter": "115/200",
+                    "price_rub": 5062,
+                    "description": "<p>Отводы предназначены для изменения направления дымохода на требуемый угол. Отводы изготавливаются из цилиндрических секций, соединенных шовной сваркой. Отводы 45 градусов состоят из двух сегментов.</p>",
+                    "properties": {
+                        "324": {
+                            "NAME": "Толщина металла (внутренняя)",
+                            "VALUE": "1",
+                            "CODE": "TOLSHCHINA_METALLA_VNUTRENNYAYA"
+                        },
+                        "325": {
+                            "NAME": "Толщина металла (наружная)",
+                            "VALUE": "0.5",
+                            "CODE": "TOLSHCHINA_METALLA_NARUZHNAYA"
+                        },
+                        "326": {
+                            "NAME": "Диаметр (наружный)",
+                            "VALUE": "200",
+                            "CODE": "DIAMETR_NARUZHNYY"
+                        },
+                        "371": {
+                            "NAME": "Марка стали (внутренняя)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_VNUTRENNYAYA"
+                        },
+                        "372": {
+                            "NAME": "Марка стали (наружная)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_NARUZHNAYA"
+                        },
+                        "329": {
+                            "NAME": "Диаметр (внутренний)",
+                            "VALUE": "115",
+                            "CODE": "DIAMETR_VNUTRENNIY"
+                        },
+                        "330": {
+                            "NAME": "Толщина изоляции",
+                            "VALUE": "40",
+                            "CODE": "TOLSHCHINA_IZOLYATSII"
+                        }
+                    }
+                },
+                {
+                    "source_id": "160253",
+                    "source_url": "https://teplov.ru/catalog/detail/truba_termo_l_500_tt_r_430_1_0_430_d115_200_keramovolokno/",
+                    "source_image": "https://teplov.ru/upload/iblock/ac6/2mb82vp8bfyshuralv49ji0doron2sp4.jpeg",
+                    "name": "Труба Термо L 500 ТТ-Р 430-1.0/430 D115/200* (керамоволокно)",
+                    "row_name": "Труба Термо L500 ТТ-Р (430-1,0/430) (керамоволокно)",
+                    "diameter": "115/200",
+                    "price_rub": 4952,
+                    "description": "Дымовая труба Термо утепленная предназначена для отвода газов и продуктов сгорания топлива. Имеет три монтажных типоразмера: 197, 447 и 947 мм - вариативность размеров упрощает процесс проектирования и монтажа.",
+                    "properties": {
+                        "324": {
+                            "NAME": "Толщина металла (внутренняя)",
+                            "VALUE": "1",
+                            "CODE": "TOLSHCHINA_METALLA_VNUTRENNYAYA"
+                        },
+                        "325": {
+                            "NAME": "Толщина металла (наружная)",
+                            "VALUE": "0.5",
+                            "CODE": "TOLSHCHINA_METALLA_NARUZHNAYA"
+                        },
+                        "326": {
+                            "NAME": "Диаметр (наружный)",
+                            "VALUE": "200",
+                            "CODE": "DIAMETR_NARUZHNYY"
+                        },
+                        "371": {
+                            "NAME": "Марка стали (внутренняя)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_VNUTRENNYAYA"
+                        },
+                        "372": {
+                            "NAME": "Марка стали (наружная)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_NARUZHNAYA"
+                        },
+                        "329": {
+                            "NAME": "Диаметр (внутренний)",
+                            "VALUE": "115",
+                            "CODE": "DIAMETR_VNUTRENNIY"
+                        },
+                        "330": {
+                            "NAME": "Толщина изоляции",
+                            "VALUE": "40",
+                            "CODE": "TOLSHCHINA_IZOLYATSII"
+                        }
+                    }
+                },
+                {
+                    "source_id": "160252",
+                    "source_url": "https://teplov.ru/catalog/detail/truba_termo_l_1000_tt_r_430_1_0_430_d115_200_keramovolokno/",
+                    "source_image": "https://teplov.ru/upload/iblock/d97/jf9kiezqzlwin1w2f98qaxmb04765wpx.jpeg",
+                    "name": "Труба Термо L 1000 ТТ-Р 430-1.0/430 D115/200* (керамоволокно)",
+                    "row_name": "Труба Термо L1000 ТТ-Р (430-1,0/430) (керамоволокно)",
+                    "diameter": "115/200",
+                    "price_rub": 7073,
+                    "description": "Дымовая труба Термо утепленная предназначена для отвода газов и продуктов сгорания топлива. Имеет три монтажных типоразмера: 197, 447 и 947 мм - вариативность размеров упрощает процесс проектирования и монтажа.",
+                    "properties": {
+                        "324": {
+                            "NAME": "Толщина металла (внутренняя)",
+                            "VALUE": "1",
+                            "CODE": "TOLSHCHINA_METALLA_VNUTRENNYAYA"
+                        },
+                        "325": {
+                            "NAME": "Толщина металла (наружная)",
+                            "VALUE": "0.5",
+                            "CODE": "TOLSHCHINA_METALLA_NARUZHNAYA"
+                        },
+                        "326": {
+                            "NAME": "Диаметр (наружный)",
+                            "VALUE": "200",
+                            "CODE": "DIAMETR_NARUZHNYY"
+                        },
+                        "371": {
+                            "NAME": "Марка стали (внутренняя)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_VNUTRENNYAYA"
+                        },
+                        "372": {
+                            "NAME": "Марка стали (наружная)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_NARUZHNAYA"
+                        },
+                        "329": {
+                            "NAME": "Диаметр (внутренний)",
+                            "VALUE": "115",
+                            "CODE": "DIAMETR_VNUTRENNIY"
+                        },
+                        "330": {
+                            "NAME": "Толщина изоляции",
+                            "VALUE": "40",
+                            "CODE": "TOLSHCHINA_IZOLYATSII"
+                        }
+                    }
+                },
+                {
+                    "source_id": "129021",
+                    "source_url": "https://teplov.ru/catalog/detail/truba_termo_l_1000_tt_r_430_1_0_430_d150_210_keramovolokno/",
+                    "source_image": "https://teplov.ru/upload/iblock/ea6/69qya2aa8d5p74h11tdiwi0j1ykgpi89.jpeg",
+                    "name": "Труба Термо L 1000 ТТ-Р 430-1.0/430 D150/210 (керамоволокно)",
+                    "row_name": "Труба Термо L1000 ТТ-Р (430-1,0/430) (керамоволокно)",
+                    "diameter": "150/210",
+                    "price_rub": 7510,
+                    "description": "Дымовая труба Термо утепленная предназначена для отвода газов и продуктов сгорания топлива. Имеет три монтажных типоразмера: 197, 447 и 947 мм - вариативность размеров упрощает процесс проектирования и монтажа.",
+                    "properties": {
+                        "324": {
+                            "NAME": "Толщина металла (внутренняя)",
+                            "VALUE": "1",
+                            "CODE": "TOLSHCHINA_METALLA_VNUTRENNYAYA"
+                        },
+                        "325": {
+                            "NAME": "Толщина металла (наружная)",
+                            "VALUE": "0.5",
+                            "CODE": "TOLSHCHINA_METALLA_NARUZHNAYA"
+                        },
+                        "326": {
+                            "NAME": "Диаметр (наружный)",
+                            "VALUE": "210",
+                            "CODE": "DIAMETR_NARUZHNYY"
+                        },
+                        "371": {
+                            "NAME": "Марка стали (внутренняя)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_VNUTRENNYAYA"
+                        },
+                        "372": {
+                            "NAME": "Марка стали (наружная)",
+                            "VALUE": "430",
+                            "CODE": "MARKA_STALI_NARUZHNAYA"
+                        },
+                        "329": {
+                            "NAME": "Диаметр (внутренний)",
+                            "VALUE": "150",
+                            "CODE": "DIAMETR_VNUTRENNIY"
+                        },
+                        "330": {
+                            "NAME": "Толщина изоляции",
+                            "VALUE": "30",
+                            "CODE": "TOLSHCHINA_IZOLYATSII"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
