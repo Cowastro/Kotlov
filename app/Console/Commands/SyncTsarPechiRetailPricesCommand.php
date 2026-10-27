@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Product;
+use App\Services\TsarPechiB2bOfferPublisher;
 use Illuminate\Console\Command;
 
 /**
@@ -51,7 +52,7 @@ class SyncTsarPechiRetailPricesCommand extends Command
         5313 => 1209, // Забава (8мм)
         5887 => 1280, // Затея (8мм)
         9908 => 1396, // Любаня (8мм)
-        9945 => 1209, // Забава Декор (8мм)
+        9945 => 1100, // Забава Декор (8мм) — актуальная цена sbg.by / Deal.by API 27.10.2026
         11982 => 791, // Емеля Лайт (3мм)
         11981 => 703, // Емеля мини Лайт (3мм)
         9946 => 1456, // Вольга (8мм)
@@ -104,7 +105,7 @@ class SyncTsarPechiRetailPricesCommand extends Command
 
         $missing = array_diff($ids, $products->keys()->all());
         if (! empty($missing)) {
-            $this->warn('Не найдены в БД id: ' . implode(', ', $missing));
+            $this->warn('Не найдены в БД id: '.implode(', ', $missing));
         }
 
         $priceChanged = 0;
@@ -126,6 +127,7 @@ class SyncTsarPechiRetailPricesCommand extends Command
 
             if (! $priceDiffers && ! $needsUnarchive) {
                 $unchanged++;
+
                 continue;
             }
 
@@ -162,6 +164,21 @@ class SyncTsarPechiRetailPricesCommand extends Command
             $unarchived,
             $unchanged
         ));
+
+        $published = ['source_id' => 0, 'offers' => 0, 'categories' => 0, 'clients' => 0];
+
+        if ($apply) {
+            $published = app(TsarPechiB2bOfferPublisher::class)->sync();
+        }
+
+        $this->line('metric.tsar_pechi_retail.matched='.count(self::MAP));
+        $this->line('metric.tsar_pechi_retail.price_changed='.$priceChanged);
+        $this->line('metric.tsar_pechi_retail.unarchived='.$unarchived);
+        $this->line('metric.tsar_pechi_retail.missing='.count($missing));
+        $this->line('metric.tsar_pechi_b2b.source_id='.$published['source_id']);
+        $this->line('metric.tsar_pechi_b2b.offers='.$published['offers']);
+        $this->line('metric.tsar_pechi_b2b.categories='.$published['categories']);
+        $this->line('metric.tsar_pechi_b2b.clients='.$published['clients']);
 
         return self::SUCCESS;
     }
