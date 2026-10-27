@@ -9,6 +9,7 @@
     $cartCount = collect(session('cart', []))->sum('quantity');
     $preview = request()->boolean('b2b-preview');
     $resetUrl = route('b2b.catalog', array_filter(['mode' => $mode, 'b2b-preview' => $preview ? 1 : null]));
+    $mobileCategoryTiles = $categoryTree->take(11);
 @endphp
 
 <div class="b2b-portal">
@@ -88,6 +89,28 @@
                 </div>
             </div>
         </form>
+
+        <section class="b2b-mobile-category-showcase" aria-label="Основные категории">
+            <div class="b2b-mobile-category-showcase__heading">
+                <strong>Каталог товаров</strong>
+                <button type="button" data-catalog-open>Все разделы <span>→</span></button>
+            </div>
+            <div class="b2b-mobile-category-grid">
+                @foreach ($mobileCategoryTiles as $category)
+                    <a href="{{ request()->fullUrlWithQuery(['category' => $category['id'], 'page' => null]) }}" class="b2b-mobile-category-tile {{ $category['selected'] ? 'active' : '' }}">
+                        <span class="b2b-mobile-category-tile__image">
+                            <img src="{{ $category['image'] }}" alt="" loading="lazy" onerror="this.src='{{ asset('img/popular/catalog.jpg') }}'">
+                            <b>{{ $category['count'] }}</b>
+                        </span>
+                        <span>{{ $category['name'] }}</span>
+                    </a>
+                @endforeach
+                <button type="button" class="b2b-mobile-category-tile b2b-mobile-category-tile--all" data-catalog-open>
+                    <span class="b2b-mobile-category-tile__image"><i class="icon icon-List"></i></span>
+                    <span>Все категории</span>
+                </button>
+            </div>
+        </section>
 
         <div class="b2b-catalog-layout">
             <div class="b2b-catalog-overlay" data-catalog-close></div>

@@ -309,6 +309,8 @@ class B2bMarketplaceController extends Controller
             return [
                 'id' => (int) $category->id,
                 'name' => $category->name,
+                'slug' => $category->slug,
+                'image' => $category->image_url,
                 'count' => (int) ($branchCounts[$category->id] ?? 0),
                 'selected' => (int) $category->id === $selectedId,
                 'expanded' => isset($selectedPath[$category->id]),
