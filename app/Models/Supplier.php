@@ -16,6 +16,8 @@ class Supplier extends Model
         'automatic_order_transfer_enabled', 'automatic_order_transfer_approved_at',
         'automatic_order_transfer_approved_by', 'automatic_order_transfer_note',
         'contact', 'communication_channels', 'notes', 'is_active',
+        'b2b_partner_enabled', 'b2b_client_warehouse_label', 'b2b_stock_max_age_hours',
+        'b2b_delivery_days_min', 'b2b_delivery_days_max', 'b2b_priority', 'b2b_require_positive_stock',
     ];
 
     protected $casts = [
@@ -26,6 +28,12 @@ class Supplier extends Model
         'automatic_order_transfer_enabled' => 'boolean',
         'automatic_order_transfer_approved_at' => 'datetime',
         'communication_channels' => 'array',
+        'b2b_partner_enabled' => 'boolean',
+        'b2b_stock_max_age_hours' => 'integer',
+        'b2b_delivery_days_min' => 'integer',
+        'b2b_delivery_days_max' => 'integer',
+        'b2b_priority' => 'integer',
+        'b2b_require_positive_stock' => 'boolean',
     ];
 
     public function imports(): HasMany
@@ -137,6 +145,11 @@ class Supplier extends Model
     public function supplierProducts(): HasMany
     {
         return $this->hasMany(SupplierProduct::class);
+    }
+
+    public function b2bPricingRules(): HasMany
+    {
+        return $this->hasMany(B2bPricingRule::class);
     }
 
     public function sources(): HasMany

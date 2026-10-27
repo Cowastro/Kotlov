@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\B2bPricingRule;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
 use App\Models\Product;
@@ -347,6 +348,32 @@ class SyncEurotermPriceListCommand extends Command
             'notes' => 'Оптовая цена, РРЦ с НДС и фактический остаток обновляются по полному прайсу Евротерм.',
             'is_active' => true,
         ])->save();
+
+        if (! $supplier->b2b_client_warehouse_label) {
+            $supplier->forceFill([
+                'b2b_client_warehouse_label' => 'Партнёрский склад',
+                'b2b_stock_max_age_hours' => 24,
+                'b2b_delivery_days_min' => 1,
+                'b2b_delivery_days_max' => 2,
+                'b2b_priority' => 100,
+                'b2b_require_positive_stock' => true,
+            ])->save();
+        }
+
+        $supplier->b2bPricingRules()->firstOrCreate([
+            'name' => 'Евротерм · базовая маржа 18%',
+        ], [
+            'scope_type' => B2bPricingRule::SCOPE_SUPPLIER,
+            'scope_id' => null,
+            'calculation_type' => B2bPricingRule::TYPE_TARGET_MARGIN,
+            'value' => 18,
+            'minimum_profit_byn' => 0,
+            'rounding_step_byn' => 1,
+            'minimum_retail_discount_percent' => 0,
+            'priority' => 100,
+            'status' => B2bPricingRule::STATUS_DRAFT,
+            'notes' => 'Пилот: только предпросмотр. Клиентам цены не публикуются.',
+        ]);
 
         $source = SupplierSource::query()->updateOrCreate([
             'supplier_id' => $supplier->id,

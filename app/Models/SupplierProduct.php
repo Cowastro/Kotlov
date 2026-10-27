@@ -37,6 +37,8 @@ class SupplierProduct extends Model
         'last_stock_synced_at',
         'match_status',
         'match_confidence',
+        'b2b_excluded',
+        'b2b_exclusion_reason',
         'raw',
         'last_synced_at',
     ];
@@ -48,6 +50,7 @@ class SupplierProduct extends Model
         'in_stock' => 'boolean',
         'stock_quantity' => 'integer',
         'delivery_days' => 'integer',
+        'b2b_excluded' => 'boolean',
         'raw' => 'array',
         'last_synced_at' => 'datetime',
         'last_stock_synced_at' => 'datetime',

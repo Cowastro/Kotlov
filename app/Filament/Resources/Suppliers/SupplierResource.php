@@ -7,6 +7,7 @@ use App\Filament\Resources\Suppliers\Pages\CreateSupplier;
 use App\Filament\Resources\Suppliers\Pages\EditSupplier;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
 use App\Filament\Resources\Suppliers\Pages\ViewSupplier;
+use App\Filament\Resources\Suppliers\RelationManagers\B2bPricingRulesRelationManager;
 use App\Filament\Resources\Suppliers\RelationManagers\PriceSourcesRelationManager;
 use App\Filament\Resources\Suppliers\RelationManagers\PriceSyncsRelationManager;
 use App\Filament\Resources\Suppliers\RelationManagers\SupplierProductsRelationManager;
@@ -173,6 +174,36 @@ class SupplierResource extends Resource
                             : 'Выключена до завершения контрольного периода')
                         ->columnSpanFull(),
                 ])->columns(2),
+
+            Section::make('Партнёрский B2B-склад')
+                ->description('Клиент не увидит поставщика. Включайте публикацию только после проверки расчёта во вкладке «Правила B2B-цен».')
+                ->schema([
+                    Toggle::make('b2b_partner_enabled')
+                        ->label('Публиковать рассчитанные предложения в B2B')
+                        ->helperText('Черновые правила никогда не публикуются. Для первого запуска оставьте выключенным.')
+                        ->default(false)
+                        ->columnSpanFull(),
+                    TextInput::make('b2b_client_warehouse_label')
+                        ->label('Название склада для клиента')
+                        ->placeholder('Партнёрский склад')
+                        ->maxLength(255),
+                    TextInput::make('b2b_stock_max_age_hours')
+                        ->label('Остаток актуален, часов')
+                        ->numeric()->integer()->minValue(1)->maxValue(720)->default(24),
+                    TextInput::make('b2b_delivery_days_min')
+                        ->label('Отгрузка от, рабочих дней')
+                        ->numeric()->integer()->minValue(0)->maxValue(365)->default(1),
+                    TextInput::make('b2b_delivery_days_max')
+                        ->label('Отгрузка до, рабочих дней')
+                        ->numeric()->integer()->minValue(0)->maxValue(365)->default(2),
+                    TextInput::make('b2b_priority')
+                        ->label('Приоритет поставщика')
+                        ->helperText('Чем больше число, тем выше приоритет при одинаковых условиях.')
+                        ->numeric()->integer()->default(100),
+                    Toggle::make('b2b_require_positive_stock')
+                        ->label('Без положительного остатка не продавать')
+                        ->default(true),
+                ])->columns(3),
 
             Section::make('Доступ и внутренняя информация')
                 ->schema([
@@ -387,6 +418,7 @@ class SupplierResource extends Resource
     {
         return [
             SupplierProductsRelationManager::class,
+            B2bPricingRulesRelationManager::class,
             PriceSourcesRelationManager::class,
             PriceSyncsRelationManager::class,
         ];

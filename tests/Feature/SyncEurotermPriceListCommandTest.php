@@ -35,6 +35,14 @@ class SyncEurotermPriceListCommandTest extends TestCase
 
         $supplier = Supplier::query()->where('code', 'euroterm')->firstOrFail();
         $this->assertSame('ООО «Евротерм»', $supplier->name);
+        $this->assertFalse($supplier->b2b_partner_enabled);
+        $this->assertSame('Партнёрский склад', $supplier->b2b_client_warehouse_label);
+        $this->assertDatabaseHas('b2b_pricing_rules', [
+            'supplier_id' => $supplier->id,
+            'calculation_type' => 'target_margin',
+            'value' => 18,
+            'status' => 'draft',
+        ]);
         $this->assertNotNull($supplier->crm_counterparty_id);
         $this->assertSame('tce@euroterm.by', $supplier->communication_channels['email']);
         $this->assertDatabaseHas('crm_counterparties', [
