@@ -25,6 +25,7 @@ class CreateFromSbgCommandTest extends TestCase
         $this->mock(DealByClient::class, fn ($mock) => $mock->shouldReceive('listProducts')->andReturn(['products' => [
             ['id' => 1, 'sku' => '4603789200959', 'name' => 'Каменка навесная Емеля', 'price' => 104, 'description' => '<p>Навесная каменка.</p>',
                 'main_image' => 'https://images.deal.by/1_w328_h250_kamenka.jpg'],
+            ['id' => 2, 'sku' => '', 'name' => 'Герметик Soudal антрацит 280 мл', 'price' => 20, 'description' => '', 'main_image' => ''],
         ]]));
         Http::fake(['images.deal.by/*' => Http::response(str_repeat('x', 10), 200, ['Content-Type' => 'image/jpeg'])]);
 
@@ -36,6 +37,13 @@ class CreateFromSbgCommandTest extends TestCase
             ->expectsOutputToContain("audit.create_from_sbg.card={$item->id}:kamenka-navesnaia-emelia:104.00:aksessuary-dlya-bani:1")
             ->expectsOutputToContain('metric.create_from_sbg.created=1')
             ->assertSuccessful();
+
+        $sealant = IntegrationProduct::query()->create(['integration_source_id' => $source->id, 'external_id' => 'x-6644', 'external_code' => 'УТ-00006644',
+            'name' => 'Герметик для печей Soudal', 'match_status' => 'unmatched']);
+        $this->artisan('integration:create-from-sbg', ['pairs' => ['УТ-00006644:@germetik-soudal-antracit-280-ml:aksessuary-dlya-bani'], '--apply' => true])
+            ->expectsOutputToContain('metric.create_from_sbg.created=1')
+            ->assertSuccessful();
+        $this->assertSame(20.0, (float) Product::query()->find($sealant->fresh()->product_id)->price);
 
         $card = Product::query()->find($item->fresh()->product_id);
         $this->assertNotSame($stove->id, $card->id);

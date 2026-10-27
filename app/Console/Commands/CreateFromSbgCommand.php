@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
 class CreateFromSbgCommand extends Command
 {
     protected $signature = 'integration:create-from-sbg
-        {pairs* : 1C_CODE:SBG_ARTICLE:CATEGORY_SLUG}
+        {pairs* : 1C_CODE:SBG_ARTICLE:CATEGORY_SLUG (or @slug-of-the-sbg-name for a product without an article)}
         {--source=onec : Integration source code}
         {--relink : Take the row off the card it is linked to now}
         {--apply : Create the cards and link the rows}';
@@ -123,6 +123,8 @@ class CreateFromSbgCommand extends Command
             $items = collect($client->listProducts(self::PAGE_SIZE, $lastId)['products'] ?? [])->filter(fn ($item) => is_array($item))->values();
             foreach ($items as $item) {
                 $sku = Str::upper(trim((string) ($item['sku'] ?? '')));
+                $byName = '@'.Str::upper(Str::slug((string) ($item['name'] ?? '')));
+                $sku = in_array($byName, $articles, true) ? $byName : $sku;
                 if (! in_array($sku, $articles, true) || ! is_numeric($item['price'] ?? null) || (float) $item['price'] <= 0) {
                     continue;
                 }
