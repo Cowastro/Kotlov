@@ -52,7 +52,7 @@
             <div class="b2b-search" data-suggest-url="{{ route('b2b.catalog.suggest', array_filter(['mode' => $mode, 'b2b-preview' => $preview ? 1 : null])) }}">
                 <i class="icon icon-MagnifyingGlass" aria-hidden="true"></i>
                 <input id="b2b-search-input" type="search" name="q" value="{{ $query }}"
-                    placeholder="Введите название, артикул, бренд или категорию" aria-label="Поиск по B2B-каталогу"
+                    placeholder="Название или артикул" aria-label="Поиск по названию, артикулу, бренду или категории"
                     aria-autocomplete="list" aria-controls="b2b-search-suggest" aria-expanded="false">
                 @if ($query !== '')
                     <a href="{{ request()->fullUrlWithQuery(['q' => null, 'page' => null]) }}" class="b2b-search__clear" aria-label="Очистить поиск">×</a>
@@ -95,7 +95,7 @@
         <section class="b2b-mobile-category-showcase" aria-label="Основные категории">
             <div class="b2b-mobile-category-showcase__heading">
                 <strong>Каталог товаров</strong>
-                <button type="button" data-catalog-open>Все разделы <span>→</span></button>
+                <button type="button" data-catalog-open><span>Все разделы</span><b>→</b></button>
             </div>
             <div class="b2b-mobile-category-grid">
                 @foreach ($mobileCategoryTiles as $category)
