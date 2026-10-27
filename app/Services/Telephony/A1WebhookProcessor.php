@@ -51,6 +51,12 @@ class A1WebhookProcessor
             ]);
 
             if (! $event->wasRecentlyCreated) {
+                if ($payload['historySource'] ?? false) {
+                    $this->applyEvent($call, $payload, $notificationType);
+                    $this->attachContext($call);
+                    $call->save();
+                }
+
                 return $call->fresh();
             }
 
@@ -72,7 +78,7 @@ class A1WebhookProcessor
     {
         $direction = strtolower((string) ($payload['crmCallType'] ?? 'inbound'));
         [$customerPhone, $employeePhone] = $this->partyPhones($payload, $direction);
-        $lineNumber = $this->companyLine($payload, $direction, $employeePhone);
+        $lineNumber = $this->companyLine($payload, $employeePhone);
 
         return [
             'company_id' => isset($payload['companyId']) ? (string) $payload['companyId'] : null,
@@ -93,7 +99,7 @@ class A1WebhookProcessor
     {
         $direction = strtolower((string) ($payload['crmCallType'] ?? $call->direction ?? 'inbound'));
         [$customerPhone, $employeePhone] = $this->partyPhones($payload, $direction);
-        $lineNumber = $this->companyLine($payload, $direction, $employeePhone);
+        $lineNumber = $this->companyLine($payload, $employeePhone);
 
         if ($customerPhone && $call->customer_phone && $customerPhone !== $call->customer_phone) {
             $this->clearCustomerContext($call);
@@ -229,13 +235,9 @@ class A1WebhookProcessor
     }
 
     /** @param array<string, mixed> $payload */
-    private function companyLine(array $payload, string $direction, ?string $employeePhone): ?string
+    private function companyLine(array $payload, ?string $employeePhone): ?string
     {
         $provided = PhoneNumber::normalize($payload['lineNumber'] ?? null);
-
-        if ($direction !== 'outbound') {
-            return $provided;
-        }
 
         if ($provided && array_key_exists($provided, config('telephony.company_lines', []))) {
             return $provided;

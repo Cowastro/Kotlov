@@ -199,7 +199,7 @@ class A1TelephonyIntegrationTest extends TestCase
             'full_number' => '375293512982',
         ]);
 
-        $call = app(A1HistoryReconciler::class)->reconcile([
+        $historyRow = [
             'uuid' => 'outbound-history-sides',
             'callType' => 'OUTGOING',
             'callerNumber' => '375293512982',
@@ -209,13 +209,30 @@ class A1TelephonyIntegrationTest extends TestCase
             'callDuration' => 45,
             'conversationDuration' => 32,
             'callStatus' => 'ANSWERED',
-        ]);
+        ];
+        $reconciler = app(A1HistoryReconciler::class);
+        $call = $reconciler->reconcile($historyRow);
 
         $this->assertNotNull($call);
         $this->assertSame('375296844429', $call->customer_phone);
         $this->assertSame('375293512982', $call->employee_phone);
         $this->assertSame('375293544041', $call->line_number);
         $this->assertSame($manager->id, $call->assigned_user_id);
+
+        $call->update([
+            'customer_phone' => '375293512982',
+            'employee_phone' => '375296844429',
+            'line_number' => '375293512982',
+            'assigned_user_id' => null,
+            'matched_user_id' => $manager->id,
+        ]);
+
+        $repaired = $reconciler->reconcile($historyRow);
+        $this->assertSame('375296844429', $repaired->customer_phone);
+        $this->assertSame('375293512982', $repaired->employee_phone);
+        $this->assertSame('375293544041', $repaired->line_number);
+        $this->assertSame($manager->id, $repaired->assigned_user_id);
+        $this->assertNull($repaired->matched_user_id);
     }
 
     public function test_history_removes_stale_employee_identity_from_outbound_client(): void
@@ -273,6 +290,38 @@ class A1TelephonyIntegrationTest extends TestCase
         $this->assertSame($order->id, $call->order_id);
         $this->assertSame($manager->id, $call->assigned_user_id);
         $this->assertSame('375296844429', $call->customer_phone);
+    }
+
+    public function test_inbound_personal_destination_is_replaced_with_employee_company_line(): void
+    {
+        $manager = User::factory()->create([
+            'phone' => '+375 29 351-29-82',
+            'role' => 'manager',
+            'is_active' => true,
+        ]);
+        TelephonyEmployee::query()->create([
+            'user_id' => $manager->id,
+            'provider' => 'a1',
+            'external_id' => 'nikita-inbound-a1',
+            'name' => 'Никита Бостан',
+            'full_number' => '375293512982',
+        ]);
+
+        $call = app(A1HistoryReconciler::class)->reconcile([
+            'uuid' => 'inbound-personal-destination',
+            'callType' => 'SINGLE_CHANNEL',
+            'callerNumber' => '375297219972',
+            'calleeNumber' => '375293512982',
+            'destinationNumber' => '375293512982',
+            'callTimestamp' => 1793091292,
+            'callDuration' => 20,
+            'callStatus' => 'NOT_ANSWERED_COMMON',
+        ]);
+
+        $this->assertSame('375297219972', $call->customer_phone);
+        $this->assertSame('375293512982', $call->employee_phone);
+        $this->assertSame('375293544041', $call->line_number);
+        $this->assertSame($manager->id, $call->assigned_user_id);
     }
 
     public function test_employee_sync_prefers_phone_and_preserves_manual_links_over_shared_email(): void
