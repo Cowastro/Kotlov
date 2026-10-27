@@ -435,6 +435,12 @@ jobs:
             grep -E '^audit\.sbg_prices\.photo=[0-9]+:[a-z0-9-]+:[0-9]+$' "$detail_log" || true
             echo "safe_sbg_prices_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:photos-21vek" ]]; then
+            echo "safe_photos_21vek_begin"
+            grep -E '^metric\.photos_21vek\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.photos_21vek\.card=[0-9]+:[a-z0-9-]+:(found|none|empty):[0-9]+$' "$detail_log" || true
+            echo "safe_photos_21vek_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:set-price" ]]; then
             echo "safe_set_price_begin"
             grep -E '^metric\.set_price\.[a-z_]+=[0-9]+$' "$detail_log" || true
