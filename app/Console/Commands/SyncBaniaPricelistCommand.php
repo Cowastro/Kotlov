@@ -25,7 +25,9 @@ class SyncBaniaPricelistCommand extends Command
         {--limit= : Process only the first N price rows}
         {--mark-missing-out-of-stock : Mark linked BANIA rows missing from the price list as out_of_stock}
         {--archive-missing-products : Archive products whose BANIA wholesale rows disappeared and which have no other supplier links}
-        {--audit-links : Read-only: list BANIA rows whose supplier title names another model than the card they feed}';
+        {--audit-links : Read-only: list BANIA rows whose supplier title names another model than the card they feed}
+        {--unlink-mismatched=* : Card ids: take BANIA rows of another model off them (with --apply), revoking their approvals}
+        {--suggest-retail=* : Card ids: list the BANIA retail row of the own model of each card}';
 
     protected $description = 'Sync BANIA supplier cost/stock and optionally catalogue RRP from the named Drive workbooks.';
 
@@ -143,6 +145,9 @@ class SyncBaniaPricelistCommand extends Command
         if ($this->option('audit-links')) {
             return $this->auditLinks((int) $supplier->id);
         }
+        if ($this->option('unlink-mismatched')) {
+            return $this->unlinkMismatched((int) $supplier->id, array_map('intval', (array) $this->option('unlink-mismatched')), ! $dryRun);
+        }
 
         try {
             $priceFile = $this->resolvePriceFile();
@@ -178,6 +183,10 @@ class SyncBaniaPricelistCommand extends Command
             $this->warn('Retail price list was not loaded: '.$e->getMessage());
         }
 
+        if ($this->option('suggest-retail')) {
+            return $this->suggestRetail(array_map('intval', (array) $this->option('suggest-retail')), $retailIndexes);
+        }
+
         if ($limit !== null && $limit > 0) {
             $rows = array_slice($rows, 0, $limit);
         }
@@ -210,6 +219,7 @@ class SyncBaniaPricelistCommand extends Command
             'retail_price_missing' => 0,
             'retail_price_skipped_manual_review' => 0,
             'retail_price_skipped_suspicious_jump' => 0,
+            'retail_price_skipped_other_model' => 0,
             'supplier_article_repaired' => 0,
             'supplier_article_repair_skipped_conflict' => 0,
             'manual_review_resolved' => 0,
@@ -340,6 +350,10 @@ class SyncBaniaPricelistCommand extends Command
                 }
                 $changed = $this->hasSupplierProductChanges($supplierProduct, $row, $newInStock, $repairArticle);
                 $retailChanged = $this->hasRetailPriceChange($supplierProduct, $retailMatch);
+                if ($retailChanged && ! $this->retailRowFitsCard($supplierProduct, $retailMatch)) {
+                    $retailChanged = false;
+                    $stats['retail_price_skipped_other_model']++;
+                }
                 $suspiciousRetailJump = $this->isSuspiciousRetailPriceJump($supplierProduct, $retailMatch);
                 if ($suspiciousRetailJump) {
                     $retailChanged = false;
@@ -400,6 +414,13 @@ class SyncBaniaPricelistCommand extends Command
             foreach ($supplierProducts as $supplierProduct) {
                 $retailMatch = $this->matchRetailForSupplierProduct($supplierProduct, $retailIndexes);
                 if (! $this->isStandaloneRetailMatchConfident($supplierProduct, $retailMatch)) {
+                    continue;
+                }
+                if (! $this->retailRowFitsCard($supplierProduct, $retailMatch)) {
+                    $stats['retail_price_skipped_other_model']++;
+                    $this->line(sprintf('audit.bania_links.blocked=%d:%d:%s', $supplierProduct->id, (int) $supplierProduct->product_id,
+                        Str::slug(Str::limit((string) ($retailMatch['name'] ?? ''), 70, '')) ?: 'none'));
+
                     continue;
                 }
 
@@ -1042,6 +1063,98 @@ class SyncBaniaPricelistCommand extends Command
         }
         foreach ($stats as $key => $value) {
             $this->line("metric.bania_links.{$key}={$value}");
+        }
+
+        return self::SUCCESS;
+    }
+
+    /** Generic words of a stove or boiler title, not part of its model. */
+    private const MODEL_STOP_WORDS = ['отопительная', 'отопительный', 'отопительное', 'твердотопливный', 'твердотопливная', 'электрический',
+        'электрическая', 'котел', 'чугунная', 'чугунный', 'стальная', 'стальной', 'банная', 'банный'];
+
+    /**
+     * The retail row names the card's model: every model word and number of the card is in it
+     * («Теплодар Kupper PRO 16» fits «Котел Kupper PRO 16-20»; «Везувий АОГТ 01» does not fit «Везувий Мини-1»).
+     */
+    private function retailRowFitsCard(object $supplierProduct, ?array $retailMatch): bool
+    {
+        $card = trim((string) ($supplierProduct->product_name ?? ''));
+        $row = trim((string) ($retailMatch['name'] ?? ''));
+        if ($card === '' || $row === '') {
+            return true;
+        }
+        [$cardWords, $cardNumbers] = $this->modelTokens($card, (string) ($supplierProduct->brand_name ?? ''));
+        [$rowWords, $rowNumbers] = $this->modelTokens($row, (string) ($supplierProduct->brand_name ?? ''));
+
+        return array_diff($cardWords, $rowWords) === [] && array_diff($cardNumbers, $rowNumbers) === [];
+    }
+
+    /** @return array{0:list<string>,1:list<string>} model words and numbers, brand and generic words left out */
+    private function modelTokens(string $name, string $brand): array
+    {
+        $text = preg_replace('/(?<=\d)c(?=\s|$)/u', 'с', $this->normalizeName($name)) ?? '';
+        $skip = array_merge(self::MODEL_STOP_WORDS, array_filter(explode(' ', $this->normalizeBrand($brand))));
+        $words = [];
+        $numbers = [];
+        foreach (preg_split('/\s+/u', $text) ?: [] as $token) {
+            if ($token === '' || in_array($token, $skip, true)) {
+                continue;
+            }
+            if (preg_match('/^\d+$/', $token)) {
+                $numbers[] = ltrim($token, '0') ?: '0';
+            } else {
+                $words[] = $token;
+            }
+        }
+
+        return [array_values(array_unique($words)), array_values(array_unique($numbers))];
+    }
+
+    /** @param list<int> $productIds */
+    private function unlinkMismatched(int $supplierId, array $productIds, bool $apply): int
+    {
+        $rows = DB::table('supplier_products as sp')->join('products as p', 'p.id', '=', 'sp.product_id')
+            ->where('sp.supplier_id', $supplierId)->whereIn('sp.product_id', $productIds)
+            ->get(['sp.id', 'sp.product_id', 'sp.supplier_name', 'p.name']);
+        $stats = ['rows' => $rows->count(), 'unlinked' => 0, 'approvals_revoked' => 0];
+        foreach ($rows as $row) {
+            if ($this->modelIdentity((string) $row->supplier_name) === $this->modelIdentity((string) $row->name)) {
+                continue;
+            }
+            $this->line(sprintf('audit.bania_links.unlink=%d:%d', $row->id, $row->product_id));
+            if (! $apply) {
+                continue;
+            }
+            DB::transaction(function () use ($row, &$stats): void {
+                DB::table('supplier_products')->where('id', $row->id)->update(['product_id' => null, 'product_sku' => null, 'updated_at' => now()]);
+                $stats['approvals_revoked'] += SupplierReviewDecision::query()->where('supplier_code', self::SUPPLIER_CODE)
+                    ->where('decision', SupplierReviewDecision::DECISION_LINK)->where('supplier_product_id', $row->id)
+                    ->where('product_id', $row->product_id)
+                    ->update(['status' => SupplierReviewDecision::STATUS_FAILED, 'error' => 'Строка прайса другой модели — отвязана']);
+                $stats['unlinked']++;
+            });
+            $this->refreshProductAvailability((int) $row->product_id, now());
+        }
+        foreach ($stats as $key => $value) {
+            $this->line("metric.bania_links.{$key}={$value}");
+        }
+
+        return self::SUCCESS;
+    }
+
+    /** @param list<int> $productIds */
+    private function suggestRetail(array $productIds, array $retailIndexes): int
+    {
+        $products = DB::table('products as p')->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')->whereIn('p.id', $productIds)
+            ->get(['p.id', 'p.name as product_name', 'p.price', 'b.name as brand_name']);
+        foreach ($products as $product) {
+            $fits = array_values(array_filter($retailIndexes['rows'] ?? [], function (array $row) use ($product): bool {
+                $reverse = (object) ['product_name' => (string) ($row['name'] ?? ''), 'brand_name' => $product->brand_name];
+
+                return $this->retailRowFitsCard($product, $row) && $this->retailRowFitsCard($reverse, ['name' => $product->product_name]);
+            }));
+            $this->line(sprintf('audit.bania_links.retail=%d:%s:%s:%d', $product->id, number_format((float) $product->price, 2, '.', ''),
+                count($fits) === 1 ? number_format((float) ($fits[0]['price'] ?? 0), 2, '.', '') : '0', count($fits)));
         }
 
         return self::SUCCESS;
