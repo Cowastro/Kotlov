@@ -146,9 +146,6 @@ class SyncBaniaPricelistCommand extends Command
         if ($this->option('audit-links')) {
             return $this->auditLinks((int) $supplier->id);
         }
-        if ($this->option('relink-own-model')) {
-            return $this->relinkOwnModel((int) $supplier->id, array_map('intval', (array) $this->option('relink-own-model')), ! $dryRun);
-        }
         if ($this->option('unlink-mismatched')) {
             return $this->unlinkMismatched((int) $supplier->id, array_map('intval', (array) $this->option('unlink-mismatched')), ! $dryRun);
         }
@@ -187,6 +184,9 @@ class SyncBaniaPricelistCommand extends Command
             $this->warn('Retail price list was not loaded: '.$e->getMessage());
         }
 
+        if ($this->option('relink-own-model')) {
+            return $this->relinkOwnModel((int) $supplier->id, array_map('intval', (array) $this->option('relink-own-model')), ! $dryRun, $retailIndexes);
+        }
         if ($this->option('suggest-retail')) {
             return $this->suggestRetail(array_map('intval', (array) $this->option('suggest-retail')), $retailIndexes);
         }
@@ -1172,14 +1172,26 @@ class SyncBaniaPricelistCommand extends Command
      *
      * @param  list<int>  $productIds
      */
-    private function relinkOwnModel(int $supplierId, array $productIds, bool $apply): int
+    private function relinkOwnModel(int $supplierId, array $productIds, bool $apply, array $retailIndexes): int
     {
         $free = DB::table('supplier_products')->where('supplier_id', $supplierId)->whereNull('product_id')->get(['id', 'supplier_name']);
-        $products = DB::table('products')->whereIn('id', $productIds)->get(['id', 'name', 'sku']);
-        $stats = ['cards' => $products->count(), 'linked' => 0, 'none' => 0, 'many' => 0];
+        $products = DB::table('products as p')->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')->whereIn('p.id', $productIds)
+            ->get(['p.id', 'p.name', 'p.name as product_name', 'p.sku', 'b.name as brand_name']);
+        $stats = ['cards' => $products->count(), 'linked' => 0, 'retail_only' => 0, 'none' => 0, 'many' => 0];
         foreach ($products as $product) {
             $identity = $this->modelIdentity((string) $product->name);
             $rows = $free->filter(fn ($row) => $identity !== '' && $this->modelIdentity((string) $row->supplier_name) === $identity)->values();
+            $retail = $rows->isEmpty() ? $this->ownRetailRows($product, $retailIndexes) : [];
+            if ($rows->isEmpty() && count($retail) === 1 && ($retail[0]['norm_article'] ?? '') !== '') {
+                // Only the retail list has the model: a retail-only row (no cost), like Теплошоп's.
+                $stats['retail_only']++;
+                $this->line(sprintf('audit.bania_links.relink=%d:0:9', $product->id));
+                if ($apply) {
+                    $this->createRetailOnlyRow($supplierId, $product, $retail[0]);
+                }
+
+                continue;
+            }
             if ($rows->count() !== 1) {
                 $stats[$rows->isEmpty() ? 'none' : 'many']++;
                 $this->line(sprintf('audit.bania_links.relink=%d:0:%d', $product->id, $rows->count()));
@@ -1200,17 +1212,49 @@ class SyncBaniaPricelistCommand extends Command
         return self::SUCCESS;
     }
 
+    /** @return list<array<string,mixed>> retail rows naming exactly the card's model */
+    private function ownRetailRows(object $product, array $retailIndexes): array
+    {
+        return array_values(array_filter($retailIndexes['rows'] ?? [], function (array $row) use ($product): bool {
+            $reverse = (object) ['product_name' => (string) ($row['name'] ?? ''), 'brand_name' => $product->brand_name];
+
+            return $this->retailRowFitsCard($product, $row) && $this->retailRowFitsCard($reverse, ['name' => $product->product_name]);
+        }));
+    }
+
+    private function createRetailOnlyRow(int $supplierId, object $product, array $retail): void
+    {
+        \App\Models\SupplierProduct::query()->updateOrCreate([
+            'supplier_id' => $supplierId,
+            'supplier_article_normalized' => (string) $retail['norm_article'],
+        ], [
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'supplier_article' => trim((string) ($retail['article'] ?? '')) ?: (string) $retail['norm_article'],
+            'supplier_article_compact' => (string) $retail['norm_article'],
+            'supplier_name' => (string) ($retail['name'] ?? ''),
+            'price' => null,
+            'price_byn' => null,
+            'currency' => 'BYN',
+            'currency_rate' => 1,
+            'in_stock' => false,
+            'stock_quantity' => null,
+            'stock_status' => 'preorder',
+            'stock_text' => 'Под заказ',
+            'match_status' => 'matched',
+            'match_confidence' => 'retail_own_model',
+            'last_synced_at' => now(),
+        ]);
+        $this->refreshProductAvailability((int) $product->id, now());
+    }
+
     /** @param list<int> $productIds */
     private function suggestRetail(array $productIds, array $retailIndexes): int
     {
         $products = DB::table('products as p')->leftJoin('brands as b', 'b.id', '=', 'p.brand_id')->whereIn('p.id', $productIds)
             ->get(['p.id', 'p.name as product_name', 'p.price', 'b.name as brand_name']);
         foreach ($products as $product) {
-            $fits = array_values(array_filter($retailIndexes['rows'] ?? [], function (array $row) use ($product): bool {
-                $reverse = (object) ['product_name' => (string) ($row['name'] ?? ''), 'brand_name' => $product->brand_name];
-
-                return $this->retailRowFitsCard($product, $row) && $this->retailRowFitsCard($reverse, ['name' => $product->product_name]);
-            }));
+            $fits = $this->ownRetailRows($product, $retailIndexes);
             $this->line(sprintf('audit.bania_links.retail=%d:%s:%s:%d', $product->id, number_format((float) $product->price, 2, '.', ''),
                 count($fits) === 1 ? number_format((float) ($fits[0]['price'] ?? 0), 2, '.', '') : '0', count($fits)));
         }
