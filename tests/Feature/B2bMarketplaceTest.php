@@ -16,6 +16,29 @@ class B2bMarketplaceTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_open_b2b_catalog_without_preview_query_parameter(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Дымоходы',
+            'slug' => 'admin-b2b-category',
+            'is_active' => true,
+        ]);
+        $product = $this->product($category, 'Товар для проверки администратора', 'ADMIN-B2B-1');
+        $source = $this->source('admin-b2b-source', $category);
+        $this->offer($source, $product, 80, 5);
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'client_type' => 'retail',
+            'b2b_approved' => false,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('b2b.catalog'))
+            ->assertOk()
+            ->assertSeeText('Товар для проверки администратора');
+    }
+
     public function test_partner_only_sees_prices_from_sources_granted_to_their_company(): void
     {
         $category = Category::query()->create([

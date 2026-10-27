@@ -35,7 +35,7 @@ class B2bCatalogOfferResolver
     public function canViewPartnerPrices(?User $user): bool
     {
         return (bool) ($user?->isB2B()
-            || ($user?->isAdmin() && request()->boolean('b2b-preview')));
+            || $user?->isAdmin());
     }
 
     /** @return Collection<int, array{id:int,name:string,slug:string,count:int}> */
@@ -229,7 +229,7 @@ class B2bCatalogOfferResolver
 
     private function userAllowsSource(?User $user, IntegrationProduct $offer): bool
     {
-        if (! $user || ($user->isAdmin() && request()->boolean('b2b-preview'))) {
+        if (! $user || $user->isAdmin()) {
             return true;
         }
 
