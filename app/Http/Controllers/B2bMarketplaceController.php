@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\ContactRequest;
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -116,6 +117,7 @@ class B2bMarketplaceController extends Controller
         }
 
         $categoryTree = $this->categoryTree($categoryIndex, $availableCategoryIds, $categoryId);
+        $minimalLayout = true;
 
         $visibleProductIds = $mode === 'reference'
             ? $products->getCollection()->pluck('id')
@@ -129,10 +131,110 @@ class B2bMarketplaceController extends Controller
             ->unique('product_id')
             ->keyBy('product_id');
 
-        return view('pages.b2b-marketplace', compact(
+        return view('pages.b2b.marketplace', compact(
             'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceKey', 'sort',
-            'categoryTree', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests',
+            'categoryTree', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests', 'minimalLayout',
         ));
+    }
+
+    public function suggest(Request $request, B2bCatalogOfferResolver $resolver): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($resolver->canViewPartnerPrices($user), 403);
+
+        $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
+        if (mb_strlen($query) < 2) {
+            return response()->json(['items' => []]);
+        }
+
+        $needle = mb_strtolower($query);
+        $preview = $request->boolean('b2b-preview') ? 1 : null;
+        $mode = $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
+
+        if ($mode === 'reference') {
+            $orderableProductIds = $resolver->offersForUser($user)->pluck('product_id')->unique();
+            $items = Product::query()
+                ->active()
+                ->notArchived()
+                ->with(['category', 'brand'])
+                ->whereNotIn('id', $orderableProductIds)
+                ->where(function ($builder) use ($query): void {
+                    $builder->where('name', 'like', "%{$query}%")
+                        ->orWhere('sku', 'like', "%{$query}%")
+                        ->orWhereHas('brand', fn ($brand) => $brand->where('name', 'like', "%{$query}%"))
+                        ->orWhereHas('category', fn ($category) => $category->where('name', 'like', "%{$query}%"));
+                })
+                ->orderBy('name')
+                ->limit(8)
+                ->get()
+                ->map(fn (Product $product): array => [
+                    'id' => (int) $product->id,
+                    'name' => (string) $product->name,
+                    'sku' => (string) ($product->sku ?: ''),
+                    'category' => (string) ($product->category?->name ?: ''),
+                    'brand' => (string) ($product->brand?->name ?: ''),
+                    'image' => (string) $product->image_url,
+                    'price' => (float) $product->price,
+                    'stock' => 'Запросить оптовую цену',
+                    'url' => route('b2b.catalog', array_filter([
+                        'mode' => 'reference',
+                        'q' => $product->sku ?: $product->name,
+                        'b2b-preview' => $preview,
+                    ])),
+                ]);
+
+            return response()->json(['items' => $items]);
+        }
+
+        $items = $resolver->offersForUser($user)
+            ->groupBy('product_id')
+            ->map(fn (Collection $offers) => $offers->sortBy(fn ($offer): float => $resolver->priceWithTax($offer))->first())
+            ->filter(function ($offer) use ($needle): bool {
+                $product = $offer->product;
+                $haystack = mb_strtolower(implode(' ', [
+                    $product?->name,
+                    $product?->sku,
+                    $product?->brand?->name,
+                    $product?->category?->name,
+                ]));
+
+                return str_contains($haystack, $needle);
+            })
+            ->sortBy(function ($offer) use ($needle): array {
+                $product = $offer->product;
+                $sku = mb_strtolower((string) $product?->sku);
+                $name = mb_strtolower((string) $product?->name);
+
+                return [
+                    $sku === $needle ? 0 : ($name === $needle ? 1 : (str_starts_with($sku, $needle) ? 2 : 3)),
+                    $name,
+                ];
+            })
+            ->take(8)
+            ->map(function ($offer) use ($resolver, $preview): array {
+                $product = $offer->product;
+
+                return [
+                    'id' => (int) $product->id,
+                    'name' => (string) $product->name,
+                    'sku' => (string) ($product->sku ?: ''),
+                    'category' => (string) ($product->category?->name ?: ''),
+                    'brand' => (string) ($product->brand?->name ?: ''),
+                    'image' => (string) $product->image_url,
+                    'price' => $resolver->priceWithTax($offer),
+                    'stock' => $resolver->isProcurementOffer($offer)
+                        ? 'Под заказ'
+                        : $offer->formattedStockQuantity(),
+                    'url' => route('b2b.catalog', array_filter([
+                        'mode' => 'orderable',
+                        'q' => $product->sku ?: $product->name,
+                        'b2b-preview' => $preview,
+                    ])),
+                ];
+            })
+            ->values();
+
+        return response()->json(['items' => $items]);
     }
 
     private function applyProductFilters($builder, string $query, int $categoryId, array $categoryFilterIds, int $brandId): void

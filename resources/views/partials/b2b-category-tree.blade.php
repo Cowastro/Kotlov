@@ -1,6 +1,6 @@
 @foreach ($nodes as $node)
     @if ($node['children']->isNotEmpty())
-        <details class="b2b-category-branch {{ $node['selected'] ? 'selected' : '' }}" @if($node['expanded']) open @endif>
+        <details class="b2b-category-branch {{ $node['selected'] ? 'selected' : '' }}" data-category-node data-label="{{ mb_strtolower($node['name']) }}" @if($node['expanded']) open @endif>
             <summary>
                 <span>{{ $node['name'] }}</span>
                 <span class="b2b-category-count">{{ $node['count'] }}</span>
@@ -13,7 +13,7 @@
             </div>
         </details>
     @else
-        <a href="{{ request()->fullUrlWithQuery(['category' => $node['id'], 'page' => null]) }}" class="b2b-category-leaf {{ $node['selected'] ? 'active' : '' }}">
+        <a href="{{ request()->fullUrlWithQuery(['category' => $node['id'], 'page' => null]) }}" class="b2b-category-leaf {{ $node['selected'] ? 'active' : '' }}" data-category-node data-label="{{ mb_strtolower($node['name']) }}">
             <span>{{ $node['name'] }}</span>
             <span class="b2b-category-count">{{ $node['count'] }}</span>
         </a>

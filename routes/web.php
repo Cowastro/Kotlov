@@ -728,6 +728,9 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 // ===== Личный кабинет =====
 Route::middleware('auth')->group(function () {
     Route::get('/b2b/catalog', B2bMarketplaceController::class)->name('b2b.catalog');
+    Route::get('/b2b/catalog/suggest', [B2bMarketplaceController::class, 'suggest'])
+        ->middleware('throttle:120,1')
+        ->name('b2b.catalog.suggest');
     Route::post('/b2b/price-requests', B2bPriceRequestController::class)
         ->middleware('throttle:20,10')
         ->name('b2b.price-requests.store');

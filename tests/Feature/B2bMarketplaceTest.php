@@ -46,9 +46,16 @@ class B2bMarketplaceTest extends TestCase
         $this->actingAs($user)
             ->get(route('b2b.catalog'))
             ->assertOk()
-            ->assertSeeText('Оптовый каталог')
+            ->assertSeeText('Быстрый заказ товаров')
             ->assertSeeText('Труба со склада')
+            ->assertDontSeeText('Онлайн-цена ниже на 3%')
             ->assertDontSeeText('Чужой прайс');
+
+        $this->actingAs($user)
+            ->getJson(route('b2b.catalog.suggest', ['q' => 'Труба']))
+            ->assertOk()
+            ->assertJsonPath('items.0.name', 'Труба со склада')
+            ->assertJsonMissing(['name' => 'Чужой прайс']);
 
         $this->actingAs($user)
             ->postJson(route('cart.add'), ['product_id' => $hiddenProduct->id, 'quantity' => 1])
