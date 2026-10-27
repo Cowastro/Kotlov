@@ -759,7 +759,7 @@
                     .always(function () {
                         if (request === activeRequest) request = null;
                     });
-            }, 120);
+            }, 180);
         });
 
         input.addEventListener('focus', function () {

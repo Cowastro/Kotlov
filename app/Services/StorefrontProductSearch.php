@@ -67,6 +67,8 @@ class StorefrontProductSearch
             return $query;
         }
 
+        $this->applyIndexedCandidateFilter($query, $search, $includeInternal);
+
         return $query->where(function (Builder $matches) use ($search, $tokens, $includeInternal, $heatingElementQuery): void {
             // A substring search for «ТЭН» also matches the manufacturer name «СТЭН».
             // For heating-element queries the token branch below deliberately uses
@@ -126,6 +128,8 @@ class StorefrontProductSearch
         if ($tokens === []) {
             return $query;
         }
+
+        $this->applyIndexedCandidateFilter($query, $search, $includeInternal);
 
         return $query->where(function (Builder $matches) use ($search, $tokens, $includeInternal, $includeCategoryMatches, $heatingElementQuery): void {
             if (! $heatingElementQuery) {
@@ -212,6 +216,8 @@ class StorefrontProductSearch
             return $query->whereRaw('1 = 0');
         }
 
+        $this->applyIndexedCandidateFilter($query, $search, $includeInternal);
+
         return $query->where(function (Builder $matches) use ($tokens, $includeInternal): void {
             foreach (array_keys($tokens) as $skippedIndex) {
                 $matches->orWhere(function (Builder $candidate) use ($tokens, $skippedIndex, $includeInternal): void {
@@ -229,6 +235,62 @@ class StorefrontProductSearch
                         });
                     }
                 });
+            }
+        });
+    }
+
+    /**
+     * MySQL can use the catalogue FULLTEXT index to reduce a large catalogue to
+     * a small candidate set before the precise LIKE/relationship rules run.
+     * SQLite remains on the portable search path used by the test suite.
+     *
+     * Internal searches also include supplier-only fields which are not part of
+     * the public index, so they deliberately retain the exhaustive behaviour.
+     */
+    private function applyIndexedCandidateFilter(Builder $query, string $search, bool $includeInternal): void
+    {
+        if ($includeInternal || ! in_array($query->getModel()->getConnection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            return;
+        }
+
+        $tokenGroups = collect($this->tokens($search));
+        $terms = $tokenGroups
+            // Put one direct form of every word first, so a long copied title
+            // keeps its model codes instead of spending the limit on variants
+            // of its first two words.
+            ->map(fn (array $alternatives): ?string => $alternatives[0] ?? null)
+            ->concat($tokenGroups->flatMap(fn (array $alternatives): array => array_slice($alternatives, 1)))
+            ->flatMap(fn (string $term): array => preg_split('/[^\pL\pN]+/u', $term, -1, PREG_SPLIT_NO_EMPTY) ?: [])
+            ->map(fn (string $term): string => preg_replace('/[^\pL\pN]/u', '', $term) ?? '')
+            ->filter(fn (string $term): bool => mb_strlen($term) >= 3)
+            ->unique()
+            ->take(20)
+            ->values();
+
+        if ($terms->isEmpty()) {
+            return;
+        }
+
+        $booleanQuery = $terms->map(fn (string $term): string => $term.'*')->implode(' ');
+        // A multi-word product query already has several indexed product terms.
+        // Keeping relationship OR branches there can make MySQL abandon the
+        // FULLTEXT access path. A single word may legitimately be only a brand
+        // or category, so retain entity fallbacks for that case.
+        $entityVariants = count($this->directTokens($search)) === 1
+            ? collect($this->variants($search))->take(8)
+            : collect();
+
+        $query->where(function (Builder $candidate) use ($booleanQuery, $entityVariants): void {
+            $candidate->whereRaw(
+                'MATCH (`products`.`name`, `products`.`sku`) AGAINST (? IN BOOLEAN MODE)',
+                [$booleanQuery]
+            );
+
+            foreach ($entityVariants as $variant) {
+                $like = '%'.$variant.'%';
+                $candidate
+                    ->orWhereHas('brand', fn (Builder $brand) => $brand->where('name', 'like', $like))
+                    ->orWhereHas('category', fn (Builder $category) => $category->where('name', 'like', $like));
             }
         });
     }

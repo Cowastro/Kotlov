@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Services\StorefrontProductSearch;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class SearchController extends Controller
 {
@@ -73,6 +74,20 @@ class SearchController extends Controller
 
         $search = app(StorefrontProductSearch::class);
         $includeInternal = auth()->user()?->is_active === true && auth()->user()?->isManager();
+        $cacheKey = 'storefront-search-suggest:v3:'.($includeInternal ? 'internal:' : 'public:').sha1(mb_strtolower($q));
+
+        $suggestions = Cache::remember(
+            $cacheKey,
+            now()->addSeconds($includeInternal ? 30 : 180),
+            fn (): array => $this->buildSuggestions($search, $q, $includeInternal)
+        );
+
+        return response()->json($suggestions);
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function buildSuggestions(StorefrontProductSearch $search, string $q, bool $includeInternal): array
+    {
         $limit = $search->isHeatingElementQuery($q) ? 10 : 8;
 
         $productQuery = fn () => Product::active()
@@ -141,6 +156,6 @@ class SearchController extends Controller
                 'image' => $brand->logo ? $brand->image_url : null,
             ]);
 
-        return response()->json($categories->concat($brands)->concat($products)->values());
+        return $categories->concat($brands)->concat($products)->values()->all();
     }
 }

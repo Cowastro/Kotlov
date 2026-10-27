@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Services\StorefrontProductSearch;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class StorefrontProductSearchTest extends TestCase
@@ -209,6 +210,41 @@ class StorefrontProductSearchTest extends TestCase
                 'url' => '/brands/ecokamin-logo-search-test',
                 'image' => '/img/brands/teplodvor/ecokamin.png',
             ]);
+    }
+
+    public function test_public_suggestions_are_cached_for_repeated_queries(): void
+    {
+        $category = Category::create([
+            'name' => 'Кеш поиска',
+            'slug' => 'search-cache-category',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'name' => 'Уникальный кешируемый насос',
+            'slug' => 'cached-search-pump',
+            'sku' => 'CACHE-PUMP-2700',
+            'price' => 100,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $query = 'CACHE-PUMP-2700';
+        $cacheKey = 'storefront-search-suggest:v3:public:'.sha1(mb_strtolower($query));
+        Cache::forget($cacheKey);
+
+        $this->getJson('/search/suggest?'.http_build_query(['q' => $query]))
+            ->assertOk()
+            ->assertJsonFragment(['type' => 'product', 'name' => $product->name]);
+
+        $product->delete();
+
+        $this->getJson('/search/suggest?'.http_build_query(['q' => $query]))
+            ->assertOk()
+            ->assertJsonFragment(['type' => 'product', 'name' => $product->name]);
+
+        Cache::forget($cacheKey);
     }
 
     public function test_gas_meter_search_ignores_word_order_and_understands_word_forms(): void
