@@ -24,6 +24,7 @@ class OneCItemsCommand extends Command
         {--search=* : Words in the 1C name or code}
         {--cards=* : Words in the site card name}
         {--card-ids=* : Site cards by id}
+        {--offers=* : Words in the name of supplier price rows without a card}
         {--articles=* : Supplier price rows with this article (which card each feeds)}
         {--link=* : 1C code (or external id) : product id}
         {--apply : Write the links}';
@@ -63,6 +64,14 @@ class OneCItemsCommand extends Command
                 $this->line(sprintf('audit.onec_items.card=%d:%s:%s:%d:%s', $card->id, $card->slug, number_format((float) $card->price, 2, '.', ''), (int) $card->is_active,
                     $costs->get($card->id, collect())->map(fn ($cost) => Str::slug((string) $cost->code, '_').'~'.number_format((float) $cost->price_byn, 2, '.', '').'~'.(int) $cost->in_stock)->implode(',') ?: 'none'));
             }
+        }
+
+        foreach ((array) $this->option('offers') as $word) {
+            DB::table('supplier_products as sp')->join('suppliers as s', 's.id', '=', 'sp.supplier_id')->whereNull('sp.product_id')
+                ->where('sp.supplier_name', 'like', '%'.$word.'%')->limit(20)
+                ->get(['sp.id', 's.code', 'sp.price_byn', 'sp.supplier_name'])
+                ->each(fn ($row) => $this->line(sprintf('audit.onec_items.offer=%d:%s:%s:%s', $row->id, Str::slug((string) $row->code, '_'),
+                    number_format((float) $row->price_byn, 2, '.', ''), Str::slug(Str::limit((string) $row->supplier_name, 90, '')) ?: 'none')));
         }
 
         foreach ((array) $this->option('articles') as $article) {
