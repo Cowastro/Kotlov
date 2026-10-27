@@ -101,11 +101,7 @@
                 @foreach ($mobileCategoryTiles as $category)
                     <a href="{{ request()->fullUrlWithQuery(['category' => $category['id'], 'page' => null]) }}" class="b2b-mobile-category-tile {{ $category['selected'] ? 'active' : '' }}">
                         <span class="b2b-mobile-category-tile__image">
-                            @if ($category['has_custom_image'])
-                                <img src="{{ $category['image'] }}" alt="" loading="lazy">
-                            @else
-                                <i class="icon {{ $category['icon'] }}" aria-hidden="true"></i>
-                            @endif
+                            <img src="{{ $category['image'] }}" alt="" loading="lazy" onerror="this.src='{{ asset('img/popular/catalog.jpg') }}'">
                             <b>{{ $category['count'] }}</b>
                         </span>
                         <span>{{ $category['name'] }}</span>
