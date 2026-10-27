@@ -1098,7 +1098,11 @@ class SyncBaniaPricelistCommand extends Command
     /** @return array{0:list<string>,1:list<string>} model words and numbers, brand and generic words left out */
     private function modelTokens(string $name, string $brand): array
     {
-        $text = preg_replace('/(?<=\d)c(?=\s|$)/u', 'с', $this->normalizeName($name)) ?? '';
+        // «190x70» / «190 x 70» are two numbers; «B8» and «В8» are one model (Latin letters that look Cyrillic).
+        $text = preg_replace('/(?<=\d)\s*[xх×*]\s*(?=\d)/u', ' ', $this->normalizeText($name)) ?? '';
+        $text = preg_replace_callback('/[a-zа-я]{1,3}(?=\d)|(?<=\d)[a-zа-я]{1,2}/u', fn ($m) => strtr($m[0], ['a' => 'а', 'b' => 'в', 'c' => 'с',
+            'e' => 'е', 'h' => 'н', 'k' => 'к', 'm' => 'м', 'o' => 'о', 'p' => 'р', 't' => 'т', 'x' => 'х', 'y' => 'у']), $text) ?? $text;
+        $text = $this->normalizeName($text);
         $skip = array_merge(self::MODEL_STOP_WORDS, array_filter(explode(' ', $this->normalizeBrand($brand))));
         $words = [];
         $numbers = [];
