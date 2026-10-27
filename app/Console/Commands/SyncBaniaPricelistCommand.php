@@ -418,8 +418,9 @@ class SyncBaniaPricelistCommand extends Command
                 }
                 if (! $this->retailRowFitsCard($supplierProduct, $retailMatch)) {
                     $stats['retail_price_skipped_other_model']++;
-                    $this->line(sprintf('audit.bania_links.blocked=%d:%d:%s', $supplierProduct->id, (int) $supplierProduct->product_id,
-                        Str::slug(Str::limit((string) ($retailMatch['name'] ?? ''), 70, '')) ?: 'none'));
+                    [$cardOnly, $rowOnly] = $this->modelTokenDifference($supplierProduct, $retailMatch);
+                    $this->line(sprintf('audit.bania_links.blocked=%d:%d:%s:%s~%s', $supplierProduct->id, (int) $supplierProduct->product_id,
+                        Str::slug(Str::limit((string) ($retailMatch['name'] ?? ''), 70, '')) ?: 'none', Str::slug(implode(' ', $cardOnly)), Str::slug(implode(' ', $rowOnly))));
 
                     continue;
                 }
@@ -1093,6 +1094,16 @@ class SyncBaniaPricelistCommand extends Command
             && count(array_intersect($cardWords, $rowWords)) * 2 < count($cardWords);
 
         return ! $numbersClash && ! $wordsClash;
+    }
+
+    /** @return array{0:list<string>,1:list<string>} model tokens only the card has, and only the retail row has */
+    private function modelTokenDifference(object $supplierProduct, ?array $retailMatch): array
+    {
+        $brand = (string) ($supplierProduct->brand_name ?? '');
+        $card = array_merge(...$this->modelTokens((string) ($supplierProduct->product_name ?? ''), $brand));
+        $row = array_merge(...$this->modelTokens((string) ($retailMatch['name'] ?? ''), $brand));
+
+        return [array_values(array_diff($card, $row)), array_values(array_diff($row, $card))];
     }
 
     /** @return array{0:list<string>,1:list<string>} model words and numbers, brand and generic words left out */
