@@ -9,7 +9,9 @@
     $cartCount = collect(session('cart', []))->sum('quantity');
     $preview = request()->boolean('b2b-preview');
     $resetUrl = route('b2b.catalog', array_filter(['mode' => $mode, 'b2b-preview' => $preview ? 1 : null]));
-    $mobileCategoryTiles = $categoryTree->take(11);
+    $mobileCategoryTiles = $categoryTree
+        ->flatMap(fn ($category) => $category['children']->isNotEmpty() ? $category['children'] : collect([$category]))
+        ->take(11);
 @endphp
 
 <div class="b2b-portal">
