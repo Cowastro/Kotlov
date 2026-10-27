@@ -1215,6 +1215,19 @@ class SyncBaniaPricelistCommand extends Command
     /** @return list<array<string,mixed>> retail rows naming exactly the card's model */
     private function ownRetailRows(object $product, array $retailIndexes): array
     {
+        $tokens = function (string $name) use ($product): array {
+            $all = array_merge(...$this->modelTokens($name, (string) ($product->brand_name ?? '')));
+            sort($all);
+
+            return $all;
+        };
+        $card = $tokens((string) $product->product_name);
+        // The same model words and numbers first («Комфорт 100 ДТ-3» is not «Комфорт 100 ДТ-3С»), a close title after.
+        $exact = array_values(array_filter($retailIndexes['rows'] ?? [], fn (array $row) => $card !== [] && $tokens((string) ($row['name'] ?? '')) === $card));
+        if ($exact !== []) {
+            return $exact;
+        }
+
         return array_values(array_filter($retailIndexes['rows'] ?? [], function (array $row) use ($product): bool {
             $reverse = (object) ['product_name' => (string) ($row['name'] ?? ''), 'brand_name' => $product->brand_name];
 
