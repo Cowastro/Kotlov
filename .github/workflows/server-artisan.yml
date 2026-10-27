@@ -492,7 +492,7 @@ jobs:
           if [[ "${ARTISAN_ARGV[0]:-}" == "integration:onec-items" ]]; then
             echo "safe_onec_items_begin"
             grep -E '^metric\.onec_items\.[a-z_]+=[0-9]+$' "$detail_log" || true
-            grep -E '^audit\.onec_items\.(source=[0-9]+:[a-z0-9-]*|row=[0-9]+:[a-z0-9-]+:[a-z0-9-]*:[a-z_]+:[0-9]+:-?[0-9]+:[0-9]+|card=[0-9]+:[a-z0-9-]+:[0-9.]+:[01]:[a-z0-9_~.,-]+|link_missing=[a-z0-9-]*|already=[0-9]+:[0-9]+|link_failed=[0-9]+|linked=[0-9]+:[0-9]+)$' "$detail_log" || true
+            grep -E '^audit\.onec_items\.(source=[0-9]+:[a-z0-9-]*|row=[0-9]+:[a-z0-9-]+:[a-z0-9-]*:[a-z_]+:[0-9]+:-?[0-9]+:[0-9]+|card=[0-9]+:[a-z0-9-]+:[0-9.]+:[01]:[a-z0-9_~.,-]+|link_missing=[a-z0-9-]*|already=[0-9]+:[0-9]+|link_failed=[0-9]+|linked=[0-9]+:[0-9]+|article=[a-z0-9-]+:[a-z0-9_]+:[0-9]+:[0-9.]+:[a-z0-9-]+)$' "$detail_log" || true
             echo "safe_onec_items_end"
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-cooper-doors" ]]; then
