@@ -23,6 +23,7 @@ class OneCItemsCommand extends Command
         {--source=onec : Integration source code}
         {--search=* : Words in the 1C name or code}
         {--cards=* : Words in the site card name}
+        {--card-ids=* : Site cards by id}
         {--link=* : 1C code (or external id) : product id}
         {--apply : Write the links}';
 
@@ -43,12 +44,18 @@ class OneCItemsCommand extends Command
                 ->where(fn ($q) => $q->where('name', 'like', '%'.$word.'%')->orWhere('external_code', 'like', '%'.$word.'%'))
                 ->orderBy('external_code')->limit(30)->get()
                 ->each(fn (IntegrationProduct $item) => $this->line(sprintf('audit.onec_items.row=%d:%s:%s:%s:%d:%d:%s',
-                    $item->id, Str::slug((string) $item->external_code) ?: 'none', Str::slug(Str::limit((string) $item->name, 70, '')),
+                    $item->id, Str::slug((string) $item->external_code) ?: 'none', Str::slug(Str::limit((string) $item->name, 150, '')),
                     $item->match_status ?: 'none', (int) round((float) $item->price_byn), (int) round((float) $item->stock_quantity), $item->product_id ?: 0)));
         }
 
-        foreach ((array) $this->option('cards') as $word) {
-            $cards = DB::table('products')->where('is_archived', false)->where('name', 'like', '%'.$word.'%')->orderBy('id')->limit(30)->get(['id', 'slug', 'price', 'is_active']);
+        $lookups = array_map(fn ($word) => ['name', $word], (array) $this->option('cards'));
+        if ($ids = array_map('intval', (array) $this->option('card-ids'))) {
+            $lookups[] = ['id', $ids];
+        }
+        foreach ($lookups as [$by, $value]) {
+            $cards = DB::table('products')->where('is_archived', false)
+                ->when($by === 'id', fn ($q) => $q->whereIn('id', $value), fn ($q) => $q->where('name', 'like', '%'.$value.'%'))
+                ->orderBy('id')->limit(30)->get(['id', 'slug', 'price', 'is_active']);
             $costs = DB::table('supplier_products as sp')->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
                 ->whereIn('sp.product_id', $cards->pluck('id'))->get(['sp.product_id', 's.code', 'sp.price_byn', 'sp.in_stock'])->groupBy('product_id');
             foreach ($cards as $card) {
