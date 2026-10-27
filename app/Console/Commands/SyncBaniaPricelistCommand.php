@@ -1073,7 +1073,7 @@ class SyncBaniaPricelistCommand extends Command
         'электрическая', 'котел', 'чугунная', 'чугунный', 'стальная', 'стальной', 'банная', 'банный'];
 
     /**
-     * The retail row names the card's model: every model word and number of the card is in it
+     * The retail row names the card's model, not another one
      * («Теплодар Kupper PRO 16» fits «Котел Kupper PRO 16-20»; «Везувий АОГТ 01» does not fit «Везувий Мини-1»).
      */
     private function retailRowFitsCard(object $supplierProduct, ?array $retailMatch): bool
@@ -1086,7 +1086,13 @@ class SyncBaniaPricelistCommand extends Command
         [$cardWords, $cardNumbers] = $this->modelTokens($card, (string) ($supplierProduct->brand_name ?? ''));
         [$rowWords, $rowNumbers] = $this->modelTokens($row, (string) ($supplierProduct->brand_name ?? ''));
 
-        return array_diff($cardWords, $rowWords) === [] && array_diff($cardNumbers, $rowNumbers) === [];
+        // Each side has a number the other lacks (Комфорт 100 / 70, Гейзер 2014 / 2016).
+        $numbersClash = array_diff($cardNumbers, $rowNumbers) !== [] && array_diff($rowNumbers, $cardNumbers) !== [];
+        // Each side has its own words and they share less than half of the card's (АОГТ / Мини, К412 топочная / каминная).
+        $wordsClash = $cardWords !== [] && array_diff($cardWords, $rowWords) !== [] && array_diff($rowWords, $cardWords) !== []
+            && count(array_intersect($cardWords, $rowWords)) * 2 < count($cardWords);
+
+        return ! $numbersClash && ! $wordsClash;
     }
 
     /** @return array{0:list<string>,1:list<string>} model words and numbers, brand and generic words left out */
