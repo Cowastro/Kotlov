@@ -108,12 +108,36 @@ class ChimneySelectorController extends Controller
             })
             ->limit(100)
             ->get();
+        $installationAccessories = Product::query()
+            ->orderable()
+            ->withSupplierChannels()
+            ->with(['category', 'brand'])
+            ->where(function ($query) {
+                $query->where('name', 'like', '%ЛПУ%')
+                    ->orWhere('name', 'like', '%лист потолочн%')
+                    ->orWhere('name', 'like', '%Лист потолочн%')
+                    ->orWhere('name', 'like', '%базальтовая вата%')
+                    ->orWhere('name', 'like', '%Базальтовая вата%')
+                    ->orWhere('name', 'like', '%базальтовый картон%')
+                    ->orWhere('name', 'like', '%Базальтовый картон%')
+                    ->orWhere('name', 'like', '%конус термо%')
+                    ->orWhere('name', 'like', '%Конус Термо%')
+                    ->orWhere('name', 'like', '%дефлектор%')
+                    ->orWhere('name', 'like', '%Дефлектор%')
+                    ->orWhere('name', 'like', '%зонт-конус%')
+                    ->orWhere('name', 'like', '%Зонт-конус%')
+                    ->orWhere('name', 'like', '%зонт конус%')
+                    ->orWhere('name', 'like', '%Зонт конус%');
+            })
+            ->limit(200)
+            ->get();
         $products = $products
             ->merge($pipeSections)
             ->merge($darcoSections)
             ->merge($mcBlackSections)
             ->merge($preferredAccessories)
             ->merge($roofAccessories)
+            ->merge($installationAccessories)
             ->unique('id')
             ->values();
 
@@ -246,7 +270,13 @@ class ChimneySelectorController extends Controller
                 || str_contains($normalizedName, 'бак навес')
                 || str_contains($normalizedName, 'бак самовар') => 'water_tank',
             str_contains($slug, 'shibery') || str_contains($normalizedName, 'шибер') => 'damper',
-            str_contains($slug, 'zonty') || str_contains($normalizedName, 'зонт') || str_contains($normalizedName, 'дефлектор') => 'umbrella',
+            str_contains($normalizedName, 'зонт-конус') || str_contains($normalizedName, 'зонт конус') => 'umbrella_cone',
+            str_contains($normalizedName, 'дефлектор') => 'deflector',
+            str_contains($normalizedName, 'конус термо') || preg_match('/\bкт-?р\b/u', $normalizedName) => 'cap_cone',
+            str_contains($slug, 'zonty') || str_contains($normalizedName, 'зонт') => 'umbrella',
+            str_contains($normalizedName, 'базальтовая вата') || str_contains($normalizedName, 'обрезь базальта') => 'basalt_wool',
+            str_contains($normalizedName, 'базальтовый картон') => 'basalt_cardboard',
+            str_contains($normalizedName, 'лпур') || str_contains($normalizedName, 'лпу') || str_contains($normalizedName, 'лист потолочн') => 'ceiling_cover',
             str_contains($normalizedName, 'ппу') || str_contains($normalizedName, 'проход через') || str_contains($normalizedName, 'проходной узел') => 'ceiling_pass',
             str_contains($normalizedName, 'площадка монтажная') || str_contains($normalizedName, 'площадка сквозная') => 'support',
             str_contains($normalizedName, 'крепление настенное')

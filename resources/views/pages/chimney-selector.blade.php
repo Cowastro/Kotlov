@@ -66,6 +66,8 @@
                         <label data-elbows-field>Где находится смещение<select name="offset_system"><option value="mono">Внутри — моно</option><option value="sandwich">Снаружи — утеплённый</option></select></label>
                         <label>Шибер<select name="damper"><option value="no" selected>Не нужен</option><option value="yes">Нужен</option></select></label>
                         <label>Проходы через перекрытие (ППУ)<select name="ceiling_passes"><option value="0">Нет</option><option value="1" selected>1 проход</option><option value="2">2 прохода</option></select></label>
+                        <label>Комплектация ППУ<select name="pass_insulation"><option value="yes" selected>Вата + базальтовый картон</option><option value="no">Без заполнения (уже есть)</option></select></label>
+                        <label>Закрытие перекрытия (ЛПУ)<select name="ceiling_cover"><option value="yes" selected>Добавить потолочный лист</option><option value="no">Не нужен / уже есть</option></select></label>
                         <label>Обычные соединительные хомуты<select name="clamps"><option value="auto" selected>Рассчитать по высоте</option><option value="0">Не нужны</option><option value="1">1 шт.</option><option value="2">2 шт.</option><option value="3">3 шт.</option><option value="4">4 шт.</option><option value="5">5 шт.</option><option value="6">6 шт.</option></select></label>
                         <label data-tee-field>Стеновые крепления<select name="wall_mounts"><option value="auto" selected>Рассчитать автоматически</option><option value="0">Не нужны</option><option value="1">1 шт.</option><option value="2">2 шт.</option><option value="3">3 шт.</option><option value="4">4 шт.</option><option value="5">5 шт.</option></select></label>
                         <label>Свободная высота над последним креплением, м<input type="number" name="free_mast_height" value="1" min="0" max="5" step="0.25" inputmode="decimal"></label>
@@ -73,7 +75,7 @@
                         <label>Кровля<select name="roof_type"><option value="pitched_metal" selected>Скатная металлическая</option><option value="pitched_soft">Скатная мягкая</option><option value="flat">Плоская</option><option value="none">Кровлю не проходим</option></select></label>
                         <label data-roof-field>Угол кровли, °<input type="number" name="roof_angle" value="30" min="0" max="60" step="5" inputmode="numeric"></label>
                         <label data-roof-field>Расстояние от трубы до конька, м<input type="number" name="ridge_distance" value="1.5" min="0" max="10" step="0.25" inputmode="decimal"></label>
-                        <label>Зонт<select name="umbrella"><option value="yes" selected>Нужен</option><option value="no">Не нужен</option></select></label>
+                        <label>Завершение дымохода<select name="termination"><option value="umbrella" selected>Оголовок + зонт</option><option value="deflector">Оголовок + дефлектор</option><option value="umbrella_cone">Зонт-конус</option><option value="none">Без завершения</option></select></label>
                     </div>
                     <div class="cs-form__actions">
                         <button type="submit" class="tf-btn animate-btn" data-calculate-button>Рассчитать и показать комплект</button>
@@ -281,7 +283,7 @@
             var adapterPairMatches = need.kind === 'adapter' && need.toDiameter
                 ? Array.isArray(product.diameter_pair) && product.diameter_pair.includes(settings.diameter) && product.diameter_pair.includes(need.toDiameter)
                 : null;
-            var diameterRangeMatches = ['ceiling_pass','roof_flashing'].includes(need.kind) && targetDiameter && Array.isArray(product.diameter_pair)
+            var diameterRangeMatches = ['ceiling_pass','ceiling_cover','roof_flashing'].includes(need.kind) && targetDiameter && Array.isArray(product.diameter_pair)
                 ? Number(targetDiameter) >= Number(product.diameter_pair[0]) && Number(targetDiameter) <= Number(product.diameter_pair[1])
                 : false;
             var productName = normalizeSearch(product.name);
@@ -383,10 +385,20 @@
         }
         var totalPasses = settings.ceilingPasses + (settings.scheme === 'tee' && settings.wallPass ? 1 : 0);
         if (totalPasses > 0) needs.push({kind:'ceiling_pass', quantity:totalPasses, system:'any', material:settings.system === 'mono' ? monoOptions.material : 'stainless', diameterMode:'outer', exactDiameter:true, label:'ППУ · проходы через перекрытие / стену'});
+        if (settings.ceilingCover && settings.ceilingPasses > 0) needs.push({kind:'ceiling_cover', quantity:settings.ceilingPasses, system:'any', diameterMode:'outer', exactDiameter:true, label:'ЛПУ · декоративное закрытие прохода перекрытия'});
+        if (settings.passInsulation && totalPasses > 0) {
+            needs.push({kind:'basalt_wool', quantity:totalPasses, system:'any', label:'Базальтовая вата для заполнения ППУ · упаковка 3 кг'});
+            needs.push({kind:'basalt_cardboard', quantity:totalPasses, system:'any', label:'Базальтовый картон для защиты прохода · лист 1,0 × 0,5 м, 5 мм'});
+        }
         if (settings.clamps > 0) needs.push({kind:'clamp', quantity:settings.clamps, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Обычные соединительные хомуты'});
         if (settings.guyWires) needs.push({kind:'guy_wire', quantity:1, system:'any', diameterMode:settings.system === 'mono' ? 'inner' : 'outer', label:'Хомут для растяжек высокой мачты'});
         if (settings.roofType !== 'none') needs.push({kind:'roof_flashing', quantity:1, system:'any', material:'stainless', roofType:settings.roofType, diameterMode:settings.system === 'mono' ? 'inner' : 'outer', exactDiameter:true, label:'Фартук / проход кровли · ' + settings.roofAngle + '°'});
-        if (settings.umbrella) needs.push({kind:'umbrella', quantity:1, system:settings.system === 'mono' ? 'mono' : 'sandwich', material:'stainless', label:'Зонт / завершение дымохода'});
+        if (settings.termination === 'umbrella_cone') {
+            needs.push({kind:'umbrella_cone', quantity:1, system:settings.system === 'mono' ? 'mono' : 'sandwich', material:'stainless', label:'Зонт-конус · готовое завершение дымохода'});
+        } else if (settings.termination === 'umbrella' || settings.termination === 'deflector') {
+            if (settings.system !== 'mono') needs.push({kind:'cap_cone', quantity:1, system:'sandwich', material:'stainless', label:'Оголовок утеплённой трубы · конус Термо'});
+            needs.push({kind:settings.termination, quantity:1, system:'mono', material:'stainless', label:settings.termination === 'deflector' ? 'Дефлектор дымохода' : 'Зонт дымохода'});
+        }
         return needs;
     }
 
@@ -407,11 +419,12 @@
             height:height, monoLength:Number(data.get('mono_length')), monoMaterial:data.get('mono_material'), stoveAdapter:data.get('stove_adapter') === 'yes', elbowAngle:data.get('elbow_angle'),
             horizontalLength:Number(data.get('horizontal_length')), wallPass:data.get('wall_pass') === 'yes', wallMountReach:Number(data.get('wall_mount_reach')), offsetLength:Number(data.get('offset_length')), offsetSystem:data.get('offset_system'),
             damper:data.get('damper') === 'yes', waterHeating:data.get('water_heating') || 'none', ceilingPasses:Number(data.get('ceiling_passes')),
+            passInsulation:data.get('pass_insulation') === 'yes', ceilingCover:data.get('ceiling_cover') === 'yes',
             clamps:clampValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(clampValue),
             wallMounts:wallMountValue === 'auto' ? Math.max(2, Math.ceil(height / 2)) : Number(wallMountValue),
             freeMastHeight:freeMastHeight, guyWires:guyWireValue === 'yes' || (guyWireValue === 'auto' && freeMastHeight > 1.5),
             roofType:data.get('roof_type'), roofAngle:Number(data.get('roof_angle')), ridgeDistance:Number(data.get('ridge_distance')),
-            umbrella:data.get('umbrella') === 'yes', outerDiameter:null, chimneyDiameter:data.get('chimney_diameter'), recommendation:recommendation.text
+            termination:data.get('termination') || 'umbrella', outerDiameter:null, chimneyDiameter:data.get('chimney_diameter'), recommendation:recommendation.text
         };
         settings.roofAdvice = roofHeightAdvice(settings.roofType, settings.ridgeDistance);
         if (!settings.stoveAdapter) settings.chimneyDiameter = settings.diameter;
@@ -575,7 +588,7 @@
             for (var passIndex = 0; passIndex < settings.ceilingPasses; passIndex++) {
                 var passY = 248 + passIndex * 54;
                 svg.push('<line x1="45" y1="' + passY + '" x2="395" y2="' + passY + '" stroke="#c9d0d3" stroke-width="6"/>');
-                svg.push(part(['ceiling_pass'], '<rect class="cs-schematic__hotspot" x="' + (stackX - 27) + '" y="' + (passY - 12) + '" width="54" height="24" fill="#fff" stroke="#e34234" stroke-width="3"/>', 'ППУ прохода перекрытия'));
+                svg.push(part(['ceiling_pass','ceiling_cover','basalt_wool','basalt_cardboard'], '<rect class="cs-schematic__hotspot" x="' + (stackX - 27) + '" y="' + (passY - 12) + '" width="54" height="24" fill="#fff" stroke="#e34234" stroke-width="3"/>', 'ППУ с изоляцией и потолочным листом'));
             }
             if (settings.ceilingPasses) svg.push(callout(52, 238, 'ППУ × ' + settings.ceilingPasses, 'проход перекрытия'));
 
@@ -590,7 +603,7 @@
             if (settings.guyWires) {
                 svg.push(part(['guy_wire'], '<path class="cs-schematic__hotspot" d="M' + stackX + ' 106 L' + (stackX - 92) + ' 182 M' + stackX + ' 106 L' + (stackX + 92) + ' 182" fill="none" stroke="#e34234" stroke-width="2" stroke-dasharray="6 4"/><circle cx="' + stackX + '" cy="106" r="6" fill="#fff" stroke="#e34234" stroke-width="2"/>', 'Растяжки высокой мачты'));
             }
-            if (settings.umbrella) svg.push(part(['umbrella'], '<path class="cs-schematic__hotspot" d="M' + (stackX - 28) + ' ' + (topY - 8) + ' Q' + stackX + ' ' + (topY - 34) + ' ' + (stackX + 28) + ' ' + (topY - 8) + ' Z" fill="#34383a" stroke="#34383a" stroke-width="3"/><line x1="' + stackX + '" y1="' + (topY - 8) + '" x2="' + stackX + '" y2="' + (topY + 5) + '" stroke="#34383a" stroke-width="4"/>', 'Завершение дымохода'));
+            if (settings.termination !== 'none') svg.push(part(['umbrella','deflector','cap_cone','umbrella_cone'], '<path class="cs-schematic__hotspot" d="M' + (stackX - 28) + ' ' + (topY - 8) + ' Q' + stackX + ' ' + (topY - 34) + ' ' + (stackX + 28) + ' ' + (topY - 8) + ' Z" fill="#34383a" stroke="#34383a" stroke-width="3"/><line x1="' + stackX + '" y1="' + (topY - 8) + '" x2="' + stackX + '" y2="' + (topY + 5) + '" stroke="#34383a" stroke-width="4"/>', 'Завершение дымохода'));
 
             svg.push('<line x1="28" y1="420" x2="28" y2="' + topY + '" stroke="#6d767a" stroke-width="1.5" marker-start="url(#cs-arrow)" marker-end="url(#cs-arrow)"/><text x="20" y="' + ((420 + topY) / 2) + '" transform="rotate(-90 20 ' + ((420 + topY) / 2) + ')" text-anchor="middle" fill="#374044" font-size="11" font-weight="700">Высота ' + esc(settings.height.toLocaleString('ru-RU')) + ' м</text>');
             if (settings.scheme === 'tee') svg.push('<line x1="' + equipmentX + '" y1="558" x2="' + stackX + '" y2="558" stroke="#6d767a" marker-start="url(#cs-arrow)" marker-end="url(#cs-arrow)"/><text x="' + ((equipmentX + stackX) / 2) + '" y="574" text-anchor="middle" fill="#374044" font-size="10">' + esc(settings.horizontalLength.toLocaleString('ru-RU')) + ' м</text>');
@@ -602,7 +615,8 @@
                 var kind = row.product.kind;
                 var system = row.product.system;
                 var combined = settings.system === 'combined';
-                if (kind === 'umbrella') return 0;
+                if (['umbrella','deflector','umbrella_cone'].includes(kind)) return 0;
+                if (kind === 'cap_cone') return 4;
                 if (kind === 'roof_flashing') return 10;
                 if (kind === 'guy_wire') return 18;
                 if (kind === 'pipe') {
@@ -615,7 +629,7 @@
                 }
                 if (kind === 'clamp') return 27;
                 if (kind === 'mount' || kind === 'wall_mount') return 28;
-                if (kind === 'ceiling_pass') return 30;
+                if (['ceiling_pass','ceiling_cover','basalt_wool','basalt_cardboard'].includes(kind)) return 30;
                 if (kind === 'transition') return 40;
                 if (kind === 'water_tank' || kind === 'heat_exchanger') return 55;
                 if (kind === 'tee') return 58;
@@ -706,7 +720,7 @@
                 + (settings.scheme === 'elbows' ? ', колена ' + settings.elbowAngle + '°, участок ' + settings.offsetLength + ' м' : '')
                 + ', высота ' + settings.height + ' м, кровля ' + settings.roofType + ' ' + settings.roofAngle + '°, до конька ' + settings.ridgeDistance + ' м, свободная мачта ' + settings.freeMastHeight + ' м, адаптер ' + (settings.stoveAdapter ? 'да' : 'нет')
                 + ', шибер ' + (settings.damper ? 'да' : 'нет') + ', ППУ ' + settings.ceilingPasses + ', хомуты ' + settings.clamps
-                + ', нагрев воды: ' + waterHeatingLabel + ', растяжки ' + (settings.guyWires ? 'да' : 'нет') + ', зонт ' + (settings.umbrella ? 'да' : 'нет') + '. Скорректированный состав: ' + names;
+                + ', нагрев воды: ' + waterHeatingLabel + ', растяжки ' + (settings.guyWires ? 'да' : 'нет') + ', завершение ' + settings.termination + '. Скорректированный состав: ' + names;
             var resultActions = managerMode
                 ? (managerCanEdit ? '<button type="button" class="tf-btn animate-btn" data-bs-toggle="modal" data-bs-target="#chimneyCheckModal">' + (@json(($managerCalculation ?? null) ? 'Сохранить изменения' : 'Создать расчёт')) + '</button>' : '<div class="cs-safety">Расчёт уже преобразован в заказ и доступен только для просмотра.</div>')
                 : '<button type="button" class="tf-btn animate-btn" data-add-kit>' + (missing ? 'Добавить найденные позиции' : 'Добавить комплект') + '</button><button type="button" class="tf-btn btn-white btn-stroke" data-bs-toggle="modal" data-bs-target="#chimneyCheckModal">Бесплатно проверить</button>';

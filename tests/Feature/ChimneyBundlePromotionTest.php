@@ -189,6 +189,22 @@ class ChimneyBundlePromotionTest extends TestCase
             'is_archived' => false,
             'availability_status' => Product::AVAILABILITY_CHECK,
         ]);
+        $installationCategory = Category::query()->create(['name' => 'Теплоизоляция', 'slug' => 'test-chimney-insulation', 'parent_id' => 0]);
+        $installationProducts = collect([
+            ['name' => 'Базальтовая вата для набивки ППУ (3 кг)', 'slug' => 'test-basalt-wool', 'sku' => 'TEST-BASALT-WOOL'],
+            ['name' => 'Базальтовый картон 1,0х0,5 м толщина 5 мм', 'slug' => 'test-basalt-cardboard', 'sku' => 'TEST-BASALT-CARDBOARD'],
+            ['name' => 'Лист Потолочный Универсальный ЛПУ-Р 480х480 D210', 'slug' => 'test-lpu-d210', 'sku' => 'TEST-LPU-D210'],
+            ['name' => 'Конус Термо КТ-Р 430-0.5/430 D150/210', 'slug' => 'test-cap-cone-d150-210', 'sku' => 'TEST-CAP-CONE'],
+            ['name' => 'Дефлектор ДМ-Р 430-0.5 D150', 'slug' => 'test-deflector-d150', 'sku' => 'TEST-DEFLECTOR'],
+            ['name' => 'Зонт-конус Термо D150/210', 'slug' => 'test-umbrella-cone-d150-210', 'sku' => 'TEST-UMBRELLA-CONE'],
+        ])->map(fn (array $data) => Product::query()->create($data + [
+            'category_id' => $installationCategory->id,
+            'brand_id' => $tisBrand->id,
+            'price' => 25,
+            'is_active' => true,
+            'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+        ]));
 
         $response = $this->get(route('chimney-selector', ['equipment' => $equipment->id]));
         $response
@@ -259,9 +275,14 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSee('"length_mm":1000', false)
             ->assertSeeText('Шибер')
             ->assertSeeText('Проходы через перекрытие (ППУ)')
+            ->assertSeeText('Комплектация ППУ')
+            ->assertSeeText('Вата + базальтовый картон')
+            ->assertSeeText('Закрытие перекрытия (ЛПУ)')
             ->assertSeeText('Обычные соединительные хомуты')
             ->assertSeeText('Растяжки для высокой мачты')
-            ->assertSeeText('Зонт')
+            ->assertSeeText('Оголовок + зонт')
+            ->assertSeeText('Оголовок + дефлектор')
+            ->assertSeeText('Зонт-конус')
             ->assertSeeText('Схема и высота')
             ->assertSeeText('Угол колен для смещения')
             ->assertSeeText('Горизонтальный участок через стену')
@@ -278,6 +299,11 @@ class ChimneyBundlePromotionTest extends TestCase
             ->assertSee("kind:'tee', quantity:1, system:teeSystem, angle:'87'", false)
             ->assertSee("kind:'wall_mount'", false)
             ->assertSee("kind:'roof_flashing'", false)
+            ->assertSee("kind:'ceiling_cover'", false)
+            ->assertSee("kind:'basalt_wool'", false)
+            ->assertSee("kind:'basalt_cardboard'", false)
+            ->assertSee("kind:'cap_cone'", false)
+            ->assertSee("kind:settings.termination", false)
             ->assertSee("sharedParams.get('items')", false)
             ->assertSeeText('Теплов и Сухов')
             ->assertSeeText('−10%')
@@ -321,6 +347,10 @@ class ChimneyBundlePromotionTest extends TestCase
         $this->assertSame(['178', '330'], $masterFlashItem['diameter_pair'] ?? null);
         $this->assertSame('wall_mount', $adjustableMountItem['kind'] ?? null);
         $this->assertSame(1000, $adjustableMountItem['mount_length_mm'] ?? null);
+        $this->assertSame(
+            ['basalt_wool', 'basalt_cardboard', 'ceiling_cover', 'cap_cone', 'deflector', 'umbrella_cone'],
+            $installationProducts->map(fn (Product $product) => $catalog->firstWhere('id', $product->id)['kind'] ?? null)->all(),
+        );
     }
 
     public function test_chimney_selector_is_listed_in_the_existing_knowledge_base(): void
