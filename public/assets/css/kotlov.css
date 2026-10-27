@@ -2653,6 +2653,75 @@ a.category-v05.subcat-tile:hover .cate-icon {
     padding: 20px 24px;
 }
 
+.own-transport-schedule {
+    margin: 0 0 20px;
+    border: 1px solid #dce8ff;
+    border-radius: 12px;
+    background: #f7faff;
+    color: #242424;
+    overflow: hidden;
+}
+.own-transport-schedule summary,
+.own-transport-schedule__heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 18px;
+}
+.own-transport-schedule summary { cursor: pointer; list-style: none; }
+.own-transport-schedule summary::-webkit-details-marker { display: none; }
+.own-transport-schedule summary::after {
+    content: '+';
+    margin-left: auto;
+    color: var(--color-primary, #e02020);
+    font-size: 22px;
+    line-height: 1;
+}
+.own-transport-schedule[open] summary::after { content: '−'; }
+.own-transport-schedule summary small {
+    display: block;
+    margin-top: 3px;
+    color: #697386;
+    font-size: 12px;
+    font-weight: 400;
+}
+.own-transport-schedule__summary-icon {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    place-items: center;
+    border-radius: 50%;
+    background: #e7efff;
+    color: var(--color-primary, #e02020);
+}
+.own-transport-schedule__body { padding: 0 18px 18px 66px; }
+.own-transport-schedule--expanded .own-transport-schedule__body { padding-top: 0; }
+.own-transport-schedule__routes { display: grid; gap: 10px; }
+.own-transport-route {
+    display: grid;
+    grid-template-columns: minmax(170px, .34fr) minmax(0, 1fr);
+    gap: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e8f5;
+    font-size: 14px;
+    line-height: 1.55;
+}
+.own-transport-route strong { color: #222; }
+.own-transport-route span { color: #586174; }
+.own-transport-schedule__note {
+    margin-top: 14px;
+    color: #697386;
+    font-size: 12px;
+    line-height: 1.5;
+}
+@media (max-width: 575px) {
+    .own-transport-schedule__body { padding: 0 14px 16px; }
+    .own-transport-schedule summary,
+    .own-transport-schedule__heading { padding: 14px; }
+    .own-transport-route { grid-template-columns: 1fr; gap: 3px; }
+}
+
 .brand-detail-content-panel {
     max-width: 840px;
     width: 100%;

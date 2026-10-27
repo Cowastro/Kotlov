@@ -25,7 +25,7 @@ class SearchController extends Controller
                 ->notArchived()
                 ->withSupplierChannels()
                 ->with(['category', 'brand']);
-            app(StorefrontProductSearch::class)->apply($query, $q, $includeInternal);
+            app(StorefrontProductSearch::class)->applyForResults($query, $q, $includeInternal);
 
             if ($category) {
                 $cat = Category::where('slug', $category)->first();
@@ -46,8 +46,8 @@ class SearchController extends Controller
                 default:           $query->orderByDesc('is_featured')->orderByDesc('rating');
             }
 
-            $total = $query->count();
             $products = $query->paginate(24)->withQueryString();
+            $total = $products->total();
         }
 
         $quickLinks = Category::whereIn('slug', [

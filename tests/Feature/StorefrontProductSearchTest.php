@@ -51,6 +51,36 @@ class StorefrontProductSearchTest extends TestCase
         }
     }
 
+    public function test_full_results_use_the_fast_pass_for_a_normal_brand_query(): void
+    {
+        $category = Category::create([
+            'name' => 'Насосы',
+            'slug' => 'fast-full-search-pumps',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $brand = Brand::create([
+            'name' => 'Wilo',
+            'slug' => 'wilo-fast-full-search',
+            'is_active' => true,
+        ]);
+        $product = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Циркуляционный насос Star-RS',
+            'slug' => 'wilo-star-rs-fast-full-search',
+            'sku' => 'WILO-STAR-RS',
+            'price' => 410,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+
+        $query = Product::query();
+        app(StorefrontProductSearch::class)->applyForResults($query, 'Wilo');
+
+        $this->assertSame([$product->id], $query->pluck('id')->all());
+    }
+
     public function test_category_suggestions_explain_identical_names_with_their_parent_section(): void
     {
         $boilers = Category::create(['name' => 'Котлы', 'slug' => 'search-boilers-parent', 'parent_id' => 0, 'is_active' => true]);
@@ -172,6 +202,10 @@ class StorefrontProductSearchTest extends TestCase
         $this->assertTrue($search->apply(Product::query(), 'Fenix')->whereKey($cyrillicBrandProduct)->exists());
         $this->assertTrue($search->apply(Product::query(), 'APC-500')->whereKey($modelProduct)->exists());
         $this->assertTrue($search->apply(Product::query(), 'atybrc')->whereKey($cyrillicBrandProduct)->exists());
+
+        $fallbackResults = Product::query();
+        $search->applyForResults($fallbackResults, 'топка Феникс');
+        $this->assertTrue($fallbackResults->whereKey($latinBrandProduct)->exists());
 
         $this->getJson('/search/suggest?q=Fenix')
             ->assertOk()

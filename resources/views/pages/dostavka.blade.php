@@ -76,6 +76,8 @@
                             </div>
                         </div>
 
+                        @include('partials.own-transport-schedule')
+
                         {{-- Транспортная компания --}}
                         <div class="delivery-card mb-20">
                             <div class="d-flex align-items-start gap-16">

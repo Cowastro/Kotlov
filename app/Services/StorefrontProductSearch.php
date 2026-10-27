@@ -143,6 +143,24 @@ class StorefrontProductSearch
         });
     }
 
+    /**
+     * Use the compact query for the common case and keep the exhaustive search
+     * as a fallback. This avoids building the much larger variant expression
+     * for every full results page while preserving typo/layout support when the
+     * compact pass cannot find anything.
+     */
+    public function applyForResults(Builder $query, string $search, bool $includeInternal = false): Builder
+    {
+        $fastQuery = clone $query;
+        $this->applyForSuggestions($fastQuery, $search, $includeInternal);
+
+        if ($fastQuery->exists()) {
+            return $this->applyForSuggestions($query, $search, $includeInternal);
+        }
+
+        return $this->apply($query, $search, $includeInternal);
+    }
+
     public function isHeatingElementQuery(string $search): bool
     {
         $tokens = preg_split('/[^\pL\pN]+/u', $this->normalize($search), -1, PREG_SPLIT_NO_EMPTY) ?: [];

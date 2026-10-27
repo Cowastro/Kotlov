@@ -37,6 +37,20 @@ class CheckoutPaymentAvailabilityTest extends TestCase
             ->assertDontSee('sbg.by', false);
     }
 
+    public function test_checkout_offers_own_transport_and_shows_its_route_schedule(): void
+    {
+        $product = $this->orderableProduct();
+
+        $this->withSession(['cart' => $this->cartFor($product)])
+            ->get(route('checkout'))
+            ->assertOk()
+            ->assertSee('value="own_transport"', false)
+            ->assertSeeText('Доставка своим транспортом по графику')
+            ->assertSeeText('Минск, Минский район и города по маршрутам')
+            ->assertSeeText('Новополоцк')
+            ->assertSeeText('Барановичи');
+    }
+
     public function test_installment_button_target_preselects_six_month_installment(): void
     {
         $product = $this->orderableProduct();

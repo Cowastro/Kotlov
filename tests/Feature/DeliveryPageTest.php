@@ -18,6 +18,21 @@ class DeliveryPageTest extends TestCase
             ->assertSeeText('Для крупногабаритных товаров и товаров весом свыше 80 кг стоимость и условия доставки согласовываются с продавцом.');
     }
 
+    public function test_delivery_page_shows_the_own_transport_weekly_routes(): void
+    {
+        $this->get('/dostavka')
+            ->assertOk()
+            ->assertSeeText('Доставка своим транспортом по графику')
+            ->assertSeeText('Понедельник, среда и пятница')
+            ->assertSeeText('Минск и Минский район')
+            ->assertSeeText('Вторник')
+            ->assertSeeText('Молодечно')
+            ->assertSeeText('Четверг')
+            ->assertSeeText('Верхнедвинск')
+            ->assertSeeText('Пятница')
+            ->assertSeeText('Жодино');
+    }
+
     public function test_public_pages_show_round_the_clock_orders_and_daily_consultations_until_twenty(): void
     {
         $this->get('/contacts')

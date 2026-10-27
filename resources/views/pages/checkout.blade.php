@@ -139,12 +139,16 @@
                                                             — {{ number_format($method['price'], 2, '.', ' ') }} BYN
                                                         @elseif (isset($method['price']) && $method['price'] === 0)
                                                             — Бесплатно
+                                                        @elseif (array_key_exists('price', $method) && $method['price'] === null)
+                                                            — стоимость уточняется
                                                         @endif
                                                     </option>
                                                 @endforeach
                                             </select>
                                         </div>
                                     </fieldset>
+
+                                    @include('partials.own-transport-schedule', ['collapsible' => true])
 
                                     <div id="delivery-address-fields">
                                         <div class="tf-grid-layout sm-col-2">
@@ -494,6 +498,7 @@
 
     // ── Показ/скрытие полей адреса при самовывозе ──
     var deliverySelect   = document.getElementById('delivery-type');
+    var ownTransportSchedule = document.getElementById('own-transport-schedule');
     var addressFields    = document.getElementById('delivery-address-fields');
     var addressInputs    = ['delivery-region', 'delivery-city', 'delivery-address'].map(function(id) { return document.getElementById(id); }).filter(Boolean);
     var requiredMarks    = document.querySelectorAll('.delivery-required-mark');
@@ -503,6 +508,9 @@
             addressFields.style.display = isPickup ? 'none' : '';
             addressInputs.forEach(function(el) { el.required = !isPickup; });
             requiredMarks.forEach(function(el) { el.style.display = isPickup ? 'none' : ''; });
+            if (ownTransportSchedule && deliverySelect.value === 'own_transport') {
+                ownTransportSchedule.open = true;
+            }
         }
         deliverySelect.addEventListener('change', toggleAddress);
         toggleAddress();
