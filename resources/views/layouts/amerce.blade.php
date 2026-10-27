@@ -193,12 +193,12 @@
             if (!textEl || !remainEl || !barEl) return;
 
             if (data.remaining <= 0) {
-                textEl.innerHTML = '🎉 <strong>Бесплатная доставка по Минску</strong>. По городам графика — бесплатно от 1 000 BYN.';
+                textEl.innerHTML = '🎉 <strong>Бесплатная доставка в пределах МКАД-2</strong>. По городам графика — бесплатно от 1 000 BYN.';
             } else {
                 var rem = parseFloat(data.remaining).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
                 textEl.innerHTML =
                     'Добавьте ещё на <span class="text-primary fw-7" id="cart-threshold-remaining">' +
-                    rem + ' BYN</span> для бесплатной доставки по Минску';
+                    rem + ' BYN</span> для бесплатной доставки в пределах МКАД-2';
             }
             var pct = data.progress || 0;
             barEl.style.width = pct + '%';

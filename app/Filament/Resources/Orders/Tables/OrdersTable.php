@@ -57,8 +57,8 @@ class OrdersTable
 
         $deliveryNames = [
             'pickup' => 'Самовывоз',
-            'courier' => 'Курьер по Минску',
-            'courier_minsk' => 'Курьер по Минску',
+            'courier' => 'Наш транспорт в пределах МКАД-2',
+            'courier_minsk' => 'Наш транспорт в пределах МКАД-2',
             'transport' => 'ТК по Беларуси',
             'transport_company' => 'ТК по Беларуси',
             'kit' => 'ТК КИТ / международная доставка',

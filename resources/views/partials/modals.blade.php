@@ -602,7 +602,7 @@
                     <span class="text-primary fw-7" id="cart-threshold-remaining">
                         {{ number_format(config('shop.free_delivery_threshold', 400), 2, '.', ' ') }} BYN
                     </span>
-                    для бесплатной доставки по Минску
+                    для бесплатной доставки в пределах МКАД-2
                 </p>
                 <div class="tf-progress-bar tf-progress-ship">
                     <div class="value" id="cart-threshold-bar" style="width: 0%" data-progress="0"></div>

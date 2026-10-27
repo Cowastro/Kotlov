@@ -64,7 +64,7 @@
                                 </div>
                                 <div>
                                     <h6 class="fw-semibold mb-8">
-                                        Нашим транспортом по Минску и Минскому району
+                                        Нашим транспортом в пределах МКАД-2
                                         — {{ number_format($delivery['courier']['price'] ?? 10, 2, '.', ' ') }} BYN<sup>*</sup>
                                     </h6>
                                     <p class="cl-text-2 mb-4">

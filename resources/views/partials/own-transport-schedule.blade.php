@@ -12,7 +12,7 @@
                 <span class="own-transport-schedule__summary-icon" aria-hidden="true"><i class="icon icon-Truck"></i></span>
                 <span>
                     <strong>График доставки своим транспортом</strong>
-                    <small>Минск, Минский район и города по маршрутам</small>
+                    <small>Минск, населённые пункты в пределах МКАД-2 и города по маршрутам</small>
                 </span>
             </summary>
             <div class="own-transport-schedule__body">
@@ -22,7 +22,7 @@
                 <span class="own-transport-schedule__summary-icon" aria-hidden="true"><i class="icon icon-Truck"></i></span>
                 <div>
                     <h6 class="fw-semibold mb-4">Доставка своим транспортом по графику</h6>
-                    <p class="cl-text-2 mb-0">Регулярные маршруты по Минску, Минскому району и городам Беларуси.</p>
+                    <p class="cl-text-2 mb-0">Регулярные маршруты по Минску, в пределах МКАД-2 и городам Беларуси.</p>
                 </div>
             </div>
             <div class="own-transport-schedule__body">
@@ -38,7 +38,7 @@
                 </div>
                 <div class="own-transport-schedule__benefit">
                     <p class="mb-4">
-                        <strong>Минск и Минский район:</strong>
+                        <strong>Минск и населённые пункты в пределах МКАД-2:</strong>
                         {{ number_format($minskTransport['price'] ?? 10, 0, '.', ' ') }} BYN,
                         от {{ number_format($minskTransport['free_from'] ?? 400, 0, '.', ' ') }} BYN — <strong>бесплатно</strong>.
                     </p>

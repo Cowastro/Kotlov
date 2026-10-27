@@ -219,7 +219,7 @@
                                     <p class="fw-medium lh-24 mb-0">Доставка:</p>
                                     @if ($subtotal >= $threshold)
                                         <span class="text-caption-01 text-end">
-                                            <strong class="text-primary">По Минску — бесплатно</strong><br>
+                                            <strong class="text-primary">В пределах МКАД-2 — бесплатно</strong><br>
                                             по городам графика — согласно тарифу
                                         </span>
                                     @else
