@@ -20,6 +20,10 @@ class ReleaseNotesController extends Controller
 
     /** Release date => title and one-line summary; each has a view admin/releases/{date}. */
     public const RELEASES = [
+        '2026-10-27' => [
+            'title' => 'Выбор диаметра у дымоходов, «Феррит 1 мм» и исправленные цены bania',
+            'summary' => 'Дымоходы переключаются по диаметру в карточке, прайс ТиС «Феррит 1 мм», починены фото, разобрана очередь 1С, исправлены чужие привязки прайса bania, объединены дубли.',
+        ],
         '2026-10-26' => [
             'title' => 'Быстрый заказ, счёт из заказа и новые бренды «Майтек Групп»',
             'summary' => 'Ручной заказ в одной форме, счёт / КП из заказа, HOTEX, SKAT, Сангай и ТЭНы INNOWARM, цены Greolit PROFI, калькулятор дымохода, WebPay и ЕРИП.',
