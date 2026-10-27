@@ -172,6 +172,7 @@ body.b2b-body { margin:0; color:var(--b2b-ink); background:var(--b2b-bg); font-f
     .b2b-mobile-category-tile{display:flex;min-width:0;flex-direction:column;align-items:center;gap:5px;padding:0;border:0;color:#2e3740;background:transparent;text-align:center;font:inherit}
     .b2b-mobile-category-tile__image{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:1;border:1px solid #e8ecef;border-radius:13px;background:#fff;overflow:hidden}
     .b2b-mobile-category-tile__image img{width:100%;height:100%;object-fit:contain;padding:8px;box-sizing:border-box}
+    .b2b-mobile-category-tile__image>i{display:grid;place-items:center;width:48px;height:48px;border-radius:14px;color:#253b4b;background:#edf2f5;font-size:27px}
     .b2b-mobile-category-tile__image b{display:none}
     .b2b-mobile-category-tile>span:last-child{display:-webkit-box;min-height:28px;font-size:10px;font-weight:600;line-height:1.2;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
     .b2b-mobile-category-tile.active .b2b-mobile-category-tile__image{border-color:var(--b2b-accent);box-shadow:0 0 0 2px rgba(223,63,66,.12)}

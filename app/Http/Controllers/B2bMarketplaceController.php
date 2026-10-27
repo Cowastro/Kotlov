@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\ContactRequest;
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
+use App\Support\CategoryIconResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -116,10 +117,7 @@ class B2bMarketplaceController extends Controller
             $products = $this->paginate($rows, $request, 30);
         }
 
-        $representativeProducts = $mode === 'reference'
-            ? $products->getCollection()
-            : $listingOffers->unique('product_id')->pluck('product')->filter();
-        $categoryTree = $this->categoryTree($categoryIndex, $availableCategoryIds, $categoryId, $representativeProducts);
+        $categoryTree = $this->categoryTree($categoryIndex, $availableCategoryIds, $categoryId);
         $minimalLayout = true;
 
         $visibleProductIds = $mode === 'reference'
@@ -281,30 +279,19 @@ class B2bMarketplaceController extends Controller
         return $ids;
     }
 
-    private function categoryTree(Collection $categories, Collection $availableCategoryIds, int $selectedId, Collection $representativeProducts): Collection
+    private function categoryTree(Collection $categories, Collection $availableCategoryIds, int $selectedId): Collection
     {
         $directCounts = $availableCategoryIds
             ->map(fn ($id): int => (int) $id)
             ->filter()
             ->countBy();
         $branchCounts = [];
-        $branchImages = [];
 
         foreach ($directCounts as $categoryId => $count) {
             $currentId = (int) $categoryId;
             $visited = [];
             while ($currentId > 0 && isset($categories[$currentId]) && ! isset($visited[$currentId])) {
                 $branchCounts[$currentId] = ($branchCounts[$currentId] ?? 0) + $count;
-                $visited[$currentId] = true;
-                $currentId = (int) $categories[$currentId]->parent_id;
-            }
-        }
-
-        foreach ($representativeProducts as $product) {
-            $currentId = (int) $product->category_id;
-            $visited = [];
-            while ($currentId > 0 && isset($categories[$currentId]) && ! isset($visited[$currentId])) {
-                $branchImages[$currentId] ??= (string) $product->image_url;
                 $visited[$currentId] = true;
                 $currentId = (int) $categories[$currentId]->parent_id;
             }
@@ -319,12 +306,14 @@ class B2bMarketplaceController extends Controller
 
         $visible = $categories->filter(fn (Category $category): bool => isset($branchCounts[$category->id]));
         $children = $visible->groupBy(fn (Category $category): int => (int) $category->parent_id);
-        $build = function (Category $category) use (&$build, $children, $branchCounts, $branchImages, $selectedId, $selectedPath): array {
+        $build = function (Category $category) use (&$build, $children, $branchCounts, $selectedId, $selectedPath): array {
             return [
                 'id' => (int) $category->id,
                 'name' => $category->name,
                 'slug' => $category->slug,
-                'image' => $branchImages[$category->id] ?? $category->image_url,
+                'image' => $category->image_url,
+                'has_custom_image' => filled($category->image),
+                'icon' => CategoryIconResolver::resolve((string) $category->slug, (string) $category->name),
                 'count' => (int) ($branchCounts[$category->id] ?? 0),
                 'selected' => (int) $category->id === $selectedId,
                 'expanded' => isset($selectedPath[$category->id]),
