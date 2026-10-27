@@ -289,6 +289,7 @@ class B2bMarketplaceController extends Controller
             ->countBy();
         $branchCounts = [];
         $branchImages = [];
+        $branchImageScores = [];
 
         foreach ($directCounts as $categoryId => $count) {
             $currentId = (int) $categoryId;
@@ -301,10 +302,39 @@ class B2bMarketplaceController extends Controller
         }
 
         foreach ($representativeProducts as $product) {
+            $productCategory = $product->category;
+            $productImage = (string) $product->image_url;
             $currentId = (int) $product->category_id;
             $visited = [];
             while ($currentId > 0 && isset($categories[$currentId]) && ! isset($visited[$currentId])) {
-                $branchImages[$currentId] ??= (string) $product->image_url;
+                $category = $categories[$currentId];
+                $searchableCategory = mb_strtolower(implode(' ', [
+                    $productCategory?->name,
+                    $productCategory?->slug,
+                ]));
+                $searchableProduct = mb_strtolower(implode(' ', [
+                    $product->name,
+                    $product->sku,
+                ]));
+                $score = (int) $product->category_id === $currentId ? 1000 : 0;
+
+                foreach ($this->categoryImageTokens($category) as $token) {
+                    if (str_contains($searchableCategory, $token)) {
+                        $score += 40;
+                    }
+                    if (str_contains($searchableProduct, $token)) {
+                        $score += 15;
+                    }
+                }
+
+                if (str_contains($productImage, 'product-placeholder')) {
+                    $score -= 500;
+                }
+
+                if (! isset($branchImageScores[$currentId]) || $score > $branchImageScores[$currentId]) {
+                    $branchImageScores[$currentId] = $score;
+                    $branchImages[$currentId] = $productImage;
+                }
                 $visited[$currentId] = true;
                 $currentId = (int) $categories[$currentId]->parent_id;
             }
@@ -324,7 +354,9 @@ class B2bMarketplaceController extends Controller
                 'id' => (int) $category->id,
                 'name' => $category->name,
                 'slug' => $category->slug,
-                'image' => $branchImages[$category->id] ?? $category->image_url,
+                'image' => filled($category->image)
+                    ? $category->image_url
+                    : ($branchImages[$category->id] ?? $category->image_url),
                 'count' => (int) ($branchCounts[$category->id] ?? 0),
                 'selected' => (int) $category->id === $selectedId,
                 'expanded' => isset($selectedPath[$category->id]),
@@ -336,6 +368,19 @@ class B2bMarketplaceController extends Controller
             ->filter(fn (Category $category): bool => (int) $category->parent_id === 0 || ! isset($branchCounts[(int) $category->parent_id]))
             ->map($build)
             ->values();
+    }
+
+    /** @return list<string> */
+    private function categoryImageTokens(Category $category): array
+    {
+        $ignored = ['система', 'товары', 'товар', 'для', 'или', 'system'];
+        $tokens = preg_split('/[^\pL\pN]+/u', mb_strtolower($category->name.' '.$category->slug)) ?: [];
+
+        return collect($tokens)
+            ->filter(fn (string $token): bool => mb_strlen($token) >= 4 && ! in_array($token, $ignored, true))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function paginate(Collection $items, Request $request, int $perPage): LengthAwarePaginator

@@ -251,6 +251,46 @@ class B2bMarketplaceTest extends TestCase
             ->assertDontSeeText('Котёл вне ветки');
     }
 
+    public function test_mobile_category_photos_are_selected_by_matching_branch_name(): void
+    {
+        $root = Category::query()->create([
+            'name' => 'Дымоходы',
+            'slug' => 'photo-root',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $mono = Category::query()->create([
+            'name' => 'Система Моно',
+            'slug' => 'test-dymohody-mono',
+            'parent_id' => $root->id,
+            'is_active' => true,
+        ]);
+        $sandwich = Category::query()->create([
+            'name' => 'Система Сэндвич',
+            'slug' => 'test-dymohody-sendvich',
+            'parent_id' => $root->id,
+            'is_active' => true,
+        ]);
+        $monoProduct = $this->product($mono, 'Труба моно', 'MONO-1');
+        $monoProduct->update(['images' => ['/img/test/mono.jpg']]);
+        $sandwichProduct = $this->product($sandwich, 'Труба сэндвич', 'SANDWICH-1');
+        $sandwichProduct->update(['images' => ['/img/test/sandwich.jpg']]);
+        $source = $this->source('photo-source', $root);
+        $this->offer($source, $sandwichProduct, 90, 3);
+        $this->offer($source, $monoProduct, 80, 5);
+        $user = $this->approvedUser([$source->id]);
+
+        $this->actingAs($user)
+            ->get(route('b2b.catalog'))
+            ->assertOk()
+            ->assertSeeInOrder([
+                '/img/test/mono.jpg',
+                'Система Моно',
+                '/img/test/sandwich.jpg',
+                'Система Сэндвич',
+            ], false);
+    }
+
     public function test_marketplace_uses_compact_localized_pagination(): void
     {
         $category = Category::query()->create([
