@@ -5984,7 +5984,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'template_slug' => 'plita-izolyatsionnaya-kaminnaya-skamoenclosure-1220-1000-30',
             'allow_unmatched' => true,
             'category_slug' => 'ognezashchitnye-plity-i-listy',
-            'fragments' => ['Плита', 'IZOSIL', 'серая', '1000x1220x30'],
+            'fragments' => ['Плита', 'IZOSIL', 'серая', '1000', '1220', '30мм'],
             'brand' => [
                 'name' => 'IZOSIL',
                 'slug' => 'izosil',
