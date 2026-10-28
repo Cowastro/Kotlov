@@ -56,6 +56,7 @@ class RepairSakovichKipiBundlePricesCommandTest extends TestCase
         $this->artisan('catalog:repair-sakovich-kipi-bundle-prices')
             ->expectsOutput('metric.sakovich_bundle.price_updates=5')
             ->expectsOutput('metric.sakovich_bundle.boiler_links_detached=5')
+            ->expectsOutput('metric.sakovich_bundle.bundle_links_upserted=5')
             ->assertSuccessful();
         $this->assertSame('1020.00', Product::findOrFail(12591)->price);
 
@@ -69,11 +70,20 @@ class RepairSakovichKipiBundlePricesCommandTest extends TestCase
             $this->assertSame(number_format($purchase, 2, '.', ''), $product->manual_purchase_price_byn);
             $this->assertNull($product->price_old);
             $this->assertFalse($product->is_sale);
+            $this->assertFalse($product->requires_price_confirmation);
             $this->assertDatabaseHas('supplier_products', [
                 'supplier_id' => $supplier->id,
                 'supplier_article_normalized' => "PELLET-UNIVERSAL-{$power}",
                 'product_id' => null,
                 'match_status' => 'unmatched',
+            ]);
+            $this->assertDatabaseHas('supplier_products', [
+                'supplier_id' => $supplier->id,
+                'supplier_article_normalized' => "PELLET-UNIVERSAL-{$power}-KIPI-BIO-BUNDLE",
+                'product_id' => $id,
+                'price_byn' => number_format($purchase, 2, '.', ''),
+                'match_status' => 'matched',
+                'match_confidence' => 'manual_price_list',
             ]);
         }
     }
