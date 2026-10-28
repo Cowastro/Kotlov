@@ -71,14 +71,20 @@ class OrderLegacyLeadQueueTest extends TestCase
         Livewire::actingAs($manager)
             ->test(ListOrders::class)
             ->set('activeTab', 'work_queue')
-            ->callTableAction('markIrrelevant', $lead, ['reason' => 'Клиент подтвердил, что заявка больше не актуальна'])
+            ->callTableAction('markOrderReason', $lead, [
+                'reason_type' => 'irrelevant',
+                'reason' => 'Клиент подтвердил, что заявка больше не актуальна',
+            ])
             ->assertHasNoTableActionErrors();
 
         $lead->refresh();
         $this->assertSame('cancelled', $lead->status);
         $this->assertNotNull($lead->archived_at);
         $this->assertSame($manager->id, $lead->archived_by);
-        $this->assertSame('Клиент подтвердил, что заявка больше не актуальна', $lead->archive_reason);
+        $this->assertSame(
+            'Заявка больше не актуальна: Клиент подтвердил, что заявка больше не актуальна',
+            $lead->archive_reason,
+        );
         $this->assertStringContainsString('Неактуальная заявка:', (string) $lead->admin_comment);
         $this->assertDatabaseHas('orders', ['id' => $lead->id]);
         $this->assertDatabaseHas('order_status_history', [
@@ -86,7 +92,7 @@ class OrderLegacyLeadQueueTest extends TestCase
             'user_id' => $manager->id,
             'status_from' => 'new',
             'status_to' => 'cancelled',
-            'comment' => 'Клиент подтвердил, что заявка больше не актуальна',
+            'comment' => 'Заявка больше не актуальна: Клиент подтвердил, что заявка больше не актуальна',
         ]);
     }
 

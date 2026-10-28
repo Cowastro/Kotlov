@@ -95,6 +95,9 @@ class Order extends Model
 
     /** Причины закрытия заказа без удаления истории. */
     public const CLOSURE_REASONS = [
+        'incorrect_price' => 'Неверная цена',
+        'out_of_stock' => 'Нет в наличии',
+        'credit_refused' => 'Отказ в кредите / рассрочке',
         'customer_refusal' => 'Отказ клиента',
         'delivery_refusal' => 'Отказ при доставке',
         'irrelevant' => 'Заявка больше не актуальна',
@@ -314,7 +317,8 @@ class Order extends Model
 
         $reason = trim($reason);
         if ($reasonType !== null) {
-            $reason = (self::CLOSURE_REASONS[$reasonType] ?? self::CLOSURE_REASONS['other']).': '.$reason;
+            $reasonLabel = self::CLOSURE_REASONS[$reasonType] ?? self::CLOSURE_REASONS['other'];
+            $reason = $reason !== '' ? $reasonLabel.': '.$reason : $reasonLabel;
         }
         $timezone = config('app.display_timezone', 'Europe/Minsk');
         $note = '['.now()->timezone($timezone)->format('d.m.Y H:i').'] Неактуальная заявка: '.$reason;

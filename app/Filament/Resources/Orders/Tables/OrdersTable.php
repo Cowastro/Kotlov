@@ -705,6 +705,46 @@ class OrdersTable
                                 ->send();
                         }
                     }),
+                Action::make('markOrderReason')
+                    ->label('Отметить причину')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->button()
+                    ->visible(fn (Order $record): bool => $record->canBeClosedAsIrrelevant())
+                    ->tooltip('Отметить причину отказа и закрыть заказ')
+                    ->modalHeading('Отметить заказ с причиной')
+                    ->modalDescription('Заказ не удаляется: он получит статус «Отменён» и попадёт в архив. Причина, автор и время сохранятся в истории.')
+                    ->schema([
+                        Select::make('reason_type')
+                            ->label('Причина')
+                            ->options(Order::CLOSURE_REASONS)
+                            ->native(false)
+                            ->required(),
+                        Textarea::make('reason')
+                            ->label('Комментарий')
+                            ->placeholder('Необязательно. Добавьте детали, если они нужны менеджеру.')
+                            ->helperText('Например: цена в карточке устарела или банк не одобрил заявку клиента.')
+                            ->rows(3)
+                            ->maxLength(1000),
+                    ])
+                    ->modalSubmitActionLabel('Отметить и закрыть заказ')
+                    ->action(function (Order $record, array $data): void {
+                        if (! $record->markIrrelevant($data['reason'] ?? '', $data['reason_type'])) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Заказ нельзя закрыть')
+                                ->body('Проверьте статус заказа и состояние оплаты.')
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title('Причина сохранена')
+                            ->body('Заказ закрыт и перемещён в архив.')
+                            ->send();
+                    }),
                 FindOrderItemAnalogAction::make()
                     ->iconButton()
                     ->tooltip('Подобрать аналог'),
@@ -723,23 +763,6 @@ class OrdersTable
                             ? app(OrderPortal::class)->url($link)
                             : null)
                         ->openUrlInNewTab(),
-                    Action::make('markIrrelevant')
-                        ->label('Неактуальна')
-                        ->icon('heroicon-o-archive-box')
-                        ->color('gray')
-                        ->visible(fn (Order $record): bool => $record->canBeClosedAsIrrelevant())
-                        ->form([
-                            Textarea::make('reason')
-                                ->label('Почему заявка неактуальна')
-                                ->placeholder('Например: клиент отказался, не удалось связаться, тестовая заявка')
-                                ->rows(3)
-                                ->minLength(3)
-                                ->maxLength(1000)
-                                ->required(),
-                        ])
-                        ->modalHeading('Отметить заявку неактуальной')
-                        ->modalDescription('Заказ не удаляется: он перейдёт в статус «Отменён», а причина и автор сохранятся в истории.')
-                        ->action(fn (Order $record, array $data) => $record->markIrrelevant($data['reason'])),
                     EditAction::make('correctOrder')
                         ->label('Корректировать заказ')
                         ->icon('heroicon-o-pencil-square')

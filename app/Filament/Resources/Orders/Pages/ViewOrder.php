@@ -801,7 +801,7 @@ class ViewOrder extends ViewRecord
                     Notification::make()->success()->title('Комментарий добавлен')->send();
                 }),
             Action::make('closeAsIrrelevant')
-                ->label('Отказ / неактуален')
+                ->label('Отметить причину')
                 ->icon('heroicon-o-no-symbol')
                 ->color('danger')
                 ->extraAttributes(['class' => 'order-view-action order-view-action--danger'])
@@ -815,16 +815,14 @@ class ViewOrder extends ViewRecord
                         ->native(false)
                         ->required(),
                     Textarea::make('reason')
-                        ->label('Конкретная причина')
-                        ->placeholder('Например: клиент купил товар в другом месте.')
+                        ->label('Комментарий')
+                        ->placeholder('Необязательно. Добавьте детали, если они нужны менеджеру.')
                         ->rows(3)
-                        ->minLength(3)
-                        ->maxLength(1000)
-                        ->required(),
+                        ->maxLength(1000),
                 ])
-                ->modalSubmitActionLabel('Закрыть заказ')
+                ->modalSubmitActionLabel('Отметить и закрыть заказ')
                 ->action(function (array $data): void {
-                    $this->record->markIrrelevant($data['reason'], $data['reason_type']);
+                    $this->record->markIrrelevant($data['reason'] ?? '', $data['reason_type']);
                     $this->reloadRecord();
 
                     Notification::make()

@@ -114,6 +114,8 @@ class OrderWorkflowSequenceTest extends TestCase
 
         Livewire::test(ListOrders::class)
             ->assertTableActionHasLabel('advanceWorkflow', 'Проверить', $new)
+            ->assertTableActionHasLabel('markOrderReason', 'Отметить причину', $new)
+            ->assertTableActionVisible('markOrderReason', $new)
             ->assertTableActionHasLabel('correctOrder', 'Корректировать заказ', $new)
             ->assertTableActionVisible('correctOrder', $new)
             ->assertTableActionVisible('findAnalog', $new)
@@ -121,6 +123,7 @@ class OrderWorkflowSequenceTest extends TestCase
             ->assertTableActionVisible('correctOrder', $checking)
             ->assertTableActionHasLabel('advanceWorkflow', 'В работу', $confirmedPaid)
             ->assertTableActionHasLabel('advanceWorkflow', 'В доставку', $processing)
+            ->assertTableActionVisible('markOrderReason', $processing)
             ->assertTableActionHidden('correctOrder', $processing)
             ->assertTableActionHidden('findAnalog', $processing)
             ->assertTableActionDoesNotExist('confirmed', record: $new)

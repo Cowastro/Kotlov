@@ -45,6 +45,33 @@ class OrderClosureWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_mark_order_from_table_with_reason_without_comment(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $order = $this->order('checking');
+
+        Livewire::actingAs($manager)
+            ->test(\App\Filament\Resources\Orders\Pages\ListOrders::class)
+            ->assertTableActionVisible('markOrderReason', $order)
+            ->callTableAction('markOrderReason', $order, [
+                'reason_type' => 'incorrect_price',
+                'reason' => '',
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $order->refresh();
+
+        $this->assertSame('cancelled', $order->status);
+        $this->assertSame('Неверная цена', $order->archive_reason);
+        $this->assertSame($manager->id, $order->archived_by);
+        $this->assertDatabaseHas('order_status_history', [
+            'order_id' => $order->id,
+            'status_from' => 'checking',
+            'status_to' => 'cancelled',
+            'comment' => 'Неверная цена',
+        ]);
+    }
+
     public function test_edit_page_has_safe_closure_action_instead_of_deletion(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
