@@ -709,7 +709,7 @@ class OrdersTable
                     ->label('Отметить причину')
                     ->icon('heroicon-o-no-symbol')
                     ->color('danger')
-                    ->button()
+                    ->iconButton()
                     ->visible(fn (Order $record): bool => $record->canBeClosedAsIrrelevant())
                     ->tooltip('Отметить причину отказа и закрыть заказ')
                     ->modalHeading('Отметить заказ с причиной')
