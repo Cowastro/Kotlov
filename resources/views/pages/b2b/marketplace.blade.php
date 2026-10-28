@@ -55,7 +55,7 @@
                     placeholder="Название или артикул" aria-label="Поиск по названию, артикулу, бренду или категории"
                     aria-autocomplete="list" aria-controls="b2b-search-suggest" aria-expanded="false">
                 @if ($query !== '')
-                    <a href="{{ request()->fullUrlWithQuery(['q' => null, 'page' => null]) }}" class="b2b-search__clear" aria-label="Очистить поиск">×</a>
+                    <a href="{{ request()->fullUrlWithQuery(['q' => null, 'category' => null, 'page' => null]) }}" class="b2b-search__clear" aria-label="Очистить поиск">×</a>
                 @else
                     <kbd>/</kbd>
                 @endif
@@ -99,7 +99,7 @@
             </div>
             <div class="b2b-mobile-category-grid">
                 @foreach ($mobileCategoryTiles as $category)
-                    <a href="{{ request()->fullUrlWithQuery(['category' => $category['id'], 'page' => null]) }}" class="b2b-mobile-category-tile {{ $category['selected'] ? 'active' : '' }}">
+                    <a href="{{ request()->fullUrlWithQuery(['category' => $category['id'], 'q' => null, 'page' => null]) }}" class="b2b-mobile-category-tile {{ $category['selected'] ? 'active' : '' }}">
                         <span class="b2b-mobile-category-tile__image">
                             <img src="{{ $category['image'] }}" alt="" loading="lazy" onerror="this.src='{{ asset('img/popular/catalog.jpg') }}'">
                             <b>{{ $category['count'] }}</b>

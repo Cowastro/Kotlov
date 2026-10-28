@@ -13,6 +13,12 @@
         select.addEventListener('change', function () { filterForm.submit(); });
     });
 
+    filterForm.addEventListener('submit', function () {
+        if (!searchInput.value.trim()) return;
+        var categoryInput = filterForm.querySelector('input[name="category"]');
+        if (categoryInput) categoryInput.remove();
+    });
+
     function closeSuggest() {
         suggest.hidden = true;
         activeIndex = -1;

@@ -22,6 +22,11 @@ class B2bMarketplaceController extends Controller
         $mode = $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
         $categoryId = max(0, $request->integer('category'));
+        // The main search is global. A category remains selected only while the
+        // user browses the tree; starting a search switches back to all goods.
+        if ($query !== '') {
+            $categoryId = 0;
+        }
         $brandId = max(0, $request->integer('brand'));
         $sourceKey = mb_substr(trim($request->string('source')->toString()), 0, 40);
         $sort = in_array($request->string('sort')->toString(), ['name', 'price_asc', 'price_desc', 'stock'], true)
@@ -385,12 +390,12 @@ class B2bMarketplaceController extends Controller
     {
         $page = max(1, $request->integer('page', 1));
 
-        return (new LengthAwarePaginator(
+        return new LengthAwarePaginator(
             $items->forPage($page, $perPage)->values(),
             $items->count(),
             $perPage,
             $page,
             ['path' => $request->url(), 'query' => $request->query()],
-        ));
+        );
     }
 }

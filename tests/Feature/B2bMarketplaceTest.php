@@ -310,6 +310,41 @@ class B2bMarketplaceTest extends TestCase
             ->assertDontSeeText('Котёл вне ветки');
     }
 
+    public function test_search_switches_from_selected_category_to_the_whole_catalog(): void
+    {
+        $selectedCategory = Category::query()->create([
+            'name' => 'Теплоносители',
+            'slug' => 'b2b-search-selected-category',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $matchingCategory = Category::query()->create([
+            'name' => 'Бани и сауны',
+            'slug' => 'b2b-search-matching-category',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $selectedProduct = $this->product($selectedCategory, 'Антифриз для отопления', 'SEARCH-GROUP-1');
+        $matchingProduct = $this->product($matchingCategory, 'Камни для бани', 'SEARCH-GROUP-2');
+        $source = $this->source('search-switch-source', $selectedCategory);
+        $settings = $source->settings;
+        $settings['b2b_category_ids'] = [$selectedCategory->id, $matchingCategory->id];
+        $source->update(['settings' => $settings]);
+        $this->offer($source, $selectedProduct, 30, 5);
+        $this->offer($source, $matchingProduct, 40, 7);
+        $user = $this->approvedUser([$source->id]);
+
+        $this->actingAs($user)
+            ->get(route('b2b.catalog', [
+                'category' => $selectedCategory->id,
+                'q' => 'камни',
+            ]))
+            ->assertOk()
+            ->assertSeeText('Камни для бани')
+            ->assertDontSeeText('Антифриз для отопления')
+            ->assertDontSee('<input type="hidden" name="category"', false);
+    }
+
     public function test_mobile_category_photos_are_selected_by_matching_branch_name(): void
     {
         $root = Category::query()->create([
