@@ -72,7 +72,48 @@ class SyncHomeTechnologiesPriceListCommandTest extends TestCase
         $this->assertNotEmpty($product->images);
         $this->assertNotEmpty($product->short_description);
         $this->assertNotEmpty($product->content);
-        $this->assertCount(3, $product->specs);
+        $this->assertGreaterThanOrEqual(3, count($product->specs));
         $this->assertSame('purchase', IntegrationSource::query()->where('code', 'home_technologies_pricelist')->firstOrFail()->b2bPriceRole());
+    }
+
+    public function test_create_missing_builds_enriched_card_and_links_exact_one_c_row(): void
+    {
+        $payload = (new HomeTechnologiesPriceList)->load(
+            base_path('resources/data/suppliers/home-technologies-2026-09.json')
+        );
+        $row = $payload['rows'][0];
+
+        $oneC = IntegrationSource::query()->where('code', 'onec')->firstOrFail();
+        $oneC->forceFill(['is_active' => true, 'update_stock' => true])->save();
+        $inventory = IntegrationProduct::query()->create([
+            'integration_source_id' => $oneC->id,
+            'external_id' => 'ONEC-HOME-TECH-NEW',
+            'name' => $row['name'],
+            'price' => 50,
+            'stock_quantity' => 3,
+            'match_status' => 'unmatched',
+            'stock_confirmed_at' => now(),
+        ]);
+
+        $this->artisan('supplier:sync-home-technologies', [
+            'file' => 'resources/data/suppliers/home-technologies-2026-09.json',
+            '--apply' => true,
+            '--create-missing' => true,
+        ])->assertSuccessful();
+
+        $product = Product::query()->where('name', $row['name'])->firstOrFail();
+        $inventory->refresh();
+
+        $this->assertSame($product->id, $inventory->product_id);
+        $this->assertSame('matched', $inventory->match_status);
+        $this->assertSame('home_technologies_exact_match', $inventory->match_method);
+        $this->assertSame('Нагревательные кабели', $product->category->name);
+        $this->assertSame('OneKeyElectro', $product->brand->name);
+        $this->assertNotEmpty($product->images);
+        $this->assertNotEmpty($product->short_description);
+        $this->assertNotEmpty($product->content);
+        $this->assertGreaterThanOrEqual(3, count($product->specs));
+        $this->assertSame(3, $product->stock_qty);
+        $this->assertTrue($product->in_stock);
     }
 }

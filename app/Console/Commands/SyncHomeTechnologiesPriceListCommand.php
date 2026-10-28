@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\CrmContactPoint;
 use App\Models\CrmCounterparty;
 use App\Models\IntegrationProduct;
@@ -11,6 +13,7 @@ use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\SupplierSource;
 use App\Models\SupplierSync;
+use App\Services\Integrations\IntegrationProductCreator;
 use App\Services\SupplierProductAvailabilityService;
 use App\Services\Suppliers\HomeTechnologiesPriceList;
 use App\Services\Telephony\PhoneNumber;
@@ -25,13 +28,14 @@ class SyncHomeTechnologiesPriceListCommand extends Command
     protected $signature = 'supplier:sync-home-technologies
         {file=resources/data/suppliers/home-technologies-2026-09.json : XLSX или нормализованный JSON}
         {--apply : Записать поставщика, закупочные цены и безопасные розничные цены}
+        {--create-missing : Создать полноценные карточки для однозначных строк, которых ещё нет на сайте}
         {--dry-run : Только предпросмотр}
         {--export-snapshot= : Сохранить нормализованный JSON}
         {--report= : CSV-отчёт сопоставления}';
 
     protected $description = 'Домашние технологии: закупочный прайс, РРЦ и связь со складом 1С без подмены остатков.';
 
-    public function handle(HomeTechnologiesPriceList $parser, SupplierProductAvailabilityService $availability): int
+    public function handle(HomeTechnologiesPriceList $parser, SupplierProductAvailabilityService $availability, IntegrationProductCreator $creator): int
     {
         $lock = Cache::lock('supplier:sync-home-technologies', 900);
         if (! $lock->get()) {
@@ -63,16 +67,16 @@ class SyncHomeTechnologiesPriceListCommand extends Command
                 return self::SUCCESS;
             }
 
-            $stats = DB::transaction(function () use ($payload, $classified, &$supplier): array {
+            $stats = DB::transaction(function () use ($payload, $classified, &$supplier, $creator): array {
                 [$supplier, $source, $sync, $integrationSource] = $this->ensureSupplier($supplier, $payload);
-                $stats = ['offers' => 0, 'linked' => 0, 'unmatched' => 0, 'ambiguous' => 0, 'retail_updated' => 0, 'retail_preserved' => 0, 'cards_enriched' => 0];
+                $stats = ['offers' => 0, 'linked' => 0, 'created_cards' => 0, 'onec_rows_linked' => 0, 'unmatched' => 0, 'ambiguous' => 0, 'retail_updated' => 0, 'retail_preserved' => 0, 'cards_enriched' => 0];
                 $touched = [];
 
                 foreach ($classified as $row) {
                     $product = $row['product_id'] ? Product::query()->find($row['product_id']) : null;
                     $retail = $this->retailPlan($row, $product);
                     $status = $product ? 'matched' : ($row['match_reason'] === 'ambiguous' ? 'ambiguous' : 'unmatched');
-                    SupplierProduct::query()->updateOrCreate([
+                    $offer = SupplierProduct::query()->updateOrCreate([
                         'supplier_id' => $supplier->id,
                         'supplier_article_normalized' => $row['article_key'],
                     ], [
@@ -106,7 +110,7 @@ class SyncHomeTechnologiesPriceListCommand extends Command
                         'last_synced_at' => now(),
                     ]);
 
-                    IntegrationProduct::query()->updateOrCreate([
+                    $priceItem = IntegrationProduct::query()->updateOrCreate([
                         'integration_source_id' => $integrationSource->id,
                         'external_id' => $row['article_key'],
                     ], [
@@ -132,6 +136,49 @@ class SyncHomeTechnologiesPriceListCommand extends Command
                         'last_offer_seen_at' => now(),
                         'stock_confirmed_at' => null,
                     ]);
+
+                    if (! $product
+                        && $this->option('create-missing')
+                        && ! $row['discontinued']
+                        && $row['match_reason'] !== 'ambiguous') {
+                        $category = $this->categoryForRow($row);
+                        $brand = $this->brandForRow($row);
+                        $description = trim((string) ($row['description'] ?? ''));
+                        $product = $creator->createAndLink($priceItem->fresh(), [
+                            'name' => $row['name'],
+                            'h1' => $row['name'],
+                            'category_id' => $category->id,
+                            'brand_id' => $brand?->id,
+                            'retail_price' => $retail['price'],
+                            'short_description' => $description !== '' ? Str::limit($description, 240) : null,
+                            'content' => $this->descriptionHtml($description),
+                            'images' => array_values(array_filter((array) ($row['images'] ?? []))),
+                            'specs' => $this->specsForRow($row),
+                            'content_source_url' => HomeTechnologiesPriceList::WEBSITE,
+                            'meta_title' => Str::limit($row['name'].' — купить в Беларуси | KOTLOV', 255, ''),
+                            'meta_description' => Str::limit('Купить '.$row['name'].' в KOTLOV. Характеристики, цена и доставка по Беларуси.', 255, ''),
+                        ]);
+                        if ($product) {
+                            $stats['created_cards']++;
+                            $offer->forceFill([
+                                'product_id' => $product->id,
+                                'product_sku' => $product->sku,
+                                'match_status' => 'matched',
+                                'match_confidence' => 'created_from_supplier_price',
+                            ])->save();
+                            if ($inventoryId = (int) ($row['inventory_candidate_id'] ?? 0)) {
+                                $linked = IntegrationProduct::query()->whereKey($inventoryId)->whereNull('product_id')->update([
+                                    'product_id' => $product->id,
+                                    'target_category_id' => $category->id,
+                                    'match_status' => 'matched',
+                                    'match_method' => 'home_technologies_exact_match',
+                                    'match_confidence' => 1,
+                                    'matched_at' => now(),
+                                ]);
+                                $stats['onec_rows_linked'] += $linked;
+                            }
+                        }
+                    }
 
                     $stats['offers']++;
                     $stats[$product ? 'linked' : $status]++;
@@ -184,18 +231,27 @@ class SyncHomeTechnologiesPriceListCommand extends Command
         $inventory = DB::table('integration_products as ip')
             ->join('integration_sources as source', 'source.id', '=', 'ip.integration_source_id')
             ->leftJoin('suppliers as supplier', 'supplier.id', '=', 'source.supplier_id')
-            ->whereNotNull('ip.product_id')
-            ->where('ip.match_status', 'matched')
+            ->whereNotNull('ip.name')
+            ->where('ip.match_status', '!=', 'ignored')
             ->where('source.update_stock', true)
             ->where(fn ($query) => $query
                 ->where('source.code', 'onec')
                 ->orWhere('supplier.code', 'sanbusinessgroup'))
-            ->get(['ip.product_id', 'ip.name']);
-        $inventoryByName = $inventory->groupBy(fn (object $offer): string => $parser->key((string) $offer->name));
+            ->get(['ip.id', 'ip.product_id', 'ip.name']);
+        $linkedInventory = $inventory->whereNotNull('product_id');
+        $inventoryByName = $linkedInventory->groupBy(fn (object $offer): string => $parser->key((string) $offer->name));
         $inventoryByModel = [];
-        foreach ($inventory as $offer) {
+        foreach ($linkedInventory as $offer) {
             foreach ($parser->modelKeys((string) $offer->name) as $model) {
                 $inventoryByModel[$model][] = (int) $offer->product_id;
+            }
+        }
+        $unlinkedInventory = $inventory->whereNull('product_id');
+        $unlinkedByName = $unlinkedInventory->groupBy(fn (object $offer): string => $parser->key((string) $offer->name));
+        $unlinkedByModel = [];
+        foreach ($unlinkedInventory as $offer) {
+            foreach ($parser->modelKeys((string) $offer->name) as $model) {
+                $unlinkedByModel[$model][] = (int) $offer->id;
             }
         }
         $sourceModelCounts = collect($rows)
@@ -207,6 +263,7 @@ class SyncHomeTechnologiesPriceListCommand extends Command
 
         foreach ($rows as &$row) {
             $ids = [];
+            $models = null;
             $reason = 'unmatched';
             if ($link = $existing->get($row['article_key'])) {
                 $ids = [(int) $link->product_id];
@@ -242,6 +299,27 @@ class SyncHomeTechnologiesPriceListCommand extends Command
             }
             $row['product_id'] = count($ids) === 1 ? $ids[0] : null;
             $row['match_reason'] = count($ids) > 1 ? 'ambiguous' : $reason;
+            $row['inventory_candidate_id'] = null;
+            if (! $row['product_id'] && $row['match_reason'] !== 'ambiguous') {
+                $inventoryIds = [];
+                if (($exact = $unlinkedByName->get($row['name_key'])) && $exact->count() === 1) {
+                    $inventoryIds = [(int) $exact->first()->id];
+                    $row['match_reason'] = 'create_from_exact_onec_name';
+                } else {
+                    $models ??= collect($parser->modelKeys($row['name']))
+                        ->filter(fn (string $model): bool => (int) $sourceModelCounts->get($model, 0) === 1)
+                        ->values();
+                    $candidateCounts = $models
+                        ->flatMap(fn (string $model): array => $unlinkedByModel[$model] ?? [])
+                        ->countBy()->sortDesc();
+                    if ($candidateCounts->isNotEmpty()) {
+                        $top = (int) $candidateCounts->max();
+                        $inventoryIds = $candidateCounts->filter(fn (int $count): bool => $count === $top)->keys()->map('intval')->all();
+                        $row['match_reason'] = count($inventoryIds) === 1 ? 'create_from_unique_onec_model' : 'ambiguous';
+                    }
+                }
+                $row['inventory_candidate_id'] = count($inventoryIds) === 1 ? $inventoryIds[0] : null;
+            }
         }
         unset($row);
 
@@ -268,11 +346,7 @@ class SyncHomeTechnologiesPriceListCommand extends Command
                 ->implode('');
         }
         if (empty($product->specs)) {
-            $updates['specs'] = [
-                ['key' => 'Раздел', 'value' => $row['section']],
-                ['key' => 'Модель поставщика', 'value' => $row['article']],
-                ['key' => 'Единица измерения', 'value' => $row['unit']],
-            ];
+            $updates['specs'] = $this->specsForRow($row);
         }
         if (blank($product->content_source_url)) {
             $updates['content_source_url'] = HomeTechnologiesPriceList::WEBSITE;
@@ -284,6 +358,128 @@ class SyncHomeTechnologiesPriceListCommand extends Command
         $product->forceFill($updates)->save();
 
         return true;
+    }
+
+    private function categoryForRow(array $row): Category
+    {
+        $name = mb_strtolower((string) $row['name']);
+        [$parentSlug, $parentName, $slug, $categoryName] = match ($row['section']) {
+            'Электрический теплый пол' => str_contains($name, 'мат нагрев')
+                ? ['teplyj-pol', 'Тёплый пол', 'nagrevatelynye-maty', 'Нагревательные маты']
+                : ['teplyj-pol', 'Тёплый пол', 'nagrevatelynye-kabeli', 'Нагревательные кабели'],
+            'Терморегуляторы' => ['teplyj-pol', 'Тёплый пол', 'termoregulyatory-dlya-teplogo-pola', 'Терморегуляторы для тёплого пола'],
+            'Труба Stahlmann' => str_contains($name, 'труба гофр')
+                ? ['truby-i-fitingi', 'Трубы и фитинги', 'gofrirovannye-truby-iz-nerzhaveyushchej-stali', 'Гофрированные трубы из нержавеющей стали']
+                : (preg_match('/муфт|тройник|угольник|гайк/u', $name)
+                    ? ['truby-i-fitingi', 'Трубы и фитинги', 'fitingi-dlya-gofrirovannoj-truby', 'Фитинги для гофрированной трубы']
+                    : ['truby-i-fitingi', 'Трубы и фитинги', 'komplektuyushchie-dlya-gofrirovannoj-truby', 'Комплектующие для гофрированной трубы']),
+            'Системы Neptun' => match (true) {
+                str_contains($name, 'датчик') => ['vodosnabzhenie', 'Водоснабжение', 'datchiki-protechki-vody', 'Датчики протечки воды'],
+                str_contains($name, 'кран с электроприводом') => ['vodosnabzhenie', 'Водоснабжение', 'krany-s-elektroprivodom', 'Краны с электроприводом'],
+                preg_match('/модуль|источник бесперебойного/u', $name) === 1 => ['vodosnabzhenie', 'Водоснабжение', 'moduli-upravleniya-zashchitoj-ot-protechek', 'Модули управления защитой от протечек'],
+                default => ['vodosnabzhenie', 'Водоснабжение', 'sistemy-zashchity-ot-protechek', 'Системы защиты от протечек'],
+            },
+            'Арх. обогрев' => match (true) {
+                preg_match('/терморегулятор|контроллер|регулятор|метеостанция/u', $name) === 1 => ['klimat', 'Климат', 'upravlenie-naruzhnym-obogrevom', 'Управление наружным обогревом'],
+                str_contains($name, 'датчик') => ['klimat', 'Климат', 'datchiki-naruzhnogo-obogreva', 'Датчики наружного обогрева'],
+                str_contains($name, 'комплект') || str_contains($name, 'блок питания') => ['klimat', 'Климат', 'komplektuyushchie-naruzhnogo-obogreva', 'Комплектующие наружного обогрева'],
+                default => ['klimat', 'Климат', 'kabeli-naruzhnogo-obogreva', 'Кабели наружного обогрева'],
+            },
+            default => ['komplektuyushchie', 'Комплектующие', 'domashnie-tehnologii', 'Домашние технологии'],
+        };
+
+        $parent = Category::query()->where('slug', $parentSlug)->first()
+            ?? Category::query()->whereRaw('LOWER(name) = ?', [mb_strtolower($parentName)])->first()
+            ?? Category::query()->create([
+                'parent_id' => 0, 'name' => $parentName, 'slug' => $parentSlug, 'h1' => $parentName,
+                'type' => 'main', 'sort_order' => 0, 'is_active' => true,
+            ]);
+
+        return Category::query()->firstOrCreate(['slug' => $slug], [
+            'parent_id' => $parent->id,
+            'name' => $categoryName,
+            'h1' => $categoryName,
+            'type' => 'main-child',
+            'sort_order' => 0,
+            'is_active' => true,
+            'meta_title' => $categoryName.' — купить в Беларуси | KOTLOV',
+            'meta_description' => $categoryName.': каталог, характеристики, цены и доставка по Беларуси.',
+        ]);
+    }
+
+    private function brandForRow(array $row): ?Brand
+    {
+        $name = mb_strtolower((string) $row['name']);
+        $brand = match (true) {
+            str_contains($name, 'onekeyelectro') => ['OneKeyElectro', 'onekeyelectro'],
+            str_contains($name, 'grand meyer') => ['Grand Meyer', 'grand-meyer'],
+            str_contains($name, 'теплолюкс') => ['Теплолюкс', 'teplolyuks'],
+            str_contains($name, 'stahlmann') => ['Stahlmann', 'stahlmann'],
+            str_contains($name, 'neptun') => ['Neptun', 'neptun'],
+            default => null,
+        };
+        if (! $brand) {
+            return null;
+        }
+
+        return Brand::query()->where('slug', $brand[1])->first()
+            ?? Brand::query()->whereRaw('LOWER(name) = ?', [mb_strtolower($brand[0])])->first()
+            ?? Brand::query()->create([
+                'name' => $brand[0], 'slug' => $brand[1], 'h1' => $brand[0],
+                'is_active' => true, 'is_featured' => false, 'sort_order' => 0,
+                'meta_title' => $brand[0].' — каталог бренда | KOTLOV',
+                'meta_description' => 'Товары '.$brand[0].': характеристики, цены и доставка по Беларуси.',
+            ]);
+    }
+
+    private function descriptionHtml(string $description): ?string
+    {
+        if ($description === '') {
+            return null;
+        }
+
+        return collect(preg_split('/\r?\n+/u', $description) ?: [$description])
+            ->map(fn (string $paragraph): string => '<p>'.e(trim($paragraph)).'</p>')
+            ->filter(fn (string $paragraph): bool => $paragraph !== '<p></p>')
+            ->implode('');
+    }
+
+    /** @return list<array{key:string,value:string}> */
+    private function specsForRow(array $row): array
+    {
+        $text = trim($row['name'].' '.($row['description'] ?? ''));
+        $specs = [
+            ['key' => 'Раздел', 'value' => $row['section']],
+            ['key' => 'Артикул', 'value' => $row['article']],
+            ['key' => 'Единица измерения', 'value' => $row['unit']],
+        ];
+        $patterns = [
+            'Мощность' => '/\b(\d+(?:[\.,]\d+)?)\s*(к?Вт)\b/ui',
+            'Площадь обогрева' => '/\b(\d+(?:[\.,]\d+)?)\s*м[²2]\b/ui',
+            'Напряжение питания' => '/\b(12|220|230)\s*В\b/ui',
+            'Диаметр условного прохода' => '/\bDN\s*(\d+)\b/ui',
+        ];
+        foreach ($patterns as $key => $pattern) {
+            if (! preg_match($pattern, $text, $match)) {
+                continue;
+            }
+            $value = str_replace('.', ',', $match[1]);
+            $value .= match ($key) {
+                'Мощность' => ' '.$match[2],
+                'Площадь обогрева' => ' м²',
+                'Напряжение питания' => ' В',
+                default => '',
+            };
+            $specs[] = ['key' => $key, 'value' => $value];
+        }
+        if (str_contains(mb_strtolower($text), 'ss304')) {
+            $specs[] = ['key' => 'Материал', 'value' => 'Нержавеющая сталь AISI 304'];
+        }
+        if (str_contains(mb_strtolower($text), 'wi-fi')) {
+            $specs[] = ['key' => 'Wi-Fi', 'value' => 'Есть'];
+        }
+
+        return $specs;
     }
 
     /** @return array{price:float,method:string,update:bool} */
@@ -404,6 +600,8 @@ class SyncHomeTechnologiesPriceListCommand extends Command
             'unmatched' => collect($rows)->whereNull('product_id')->where('match_reason', '!=', 'ambiguous')->count(),
             'ambiguous' => collect($rows)->where('match_reason', 'ambiguous')->count(),
             'discontinued' => collect($rows)->where('discontinued', true)->count(),
+            'ready_to_create' => collect($rows)->filter(fn (array $row): bool => ! $row['product_id'] && $row['match_reason'] !== 'ambiguous' && ! $row['discontinued'])->count(),
+            'onec_ready_to_link' => collect($rows)->whereNotNull('inventory_candidate_id')->count(),
         ];
         $this->table(['Показатель', 'Значение'], [
             ['Дата прайса', $payload['source_date']],
@@ -414,6 +612,8 @@ class SyncHomeTechnologiesPriceListCommand extends Command
             ['Не сопоставлено', $metrics['unmatched']],
             ['Неоднозначно', $metrics['ambiguous']],
             ['Вывод из ассортимента', $metrics['discontinued']],
+            ['Готово к созданию карточек', $metrics['ready_to_create']],
+            ['Из них найдена строка склада 1С', $metrics['onec_ready_to_link']],
         ]);
         foreach ($metrics as $key => $value) {
             $this->line("metric.home_technologies.{$key}={$value}");
