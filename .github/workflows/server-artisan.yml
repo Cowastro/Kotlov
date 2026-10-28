@@ -885,6 +885,7 @@ jobs:
             echo "safe_sbg_stainless_duct_metrics_begin"
             grep -E '^metric\.sbg_stainless_duct\.[a-z_]+=[0-9]+$' "$detail_log" || true
             grep -E '^audit\.sbg_stainless_duct\.skipped=[0-9]+:(missing_sbg_offer|ambiguous_local_identity)$' "$detail_log" || true
+            grep -E '^audit\.sbg_stainless_duct\.identity=[0-9]+:[0-9]+:[0-9]+:[0-9]+$' "$detail_log" || true
             echo "safe_sbg_stainless_duct_metrics_end"
           fi
           if [[ "$TASK" == "artisan-dry-run" && "${ARTISAN_ARGV[0]:-}" == "deal:audit-order-prices" ]]; then

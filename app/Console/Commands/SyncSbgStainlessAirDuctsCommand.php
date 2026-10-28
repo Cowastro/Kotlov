@@ -82,6 +82,13 @@ class SyncSbgStainlessAirDuctsCommand extends Command
                 $stats['skipped']++;
                 $reason = ! $offer ? 'missing_sbg_offer' : 'ambiguous_local_identity';
                 $this->line("audit.sbg_stainless_duct.skipped={$diameter}:{$reason}");
+                $this->line(sprintf(
+                    'audit.sbg_stainless_duct.identity=%d:%d:%d:%d',
+                    $diameter,
+                    $matchingItems->count(),
+                    $matchingProducts->count(),
+                    $linkedProduct->count(),
+                ));
 
                 continue;
             }
