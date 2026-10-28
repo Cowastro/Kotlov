@@ -7,16 +7,14 @@
     $availabilityStatus = method_exists($product, 'effectiveAvailabilityStatus') ? $product->effectiveAvailabilityStatus() : ($product->in_stock ? 'in_stock' : 'out_of_stock');
     $availabilityLabel = method_exists($product, 'publicAvailabilityLabel') ? $product->publicAvailabilityLabel() : ($product->in_stock ? 'В наличии' : 'Нет в наличии');
     $displayAvailabilityStatus = method_exists($product, 'publicAvailabilityStatus') ? $product->publicAvailabilityStatus() : $availabilityStatus;
-    $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
-    $b2bOffer = $b2bComparison['offer'] ?? null;
-    $isB2bOffer = $b2bOffer !== null;
-    $isProcurementOffer = $isB2bOffer && $b2bOffer->source?->isProcurementMode();
-    $b2bAvailability = $isB2bOffer
-        ? app(\App\Services\B2bCatalogOfferResolver::class)->availabilityFor($b2bOffer, auth()->user())
-        : null;
-    $b2bMoscowStock = $isB2bOffer && !app(\App\Services\B2bCatalogOfferResolver::class)->hasFreshStock($b2bOffer)
-        ? $b2bOffer->product?->warehouseStocks->first(fn ($stock) => (float) $stock->available_quantity > 0)
-        : null;
+    // Публичный каталог всегда остаётся розничным. Оптовое предложение
+    // показывается и заказывается только из отдельного B2B-кабинета.
+    $b2bComparison = [];
+    $b2bOffer = null;
+    $isB2bOffer = false;
+    $isProcurementOffer = false;
+    $b2bAvailability = null;
+    $b2bMoscowStock = null;
     $hasAssignedSupplier = method_exists($product, 'hasAssignedSupplier') && $product->hasAssignedSupplier();
     $canBuy = $isB2bOffer
         ? $hasAssignedSupplier && $product->is_active && ! $product->is_archived && app(\App\Services\B2bCatalogOfferResolver::class)->canOrder($b2bOffer)

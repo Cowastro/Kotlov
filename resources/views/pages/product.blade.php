@@ -224,12 +224,12 @@
                                 @endif
 
                                 @php
-                                    $b2bComparison = app(\App\Services\B2bCatalogOfferResolver::class)->comparison($product, auth()->user());
-                                    $b2bOffer = $b2bComparison['offer'] ?? null;
-                                    $isProcurementOffer = $b2bOffer && $b2bOffer->source?->isProcurementMode();
-                                    $b2bAvailability = $b2bOffer
-                                        ? app(\App\Services\B2bCatalogOfferResolver::class)->availabilityFor($b2bOffer, auth()->user())
-                                        : null;
+                                    // Страница товара относится к розничной витрине. B2B-цены
+                                    // доступны только в отдельном рабочем каталоге B2B.
+                                    $b2bComparison = [];
+                                    $b2bOffer = null;
+                                    $isProcurementOffer = false;
+                                    $b2bAvailability = null;
                                     $hasAssignedSupplier = $product->hasAssignedSupplier();
                                     if (!$product->is_active || $product->is_archived) {
                                         $availabilityStatus = 'out_of_stock';

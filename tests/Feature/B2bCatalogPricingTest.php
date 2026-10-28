@@ -20,22 +20,24 @@ class B2bCatalogPricingTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_approved_wholesale_user_sees_wholesale_price_with_tax_retail_difference_and_stock(): void
+    public function test_approved_wholesale_user_still_sees_retail_price_on_public_product_page(): void
     {
         [$product, $user] = $this->catalogFixture(approved: true);
 
         $this->actingAs($user)
             ->get('/'.$product->category->slug.'/'.$product->slug)
             ->assertOk()
-            ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
-            ->assertSeeText('96.00 BYN')
-            ->assertDontSeeText('Цена с НДС')
-            ->assertSeeText('Розничная цена: 120.00 BYN')
-            ->assertSeeText('Ваша скидка к рознице: 24.00 BYN (20.0%)')
-            ->assertSeeText('Основной: 7 шт.')
-            ->assertSee('В корзину', false)
-            ->assertSeeText('— 96.00 BYN')
-            ->assertDontSeeText('Купить в рассрочку до 6 месяцев');
+            ->assertSeeText('120.00 BYN')
+            ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
+            ->assertDontSeeText('Ваша скидка к рознице')
+            ->assertDontSeeText('96.00 BYN');
+
+        $this->actingAs($user)
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+            ->assertOk()
+            ->assertJsonPath('subtotal', 120);
+
+        $this->assertSame('retail', session('cart')[$product->id]['pricing_type']);
     }
 
     public function test_unapproved_wholesale_user_does_not_see_wholesale_price(): void
@@ -64,7 +66,7 @@ class B2bCatalogPricingTest extends TestCase
             ->assertSeeText('120.00 BYN');
 
         $this->actingAs($user)
-            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1, 'pricing_mode' => 'b2b'])
             ->assertStatus(422)
             ->assertJsonPath('message', 'Товар недоступен для B2B-заказа: требуется подтверждённая привязка, цена и свежий остаток 1С.');
     }
@@ -86,7 +88,7 @@ class B2bCatalogPricingTest extends TestCase
                 ->assertSeeText('120.00 BYN');
 
             $this->actingAs($user)
-                ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+                ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1, 'pricing_mode' => 'b2b'])
                 ->assertStatus(422);
         }
     }
@@ -137,14 +139,13 @@ class B2bCatalogPricingTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->get(route('b2b.catalog', ['q' => $product->sku]))
             ->assertOk()
-            ->assertSeeText('184.38 BYN')
-            ->assertSeeText('Закупка БелОМО')
-            ->assertDontSeeText('Закупка БелОМО: 0 шт.');
+            ->assertSeeText('184,38 BYN')
+            ->assertSeeText('Закупка БелОМО');
 
         $this->actingAs($user)
-            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2])
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2, 'pricing_mode' => 'b2b'])
             ->assertOk()
             ->assertJsonPath('subtotal', 368.76);
     }
@@ -169,15 +170,15 @@ class B2bCatalogPricingTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->get(route('b2b.catalog', ['q' => $product->sku]))
             ->assertOk()
-            ->assertSeeText('Склад Москва')
-            ->assertSeeText('доставка до 7 дней');
+            ->assertSeeText('Склад Москва');
 
         $this->actingAs($user)
             ->postJson('/cart/add', [
                 'product_id' => $product->id,
                 'quantity' => 2,
+                'pricing_mode' => 'b2b',
                 'warehouse_stock_id' => $moscow->id,
             ])
             ->assertOk();
@@ -204,7 +205,7 @@ class B2bCatalogPricingTest extends TestCase
         [$product, $user] = $this->catalogFixture(approved: true);
 
         $this->actingAs($user)
-            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2])
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2, 'pricing_mode' => 'b2b'])
             ->assertOk()
             ->assertJsonPath('subtotal', 192);
 
@@ -230,16 +231,14 @@ class B2bCatalogPricingTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->get(route('b2b.catalog', ['q' => $product->sku]))
             ->assertOk()
-            ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
-            ->assertSeeText('170.00 BYN')
-            ->assertSeeText('Розничная цена: 200.00 BYN')
-            ->assertSeeText('Ваша скидка к рознице: 30.00 BYN (15.0%)')
-            ->assertDontSeeText('80.00 BYN');
+            ->assertSeeText('170,00 BYN')
+            ->assertSeeText('Розница 200,00')
+            ->assertDontSeeText('80,00 BYN');
 
         $this->actingAs($user)
-            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2])
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2, 'pricing_mode' => 'b2b'])
             ->assertOk()
             ->assertJsonPath('subtotal', 340);
 
@@ -259,13 +258,13 @@ class B2bCatalogPricingTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/'.$heatPumps->slug.'/'.$product->slug)
+            ->get(route('b2b.catalog', ['q' => $product->sku]))
             ->assertOk()
-            ->assertSeeText('170.00 BYN')
-            ->assertSeeText('Ваша скидка к рознице: 30.00 BYN (15.0%)');
+            ->assertSeeText('170,00 BYN')
+            ->assertSeeText('Розница 200,00');
 
         $this->actingAs($user)
-            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1, 'pricing_mode' => 'b2b'])
             ->assertOk()
             ->assertJsonPath('subtotal', 170);
     }
@@ -283,7 +282,7 @@ class B2bCatalogPricingTest extends TestCase
             ->assertDontSeeText('Партнёрская цена от ООО «СанБизнесГруп»');
 
         $this->actingAs($user)
-            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1, 'pricing_mode' => 'b2b'])
             ->assertStatus(422)
             ->assertJsonPath('message', 'Товар недоступен для B2B-заказа: требуется подтверждённая привязка, цена и свежий остаток 1С.');
     }
@@ -293,7 +292,7 @@ class B2bCatalogPricingTest extends TestCase
         [$product, $user] = $this->catalogFixture(approved: true);
 
         $this->actingAs($user)
-            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 8])
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 8, 'pricing_mode' => 'b2b'])
             ->assertStatus(422)
             ->assertJsonPath('message', 'Запрошенное количество превышает доступный остаток поставщика.');
     }
@@ -303,7 +302,7 @@ class B2bCatalogPricingTest extends TestCase
         [$product, $user] = $this->catalogFixture(approved: true);
 
         $this->actingAs($user)
-            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2])
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2, 'pricing_mode' => 'b2b'])
             ->assertOk();
 
         IntegrationProduct::query()->where('product_id', $product->id)->update([
@@ -330,7 +329,7 @@ class B2bCatalogPricingTest extends TestCase
         [$product, $user] = $this->catalogFixture(approved: true);
 
         $this->actingAs($user)
-            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1])
+            ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 1, 'pricing_mode' => 'b2b'])
             ->assertOk();
 
         IntegrationProduct::query()->where('product_id', $product->id)->update([
@@ -357,7 +356,7 @@ class B2bCatalogPricingTest extends TestCase
         $this->assertDatabaseCount((new Order)->getTable(), 0);
     }
 
-    public function test_admin_can_preview_partner_card_without_changing_their_account(): void
+    public function test_admin_can_preview_separate_b2b_catalog_without_changing_their_account(): void
     {
         [$product] = $this->catalogFixture(approved: false);
         $admin = User::factory()->create([
@@ -368,10 +367,10 @@ class B2bCatalogPricingTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/'.$product->category->slug.'/'.$product->slug.'?b2b-preview=1')
+            ->get(route('b2b.catalog', ['b2b-preview' => 1, 'q' => $product->sku]))
             ->assertOk()
-            ->assertSeeText('Предпросмотр карточки для одобренного B2B-партнёра')
-            ->assertSeeText('96.00 BYN');
+            ->assertSeeText('Быстрый заказ товаров')
+            ->assertSeeText('96,00 BYN');
 
         $this->actingAs($admin)
             ->get('/account?b2b-preview=1')
@@ -418,10 +417,10 @@ class B2bCatalogPricingTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->get(route('b2b.catalog', ['q' => $product->sku]))
             ->assertOk()
-            ->assertSeeText('96.00 BYN')
-            ->assertSeeText('Ваша скидка к рознице: 24.00 BYN (20.0%)');
+            ->assertSeeText('96,00 BYN')
+            ->assertSeeText('Розница 120,00');
 
         $this->assertSame(96.0, $offer->fresh()->normalizedPriceByn());
     }
@@ -463,10 +462,10 @@ class B2bCatalogPricingTest extends TestCase
         $source->updateQuietly(['settings' => $settings]);
 
         $this->actingAs($user)
-            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->get(route('b2b.catalog', ['q' => $product->sku]))
             ->assertOk()
-            ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»')
-            ->assertSeeText('96.00 BYN');
+            ->assertSeeText($product->name)
+            ->assertSeeText('96,00 BYN');
 
         $this->actingAs($user)
             ->get('/account')
@@ -540,14 +539,14 @@ class B2bCatalogPricingTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/'.$product->category->slug.'/'.$product->slug)
+            ->get(route('b2b.catalog', ['q' => $product->sku]))
             ->assertOk()
-            ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»');
+            ->assertSeeText($product->name);
 
         $this->actingAs($user)
-            ->get('/'.$blockedCategory->slug.'/'.$blockedProduct->slug)
+            ->get(route('b2b.catalog', ['q' => $blockedProduct->sku]))
             ->assertOk()
-            ->assertSeeText('Партнёрская цена от ООО «СанБизнесГруп»');
+            ->assertSeeText($blockedProduct->name);
 
         $this->actingAs($user)
             ->get('/account')

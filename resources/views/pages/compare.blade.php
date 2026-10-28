@@ -165,12 +165,8 @@
                                 <td class="compare-col compare-title">Корзина</td>
                                 @foreach ($products as $product)
                                     @php
-                                        $compareB2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)
-                                            ->forProduct($product, auth()->user());
                                         $hasAssignedSupplier = $product->hasAssignedSupplier();
-                                        $compareCanBuy = $compareB2bOffer
-                                            ? $hasAssignedSupplier && $product->is_active && ! $product->is_archived && (float) $compareB2bOffer->stock_quantity >= 1
-                                            : $product->canBeAddedToCart();
+                                        $compareCanBuy = $product->canBeAddedToCart();
                                     @endphp
                                     <td class="compare-col compare-value">
                                         @if ($compareCanBuy)

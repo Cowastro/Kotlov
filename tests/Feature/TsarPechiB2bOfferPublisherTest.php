@@ -100,7 +100,7 @@ class TsarPechiB2bOfferPublisherTest extends TestCase
         $this->assertSame(7, data_get($offer->payload, 'delivery_days'));
 
         $this->actingAs($user)
-            ->postJson(route('cart.add'), ['product_id' => $product->id, 'quantity' => 2])
+            ->postJson(route('cart.add'), ['product_id' => $product->id, 'quantity' => 2, 'pricing_mode' => 'b2b'])
             ->assertOk()
             ->assertJsonPath('subtotal', 1036.8);
 

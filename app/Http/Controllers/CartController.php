@@ -44,15 +44,19 @@ class CartController extends Controller
             'quantity' => ['sometimes', 'integer', 'min:1', 'max:999'],
             'warehouse_stock_id' => ['sometimes', 'nullable', 'integer', 'exists:product_warehouse_stocks,id'],
             'chimney_selector_token' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'pricing_mode' => ['sometimes', 'string', 'in:retail,b2b'],
         ]);
 
         $product = Product::query()
             ->withSupplierChannels()
             ->with(['category:id,slug', 'brand:id,slug,name', 'warehouseStocks'])
             ->findOrFail($request->product_id);
-        $b2bOffer = $offerResolver->forProduct($product, $request->user());
+        $isB2bRequest = $request->input('pricing_mode') === 'b2b';
+        $b2bOffer = $isB2bRequest
+            ? $offerResolver->forProduct($product, $request->user())
+            : null;
 
-        if ($request->user()?->isB2B() && ! $b2bOffer) {
+        if ($isB2bRequest && ! $b2bOffer) {
             $message = 'Товар недоступен для B2B-заказа: требуется подтверждённая привязка, цена и свежий остаток 1С.';
 
             return $request->expectsJson()

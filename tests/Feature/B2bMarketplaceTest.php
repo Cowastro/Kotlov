@@ -135,7 +135,7 @@ class B2bMarketplaceTest extends TestCase
             ->assertJsonMissing(['name' => 'Чужой прайс']);
 
         $this->actingAs($user)
-            ->postJson(route('cart.add'), ['product_id' => $hiddenProduct->id, 'quantity' => 1])
+            ->postJson(route('cart.add'), ['product_id' => $hiddenProduct->id, 'quantity' => 1, 'pricing_mode' => 'b2b'])
             ->assertUnprocessable();
     }
 

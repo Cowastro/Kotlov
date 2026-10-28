@@ -156,7 +156,7 @@
         fetch('{{ route('cart.add') }}', {
             method: 'POST',
             headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN':csrf },
-            body: JSON.stringify({ product_id:Number(button.dataset.productId), quantity:qty }),
+            body: JSON.stringify({ product_id:Number(button.dataset.productId), quantity:qty, pricing_mode:'b2b' }),
         }).then(function (response) {
             return response.json().then(function (data) { if (!response.ok) throw new Error(data.message || 'Не удалось добавить товар'); return data; });
         }).then(function (data) {

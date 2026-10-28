@@ -49,11 +49,7 @@
                                 ? number_format($product->price_old, 2, '.', ' ') . ' BYN'
                                 : null;
                             $productUrl = '/' . ($product->category->slug ?? 'catalog') . '/' . $product->slug;
-                            $wishlistB2bOffer = app(\App\Services\B2bCatalogOfferResolver::class)
-                                ->forProduct($product, auth()->user());
-                            $canBuy = $wishlistB2bOffer
-                                ? $hasAssignedSupplier && $product->is_active && ! $product->is_archived && (float) $wishlistB2bOffer->stock_quantity >= 1
-                                : $product->canBeAddedToCart();
+                            $canBuy = $product->canBeAddedToCart();
                             $quickViewImages = collect($product->images ?: [$product->main_image])
                                 ->filter()
                                 ->keys()
