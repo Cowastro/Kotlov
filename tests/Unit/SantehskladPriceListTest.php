@@ -26,6 +26,7 @@ class SantehskladPriceListTest extends TestCase
         $this->assertSame('standart_12', $parser->productIdentity('Твердотопливный котел Sakovich Standart 12 кВт (сталь 4 мм)'));
         $this->assertSame('standart_pro_14', $parser->productIdentity('Котел Сакович Standart Pro 14'));
         $this->assertSame('pellet_standart_praktik_15', $parser->productIdentity('Пеллетный котел Sakovich Pellet Standart 15 с горелкой Praktik и бункером'));
+        $this->assertSame('pellet_universal_kipi_bundle_20', $parser->productIdentity('Пеллетный котел Sakovich Pellet Universal 20 с горелкой KIPI Rotary и бункером'));
         $this->assertSame('promka_8_no_glass', $parser->productIdentity('Печь Sakovich Promka 8 кВт без стекла'));
         $this->assertSame('kipi_rotary_4_16', $parser->productIdentity('Пеллетная горелка KIPI Rotary 4–16 кВт'));
 

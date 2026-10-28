@@ -96,7 +96,11 @@ class SyncSantehskladPricelistCommand extends Command
                         ->where('supplier_article_normalized', $row['article_key'])
                         ->first();
                     if ($existing?->product_id && $product && (int) $existing->product_id !== (int) $product->id) {
-                        throw new RuntimeException("Позиция {$row['article']} уже связана с другой карточкой.");
+                        $linkedProduct = Product::query()->find($existing->product_id);
+                        $linkedIdentity = $linkedProduct ? $parser->productIdentity((string) $linkedProduct->name) : '';
+                        if ($linkedIdentity === $parser->rowMatchIdentity($row)) {
+                            throw new RuntimeException("Позиция {$row['article']} уже связана с другой карточкой.");
+                        }
                     }
 
                     SupplierProduct::query()->updateOrCreate([
@@ -216,7 +220,7 @@ class SyncSantehskladPricelistCommand extends Command
             $linkedId = (int) ($existingLinks->get($row['article_key'])?->product_id ?? 0);
             $ranked = $candidates->sortByDesc(fn (Product $product): int => $this->completenessScore($product))->values();
             $product = $linkedId > 0
-                ? $ranked->firstWhere('id', $linkedId)
+                ? ($ranked->firstWhere('id', $linkedId) ?? $ranked->first())
                 : $ranked->first();
             $row['product_id'] = $product?->id;
             $row['candidate_ids'] = $ranked->pluck('id')->map(fn ($id): int => (int) $id)->all();

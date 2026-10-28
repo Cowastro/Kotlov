@@ -135,6 +135,15 @@ class SantehskladPriceList
             return '';
         }
 
+        // This price list keeps Pellet boiler bodies, KIPI burners and BIO
+        // hoppers as separate rows. A storefront card which promises all
+        // three parts must not inherit the boiler-only RRP.
+        if (str_starts_with($family, 'pellet_')
+            && (str_contains($value, 'kipi') || str_contains($value, 'rotary'))
+            && str_contains($value, 'бункер')) {
+            return $family.'_kipi_bundle_'.$power;
+        }
+
         $variant = '';
         if ($family === 'promka') {
             $variant = str_contains($value, 'без стекла') ? '_no_glass' : (str_contains($value, 'со стеклом') ? '_glass' : '_unknown');

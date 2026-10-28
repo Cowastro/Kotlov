@@ -6,12 +6,61 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class SyncSantehskladPricelistCommandTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_boiler_only_row_is_relinked_away_from_a_kipi_bundle_and_does_not_change_bundle_price(): void
+    {
+        $brand = Brand::create(['name' => 'Sakovich', 'slug' => 'sakovich-bundle-guard', 'is_active' => true]);
+        $category = Category::create(['name' => 'Котлы', 'slug' => 'sakovich-bundle-guard']);
+        $bareBoiler = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Пеллетный котел Sakovich Pellet Universal 20 кВт',
+            'slug' => 'sakovich-pellet-universal-20-bare-test',
+            'sku' => 'SAKOVICH-PU-20-BARE',
+            'price' => 3500,
+            'is_active' => true,
+        ]);
+        $bundle = Product::create([
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'name' => 'Пеллетный котел Sakovich Pellet Universal 20 с горелкой KIPI Rotary и бункером',
+            'slug' => 'sakovich-pellet-universal-20-kipi-bundle-test',
+            'sku' => 'SAKOVICH-PU-20-BUNDLE',
+            'price' => 11300,
+            'is_active' => true,
+        ]);
+        $supplier = Supplier::create(['name' => 'Сантехсклад', 'code' => 'santehsklad']);
+        SupplierProduct::create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $bundle->id,
+            'product_sku' => $bundle->sku,
+            'supplier_article' => 'SANTEHSKLAD-PELLET-UNIVERSAL-20',
+            'supplier_article_normalized' => 'PELLET-UNIVERSAL-20',
+            'supplier_name' => 'Пеллетный котел Sakovich Pellet Universal 20 кВт',
+            'price' => 2772,
+            'price_byn' => 2772,
+            'currency' => 'BYN',
+            'match_status' => 'matched',
+        ]);
+
+        $this->artisan('supplier:sync-santehsklad-pricelist', ['--apply' => true])
+            ->assertSuccessful();
+
+        $offer = SupplierProduct::query()
+            ->where('supplier_id', $supplier->id)
+            ->where('supplier_article_normalized', 'PELLET-UNIVERSAL-20')
+            ->firstOrFail();
+        $this->assertSame($bareBoiler->id, $offer->product_id);
+        $this->assertSame('3600.00', $bareBoiler->fresh()->price);
+        $this->assertSame('11300.00', $bundle->fresh()->price);
+    }
 
     public function test_it_links_exact_cards_updates_all_exact_duplicates_and_never_invents_stock(): void
     {
