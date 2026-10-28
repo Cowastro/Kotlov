@@ -555,7 +555,7 @@ class CrmMailSender
         return view('emails.crm.kotlov-reply', [
             'body' => $body,
             'portalUrl' => $portalMatch[1] ?? null,
-            'managerName' => $user->name,
+            'managerName' => $user->crmSignatureName(),
             'managerJobTitle' => $user->job_title,
             'managerPhone' => $user->phone,
             'company' => config('legal.commercial_documents'),
@@ -573,7 +573,7 @@ class CrmMailSender
         ]);
 
         return trim($body)."\n\n"
-            .'С уважением, '.$user->name."\n"
+            .'С уважением, '.$user->crmSignatureName()."\n"
             .($managerDetails ? implode("\n", $managerDetails)."\n" : '')
             .'Команда KOTLOV.BY'."\n"
             .'Общие телефоны: '.$phones."\n"

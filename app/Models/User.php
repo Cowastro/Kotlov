@@ -148,6 +148,16 @@ class User extends Authenticatable implements FilamentUser
         return in_array($this->role, ['manager', 'sales_manager'], true);
     }
 
+    public function crmSignatureName(): string
+    {
+        $profileName = trim(implode(' ', array_filter([
+            trim((string) $this->last_name),
+            trim((string) $this->first_name),
+        ])));
+
+        return $profileName !== '' ? $profileName : trim((string) $this->name);
+    }
+
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);

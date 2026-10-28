@@ -217,6 +217,8 @@ class CrmMailModuleTest extends TestCase
     {
         $manager = User::factory()->create([
             'name' => 'Александр Менеджер',
+            'first_name' => 'Александр',
+            'last_name' => 'Менеджер',
             'job_title' => 'Менеджер по продажам',
             'phone' => '+375 (29) 000-00-00',
         ]);
@@ -226,7 +228,7 @@ class CrmMailModuleTest extends TestCase
         $text = $sender->brandedText('Здравствуйте!', $manager);
 
         $this->assertStringContainsString('KOTLOV', $html);
-        $this->assertStringContainsString('Александр Менеджер', $html);
+        $this->assertStringContainsString('Менеджер Александр', $html);
         $this->assertStringContainsString('Менеджер по продажам', $html);
         $this->assertStringContainsString('+375 (29) 000-00-00', $html);
         $this->assertStringNotContainsString('<script>', $html);
@@ -235,6 +237,7 @@ class CrmMailModuleTest extends TestCase
         $this->assertStringContainsString('220075, г. Минск, ул. Селицкого, д. 39Б', $html);
         $this->assertStringNotContainsString('ООО «СБГ бай»', $html);
         $this->assertStringContainsString('Команда KOTLOV.BY', $text);
+        $this->assertStringContainsString('С уважением, Менеджер Александр', $text);
         $this->assertStringContainsString('Менеджер по продажам', $text);
         $this->assertStringContainsString('+375 (29) 000-00-00', $text);
         $this->assertStringContainsString('info@kotlov.by', $text);
