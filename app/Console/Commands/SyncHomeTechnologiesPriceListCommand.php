@@ -318,16 +318,28 @@ class SyncHomeTechnologiesPriceListCommand extends Command
 
     private function metrics(array $payload, array $rows): void
     {
+        $metrics = [
+            'rows' => count($rows),
+            'with_supplier_rrp' => collect($rows)->whereNotNull('retail')->count(),
+            'without_supplier_rrp' => collect($rows)->whereNull('retail')->count(),
+            'matched' => collect($rows)->whereNotNull('product_id')->count(),
+            'unmatched' => collect($rows)->whereNull('product_id')->where('match_reason', '!=', 'ambiguous')->count(),
+            'ambiguous' => collect($rows)->where('match_reason', 'ambiguous')->count(),
+            'discontinued' => collect($rows)->where('discontinued', true)->count(),
+        ];
         $this->table(['Показатель', 'Значение'], [
             ['Дата прайса', $payload['source_date']],
-            ['Товарных строк', count($rows)],
-            ['С РРЦ поставщика', collect($rows)->whereNotNull('retail')->count()],
-            ['Без РРЦ — стандарт/рынок', collect($rows)->whereNull('retail')->count()],
-            ['Однозначно сопоставлено', collect($rows)->whereNotNull('product_id')->count()],
-            ['Не сопоставлено', collect($rows)->whereNull('product_id')->where('match_reason', '!=', 'ambiguous')->count()],
-            ['Неоднозначно', collect($rows)->where('match_reason', 'ambiguous')->count()],
-            ['Вывод из ассортимента', collect($rows)->where('discontinued', true)->count()],
+            ['Товарных строк', $metrics['rows']],
+            ['С РРЦ поставщика', $metrics['with_supplier_rrp']],
+            ['Без РРЦ — стандарт/рынок', $metrics['without_supplier_rrp']],
+            ['Однозначно сопоставлено', $metrics['matched']],
+            ['Не сопоставлено', $metrics['unmatched']],
+            ['Неоднозначно', $metrics['ambiguous']],
+            ['Вывод из ассортимента', $metrics['discontinued']],
         ]);
+        foreach ($metrics as $key => $value) {
+            $this->line("metric.home_technologies.{$key}={$value}");
+        }
     }
 
     private function writeReport(array $rows): void
