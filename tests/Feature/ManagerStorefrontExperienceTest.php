@@ -165,11 +165,12 @@ class ManagerStorefrontExperienceTest extends TestCase
     public function test_manual_one_c_link_wins_over_an_older_legacy_offer_from_the_same_supplier(): void
     {
         [$product, $offer] = $this->makeProductWithSupplierOffer();
-        $offer->supplier->update([
-            'code' => 'sanbusinessgroup',
-            'name' => 'ООО «СанБизнесГруп»',
-        ]);
+        $sbg = Supplier::firstOrCreate(
+            ['code' => 'sanbusinessgroup'],
+            ['name' => 'ООО «СанБизнесГруп»', 'currency' => 'BYN', 'currency_rate' => 1, 'is_active' => true],
+        );
         $offer->update([
+            'supplier_id' => $sbg->id,
             'supplier_name' => $product->name,
             'price' => 35,
             'price_byn' => 35,
