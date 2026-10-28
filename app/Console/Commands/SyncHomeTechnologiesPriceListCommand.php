@@ -29,6 +29,7 @@ class SyncHomeTechnologiesPriceListCommand extends Command
         {file=resources/data/suppliers/home-technologies-2026-09.json : XLSX или нормализованный JSON}
         {--apply : Записать поставщика, закупочные цены и безопасные розничные цены}
         {--create-missing : Создать полноценные карточки для однозначных строк, которых ещё нет на сайте}
+        {--reclassify-existing : Только исправить категории уже созданных карточек этого поставщика}
         {--dry-run : Только предпросмотр}
         {--export-snapshot= : Сохранить нормализованный JSON}
         {--report= : CSV-отчёт сопоставления}';
@@ -63,6 +64,20 @@ class SyncHomeTechnologiesPriceListCommand extends Command
 
             if (! $this->option('apply') || $this->option('dry-run')) {
                 $this->warn('Предпросмотр: база не изменена. Для записи добавьте --apply.');
+
+                return self::SUCCESS;
+            }
+
+            if ($this->option('reclassify-existing')) {
+                if (! $supplier) {
+                    $this->error('Поставщик Домашние технологии ещё не создан.');
+
+                    return self::FAILURE;
+                }
+                $stats = $this->reclassifyExisting($classified, $supplier);
+                foreach ($stats as $key => $value) {
+                    $this->line("metric.home_technologies.{$key}={$value}");
+                }
 
                 return self::SUCCESS;
             }
@@ -377,6 +392,42 @@ class SyncHomeTechnologiesPriceListCommand extends Command
         $product->forceFill($updates)->save();
 
         return true;
+    }
+
+    /** @return array{reclassify_scanned:int,reclassified:int} */
+    private function reclassifyExisting(array $rows, Supplier $supplier): array
+    {
+        $stats = ['reclassify_scanned' => 0, 'reclassified' => 0];
+        foreach ($rows as $row) {
+            if (! $row['product_id']) {
+                continue;
+            }
+            $product = Product::query()->find($row['product_id']);
+            if (! $product || (int) $product->supplier_id !== (int) $supplier->id) {
+                continue;
+            }
+            $stats['reclassify_scanned']++;
+            $category = $this->categoryForRow($row);
+            $brand = $this->brandForRow($row);
+            $updates = [];
+            if ((int) $product->category_id !== (int) $category->id) {
+                $updates['category_id'] = $category->id;
+            }
+            if (! $product->brand_id && $brand) {
+                $updates['brand_id'] = $brand->id;
+            }
+            if ($updates === []) {
+                continue;
+            }
+            $product->forceFill($updates)->save();
+            if (isset($updates['category_id'])) {
+                IntegrationProduct::query()->where('product_id', $product->id)
+                    ->update(['target_category_id' => $updates['category_id']]);
+            }
+            $stats['reclassified']++;
+        }
+
+        return $stats;
     }
 
     private function categoryForRow(array $row): Category
