@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class IntegrationProduct extends Model
 {
@@ -80,7 +81,10 @@ class IntegrationProduct extends Model
             ? number_format($quantity, 0, '.', ' ')
             : rtrim(rtrim(number_format($quantity, 3, '.', ' '), '0'), '.');
 
-        return $formatted.' шт.';
+        $unit = Str::lower(trim((string) $this->product?->unit));
+        $suffix = Str::contains($unit, ['пог', 'метр']) ? ' м' : ' шт.';
+
+        return $formatted.$suffix;
     }
 
     /**
