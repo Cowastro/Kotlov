@@ -11379,4 +11379,74 @@ XML;
             'is_active' => true,
         ]);
     }
+
+    public function test_it_creates_the_exact_150_mm_chimney_draft_stabilizer_at_owner_price(): void
+    {
+        $supplier = Supplier::query()->create([
+            'code' => 'sbg-draft-stabilizer',
+            'name' => 'ООО «СанБизнесГруп»',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-draft-stabilizer',
+            'name' => '1С СанБизнесГруп',
+            'supplier_id' => $supplier->id,
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->where('slug', 'prochie-dymohod')->sole();
+        $templateBrand = Brand::query()->create([
+            'name' => 'Теплов и Сухов',
+            'slug' => 'teplov-i-suhov-stabilizer-template',
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $templateBrand->id,
+            'sku' => 'PS-009.760',
+            'name' => 'Теплов и Сухов Площадка монтажная',
+            'slug' => 'ploschadka-montajnaya-teplov-i-suhov-mono-pmm-r-aisi-304-08-mm',
+            'price' => 50,
+            'images' => ['product/009/009760/template.jpg'],
+            'is_active' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'draft-stabilizer-150',
+            'external_code' => 'УТ-00004401',
+            'name' => 'Стабилизатор тяги ф150',
+            'price_byn' => null,
+            'stock_quantity' => 14,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261028-fe',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $this->assertNotNull($product);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertNull($product->brand_id);
+        $this->assertSame('320.00', $product->price);
+        $this->assertSame('14', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('Стабилизатор (регулятор) силы тяги дымохода Ø150 мм', $product->name);
+        $this->assertCount(1, $product->images);
+        $this->assertSame('15–35 Па', collect($product->specs)->firstWhere('key', 'Диапазон настройки тяги')['value']);
+        $this->assertSame('400 °C', collect($product->specs)->firstWhere('key', 'Максимальная температура дымовых газов')['value']);
+        $this->assertStringContainsString('ozon.by', $product->content_source_url);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00004401',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
 }

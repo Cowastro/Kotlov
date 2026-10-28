@@ -6020,6 +6020,37 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // The 1C row has stock but no purchase price. The owner supplied the
+    // public retail price explicitly; the source pages establish the exact
+    // 150 mm variant, its operating range and a clean product image.
+    private const BATCH_UNMATCHED_RESEARCHED_20261028_FE = [
+        'УТ-00004401' => [
+            'template_slug' => 'ploschadka-montajnaya-teplov-i-suhov-mono-pmm-r-aisi-304-08-mm',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'force_brandless' => true,
+            'category_slug' => 'prochie-dymohod',
+            'fragments' => ['Стабилизатор', 'тяги', '150'],
+            'name' => 'Стабилизатор (регулятор) силы тяги дымохода Ø150 мм',
+            'retail' => 320.00,
+            'images' => [
+                'https://kpdshop.ru/wa-data/public/shop/products/53/02/253/images/1615/1615.750x0.jpg',
+            ],
+            'source_url' => 'https://ozon.by/product/stabilizator-regulyator-sily-tyagi-dymohoda-150-mm-1259355562/',
+            'short' => 'Стабилизатор тяги Ø150 мм для выравнивания разрежения в дымоходе, защиты от обратного задувания и снижения избыточной тяги.',
+            'content' => '<p><strong>Стабилизатор силы тяги Ø150 мм</strong> автоматически выравнивает разрежение в дымоходе. Клапан ограничивает избыточную тягу при порывах ветра и изменении атмосферного давления, что помогает стабилизировать работу отопительного прибора.</p><h2>Монтаж</h2><p>Регулятор можно устанавливать ниже или выше выхода дымовых газов, а также непосредственно за котлом. Перед монтажом необходимо проверить совместимость с дымоходом Ø150 мм и требования изготовителя отопительного оборудования.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Стабилизатор силы тяги дымохода'],
+                ['key' => 'Внутренний диаметр', 'value' => '150 мм'],
+                ['key' => 'Диапазон настройки тяги', 'value' => '15–35 Па'],
+                ['key' => 'Максимальная температура дымовых газов', 'value' => '400 °C'],
+                ['key' => 'Материал', 'value' => 'Сталь'],
+                ['key' => 'Количество в комплекте', 'value' => '1 шт.'],
+                ['key' => 'Страна производства', 'value' => 'Россия'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -6187,6 +6218,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'ole-pro-accessories-20261015-fb' => self::BATCH_OLE_PRO_ACCESSORIES_20261015_FB,
             'ole-pro-protect-review-20261015-fc' => self::BATCH_OLE_PRO_PROTECT_REVIEW_20261015_FC,
             'unmatched-researched-20261028-fd' => self::BATCH_UNMATCHED_RESEARCHED_20261028_FD,
+            'unmatched-researched-20261028-fe' => self::BATCH_UNMATCHED_RESEARCHED_20261028_FE,
             default => null,
         };
 
