@@ -29,7 +29,7 @@ class SyncHomeTechnologiesPriceListCommandTest extends TestCase
         ]);
         $product = Product::query()->create([
             'category_id' => $category->id,
-            'name' => $row['name'],
+            'name' => 'Складская карточка 1С без описания',
             'slug' => 'test-home-technologies-product',
             'sku' => 'KOTLOV-TEST-HOME-TECH',
             'price' => 0,
@@ -43,7 +43,7 @@ class SyncHomeTechnologiesPriceListCommandTest extends TestCase
             'integration_source_id' => $oneC->id,
             'product_id' => $product->id,
             'external_id' => 'ONEC-HOME-TECH-1',
-            'name' => $product->name,
+            'name' => $row['name'],
             'price' => 50,
             'stock_quantity' => 4,
             'match_status' => 'matched',
@@ -69,6 +69,10 @@ class SyncHomeTechnologiesPriceListCommandTest extends TestCase
         $this->assertSame(4, $product->stock_qty);
         $this->assertTrue($product->in_stock);
         $this->assertSame(number_format((float) $row['retail'], 2, '.', ''), $product->price);
+        $this->assertNotEmpty($product->images);
+        $this->assertNotEmpty($product->short_description);
+        $this->assertNotEmpty($product->content);
+        $this->assertCount(3, $product->specs);
         $this->assertSame('purchase', IntegrationSource::query()->where('code', 'home_technologies_pricelist')->firstOrFail()->b2bPriceRole());
     }
 }

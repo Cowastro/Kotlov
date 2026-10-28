@@ -36,7 +36,10 @@
       "retail": 61.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 3
+      "source_row": 3,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE150145-FE1372210B",
@@ -50,7 +53,10 @@
       "retail": 73.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 4
+      "source_row": 4,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE225160-E8262B2A8A",
@@ -64,7 +70,10 @@
       "retail": 91.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 5
+      "source_row": 5,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE375320-0F75998F64",
@@ -78,7 +87,10 @@
       "retail": 114.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 6
+      "source_row": 6,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE450390-1B6E0B879F",
@@ -92,7 +104,10 @@
       "retail": 129.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 7
+      "source_row": 7,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE525450-2C6BAA936C",
@@ -106,7 +121,10 @@
       "retail": 147.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 8
+      "source_row": 8,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE600500-12C4843CAB",
@@ -120,7 +138,10 @@
       "retail": 168.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 9
+      "source_row": 9,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE750580-3734895C7D",
@@ -134,7 +155,10 @@
       "retail": 208.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 10
+      "source_row": 10,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE900710-32DD3D1351",
@@ -148,7 +172,10 @@
       "retail": 235.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 11
+      "source_row": 11,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE1200860-C781AAB98D",
@@ -162,7 +189,10 @@
       "retail": 287.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 12
+      "source_row": 12,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE15001050-EF1D3B4A21",
@@ -176,7 +206,10 @@
       "retail": 319.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 13
+      "source_row": 13,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE18001280-EF59DEB7EA",
@@ -190,7 +223,10 @@
       "retail": 358.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 14
+      "source_row": 14,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE21001480-B6092C3873",
@@ -204,7 +240,10 @@
       "retail": 510.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 15
+      "source_row": 15,
+      "images": [
+        "/img/products/home-technologies/warm-floor-003-05.webp"
+      ]
     },
     {
       "article": "OKE75050-2012AB2A4B",
@@ -218,7 +257,10 @@
       "retail": 64.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 16
+      "source_row": 16,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE150100-B058C92510",
@@ -232,7 +274,10 @@
       "retail": 74.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 17
+      "source_row": 17,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE225150-D9A2A295B0",
@@ -246,7 +291,10 @@
       "retail": 92.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 18
+      "source_row": 18,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE300200-5AFF1020F6",
@@ -260,7 +308,10 @@
       "retail": 111.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 19
+      "source_row": 19,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE375250-1E06FCA69C",
@@ -274,7 +325,10 @@
       "retail": 128.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 20
+      "source_row": 20,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE450300-43F56E5DA9",
@@ -288,7 +342,10 @@
       "retail": 150.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 21
+      "source_row": 21,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE525350-75A6F27FBB",
@@ -302,7 +359,10 @@
       "retail": 170.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 22
+      "source_row": 22,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE600400-2306B172B4",
@@ -316,7 +376,10 @@
       "retail": 192.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 23
+      "source_row": 23,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE675450-F8043426B1",
@@ -330,7 +393,10 @@
       "retail": 211.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 24
+      "source_row": 24,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE750500-C36CBECF3B",
@@ -344,7 +410,10 @@
       "retail": 230.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 25
+      "source_row": 25,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE900600-AB4B007437",
@@ -358,7 +427,10 @@
       "retail": 264.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 26
+      "source_row": 26,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE1050700-FA877D15BE",
@@ -372,7 +444,10 @@
       "retail": 292.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 27
+      "source_row": 27,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE1200800-E2D7477F7E",
@@ -386,7 +461,10 @@
       "retail": 331.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 28
+      "source_row": 28,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE15001000-917A9D08AA",
@@ -400,7 +478,10 @@
       "retail": 346.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 29
+      "source_row": 29,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE18001200-EA00BBBDAC",
@@ -414,7 +495,10 @@
       "retail": 402.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 30
+      "source_row": 30,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "OKE21001400-6C051FF166",
@@ -428,7 +512,10 @@
       "retail": 512.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 31
+      "source_row": 31,
+      "images": [
+        "/img/products/home-technologies/warm-floor-016-06.webp"
+      ]
     },
     {
       "article": "THC2010-218873DDEA",
@@ -442,7 +529,10 @@
       "retail": 167.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 32
+      "source_row": 32,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THC2015-EC6F9078ED",
@@ -456,7 +546,10 @@
       "retail": 192.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 33
+      "source_row": 33,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THC2023-18DF4A852C",
@@ -470,7 +563,10 @@
       "retail": 235.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 34
+      "source_row": 34,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THC2032-A6EFD48257",
@@ -484,7 +580,10 @@
       "retail": 297.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 35
+      "source_row": 35,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THC2045-42485EC135",
@@ -498,7 +597,10 @@
       "retail": 363.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 36
+      "source_row": 36,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THC2057-20C5629502",
@@ -512,7 +614,10 @@
       "retail": 422.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 37
+      "source_row": 37,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THC2070-F63A641E92",
@@ -526,7 +631,10 @@
       "retail": 518.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 38
+      "source_row": 38,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THC2085-B2346F6C83",
@@ -540,7 +648,10 @@
       "retail": 616.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 39
+      "source_row": 39,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THC2098-D08CEEFF0B",
@@ -554,7 +665,10 @@
       "retail": 669.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 40
+      "source_row": 40,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THC20115-8B48235B70",
@@ -568,7 +682,10 @@
       "retail": 784.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 41
+      "source_row": 41,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THC20160-641E11FFB8",
@@ -582,7 +699,10 @@
       "retail": 1017.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 42
+      "source_row": 42,
+      "images": [
+        "/img/products/home-technologies/warm-floor-032-04.webp"
+      ]
     },
     {
       "article": "THM200007-B10E1E6684",
@@ -596,7 +716,10 @@
       "retail": 166.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 43
+      "source_row": 43,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200010-BAF073FE60",
@@ -610,7 +733,10 @@
       "retail": 202.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 44
+      "source_row": 44,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200015-CF249D3273",
@@ -624,7 +750,10 @@
       "retail": 236.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 45
+      "source_row": 45,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200020-94358B56B8",
@@ -638,7 +767,10 @@
       "retail": 271.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 46
+      "source_row": 46,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200030-0AD59A5CC6",
@@ -652,7 +784,10 @@
       "retail": 333.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 47
+      "source_row": 47,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200040-9804EFE48E",
@@ -666,7 +801,10 @@
       "retail": 402.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 48
+      "source_row": 48,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200050-397082C0C7",
@@ -680,7 +818,10 @@
       "retail": 506.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 49
+      "source_row": 49,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200060-EE36F98F27",
@@ -694,7 +835,10 @@
       "retail": 564.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 50
+      "source_row": 50,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200070-9FFE8B5E5B",
@@ -708,7 +852,10 @@
       "retail": 652.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 51
+      "source_row": 51,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200080-75C467A8A2",
@@ -722,7 +869,10 @@
       "retail": 688.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 52
+      "source_row": 52,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200090-7CA1FE640E",
@@ -736,7 +886,10 @@
       "retail": 801.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 53
+      "source_row": 53,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200100-CC5A420F62",
@@ -750,7 +903,10 @@
       "retail": 890.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 54
+      "source_row": 54,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200120-1DA1FEE07A",
@@ -764,7 +920,10 @@
       "retail": 1088.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 55
+      "source_row": 55,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "THM200140-5B002C33E5",
@@ -778,7 +937,10 @@
       "retail": 1231.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 56
+      "source_row": 56,
+      "images": [
+        "/img/products/home-technologies/warm-floor-043-03.webp"
+      ]
     },
     {
       "article": "PROFIROLL9-5C167CB92B",
@@ -792,7 +954,10 @@
       "retail": 150.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 57
+      "source_row": 57,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL12-76F8CD782A",
@@ -806,7 +971,10 @@
       "retail": 162.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 58
+      "source_row": 58,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL15-63D74BD19A",
@@ -820,7 +988,10 @@
       "retail": 171.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 59
+      "source_row": 59,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL20-30DFB3C46B",
@@ -834,7 +1005,10 @@
       "retail": 207.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 60
+      "source_row": 60,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL25-290A998CF7",
@@ -848,7 +1022,10 @@
       "retail": 243.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 61
+      "source_row": 61,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL31-48D1C8FCA2",
@@ -862,7 +1039,10 @@
       "retail": 282.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 62
+      "source_row": 62,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL42-83C983632E",
@@ -876,7 +1056,10 @@
       "retail": 312.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 63
+      "source_row": 63,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL49-1FD63E3AC1",
@@ -890,7 +1073,10 @@
       "retail": 342.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 64
+      "source_row": 64,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL54-4EBA37981B",
@@ -904,7 +1090,10 @@
       "retail": 366.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 65
+      "source_row": 65,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL62-4D92814787",
@@ -918,7 +1107,10 @@
       "retail": 426.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 66
+      "source_row": 66,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL71-4EDE8D5E0F",
@@ -932,7 +1124,10 @@
       "retail": 462.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 67
+      "source_row": 67,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL79-2A555CDB4C",
@@ -946,7 +1141,10 @@
       "retail": 534.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 68
+      "source_row": 68,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL87-4C2C525B7E",
@@ -960,7 +1158,10 @@
       "retail": 606.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 69
+      "source_row": 69,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL101-280A2C65A4",
@@ -974,7 +1175,10 @@
       "retail": 642.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 70
+      "source_row": 70,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL116-2454E4C0C3",
@@ -988,7 +1192,10 @@
       "retail": 726.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 71
+      "source_row": 71,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL129-2F0DD43A6D",
@@ -1002,7 +1209,10 @@
       "retail": 870.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 72
+      "source_row": 72,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIROLL153-4CBF8FC437",
@@ -1016,7 +1226,10 @@
       "retail": 1122.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 73
+      "source_row": 73,
+      "images": [
+        "/img/products/home-technologies/warm-floor-057-01.webp"
+      ]
     },
     {
       "article": "PROFIMAT180-F46C3E294F",
@@ -1030,7 +1243,10 @@
       "retail": 216.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 74
+      "source_row": 74,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT270-843B9A6060",
@@ -1044,7 +1260,10 @@
       "retail": 246.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 75
+      "source_row": 75,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT360-5D65F41092",
@@ -1058,7 +1277,10 @@
       "retail": 288.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 76
+      "source_row": 76,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT450-D2784496F7",
@@ -1072,7 +1294,10 @@
       "retail": 324.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 77
+      "source_row": 77,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT540-086D088D94",
@@ -1086,7 +1311,10 @@
       "retail": 360.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 78
+      "source_row": 78,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT630-E38C76F7F2",
@@ -1100,7 +1328,10 @@
       "retail": 396.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 79
+      "source_row": 79,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT720-88EBBDB1C8",
@@ -1114,7 +1345,10 @@
       "retail": 444.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 80
+      "source_row": 80,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT900-9550B2B99D",
@@ -1128,7 +1362,10 @@
       "retail": 504.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 81
+      "source_row": 81,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT1080-8C852DF6A1",
@@ -1142,7 +1379,10 @@
       "retail": 564.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 82
+      "source_row": 82,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT1260-264250EC4A",
@@ -1156,7 +1396,10 @@
       "retail": 624.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 83
+      "source_row": 83,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT1440-6E6023C870",
@@ -1170,7 +1413,10 @@
       "retail": 672.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 84
+      "source_row": 84,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT1620-BE9EA8F95D",
@@ -1184,7 +1430,10 @@
       "retail": 756.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 85
+      "source_row": 85,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT1800-6D6F771C91",
@@ -1198,7 +1447,10 @@
       "retail": 840.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 86
+      "source_row": 86,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT2160-8BB54602BF",
@@ -1212,7 +1464,10 @@
       "retail": 900.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 87
+      "source_row": 87,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "PROFIMAT2700-5937534267",
@@ -1226,7 +1481,10 @@
       "retail": 1086.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 88
+      "source_row": 88,
+      "images": [
+        "/img/products/home-technologies/warm-floor-074-02.webp"
+      ]
     },
     {
       "article": "TP010-A4CA16A90E",
@@ -1240,7 +1498,10 @@
       "retail": 30.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 3
+      "source_row": 3,
+      "images": [
+        "/img/products/home-technologies/thermostats-003-04.webp"
+      ]
     },
     {
       "article": "PT05-72D0C9518D",
@@ -1254,7 +1515,10 @@
       "retail": 56.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 4
+      "source_row": 4,
+      "images": [
+        "/img/products/home-technologies/thermostats-004-01.webp"
+      ]
     },
     {
       "article": "TP510-36032BB905",
@@ -1268,7 +1532,10 @@
       "retail": 96.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 5
+      "source_row": 5,
+      "images": [
+        "/img/products/home-technologies/thermostats-004-01.webp"
+      ]
     },
     {
       "article": "TP515-436B0FA514",
@@ -1282,7 +1549,10 @@
       "retail": 214.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 6
+      "source_row": 6,
+      "images": [
+        "/img/products/home-technologies/thermostats-006-02.webp"
+      ]
     },
     {
       "article": "TP515-733100990C",
@@ -1296,7 +1566,10 @@
       "retail": 214.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 7
+      "source_row": 7,
+      "images": [
+        "/img/products/home-technologies/thermostats-007-03.webp"
+      ]
     },
     {
       "article": "TP012-2FB5B3CDF8",
@@ -1310,7 +1583,10 @@
       "retail": 120.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 8
+      "source_row": 8,
+      "images": [
+        "/img/products/home-technologies/thermostats-008-06.webp"
+      ]
     },
     {
       "article": "TP012-D01402EACB",
@@ -1324,7 +1600,10 @@
       "retail": 104.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 9
+      "source_row": 9,
+      "images": [
+        "/img/products/home-technologies/thermostats-008-06.webp"
+      ]
     },
     {
       "article": "SS304-5C302B8FA2",
@@ -1338,7 +1617,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 3
+      "source_row": 3,
+      "images": [
+        "/img/products/home-technologies/stahlmann-003-18.webp"
+      ]
     },
     {
       "article": "SS304-8A1E6358EB",
@@ -1352,7 +1634,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 4
+      "source_row": 4,
+      "images": [
+        "/img/products/home-technologies/stahlmann-003-18.webp"
+      ]
     },
     {
       "article": "SS304-77BF7B3970",
@@ -1366,7 +1651,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 5
+      "source_row": 5,
+      "images": [
+        "/img/products/home-technologies/stahlmann-003-18.webp"
+      ]
     },
     {
       "article": "SS304-F3C31DF59C",
@@ -1380,7 +1668,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 6
+      "source_row": 6,
+      "images": [
+        "/img/products/home-technologies/stahlmann-003-18.webp"
+      ]
     },
     {
       "article": "SS304-F891A7EF3E",
@@ -1394,7 +1685,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 7
+      "source_row": 7,
+      "images": [
+        "/img/products/home-technologies/stahlmann-007-19.webp"
+      ]
     },
     {
       "article": "SS304-DF7B4CC1F0",
@@ -1408,7 +1702,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 8
+      "source_row": 8,
+      "images": [
+        "/img/products/home-technologies/stahlmann-007-19.webp"
+      ]
     },
     {
       "article": "SS304-83999703A3",
@@ -1422,7 +1719,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 9
+      "source_row": 9,
+      "images": [
+        "/img/products/home-technologies/stahlmann-007-19.webp"
+      ]
     },
     {
       "article": "SS304-5670CC3F2E",
@@ -1436,7 +1736,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 10
+      "source_row": 10,
+      "images": [
+        "/img/products/home-technologies/stahlmann-007-19.webp"
+      ]
     },
     {
       "article": "SS304-2742F4B84B",
@@ -1450,7 +1753,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 11
+      "source_row": 11,
+      "images": [
+        "/img/products/home-technologies/stahlmann-007-19.webp"
+      ]
     },
     {
       "article": "SS304-C9FB9D4934",
@@ -1464,7 +1770,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 12
+      "source_row": 12,
+      "images": [
+        "/img/products/home-technologies/stahlmann-007-19.webp"
+      ]
     },
     {
       "article": "SS304-84A820CCE5",
@@ -1478,7 +1787,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 13
+      "source_row": 13,
+      "images": [
+        "/img/products/home-technologies/stahlmann-013-21.webp"
+      ]
     },
     {
       "article": "SS304-3F197844F6",
@@ -1492,7 +1804,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 14
+      "source_row": 14,
+      "images": [
+        "/img/products/home-technologies/stahlmann-013-21.webp"
+      ]
     },
     {
       "article": "SS304-30A26927E0",
@@ -1506,7 +1821,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 15
+      "source_row": 15,
+      "images": [
+        "/img/products/home-technologies/stahlmann-015-20.webp"
+      ]
     },
     {
       "article": "SS304-3753E962D3",
@@ -1520,7 +1838,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 16
+      "source_row": 16,
+      "images": [
+        "/img/products/home-technologies/stahlmann-015-20.webp"
+      ]
     },
     {
       "article": "15X12-9CF1A15C88",
@@ -1534,7 +1855,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 17
+      "source_row": 17,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-08.webp"
+      ]
     },
     {
       "article": "15X12-6D4DC09367",
@@ -1548,7 +1872,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 18
+      "source_row": 18,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-08.webp"
+      ]
     },
     {
       "article": "15X34-AD0310A855",
@@ -1562,7 +1889,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 19
+      "source_row": 19,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-08.webp"
+      ]
     },
     {
       "article": "20X34-028B4DF39F",
@@ -1576,7 +1906,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 20
+      "source_row": 20,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-07.webp"
+      ]
     },
     {
       "article": "20X34-3AADA37931",
@@ -1590,7 +1923,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 21
+      "source_row": 21,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-07.webp"
+      ]
     },
     {
       "article": "DT-F246D186BE",
@@ -1604,7 +1940,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 22
+      "source_row": 22,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-07.webp"
+      ]
     },
     {
       "article": "DT-90F894CF25",
@@ -1618,7 +1957,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 23
+      "source_row": 23,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-07.webp"
+      ]
     },
     {
       "article": "DT-29BA4AE5F4",
@@ -1632,7 +1974,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 24
+      "source_row": 24,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-05.webp"
+      ]
     },
     {
       "article": "DT-0C44FA7FCD",
@@ -1646,7 +1991,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 25
+      "source_row": 25,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-05.webp"
+      ]
     },
     {
       "article": "15X12-CAF3F58B0A",
@@ -1660,7 +2008,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 26
+      "source_row": 26,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-05.webp"
+      ]
     },
     {
       "article": "15X12-CB8DC58131",
@@ -1674,7 +2025,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 27
+      "source_row": 27,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-05.webp"
+      ]
     },
     {
       "article": "15X34-EE3F03535F",
@@ -1688,7 +2042,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 28
+      "source_row": 28,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-05.webp"
+      ]
     },
     {
       "article": "20X34-AB3088BCCB",
@@ -1702,7 +2059,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 29
+      "source_row": 29,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-09.webp"
+      ]
     },
     {
       "article": "20X34-B45C5BB77F",
@@ -1716,7 +2076,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 30
+      "source_row": 30,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-09.webp"
+      ]
     },
     {
       "article": "DT-6BB4365633",
@@ -1730,7 +2093,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 31
+      "source_row": 31,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-09.webp"
+      ]
     },
     {
       "article": "DT-09628A1403",
@@ -1744,7 +2110,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 32
+      "source_row": 32,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-09.webp"
+      ]
     },
     {
       "article": "DT-3D15E64B9B",
@@ -1758,7 +2127,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 33
+      "source_row": 33,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-09.webp"
+      ]
     },
     {
       "article": "DT-A60346ADFC",
@@ -1772,7 +2144,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 34
+      "source_row": 34,
+      "images": [
+        "/img/products/home-technologies/stahlmann-017-09.webp"
+      ]
     },
     {
       "article": "STAHLMANN15X15-DB559AAEC4",
@@ -1786,7 +2161,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 35
+      "source_row": 35,
+      "images": [
+        "/img/products/home-technologies/stahlmann-035-11.webp"
+      ]
     },
     {
       "article": "STAHLMANN20X15-C499379991",
@@ -1800,7 +2178,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 36
+      "source_row": 36,
+      "images": [
+        "/img/products/home-technologies/stahlmann-035-11.webp"
+      ]
     },
     {
       "article": "STAHLMANN20X20-4002987E97",
@@ -1814,7 +2195,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 37
+      "source_row": 37,
+      "images": [
+        "/img/products/home-technologies/stahlmann-035-11.webp"
+      ]
     },
     {
       "article": "STAHLMANN25X15-C5CB66BDD4",
@@ -1828,7 +2212,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 38
+      "source_row": 38,
+      "images": [
+        "/img/products/home-technologies/stahlmann-035-11.webp"
+      ]
     },
     {
       "article": "STAHLMANN25X20-C3886476F8",
@@ -1842,7 +2229,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 39
+      "source_row": 39,
+      "images": [
+        "/img/products/home-technologies/stahlmann-035-12.webp"
+      ]
     },
     {
       "article": "STAHLMANN25X25-66D054C717",
@@ -1856,7 +2246,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 40
+      "source_row": 40,
+      "images": [
+        "/img/products/home-technologies/stahlmann-035-12.webp"
+      ]
     },
     {
       "article": "STAHLMANN32X32-133B7C379D",
@@ -1870,7 +2263,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 41
+      "source_row": 41,
+      "images": [
+        "/img/products/home-technologies/stahlmann-035-12.webp"
+      ]
     },
     {
       "article": "STAHLMANN15X15X15-D208B401DC",
@@ -1884,7 +2280,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 42
+      "source_row": 42,
+      "images": [
+        "/img/products/home-technologies/stahlmann-042-13.webp"
+      ]
     },
     {
       "article": "STAHLMANN20X20X20-A1C513A9D7",
@@ -1898,7 +2297,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 43
+      "source_row": 43,
+      "images": [
+        "/img/products/home-technologies/stahlmann-042-13.webp"
+      ]
     },
     {
       "article": "STAHLMANN25X25X25-A6750883E8",
@@ -1912,7 +2314,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 44
+      "source_row": 44,
+      "images": [
+        "/img/products/home-technologies/stahlmann-042-13.webp"
+      ]
     },
     {
       "article": "15X12X15-095B28B9EF",
@@ -1926,7 +2331,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 45
+      "source_row": 45,
+      "images": [
+        "/img/products/home-technologies/stahlmann-042-13.webp"
+      ]
     },
     {
       "article": "20X34X20-602F9D4C85",
@@ -1940,7 +2348,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 46
+      "source_row": 46,
+      "images": [
+        "/img/products/home-technologies/stahlmann-042-13.webp"
+      ]
     },
     {
       "article": "DT-AA32538753",
@@ -1954,7 +2365,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 47
+      "source_row": 47,
+      "images": [
+        "/img/products/home-technologies/stahlmann-042-13.webp"
+      ]
     },
     {
       "article": "14X32-BEE99CD17B",
@@ -1968,7 +2382,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 48
+      "source_row": 48,
+      "images": [
+        "/img/products/home-technologies/stahlmann-042-14.webp"
+      ]
     },
     {
       "article": "15X12X15-4A965AE66E",
@@ -1982,7 +2399,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 49
+      "source_row": 49,
+      "images": [
+        "/img/products/home-technologies/stahlmann-042-14.webp"
+      ]
     },
     {
       "article": "KPEПЛEHИEM15-2909AE3DAC",
@@ -1996,7 +2416,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 50
+      "source_row": 50,
+      "images": [
+        "/img/products/home-technologies/stahlmann-050-15.webp"
+      ]
     },
     {
       "article": "KPEПЛEHИEM20X3-30C348AD41",
@@ -2010,7 +2433,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 51
+      "source_row": 51,
+      "images": [
+        "/img/products/home-technologies/stahlmann-050-15.webp"
+      ]
     },
     {
       "article": "15X12-F5C60954FC",
@@ -2024,7 +2450,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 52
+      "source_row": 52,
+      "images": [
+        "/img/products/home-technologies/stahlmann-050-15.webp"
+      ]
     },
     {
       "article": "STAHLMANN15X1-E5DC7292C9",
@@ -2038,7 +2467,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 53
+      "source_row": 53,
+      "images": [
+        "/img/products/home-technologies/stahlmann-050-15.webp"
+      ]
     },
     {
       "article": "STAHLMANN20X3-4CAFFB480B",
@@ -2052,7 +2484,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 54
+      "source_row": 54,
+      "images": [
+        "/img/products/home-technologies/stahlmann-050-16.webp"
+      ]
     },
     {
       "article": "STAHLMANN25X1-6C49ED4C35",
@@ -2066,7 +2501,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 55
+      "source_row": 55,
+      "images": [
+        "/img/products/home-technologies/stahlmann-050-16.webp"
+      ]
     },
     {
       "article": "ГAЗ15X1-5E1B5159CD",
@@ -2080,7 +2518,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 56
+      "source_row": 56,
+      "images": [
+        "/img/products/home-technologies/stahlmann-056-17.webp"
+      ]
     },
     {
       "article": "ГAЗ20X3-AB368F6A18",
@@ -2094,7 +2535,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 57
+      "source_row": 57,
+      "images": [
+        "/img/products/home-technologies/stahlmann-056-17.webp"
+      ]
     },
     {
       "article": "ГAЗ25X1-AD95AB19AD",
@@ -2108,7 +2552,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 58
+      "source_row": 58,
+      "images": [
+        "/img/products/home-technologies/stahlmann-056-17.webp"
+      ]
     },
     {
       "article": "ГAЗ15X1-0C8A284240",
@@ -2122,7 +2569,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 59
+      "source_row": 59,
+      "images": [
+        "/img/products/home-technologies/stahlmann-056-17.webp"
+      ]
     },
     {
       "article": "ГAЗ20X3-390C8E4261",
@@ -2136,7 +2586,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 60
+      "source_row": 60,
+      "images": [
+        "/img/products/home-technologies/stahlmann-056-06.webp"
+      ]
     },
     {
       "article": "ГAЗ25X1-01E79C73D9",
@@ -2150,7 +2603,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 61
+      "source_row": 61,
+      "images": [
+        "/img/products/home-technologies/stahlmann-056-06.webp"
+      ]
     },
     {
       "article": "DN15-B426A0DA86",
@@ -2164,7 +2620,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 62
+      "source_row": 62,
+      "images": [
+        "/img/products/home-technologies/stahlmann-062-01.webp"
+      ]
     },
     {
       "article": "DN20-E633508348",
@@ -2178,7 +2637,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 63
+      "source_row": 63,
+      "images": [
+        "/img/products/home-technologies/stahlmann-062-01.webp"
+      ]
     },
     {
       "article": "DN25-26C819F160",
@@ -2192,7 +2654,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 64
+      "source_row": 64,
+      "images": [
+        "/img/products/home-technologies/stahlmann-062-01.webp"
+      ]
     },
     {
       "article": "DN32-FA9A81FE3C",
@@ -2206,7 +2671,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 65
+      "source_row": 65,
+      "images": [
+        "/img/products/home-technologies/stahlmann-062-01.webp"
+      ]
     },
     {
       "article": "DN15-96584F2FBE",
@@ -2220,7 +2688,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 66
+      "source_row": 66,
+      "images": [
+        "/img/products/home-technologies/stahlmann-066-03.webp"
+      ]
     },
     {
       "article": "DN20-0159821A6C",
@@ -2234,7 +2705,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 67
+      "source_row": 67,
+      "images": [
+        "/img/products/home-technologies/stahlmann-066-03.webp"
+      ]
     },
     {
       "article": "DN25-B051F011DE",
@@ -2248,7 +2722,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 68
+      "source_row": 68,
+      "images": [
+        "/img/products/home-technologies/stahlmann-066-03.webp"
+      ]
     },
     {
       "article": "DN32-B8372F4F3F",
@@ -2262,7 +2739,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 69
+      "source_row": 69,
+      "images": [
+        "/img/products/home-technologies/stahlmann-066-03.webp"
+      ]
     },
     {
       "article": "STAHLMANN1-BE0BF18E0C",
@@ -2276,7 +2756,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 70
+      "source_row": 70,
+      "images": [
+        "/img/products/home-technologies/stahlmann-070-02.webp"
+      ]
     },
     {
       "article": "STAHLMANN3-FF93B9609F",
@@ -2290,7 +2773,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 71
+      "source_row": 71,
+      "images": [
+        "/img/products/home-technologies/stahlmann-070-02.webp"
+      ]
     },
     {
       "article": "STAHLMANN1-BC8CB655B9",
@@ -2304,7 +2790,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 72
+      "source_row": 72,
+      "images": [
+        "/img/products/home-technologies/stahlmann-072-04.webp"
+      ]
     },
     {
       "article": "STAHLMANN3-155627DFBA",
@@ -2318,679 +2807,826 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 73
+      "source_row": 73,
+      "images": [
+        "/img/products/home-technologies/stahlmann-072-04.webp"
+      ]
     },
     {
       "article": "AЛИCOЙ1-4CF910A923",
       "article_key": "aлиcoй14cf910a923",
       "name": "NEPTUN × Умный дом с Алисой 1/2. Комплект базовый",
       "name_key": "neptunymhыйдomcaлиcoй12komплektбaзobый",
-      "description": "",
+      "description": "Голосовое управление через Алису. Проводной + беспроводной датчик в одном комплекте. Два латунных крана Standart. Блок управления оддерживает до 60 проводных и до 50 беспроводных датчиков. Контроль обрыва датчиков. Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 1104.0,
       "retail": 1380.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 3
+      "source_row": 3,
+      "images": [
+        "/img/products/home-technologies/neptun-003-14.webp"
+      ]
     },
     {
       "article": "AЛИCOЙ3-176AF8EED4",
       "article_key": "aлиcoй3176af8eed4",
       "name": "NEPTUN × Умный дом с Алисой 3/4. Комплект базовый",
       "name_key": "neptunymhыйдomcaлиcoй34komплektбaзobый",
-      "description": "",
+      "description": "Голосовое управление через Алису. Проводной + беспроводной датчик в одном комплекте. Два латунных крана Standart. Блок управления оддерживает до 60 проводных и до 50 беспроводных датчиков. Контроль обрыва датчиков. Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 1104.0,
       "retail": 1380.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 4
+      "source_row": 4,
+      "images": [
+        "/img/products/home-technologies/neptun-003-14.webp"
+      ]
     },
     {
       "article": "AЛИCOЙ1-A5398E3A31",
       "article_key": "aлиcoй1a5398e3a31",
       "name": "NEPTUN × Умный дом с Алисой 1/2. Комплект оптимальный",
       "name_key": "neptunymhыйдomcaлиcoй12komплektoпtиmaльhый",
-      "description": "",
+      "description": "Голосовое управление через Алису. Два проводных + беспроводной датчик в одном комплекте. Два латунных крана Standart. Поддерживает до 60 проводных и до 50 беспроводных датчиков. Контроль обрыва датчиков. Модуль управления с ИБП в комплекте Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 1358.4,
       "retail": 1698.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 5
+      "source_row": 5,
+      "images": [
+        "/img/products/home-technologies/neptun-005-15.webp"
+      ]
     },
     {
       "article": "AЛИCOЙ3-5FFDF82ABC",
       "article_key": "aлиcoй35ffdf82abc",
       "name": "NEPTUN × Умный дом с Алисой 3/4. Комплект оптимальный",
       "name_key": "neptunymhыйдomcaлиcoй34komплektoпtиmaльhый",
-      "description": "",
+      "description": "Голосовое управление через Алису. Два проводных + беспроводной датчик в одном комплекте. Два латунных крана Standart. Поддерживает до 60 проводных и до 50 беспроводных датчиков. Контроль обрыва датчиков. Модуль управления с ИБП в комплекте Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 1358.4,
       "retail": 1698.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 6
+      "source_row": 6,
+      "images": [
+        "/img/products/home-technologies/neptun-005-15.webp"
+      ]
     },
     {
       "article": "AЛИCOЙ1-155E366CF7",
       "article_key": "aлиcoй1155e366cf7",
       "name": "NEPTUN × Умный дом с Алисой 1/2. Комплект максимальный",
       "name_key": "neptunymhыйдomcaлиcoй12komплektmakcиmaльhый",
-      "description": "",
+      "description": "Голосовое управление через Алису. Два проводных + два беспроводных датчика в одном комплекте. Два латунных крана Standart. Поддерживает до 60 проводных и до 50 беспроводных датчиков. Контроль обрыва датчиков. Модуль управления с ИБП в комплекте. Два умных счетчика в комплекте. Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 2069.6,
       "retail": 2587.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 7
+      "source_row": 7,
+      "images": [
+        "/img/products/home-technologies/neptun-007-13.webp"
+      ]
     },
     {
       "article": "AЛИCOЙ3-7A9279015E",
       "article_key": "aлиcoй37a9279015e",
       "name": "NEPTUN × Умный дом с Алисой 3/4. Комплект максимальный",
       "name_key": "neptunymhыйдomcaлиcoй34komплektmakcиmaльhый",
-      "description": "",
+      "description": "Голосовое управление через Алису. Два проводных + два беспроводных датчика в одном комплекте. Два латунных крана Standart. Поддерживает до 60 проводных и до 50 беспроводных датчиков. Контроль обрыва датчиков. Модуль управления с ИБП в комплекте. Два умных счетчика в комплекте. Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 2069.6,
       "retail": 2587.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 8
+      "source_row": 8,
+      "images": [
+        "/img/products/home-technologies/neptun-007-13.webp"
+      ]
     },
     {
       "article": "AQUACONTROL1-D61FD6F52B",
       "article_key": "aquacontrol1d61fd6f52b",
       "name": "Система защиты от потопа Neptun Aquacontrol 1/2",
       "name_key": "cиctemaзaщиtыotпotoпaneptunaquacontrol12",
-      "description": "",
+      "description": "Система низкого ценового сегмента за счет использования в ней кранов с электроприводом, производство которых размещено в Китае. Cостав: модуль управления Neptun Base-1шт, датчик контроля протечки воды SW007-2 шт, кран шаровый с электроприводом МК 220В-2шт. Гарантия 4 года.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 499.2,
       "retail": 624.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 9
+      "source_row": 9,
+      "images": [
+        "/img/products/home-technologies/neptun-009-04.webp"
+      ]
     },
     {
       "article": "AQUACONTROL3-247F9D77F5",
       "article_key": "aquacontrol3247f9d77f5",
       "name": "Система защиты от потопа Neptun Aquacontrol 3/4",
       "name_key": "cиctemaзaщиtыotпotoпaneptunaquacontrol34",
-      "description": "",
+      "description": "Система низкого ценового сегмента за счет использования в ней кранов с электроприводом, производство которых размещено в Китае. Cостав: модуль управления Neptun Base-1шт, датчик контроля протечки воды SW007-2 шт, кран шаровый с электроприводом МК 220В-2шт. Гарантия 4 года.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 518.4,
       "retail": 648.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 10
+      "source_row": 10,
+      "images": [
+        "/img/products/home-technologies/neptun-009-04.webp"
+      ]
     },
     {
       "article": "BASE1-843F771266",
       "article_key": "base1843f771266",
       "name": "Система Neptun Bugatti Base 1/2",
       "name_key": "cиctemaneptunbugattibase12",
-      "description": "",
+      "description": "Система среднего ценового сегмента с оптимальной комплектацией. В состав входят краны итальянской фирмы Вugatti. Состав: модуль управления Neptun Base-1шт, датчик контроля протечки воды SW005-3 шт, Кран шаровый с электроприводом NEPTUN BUGATTI PRO 220В-2шт. Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 748.8,
       "retail": 936.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 11
+      "source_row": 11,
+      "images": [
+        "/img/products/home-technologies/neptun-011-03.webp"
+      ]
     },
     {
       "article": "BASE3-8186F10F04",
       "article_key": "base38186f10f04",
       "name": "Система Neptun Bugatti Base 3/4",
       "name_key": "cиctemaneptunbugattibase34",
-      "description": "",
+      "description": "Система среднего ценового сегмента с оптимальной комплектацией. В состав входят краны итальянской фирмы Вugatti. Состав: модуль управления Neptun Base-1шт, датчик контроля протечки воды SW005-3 шт, Кран шаровый с электроприводом NEPTUN BUGATTI PRO 220В-2шт. Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 748.8,
       "retail": 936.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 12
+      "source_row": 12,
+      "images": [
+        "/img/products/home-technologies/neptun-011-03.webp"
+      ]
     },
     {
       "article": "BASE1-0F5089D06F",
       "article_key": "base10f5089d06f",
       "name": "Система Neptun PROFI Base 1/2",
       "name_key": "cиctemaneptunprofibase12",
-      "description": "",
+      "description": "Система среднего ценового сегмента с оптимальной комплектацией. В состав входят российские краны из нержавеющей стали марки SS304 Neptun PROFI. Состав: модуль управления Neptun Base-1шт,датчик контроля протечки воды SW005-3 шт, кран шаровый с электроприводом NEPTUN PROFI 220В-2шт. Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 705.6,
       "retail": 882.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 13
+      "source_row": 13,
+      "images": [
+        "/img/products/home-technologies/neptun-013-05.webp"
+      ]
     },
     {
       "article": "BASE3-9DC4E68AEC",
       "article_key": "base39dc4e68aec",
       "name": "Система Neptun PROFI Base 3/4",
       "name_key": "cиctemaneptunprofibase34",
-      "description": "",
+      "description": "Система среднего ценового сегмента с оптимальной комплектацией. В состав входят российские краны из нержавеющей стали марки SS304 Neptun PROFI. Состав: модуль управления Neptun Base-1шт,датчик контроля протечки воды SW005-3 шт, кран шаровый с электроприводом NEPTUN PROFI 220В-2шт. Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 705.6,
       "retail": 882.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 14
+      "source_row": 14,
+      "images": [
+        "/img/products/home-technologies/neptun-013-05.webp"
+      ]
     },
     {
       "article": "SMART1-55B846D67E",
       "article_key": "smart155b846d67e",
       "name": "Система Neptun Profi Smart 1/2 Tuya вывод из ассортимента",
       "name_key": "cиctemaneptunprofismart12tuyabыboдизaccoptиmehta",
-      "description": "",
+      "description": "Умная проводная система защиты от протечки воды Neptun Profi Smart Tuya предназначена для обнаружения и локализации протечек воды в системах водоснабжения. Компоненты системы связаны и взаимодействуют друг с другом через центральный контроллер (модуль управления Neptun Smart+ Tuya) Состав: модуль управления Neptun Smart+ Tuya - 1 шт., датчик Нептун SW 005 - 3 шт, кран шаровый с электроприводом Neptun Profi 12В - 2 шт., блок питания 12В - 1 шт. Гарантия: 10 лет",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 1137.6,
       "retail": 1422.0,
       "retail_method": "supplier_rrp",
       "discontinued": true,
-      "source_row": 15
+      "source_row": 15,
+      "images": [
+        "/img/products/home-technologies/neptun-015-16.webp"
+      ]
     },
     {
       "article": "SMART3-E7051F0C19",
       "article_key": "smart3e7051f0c19",
       "name": "Система Neptun Profi Smart 3/4 Tuya вывод из ассортимента",
       "name_key": "cиctemaneptunprofismart34tuyabыboдизaccoptиmehta",
-      "description": "",
+      "description": "Умная проводная система защиты от протечки воды Neptun Profi Smart Tuya предназначена для обнаружения и локализации протечек воды в системах водоснабжения. Компоненты системы связаны и взаимодействуют друг с другом через центральный контроллер (модуль управления Neptun Smart+ Tuya) Состав: модуль управления Neptun Smart+ Tuya - 1 шт., датчик Нептун SW 005 - 3 шт, кран шаровый с электроприводом Neptun Profi 12В - 2 шт., блок питания 12В - 1 шт. Гарантия: 10 лет",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 1137.6,
       "retail": 1422.0,
       "retail_method": "supplier_rrp",
       "discontinued": true,
-      "source_row": 16
+      "source_row": 16,
+      "images": [
+        "/img/products/home-technologies/neptun-015-16.webp"
+      ]
     },
     {
       "article": "DT-1AB0C18101",
       "article_key": "dt1ab0c18101",
       "name": "Система Neptun PROFI Smart+ 1/2 Tuya",
       "name_key": "cиctemaneptunprofismart12tuya",
-      "description": "",
+      "description": "Умная беспроводная система защиты от протечки воды Neptun Bugatti Smart+Tuya предназначена для обнаружения и локализации протечек воды в системах водоснабжения. Контроль протечки воды осуществляется автоматически, не требует участия пользователя, а также позволяет проводить мониторинг системы с помощью приложения TUYA Smart Home. Состав: модуль управления Neptun Smart+ - 1 шт.; радиодатчик Neptun Smart868 - 2 шт, датчик Нептун SW 005 - 1 шт; кран шаровый с электроприводом Neptun Profi 12В - 2 шт.; блок питания 12В - 1 шт. Гарантия 10 лет",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 1392.0,
       "retail": 1740.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 17
+      "source_row": 17,
+      "images": [
+        "/img/products/home-technologies/neptun-017-06.webp"
+      ]
     },
     {
       "article": "DT-B9BE0D5FE4",
       "article_key": "dtb9be0d5fe4",
       "name": "Система Neptun PROFI Smart+ 3/4 Tuya",
       "name_key": "cиctemaneptunprofismart34tuya",
-      "description": "",
+      "description": "Умная беспроводная система защиты от протечки воды Neptun Bugatti Smart+Tuya предназначена для обнаружения и локализации протечек воды в системах водоснабжения. Контроль протечки воды осуществляется автоматически, не требует участия пользователя, а также позволяет проводить мониторинг системы с помощью приложения TUYA Smart Home. Состав: модуль управления Neptun Smart+ - 1 шт.; радиодатчик Neptun Smart868 - 2 шт, датчик Нептун SW 005 - 1 шт; кран шаровый с электроприводом Neptun Profi 12В - 2 шт.; блок питания 12В - 1 шт. Гарантия 10 лет",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 1392.0,
       "retail": 1740.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 18
+      "source_row": 18,
+      "images": [
+        "/img/products/home-technologies/neptun-017-07.webp"
+      ]
     },
     {
       "article": "DT-234D16348F",
       "article_key": "dt234d16348f",
       "name": "Модуль управления Neptun Base",
       "name_key": "moдyльyпpabлehияneptunbase",
-      "description": "",
+      "description": "Модуль Neptun Base для систем контроля протечек воды предназначен для обработки сигналов от датчиков контроля протечки воды и выдачи управляющего сигнала на исполнительное устройство, перекрывающее воду. Обеспечивает световое и звуковое оповещение об аварии. Максимальное количество датчиков: 20, максимальное количество кранов: 6, функция проворота кранов, накладной монтаж. Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 153.6,
       "retail": 192.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 19
+      "source_row": 19,
+      "images": [
+        "/img/products/home-technologies/neptun-017-07.webp"
+      ]
     },
     {
       "article": "DT-0A0BE7C2A5",
       "article_key": "dt0a0be7c2a5",
       "name": "Модуль управления Neptun Smart+ Tuya",
       "name_key": "moдyльyпpabлehияneptunsmarttuya",
-      "description": "",
+      "description": "Модуль управления Neptun Smart+ Tuya является центральным контроллером в системах защиты от протечки воды, считывает сигналы от датчиков контроля и управляет кранами, установленных в системах водоснабжения. Один модуль Neptun Smart+Tuya позволяет независимо контролировать два разных стояка водоснабжения. Управление, мониторинг и настройка осуществляется с помощью приложения TUYA Smart Home. В оригинальной комплектации в модуль установлены плата расширения за контролем расхода воды с приборов учета ГВС и ХВС и плата подключения радиодатчиков. Дополнительно в модуль можно установить платы расширения. Гарантия 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 614.4,
       "retail": 768.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 20
+      "source_row": 20,
+      "images": [
+        "/img/products/home-technologies/neptun-020-17.webp"
+      ]
     },
     {
       "article": "DT-9BFE37A4D8",
       "article_key": "dt9bfe37a4d8",
       "name": "Модуль расширения Neptun Smart. Ethernet",
       "name_key": "moдyльpacшиpehияneptunsmartethernet",
-      "description": "",
+      "description": "Модуль расширения Ethernet служит для сетевого подключения модуля управления к маршрутизаторам в случае невозможности организации беспроводного подключения к сети Wi-Fi. При использовании модуля расширения Ethernet подключение по Wi-Fi становится невозможным. Настройки сети осуществляются автоматически посредством протокола DHCP.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 158.4,
       "retail": 198.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 21
+      "source_row": 21,
+      "images": [
+        "/img/products/home-technologies/neptun-020-17.webp"
+      ]
     },
     {
       "article": "RS485-07FCBEDE49",
       "article_key": "rs48507fcbede49",
       "name": "Модуль расширения Neptun Smart. RS485",
       "name_key": "moдyльpacшиpehияneptunsmartrs485",
-      "description": "",
+      "description": "Модуль расширения RS-485 служит для интеграции в автоматизированные системы управления с поддержкой протокола MODBUS RTU. Поддерживаются скорости передачи от 1200 бит/с до 921600 бит/с без контроля четности. Изначально выставлена скорость передачи 9600 бит/с. Карта памяти регистров доступна по ссылке.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 196.8,
       "retail": 246.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 22
+      "source_row": 22,
+      "images": [
+        "/img/products/home-technologies/neptun-020-17.webp"
+      ]
     },
     {
       "article": "DT-C8E915963E",
       "article_key": "dtc8e915963e",
       "name": "Модуль расширения Neptun Smart. Радиодатчики",
       "name_key": "moдyльpacшиpehияneptunsmartpaдиoдatчиkи",
-      "description": "",
+      "description": "Модуль подключения радиодатчиков предназначен для организации соединения с беспроводными датчиками контроля протечки воды. Посредством радиомодуля можно подключить до 50 беспроводных датчиков протечки воды.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 76.8,
       "retail": 96.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 23
+      "source_row": 23,
+      "images": [
+        "/img/products/home-technologies/neptun-020-17.webp"
+      ]
     },
     {
       "article": "DT-66E5D731FC",
       "article_key": "dt66e5d731fc",
       "name": "Модуль расширения Neptun Smart. Счётчики воды",
       "name_key": "moдyльpacшиpehияneptunsmartcчеtчиkиboды",
-      "description": "",
+      "description": "Модуль подключения счетчиков предназначен для считывания показаний с приборов учета расхода воды. Показания хранятся в энергонезависимой памяти модуля расширения. К одному модулю расширения можно подключить до 2 счетчиков. Модуль расширения поддерживает работу со счетчиками с выходом по стандарту NAMUR (настраивается через приложение).",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 76.8,
       "retail": 96.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 24
+      "source_row": 24,
+      "images": [
+        "/img/products/home-technologies/neptun-026-08.webp"
+      ]
     },
     {
       "article": "DT-0E8C947B9F",
       "article_key": "dt0e8c947b9f",
       "name": "Модуль расширения Neptun Smart. Tuya",
       "name_key": "moдyльpacшиpehияneptunsmarttuya",
-      "description": "",
+      "description": "Модуль расширения Neptun Smart Tuya предназначен для использования в модулях Neptun Smart. Данный модуль позволяет подключаться к приложению Smart Life, тем самым открывает для пользователя такие функции, как: • Управление при помощи голосовых помощниках (Siri, Yandex Alisa, Google Assistant); • Сценарии автоматизации устройства; • Групповые сценарии автоматизации умного дома; • Стабильный сервис; • Легкое и быстрое подключение устройства",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 67.2,
       "retail": 84.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 25
+      "source_row": 25,
+      "images": [
+        "/img/products/home-technologies/neptun-026-08.webp"
+      ]
     },
     {
       "article": "SW005-AE1692CD32",
       "article_key": "sw005ae1692cd32",
       "name": "Датчик контроля протечки воды SW005",
       "name_key": "дatчиkkohtpoляпpoteчkиboдыsw005",
-      "description": "",
+      "description": "Датчик контроля протечки воды предназначен для выработки сигнала при попадании на него воды.Датчик подключен к безопасному источнику питания и не представляет опасности при прикосновении к пластинам-контактам. Длинна установочного провода: 3м, 5м, 10м, 20м. Максималоьное удаление от контроллера: 100м",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 50.4,
       "retail": 63.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 26
+      "source_row": 26,
+      "images": [
+        "/img/products/home-technologies/neptun-026-08.webp"
+      ]
     },
     {
       "article": "SW00550-9574B6EF59",
       "article_key": "sw005509574b6ef59",
       "name": "Датчик контроля протечки воды SW005-5,0",
       "name_key": "дatчиkkohtpoляпpoteчkиboдыsw00550",
-      "description": "",
+      "description": "Датчик контроля протечки воды предназначен для выработки сигнала при попадании на него воды.Датчик подключен к безопасному источнику питания и не представляет опасности при прикосновении к пластинам-контактам. Длинна установочного провода: 3м, 5м, 10м, 20м. Максималоьное удаление от контроллера: 100м",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 60.0,
       "retail": 75.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 27
+      "source_row": 27,
+      "images": [
+        "/img/products/home-technologies/neptun-026-08.webp"
+      ]
     },
     {
       "article": "SW005100-A37FEE15B8",
       "article_key": "sw005100a37fee15b8",
       "name": "Датчик контроля протечки воды SW005-10,0",
       "name_key": "дatчиkkohtpoляпpoteчkиboдыsw005100",
-      "description": "",
+      "description": "Датчик контроля протечки воды предназначен для выработки сигнала при попадании на него воды.Датчик подключен к безопасному источнику питания и не представляет опасности при прикосновении к пластинам-контактам. Длинна установочного провода: 3м, 5м, 10м, 20м. Максималоьное удаление от контроллера: 100м",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 74.4,
       "retail": 93.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 28
+      "source_row": 28,
+      "images": [
+        "/img/products/home-technologies/neptun-026-18.webp"
+      ]
     },
     {
       "article": "SW005200-082D180801",
       "article_key": "sw005200082d180801",
       "name": "Датчик контроля протечки воды SW005-20,0",
       "name_key": "дatчиkkohtpoляпpoteчkиboдыsw005200",
-      "description": "",
+      "description": "Датчик контроля протечки воды предназначен для выработки сигнала при попадании на него воды.Датчик подключен к безопасному источнику питания и не представляет опасности при прикосновении к пластинам-контактам. Длинна установочного провода: 3м, 5м, 10м, 20м. Максималоьное удаление от контроллера: 100м",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 88.8,
       "retail": 111.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 29
+      "source_row": 29,
+      "images": [
+        "/img/products/home-technologies/neptun-026-18.webp"
+      ]
     },
     {
       "article": "SW007-C099D4E40F",
       "article_key": "sw007c099d4e40f",
       "name": "Датчик контроля протечки воды SW007",
       "name_key": "дatчиkkohtpoляпpoteчkиboдыsw007",
-      "description": "",
+      "description": "Датчик контроля протечки воды предназначен для выработки сигнала при попадании на него воды.Датчик подключен к безопасному источнику питания и не представляет опасности при прикосновении к пластинам-контактам. Длинна установочного провода: 2м Максималоьное удаление от контроллера: 100м",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 50.4,
       "retail": 63.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 30
+      "source_row": 30,
+      "images": [
+        "/img/products/home-technologies/neptun-030-09.webp"
+      ]
     },
     {
       "article": "SMART868-EE8B18F79A",
       "article_key": "smart868ee8b18f79a",
       "name": "Радиодатчик Neptun Smart 868.2",
       "name_key": "paдиoдatчиkneptunsmart8682",
-      "description": "",
+      "description": "Радиодатчик Neptun Smart 868.2 предназначен для передачи сигналов на модули управления Neptun Smart/Smart+/Smart+18 в случае наличия протечки.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 177.6,
       "retail": 222.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 31
+      "source_row": 31,
+      "images": [
+        "/img/products/home-technologies/neptun-030-09.webp"
+      ]
     },
     {
       "article": "PRO12B-819633C69A",
       "article_key": "pro12b819633c69a",
       "name": "Кран с электроприводом Neptun Bugatti Pro 12В 1/2",
       "name_key": "kpahcэлektpoпpиboдomneptunbugattipro12b12",
-      "description": "",
+      "description": "Шаровые краны с электроприводом серии Neptun Bugatti Pro могут использоваться в системах контроля протечки воды, системах обогрева, фанкойлах, тепловых насосах или установках с автоматически регулируемой подачей холодной и горячей воды и т. п. Напряжение питания: 12В. Диаметр трубы: 1/2, 3/4, 1, Крутящий момент: 16 Нм. Материал шестеренок электропривода: сталь. Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 297.6,
       "retail": 372.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 32
+      "source_row": 32,
+      "images": [
+        "/img/products/home-technologies/neptun-032-12.webp"
+      ]
     },
     {
       "article": "PRO12B-44BB36478D",
       "article_key": "pro12b44bb36478d",
       "name": "Кран с электроприводом Neptun Bugatti Pro 12В 3/4",
       "name_key": "kpahcэлektpoпpиboдomneptunbugattipro12b34",
-      "description": "",
+      "description": "Шаровые краны с электроприводом серии Neptun Bugatti Pro могут использоваться в системах контроля протечки воды, системах обогрева, фанкойлах, тепловых насосах или установках с автоматически регулируемой подачей холодной и горячей воды и т. п. Напряжение питания: 12В. Диаметр трубы: 1/2, 3/4, 1, Крутящий момент: 16 Нм. Материал шестеренок электропривода: сталь. Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 297.6,
       "retail": 372.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 33
+      "source_row": 33,
+      "images": [
+        "/img/products/home-technologies/neptun-032-12.webp"
+      ]
     },
     {
       "article": "PRO12B-3457601997",
       "article_key": "pro12b3457601997",
       "name": "Кран с электроприводом Neptun Bugatti Pro 12В 1",
       "name_key": "kpahcэлektpoпpиboдomneptunbugattipro12b1",
-      "description": "",
+      "description": "Шаровые краны с электроприводом серии Neptun Bugatti Pro могут использоваться в системах контроля протечки воды, системах обогрева, фанкойлах, тепловых насосах или установках с автоматически регулируемой подачей холодной и горячей воды и т. п. Напряжение питания: 12В. Диаметр трубы: 1/2, 3/4, 1, Крутящий момент: 16 Нм. Материал шестеренок электропривода: сталь. Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 374.4,
       "retail": 468.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 34
+      "source_row": 34,
+      "images": [
+        "/img/products/home-technologies/neptun-032-12.webp"
+      ]
     },
     {
       "article": "PRO220B-0061CF3617",
       "article_key": "pro220b0061cf3617",
       "name": "Кран с электроприводом Neptun Bugatti Pro 220В 1/2",
       "name_key": "kpahcэлektpoпpиboдomneptunbugattipro220b12",
-      "description": "",
+      "description": "Шаровые краны с электроприводом серии Neptun Bugatti Pro могут использоваться в системах контроля протечки воды, системах обогрева, фанкойлах, тепловых насосах или установках с автоматически регулируемой подачей холодной и горячей воды и т. п. Напряжение питания: 220 В. Диаметр трубы: 1/2, 3/4, 1. Крутящий момент: 9 Нм. Материал шестеренок электропривода: сталь. Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 297.6,
       "retail": 372.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 35
+      "source_row": 35,
+      "images": [
+        "/img/products/home-technologies/neptun-035-10.webp"
+      ]
     },
     {
       "article": "PRO220B-1E19AE60D3",
       "article_key": "pro220b1e19ae60d3",
       "name": "Кран с электроприводом Neptun Bugatti Pro 220В 3/4",
       "name_key": "kpahcэлektpoпpиboдomneptunbugattipro220b34",
-      "description": "",
+      "description": "Шаровые краны с электроприводом серии Neptun Bugatti Pro могут использоваться в системах контроля протечки воды, системах обогрева, фанкойлах, тепловых насосах или установках с автоматически регулируемой подачей холодной и горячей воды и т. п. Напряжение питания: 220 В. Диаметр трубы: 1/2, 3/4, 1. Крутящий момент: 9 Нм. Материал шестеренок электропривода: сталь. Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 297.6,
       "retail": 372.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 36
+      "source_row": 36,
+      "images": [
+        "/img/products/home-technologies/neptun-035-10.webp"
+      ]
     },
     {
       "article": "PRO220B-A72CBD7748",
       "article_key": "pro220ba72cbd7748",
       "name": "Кран с электроприводом Neptun Bugatti Pro 220В 1",
       "name_key": "kpahcэлektpoпpиboдomneptunbugattipro220b1",
-      "description": "",
+      "description": "Шаровые краны с электроприводом серии Neptun Bugatti Pro могут использоваться в системах контроля протечки воды, системах обогрева, фанкойлах, тепловых насосах или установках с автоматически регулируемой подачей холодной и горячей воды и т. п. Напряжение питания: 220 В. Диаметр трубы: 1/2, 3/4, 1. Крутящий момент: 9 Нм. Материал шестеренок электропривода: сталь. Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 374.4,
       "retail": 468.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 37
+      "source_row": 37,
+      "images": [
+        "/img/products/home-technologies/neptun-035-10.webp"
+      ]
     },
     {
       "article": "PRO220B-7560D83E50",
       "article_key": "pro220b7560d83e50",
       "name": "Кран с электроприводом Neptun Bugatti Pro 220В 1 1/2",
       "name_key": "kpahcэлektpoпpиboдomneptunbugattipro220b112",
-      "description": "",
+      "description": "Промышленные шаровые краны с электроприводом серии Neptun Bugatti Pro больших диаметров могут использоваться в системах контроля протечки воды, системах обогрева, фанкойлах, тепловых насосах или установках с автоматически регулируемой подачей холодной и горячей воды и т. п.Диаметр трубы: 1 ½ , 2. Крутящий момент: 31 Нм Материал шестеренок электропривода: сталь. Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 595.2,
       "retail": 744.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 38
+      "source_row": 38,
+      "images": [
+        "/img/products/home-technologies/neptun-038-11.webp"
+      ]
     },
     {
       "article": "PRO220B-D13F487BCF",
       "article_key": "pro220bd13f487bcf",
       "name": "Кран с электроприводом Neptun Bugatti Pro 220В 2",
       "name_key": "kpahcэлektpoпpиboдomneptunbugattipro220b2",
-      "description": "",
+      "description": "Промышленные шаровые краны с электроприводом серии Neptun Bugatti Pro больших диаметров могут использоваться в системах контроля протечки воды, системах обогрева, фанкойлах, тепловых насосах или установках с автоматически регулируемой подачей холодной и горячей воды и т. п.Диаметр трубы: 1 ½ , 2. Крутящий момент: 31 Нм Материал шестеренок электропривода: сталь. Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 739.2,
       "retail": 924.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 39
+      "source_row": 39,
+      "images": [
+        "/img/products/home-technologies/neptun-038-11.webp"
+      ]
     },
     {
       "article": "STANDART230B-FE51CD4117",
       "article_key": "standart230bfe51cd4117",
       "name": "Кран с электроприводом Neptun Standart 230В 1/2",
       "name_key": "kpahcэлektpoпpиboдomneptunstandart230b12",
-      "description": "",
+      "description": "Мощные и прочные шаровые краны с электроприводом серии Standard для блокировки водоснабжения. Краны с электроприводом могут использоваться в системах контроля протечки воды, системах обогрева, фанкойлах, тепловых насосах или установках с автоматически регулируемой подачей холодной и горячей воды. Краны из горячекованной никелированной латуни. Метод горячей ковки обеспечивает абсолютную прочность и полностью исключает возможность появления скрытых дефектов внутри металла. Полнопроходный кран и мощные шестеренки из стали провернут кран даже при закисании. Крутящий момент 8Нм. Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 211.2,
       "retail": 264.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 40
+      "source_row": 40,
+      "images": [
+        "/img/products/home-technologies/neptun-040-02.webp"
+      ]
     },
     {
       "article": "STANDART230B-398ABD676A",
       "article_key": "standart230b398abd676a",
       "name": "Кран с электроприводом Neptun Standart 230В 3/4",
       "name_key": "kpahcэлektpoпpиboдomneptunstandart230b34",
-      "description": "",
+      "description": "Мощные и прочные шаровые краны с электроприводом серии Standard для блокировки водоснабжения. Краны с электроприводом могут использоваться в системах контроля протечки воды, системах обогрева, фанкойлах, тепловых насосах или установках с автоматически регулируемой подачей холодной и горячей воды. Краны из горячекованной никелированной латуни. Метод горячей ковки обеспечивает абсолютную прочность и полностью исключает возможность появления скрытых дефектов внутри металла. Полнопроходный кран и мощные шестеренки из стали провернут кран даже при закисании. Крутящий момент 8Нм. Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 211.2,
       "retail": 264.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 41
+      "source_row": 41,
+      "images": [
+        "/img/products/home-technologies/neptun-040-02.webp"
+      ]
     },
     {
       "article": "PROFI12B-E7DA7F6281",
       "article_key": "profi12be7da7f6281",
       "name": "Кран с электроприводом Neptun PROFI 12В 1/2",
       "name_key": "kpahcэлektpoпpиboдomneptunprofi12b12",
-      "description": "",
+      "description": "Новый шаровый кран из нержавеющей стали марки SS304 с электроприводом Neptun PROFI. За счет широкого диапозона диаметров 1/2, 3/4, 1, 1 ¼ могут использоваться как в бытовой, так и промышленной сферах. Краны имеют современный европейский дизайн, усиленную резьбовую часть крана и центральную часть крана около шара (2мм). Кран имеет удобную кнопку для ручного управления краном. Диаметр трубы: 1/2, 3/4, 1, 1 ¼ Крутящий момент: 9 Нм для кранов 220В, 16Нм для кранов 12В. Материал шестеренок электропривода: сталь. Мин. ресурс изделия: >100000 циклов открытия/закрытия. Рабочее давление – до 40 бар Рабочая температура – до 120°С Степень защиты: IP65 Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 268.8,
       "retail": 336.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 42
+      "source_row": 42,
+      "images": [
+        "/img/products/home-technologies/neptun-042-01.webp"
+      ]
     },
     {
       "article": "PROFI12B-C42ECF271E",
       "article_key": "profi12bc42ecf271e",
       "name": "Кран с электроприводом Neptun PROFI 12В 3/4",
       "name_key": "kpahcэлektpoпpиboдomneptunprofi12b34",
-      "description": "",
+      "description": "Новый шаровый кран из нержавеющей стали марки SS304 с электроприводом Neptun PROFI. За счет широкого диапозона диаметров 1/2, 3/4, 1, 1 ¼ могут использоваться как в бытовой, так и промышленной сферах. Краны имеют современный европейский дизайн, усиленную резьбовую часть крана и центральную часть крана около шара (2мм). Кран имеет удобную кнопку для ручного управления краном. Диаметр трубы: 1/2, 3/4, 1, 1 ¼ Крутящий момент: 9 Нм для кранов 220В, 16Нм для кранов 12В. Материал шестеренок электропривода: сталь. Мин. ресурс изделия: >100000 циклов открытия/закрытия. Рабочее давление – до 40 бар Рабочая температура – до 120°С Степень защиты: IP65 Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 268.8,
       "retail": 336.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 43
+      "source_row": 43,
+      "images": [
+        "/img/products/home-technologies/neptun-042-01.webp"
+      ]
     },
     {
       "article": "PROFI12B-4CD69AF458",
       "article_key": "profi12b4cd69af458",
       "name": "Кран с электроприводом Neptun PROFI 12В 1",
       "name_key": "kpahcэлektpoпpиboдomneptunprofi12b1",
-      "description": "",
+      "description": "Новый шаровый кран из нержавеющей стали марки SS304 с электроприводом Neptun PROFI. За счет широкого диапозона диаметров 1/2, 3/4, 1, 1 ¼ могут использоваться как в бытовой, так и промышленной сферах. Краны имеют современный европейский дизайн, усиленную резьбовую часть крана и центральную часть крана около шара (2мм). Кран имеет удобную кнопку для ручного управления краном. Диаметр трубы: 1/2, 3/4, 1, 1 ¼ Крутящий момент: 9 Нм для кранов 220В, 16Нм для кранов 12В. Материал шестеренок электропривода: сталь. Мин. ресурс изделия: >100000 циклов открытия/закрытия. Рабочее давление – до 40 бар Рабочая температура – до 120°С Степень защиты: IP65 Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 336.0,
       "retail": 420.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 44
+      "source_row": 44,
+      "images": [
+        "/img/products/home-technologies/neptun-042-01.webp"
+      ]
     },
     {
       "article": "PROFI12B-353B407E11",
       "article_key": "profi12b353b407e11",
       "name": "Кран с электроприводом Neptun PROFI 12В 1 1/4",
       "name_key": "kpahcэлektpoпpиboдomneptunprofi12b114",
-      "description": "",
+      "description": "Новый шаровый кран из нержавеющей стали марки SS304 с электроприводом Neptun PROFI. За счет широкого диапозона диаметров 1/2, 3/4, 1, 1 ¼ могут использоваться как в бытовой, так и промышленной сферах. Краны имеют современный европейский дизайн, усиленную резьбовую часть крана и центральную часть крана около шара (2мм). Кран имеет удобную кнопку для ручного управления краном. Диаметр трубы: 1/2, 3/4, 1, 1 ¼ Крутящий момент: 9 Нм для кранов 220В, 16Нм для кранов 12В. Материал шестеренок электропривода: сталь. Мин. ресурс изделия: >100000 циклов открытия/закрытия. Рабочее давление – до 40 бар Рабочая температура – до 120°С Степень защиты: IP65 Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 384.0,
       "retail": 480.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 45
+      "source_row": 45,
+      "images": [
+        "/img/products/home-technologies/neptun-042-01.webp"
+      ]
     },
     {
       "article": "PROFI220B-E6FF04EDC8",
       "article_key": "profi220be6ff04edc8",
       "name": "Кран с электроприводом Neptun PROFI 220В 1/2",
       "name_key": "kpahcэлektpoпpиboдomneptunprofi220b12",
-      "description": "",
+      "description": "Новый шаровый кран из нержавеющей стали марки SS304 с электроприводом Neptun PROFI. За счет широкого диапозона диаметров 1/2, 3/4, 1, 1 ¼ могут использоваться как в бытовой, так и промышленной сферах. Краны имеют современный европейский дизайн, усиленную резьбовую часть крана и центральную часть крана около шара (2мм). Кран имеет удобную кнопку для ручного управления краном. Диаметр трубы: 1/2, 3/4, 1, 1 ¼ Крутящий момент: 9 Нм для кранов 220В, 16Нм для кранов 12В. Материал шестеренок электропривода: сталь. Мин. ресурс изделия: >100000 циклов открытия/закрытия. Рабочее давление – до 40 бар Рабочая температура – до 120°С Степень защиты: IP65 Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 268.8,
       "retail": 336.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 46
+      "source_row": 46,
+      "images": [
+        "/img/products/home-technologies/neptun-042-01.webp"
+      ]
     },
     {
       "article": "PROFI220B-1668096AC1",
       "article_key": "profi220b1668096ac1",
       "name": "Кран с электроприводом Neptun PROFI 220В 3/4",
       "name_key": "kpahcэлektpoпpиboдomneptunprofi220b34",
-      "description": "",
+      "description": "Новый шаровый кран из нержавеющей стали марки SS304 с электроприводом Neptun PROFI. За счет широкого диапозона диаметров 1/2, 3/4, 1, 1 ¼ могут использоваться как в бытовой, так и промышленной сферах. Краны имеют современный европейский дизайн, усиленную резьбовую часть крана и центральную часть крана около шара (2мм). Кран имеет удобную кнопку для ручного управления краном. Диаметр трубы: 1/2, 3/4, 1, 1 ¼ Крутящий момент: 9 Нм для кранов 220В, 16Нм для кранов 12В. Материал шестеренок электропривода: сталь. Мин. ресурс изделия: >100000 циклов открытия/закрытия. Рабочее давление – до 40 бар Рабочая температура – до 120°С Степень защиты: IP65 Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 268.8,
       "retail": 336.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 47
+      "source_row": 47,
+      "images": [
+        "/img/products/home-technologies/neptun-042-19.webp"
+      ]
     },
     {
       "article": "PROFI220B-0E82F04AFA",
       "article_key": "profi220b0e82f04afa",
       "name": "Кран с электроприводом Neptun PROFI 220В 1",
       "name_key": "kpahcэлektpoпpиboдomneptunprofi220b1",
-      "description": "",
+      "description": "Новый шаровый кран из нержавеющей стали марки SS304 с электроприводом Neptun PROFI. За счет широкого диапозона диаметров 1/2, 3/4, 1, 1 ¼ могут использоваться как в бытовой, так и промышленной сферах. Краны имеют современный европейский дизайн, усиленную резьбовую часть крана и центральную часть крана около шара (2мм). Кран имеет удобную кнопку для ручного управления краном. Диаметр трубы: 1/2, 3/4, 1, 1 ¼ Крутящий момент: 9 Нм для кранов 220В, 16Нм для кранов 12В. Материал шестеренок электропривода: сталь. Мин. ресурс изделия: >100000 циклов открытия/закрытия. Рабочее давление – до 40 бар Рабочая температура – до 120°С Степень защиты: IP65 Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 336.0,
       "retail": 420.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 48
+      "source_row": 48,
+      "images": [
+        "/img/products/home-technologies/neptun-042-19.webp"
+      ]
     },
     {
       "article": "PROFI220B-99A5632535",
       "article_key": "profi220b99a5632535",
       "name": "Кран с электроприводом Neptun PROFI 220В 1 1/4",
       "name_key": "kpahcэлektpoпpиboдomneptunprofi220b114",
-      "description": "",
+      "description": "Новый шаровый кран из нержавеющей стали марки SS304 с электроприводом Neptun PROFI. За счет широкого диапозона диаметров 1/2, 3/4, 1, 1 ¼ могут использоваться как в бытовой, так и промышленной сферах. Краны имеют современный европейский дизайн, усиленную резьбовую часть крана и центральную часть крана около шара (2мм). Кран имеет удобную кнопку для ручного управления краном. Диаметр трубы: 1/2, 3/4, 1, 1 ¼ Крутящий момент: 9 Нм для кранов 220В, 16Нм для кранов 12В. Материал шестеренок электропривода: сталь. Мин. ресурс изделия: >100000 циклов открытия/закрытия. Рабочее давление – до 40 бар Рабочая температура – до 120°С Степень защиты: IP65 Гарантия - 10 лет.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 384.0,
       "retail": 480.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 49
+      "source_row": 49,
+      "images": [
+        "/img/products/home-technologies/neptun-042-19.webp"
+      ]
     },
     {
       "article": "ПИTAHИЯ18650-DA0DE0601B",
       "article_key": "пиtahия18650da0de0601b",
       "name": "Источник бесперебойного питания 18650",
       "name_key": "иctoчhиkбecпepeбoйhoгoпиtahия18650",
-      "description": "",
+      "description": "Источник бесперебойного питания 18650 - это резервный накопитель для хранения энергии с литиевой батареей. Специально разработан для модулей Neptun Smart и Smart+ и позволяет сохранить работоспособность системы защиты от протечек воды до 8 часов в случае возникновения перебоев в питании.",
       "section": "Системы Neptun",
       "unit": "шт",
       "wholesale": 139.2,
       "retail": 174.0,
       "retail_method": "supplier_rrp",
       "discontinued": false,
-      "source_row": 50
+      "source_row": 50,
+      "images": [
+        "/img/products/home-technologies/neptun-042-19.webp"
+      ]
     },
     {
       "article": "CAMOPEГYЛИPYЮЩИЙCЯ17KCTM2T-3B7A9B8337",
@@ -3004,7 +3640,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 3
+      "source_row": 3,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-003-12.webp"
+      ]
     },
     {
       "article": "CAMOPEГYЛИPYЮЩИЙCЯ30KCTM2T-B92BD10C66",
@@ -3018,7 +3657,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 4
+      "source_row": 4,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-004-11.webp"
+      ]
     },
     {
       "article": "CAMOPEГYЛИPYЮЩИЙCЯ32ROOFMATE2-89B1356AD7",
@@ -3032,7 +3674,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 5
+      "source_row": 5,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-005-13.webp"
+      ]
     },
     {
       "article": "PHC16-8856E8B890",
@@ -3046,7 +3691,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 6
+      "source_row": 6,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-006-08.webp"
+      ]
     },
     {
       "article": "PHC30-0DA0B6254B",
@@ -3060,7 +3708,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 7
+      "source_row": 7,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-007-02.webp"
+      ]
     },
     {
       "article": "DT-EE11FB9F9F",
@@ -3074,7 +3725,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 8
+      "source_row": 8,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-008-14.webp"
+      ]
     },
     {
       "article": "SMM9050-4B8CF2C70B",
@@ -3088,7 +3742,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 9
+      "source_row": 9,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-008-14.webp"
+      ]
     },
     {
       "article": "MST92A-623ABCB47F",
@@ -3102,7 +3759,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 10
+      "source_row": 10,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-010-15.webp"
+      ]
     },
     {
       "article": "WSM13-E41217625D",
@@ -3116,7 +3776,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 11
+      "source_row": 11,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-011-17.webp"
+      ]
     },
     {
       "article": "SM12-A7C1F85FFA",
@@ -3130,7 +3793,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 12
+      "source_row": 12,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-012-01.webp"
+      ]
     },
     {
       "article": "MST91AI-5BB7D6DD89",
@@ -3144,7 +3810,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 13
+      "source_row": 13,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-012-01.webp"
+      ]
     },
     {
       "article": "PTM2000-9EF248EDBC",
@@ -3158,7 +3827,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 14
+      "source_row": 14,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-014-07.webp"
+      ]
     },
     {
       "article": "PTM2000-CBEA3194AD",
@@ -3172,7 +3844,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 15
+      "source_row": 15,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-014-10.webp"
+      ]
     },
     {
       "article": "TSW0130-15ADC133B2",
@@ -3186,7 +3861,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 16
+      "source_row": 16,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-014-03.webp"
+      ]
     },
     {
       "article": "TSP0130-D1247BF98B",
@@ -3200,7 +3878,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 17
+      "source_row": 17,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-014-04.webp"
+      ]
     },
     {
       "article": "TSP0230-2EB37C6F3B",
@@ -3214,7 +3895,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 18
+      "source_row": 18,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-014-05.webp"
+      ]
     },
     {
       "article": "TST0103П-3C6E7F4563",
@@ -3228,7 +3912,10 @@
       "retail": null,
       "retail_method": "standard_target_margin_20",
       "discontinued": false,
-      "source_row": 19
+      "source_row": 19,
+      "images": [
+        "/img/products/home-technologies/outdoor-heating-014-06.webp"
+      ]
     }
   ]
 }

@@ -40,10 +40,11 @@ class HomeTechnologiesPriceList
             }
 
             $description = '';
+            $descriptionColumn = $sheetName === 'Системы Neptun' ? 'A' : 'B';
             $blankRows = 0;
             for ($rowNumber = 3; $rowNumber <= $sheet->getHighestRow(); $rowNumber++) {
                 $name = $this->clean((string) $sheet->getCell("C{$rowNumber}")->getCalculatedValue());
-                $currentDescription = $this->clean((string) $sheet->getCell("B{$rowNumber}")->getCalculatedValue());
+                $currentDescription = $this->clean((string) $sheet->getCell("{$descriptionColumn}{$rowNumber}")->getCalculatedValue());
                 if ($currentDescription !== '') {
                     $description = $currentDescription;
                 }

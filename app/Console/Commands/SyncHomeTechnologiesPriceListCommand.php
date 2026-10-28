@@ -18,6 +18,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class SyncHomeTechnologiesPriceListCommand extends Command
 {
@@ -64,7 +65,7 @@ class SyncHomeTechnologiesPriceListCommand extends Command
 
             $stats = DB::transaction(function () use ($payload, $classified, &$supplier): array {
                 [$supplier, $source, $sync, $integrationSource] = $this->ensureSupplier($supplier, $payload);
-                $stats = ['offers' => 0, 'linked' => 0, 'unmatched' => 0, 'ambiguous' => 0, 'retail_updated' => 0, 'retail_preserved' => 0];
+                $stats = ['offers' => 0, 'linked' => 0, 'unmatched' => 0, 'ambiguous' => 0, 'retail_updated' => 0, 'retail_preserved' => 0, 'cards_enriched' => 0];
                 $touched = [];
 
                 foreach ($classified as $row) {
@@ -143,6 +144,9 @@ class SyncHomeTechnologiesPriceListCommand extends Command
                     } else {
                         $stats['retail_preserved']++;
                     }
+                    if ($this->enrichCard($product, $row)) {
+                        $stats['cards_enriched']++;
+                    }
                     if ($product->brand_id) {
                         $supplier->brands()->syncWithoutDetaching([$product->brand_id]);
                     }
@@ -177,6 +181,26 @@ class SyncHomeTechnologiesPriceListCommand extends Command
                 $byModel[$model][] = (int) $product->id;
             }
         }
+        $inventory = DB::table('integration_products as ip')
+            ->join('integration_sources as source', 'source.id', '=', 'ip.integration_source_id')
+            ->leftJoin('suppliers as supplier', 'supplier.id', '=', 'source.supplier_id')
+            ->whereNotNull('ip.product_id')
+            ->where('ip.match_status', 'matched')
+            ->where('source.update_stock', true)
+            ->where(fn ($query) => $query
+                ->where('source.code', 'onec')
+                ->orWhere('supplier.code', 'sanbusinessgroup'))
+            ->get(['ip.product_id', 'ip.name']);
+        $inventoryByName = $inventory->groupBy(fn (object $offer): string => $parser->key((string) $offer->name));
+        $inventoryByModel = [];
+        foreach ($inventory as $offer) {
+            foreach ($parser->modelKeys((string) $offer->name) as $model) {
+                $inventoryByModel[$model][] = (int) $offer->product_id;
+            }
+        }
+        $sourceModelCounts = collect($rows)
+            ->flatMap(fn (array $row): array => $parser->modelKeys($row['name']))
+            ->countBy();
         $existing = $supplier
             ? $supplier->supplierProducts()->whereNotNull('product_id')->get()->keyBy('supplier_article_normalized')
             : collect();
@@ -190,14 +214,30 @@ class SyncHomeTechnologiesPriceListCommand extends Command
             } elseif (($exact = $byName->get($row['name_key'])) && $exact->count() === 1) {
                 $ids = [(int) $exact->first()->id];
                 $reason = 'exact_name';
+            } elseif (($exact = $inventoryByName->get($row['name_key'])) && $exact->pluck('product_id')->unique()->count() === 1) {
+                $ids = [(int) $exact->first()->product_id];
+                $reason = 'exact_onec_name';
             } else {
-                $modelIds = collect($parser->modelKeys($row['name']))
+                $models = collect($parser->modelKeys($row['name']))
+                    ->filter(fn (string $model): bool => (int) $sourceModelCounts->get($model, 0) === 1)
+                    ->values();
+                $modelIds = $models
                     ->flatMap(fn (string $model): array => $byModel[$model] ?? [])
                     ->countBy()->sortDesc();
                 if ($modelIds->isNotEmpty()) {
                     $top = (int) $modelIds->max();
                     $ids = $modelIds->filter(fn (int $count): bool => $count === $top)->keys()->map('intval')->all();
                     $reason = count($ids) === 1 ? 'unique_model' : 'ambiguous';
+                }
+                if ($ids === []) {
+                    $modelIds = $models
+                        ->flatMap(fn (string $model): array => $inventoryByModel[$model] ?? [])
+                        ->countBy()->sortDesc();
+                    if ($modelIds->isNotEmpty()) {
+                        $top = (int) $modelIds->max();
+                        $ids = $modelIds->filter(fn (int $count): bool => $count === $top)->keys()->map('intval')->all();
+                        $reason = count($ids) === 1 ? 'unique_onec_model' : 'ambiguous';
+                    }
                 }
             }
             $row['product_id'] = count($ids) === 1 ? $ids[0] : null;
@@ -206,6 +246,44 @@ class SyncHomeTechnologiesPriceListCommand extends Command
         unset($row);
 
         return $rows;
+    }
+
+    private function enrichCard(Product $product, array $row): bool
+    {
+        $updates = [];
+        $images = array_values(array_filter((array) ($row['images'] ?? [])));
+        if (empty($product->images) && $images !== []) {
+            $updates['images'] = $images;
+        }
+
+        $description = trim((string) ($row['description'] ?? ''));
+        if ($description !== '' && blank($product->short_description)) {
+            $updates['short_description'] = Str::limit($description, 240);
+        }
+        if ($description !== '' && blank($product->content)) {
+            $paragraphs = preg_split('/\r?\n+/u', $description) ?: [$description];
+            $updates['content'] = collect($paragraphs)
+                ->map(fn (string $paragraph): string => '<p>'.e(trim($paragraph)).'</p>')
+                ->filter(fn (string $paragraph): bool => $paragraph !== '<p></p>')
+                ->implode('');
+        }
+        if (empty($product->specs)) {
+            $updates['specs'] = [
+                ['key' => 'Раздел', 'value' => $row['section']],
+                ['key' => 'Модель поставщика', 'value' => $row['article']],
+                ['key' => 'Единица измерения', 'value' => $row['unit']],
+            ];
+        }
+        if (blank($product->content_source_url)) {
+            $updates['content_source_url'] = HomeTechnologiesPriceList::WEBSITE;
+        }
+        if ($updates === []) {
+            return false;
+        }
+
+        $product->forceFill($updates)->save();
+
+        return true;
     }
 
     /** @return array{price:float,method:string,update:bool} */
