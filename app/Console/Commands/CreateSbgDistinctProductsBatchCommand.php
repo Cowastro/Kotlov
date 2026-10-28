@@ -5976,6 +5976,50 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // Exact Belarus dealer listing for the stocked grey IZOSIL board. The 1C
+    // row has no purchase price, so the public retail benchmark is stored on
+    // the card while B2B pricing remains unavailable until 1C supplies cost.
+    private const BATCH_UNMATCHED_RESEARCHED_20261028_FD = [
+        'УТ-00009035' => [
+            'template_slug' => 'plita-izolyatsionnaya-kaminnaya-skamoenclosure-1220-1000-30',
+            'allow_unmatched' => true,
+            'category_slug' => 'ognezashchitnye-plity-i-listy',
+            'fragments' => ['Плита', 'IZOSIL', 'серая', '1000x1220x30'],
+            'brand' => [
+                'name' => 'IZOSIL',
+                'slug' => 'izosil',
+            ],
+            'name' => 'IZOSIL Плита кальций-силикатная серая 1000×1220×30 мм',
+            'retail' => 175.56,
+            'images' => [
+                'https://www.teplodvor.by/userfls/shop/product/17/165865_plita-izosil-seraya-silikat-ka.jpg',
+                'https://www.teplodvor.by/userfls/shop/product/17/165864_plita-izosil-seraya-silikat-ka.jpg',
+                'https://www.teplodvor.by/userfls/shop/product/17/165866_plita-izosil-seraya-silikat-ka.jpg',
+                'https://www.teplodvor.by/userfls/shop/product/17/165868_plita-izosil-seraya-silikat-ka.jpg',
+            ],
+            'source_url' => 'https://www.teplodvor.by/shop/vse-dlya-bani/izolyatsionnye-materialy/plita-izosil-seraya-silikat-kaltsiya-1000x1220x30/',
+            'short' => 'Негорючая серая плита IZOSIL из силиката кальция 1000×1220×30 мм для теплоизоляции печей и каминов.',
+            'content' => '<p><strong>IZOSIL 1000×1220×30 мм</strong> — негорючая кальций-силикатная плита для теплоизоляции печей, каминов и защитных коробов.</p><p>Плита рассчитана на классификационную температуру до 1000 °C. Материал обладает низкой теплопроводностью и обрабатывается обычным деревообрабатывающим инструментом. Перед монтажом необходимо учесть температуру поверхностей, зазоры и требования проекта.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Кальций-силикатная теплоизоляционная плита'],
+                ['key' => 'Материал', 'value' => 'Силикат кальция'],
+                ['key' => 'Цвет', 'value' => 'Серый'],
+                ['key' => 'Длина', 'value' => '1220 мм'],
+                ['key' => 'Ширина', 'value' => '1000 мм'],
+                ['key' => 'Толщина', 'value' => '30 мм'],
+                ['key' => 'Плотность', 'value' => '270±10 кг/м³'],
+                ['key' => 'Классификационная температура', 'value' => '1000 °C'],
+                ['key' => 'Прочность на сжатие', 'value' => '2,2 МПа'],
+                ['key' => 'Прочность на изгиб', 'value' => '1 МПа'],
+                ['key' => 'Теплопроводность при 200 °C', 'value' => '< 0,041 Вт/(м·К)'],
+                ['key' => 'Теплопроводность при 400 °C', 'value' => '< 0,057 Вт/(м·К)'],
+                ['key' => 'Теплопроводность при 600 °C', 'value' => '< 0,066 Вт/(м·К)'],
+                ['key' => 'Теплопроводность при 800 °C', 'value' => '< 0,074 Вт/(м·К)'],
+                ['key' => 'Бренд', 'value' => 'IZOSIL'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -6142,6 +6186,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'ole-pro-researched-20261015-fa' => self::BATCH_OLE_PRO_RESEARCHED_20261015_FA,
             'ole-pro-accessories-20261015-fb' => self::BATCH_OLE_PRO_ACCESSORIES_20261015_FB,
             'ole-pro-protect-review-20261015-fc' => self::BATCH_OLE_PRO_PROTECT_REVIEW_20261015_FC,
+            'unmatched-researched-20261028-fd' => self::BATCH_UNMATCHED_RESEARCHED_20261028_FD,
             default => null,
         };
 

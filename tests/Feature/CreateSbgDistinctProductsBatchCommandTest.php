@@ -11304,4 +11304,79 @@ XML;
             'is_active' => true,
         ]);
     }
+
+    public function test_it_creates_the_exact_izosil_board_with_retail_content_and_live_stock(): void
+    {
+        $supplier = Supplier::query()->create([
+            'code' => 'sbg-izosil',
+            'name' => 'ООО «СанБизнесГруп»',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-izosil',
+            'name' => '1С СанБизнесГруп',
+            'supplier_id' => $supplier->id,
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Огнезащитные плиты и листы',
+            'slug' => 'ognezashchitnye-plity-i-listy',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $templateBrand = Brand::query()->create([
+            'name' => 'Skamol',
+            'slug' => 'skamol',
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'brand_id' => $templateBrand->id,
+            'sku' => 'PS-009.751',
+            'name' => 'Skamol Плита каминная SkamoEnclosure Board 1220×1000×30 мм',
+            'slug' => 'plita-izolyatsionnaya-kaminnaya-skamoenclosure-1220-1000-30',
+            'price' => 184,
+            'images' => ['product/009/009751/template.jpg'],
+            'is_active' => true,
+        ]);
+        $item = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'izosil-1000-1220-30',
+            'external_code' => 'УТ-00009035',
+            'name' => 'Плита IZOSIL серая (Силикат кальция) 1000x1220x30мм',
+            'price_byn' => null,
+            'stock_quantity' => 3,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261028-fd',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $item->refresh();
+        $product = $item->product;
+        $this->assertNotNull($product);
+        $this->assertSame('matched', $item->match_status);
+        $this->assertSame('manual_created', $item->match_method);
+        $this->assertSame($category->id, $product->category_id);
+        $this->assertSame('IZOSIL', $product->brand->name);
+        $this->assertSame('175.56', $product->price);
+        $this->assertSame('3', (string) $product->stock_qty);
+        $this->assertTrue((bool) $product->in_stock);
+        $this->assertSame('IZOSIL Плита кальций-силикатная серая 1000×1220×30 мм', $product->name);
+        $this->assertCount(4, $product->images);
+        $this->assertSame('270±10 кг/м³', collect($product->specs)->firstWhere('key', 'Плотность')['value']);
+        $this->assertSame('1000 °C', collect($product->specs)->firstWhere('key', 'Классификационная температура')['value']);
+        $this->assertStringContainsString('teplodvor.by', $product->content_source_url);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00009035',
+            'product_id' => $product->id,
+            'product_sku' => $product->sku,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
 }
