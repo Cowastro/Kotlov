@@ -26,6 +26,7 @@ class CreateFromPageCommand extends Command
         {price : Retail price, BYN}
         {url : Shop page of the same product}
         {--source=onec : Integration source code}
+        {--allow-price-request : Allow a zero retail price so the public card requests the price}
         {--apply : Create the card and link the row}';
 
     protected $description = 'Create a card for a 1C row from a shop page at a market price';
@@ -47,7 +48,7 @@ class CreateFromPageCommand extends Command
             ! $item => 'no_row',
             (bool) $item->product_id => 'linked',
             ! $category => 'no_category',
-            $price <= 0 => 'no_price',
+            $price < 0 || ($price === 0.0 && ! $this->option('allow-price-request')) => 'no_price',
             $name === '' => 'no_page',
             default => null,
         };
