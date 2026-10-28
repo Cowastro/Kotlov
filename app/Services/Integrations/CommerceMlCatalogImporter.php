@@ -670,7 +670,10 @@ class CommerceMlCatalogImporter
 
     private function prepareIndexes(): void
     {
-        $this->products = Product::query()->get(['id', 'sku', 'name', 'supplier_id'])->keyBy('id');
+        $this->products = Product::query()
+            ->where(fn ($query) => $query->where('is_archived', false)->orWhereNull('is_archived'))
+            ->get(['id', 'sku', 'name', 'supplier_id'])
+            ->keyBy('id');
         $this->skuIndex = [];
         $this->supplierArticleIndex = [];
         $this->reviewedSupplierArticleIndex = [];

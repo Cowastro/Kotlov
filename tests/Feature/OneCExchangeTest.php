@@ -213,6 +213,8 @@ class OneCExchangeTest extends TestCase
                 $table->string('name')->nullable();
                 $table->string('slug')->nullable();
                 $table->unsignedBigInteger('category_id')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->boolean('is_archived')->default(false);
                 $table->timestamps();
             });
         } else {
@@ -225,6 +227,12 @@ class OneCExchangeTest extends TestCase
                 }
                 if (! Schema::hasColumn('products', 'category_id')) {
                     $table->unsignedBigInteger('category_id')->nullable();
+                }
+                if (! Schema::hasColumn('products', 'is_active')) {
+                    $table->boolean('is_active')->default(true);
+                }
+                if (! Schema::hasColumn('products', 'is_archived')) {
+                    $table->boolean('is_archived')->default(false);
                 }
             });
         }
@@ -1624,6 +1632,8 @@ XML;
             'name' => 'Крепление универсальное D200–210',
             'slug' => 'match-advisor-product-'.uniqid(),
             'category_id' => $category->id,
+            'is_active' => true,
+            'is_archived' => false,
         ]);
         $item = IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
@@ -1673,12 +1683,16 @@ XML;
             'name' => 'Труба моно 500 D150',
             'slug' => 'candidate-one',
             'category_id' => $category->id,
+            'is_active' => true,
+            'is_archived' => false,
         ]);
         $second = $this->createProduct([
             'sku' => 'CANDIDATE-2',
             'name' => 'Труба моно 1000 D150',
             'slug' => 'candidate-two',
             'category_id' => $category->id,
+            'is_active' => true,
+            'is_archived' => false,
         ]);
         $item = IntegrationProduct::query()->create([
             'integration_source_id' => $source->id,
@@ -1701,6 +1715,12 @@ XML;
         $this->assertSame($first->id, $candidates[0]['product_id']);
         $this->assertSame('Кандидаты дымоходов', $candidates[0]['category_name']);
         $this->assertStringContainsString('/candidate-review-category/candidate-one', $candidates[0]['public_url']);
+
+        $first->update(['is_active' => false, 'is_archived' => true]);
+        $liveCandidates = app(IntegrationProductMatchAdvisor::class)->candidates($item->fresh());
+        $this->assertCount(1, $liveCandidates);
+        $this->assertSame($second->id, $liveCandidates[0]['product_id']);
+        $this->assertNull(app(IntegrationProductMatchDecision::class)->confirmCandidate($item, $first->id));
         $this->assertNull(app(IntegrationProductMatchDecision::class)->confirmCandidate($item, 999999));
 
         $confirmed = app(IntegrationProductMatchDecision::class)->confirmCandidate($item, $second->id);

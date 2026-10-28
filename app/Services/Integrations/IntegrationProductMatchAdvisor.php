@@ -33,6 +33,7 @@ class IntegrationProductMatchAdvisor
 
         $product = Product::query()
             ->with('category:id,name')
+            ->where(fn ($query) => $query->where('is_archived', false)->orWhereNull('is_archived'))
             ->find($productId, ['id', 'category_id', 'sku', 'name']);
         if (! $product) {
             return null;
@@ -87,6 +88,7 @@ class IntegrationProductMatchAdvisor
             ->values();
         $products = Product::query()
             ->with('category:id,name,slug')
+            ->where(fn ($query) => $query->where('is_archived', false)->orWhereNull('is_archived'))
             ->whereIn('id', $ranked->pluck('product_id')->map(fn (mixed $id): int => (int) $id))
             ->get(['id', 'category_id', 'sku', 'name', 'slug'])
             ->keyBy('id');
