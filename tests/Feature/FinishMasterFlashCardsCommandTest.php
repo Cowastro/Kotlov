@@ -31,6 +31,9 @@ class FinishMasterFlashCardsCommandTest extends TestCase
         $this->assertSame('ASTON', $aston->brand?->name);
         $this->assertSame(0.0, (float) $aston->price);
         $this->assertStringContainsString('200–280 мм', $aston->short_description);
+
+        $red = Product::query()->where('sku', 'KOTLOV-030290')->firstOrFail();
+        $this->assertSame(['https://images.deal.by/40324734_krovelnyj-uplotnitel-masterflash.jpg'], $red->images);
     }
 
     public function test_preview_does_not_write_changes(): void
@@ -50,7 +53,7 @@ class FinishMasterFlashCardsCommandTest extends TestCase
                 'slug' => 'master-flash-'.$number,
                 'sku' => 'KOTLOV-'.str_pad((string) $number, 6, '0', STR_PAD_LEFT),
                 'price' => $number === 30301 ? 0 : 70,
-                'images' => ["/storage/products/{$number}/colour-photo.webp"],
+                'images' => $number === 30290 ? [] : ["/storage/products/{$number}/colour-photo.webp"],
                 'is_active' => true,
             ]);
         }

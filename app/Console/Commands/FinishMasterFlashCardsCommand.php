@@ -14,21 +14,21 @@ class FinishMasterFlashCardsCommand extends Command
 
     protected $description = 'Complete Master Flash cards with descriptions, specs, SEO and verified brand data';
 
-    /** @var array<string,array{series:string,diameter:string,colour:string,base:?string,brand:?string,source:?string}> */
+    /** @var array<string,array{series:string,diameter:string,colour:string,base:?string,brand:?string,source:?string,image:?string}> */
     private const CARDS = [
-        'KOTLOV-030290' => ['series' => 'RES №1', 'diameter' => '75–200 мм', 'colour' => 'красный', 'base' => null, 'brand' => null, 'source' => null],
+        'KOTLOV-030290' => ['series' => 'RES №1', 'diameter' => '75–200 мм', 'colour' => 'красный', 'base' => null, 'brand' => null, 'source' => 'https://sbg.by/p11682950-krovelnyj-uplotnitel-masterflash.html', 'image' => 'https://images.deal.by/40324734_krovelnyj-uplotnitel-masterflash.jpg'],
         'KOTLOV-030291' => ['series' => 'RES №1', 'diameter' => '75–200 мм', 'colour' => 'чёрный', 'base' => null, 'brand' => null, 'source' => null],
         'KOTLOV-030292' => ['series' => 'RES №1', 'diameter' => '75–200 мм', 'colour' => 'синий', 'base' => null, 'brand' => null, 'source' => null],
         'KOTLOV-030293' => ['series' => 'RES №1', 'diameter' => '75–200 мм', 'colour' => 'серый', 'base' => null, 'brand' => null, 'source' => null],
         'KOTLOV-030294' => ['series' => 'RES №1', 'diameter' => '75–200 мм', 'colour' => 'коричневый', 'base' => null, 'brand' => null, 'source' => null],
         'KOTLOV-030295' => ['series' => 'RES №1', 'diameter' => '75–200 мм', 'colour' => 'зелёный', 'base' => null, 'brand' => null, 'source' => null],
-        'KOTLOV-030296' => ['series' => 'RES №2', 'diameter' => '203–280 мм', 'colour' => 'чёрный', 'base' => '600×600 мм', 'brand' => null, 'source' => null],
+        'KOTLOV-030296' => ['series' => 'RES №2', 'diameter' => '203–280 мм', 'colour' => 'чёрный', 'base' => '600×600 мм', 'brand' => null, 'source' => 'https://sbg.by/p11683002-krovelnaya-prohodka-master.html', 'image' => 'https://images.deal.by/22606857_krovelnaya-prohodka-master.jpg'],
         'KOTLOV-030297' => ['series' => 'RES №2', 'diameter' => '203–280 мм', 'colour' => 'серый', 'base' => '600×600 мм', 'brand' => null, 'source' => null],
         'KOTLOV-030298' => ['series' => 'RES №2', 'diameter' => '203–280 мм', 'colour' => 'красный', 'base' => '600×600 мм', 'brand' => null, 'source' => null],
-        'KOTLOV-030299' => ['series' => 'RES №2', 'diameter' => '203–280 мм', 'colour' => 'коричневый', 'base' => '600×600 мм', 'brand' => null, 'source' => null],
+        'KOTLOV-030299' => ['series' => 'RES №2', 'diameter' => '203–280 мм', 'colour' => 'коричневый', 'base' => '600×600 мм', 'brand' => null, 'source' => 'https://sbg.by/p11683015-krovelnaya-prohodka-master.html', 'image' => 'https://images.deal.by/22606877_krovelnaya-prohodka-master.jpg'],
         'KOTLOV-030300' => ['series' => 'RES №2', 'diameter' => '203–280 мм', 'colour' => 'зелёный', 'base' => '600×600 мм', 'brand' => null, 'source' => null],
-        'KOTLOV-030301' => ['series' => '№6', 'diameter' => '200–280 мм', 'colour' => 'красный', 'base' => '600×600 мм', 'brand' => 'ASTON', 'source' => 'https://www.kaminyug.ru/catalog/master_flesh_uglovoy/master_flesh_aston_6_200_280mm_600kh600mm_ugl_silikon_krasnyy/'],
-        'KOTLOV-030302' => ['series' => 'RES №2', 'diameter' => '203–280 мм', 'colour' => 'графитовый', 'base' => '600×600 мм', 'brand' => null, 'source' => 'https://www.kaminyug.ru/catalog/master_flesh_uglovoy/master_flesh_2_203_280mm_600mm_600mm_uglovoy_silikon_grafit_rr7024/'],
+        'KOTLOV-030301' => ['series' => '№6', 'diameter' => '200–280 мм', 'colour' => 'красный', 'base' => '600×600 мм', 'brand' => 'ASTON', 'source' => 'https://www.kaminyug.ru/catalog/master_flesh_uglovoy/master_flesh_aston_6_200_280mm_600kh600mm_ugl_silikon_krasnyy/', 'image' => 'https://s3.kaminyug.ru/iblock/85e/dyc08ncq6fhtlndq1jk6sfo9fv6zv2su.jpg'],
+        'KOTLOV-030302' => ['series' => 'RES №2', 'diameter' => '203–280 мм', 'colour' => 'графитовый', 'base' => '600×600 мм', 'brand' => null, 'source' => 'https://www.kaminyug.ru/catalog/master_flesh_uglovoy/master_flesh_2_203_280mm_600mm_600mm_uglovoy_silikon_grafit_rr7024/', 'image' => 'https://s3.kaminyug.ru/iblock/198/z9s2uq0qm50gf3rgzjliv9voy26hmbnf.jpg'],
         'KOTLOV-030303' => ['series' => 'RES №2', 'diameter' => '203–280 мм', 'colour' => 'синий', 'base' => '600×600 мм', 'brand' => null, 'source' => 'https://pechki66.ru/product/res_2_203-280_sinij_silikon_no_name/'],
     ];
 
@@ -48,7 +48,8 @@ class FinishMasterFlashCardsCommand extends Command
 
             $stats['found']++;
             $images = array_values(array_filter((array) $product->images, fn ($image) => is_string($image) && trim($image) !== ''));
-            $images === [] ? $stats['without_images']++ : $stats['with_images']++;
+            $finalImages = $images !== [] ? $images : array_values(array_filter([$card['image'] ?? null]));
+            $finalImages === [] ? $stats['without_images']++ : $stats['with_images']++;
 
             $isAston = $card['brand'] === 'ASTON';
             $title = $isAston
@@ -94,6 +95,11 @@ class FinishMasterFlashCardsCommand extends Command
             if ($card['source']) {
                 $changes['content_source_url'] = $card['source'];
             }
+            // Preserve every already verified colour photo. Fill only cards where
+            // the original page import could not save its exact source image.
+            if ($images === [] && $finalImages !== []) {
+                $changes['images'] = $finalImages;
+            }
             if ($isAston) {
                 if ($apply && ! $astonBrand) {
                     $astonBrand = Brand::query()->firstOrCreate(['slug' => 'aston'], ['name' => 'ASTON', 'h1' => 'ASTON', 'is_active' => true]);
@@ -103,7 +109,7 @@ class FinishMasterFlashCardsCommand extends Command
                 }
             }
 
-            $this->line(sprintf('audit.master_flash.card=%d:%s:images_%d:%s', $product->id, $sku, count($images), $apply ? 'apply' : 'preview'));
+            $this->line(sprintf('audit.master_flash.card=%d:%s:images_%d:%s', $product->id, $sku, count($finalImages), $apply ? 'apply' : 'preview'));
             if ($apply) {
                 $product->forceFill($changes)->save();
             }
