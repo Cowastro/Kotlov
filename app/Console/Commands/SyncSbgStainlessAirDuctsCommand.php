@@ -7,11 +7,9 @@ use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
 use App\Services\Integrations\IntegrationManualMatchRecorder;
-use App\Services\Marketplaces\DealByClient;
 use App\Services\ProductSourceEnricher;
 use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -39,7 +37,6 @@ class SyncSbgStainlessAirDuctsCommand extends Command
     ];
 
     public function handle(
-        DealByClient $client,
         ProductSourceEnricher $enricher,
         IntegrationManualMatchRecorder $recorder,
         SupplierProductAvailabilityService $availability,
@@ -54,7 +51,6 @@ class SyncSbgStainlessAirDuctsCommand extends Command
             return self::FAILURE;
         }
 
-        $remote = $this->siteProducts($client);
         $items = IntegrationProduct::query()
             ->where('integration_source_id', $source->id)
             ->where(function ($query): void {
@@ -73,7 +69,11 @@ class SyncSbgStainlessAirDuctsCommand extends Command
         $stats = ['sizes' => count(self::RANGE), 'ready' => 0, 'created' => 0, 'updated' => 0, 'linked' => 0, 'skipped' => 0];
 
         foreach (self::RANGE as $diameter => $definition) {
-            $offer = $remote[Str::upper($definition['article'])] ?? null;
+            try {
+                $offer = $enricher->preview($definition['url']);
+            } catch (\Throwable) {
+                $offer = null;
+            }
             $matchingItems = $items->filter(fn (IntegrationProduct $item): bool => $this->isStainlessDiameter($item->name, $diameter))->values();
             $matchingProducts = $products->filter(fn (Product $product): bool => $this->isStainlessDiameter($product->name, $diameter))->values();
             $linkedProduct = $matchingItems->pluck('product_id')->filter()->unique();
@@ -113,7 +113,7 @@ class SyncSbgStainlessAirDuctsCommand extends Command
                     'currency' => 'BYN',
                     'unit' => 'пог. м',
                     'short_description' => "Гибкий гофрированный воздуховод из нержавеющей стали диаметром {$diameter} мм. Цена указана за 1 погонный метр.",
-                    'content' => $offer['description'] ?: "<p><strong>{$name}</strong> применяется в системах вентиляции. Цена указана за 1 погонный метр.</p>",
+                    'content' => ($offer['description'] ?? '') ?: "<p><strong>{$name}</strong> применяется в системах вентиляции. Цена указана за 1 погонный метр.</p>",
                     'content_source_url' => $definition['url'],
                     'specs' => [
                         ['key' => 'Тип', 'value' => 'Гибкий гофрированный воздуховод'],
@@ -159,9 +159,8 @@ class SyncSbgStainlessAirDuctsCommand extends Command
                 }
             });
 
-            if ($offer['images'] !== []) {
-                $enricher->enrichFromParsed($product->fresh(), $definition['url'], ['images' => []], [
-                    'verified_images' => $offer['images'],
+            if (($offer['images'] ?? []) !== []) {
+                $enricher->enrichFromParsed($product->fresh(), $definition['url'], $offer, [
                     'update_images' => true,
                     'replace_images' => true,
                     'update_specs' => false,
@@ -180,45 +179,6 @@ class SyncSbgStainlessAirDuctsCommand extends Command
         }
 
         return $stats['skipped'] === 0 ? self::SUCCESS : self::FAILURE;
-    }
-
-    /** @return array<string,array{description:string,images:list<string>}> */
-    private function siteProducts(DealByClient $client): array
-    {
-        $wanted = collect(self::RANGE)->pluck('article')->map(fn (string $article): string => Str::upper($article))->all();
-        $found = [];
-        $lastId = null;
-
-        for ($page = 1; $page <= 2000 && count($found) < count($wanted); $page++) {
-            $items = collect($client->listProducts(100, $lastId)['products'] ?? [])->filter(fn ($item): bool => is_array($item))->values();
-            foreach ($items as $item) {
-                $sku = Str::upper(trim((string) ($item['sku'] ?? '')));
-                if (! in_array($sku, $wanted, true)) {
-                    continue;
-                }
-                $images = array_values(array_filter(array_merge([(string) ($item['main_image'] ?? '')], array_map(
-                    fn ($image): string => is_array($image) ? (string) ($image['url'] ?? '') : (string) $image,
-                    (array) ($item['images'] ?? []),
-                ))));
-                $found[$sku] = [
-                    'description' => trim((string) ($item['description'] ?? '')),
-                    'images' => array_values(array_unique(array_map(
-                        fn (string $url): string => (string) preg_replace('/_w\d+_h\d+_/', '_', $url),
-                        $images,
-                    ))),
-                ];
-            }
-            if ($items->count() < 100) {
-                break;
-            }
-            $next = (int) data_get($items->last(), 'id');
-            if ($next <= 0 || $next === $lastId) {
-                break;
-            }
-            $lastId = $next;
-        }
-
-        return $found;
     }
 
     private function isStainlessDiameter(string $name, int $diameter): bool

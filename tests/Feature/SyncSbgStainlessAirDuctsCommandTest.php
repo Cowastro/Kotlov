@@ -6,7 +6,6 @@ use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
-use App\Services\Marketplaces\DealByClient;
 use App\Services\ProductSourceEnricher;
 use App\Services\SupplierProductAvailabilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,19 +58,13 @@ class SyncSbgStainlessAirDuctsCommandTest extends TestCase
         }
 
         $prices = [80 => 50, 100 => 50, 110 => 55, 120 => 59, 125 => 61, 130 => 63, 135 => 67, 140 => 70, 150 => 73, 200 => 93];
-        $remote = [];
-        foreach ($prices as $diameter => $price) {
-            $remote[] = [
-                'id' => $diameter,
-                'sku' => 'ВНС'.$diameter,
-                'name' => "Воздуховод {$diameter}",
-                'price' => $price,
-                'description' => "<p>Описание {$diameter}</p>",
-                'main_image' => "https://images.deal.by/duct-{$diameter}.jpg",
-            ];
-        }
-        $this->mock(DealByClient::class, fn ($mock) => $mock->shouldReceive('listProducts')->once()->andReturn(['products' => $remote]));
-        $this->mock(ProductSourceEnricher::class, fn ($mock) => $mock->shouldReceive('enrichFromParsed')->times(10)->andReturn([]));
+        $this->mock(ProductSourceEnricher::class, function ($mock): void {
+            $mock->shouldReceive('preview')->times(10)->andReturn([
+                'description' => '<p>Описание</p>',
+                'images' => ['https://images.deal.by/duct.jpg'],
+            ]);
+            $mock->shouldReceive('enrichFromParsed')->times(10)->andReturn([]);
+        });
         $this->mock(SupplierProductAvailabilityService::class, fn ($mock) => $mock->shouldReceive('refresh')->times(10));
 
         $this->artisan('catalog:sync-sbg-stainless-air-ducts', ['--apply' => true])
