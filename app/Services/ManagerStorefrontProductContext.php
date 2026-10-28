@@ -64,6 +64,7 @@ class ManagerStorefrontProductContext
                     : null;
 
                 return [
+                    'manual_match' => false,
                     'supplier_key' => $this->supplierKey($offer->supplier?->name),
                     'matches_product_name' => $this->productNameKey($offer->supplier_name) === $productNameKey,
                     'supplier' => $offer->supplier?->name ?: ($offer->supplier?->code ?: 'Поставщик'),
@@ -96,6 +97,14 @@ class ManagerStorefrontProductContext
                 $purchasePrice = $offer->normalizedPriceByn();
 
                 return [
+                    // A manager-confirmed 1C link is the authoritative offer for
+                    // this card even when an older legacy supplier row happens
+                    // to repeat the public product name verbatim.
+                    'manual_match' => in_array($offer->match_method, [
+                        'manual_search',
+                        'manual_candidate',
+                        'manual_suggestion',
+                    ], true),
                     'supplier_key' => $this->supplierKey($source?->supplier?->name ?: $source?->name),
                     'matches_product_name' => $this->productNameKey($offer->name) === $productNameKey,
                     'supplier' => $source?->supplier?->name ?: ($source?->name ?: 'Интеграция'),
@@ -125,6 +134,7 @@ class ManagerStorefrontProductContext
             $supplier = $stock->supplier;
 
             return [
+                'manual_match' => false,
                 'supplier_key' => $this->supplierKey($supplier?->name),
                 'matches_product_name' => true,
                 'supplier' => $supplier?->name ?: 'ООО «СанБизнесГруп»',
@@ -151,6 +161,7 @@ class ManagerStorefrontProductContext
             ->concat($integrationOffers)
             ->concat($warehouseOffers)
             ->sortBy([
+                ['manual_match', 'desc'],
                 ['matches_product_name', 'desc'],
                 ['is_fresh', 'desc'],
                 ['in_stock', 'desc'],

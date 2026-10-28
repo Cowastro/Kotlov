@@ -162,6 +162,58 @@ class ManagerStorefrontExperienceTest extends TestCase
         $this->assertSame('7 шт.', $offers->first()['stock']);
     }
 
+    public function test_manual_one_c_link_wins_over_an_older_legacy_offer_from_the_same_supplier(): void
+    {
+        [$product, $offer] = $this->makeProductWithSupplierOffer();
+        $offer->supplier->update([
+            'code' => 'sanbusinessgroup',
+            'name' => 'ООО «СанБизнесГруп»',
+        ]);
+        $offer->update([
+            'supplier_name' => $product->name,
+            'price' => 35,
+            'price_byn' => 35,
+            'stock_quantity' => 1.8,
+        ]);
+
+        $sourceId = DB::table('integration_sources')->insertGetId([
+            'supplier_id' => $offer->supplier_id,
+            'code' => 'onec-manager-context-test',
+            'name' => '1С СанБизнесГруп',
+            'is_active' => true,
+            'update_stock' => true,
+            'settings' => json_encode(['warehouse_label' => 'Основной']),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('integration_products')->insert([
+            'integration_source_id' => $sourceId,
+            'product_id' => $product->id,
+            'external_id' => 'UT-00009075',
+            'external_code' => 'UT-00009075',
+            'external_sku' => 'UT-00009075',
+            'name' => 'Одеяло огнеупорное Blanket 1260',
+            'price' => 21,
+            'price_byn' => 25.20,
+            'stock_quantity' => 10,
+            'match_status' => 'matched',
+            'match_method' => 'manual_search',
+            'match_confidence' => 1,
+            'matched_at' => now(),
+            'stock_confirmed_at' => now(),
+            'last_seen_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        $context = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager)->first();
+
+        $this->assertSame('UT-00009075', $context['article']);
+        $this->assertSame(25.20, $context['purchase_price']);
+        $this->assertSame('10 шт.', $context['stock']);
+    }
+
     public function test_one_supplier_with_two_warehouses_is_rendered_once(): void
     {
         [$product, $offer] = $this->makeProductWithSupplierOffer();
