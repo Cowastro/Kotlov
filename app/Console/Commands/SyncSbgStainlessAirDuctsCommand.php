@@ -66,7 +66,7 @@ class SyncSbgStainlessAirDuctsCommand extends Command
             ->where('name', 'like', '%воздуховод%')
             ->get();
 
-        $stats = ['sizes' => count(self::RANGE), 'ready' => 0, 'created' => 0, 'updated' => 0, 'linked' => 0, 'skipped' => 0];
+        $stats = ['sizes' => count(self::RANGE), 'ready' => 0, 'created' => 0, 'updated' => 0, 'linked' => 0, 'deferred_links' => 0, 'skipped' => 0];
 
         foreach (self::RANGE as $diameter => $definition) {
             try {
@@ -78,7 +78,7 @@ class SyncSbgStainlessAirDuctsCommand extends Command
             $matchingProducts = $products->filter(fn (Product $product): bool => $this->isStainlessDiameter($product->name, $diameter))->values();
             $linkedProduct = $matchingItems->pluck('product_id')->filter()->unique();
 
-            if (! $offer || $matchingItems->count() > 1 || $matchingProducts->count() > 1 || $linkedProduct->count() > 1) {
+            if (! $offer || $matchingProducts->count() > 1 || $linkedProduct->count() > 1) {
                 $stats['skipped']++;
                 $reason = ! $offer ? 'missing_sbg_offer' : 'ambiguous_local_identity';
                 $this->line("audit.sbg_stainless_duct.skipped={$diameter}:{$reason}");
@@ -93,8 +93,15 @@ class SyncSbgStainlessAirDuctsCommand extends Command
                 continue;
             }
 
-            $item = $matchingItems->first();
-            $product = $item?->product_id ? Product::query()->find($item->product_id) : $matchingProducts->first();
+            $product = $linkedProduct->count() === 1
+                ? Product::query()->find((int) $linkedProduct->first())
+                : $matchingProducts->first();
+            $item = $product
+                ? $matchingItems->firstWhere('product_id', $product->id)
+                : $this->pickExactIntegrationRow($matchingItems);
+            if (! $item && $matchingItems->isNotEmpty()) {
+                $stats['deferred_links']++;
+            }
             $stats['ready']++;
             $this->line(sprintf(
                 'audit.sbg_stainless_duct.ready=%d:%s:%.2f:%s:%s',
@@ -194,6 +201,26 @@ class SyncSbgStainlessAirDuctsCommand extends Command
 
         return Str::contains($normalized, ['нерж', 'нержав'])
             && (bool) preg_match('/(?<!\d)'.preg_quote((string) $diameter, '/').'(?!\d)/u', $normalized);
+    }
+
+    private function pickExactIntegrationRow(\Illuminate\Support\Collection $items): ?IntegrationProduct
+    {
+        if ($items->count() === 1) {
+            return $items->first();
+        }
+
+        $positive = $items->filter(fn (IntegrationProduct $item): bool => (float) $item->stock_quantity > 0)->values();
+        if ($positive->count() === 1) {
+            return $positive->first();
+        }
+
+        $threeMetre = $items->filter(function (IntegrationProduct $item): bool {
+            $name = preg_replace('/\s+/u', '', Str::lower($item->name));
+
+            return Str::contains($name, ['3мнерж', '3м(нерж']);
+        })->values();
+
+        return $threeMetre->count() === 1 ? $threeMetre->first() : null;
     }
 
     private function uniqueSku(int $productId): string

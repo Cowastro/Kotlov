@@ -72,6 +72,7 @@ class SyncSbgStainlessAirDuctsCommandTest extends TestCase
             ->expectsOutputToContain('metric.sbg_stainless_duct.created=8')
             ->expectsOutputToContain('metric.sbg_stainless_duct.updated=2')
             ->expectsOutputToContain('metric.sbg_stainless_duct.linked=2')
+            ->expectsOutputToContain('metric.sbg_stainless_duct.deferred_links=0')
             ->assertSuccessful();
 
         $this->assertSame(10, Product::query()->where('name', 'like', '%нержавеющей стали%')->count());
