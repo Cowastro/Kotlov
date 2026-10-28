@@ -65,6 +65,7 @@ class ManagerStorefrontProductContext
 
                 return [
                     'manual_match' => false,
+                    'legacy_supplier_offer' => true,
                     'supplier_key' => $this->supplierKey($offer->supplier?->name),
                     'matches_product_name' => $this->productNameKey($offer->supplier_name) === $productNameKey,
                     'supplier' => $offer->supplier?->name ?: ($offer->supplier?->code ?: 'Поставщик'),
@@ -105,6 +106,7 @@ class ManagerStorefrontProductContext
                         'manual_candidate',
                         'manual_suggestion',
                     ], true),
+                    'legacy_supplier_offer' => false,
                     'supplier_key' => $this->supplierKey($source?->supplier?->name ?: $source?->name),
                     'matches_product_name' => $this->productNameKey($offer->name) === $productNameKey,
                     'supplier' => $source?->supplier?->name ?: ($source?->name ?: 'Интеграция'),
@@ -135,6 +137,7 @@ class ManagerStorefrontProductContext
 
             return [
                 'manual_match' => false,
+                'legacy_supplier_offer' => false,
                 'supplier_key' => $this->supplierKey($supplier?->name),
                 'matches_product_name' => true,
                 'supplier' => $supplier?->name ?: 'ООО «СанБизнесГруп»',
@@ -178,6 +181,15 @@ class ManagerStorefrontProductContext
     /** @param Collection<int, array<string, mixed>> $offers */
     private function mergeSupplierOffers(Collection $offers): array
     {
+        if ($offers->contains(fn (array $offer): bool => $offer['manual_match'])) {
+            // A confirmed integration row supersedes legacy rows for the same
+            // supplier. Keep true warehouse records, which can represent an
+            // additional physical location rather than a duplicate feed row.
+            $offers = $offers
+                ->reject(fn (array $offer): bool => $offer['legacy_supplier_offer'])
+                ->values();
+        }
+
         $best = $offers->first();
         $locations = $offers
             ->unique(fn (array $offer): string => mb_strtolower((string) ($offer['warehouse'] ?? '')))
