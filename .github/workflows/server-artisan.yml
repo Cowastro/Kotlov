@@ -557,6 +557,12 @@ jobs:
             grep -E '^audit\.master_flash\.(card=[0-9]+:KOTLOV-[0-9]+:images_[0-9]+:(preview|apply)|missing=KOTLOV-[0-9]+)$' "$detail_log" || true
             echo "safe_master_flash_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:organize-chimney-mounts" ]]; then
+            echo "safe_chimney_mounts_metrics_begin"
+            grep -E '^(metric|group)\.chimney_mounts\.[a-z0-9_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.chimney_mounts\.(missing_root=[01]|unmatched=[0-9]+|missing_target=[a-z0-9-]+)$' "$detail_log" || true
+            echo "safe_chimney_mounts_metrics_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:brand-suppliers" ]]; then
             echo "safe_brand_suppliers_metrics_begin"
             grep -E '^metric\.brand_suppliers\.[a-z0-9_]+=[0-9]+$' "$detail_log" || true
