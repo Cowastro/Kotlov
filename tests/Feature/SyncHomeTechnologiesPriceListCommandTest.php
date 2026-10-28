@@ -115,5 +115,9 @@ class SyncHomeTechnologiesPriceListCommandTest extends TestCase
         $this->assertGreaterThanOrEqual(3, count($product->specs));
         $this->assertSame(3, $product->stock_qty);
         $this->assertTrue($product->in_stock);
+        $this->assertSame(
+            'Нагревательные маты',
+            Product::query()->where('name', 'Нагревательный мат Grand Meyer THM200-140')->firstOrFail()->category->name
+        );
     }
 }

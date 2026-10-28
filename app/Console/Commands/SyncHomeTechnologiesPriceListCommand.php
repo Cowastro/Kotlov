@@ -69,7 +69,7 @@ class SyncHomeTechnologiesPriceListCommand extends Command
 
             $stats = DB::transaction(function () use ($payload, $classified, &$supplier, $creator): array {
                 [$supplier, $source, $sync, $integrationSource] = $this->ensureSupplier($supplier, $payload);
-                $stats = ['offers' => 0, 'linked' => 0, 'created_cards' => 0, 'onec_rows_linked' => 0, 'unmatched' => 0, 'ambiguous' => 0, 'retail_updated' => 0, 'retail_preserved' => 0, 'cards_enriched' => 0];
+                $stats = ['offers' => 0, 'linked' => 0, 'created_cards' => 0, 'onec_rows_linked' => 0, 'cards_reclassified' => 0, 'unmatched' => 0, 'ambiguous' => 0, 'retail_updated' => 0, 'retail_preserved' => 0, 'cards_enriched' => 0];
                 $touched = [];
 
                 foreach ($classified as $row) {
@@ -184,6 +184,25 @@ class SyncHomeTechnologiesPriceListCommand extends Command
                     $stats[$product ? 'linked' : $status]++;
                     if (! $product) {
                         continue;
+                    }
+                    if ($this->option('create-missing') && (int) $product->supplier_id === (int) $supplier->id) {
+                        $category = $this->categoryForRow($row);
+                        $brand = $this->brandForRow($row);
+                        $classification = [];
+                        if ((int) $product->category_id !== (int) $category->id) {
+                            $classification['category_id'] = $category->id;
+                        }
+                        if (! $product->brand_id && $brand) {
+                            $classification['brand_id'] = $brand->id;
+                        }
+                        if ($classification !== []) {
+                            $product->forceFill($classification)->save();
+                            if (isset($classification['category_id'])) {
+                                IntegrationProduct::query()->where('product_id', $product->id)
+                                    ->update(['target_category_id' => $classification['category_id']]);
+                            }
+                            $stats['cards_reclassified']++;
+                        }
                     }
                     if ($retail['update'] && abs((float) $product->price - $retail['price']) > 0.005) {
                         $product->forceFill(['price' => $retail['price'], 'requires_price_confirmation' => false])->save();
@@ -364,7 +383,7 @@ class SyncHomeTechnologiesPriceListCommand extends Command
     {
         $name = mb_strtolower((string) $row['name']);
         [$parentSlug, $parentName, $slug, $categoryName] = match ($row['section']) {
-            'Электрический теплый пол' => str_contains($name, 'мат нагрев')
+            'Электрический теплый пол' => str_contains($name, 'мат нагрев') || str_contains($name, 'нагревательный мат')
                 ? ['teplyj-pol', 'Тёплый пол', 'nagrevatelynye-maty', 'Нагревательные маты']
                 : ['teplyj-pol', 'Тёплый пол', 'nagrevatelynye-kabeli', 'Нагревательные кабели'],
             'Терморегуляторы' => ['teplyj-pol', 'Тёплый пол', 'termoregulyatory-dlya-teplogo-pola', 'Терморегуляторы для тёплого пола'],
