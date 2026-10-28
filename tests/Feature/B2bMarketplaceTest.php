@@ -41,6 +41,58 @@ class B2bMarketplaceTest extends TestCase
             ->assertSeeText('Товар для проверки администратора');
     }
 
+    public function test_crm_manager_can_only_open_read_only_b2b_preview(): void
+    {
+        $category = Category::query()->create([
+            'name' => 'Тест CRM',
+            'slug' => 'crm-b2b-preview-category',
+            'is_active' => true,
+        ]);
+        $product = $this->product($category, 'Товар для CRM-превью', 'CRM-PREVIEW-1');
+        $source = $this->source('crm-preview-source', $category);
+        $this->offer($source, $product, 80, 5);
+        $manager = User::factory()->create([
+            'role' => 'manager',
+            'is_crm_user' => true,
+            'client_type' => 'retail',
+            'b2b_approved' => false,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($manager)
+            ->get(route('b2b.catalog'))
+            ->assertForbidden();
+
+        $this->actingAs($manager)
+            ->get(route('b2b.catalog', ['b2b-preview' => 1]))
+            ->assertOk()
+            ->assertSeeText('Тестовый просмотр для CRM')
+            ->assertSeeText('Товар для CRM-превью')
+            ->assertSeeText('80,00 BYN')
+            ->assertSeeText('Тестовый просмотр')
+            ->assertDontSee('data-qty-input="#b2b-qty-'.$product->id.'"', false);
+
+        $this->actingAs($manager)
+            ->getJson(route('b2b.catalog.suggest', ['b2b-preview' => 1, 'q' => 'CRM-PREVIEW-1']))
+            ->assertOk()
+            ->assertJsonPath('items.0.name', 'Товар для CRM-превью');
+    }
+
+    public function test_non_crm_manager_cannot_open_b2b_preview(): void
+    {
+        $manager = User::factory()->create([
+            'role' => 'manager',
+            'is_crm_user' => false,
+            'client_type' => 'retail',
+            'b2b_approved' => false,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($manager)
+            ->get(route('b2b.catalog', ['b2b-preview' => 1]))
+            ->assertForbidden();
+    }
+
     public function test_partner_only_sees_prices_from_sources_granted_to_their_company(): void
     {
         $category = Category::query()->create([

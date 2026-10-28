@@ -4,6 +4,7 @@ namespace App\Filament\Resources\B2bClients\Pages;
 
 use App\Filament\Resources\B2bClients\B2bClientResource;
 use App\Models\B2bClient;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -45,6 +46,13 @@ class ListB2bClients extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [CreateAction::make()->label('Добавить B2B-клиента')];
+        return [
+            Action::make('b2b_preview')
+                ->label('Открыть B2B-превью')
+                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->url(route('b2b.catalog', ['b2b-preview' => 1]))
+                ->openUrlInNewTab(),
+            CreateAction::make()->label('Добавить B2B-клиента'),
+        ];
     }
 }

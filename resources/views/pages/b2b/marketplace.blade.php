@@ -26,10 +26,14 @@
                 <strong>{{ auth()->user()->company_name ?: auth()->user()->name }}</strong>
             </div>
             <nav class="b2b-topbar__actions" aria-label="B2B-навигация">
-                <a href="{{ route('account') }}" class="b2b-topbar__link"><i class="icon icon-User"></i><span>Заказы</span></a>
-                <a href="{{ route('cart') }}" class="b2b-topbar__link b2b-topbar__cart">
-                    <i class="icon icon-Handbag"></i><span>Корзина</span><b class="cart-count">{{ $cartCount }}</b>
-                </a>
+                @if ($staffPreview)
+                    <span class="b2b-topbar__link b2b-topbar__preview"><i class="icon icon-Eye"></i><span>Только просмотр</span></span>
+                @else
+                    <a href="{{ route('account') }}" class="b2b-topbar__link"><i class="icon icon-User"></i><span>Заказы</span></a>
+                    <a href="{{ route('cart') }}" class="b2b-topbar__link b2b-topbar__cart">
+                        <i class="icon icon-Handbag"></i><span>Корзина</span><b class="cart-count">{{ $cartCount }}</b>
+                    </a>
+                @endif
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" class="b2b-topbar__logout">Выйти</button>
@@ -39,6 +43,12 @@
     </header>
 
     <main class="b2b-workspace">
+        @if ($staffPreview)
+            <div class="b2b-preview-notice" role="status">
+                <strong>Тестовый просмотр для CRM</strong>
+                <span>Вы видите B2B-каталог глазами оптового клиента. Корзина, заказ и запрос цены отключены.</span>
+            </div>
+        @endif
         <section class="b2b-page-heading">
             <div><p>B2B · рабочий каталог</p><h1>Быстрый заказ товаров</h1></div>
             <button type="button" class="b2b-mobile-catalog-button" data-catalog-open><span>☰</span> Категории</button>
@@ -164,14 +174,22 @@
                                     <div class="b2b-price-cell"><strong>{{ number_format($item['price'], 2, ',', ' ') }} <small>BYN</small></strong>@if ($item['retail_price'] > 0)<span>Розница {{ number_format($item['retail_price'], 2, ',', ' ') }}</span>@endif</div>
                                     <div class="b2b-stock-cell"><strong><span class="b2b-live-dot"></span>{{ $item['stock_label'] }}</strong><span>{{ $item['offer']->source?->partnerName() }}</span></div>
                                     <div class="b2b-buy-cell">
-                                        <input id="b2b-qty-{{ $product->id }}" type="number" value="1" min="1" max="999" inputmode="numeric" aria-label="Количество">
-                                        <button type="button" class="b2b-add-button b2b-add-to-cart" data-product-id="{{ $product->id }}" data-qty-input="#b2b-qty-{{ $product->id }}"><i class="icon icon-Handbag"></i><span>Добавить</span></button>
+                                        @if ($staffPreview)
+                                            <span class="b2b-preview-action">Тестовый просмотр</span>
+                                        @else
+                                            <input id="b2b-qty-{{ $product->id }}" type="number" value="1" min="1" max="999" inputmode="numeric" aria-label="Количество">
+                                            <button type="button" class="b2b-add-button b2b-add-to-cart" data-product-id="{{ $product->id }}" data-qty-input="#b2b-qty-{{ $product->id }}"><i class="icon icon-Handbag"></i><span>Добавить</span></button>
+                                        @endif
                                     </div>
                                 @else
                                     <div class="b2b-price-cell"><strong>{{ (float) $product->price > 0 ? number_format((float) $product->price, 2, ',', ' ') : '—' }} <small>BYN</small></strong><span>Справочная цена</span></div>
                                     <div class="b2b-request-cell">
-                                        @if ($priceRequest)<div class="b2b-price-request-state" data-price-request-state="{{ $product->id }}"><strong>{{ \App\Models\ContactRequest::$statuses[$priceRequest->status] ?? $priceRequest->status }}</strong>@if ($priceRequest->client_response)<p>{{ $priceRequest->client_response }}</p>@elseif ($priceRequestIsOpen)<span>Менеджер проверяет цену и срок</span>@endif</div>@endif
-                                        @if (! $priceRequestIsOpen)<form class="b2b-price-request-form" data-product-id="{{ $product->id }}"><input name="quantity" type="number" value="1" min="1" max="999" inputmode="numeric" aria-label="Количество"><button type="submit">Запросить оптовую цену</button></form>@endif
+                                        @if ($staffPreview)
+                                            <span class="b2b-preview-action">Тестовый просмотр</span>
+                                        @else
+                                            @if ($priceRequest)<div class="b2b-price-request-state" data-price-request-state="{{ $product->id }}"><strong>{{ \App\Models\ContactRequest::$statuses[$priceRequest->status] ?? $priceRequest->status }}</strong>@if ($priceRequest->client_response)<p>{{ $priceRequest->client_response }}</p>@elseif ($priceRequestIsOpen)<span>Менеджер проверяет цену и срок</span>@endif</div>@endif
+                                            @if (! $priceRequestIsOpen)<form class="b2b-price-request-form" data-product-id="{{ $product->id }}"><input name="quantity" type="number" value="1" min="1" max="999" inputmode="numeric" aria-label="Количество"><button type="submit">Запросить оптовую цену</button></form>@endif
+                                        @endif
                                     </div>
                                 @endif
                             </article>

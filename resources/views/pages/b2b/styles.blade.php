@@ -18,6 +18,10 @@ body.b2b-body { margin:0; color:var(--b2b-ink); background:var(--b2b-bg); font-f
 .b2b-topbar__cart:hover { color:#fff; background:#080c10; }
 .b2b-topbar__cart b { display:grid; place-items:center; min-width:20px; height:20px; padding:0 5px; border-radius:10px; color:#111; background:#fff; font-size:11px; }
 .b2b-workspace { width:min(1360px,calc(100% - 40px)); margin:0 auto; padding:26px 0 40px; }
+.b2b-preview-notice { display:flex; align-items:center; gap:12px; margin-bottom:18px; padding:11px 14px; border:1px solid #f1c96b; border-radius:10px; color:#5c4308; background:#fff8df; font-size:12px; }
+.b2b-preview-notice strong { flex:0 0 auto; }
+.b2b-topbar__preview { color:#7a5600; background:#fff3c4; }
+.b2b-preview-action { display:flex; align-items:center; justify-content:center; width:100%; min-height:36px; padding:0 10px; border:1px dashed #d6a936; border-radius:7px; color:#785600; background:#fff9e6; font-size:11px; font-weight:700; }
 .b2b-page-heading { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:18px; }
 .b2b-page-heading p { margin:0 0 3px; color:var(--b2b-accent); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
 .b2b-page-heading h1 { margin:0; font-size:26px; line-height:1.15; }

@@ -17,7 +17,10 @@ class B2bMarketplaceController extends Controller
     public function __invoke(Request $request, B2bCatalogOfferResolver $resolver)
     {
         $user = $request->user();
-        abort_unless($resolver->canViewPartnerPrices($user), 403);
+        $staffPreview = $request->boolean('b2b-preview')
+            && ! $resolver->canViewPartnerPrices($user)
+            && $resolver->canPreviewPartnerPrices($user);
+        abort_unless($resolver->canViewPartnerPrices($user) || $staffPreview, 403);
 
         $mode = $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
@@ -33,7 +36,10 @@ class B2bMarketplaceController extends Controller
             ? $request->string('sort')->toString()
             : 'name';
 
-        $allOffers = $resolver->offersForUser($user);
+        $allOffers = $staffPreview
+            ? $resolver->offersForStaffPreview($user)
+            : $resolver->offersForUser($user);
+        $offerAccessUser = $staffPreview ? null : $user;
         $orderableProductIds = $allOffers->pluck('product_id')->unique()->map(fn ($id): int => (int) $id);
         $sourceGroups = $allOffers
             ->groupBy(fn ($offer): string => mb_strtolower(trim($offer->source->partnerName())))
@@ -84,9 +90,9 @@ class B2bMarketplaceController extends Controller
             $availableCategoryIds = $listingOffers
                 ->unique('product_id')
                 ->pluck('product.category_id');
-            $rows = $offers->map(function ($offer) use ($resolver, $user): array {
+            $rows = $offers->map(function ($offer) use ($resolver, $offerAccessUser): array {
                 $product = $offer->product;
-                $availability = $resolver->availabilityFor($offer, $user);
+                $availability = $resolver->availabilityFor($offer, $offerAccessUser);
 
                 return [
                     'product' => $product,
@@ -129,25 +135,30 @@ class B2bMarketplaceController extends Controller
         $visibleProductIds = $mode === 'reference'
             ? $products->getCollection()->pluck('id')
             : $products->getCollection()->pluck('product.id');
-        $priceRequests = ContactRequest::query()
-            ->where('user_id', $user->id)
-            ->where('source', 'b2b_price_request')
-            ->whereIn('product_id', $visibleProductIds)
-            ->latest('id')
-            ->get()
-            ->unique('product_id')
-            ->keyBy('product_id');
+        $priceRequests = $staffPreview
+            ? collect()
+            : ContactRequest::query()
+                ->where('user_id', $user->id)
+                ->where('source', 'b2b_price_request')
+                ->whereIn('product_id', $visibleProductIds)
+                ->latest('id')
+                ->get()
+                ->unique('product_id')
+                ->keyBy('product_id');
 
         return view('pages.b2b.marketplace', compact(
             'products', 'mode', 'query', 'categoryId', 'brandId', 'sourceKey', 'sort',
-            'categoryTree', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests', 'minimalLayout',
+            'categoryTree', 'brands', 'sourceGroups', 'orderableProductIds', 'priceRequests', 'minimalLayout', 'staffPreview',
         ));
     }
 
     public function suggest(Request $request, B2bCatalogOfferResolver $resolver): JsonResponse
     {
         $user = $request->user();
-        abort_unless($resolver->canViewPartnerPrices($user), 403);
+        $staffPreview = $request->boolean('b2b-preview')
+            && ! $resolver->canViewPartnerPrices($user)
+            && $resolver->canPreviewPartnerPrices($user);
+        abort_unless($resolver->canViewPartnerPrices($user) || $staffPreview, 403);
 
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
         if (mb_strlen($query) < 2) {
@@ -159,7 +170,10 @@ class B2bMarketplaceController extends Controller
         $mode = $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
 
         if ($mode === 'reference') {
-            $orderableProductIds = $resolver->offersForUser($user)->pluck('product_id')->unique();
+            $orderableProductIds = ($staffPreview
+                ? $resolver->offersForStaffPreview($user)
+                : $resolver->offersForUser($user))
+                ->pluck('product_id')->unique();
             $items = Product::query()
                 ->active()
                 ->notArchived()
@@ -193,7 +207,9 @@ class B2bMarketplaceController extends Controller
             return response()->json(['items' => $items]);
         }
 
-        $items = $resolver->offersForUser($user)
+        $items = ($staffPreview
+            ? $resolver->offersForStaffPreview($user)
+            : $resolver->offersForUser($user))
             ->groupBy('product_id')
             ->map(fn (Collection $offers) => $offers->sortBy(fn ($offer): float => $resolver->priceWithTax($offer))->first())
             ->filter(function ($offer) use ($needle): bool {
@@ -218,9 +234,9 @@ class B2bMarketplaceController extends Controller
                 ];
             })
             ->take(8)
-            ->map(function ($offer) use ($resolver, $preview, $user): array {
+            ->map(function ($offer) use ($resolver, $preview, $staffPreview, $user): array {
                 $product = $offer->product;
-                $availability = $resolver->availabilityFor($offer, $user);
+                $availability = $resolver->availabilityFor($offer, $staffPreview ? null : $user);
 
                 return [
                     'id' => (int) $product->id,

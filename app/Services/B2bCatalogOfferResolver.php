@@ -41,6 +41,23 @@ class B2bCatalogOfferResolver
             || $user?->isAdmin());
     }
 
+    public function canPreviewPartnerPrices(?User $user): bool
+    {
+        return (bool) ($user?->is_active
+            && $user->is_crm_user
+            && $user->isOperationalManager());
+    }
+
+    /** @return Collection<int, IntegrationProduct> */
+    public function offersForStaffPreview(?User $user): Collection
+    {
+        if (! $this->canPreviewPartnerPrices($user)) {
+            return collect();
+        }
+
+        return $this->offers()->values();
+    }
+
     /** @return Collection<int, array{id:int,name:string,slug:string,count:int}> */
     public function catalogGroups(?User $user): Collection
     {
