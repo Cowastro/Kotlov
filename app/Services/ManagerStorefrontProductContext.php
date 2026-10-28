@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class ManagerStorefrontProductContext
 {
@@ -55,7 +56,7 @@ class ManagerStorefrontProductContext
 
         $supplierOffers = $product->supplierProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->supplier?->name))
-            ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin): array {
+            ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin, $product): array {
                 $quantity = $offer->stock_quantity;
                 $inStock = (float) $quantity > 0 || $offer->in_stock === true;
                 $purchasePrice = $offer->stock_status !== 'missing_from_feed' && (float) $offer->price_byn > 0
@@ -76,7 +77,7 @@ class ManagerStorefrontProductContext
                     'margin' => $this->margin($retailPrice, $purchasePrice),
                     'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
                     'stock' => $quantity !== null
-                        ? $this->formatQuantity((float) $quantity)
+                        ? $this->formatQuantity((float) $quantity, $product->unit)
                         : ($inStock ? 'В наличии' : ($offer->stock_text ?: 'Нет в наличии')),
                     'stock_quantity' => $quantity !== null ? (float) $quantity : null,
                     'warehouse' => $this->warehouseLabel($offer->warehouse_name, $isEcokamin),
@@ -89,7 +90,7 @@ class ManagerStorefrontProductContext
 
         $integrationOffers = $product->integrationProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->source?->supplier?->name))
-            ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin): array {
+            ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin, $product): array {
                 $quantity = (float) $offer->stock_quantity;
                 $source = $offer->source;
                 $purchasePrice = $offer->normalizedPriceByn();
@@ -107,7 +108,7 @@ class ManagerStorefrontProductContext
                     'retail_price' => $retailPrice,
                     'margin' => $this->margin($retailPrice, $purchasePrice),
                     'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
-                    'stock' => $this->formatQuantity($quantity),
+                    'stock' => $this->formatQuantity($quantity, $product->unit),
                     'stock_quantity' => $quantity,
                     'warehouse' => $this->warehouseLabel(
                         data_get($source?->settings, 'warehouse_label'),
@@ -235,13 +236,15 @@ class ManagerStorefrontProductContext
         return $label !== '' ? $label : null;
     }
 
-    private function formatQuantity(float $quantity): string
+    private function formatQuantity(float $quantity, ?string $unit = null): string
     {
         $formatted = abs($quantity - round($quantity)) < 0.0005
             ? number_format($quantity, 0, '.', ' ')
             : rtrim(rtrim(number_format($quantity, 3, '.', ' '), '0'), '.');
 
-        return $formatted.' шт.';
+        $suffix = Str::contains(Str::lower(trim((string) $unit)), ['пог', 'метр']) ? ' пог. м' : ' шт.';
+
+        return $formatted.$suffix;
     }
 
     private function margin(?float $retailPrice, ?float $purchasePrice): ?float

@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Product;
+use App\Models\SupplierProduct;
 use App\Services\Integrations\IntegrationManualMatchRecorder;
 use App\Services\ProductSourceEnricher;
 use App\Services\SupplierProductAvailabilityService;
@@ -66,7 +67,7 @@ class SyncSbgStainlessAirDuctsCommand extends Command
             ->where('name', 'like', '%воздуховод%')
             ->get();
 
-        $stats = ['sizes' => count(self::RANGE), 'ready' => 0, 'created' => 0, 'updated' => 0, 'linked' => 0, 'deferred_links' => 0, 'skipped' => 0];
+        $stats = ['sizes' => count(self::RANGE), 'ready' => 0, 'created' => 0, 'updated' => 0, 'linked' => 0, 'supplier_routes' => 0, 'deferred_links' => 0, 'skipped' => 0];
 
         foreach (self::RANGE as $diameter => $definition) {
             try {
@@ -170,6 +171,33 @@ class SyncSbgStainlessAirDuctsCommand extends Command
                     ]);
                     $recorder->record($item->fresh());
                     $stats['linked']++;
+                }
+
+                if (! $item && $source->supplier_id) {
+                    SupplierProduct::query()->updateOrCreate([
+                        'supplier_id' => $source->supplier_id,
+                        'supplier_article_normalized' => Str::upper($definition['article']),
+                    ], [
+                        'product_id' => $product->id,
+                        'product_sku' => $product->sku,
+                        'supplier_article' => $definition['article'],
+                        'supplier_article_compact' => Str::upper($definition['article']),
+                        'supplier_name' => $name,
+                        'source_url' => $definition['url'],
+                        'price' => null,
+                        'price_byn' => null,
+                        'currency' => 'BYN',
+                        'currency_rate' => 1,
+                        'in_stock' => false,
+                        'stock_quantity' => null,
+                        'stock_status' => 'preorder',
+                        'stock_text' => 'Под заказ',
+                        'match_status' => 'matched',
+                        'match_confidence' => 'manual_price_list',
+                        'raw' => ['retail_price' => $definition['price'], 'unit' => 'пог. м'],
+                        'last_synced_at' => now(),
+                    ]);
+                    $stats['supplier_routes']++;
                 }
             });
 
