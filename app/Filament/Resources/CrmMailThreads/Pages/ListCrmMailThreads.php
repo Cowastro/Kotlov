@@ -271,14 +271,15 @@ class ListCrmMailThreads extends ListRecords
                             $result = app(ImapMailboxSynchronizer::class)->sync($mailbox);
                             $imported += $result['imported'];
                             $skipped += $result['skipped'];
-                        } catch (Throwable $exception) {
-                            $errors[] = $mailbox->email.': '.$exception->getMessage();
+                        } catch (Throwable) {
+                            $errors[] = $mailbox->email;
                         }
                     }
 
                     if ($errors !== []) {
                         Notification::make()->danger()->title('Не удалось проверить часть ящиков')
-                            ->body(implode("\n", $errors))->send();
+                            ->body('Не синхронизированы: '.implode(', ', $errors).'. Подробности записаны в журнал.')
+                            ->send();
 
                         return;
                     }

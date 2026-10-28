@@ -7,6 +7,7 @@ use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -94,6 +95,20 @@ class ImapMailboxSynchronizer
                 $subject = $this->decodeHeader($header->subject ?? null) ?: '(без темы)';
                 $messageId = $this->cleanMessageId($header->message_id ?? null);
                 $inReplyTo = $this->cleanMessageId($header->in_reply_to ?? null);
+
+                // A server can assign a new IMAP UID to a message that was already
+                // imported (for example after moving/restoring it). The RFC Message-ID
+                // remains the same, and is the stable identity in that case.
+                if ($messageId && CrmMailMessage::query()
+                    ->where('mailbox_id', $mailbox->id)
+                    ->where('message_id', $messageId)
+                    ->exists()) {
+                    $skipped++;
+                    $mailbox->last_uid = max((int) $mailbox->last_uid, (int) $uid);
+
+                    continue;
+                }
+
                 $structure = imap_fetchstructure($imap, $messageNumber);
                 $bodies = $this->extractBodies($imap, $messageNumber, $structure);
                 $attachments = $this->extractAttachments($imap, $messageNumber, $structure, $mailbox->id, (int) $uid);
@@ -120,6 +135,19 @@ class ImapMailboxSynchronizer
                     $mailbox, $uid, $header, $fromEmail, $fromName, $subject, $messageId,
                     $inReplyTo, $bodies, $attachments, $counterparty, $contact, $isBlockedSender
                 ): CrmMailMessage {
+                    // Serialize persistence for one mailbox and repeat the identity
+                    // check under the lock. This closes the race between two manual or
+                    // scheduled synchronizations of the same mailbox.
+                    $existingMessage = $this->existingMessageUnderLock(
+                        $mailbox,
+                        (int) $uid,
+                        $messageId,
+                    );
+
+                    if ($existingMessage) {
+                        return $existingMessage;
+                    }
+
                     $receivedAt = $this->parseDate($header->date ?? null);
                     $thread = $this->threadResolver->resolve(
                         $mailbox,
@@ -201,6 +229,13 @@ class ImapMailboxSynchronizer
                     return $message;
                 });
 
+                if (! $message->wasRecentlyCreated) {
+                    $skipped++;
+                    $mailbox->last_uid = max((int) $mailbox->last_uid, (int) $uid);
+
+                    continue;
+                }
+
                 // The shared Telegram chat shows the letter text: personal mailboxes stay private.
                 if (! $isBlockedSender && ! $mailbox->isPersonal()) {
                     $this->telegramNotifier->send($message);
@@ -216,13 +251,41 @@ class ImapMailboxSynchronizer
                 'last_error' => null,
             ])->save();
         } catch (Throwable $exception) {
-            $mailbox->forceFill(['last_error' => $this->toUtf8($exception->getMessage())])->save();
+            Log::error('CRM mailbox synchronization failed.', [
+                'mailbox_id' => $mailbox->id,
+                'mailbox_email' => $mailbox->email,
+                'exception_class' => $exception::class,
+                'exception_code' => (string) $exception->getCode(),
+            ]);
+            $mailbox->forceFill([
+                'last_error' => 'Синхронизация не завершена. Подробности записаны в журнал.',
+            ])->save();
             throw $exception;
         } finally {
             imap_close($imap);
         }
 
         return compact('imported', 'skipped');
+    }
+
+    private function existingMessageUnderLock(
+        CrmMailbox $mailbox,
+        int $uid,
+        ?string $messageId,
+    ): ?CrmMailMessage {
+        CrmMailbox::query()->whereKey($mailbox->id)->lockForUpdate()->first();
+
+        return CrmMailMessage::query()
+            ->where('mailbox_id', $mailbox->id)
+            ->where(function ($query) use ($uid, $messageId): void {
+                $query->where('imap_uid', $uid);
+
+                if ($messageId) {
+                    $query->orWhere('message_id', $messageId);
+                }
+            })
+            ->lockForUpdate()
+            ->first();
     }
 
     /**

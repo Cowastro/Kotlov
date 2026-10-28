@@ -121,8 +121,10 @@ class CrmMailboxResource extends Resource
                         $result = app(ImapMailboxSynchronizer::class)->sync($record);
                         Notification::make()->success()->title('Почта проверена')
                             ->body("Загружено: {$result['imported']}; пропущено: {$result['skipped']}.")->send();
-                    } catch (Throwable $exception) {
-                        Notification::make()->danger()->title('Не удалось проверить почту')->body($exception->getMessage())->send();
+                    } catch (Throwable) {
+                        Notification::make()->danger()->title('Не удалось проверить почту')
+                            ->body('Синхронизация не завершена. Подробности записаны в журнал.')
+                            ->send();
                     }
                 }),
             Action::make('sendTest')
