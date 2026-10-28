@@ -226,13 +226,13 @@ return [
     'terminal_number' => '87015502',
 
     // Способы оплаты доступные в форме checkout (подмножество payment_methods)
-    'checkout_payment_methods' => [
-        'cash',
-        'card',
-        'bank_transfer',
-        'installment_6',
-        'invoice',
-    ],
+    // Временно, до подписания договора эквайринга, на сайте оставлены
+    // только наличные и заявка на рассрочку. После подписания договора достаточно
+    // задать LIMITED_PAYMENT_MODE=false и очистить config cache.
+    'limited_payment_mode' => (bool) env('LIMITED_PAYMENT_MODE', true),
+    'checkout_payment_methods' => env('LIMITED_PAYMENT_MODE', true)
+        ? ['cash', 'installment_6']
+        : ['cash', 'card', 'bank_transfer', 'installment_6', 'invoice'],
 
     // Типы доставки доступные в форме checkout
     'checkout_delivery_methods' => [

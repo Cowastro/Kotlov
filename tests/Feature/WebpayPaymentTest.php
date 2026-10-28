@@ -22,6 +22,7 @@ class WebpayPaymentTest extends TestCase
     {
         parent::setUp();
 
+        config()->set('shop.limited_payment_mode', false);
         config()->set('services.webpay', [
             'enabled' => true,
             'test_mode' => true,
@@ -95,6 +96,26 @@ class WebpayPaymentTest extends TestCase
     public function test_sandbox_payment_is_hidden_from_customers_outside_allowlist(): void
     {
         $customer = User::factory()->create(['email' => 'customer@example.test']);
+        $order = $this->createConfirmedOrder($customer);
+
+        $this->actingAs($customer)
+            ->get(route('account.orders.show', $order))
+            ->assertOk()
+            ->assertDontSeeText('Оплатить через WEBPAY');
+
+        $this->actingAs($customer)
+            ->post(route('account.orders.webpay.start', $order))
+            ->assertRedirect(route('account.orders.show', $order))
+            ->assertSessionHas('payment_error');
+
+        $this->assertDatabaseCount('webpay_payment_attempts', 0);
+    }
+
+    public function test_limited_payment_mode_blocks_webpay_even_for_an_allowed_customer(): void
+    {
+        config()->set('shop.limited_payment_mode', true);
+
+        $customer = User::factory()->create(['email' => 'test@kotlov.by']);
         $order = $this->createConfirmedOrder($customer);
 
         $this->actingAs($customer)

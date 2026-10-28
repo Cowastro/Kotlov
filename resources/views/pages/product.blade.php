@@ -1278,8 +1278,10 @@
                             <div class="desc_info">
                                 <ul class="list">
                                     <li class="cl-text-2">— Наличными при получении</li>
+                                    @unless(config('shop.limited_payment_mode', true))
                                     <li class="cl-text-2">— Банковской картой</li>
                                     <li class="cl-text-2">— Безналичный расчёт (для юрлиц)</li>
+                                    @endunless
                                     <li class="cl-text-2">— Рассрочка 0%</li>
                                 </ul>
                             </div>

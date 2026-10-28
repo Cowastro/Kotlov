@@ -208,7 +208,11 @@
                 Интернет-магазин {{ $resourceOwner['domain'] }} принадлежит и используется {{ $seller['short_name'] }}. Владелец интернет-ресурса: {{ $resourceOwner['name'] }}. Регистрация в БелГИЭ: ресурс N {{ $resourceOwner['belgie_number'] }}, дата {{ $resourceOwner['belgie_registration_date'] }}, статус: {{ $resourceOwner['belgie_status'] }}. Торговый реестр Республики Беларусь: {{ $tradeRegistry['shop'] }}, дата включения {{ $tradeRegistry['registration_date'] }}, регистрационный номер {{ $tradeRegistry['registration_number'] }}. <a href="{{ url('/rekvizity') }}">Полные реквизиты продавца</a>.
             </p>
             <p>
+                @if(config('shop.limited_payment_mode', true))
+                Способы оплаты: {{ $payments['cash']['name'] ?? 'наличными' }}, {{ $payments['installment_6']['name'] ?? 'рассрочка на 6 месяцев' }} после подтверждения менеджером.
+                @else
                 Способы оплаты: {{ $payments['cash']['name'] ?? 'наличными' }}, {{ $payments['card']['name'] ?? 'банковской картой' }}, {{ $payments['erip']['name'] ?? 'система «Расчёт» (ЕРИП)' }}, {{ $payments['bank_transfer']['name'] ?? 'безналичный расчет' }}, рассрочка по заявке через менеджера, кредит, оплата по счету для организаций.
+                @endif
                 Способы доставки: {{ $delivery['pickup']['name'] ?? 'самовывоз' }} по адресу {{ $delivery['pickup']['address'] ?? $seller['address'] }}, {{ $delivery['courier']['name'] ?? 'доставка курьером по г. Минску' }}, {{ $delivery['own_transport']['name'] ?? 'доставка своим транспортом по графику' }}, {{ $delivery['transport']['name'] ?? 'транспортная компания по Беларуси' }}.
             </p>
             <p>

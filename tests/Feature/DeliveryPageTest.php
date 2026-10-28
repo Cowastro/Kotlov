@@ -62,38 +62,38 @@ class DeliveryPageTest extends TestCase
             ->assertDontSeeText('Пн–Пт: 9:00–18:00');
     }
 
-    public function test_homepage_shows_payment_systems_working_hours_and_compliance_link(): void
+    public function test_homepage_shows_only_cash_installment_working_hours_and_compliance_link(): void
     {
         $this->get('/')
             ->assertOk()
-            ->assertSeeText('Онлайн-оплата и режим работы')
+            ->assertSeeText('Оплата и режим работы')
+            ->assertSeeText('наличными при получении или рассрочка до 6 месяцев')
             ->assertSeeText('Онлайн-заказы — круглосуточно, 24/7')
             ->assertSeeText('Консультации — ежедневно до 20:00')
-            ->assertSee('assets/images/payment/webpay-payment-systems.png', false)
-            ->assertSee('assets/images/payment/erip-logo-color.svg', false)
-            ->assertSee('/dostavka#erip', false)
-            ->assertSee('https://www.webpay.by/', false)
+            ->assertDontSee('assets/images/payment/webpay-payment-systems.png', false)
+            ->assertDontSee('assets/images/payment/erip-logo-color.svg', false)
+            ->assertDontSee('https://www.webpay.by/', false)
             ->assertSee('/dostavka#order-procedure', false);
     }
 
-    public function test_delivery_page_contains_required_webpay_order_delivery_and_receipt_information(): void
+    public function test_delivery_page_shows_only_cash_and_installment_without_online_payment_information(): void
     {
         $this->get('/dostavka')
             ->assertOk()
             ->assertSeeText('Как оформить заказ')
-            ->assertSeeText('Когда и как будет доставлен оплаченный заказ')
-            ->assertSeeText('Безопасный сервер WEBPAY устанавливает шифрованное соединение по защищенному протоколу TLS')
-            ->assertSeeText('сохранять полученные карт-чеки')
-            ->assertSeeText('+375 (29) 354-40-41')
-            ->assertSeeText('info@kotlov.by')
-            ->assertSeeText('возврат денежных средств осуществляется на карточку, с которой была произведена оплата')
-            ->assertSeeText('Образец документа, подтверждающего оплату')
-            ->assertSeeText('п. 11 ст. 7 Закона о защите прав потребителей')
-            ->assertSeeText('Оплата через систему «Расчёт» (ЕРИП)')
-            ->assertSeeText('Интернет-магазины/сервисы → A–Z Латинские домены → K → KOTLOV.BY')
-            ->assertSeeText('Если Вы осуществляете платёж в кассе банка')
-            ->assertSee('assets/images/payment/erip-logo-color.svg', false)
-            ->assertSee('https://www.webpay.by/', false);
+            ->assertSeeText('Когда и как будет доставлен заказ')
+            ->assertSeeText('Наличными при получении')
+            ->assertSeeText('Рассрочка до 6 месяцев')
+            ->assertSeeText('Доступны наличные при получении или заявка на рассрочку')
+            ->assertDontSeeText('Банковской картой')
+            ->assertDontSeeText('Безналичный расчёт')
+            ->assertDontSeeText('Кредит')
+            ->assertDontSeeText('Карта рассрочки «Халва»')
+            ->assertDontSeeText('WEBPAY')
+            ->assertDontSeeText('ЕРИП')
+            ->assertDontSee('assets/images/payment/webpay-payment-systems.png', false)
+            ->assertDontSee('assets/images/payment/erip-logo-color.svg', false)
+            ->assertDontSee('https://www.webpay.by/', false);
     }
 
     public function test_public_checkout_information_uses_san_business_group_as_the_only_seller(): void

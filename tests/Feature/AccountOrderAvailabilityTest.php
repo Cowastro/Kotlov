@@ -121,6 +121,7 @@ class AccountOrderAvailabilityTest extends TestCase
 
     public function test_confirmed_sandbox_order_has_a_clear_payment_action_in_account(): void
     {
+        config()->set('shop.limited_payment_mode', false);
         config()->set('services.webpay.enabled', true);
         config()->set('services.webpay.test_mode', true);
         config()->set('services.webpay.store_id', '833122335');

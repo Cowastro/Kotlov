@@ -129,6 +129,16 @@
                                 </div>
                             </div>
 
+                            @if(config('shop.limited_payment_mode', true))
+                            <div class="col-md-6">
+                                <div class="payment-info-card">
+                                    <h6 class="fw-semibold mb-8">📅 Рассрочка до 6 месяцев</h6>
+                                    <p class="cl-text-2 mb-0">
+                                        Оставьте заявку при оформлении заказа. Менеджер свяжется с вами и поможет оформить рассрочку.
+                                    </p>
+                                </div>
+                            </div>
+                            @else
                             <div class="col-md-6">
                                 <div class="payment-info-card">
                                     <h6 class="fw-semibold mb-8">💳 Банковской картой</h6>
@@ -209,6 +219,7 @@
                                     <p class="cl-text-2 mb-0">Рассрочка до 8 месяцев.</p>
                                 </div>
                             </div>
+                            @endif
 
                         </div>
                     </div>

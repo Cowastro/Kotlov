@@ -293,6 +293,7 @@
                             </div>
 
                             {{-- 3б. Реквизиты для счёта (только при invoice) --}}
+                            @if($checkoutPayment->has('invoice'))
                             <div class="box-ip-checkout" id="invoice-fields" style="display:none;">
                                 <div class="h5 title">Реквизиты организации</div>
                                 <div class="form-content">
@@ -349,6 +350,7 @@
                                     </div>
                                 </div>
                             </div>
+                            @endif
 
                             {{-- 4. Комментарий — подтягиваем cart_note из session --}}
                             <div class="box-ip-checkout">

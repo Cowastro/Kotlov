@@ -4,6 +4,7 @@
     $homeSellerUnp = $homeSeller['unp'] ?? '191355768';
     $homeSellerAddress = $homeSeller['address'] ?? '220075, г. Минск, ул. Селицкого, д. 39Б';
     $homeSellerEmail = $homeSeller['email'] ?? 'info@kotlov.by';
+    $limitedPaymentMode = config('shop.limited_payment_mode', true);
 @endphp
 
 <section class="home-webpay flat-spacing" id="payment-and-hours" aria-labelledby="home-webpay-title">
@@ -11,8 +12,13 @@
         <div class="home-webpay__shell">
             <div class="home-webpay__main">
                 <span class="home-webpay__eyebrow">Официальная информация интернет-магазина</span>
-                <h2 id="home-webpay-title">Онлайн-оплата и режим работы</h2>
-                <p>После подтверждения заказа менеджером его можно оплатить банковской картой через защищённую систему WEBPAY или по номеру заказа через систему «Расчёт» (ЕРИП).</p>
+                <h2 id="home-webpay-title">{{ $limitedPaymentMode ? 'Оплата и режим работы' : 'Онлайн-оплата и режим работы' }}</h2>
+                @if($limitedPaymentMode)
+                    <p>Временно доступны два способа оплаты: наличными при получении или рассрочка до 6 месяцев после подтверждения менеджером.</p>
+                @else
+                    <p>После подтверждения заказа менеджером его можно оплатить банковской картой через защищённую систему WEBPAY или по номеру заказа через систему «Расчёт» (ЕРИП).</p>
+                @endif
+                @unless($limitedPaymentMode)
                 <div class="home-webpay__payment-logos">
                     <a class="home-webpay__logos" href="https://www.webpay.by/" target="_blank" rel="noopener noreferrer" aria-label="Платёжные системы WEBPAY, Visa, Mastercard и БЕЛКАРТ — перейти на официальный сайт WEBPAY">
                         <img src="{{ asset('assets/images/payment/webpay-payment-systems.png') }}" alt="WEBPAY, Visa, Visa Secure, Mastercard SecureCode, БЕЛКАРТ и БЕЛКАРТ ИнтернетПароль" width="7944" height="550">
@@ -21,6 +27,7 @@
                         <img src="{{ asset('assets/images/payment/erip-logo-color.svg') }}" alt="Система «Расчёт» ЕРИП" width="1773" height="600">
                     </a>
                 </div>
+                @endunless
                 <a href="{{ url('/dostavka#order-procedure') }}" class="tf-btn btn-fill animate-btn home-webpay__rules">Правила заказа, оплаты и доставки</a>
             </div>
             <div class="home-webpay__details">

@@ -102,7 +102,8 @@ class WebpayService
 
     public function configured(): bool
     {
-        return (bool) config('services.webpay.enabled')
+        return ! config('shop.limited_payment_mode', true)
+            && (bool) config('services.webpay.enabled')
             && filled(config('services.webpay.store_id'))
             && filled(config('services.webpay.secret_key'))
             && filled(config('services.webpay.username'))

@@ -14,13 +14,14 @@ use Filament\Notifications\DatabaseNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class CheckoutPaymentAvailabilityTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_checkout_hides_online_card_payment_and_explains_installment_follow_up(): void
+    public function test_limited_mode_shows_only_cash_and_installment_and_explains_follow_up(): void
     {
         $product = $this->orderableProduct();
 
@@ -29,7 +30,14 @@ class CheckoutPaymentAvailabilityTest extends TestCase
             ->assertOk()
             ->assertDontSee('Онлайн-оплата картой')
             ->assertDontSee('Оплата через WEBPAY')
+            ->assertSee('Наличными')
             ->assertSee('Рассрочка на 6 месяцев')
+            ->assertDontSee('Банковской платежной карточкой')
+            ->assertDontSee('Безналичный расчёт')
+            ->assertDontSee('По счёту (для организаций)')
+            ->assertDontSee('value="card"', false)
+            ->assertDontSee('value="bank_transfer"', false)
+            ->assertDontSee('value="invoice"', false)
             ->assertSee('менеджер подтвердит доступность рассрочки и поможет с оформлением')
             ->assertSee('Смотреть видеоинструкцию')
             ->assertSee('https://www.youtube.com/watch?v=nw2v3z5BZms', false)
@@ -91,6 +99,34 @@ class CheckoutPaymentAvailabilityTest extends TestCase
         $this->assertDatabaseCount((new Order)->getTable(), 0);
     }
 
+    #[DataProvider('disabledPaymentMethods')]
+    public function test_all_temporarily_disabled_payment_methods_cannot_be_submitted_directly(string $paymentType): void
+    {
+        $product = $this->orderableProduct();
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0')
+            ->withSession(['cart' => $this->cartFor($product)])
+            ->from(route('checkout'))
+            ->post(route('checkout.store'), $this->checkoutData($paymentType, 'disabled-'.$paymentType))
+            ->assertRedirect(route('checkout'))
+            ->assertSessionHasErrors(['payment_type']);
+
+        $this->assertDatabaseCount((new Order)->getTable(), 0);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function disabledPaymentMethods(): array
+    {
+        return [
+            'card' => ['card'],
+            'bank transfer' => ['bank_transfer'],
+            'invoice' => ['invoice'],
+            'online card' => ['online_card'],
+            'webpay' => ['webpay'],
+            'erip' => ['erip'],
+        ];
+    }
+
     public function test_installment_request_is_created_and_highlighted_for_managers(): void
     {
         Notification::fake();
@@ -134,6 +170,9 @@ class CheckoutPaymentAvailabilityTest extends TestCase
 
     public function test_invoice_checkout_creates_a_draft_from_registry_and_requires_manager_stock_confirmation(): void
     {
+        config()->set('shop.limited_payment_mode', false);
+        config()->set('shop.checkout_payment_methods', ['cash', 'card', 'bank_transfer', 'installment_6', 'invoice']);
+
         Notification::fake();
         $this->fakeTaxpayerRegistry();
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
