@@ -30,6 +30,7 @@ class SyncHomeTechnologiesPriceListCommand extends Command
         {--apply : Записать поставщика, закупочные цены и безопасные розничные цены}
         {--create-missing : Создать полноценные карточки для однозначных строк, которых ещё нет на сайте}
         {--reclassify-existing : Только исправить категории уже созданных карточек этого поставщика}
+        {--refresh-generated-specs : Только обновить характеристики карточек, созданных из этого прайса}
         {--dry-run : Только предпросмотр}
         {--export-snapshot= : Сохранить нормализованный JSON}
         {--report= : CSV-отчёт сопоставления}';
@@ -75,6 +76,20 @@ class SyncHomeTechnologiesPriceListCommand extends Command
                     return self::FAILURE;
                 }
                 $stats = $this->reclassifyExisting($classified, $supplier);
+                foreach ($stats as $key => $value) {
+                    $this->line("metric.home_technologies.{$key}={$value}");
+                }
+
+                return self::SUCCESS;
+            }
+
+            if ($this->option('refresh-generated-specs')) {
+                if (! $supplier) {
+                    $this->error('Поставщик Домашние технологии ещё не создан.');
+
+                    return self::FAILURE;
+                }
+                $stats = $this->refreshGeneratedSpecs($classified, $supplier);
                 foreach ($stats as $key => $value) {
                     $this->line("metric.home_technologies.{$key}={$value}");
                 }
@@ -430,6 +445,30 @@ class SyncHomeTechnologiesPriceListCommand extends Command
         return $stats;
     }
 
+    /** @return array{spec_cards_scanned:int,spec_cards_updated:int} */
+    private function refreshGeneratedSpecs(array $rows, Supplier $supplier): array
+    {
+        $stats = ['spec_cards_scanned' => 0, 'spec_cards_updated' => 0];
+        foreach ($rows as $row) {
+            if (! $row['product_id']) {
+                continue;
+            }
+            $product = Product::query()->find($row['product_id']);
+            if (! $product || (int) $product->supplier_id !== (int) $supplier->id) {
+                continue;
+            }
+            $stats['spec_cards_scanned']++;
+            $specs = $this->specsForRow($row);
+            if ($product->specs === $specs) {
+                continue;
+            }
+            $product->forceFill(['specs' => $specs])->save();
+            $stats['spec_cards_updated']++;
+        }
+
+        return $stats;
+    }
+
     private function categoryForRow(array $row): Category
     {
         $name = mb_strtolower((string) $row['name']);
@@ -518,16 +557,13 @@ class SyncHomeTechnologiesPriceListCommand extends Command
     private function specsForRow(array $row): array
     {
         $text = trim($row['name'].' '.($row['description'] ?? ''));
-        $specs = [
-            ['key' => 'Раздел', 'value' => $row['section']],
-            ['key' => 'Артикул', 'value' => $row['article']],
-            ['key' => 'Единица измерения', 'value' => $row['unit']],
-        ];
+        $name = (string) $row['name'];
+        $specs = [];
         $patterns = [
             'Мощность' => '/\b(\d+(?:[\.,]\d+)?)\s*(к?Вт)\b/ui',
             'Площадь обогрева' => '/\b(\d+(?:[\.,]\d+)?)\s*м[²2]\b/ui',
             'Напряжение питания' => '/\b(12|220|230)\s*В\b/ui',
-            'Диаметр условного прохода' => '/\bDN\s*(\d+)\b/ui',
+            'Диаметр условного прохода' => '/\b(?:DN\s*)?(\d+)\s*[AА]\b/ui',
         ];
         foreach ($patterns as $key => $pattern) {
             if (! preg_match($pattern, $text, $match)) {
@@ -545,11 +581,31 @@ class SyncHomeTechnologiesPriceListCommand extends Command
         if (str_contains(mb_strtolower($text), 'ss304')) {
             $specs[] = ['key' => 'Материал', 'value' => 'Нержавеющая сталь AISI 304'];
         }
+        if (preg_match('/\b(1\s+1\/2|1\s+1\/4|1\/2|3\/4|1|2)(?=\s*(?:Tuya|\.|$))/ui', $name, $match)) {
+            $specs[] = ['key' => 'Присоединительный размер', 'value' => $match[1].'″'];
+        }
+        if (str_contains(mb_strtolower($text), 'неотожженная')) {
+            $specs[] = ['key' => 'Исполнение трубы', 'value' => 'Неотожжённая'];
+        } elseif (str_contains(mb_strtolower($text), 'отожженная')) {
+            $specs[] = ['key' => 'Исполнение трубы', 'value' => 'Отожжённая'];
+        }
+        if (preg_match('/бухты:\s*([^\)]+)/ui', $text, $match)) {
+            $specs[] = ['key' => 'Доступные бухты', 'value' => trim($match[1])];
+        }
         if (str_contains(mb_strtolower($text), 'wi-fi')) {
             $specs[] = ['key' => 'Wi-Fi', 'value' => 'Есть'];
         }
+        if (str_contains(mb_strtolower($text), 'tuya')) {
+            $specs[] = ['key' => 'Умный дом', 'value' => 'Tuya Smart Home'];
+        }
+        if (preg_match('/гарантия\s+(\d+)\s*(?:лет|года|год)/ui', $text, $match)) {
+            $specs[] = ['key' => 'Гарантия', 'value' => $match[1].' лет'];
+        }
+        if ($specs === []) {
+            $specs[] = ['key' => 'Единица продажи', 'value' => (string) $row['unit']];
+        }
 
-        return $specs;
+        return collect($specs)->unique('key')->values()->all();
     }
 
     /** @return array{price:float,method:string,update:bool} */

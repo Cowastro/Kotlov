@@ -72,7 +72,7 @@ class SyncHomeTechnologiesPriceListCommandTest extends TestCase
         $this->assertNotEmpty($product->images);
         $this->assertNotEmpty($product->short_description);
         $this->assertNotEmpty($product->content);
-        $this->assertGreaterThanOrEqual(3, count($product->specs));
+        $this->assertGreaterThanOrEqual(2, count($product->specs));
         $this->assertSame('purchase', IntegrationSource::query()->where('code', 'home_technologies_pricelist')->firstOrFail()->b2bPriceRole());
     }
 
@@ -112,7 +112,7 @@ class SyncHomeTechnologiesPriceListCommandTest extends TestCase
         $this->assertNotEmpty($product->images);
         $this->assertNotEmpty($product->short_description);
         $this->assertNotEmpty($product->content);
-        $this->assertGreaterThanOrEqual(3, count($product->specs));
+        $this->assertGreaterThanOrEqual(2, count($product->specs));
         $this->assertSame(3, $product->stock_qty);
         $this->assertTrue($product->in_stock);
         $mat = Product::query()->where('name', 'Нагревательный мат Grand Meyer THM200-140')->firstOrFail();
@@ -128,5 +128,19 @@ class SyncHomeTechnologiesPriceListCommandTest extends TestCase
 
         $this->assertSame($productCount, Product::query()->count());
         $this->assertSame('Нагревательные маты', $mat->fresh()->category->name);
+
+        $neptun = Product::query()->where('name', 'Система Neptun PROFI Smart+ 3/4 Tuya')->firstOrFail();
+        $neptun->forceFill(['specs' => [['key' => 'Артикул', 'value' => 'DT-TEST']]])->save();
+        $this->artisan('supplier:sync-home-technologies', [
+            'file' => 'resources/data/suppliers/home-technologies-2026-09.json',
+            '--apply' => true,
+            '--refresh-generated-specs' => true,
+        ])->assertSuccessful();
+
+        $this->assertSame($productCount, Product::query()->count());
+        $specs = collect($neptun->fresh()->specs)->pluck('value', 'key');
+        $this->assertFalse($specs->has('Артикул'));
+        $this->assertSame('3/4″', $specs->get('Присоединительный размер'));
+        $this->assertSame('Tuya Smart Home', $specs->get('Умный дом'));
     }
 }
