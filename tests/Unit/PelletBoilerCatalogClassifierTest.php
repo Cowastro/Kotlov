@@ -20,6 +20,8 @@ class PelletBoilerCatalogClassifierTest extends TestCase
             ['Пеллетный котел TIS Pellet 15'],
             ['Котёл пеллетный автоматический 25 кВт'],
             ['Котел на пеллетах Heiztechnik 40'],
+            ['Пеллетный котел Sakovich Pellet Universal 20 с горелкой KIPI Rotary и бункером'],
+            ['Пеллетный котел Sakovich Pellet Standart 15 с горелкой Praktik, шнеком и бункером'],
         ];
     }
 
