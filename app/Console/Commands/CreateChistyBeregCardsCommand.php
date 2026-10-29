@@ -116,6 +116,13 @@ class CreateChistyBeregCardsCommand extends Command
     {
         $n = mb_strtolower($name);
         $has = fn (string ...$words): bool => collect($words)->contains(fn ($word) => str_contains($n, $word));
+        // Spare parts of water heaters and buffer tanks come in several supplier groups.
+        if ($has('для водонагрев', 'для буф', 'для бойлер') || ($has('ariston') && $has('элемент нагрев', 'термостат', 'фланец', 'анод'))) {
+            return $has('клапан') ? 'predokhranitelnaya-i-reguliruyushchaya-armatura' : 'komplektuyushchie-dlya-vodonagrevateley';
+        }
+        if (Str::startsWith($n, 'насос') && $has('с ножом', 'измельч')) {
+            return 'drenajnyie';
+        }
 
         return match (Str::slug($supplierCategory)) {
             'nasosy' => match (true) {

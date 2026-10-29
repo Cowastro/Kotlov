@@ -26,6 +26,10 @@ class CreateChistyBeregCardsCommandTest extends TestCase
         $this->assertSame('bimetallicheskie-radiatory', CreateChistyBeregCardsCommand::targetCategory('Отопительное оборудование', 'Радиатор биметаллический 500/80 10 секций'));
         $this->assertSame('obratnye-klapany', CreateChistyBeregCardsCommand::targetCategory('Клапаны', 'Клапан обратный пружинный 1/2"'));
         $this->assertSame('schetchiki-vody-i-tepla', CreateChistyBeregCardsCommand::targetCategory('Приборы учета и контроля', 'Счетчик воды крыльчатый Ду 15'));
+        $this->assertSame('komplektuyushchie-dlya-vodonagrevateley', CreateChistyBeregCardsCommand::targetCategory('Водонагреватели и буферные емкости', 'Изоляция для буф. емкости AQ PT 750 AQUASTIC Венгрия'));
+        $this->assertSame('komplektuyushchie-dlya-vodonagrevateley', CreateChistyBeregCardsCommand::targetCategory('Запчасти', 'Элемент нагревательный 1500W 220-240V с прокладкой европодвес ARISTON Италия'));
+        $this->assertSame('predokhranitelnaya-i-reguliruyushchaya-armatura', CreateChistyBeregCardsCommand::targetCategory('Клапаны', 'Клапан предохранительный для бойлера с обрат. клапаном AF8 6-7 bar Ду 3/4'));
+        $this->assertSame('drenajnyie', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос CMF 40-25 с ножом 380V Россия'));
         $this->assertNull(CreateChistyBeregCardsCommand::targetCategory('Трубы ПП для водоснабжения и фасонные части', 'Труба ПП 20'));
     }
 
