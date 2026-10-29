@@ -11513,8 +11513,8 @@ XML;
         $this->assertSame($category->id, $ten->product->category_id);
         $this->assertNull($five->product->brand_id);
         $this->assertNull($ten->product->brand_id);
-        $this->assertSame('8.40', $five->product->price);
-        $this->assertSame('13.20', $ten->product->price);
+        $this->assertSame('12.00', $five->product->price);
+        $this->assertSame('15.00', $ten->product->price);
         $this->assertSame('101', (string) $five->product->stock_qty);
         $this->assertSame('39', (string) $ten->product->stock_qty);
         $this->assertSame('5 мм', collect($five->product->specs)->firstWhere('key', 'Толщина')['value']);
@@ -11537,5 +11537,19 @@ XML;
             'confidence' => 'manual',
             'is_active' => true,
         ]);
+
+        // Re-running a curated batch must refresh a card already created by
+        // this command. This is the production path when a researched retail
+        // benchmark changes after the initial card publication.
+        $five->product->forceFill(['price' => 8.40])->save();
+        $ten->product->forceFill(['price' => 13.20])->save();
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261029-ff',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $this->assertSame('12.00', $five->product->fresh()->price);
+        $this->assertSame('15.00', $ten->product->fresh()->price);
     }
 }

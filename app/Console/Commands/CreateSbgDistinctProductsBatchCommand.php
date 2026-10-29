@@ -6060,10 +6060,11 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'allow_unmatched' => true,
             'allow_brandless' => true,
             'force_brandless' => true,
+            'refresh_existing' => true,
             'category_slug' => 'ognezashchitnye-plity-i-listy',
             'fragments' => ['ОБМ-К', '1000', '600', '5мм'],
             'name' => 'Базальтовый картон ОБМ-К 1000×600×5 мм',
-            'retail' => 8.40,
+            'retail' => 12.00,
             'images' => [
                 'https://dompechei.ru/upload/iblock/1c7/sf0cqs3yfij5emc1l7jb0esfek21bg7j.png',
             ],
@@ -6091,10 +6092,11 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'allow_unmatched' => true,
             'allow_brandless' => true,
             'force_brandless' => true,
+            'refresh_existing' => true,
             'category_slug' => 'ognezashchitnye-plity-i-listy',
             'fragments' => ['ОБМ-К', '1000', '600', '10мм'],
             'name' => 'Базальтовый картон ОБМ-К 1000×600×10 мм',
-            'retail' => 13.20,
+            'retail' => 15.00,
             'images' => [
                 'https://dompechei.ru/upload/iblock/1c7/sf0cqs3yfij5emc1l7jb0esfek21bg7j.png',
             ],
@@ -6794,9 +6796,13 @@ class CreateSbgDistinctProductsBatchCommand extends Command
                                 'brand_id' => ($rule['force_brandless'] ?? false)
                                     ? null
                                     : $item->product->brand_id,
+                                'price' => isset($rule['retail'])
+                                    ? round((float) $rule['retail'], 2)
+                                    : $item->product->price,
                                 'short_description' => $rule['short'] ?? $item->product->short_description,
                                 'content' => $rule['content'] ?? $item->product->content,
                                 'images' => $portableImages,
+                                'specs' => $rule['specs'] ?? $item->product->specs,
                                 'content_source_url' => $rule['source_url'] ?? $item->product->content_source_url,
                             ])->save();
                             $stats['refreshed']++;
