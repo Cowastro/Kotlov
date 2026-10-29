@@ -757,6 +757,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/b2b/cabinet/specifications', [B2bCabinetController::class, 'storeSpecification'])
         ->middleware('throttle:10,1')
         ->name('b2b.cabinet.specifications.store');
+    Route::post('/b2b/cabinet/specifications/{specification}/revisions', [B2bCabinetController::class, 'storeSpecificationRevision'])
+        ->middleware('throttle:10,1')
+        ->name('b2b.cabinet.specifications.revisions.store');
     Route::post('/b2b/cabinet/specifications/{specification}/cart', [B2bCabinetController::class, 'specificationCart'])
         ->middleware('throttle:20,1')
         ->name('b2b.cabinet.specifications.cart');

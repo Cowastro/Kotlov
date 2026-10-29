@@ -5,6 +5,7 @@ namespace App\Filament\Resources\B2bSpecifications;
 use App\Filament\Resources\B2bSpecifications\Pages\EditB2bSpecification;
 use App\Filament\Resources\B2bSpecifications\Pages\ListB2bSpecifications;
 use App\Filament\Resources\B2bSpecifications\RelationManagers\ItemsRelationManager;
+use App\Filament\Resources\B2bSpecifications\RelationManagers\VersionsRelationManager;
 use App\Models\B2bSpecification;
 use BackedEnum;
 use Filament\Actions\EditAction;
@@ -167,6 +168,6 @@ class B2bSpecificationResource extends Resource
 
     public static function getRelations(): array
     {
-        return [ItemsRelationManager::class];
+        return [ItemsRelationManager::class, VersionsRelationManager::class];
     }
 }

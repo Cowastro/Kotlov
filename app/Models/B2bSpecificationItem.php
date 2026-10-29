@@ -15,7 +15,7 @@ class B2bSpecificationItem extends Model
     ];
 
     protected $fillable = [
-        'b2b_specification_id', 'b2b_specification_attachment_id', 'source_row',
+        'b2b_specification_id', 'b2b_specification_version_id', 'is_current', 'b2b_specification_attachment_id', 'source_row',
         'source_sku', 'source_name', 'quantity', 'unit', 'status', 'product_id',
         'confidence', 'match_reason', 'candidates', 'reviewed_by', 'reviewed_at', 'raw_data',
     ];
@@ -27,6 +27,7 @@ class B2bSpecificationItem extends Model
         'candidates' => 'array',
         'reviewed_at' => 'datetime',
         'raw_data' => 'array',
+        'is_current' => 'boolean',
     ];
 
     protected static function booted(): void
@@ -57,6 +58,11 @@ class B2bSpecificationItem extends Model
     public function attachment(): BelongsTo
     {
         return $this->belongsTo(B2bSpecificationAttachment::class, 'b2b_specification_attachment_id');
+    }
+
+    public function version(): BelongsTo
+    {
+        return $this->belongsTo(B2bSpecificationVersion::class, 'b2b_specification_version_id');
     }
 
     public function product(): BelongsTo

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\B2bSpecifications\Pages;
 use App\Filament\Resources\B2bSpecifications\B2bSpecificationResource;
 use App\Services\B2bSpecificationParser;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
@@ -33,7 +34,12 @@ class EditB2bSpecification extends EditRecord
                     return in_array(mb_strtolower(pathinfo($attachment->original_name, PATHINFO_EXTENSION)), ['xlsx', 'xls', 'csv', 'ods'], true);
                 }))
                 ->action(function (): void {
-                    $result = app(B2bSpecificationParser::class)->parse($this->record->fresh('attachments'));
+                    $result = app(B2bSpecificationParser::class)->parse(
+                        $this->record->fresh(['attachments', 'currentVersion']),
+                        null,
+                        'reparse',
+                        Filament::auth()->user(),
+                    );
                     $this->record->refresh();
 
                     Notification::make()

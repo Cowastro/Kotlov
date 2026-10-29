@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\B2bSpecification;
 use App\Models\B2bSpecificationAttachment;
 use App\Models\Product;
+use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -28,9 +30,20 @@ class B2bSpecificationParser
     ];
 
     /** @return array{status:string,items:int,matched:int,suggested:int,message:string} */
-    public function parse(B2bSpecification $specification): array
-    {
-        $attachments = $specification->attachments()->get();
+    public function parse(
+        B2bSpecification $specification,
+        ?array $attachmentIds = null,
+        string $source = 'upload',
+        ?User $actor = null,
+        ?string $note = null,
+    ): array {
+        $attachmentsQuery = $specification->attachments()->orderBy('id');
+        if ($attachmentIds !== null) {
+            $attachmentsQuery->whereIn('id', array_map('intval', $attachmentIds));
+        } elseif ($specification->currentVersion?->attachment_ids) {
+            $attachmentsQuery->whereIn('id', $specification->currentVersion->attachment_ids);
+        }
+        $attachments = $attachmentsQuery->get();
         $spreadsheets = $attachments->filter(fn (B2bSpecificationAttachment $attachment): bool => in_array(
             mb_strtolower(pathinfo($attachment->original_name, PATHINFO_EXTENSION)),
             self::SPREADSHEET_EXTENSIONS,
@@ -38,7 +51,16 @@ class B2bSpecificationParser
         ));
 
         if ($spreadsheets->isEmpty()) {
-            return $this->finish($specification, 'manual', 0, 0, 'PDF и изображения переданы менеджеру для ручной обработки.');
+            return $this->persistSnapshot(
+                $specification,
+                $attachments,
+                [],
+                'manual',
+                'PDF и изображения переданы менеджеру для ручной обработки.',
+                $source,
+                $actor,
+                $note,
+            );
         }
 
         [$skuMatches, $nameMatches, $products, $tokenIndex] = $this->productIndexes();
@@ -68,13 +90,6 @@ class B2bSpecificationParser
             }
         }
 
-        DB::transaction(function () use ($specification, $rows): void {
-            $specification->items()->delete();
-            foreach (array_chunk($rows, 500) as $chunk) {
-                $specification->items()->insert($chunk);
-            }
-        });
-
         $matched = collect($rows)->where('status', 'matched')->count();
         $suggested = collect($rows)->where('status', 'suggested')->count();
         if ($rows === []) {
@@ -82,7 +97,7 @@ class B2bSpecificationParser
                 ? 'В таблице не найдены строки с товарами. Менеджер обработает файл вручную.'
                 : 'Не удалось прочитать таблицу. Менеджер обработает файл вручную.';
 
-            return $this->finish($specification, 'failed', 0, 0, $message, 0);
+            return $this->persistSnapshot($specification, $attachments, [], 'failed', $message, $source, $actor, $note);
         }
 
         $message = 'Извлечено позиций: '.count($rows).", автоматически сопоставлено: {$matched}.";
@@ -93,7 +108,7 @@ class B2bSpecificationParser
             $message .= ' Не прочитаны файлы: '.implode(', ', $errors).'.';
         }
 
-        return $this->finish($specification, 'parsed', count($rows), $matched, $message, $suggested);
+        return $this->persistSnapshot($specification, $attachments, $rows, 'parsed', $message, $source, $actor, $note);
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -325,15 +340,133 @@ class B2bSpecificationParser
         return trim((string) preg_replace('/[^\pL\pN]+/u', ' ', $value));
     }
 
-    /** @return array{status:string,items:int,matched:int,suggested:int,message:string} */
-    private function finish(B2bSpecification $specification, string $status, int $items, int $matched, string $message, int $suggested = 0): array
-    {
-        $specification->update([
-            'parsing_status' => $status,
-            'parse_message' => $message,
-            'parsed_at' => now(),
+    /**
+     * Store every parse as an immutable snapshot. Only rows from the new
+     * snapshot are marked current and therefore can reach the customer cart.
+     *
+     * @param  Collection<int, B2bSpecificationAttachment>  $attachments
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return array{status:string,items:int,matched:int,suggested:int,message:string,version:int,diff:array<string,int>}
+     */
+    private function persistSnapshot(
+        B2bSpecification $specification,
+        Collection $attachments,
+        array $rows,
+        string $status,
+        string $message,
+        string $source,
+        ?User $actor,
+        ?string $note = null,
+    ): array {
+        $previous = $specification->items()->get([
+            'source_sku', 'source_name', 'quantity', 'unit',
         ]);
+        $diff = $this->diffSummary($previous, $rows);
+        $matched = collect($rows)->where('status', 'matched')->count();
+        $suggested = collect($rows)->where('status', 'suggested')->count();
+        $items = count($rows);
 
-        return compact('status', 'items', 'matched', 'suggested', 'message');
+        $versionNumber = DB::transaction(function () use (
+            $specification, $attachments, $rows, $status, $message, $source, $actor, $note,
+            $diff, $matched, $suggested, $items,
+        ): int {
+            $locked = B2bSpecification::query()->lockForUpdate()->findOrFail($specification->id);
+            $number = ((int) $locked->versions()->max('number')) + 1;
+            $version = $locked->versions()->create([
+                'parent_version_id' => $locked->current_version_id,
+                'number' => $number,
+                'source' => $source,
+                'parsing_status' => $status,
+                'note' => $note,
+                'message' => $message,
+                'item_count' => $items,
+                'matched_count' => $matched,
+                'suggested_count' => $suggested,
+                'attachment_ids' => $attachments->modelKeys(),
+                'diff_summary' => $diff,
+                'created_by' => $actor?->id,
+            ]);
+
+            $locked->allItems()->where('is_current', true)->update(['is_current' => false]);
+            foreach (array_chunk($rows, 500) as $chunk) {
+                $payload = array_map(fn (array $row): array => [
+                    ...$row,
+                    'b2b_specification_version_id' => $version->id,
+                    'is_current' => true,
+                ], $chunk);
+                $locked->allItems()->insert($payload);
+            }
+
+            $locked->update([
+                'current_version_id' => $version->id,
+                'parsing_status' => $status,
+                'parse_message' => $message,
+                'parsed_at' => now(),
+            ]);
+
+            return $number;
+        });
+
+        $specification->refresh();
+
+        return compact('status', 'items', 'matched', 'suggested', 'message', 'diff') + ['version' => $versionNumber];
+    }
+
+    /**
+     * Compare source rows rather than match decisions. A manager changing a
+     * catalogue link must not make the customer's document look revised.
+     *
+     * @param  Collection<int, mixed>  $previous
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return array{added:int,removed:int,changed:int,unchanged:int}
+     */
+    private function diffSummary(Collection $previous, array $rows): array
+    {
+        $old = $previous->map(fn ($item): array => [
+            'key' => $this->rowKey((array) $item->getAttributes()),
+            'fingerprint' => $this->rowFingerprint((array) $item->getAttributes()),
+        ])->groupBy('key');
+        $new = collect($rows)->map(fn (array $item): array => [
+            'key' => $this->rowKey($item),
+            'fingerprint' => $this->rowFingerprint($item),
+        ])->groupBy('key');
+        $summary = ['added' => 0, 'removed' => 0, 'changed' => 0, 'unchanged' => 0];
+
+        foreach ($old->keys()->merge($new->keys())->unique() as $key) {
+            $oldFingerprints = $old->get($key, collect())->pluck('fingerprint')->countBy();
+            $newFingerprints = $new->get($key, collect())->pluck('fingerprint')->countBy();
+            $oldCount = $oldFingerprints->sum();
+            $newCount = $newFingerprints->sum();
+            $same = $oldFingerprints->sum(fn (int $count, string $fingerprint): int => min($count, (int) $newFingerprints->get($fingerprint, 0)));
+            $paired = min($oldCount, $newCount);
+
+            $summary['unchanged'] += $same;
+            $summary['changed'] += $paired - $same;
+            $summary['removed'] += $oldCount - $paired;
+            $summary['added'] += $newCount - $paired;
+        }
+
+        return $summary;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function rowKey(array $row): string
+    {
+        $sku = $this->normalize((string) ($row['source_sku'] ?? ''));
+
+        return $sku !== ''
+            ? 'sku:'.$sku
+            : 'name:'.$this->normalize((string) ($row['source_name'] ?? ''));
+    }
+
+    /** @param array<string, mixed> $row */
+    private function rowFingerprint(array $row): string
+    {
+        return hash('sha256', json_encode([
+            $this->normalize((string) ($row['source_sku'] ?? '')),
+            $this->normalize((string) ($row['source_name'] ?? '')),
+            number_format((float) ($row['quantity'] ?? 1), 3, '.', ''),
+            $this->normalize((string) ($row['unit'] ?? '')),
+        ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
     }
 }

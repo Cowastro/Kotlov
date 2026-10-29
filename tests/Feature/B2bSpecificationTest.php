@@ -277,6 +277,83 @@ class B2bSpecificationTest extends TestCase
         $this->assertNotNull($item->reviewed_at);
     }
 
+    public function test_client_revision_creates_immutable_version_and_diff_without_mixing_old_rows(): void
+    {
+        Storage::fake('local');
+        [$user] = $this->b2bClient();
+        $initialPath = $this->spreadsheetFile([
+            ['Артикул', 'Наименование', 'Количество'],
+            ['A-1', 'Клапан первый', 1],
+            ['B-2', 'Клапан второй', 2],
+        ]);
+        $revisionPath = $this->spreadsheetFile([
+            ['Артикул', 'Наименование', 'Количество'],
+            ['A-1', 'Клапан первый', 3],
+            ['C-3', 'Клапан третий', 4],
+        ]);
+
+        try {
+            $this->actingAs($user)->post(route('b2b.cabinet.specifications.store'), [
+                'title' => 'Версионная спецификация',
+                'files' => [new UploadedFile($initialPath, 'version-1.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true)],
+            ])->assertRedirect();
+
+            $specification = B2bSpecification::query()->sole();
+            $this->actingAs($user)->post(route('b2b.cabinet.specifications.revisions.store', $specification), [
+                'revision_note' => 'Изменили количество и одну позицию.',
+                'files' => [new UploadedFile($revisionPath, 'version-2.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true)],
+            ])->assertRedirect(route('b2b.cabinet', ['section' => 'specifications']));
+        } finally {
+            @unlink($initialPath);
+            @unlink($revisionPath);
+        }
+
+        $specification->refresh();
+        $versions = $specification->versions()->orderBy('number')->get();
+        $this->assertCount(2, $versions);
+        $this->assertSame($versions[1]->id, $specification->current_version_id);
+        $this->assertSame('Изменили количество и одну позицию.', $versions[1]->note);
+        $this->assertSame([
+            'added' => 1,
+            'removed' => 1,
+            'changed' => 1,
+            'unchanged' => 0,
+        ], $versions[1]->diff_summary);
+        $this->assertCount(2, $specification->items()->get());
+        $this->assertSame(['A-1', 'C-3'], $specification->items()->orderBy('source_sku')->pluck('source_sku')->all());
+        $this->assertCount(4, $specification->allItems()->get());
+        $this->assertSame(2, $specification->allItems()->where('is_current', false)->count());
+
+        $this->actingAs($user)
+            ->get(route('b2b.cabinet', ['section' => 'specifications']))
+            ->assertOk()
+            ->assertSee('История редакций')
+            ->assertSee('Редакция №2')
+            ->assertSee('Изменили количество и одну позицию.')
+            ->assertSee('version-1.xlsx')
+            ->assertSee('version-2.xlsx');
+    }
+
+    public function test_other_client_cannot_upload_revision_to_someone_elses_specification(): void
+    {
+        Storage::fake('local');
+        [$owner, $client] = $this->b2bClient();
+        [$other] = $this->b2bClient('revision-attacker@example.test');
+        $specification = B2bSpecification::query()->create([
+            'b2b_client_id' => $client->id,
+            'user_id' => $owner->id,
+            'title' => 'Закрытая для другого клиента заявка',
+            'status' => 'submitted',
+        ]);
+
+        $this->actingAs($other)->post(route('b2b.cabinet.specifications.revisions.store', $specification), [
+            'files' => [UploadedFile::fake()->create('revision.xlsx', 10)],
+        ])->assertNotFound();
+
+        $this->assertDatabaseCount('b2b_specification_attachments', 0);
+        $this->assertDatabaseCount('b2b_specification_versions', 0);
+    }
+
     /** @return array{User, B2bClient} */
     private function b2bClient(?string $email = null): array
     {

@@ -62,7 +62,10 @@ class B2bCabinetController extends Controller
             ->get();
         $savedCarts = $user->b2bSavedCarts()->latest('updated_at')->get();
         $specifications = $client->specifications()
-            ->with(['attachments', 'commercialDocument', 'items.product'])
+            ->with([
+                'attachments', 'commercialDocument', 'items.product',
+                'versions' => fn ($query) => $query->with('creator')->orderByDesc('number'),
+            ])
             ->latest('submitted_at')
             ->paginate(10, ['*'], 'specifications_page')
             ->withQueryString();
@@ -309,7 +312,7 @@ class B2bCabinetController extends Controller
         }
 
         try {
-            $result = $parser->parse($specification->fresh('attachments'));
+            $result = $parser->parse($specification->fresh('attachments'), null, 'upload', $user);
         } catch (\Throwable) {
             $specification->update([
                 'parsing_status' => 'failed',
@@ -327,6 +330,85 @@ class B2bCabinetController extends Controller
         return to_route('b2b.cabinet', [
             'section' => 'specifications',
         ])->with('success', $message.' Статус обработки виден в кабинете.');
+    }
+
+    public function storeSpecificationRevision(
+        Request $request,
+        B2bSpecification $specification,
+        B2bSpecificationParser $parser,
+    ) {
+        $user = $request->user();
+        abort_unless($user->isB2B() && (int) $specification->user_id === (int) $user->id, 404);
+        $client = $user->b2bClient()->firstOrFail();
+        abort_unless($client->specification_service_enabled, 403);
+        abort_if(in_array($specification->status, ['closed', 'cancelled'], true), 422, 'Завершённую заявку нельзя изменить.');
+
+        $data = $request->validate([
+            'revision_note' => ['nullable', 'string', 'max:1000'],
+            'files' => ['required', 'array', 'min:1', 'max:5'],
+            'files.*' => ['required', 'file', 'max:15360', 'mimes:pdf,xlsx,xls,csv,ods,png,jpg,jpeg,webp'],
+        ], [
+            'files.required' => 'Добавьте хотя бы один файл новой редакции.',
+            'files.max' => 'За один раз можно загрузить не более 5 файлов.',
+            'files.*.max' => 'Размер каждого файла не должен превышать 15 МБ.',
+            'files.*.mimes' => 'Допустимы PDF, Excel, CSV и изображения JPG, PNG или WEBP.',
+        ]);
+
+        $storedPaths = [];
+        $attachments = collect();
+
+        try {
+            DB::transaction(function () use ($specification, $request, &$storedPaths, &$attachments): void {
+                foreach ($request->file('files', []) as $file) {
+                    $extension = mb_strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'bin');
+                    $path = $file->storeAs(
+                        "b2b-specifications/{$specification->b2b_client_id}/{$specification->id}",
+                        Str::uuid().'.'.$extension,
+                        'local',
+                    );
+                    if (! $path) {
+                        throw new \RuntimeException('Не удалось сохранить новую редакцию спецификации.');
+                    }
+
+                    $storedPaths[] = $path;
+                    $attachments->push($specification->attachments()->create([
+                        'disk' => 'local',
+                        'path' => $path,
+                        'original_name' => Str::limit(basename(str_replace('\\', '/', $file->getClientOriginalName())), 255, ''),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                        'sha256' => hash_file('sha256', $file->getRealPath()),
+                    ]));
+                }
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($storedPaths);
+            throw $exception;
+        }
+
+        try {
+            $result = $parser->parse(
+                $specification->fresh(['attachments', 'currentVersion']),
+                $attachments->pluck('id')->map(fn ($id): int => (int) $id)->all(),
+                'revision',
+                $user,
+                $data['revision_note'] ?? null,
+            );
+        } catch (\Throwable) {
+            $specification->update([
+                'parsing_status' => 'failed',
+                'parse_message' => 'Новая редакция сохранена, но автоматический разбор временно недоступен.',
+                'parsed_at' => now(),
+            ]);
+
+            return back()->withErrors(['files' => 'Файлы сохранены. Менеджер обработает новую редакцию вручную.']);
+        }
+
+        $diff = $result['diff'];
+        $message = "Редакция №{$result['version']} сохранена. Добавлено: {$diff['added']}, изменено: {$diff['changed']}, удалено: {$diff['removed']}.";
+
+        return to_route('b2b.cabinet', ['section' => 'specifications'])
+            ->with('success', $message);
     }
 
     public function specificationCart(Request $request, B2bSpecification $specification, B2bCatalogOfferResolver $resolver)

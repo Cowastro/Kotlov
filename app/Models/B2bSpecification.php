@@ -28,7 +28,7 @@ class B2bSpecification extends Model
     protected $fillable = [
         'b2b_client_id', 'user_id', 'reference', 'title', 'comment', 'status',
         'manager_id', 'commercial_document_id', 'client_message', 'manager_note', 'submitted_at', 'reviewed_at',
-        'parsing_status', 'parse_message', 'parsed_at',
+        'parsing_status', 'parse_message', 'parsed_at', 'current_version_id',
     ];
 
     protected $casts = [
@@ -78,7 +78,22 @@ class B2bSpecification extends Model
 
     public function items(): HasMany
     {
+        return $this->hasMany(B2bSpecificationItem::class)->where('is_current', true);
+    }
+
+    public function allItems(): HasMany
+    {
         return $this->hasMany(B2bSpecificationItem::class);
+    }
+
+    public function versions(): HasMany
+    {
+        return $this->hasMany(B2bSpecificationVersion::class);
+    }
+
+    public function currentVersion(): BelongsTo
+    {
+        return $this->belongsTo(B2bSpecificationVersion::class, 'current_version_id');
     }
 
     public function statusLabel(): string
