@@ -143,7 +143,11 @@ class InstallRequestTelegramNotifierTest extends TestCase
             'services.telegram.orders_chat_id' => '-100123456789',
         ]);
 
-        $product = new Product(['name' => 'Тепловой насос KOTLOV GE 12 кВт R290']);
+        $product = new Product([
+            'name' => 'Тепловой насос KOTLOV GE 12 кВт R290',
+            'price' => 12690,
+            'currency' => 'BYN',
+        ]);
         $product->id = 77;
 
         $request = new InstallRequest([
@@ -163,6 +167,7 @@ class InstallRequestTelegramNotifierTest extends TestCase
             ->withArgs(fn ($chatId, string $message): bool => $chatId === '-100123456789'
                 && str_contains($message, '*Источник:* Каталог тепловых насосов')
                 && str_contains($message, '*Товар:* Тепловой насос KOTLOV GE 12 кВт R290')
+                && str_contains($message, '*Цена на сайте:* 12 690,00 BYN')
             )
             ->andReturn(['ok' => true, 'result' => ['message_id' => 459]]);
 

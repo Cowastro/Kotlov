@@ -7,7 +7,14 @@ use Illuminate\Support\Facades\Log;
 
 class InstallRequestTelegramNotifier
 {
-    public function __construct(private TelegramApi $telegram) {}
+    private readonly TelegramStorefrontPrice $storefrontPrice;
+
+    public function __construct(
+        private TelegramApi $telegram,
+        ?TelegramStorefrontPrice $storefrontPrice = null,
+    ) {
+        $this->storefrontPrice = $storefrontPrice ?? app(TelegramStorefrontPrice::class);
+    }
 
     public function send(InstallRequest $installRequest): bool
     {
@@ -92,6 +99,7 @@ class InstallRequestTelegramNotifier
             $installerProfile ? '*Монтажник:* '.$escape($installerProfile->display_name) : null,
             '*Направление:* '.$escape($specialization),
             $product ? '*Товар:* '.$escape($product->name) : null,
+            $this->storefrontPrice->line($product),
             '',
             '*Имя:* '.$escape($installRequest->customer_name),
             '*Телефон:* '.$escape($installRequest->customer_phone),

@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\SupportConversation;
 use App\Services\SupportChatNotifier;
 use App\Services\TelegramApi;
@@ -20,13 +22,28 @@ class SupportChatNotifierTest extends TestCase
             'services.telegram.bot_token' => 'test-token',
             'services.telegram.support_chat_id' => '-100222333444',
         ]);
+        $category = Category::query()->create([
+            'name' => 'Газовые котлы',
+            'slug' => 'gazovye-kotly',
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Котёл для Telegram',
+            'slug' => 'kotel-dlya-telegram',
+            'sku' => 'TG-PRICE-1',
+            'price' => 4321.5,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
         $conversation = SupportConversation::query()->create([
             'public_id' => fake()->uuid(),
             'session_hash' => hash('sha256', 'telegram-test-session'),
             'name' => 'Иван',
             'phone' => '+375 29 123-45-67',
             'status' => 'new',
-            'page_url' => 'https://kotlov.by/gazovye-kotly',
+            'page_url' => 'https://kotlov.by/gazovye-kotly/kotel-dlya-telegram',
             'last_message_at' => now(),
             'last_visitor_message_at' => now(),
         ]);
@@ -42,6 +59,7 @@ class SupportChatNotifierTest extends TestCase
                 && str_contains($message, 'Иван')
                 && str_contains($message, '+375 29 123-45-67')
                 && str_contains($message, 'Нужен котёл для дома 150 м²')
+                && str_contains($message, '*Цена на сайте:* 4 321,50 BYN')
                 && str_contains($message, '/admin/support-conversations/'.$conversation->id)
         )->andReturn(['ok' => true]);
 

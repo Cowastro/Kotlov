@@ -2,7 +2,9 @@
 
 namespace Tests\Unit;
 
+use App\Models\Category;
 use App\Models\ContactRequest;
+use App\Models\Product;
 use App\Services\ContactRequestNotifier;
 use App\Services\TelegramApi;
 use Carbon\Carbon;
@@ -70,6 +72,47 @@ class ContactRequestNotifierTest extends TestCase
                 && str_contains($message, 'Анна')
                 && str_contains((string) ($extra['reply_markup'] ?? ''), 'take_contact_request:56'))
             ->andReturn(['ok' => true]);
+
+        (new ContactRequestNotifier($telegram))->notify($request);
+    }
+
+    public function test_product_request_contains_current_storefront_price(): void
+    {
+        config([
+            'services.telegram.bot_token' => 'test-token',
+            'services.telegram.contact_requests_chat_id' => '-100987654321',
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Печи',
+            'slug' => 'pechi',
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Печь с ценой',
+            'slug' => 'pech-s-cenoy',
+            'sku' => 'TG-PRICE-2',
+            'price' => 987.6,
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $request = ContactRequest::query()->create([
+            'name' => 'Мария',
+            'phone' => '+375 44 000-00-00',
+            'source' => 'product_page',
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'product_url' => 'https://kotlov.by/pechi/pech-s-cenoy',
+            'message' => 'Подскажите наличие',
+        ]);
+
+        $telegram = Mockery::mock(TelegramApi::class);
+        $telegram->shouldReceive('sendMessage')->once()->withArgs(
+            fn ($chatId, string $message): bool => $chatId === '-100987654321'
+                && str_contains($message, 'Печь с ценой')
+                && str_contains($message, '*Цена на сайте:* 987,60 BYN')
+        )->andReturn(['ok' => true]);
 
         (new ContactRequestNotifier($telegram))->notify($request);
     }

@@ -11,7 +11,14 @@ use Illuminate\Support\Facades\Log;
 
 class SupportChatNotifier
 {
-    public function __construct(private readonly TelegramApi $telegram) {}
+    private readonly TelegramStorefrontPrice $storefrontPrice;
+
+    public function __construct(
+        private readonly TelegramApi $telegram,
+        ?TelegramStorefrontPrice $storefrontPrice = null,
+    ) {
+        $this->storefrontPrice = $storefrontPrice ?? app(TelegramStorefrontPrice::class);
+    }
 
     public function notifyNewConversation(SupportConversation $conversation): void
     {
@@ -64,12 +71,16 @@ class SupportChatNotifier
             (string) $value
         );
         $adminUrl = SupportConversationResource::getUrl('view', ['record' => $conversation], panel: 'admin');
+        $storefrontPrice = $this->storefrontPrice->line(
+            $this->storefrontPrice->productFromUrl($conversation->page_url),
+        );
         $lines = [
             '💬 *Новый онлайн-чат*',
             '',
             '*Имя:* '.$escape($conversation->name),
             '*Телефон:* '.$escape($conversation->phone),
             "*Сообщение:*\n".$escape($firstMessage ?: 'Не указано'),
+            $storefrontPrice,
             $conversation->page_url ? "*Страница:*\n".$escape($conversation->page_url) : null,
             '',
             '[Открыть диалог в админке]('.$adminUrl.')',

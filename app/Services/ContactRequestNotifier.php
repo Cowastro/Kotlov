@@ -9,7 +9,14 @@ use Illuminate\Support\Facades\Log;
 
 class ContactRequestNotifier
 {
-    public function __construct(private readonly TelegramApi $telegram) {}
+    private readonly TelegramStorefrontPrice $storefrontPrice;
+
+    public function __construct(
+        private readonly TelegramApi $telegram,
+        ?TelegramStorefrontPrice $storefrontPrice = null,
+    ) {
+        $this->storefrontPrice = $storefrontPrice ?? app(TelegramStorefrontPrice::class);
+    }
 
     public function notify(ContactRequest $contactRequest): void
     {
@@ -68,6 +75,9 @@ class ContactRequestNotifier
         $source = $contactRequest->source
             ? ($sourceLabels[$contactRequest->source] ?? $contactRequest->source)
             : null;
+        $product = $contactRequest->product_id
+            ? $contactRequest->product()->first()
+            : $this->storefrontPrice->productFromUrl($contactRequest->product_url);
         $lines = [
             match ($contactRequest->source) {
                 'ai_selection' => '🤖 *Нужна помощь с AI-подбором*',
@@ -78,6 +88,7 @@ class ContactRequestNotifier
             $source ? '*Источник:* '.$escape($source) : null,
             $contactRequest->city ? '*Город:* '.$escape($contactRequest->city) : null,
             $contactRequest->product_name ? "*Раздел / товар:*\n".$escape($contactRequest->product_name) : null,
+            $this->storefrontPrice->line($product),
             $contactRequest->product_url ? "*Страница:*\n".$escape($contactRequest->product_url) : null,
             '',
             '*Имя:* '.$escape($contactRequest->name),
