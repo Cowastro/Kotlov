@@ -32,14 +32,15 @@ class ProductSourceEnricher
         return $this->enrichFromParsed($product, $sourceUrl, $parsed, $options);
     }
 
-    public function preview(string $sourceUrl): array
+    /** $timeout/$retries: a quick look at pages found by a search, where a slow shop is just skipped. */
+    public function preview(string $sourceUrl, int $timeout = 45, int $retries = 2): array
     {
         $sourceUrl = trim($sourceUrl);
         if (! filter_var($sourceUrl, FILTER_VALIDATE_URL) || ! in_array(parse_url($sourceUrl, PHP_URL_SCHEME), ['http', 'https'], true)) {
             throw new \InvalidArgumentException('Invalid source URL.');
         }
 
-        return $this->parsePage($this->fetchHtml($sourceUrl), $sourceUrl);
+        return $this->parsePage($this->fetchHtml($sourceUrl, $timeout, $retries), $sourceUrl);
     }
 
     public function enrichFromParsed(Product $product, string $sourceUrl, array $parsed, array $options = []): array
@@ -700,7 +701,7 @@ class ProductSourceEnricher
         ]);
     }
 
-    private function fetchHtml(string $url): string
+    private function fetchHtml(string $url, int $timeout = 45, int $retries = 2): string
     {
         $request = Http::withHeaders($this->sourcePageRequestHeaders($url));
         if ($this->isEurotermUrl($url)) {
@@ -710,9 +711,9 @@ class ProductSourceEnricher
         }
 
         $response = $request
-            ->connectTimeout(10)
-            ->timeout(45)
-            ->retry(2, 750)
+            ->connectTimeout(min(10, $timeout))
+            ->timeout($timeout)
+            ->retry(max(1, $retries), 750)
             ->get($url);
 
         if (! $response->successful()) {

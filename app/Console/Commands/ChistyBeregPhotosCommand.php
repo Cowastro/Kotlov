@@ -58,9 +58,13 @@ class ChistyBeregPhotosCommand extends Command
                 }
                 $urls = array_values(array_filter(array_keys($urls), fn (string $url): bool => ! str_contains($url, 'bereg.by') && ! preg_match('/\.(pdf|docx?|xlsx?)(\?|$)/i', $url)));
                 $found = null;
+                $started = microtime(true);
                 foreach (array_slice($urls, 0, self::PAGES) as $url) {
+                    if (microtime(true) - $started > 60) {
+                        break;
+                    }
                     try {
-                        $page = $enricher->preview($url);
+                        $page = $enricher->preview($url, 15, 1);
                     } catch (\Throwable) {
                         continue;
                     }
