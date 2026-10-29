@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Cards for the Чистый берег offers no card of ours carries (stage 1: heating). The category comes
+ * Cards for the Чистый берег offers no card of ours carries (stage 1: heating; stage 2: pipes and fittings,
+ * plumbing, mounting materials). Tool hire, electrics, workwear and fire equipment are not taken. The category comes
  * from the supplier category and the title; photos, specs and description from the product page on
  * bereg.by (found by the 8-digit code); the price is the recommended retail. A card without a photo
  * stays hidden (awaiting photos) until one is found. Marked-down rows («Уценка …») are left out.
@@ -36,6 +37,15 @@ class CreateChistyBeregCardsCommand extends Command
         'baki-rassiritelnye-membrannye', 'termostatika-i-balansirovka', 'krany', 'klapany', 'ventili-klapany-zapornye', 'zadvizki', 'zatvory',
         'filtry', 'pribory-uceta-i-kontrolia', 'reguliatory-kondensatootvodciki', 'itp-ind-teplovoi-punkt', 'privody'];
 
+    /** Supplier categories of stage 2 (pipes and fittings, plumbing, mounting materials), by slug. */
+    private const PLUMBING = ['truby-pp-dlia-vodosnabzeniia-i-fasonnye-casti', 'truby-pex-pert-i-fitingi', 'truby-metalloplastikovye-i-fitingi',
+        'sistemy-metalliceskix-trub-i-fitingi-press-paika-obzim', 'fitingi', 'flancy', 'truby-stalnye-detali-truboprovodov-i-metalloprokat',
+        'truby-cugunnye-dlia-vodosnabzeniia-i-fasonnye-casti', 'truby-cugunnye-dlia-kanalizacii-i-fasonnye-casti', 'truby-pe-i-fasonnye-casti',
+        'truby-npvx-napornye-dlia-vodoprovoda', 'truby-pp-dlia-vnutrennei-kanalizacii-i-fasonnye-casti',
+        'truby-pvxpp-dlia-naruznoi-kanalizacii-i-fasonnye-casti', 'liuki-dlia-smotrovyx-kolodcev-i-dozdepriemniki', 'teploizoliaciia',
+        'uplotnitelnye-i-izoliacionnye-materialy', 'elementy-dlia-krepleniia-metizy', 'obshhestroi-peny-germetiki-gruntovka-klei-i-procee',
+        'santexniceskaia-posuda', 'santexniceskoe-oborudovanie'];
+
     private const COUNTRIES = 'Россия|РФ|Китай|Италия|Германия|Беларусь|РБ|Польша|Турция|Словения|Чехия|Сербия|Франция|Испания|Дания|Швеция|Финляндия|Корея|Япония|Украина|Венгрия|Австрия|Швейцария|Нидерланды|Бельгия|Португалия|Литва|Латвия|Эстония|Болгария|Румыния|Словакия|Великобритания|США|Индия|Тайвань|Вьетнам|Малайзия|Израиль|Казахстан';
 
     public function handle(BeregSiteCatalog $bereg, ProductSourceEnricher $enricher): int
@@ -49,7 +59,7 @@ class CreateChistyBeregCardsCommand extends Command
         if ($this->option('report')) {
             return $this->report();
         }
-        $groups = (array) $this->option('group') ?: self::HEATING;
+        $groups = (array) $this->option('group') ?: [...self::HEATING, ...self::PLUMBING];
         $categories = DB::table('categories')->pluck('id', 'slug');
         $offers = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNull('product_id')->where('match_status', 'unmatched')
             ->orderBy('supplier_article')->get()
@@ -148,6 +158,58 @@ class CreateChistyBeregCardsCommand extends Command
         }
         if (Str::startsWith($n, 'насос') && $has('с ножом', 'измельч')) {
             return 'drenajnyie';
+        }
+        // Used tools and equipment the supplier sells off are not for the catalogue.
+        if ($has('был в эксплуатац')) {
+            return null;
+        }
+        $tool = Str::startsWith($n, ['инструмент', 'щипцы', 'пресс-клещи', 'пресс-губки', 'ножницы', 'труборез', 'калибратор', 'аппарат', 'насадка', 'нож ', 'ключ ', 'олово', 'пресс ']);
+        $pipe = (bool) preg_match('/^(п\/п |м\/п |пэ |пнд )?труб[аык]/u', $n);
+        // Pipes, their fittings and the tools to join them; the rest of plumbing by the first words of the title.
+        $plumbing = match (Str::slug($supplierCategory)) {
+            'truby-pp-dlia-vodosnabzeniia-i-fasonnye-casti' => $pipe ? 'polipropilenovye-truby' : 'fitingi-dlya-polipropilenovykh-trub',
+            'truby-pex-pert-i-fitingi' => match (true) {
+                $pipe && $has('металлопласт') => 'metalloplastikovye-truby',
+                $pipe => 'truby-iz-sshitogo-polietilena',
+                $has('теплого пола', 'тёплого пола', 'теплый пол', 'тёплый пол') => 'vodyanoy-teplyy-pol',
+                Str::startsWith($n, 'сервопривод') || $has('трехход', 'трёхход') => 'smesitelnye-klapany-i-uzly',
+                Str::startsWith($n, 'кран шаров') => 'sharovye-krany',
+                Str::startsWith($n, 'головка') => 'radiatornaya-armatura',
+                $has('шкаф') => 'kollektornye-shkafy',
+                $has('коллектор') => 'grebenki',
+                default => 'fitingi-dlya-trub-pex',
+            },
+            'truby-metalloplastikovye-i-fitingi' => $pipe ? 'metalloplastikovye-truby' : 'fitingi-dlya-metalloplastikovykh-trub',
+            'sistemy-metalliceskix-trub-i-fitingi-press-paika-obzim' => $pipe ? 'metallicheskie-truby' : 'press-fitingi',
+            'fitingi' => 'rezbovye-fitingi',
+            'flancy' => 'flantsy',
+            'truby-stalnye-detali-truboprovodov-i-metalloprokat' => $pipe ? 'metallicheskie-truby' : 'stalnye-detali-truboprovodov',
+            'truby-cugunnye-dlia-vodosnabzeniia-i-fasonnye-casti', 'truby-cugunnye-dlia-kanalizacii-i-fasonnye-casti' => 'chugunnye-truby-i-fasonnye-chasti',
+            'truby-pe-i-fasonnye-casti' => $pipe ? 'polietilenovye-truby' : 'fitingi-dlya-pe-trub',
+            'truby-npvx-napornye-dlia-vodoprovoda' => 'truby-npvh-napornye',
+            'truby-pp-dlia-vnutrennei-kanalizacii-i-fasonnye-casti' => 'vnutrennyaya-kanalizatsiya',
+            'truby-pvxpp-dlia-naruznoi-kanalizacii-i-fasonnye-casti' => 'naruzhnaya-kanalizatsiya',
+            'liuki-dlia-smotrovyx-kolodcev-i-dozdepriemniki' => 'lyuki-i-dozhdepriemniki',
+            'teploizoliaciia' => 'teploizolyatsiya-dlya-trub',
+            'uplotnitelnye-i-izoliacionnye-materialy' => 'uplotnitelnye-materialy',
+            'elementy-dlia-krepleniia-metizy' => Str::startsWith($n, 'хомут') ? 'krepleniya-dlya-trub' : 'krepezh-i-metizy',
+            'obshhestroi-peny-germetiki-gruntovka-klei-i-procee' => 'peny-germetiki-i-khimiya',
+            'santexniceskaia-posuda' => match (true) {
+                Str::startsWith($n, ['умывальник', 'раковина', 'унитаз', 'пьедестал', 'поддон', 'мойка', 'чаша', 'сиденье', 'ванна', 'писсуар', 'биде']) => 'santekhnicheskaya-posuda',
+                Str::startsWith($n, ['арматура', 'кнопка', 'инсталляц', 'каркас', 'система', 'бачок']) => 'installyatsii-i-armatura-bachkov',
+                default => 'komplektuyushchie-dlya-santekhniki',
+            },
+            'santexniceskoe-oborudovanie' => match (true) {
+                Str::startsWith($n, ['шланг', 'подводка']) => 'gibkaya-podvodka-dlya-vody',
+                Str::startsWith($n, ['смеситель', 'излив', 'картридж', 'аэратор', 'лейка', 'кран-букса', 'головка']) || $has('душев') => 'smesiteli',
+                Str::startsWith($n, ['сифон', 'трап', 'донный', 'желоб', 'воронка', 'гофра']) => 'sifony-i-trapy',
+                Str::startsWith($n, 'полотенцесушитель') => 'polotentsesushiteli',
+                default => 'komplektuyushchie-dlya-santekhniki',
+            },
+            default => false,
+        };
+        if ($plumbing !== false) {
+            return $tool && ! $pipe ? 'instrumenty-dlya-montazha' : $plumbing;
         }
 
         return match (Str::slug($supplierCategory)) {

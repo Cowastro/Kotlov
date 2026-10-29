@@ -30,7 +30,14 @@ class CreateChistyBeregCardsCommandTest extends TestCase
         $this->assertSame('komplektuyushchie-dlya-vodonagrevateley', CreateChistyBeregCardsCommand::targetCategory('Запчасти', 'Элемент нагревательный 1500W 220-240V с прокладкой европодвес ARISTON Италия'));
         $this->assertSame('predokhranitelnaya-i-reguliruyushchaya-armatura', CreateChistyBeregCardsCommand::targetCategory('Клапаны', 'Клапан предохранительный для бойлера с обрат. клапаном AF8 6-7 bar Ду 3/4'));
         $this->assertSame('drenajnyie', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос CMF 40-25 с ножом 380V Россия'));
-        $this->assertNull(CreateChistyBeregCardsCommand::targetCategory('Трубы ПП для водоснабжения и фасонные части', 'Труба ПП 20'));
+        $this->assertSame('polipropilenovye-truby', CreateChistyBeregCardsCommand::targetCategory('Трубы ПП для водоснабжения и фасонные части', 'П/п труба PN20 20х3,4 PRO AQUA Россия'));
+        $this->assertSame('fitingi-dlya-polipropilenovykh-trub', CreateChistyBeregCardsCommand::targetCategory('Трубы ПП для водоснабжения и фасонные части', 'П/п муфта 20 PRO AQUA Россия'));
+        $this->assertSame('instrumenty-dlya-montazha', CreateChistyBeregCardsCommand::targetCategory('Трубы ПП для водоснабжения и фасонные части', 'Аппарат для сварки п/п труб 1500 Вт'));
+        $this->assertSame('kollektornye-shkafy', CreateChistyBeregCardsCommand::targetCategory('Трубы PEX, PERT и фитинги', 'Шкаф коллекторный наружный ШРН-3'));
+        $this->assertSame('krepleniya-dlya-trub', CreateChistyBeregCardsCommand::targetCategory('Элементы для крепления, метизы', 'Хомут трубный с гайкой 1/2"'));
+        $this->assertSame('gibkaya-podvodka-dlya-vody', CreateChistyBeregCardsCommand::targetCategory('Сантехническое оборудование', 'Шланг гибкий 1/2" г-г 60 см'));
+        $this->assertSame('santekhnicheskaya-posuda', CreateChistyBeregCardsCommand::targetCategory('Сантехническая посуда', 'Умывальник 55 см'));
+        $this->assertNull(CreateChistyBeregCardsCommand::targetCategory('Прокат инструмента', 'Перфоратор'));
     }
 
     public function test_an_offer_becomes_a_card_with_bereg_photos_and_specs_and_is_shown(): void
