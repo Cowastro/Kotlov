@@ -7,9 +7,12 @@ use App\Models\EmailSubscriber;
 use App\Models\User;
 use App\Services\B2bAccessRequestNotifier;
 use App\Services\B2bClientWorkflow;
+use App\Services\Crm\BelarusTaxpayerRegistry;
+use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
 use App\Services\PhoneVerificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
@@ -22,20 +25,22 @@ class AuthController extends Controller
         B2bClientWorkflow $b2bWorkflow,
         B2bAccessRequestNotifier $b2bNotifier,
         PhoneVerificationService $phoneVerification,
-    )
-    {
+        BelarusTaxpayerRegistry $taxpayerRegistry,
+        CrmCounterpartyFromTaxpayerLookup $counterpartyFromLookup,
+    ) {
         // Honeypot: боты заполняют скрытое поле, люди — нет
         if ($request->filled('website')) {
             return redirect('/');
         }
 
-        $request->validate([
+        $data = $request->validate([
             'account_type' => ['required', Rule::in(['legal', 'retail'])],
             'company_name' => ['nullable', 'required_if:account_type,legal', 'string', 'max:255'],
-            'company_inn' => ['nullable', 'string', 'max:50'],
-            'name'     => ['required', 'string', 'max:255'],
-            'phone'    => ['required', 'string', 'max:30'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'company_inn' => ['nullable', 'required_if:account_type,legal', 'regex:/^\d{9}$/'],
+            'company_address' => ['nullable', 'string', 'max:1000'],
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'max:30'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', 'min:8'],
             'privacy_accepted' => ['accepted'],
             'phone_verification_token' => [Rule::requiredIf(config('services.sms_by.enabled')), 'nullable', 'uuid'],
@@ -44,13 +49,15 @@ class AuthController extends Controller
             'account_type.required' => 'Выберите тип аккаунта.',
             'account_type.in' => 'Некорректный тип аккаунта.',
             'company_name.required_if' => 'Введите название компании или ИП.',
-            'name.required'      => 'Введите ваше имя.',
-            'phone.required'     => 'Введите телефон.',
-            'email.required'     => 'Введите email.',
-            'email.email'        => 'Некорректный email адрес.',
-            'email.unique'       => 'Этот email уже зарегистрирован.',
-            'password.required'  => 'Введите пароль.',
-            'password.min'       => 'Пароль должен содержать минимум 8 символов.',
+            'company_inn.required_if' => 'Введите УНП организации.',
+            'company_inn.regex' => 'УНП должен состоять из 9 цифр.',
+            'name.required' => 'Введите ваше имя.',
+            'phone.required' => 'Введите телефон.',
+            'email.required' => 'Введите email.',
+            'email.email' => 'Некорректный email адрес.',
+            'email.unique' => 'Этот email уже зарегистрирован.',
+            'password.required' => 'Введите пароль.',
+            'password.min' => 'Пароль должен содержать минимум 8 символов.',
             'password.confirmed' => 'Пароли не совпадают.',
             'privacy_accepted.accepted' => 'Подтвердите согласие на обработку персональных данных.',
             'phone_verification_token.required' => 'Сначала запросите код подтверждения телефона.',
@@ -66,21 +73,51 @@ class AuthController extends Controller
             );
         }
 
-        $isLegal = $request->string('account_type')->toString() === 'legal';
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'phone'    => $request->phone,
-            'phone_verified_at' => config('services.sms_by.enabled') ? now() : null,
-            'password' => Hash::make($request->password),
-            'client_type' => $isLegal ? ClientType::Wholesale : ClientType::Retail,
-            'b2b_approved' => false,
-            'company_name' => $isLegal ? $request->company_name : null,
-            'company_inn' => $isLegal ? $request->company_inn : null,
-        ]);
+        $isLegal = $data['account_type'] === 'legal';
+        $registryData = $isLegal ? $taxpayerRegistry->lookup($data['company_inn']) : null;
+        $companyName = $isLegal
+            ? ($registryData['short_name'] ?? $registryData['legal_name'] ?? $data['company_name'])
+            : null;
+
+        $user = DB::transaction(function () use (
+            $data,
+            $isLegal,
+            $companyName,
+            $registryData,
+            $b2bWorkflow,
+            $counterpartyFromLookup,
+        ): User {
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+                'phone_verified_at' => config('services.sms_by.enabled') ? now() : null,
+                'password' => Hash::make($data['password']),
+                'client_type' => $isLegal ? ClientType::Wholesale : ClientType::Retail,
+                'b2b_approved' => false,
+                'company_name' => $companyName,
+                'company_inn' => $isLegal ? $data['company_inn'] : null,
+            ]);
+
+            if (! $isLegal) {
+                return $user;
+            }
+
+            $client = $b2bWorkflow->registerApplication($user->fresh());
+            if ($registryData) {
+                $result = $counterpartyFromLookup->upsert([
+                    ...$registryData,
+                    'address' => $registryData['address'] ?? ($data['company_address'] ?? null),
+                    'email' => $data['email'],
+                    'phone' => $data['phone'],
+                ], null, $data['name']);
+                $client->forceFill(['counterparty_id' => $result['counterparty']->id])->save();
+            }
+
+            return $user;
+        });
 
         if ($isLegal) {
-            $b2bWorkflow->registerApplication($user->fresh());
             $b2bNotifier->notify($user->fresh());
         }
 
@@ -106,22 +143,22 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => ['required', 'email'],
+            'email' => ['required', 'email'],
             'password' => ['required'],
         ], [
-            'email.required'    => 'Введите email.',
-            'email.email'       => 'Некорректный email адрес.',
+            'email.required' => 'Введите email.',
+            'email.email' => 'Некорректный email адрес.',
             'password.required' => 'Введите пароль.',
         ]);
 
         $credentials = $request->only('email', 'password');
-        $remember    = $request->boolean('remember');
+        $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
 
             return redirect()->intended('/account')
-                ->with('success', 'Добро пожаловать, ' . Auth::user()->name . '!');
+                ->with('success', 'Добро пожаловать, '.Auth::user()->name.'!');
         }
 
         // ВАЖНО: возвращаем _form чтобы модалка знала какую открыть
@@ -148,7 +185,7 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
         ], [
             'email.required' => 'Введите email.',
-            'email.email'    => 'Некорректный email адрес.',
+            'email.email' => 'Некорректный email адрес.',
         ]);
 
         $status = Password::sendResetLink(
@@ -175,12 +212,12 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'token'    => ['required'],
-            'email'    => ['required', 'email'],
+            'token' => ['required'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', 'min:8'],
         ], [
             'password.confirmed' => 'Пароли не совпадают.',
-            'password.min'       => 'Пароль должен содержать минимум 8 символов.',
+            'password.min' => 'Пароль должен содержать минимум 8 символов.',
         ]);
 
         $status = Password::reset(

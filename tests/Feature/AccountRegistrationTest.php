@@ -15,6 +15,17 @@ class AccountRegistrationTest extends TestCase
 
     public function test_legal_entity_registration_creates_pending_b2b_application(): void
     {
+        Http::fake([
+            'grp.nalog.gov.by/*' => Http::response([
+                'row' => [
+                    'vunp' => '190123456',
+                    'vnaimp' => 'Общество с ограниченной ответственностью «Теплосервис»',
+                    'vnaimk' => 'ООО «Теплосервис»',
+                    'vpadres' => 'г. Минск, ул. Тепловая, 10',
+                    'vkods' => 'Действующий',
+                ],
+            ]),
+        ]);
         $notifier = $this->mock(B2bAccessRequestNotifier::class);
         $notifier->shouldReceive('notify')->once()->withArgs(
             fn (User $user): bool => $user->email === 'office@teplo.by',
@@ -48,6 +59,34 @@ class AccountRegistrationTest extends TestCase
             'unp' => '190123456',
             'contact_email' => 'office@teplo.by',
         ]);
+        $this->assertDatabaseHas('crm_counterparties', [
+            'unp' => '190123456',
+            'legal_name' => 'Общество с ограниченной ответственностью «Теплосервис»',
+            'legal_address' => 'г. Минск, ул. Тепловая, 10',
+        ]);
+        $this->assertNotNull(
+            User::query()->where('email', 'office@teplo.by')->firstOrFail()->b2bClient?->counterparty_id,
+        );
+    }
+
+    public function test_registration_company_lookup_returns_official_company_data(): void
+    {
+        Http::fake([
+            'grp.nalog.gov.by/*' => Http::response([
+                'row' => [
+                    'vunp' => '191355768',
+                    'vnaimp' => 'Общество с ограниченной ответственностью «СанБизнесГруп»',
+                    'vnaimk' => 'ООО «СанБизнесГруп»',
+                    'vpadres' => 'г. Минск, ул. Селицкого, д. 39Б',
+                    'vkods' => 'Действующий',
+                ],
+            ]),
+        ]);
+
+        $this->postJson(route('registration.company-lookup'), ['unp' => '191355768'])
+            ->assertOk()
+            ->assertJsonPath('data.short_name', 'ООО «СанБизнесГруп»')
+            ->assertJsonPath('data.address', 'г. Минск, ул. Селицкого, д. 39Б');
     }
 
     public function test_individual_registration_creates_retail_account_without_b2b_application(): void
@@ -94,6 +133,7 @@ class AccountRegistrationTest extends TestCase
             ->assertSeeText('Юридическое лицо')
             ->assertSeeText('Физическое лицо')
             ->assertSeeText('Компания / ИП')
+            ->assertSeeText('Введите 9 цифр УНП — название и адрес заполнятся автоматически.')
             ->assertSeeText('обработки персональных данных');
     }
 

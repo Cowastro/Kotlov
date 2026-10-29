@@ -3,6 +3,7 @@
     $accountType = old('account_type', 'legal');
 @endphp
 
+<div class="registration-fields" data-registration-fields data-company-lookup-url="{{ route('registration.company-lookup') }}">
 <div class="registration-kind" data-registration-kind>
     <input type="hidden" name="account_type" value="{{ $accountType }}" data-account-type>
     <button type="button" data-account-kind="legal" class="{{ $accountType === 'legal' ? 'active' : '' }}">Юридическое лицо</button>
@@ -10,14 +11,22 @@
 </div>
 
 <div class="form-content">
-    <div data-legal-fields @if($accountType !== 'legal') hidden @endif>
+    <div class="registration-legal-fields" data-legal-fields @if($accountType !== 'legal') hidden @endif>
         <fieldset class="tf-field">
             <label for="{{ $prefix }}-company" class="tf-lable fw-medium">Компания / ИП <span class="text-primary">*</span></label>
             <input type="text" id="{{ $prefix }}-company" name="company_name" value="{{ old('company_name') }}" placeholder="ООО «Теплосервис»" data-legal-required>
         </fieldset>
         <fieldset class="tf-field">
-            <label for="{{ $prefix }}-unp" class="tf-lable fw-medium">УНП / ИНН</label>
-            <input type="text" id="{{ $prefix }}-unp" name="company_inn" value="{{ old('company_inn') }}" placeholder="УНП или ИНН организации">
+            <label for="{{ $prefix }}-unp" class="tf-lable fw-medium">УНП <span class="text-primary">*</span></label>
+            <div class="registration-unp-row">
+                <input type="text" id="{{ $prefix }}-unp" name="company_inn" value="{{ old('company_inn') }}" placeholder="9 цифр УНП" inputmode="numeric" maxlength="9" autocomplete="off" data-legal-required data-company-unp>
+                <button type="button" data-company-lookup-button title="Заполнить название компании и юридический адрес по УНП" aria-label="Автозаполнить реквизиты компании по УНП">Автозаполнить</button>
+            </div>
+            <p class="registration-lookup-status" data-company-lookup-status aria-live="polite">Введите 9 цифр УНП — название и адрес заполнятся автоматически.</p>
+        </fieldset>
+        <fieldset class="tf-field">
+            <label for="{{ $prefix }}-company-address" class="tf-lable fw-medium">Юридический адрес</label>
+            <input type="text" id="{{ $prefix }}-company-address" name="company_address" value="{{ old('company_address') }}" placeholder="Заполнится автоматически по УНП" data-company-address>
         </fieldset>
     </div>
 
@@ -53,6 +62,7 @@
         <div class="password-wrapper w-100"><span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span><input class="password-field" type="password" name="password_confirmation" id="{{ $prefix }}-password-confirm" placeholder="Повторите пароль" required autocomplete="new-password"></div>
     </fieldset>
 </div>
+</div>
 
 <div class="registration-consent checkbox-wrap">
     <input class="tf-check flex-shrink-0" type="checkbox" id="{{ $prefix }}-privacy" name="privacy_accepted" value="1" @checked(old('privacy_accepted')) required>
@@ -60,14 +70,81 @@
 </div>
 
 <style>
-.registration-kind{display:grid;grid-template-columns:1fr 1fr;margin-bottom:18px;border:1px solid #dce2e8;border-radius:9px;overflow:hidden}.registration-kind button{border:0;border-right:1px solid #dce2e8;background:#fff;color:#59697a;padding:12px 8px;font-weight:700}.registration-kind button:last-child{border-right:0}.registration-kind button.active{background:#132238;color:#fff}.registration-consent{align-items:flex-start;margin-top:4px}.registration-consent label{font-size:13px;line-height:1.45}.registration-consent a{color:#087cdb}
+#register .modal-content{max-height:calc(100vh - 24px)}#register .modal-main{overflow-y:auto;padding-right:3px}.registration-fields{width:100%}.registration-kind{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:20px;padding:4px;border:1px solid #e0e0e0;border-radius:10px;background:#f6f6f6}.registration-kind button{display:flex;align-items:center;justify-content:center;width:100%;height:42px;min-height:42px;margin:0;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#5f6368;font-family:inherit;font-size:14px;font-weight:500;line-height:1;text-align:center;white-space:nowrap}.registration-kind button.active{background:#111;color:#fff;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}.registration-fields .form-content{gap:16px;margin-bottom:24px}.registration-legal-fields{display:grid;gap:16px}.registration-fields .tf-field{width:100%}.registration-fields .tf-field>input,.registration-fields .password-wrapper.w-100>input,.registration-unp-row input{width:100%;height:50px;min-height:50px;box-sizing:border-box}.registration-unp-row{display:grid;grid-template-columns:minmax(0,1fr) 132px;align-items:stretch;gap:8px;width:100%}.registration-unp-row button{display:flex;align-items:center;justify-content:center;width:100%;height:50px;min-height:50px;margin:0;padding:0 10px;border:1px solid #111;border-radius:8px;background:#111;color:#fff;font-family:inherit;font-size:13px;font-weight:600;line-height:1;text-align:center;white-space:nowrap}.registration-unp-row button:disabled{opacity:.6;cursor:wait}.registration-lookup-status{min-height:18px;margin:6px 0 0;color:#7a8794;font-size:12px;line-height:1.45}.registration-lookup-status.is-success{color:#168344}.registration-lookup-status.is-error{color:#c62828}.registration-consent{display:grid;grid-template-columns:16px minmax(0,1fr);align-items:start;gap:9px;margin:0 0 22px}.registration-consent .tf-check{margin-top:2px}.registration-consent label{min-width:0;font-size:13px;line-height:1.45}.registration-consent a{color:#087cdb}
 .phone-verification{margin:-4px 0 14px}.phone-verification-send{width:100%;padding:11px 16px;border:1px solid #087cdb;border-radius:8px;background:#fff;color:#087cdb;font-weight:700}.phone-verification-send:disabled{opacity:.65;cursor:not-allowed}.phone-verification-code{margin-top:12px}.phone-verification-code input{width:100%;letter-spacing:.35em;text-align:center;font-size:18px}.phone-verification-status{min-height:20px;margin:7px 0 0;font-size:13px;color:#59697a}.phone-verification-status.is-error{color:#c62828}.phone-verification-status.is-success{color:#168344}
+@media(max-width:420px){.registration-kind button{font-size:13px}.registration-unp-row{grid-template-columns:minmax(0,1fr) 120px}.registration-unp-row button{font-size:12px;padding:0 7px}}
 </style>
 
 @once
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-registration-fields]').forEach(function (wrapper) {
+        const form = wrapper.closest('form');
+        const unp = wrapper.querySelector('[data-company-unp]');
+        const company = wrapper.querySelector('input[name="company_name"]');
+        const address = wrapper.querySelector('[data-company-address]');
+        const button = wrapper.querySelector('[data-company-lookup-button]');
+        const status = wrapper.querySelector('[data-company-lookup-status]');
+        const csrf = form.querySelector('input[name="_token"]');
+        let timer = null;
+        let lastLookup = '';
+
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.classList.toggle('is-success', type === 'success');
+            status.classList.toggle('is-error', type === 'error');
+        }
+
+        async function lookupCompany() {
+            const value = unp.value.replace(/\D/g, '').slice(0, 9);
+            unp.value = value;
+            if (value.length !== 9) {
+                showStatus('Введите 9 цифр УНП.', value.length ? 'error' : '');
+                return;
+            }
+            if (lastLookup === value && company.value.trim()) return;
+
+            button.disabled = true;
+            button.textContent = 'Ищем…';
+            showStatus('Проверяем УНП в реестре…', '');
+            try {
+                const response = await fetch(wrapper.dataset.companyLookupUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf.value
+                    },
+                    body: JSON.stringify({unp: value})
+                });
+                const payload = await response.json();
+                if (!response.ok) throw new Error(payload.message || 'Организация не найдена.');
+
+                const data = payload.data || {};
+                company.value = data.short_name || data.legal_name || company.value;
+                address.value = data.address || address.value;
+                lastLookup = value;
+                showStatus('Организация найдена. Реквизиты заполнены автоматически.', 'success');
+            } catch (error) {
+                showStatus((error.message || 'Не удалось проверить УНП.') + ' Можно заполнить данные вручную.', 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Автозаполнить';
+            }
+        }
+
+        unp.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 9);
+            lastLookup = '';
+            clearTimeout(timer);
+            if (this.value.length === 9) timer = setTimeout(lookupCompany, 350);
+            else showStatus('Введите 9 цифр УНП — название и адрес заполнятся автоматически.', '');
+        });
+        unp.addEventListener('blur', function () { if (this.value.length === 9) lookupCompany(); });
+        button.addEventListener('click', lookupCompany);
+    });
+
     document.querySelectorAll('[data-registration-kind]').forEach(function (switcher) {
         const form = switcher.closest('form');
         const input = switcher.querySelector('[data-account-type]');

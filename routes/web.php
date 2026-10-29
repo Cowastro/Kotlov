@@ -723,6 +723,9 @@ Route::post('/register', [AuthController::class, 'register'])->name('register')-
 Route::post('/registration/phone/send-code', [\App\Http\Controllers\PhoneVerificationController::class, 'store'])
     ->name('registration.phone.send-code')
     ->middleware('throttle:10,10');
+Route::post('/registration/company-lookup', TaxpayerLookupController::class)
+    ->name('registration.company-lookup')
+    ->middleware('throttle:20,1');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
