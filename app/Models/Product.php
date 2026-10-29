@@ -498,10 +498,52 @@ class Product extends Model
     public function qualifiesForOnlineOrderDiscount(): bool
     {
         $categorySlug = $this->category?->slug;
-        $excluded = (array) config('shop.online_order_discount.excluded_category_slugs', []);
+        $excludedCategories = (array) config('shop.online_order_discount.excluded_category_slugs', []);
+        $excludedSupplierCodes = collect(config('shop.online_order_discount.excluded_supplier_codes', []))
+            ->map(fn (mixed $code): string => mb_strtolower(trim((string) $code)))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
 
         // A supplier promotion already lowers the price: the online discount does not stack.
-        return ! in_array($categorySlug, $excluded, true) && ! $this->hasActiveSaleCampaign();
+        return ! in_array($categorySlug, $excludedCategories, true)
+            && ! $this->hasActiveSaleCampaign()
+            && ! $this->hasSupplierWithCode($excludedSupplierCodes);
+    }
+
+    /** @param list<string> $codes */
+    private function hasSupplierWithCode(array $codes): bool
+    {
+        if ($codes === []) {
+            return false;
+        }
+
+        $legacyRelationsReady = $this->relationLoaded('supplierProducts')
+            && $this->supplierProducts->every(fn (SupplierProduct $link): bool => $link->relationLoaded('supplier'));
+        $legacyMatch = $legacyRelationsReady
+            ? $this->supplierProducts->contains(
+                fn (SupplierProduct $link): bool => in_array(mb_strtolower((string) $link->supplier?->code), $codes, true)
+            )
+            : $this->supplierProducts()
+                ->whereHas('supplier', fn ($query) => $query->whereIn('code', $codes))
+                ->exists();
+
+        if ($legacyMatch) {
+            return true;
+        }
+
+        $integrationRelationsReady = $this->relationLoaded('integrationProducts')
+            && $this->integrationProducts->every(fn (IntegrationProduct $item): bool => $item->relationLoaded('source')
+                && ($item->source === null || $item->source->relationLoaded('supplier')));
+
+        return $integrationRelationsReady
+            ? $this->integrationProducts->contains(
+                fn (IntegrationProduct $item): bool => in_array(mb_strtolower((string) $item->source?->supplier?->code), $codes, true)
+            )
+            : $this->integrationProducts()
+                ->whereHas('source.supplier', fn ($query) => $query->whereIn('code', $codes))
+                ->exists();
     }
 
     public function category(): BelongsTo

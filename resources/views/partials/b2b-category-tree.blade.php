@@ -13,7 +13,7 @@
             </div>
         </details>
     @else
-        <a href="{{ request()->fullUrlWithQuery(['category' => $node['id'], 'q' => null, 'page' => null]) }}" class="b2b-category-leaf {{ $node['selected'] ? 'active' : '' }}" data-category-node data-label="{{ mb_strtolower($node['name']) }}">
+        <a href="{{ request()->fullUrlWithQuery(['category' => $node['id'], 'q' => null, 'page' => null]) }}" class="b2b-category-leaf{{ $level === 0 ? ' b2b-category-leaf--root' : '' }}{{ $node['selected'] ? ' active' : '' }}" data-category-node data-label="{{ mb_strtolower($node['name']) }}">
             <span>{{ $node['name'] }}</span>
             <span class="b2b-category-count">{{ $node['count'] }}</span>
         </a>

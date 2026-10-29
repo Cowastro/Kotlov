@@ -44,6 +44,7 @@ class AlignKotlovSanBusinessGroupCommandTest extends TestCase
             ['code' => 'sanbusinessgroup'],
             ['name' => 'ООО «СанБизнесГруп»', 'is_active' => false],
         );
+        SupplierProduct::query()->where('supplier_id', $supplier->id)->delete();
         $priced = $this->product($category->id, $brand->id, 'KOTLOV-PRICED', 250, true, false);
         $withoutPrice = $this->product($category->id, $brand->id, 'KOTLOV-NO-PRICE', 0, true, false);
         $archived = $this->product($category->id, $brand->id, 'KOTLOV-ARCHIVED', 300, true, true);

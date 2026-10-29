@@ -106,49 +106,7 @@
                                 <input type="hidden" name="_form" value="register">
                                 <input type="text" name="website" value="" style="display:none" tabindex="-1" autocomplete="off">
 
-                                <div class="form-content">
-                                    <fieldset class="tf-field">
-                                        <label for="reg-name" class="tf-lable fw-medium">
-                                            Имя <span class="text-primary">*</span>
-                                        </label>
-                                        <input type="text" id="reg-name" name="name"
-                                            value="{{ old('name') }}"
-                                            placeholder="Ваше имя" required>
-                                    </fieldset>
-
-                                    <fieldset class="tf-field">
-                                        <label for="reg-email" class="tf-lable fw-medium">
-                                            Email <span class="text-primary">*</span>
-                                        </label>
-                                        <input type="email" id="reg-email" name="email"
-                                            value="{{ old('email') }}"
-                                            placeholder="Ваш email" required>
-                                    </fieldset>
-
-                                    <fieldset class="tf-field">
-                                        <label for="reg-password" class="tf-lable fw-medium">
-                                            Пароль <span class="text-primary">*</span>
-                                        </label>
-                                        <div class="password-wrapper w-100">
-                                            <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
-                                            <input class="password-field" type="password"
-                                                id="reg-password" name="password"
-                                                placeholder="Минимум 8 символов" required>
-                                        </div>
-                                    </fieldset>
-
-                                    <fieldset class="tf-field">
-                                        <label for="reg-password-confirm" class="tf-lable fw-medium">
-                                            Повторите пароль <span class="text-primary">*</span>
-                                        </label>
-                                        <div class="password-wrapper w-100">
-                                            <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
-                                            <input class="password-field" type="password"
-                                                id="reg-password-confirm" name="password_confirmation"
-                                                placeholder="Повторите пароль" required>
-                                        </div>
-                                    </fieldset>
-                                </div>
+                                @include('partials.registration-fields', ['prefix' => 'page-register'])
 
                                 <div class="checkbox-wrap">
                                     <input class="tf-check flex-shrink-0" type="checkbox"

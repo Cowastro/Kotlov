@@ -51,6 +51,17 @@ return [
         'notification_email' => env('B2B_NOTIFICATION_EMAIL', 'order@kotlov.by'),
     ],
 
+    'sms_by' => [
+        'enabled' => (bool) env('SMS_BY_ENABLED', false),
+        'base_url' => env('SMS_BY_BASE_URL', 'https://app.sms.by'),
+        'token' => env('SMS_BY_TOKEN', ''),
+        'password_object_id' => env('SMS_BY_PASSWORD_OBJECT_ID', ''),
+        'alphaname_id' => env('SMS_BY_ALPHANAME_ID', ''),
+        'message' => env('SMS_BY_VERIFICATION_MESSAGE', 'Код подтверждения на Kotlov.by: %CODE%'),
+        'timeout' => (int) env('SMS_BY_TIMEOUT', 10),
+        'verification_ttl' => (int) env('SMS_BY_VERIFICATION_TTL', 300),
+    ],
+
     'procurement' => [
         'email' => env('PROCUREMENT_EMAIL', ''),
     ],

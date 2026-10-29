@@ -412,6 +412,7 @@ class B2bMarketplaceTest extends TestCase
         $treeStart = strpos($content, 'id="b2b-category-tree"');
 
         $this->assertNotFalse($treeStart);
+        $this->assertStringContainsString('class="b2b-category-leaf b2b-category-leaf--root"', $content);
         $this->assertLessThan(strpos($content, 'Ящики', $treeStart), strpos($content, 'Арматура', $treeStart));
         $this->assertLessThan(strpos($content, 'Фитинги', $treeStart), strpos($content, 'Краны', $treeStart));
     }

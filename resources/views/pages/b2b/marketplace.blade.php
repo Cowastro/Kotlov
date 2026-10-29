@@ -33,7 +33,7 @@
                 @if ($staffPreview)
                     <span class="b2b-topbar__link b2b-topbar__preview"><i class="icon icon-Eye"></i><span>Только просмотр</span></span>
                 @else
-                    <a href="{{ route('account') }}" class="b2b-topbar__link"><i class="icon icon-User"></i><span>Заказы</span></a>
+                    <a href="{{ route('b2b.cabinet') }}" class="b2b-topbar__link"><i class="icon icon-User"></i><span>Кабинет</span></a>
                     <a href="{{ route('cart') }}" class="b2b-topbar__link b2b-topbar__cart">
                         <i class="icon icon-Handbag"></i><span>Корзина</span><b class="cart-count">{{ $cartCount }}</b>
                     </a>

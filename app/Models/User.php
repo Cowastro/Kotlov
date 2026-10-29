@@ -30,6 +30,7 @@ class User extends Authenticatable implements FilamentUser
         'client_type',
 
         'phone',
+        'phone_verified_at',
         'job_title',
         'department',
         'telegram_username',
@@ -49,6 +50,7 @@ class User extends Authenticatable implements FilamentUser
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'phone_verified_at' => 'datetime',
         'password' => 'hashed',
         'is_active' => 'boolean',
         'is_crm_user' => 'boolean',
@@ -201,6 +203,11 @@ class User extends Authenticatable implements FilamentUser
     public function b2bClient(): HasOne
     {
         return $this->hasOne(B2bClient::class);
+    }
+
+    public function b2bSavedCarts(): HasMany
+    {
+        return $this->hasMany(B2bSavedCart::class);
     }
 
     public function products(): HasMany

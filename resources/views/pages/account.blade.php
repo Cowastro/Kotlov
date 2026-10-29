@@ -407,6 +407,12 @@
                                             Тип: {{ $user->client_type_label }} · Компания: {{ $user->company_name ?: 'не указана' }}
                                         </p>
 
+                                        @if (! $isB2bPreview)
+                                            <a href="{{ route('b2b.cabinet') }}" class="tf-btn mb-12">
+                                                <i class="icon icon-User"></i>
+                                                Открыть кабинет партнёра
+                                            </a>
+                                        @endif
                                         <a href="{{ route('b2b.catalog', $isB2bPreview ? ['b2b-preview' => 1] : []) }}" class="tf-btn btn-primary mb-24">
                                             <i class="icon icon-SquaresFour"></i>
                                             Открыть оптовый каталог

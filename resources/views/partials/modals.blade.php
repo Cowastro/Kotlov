@@ -806,31 +806,9 @@
             <div class="modal-main">
                 <form action="/register" method="POST" class="form-log">
                     @csrf
+                    <input type="hidden" name="_form" value="register">
                     <input type="text" name="website" value="" style="display:none" tabindex="-1" autocomplete="off">
-                    <div class="form-content">
-                        <fieldset class="tf-field">
-                            <label for="reg-name" class="tf-lable fw-medium">Ваше имя <span class="text-primary">*</span></label>
-                            <input type="text" name="name" id="reg-name" placeholder="Ваше имя*" required>
-                        </fieldset>
-                        <fieldset class="tf-field">
-                            <label for="reg-email" class="tf-lable fw-medium">Email <span class="text-primary">*</span></label>
-                            <input type="email" name="email" id="reg-email" placeholder="Ваш email*" required>
-                        </fieldset>
-                        <fieldset class="tf-field password-wrapper">
-                            <label for="register-password" class="tf-lable fw-medium">Пароль <span class="text-primary">*</span></label>
-                            <div class="password-wrapper w-100">
-                                <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
-                                <input class="password-field" type="password" name="password" id="register-password" placeholder="Пароль*" required>
-                            </div>
-                        </fieldset>
-                        <fieldset class="tf-field password-wrapper">
-                            <label for="register-password-confirm" class="tf-lable fw-medium">Повторите пароль <span class="text-primary">*</span></label>
-                            <div class="password-wrapper w-100">
-                                <span class="toggle-pass icon-EyeSlash fs-20 cl-text-3"></span>
-                                <input class="password-field" type="password" name="password_confirmation" id="register-password-confirm" placeholder="Повторите пароль*" required>
-                            </div>
-                        </fieldset>
-                    </div>
+                    @include('partials.registration-fields', ['prefix' => 'modal-register'])
                     <div class="group-action">
                         <button type="submit" class="action-create-account tf-btn animate-btn w-100">Создать аккаунт</button>
                         <a href="#sign" data-bs-toggle="modal" class="tf-btn btn-stroke">Войти</a>

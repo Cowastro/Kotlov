@@ -43,6 +43,10 @@ return [
         'excluded_category_slugs' => [
             'teplovyie-nasosyi',
         ],
+        'excluded_supplier_codes' => [
+            'thermostudio',
+            'termostudia',
+        ],
         'excluded_payment_methods' => [
             'installment_6',
         ],

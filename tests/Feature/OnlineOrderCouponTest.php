@@ -90,6 +90,57 @@ class OnlineOrderCouponTest extends TestCase
             ->assertSeeText('В корзину');
     }
 
+    public function test_thermostudio_product_is_excluded_from_the_online_discount(): void
+    {
+        $product = $this->orderableThermostudioProduct();
+
+        $response = $this
+            ->withHeader('User-Agent', 'Mozilla/5.0')
+            ->postJson(route('cart.add'), [
+                'product_id' => $product->id,
+                'quantity' => 1,
+            ]);
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'discount' => 0,
+                'total' => 200,
+            ]);
+        $response->assertSessionMissing('cart_coupon');
+        $this->assertFalse($product->qualifiesForOnlineOrderDiscount());
+
+        $this->get('/'.$product->category->slug.'/'.$product->slug)
+            ->assertOk()
+            ->assertDontSeeText('со скидкой −3%')
+            ->assertSeeText('В корзину');
+    }
+
+    public function test_mixed_cart_discounts_regular_goods_but_not_thermostudio_goods(): void
+    {
+        $regular = $this->orderableProduct();
+        $thermostudio = $this->orderableThermostudioProduct();
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0')->postJson(route('cart.add'), [
+            'product_id' => $regular->id,
+            'quantity' => 1,
+        ])->assertOk();
+
+        $response = $this->withHeader('User-Agent', 'Mozilla/5.0')->postJson(route('cart.add'), [
+            'product_id' => $thermostudio->id,
+            'quantity' => 1,
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJson([
+                'subtotal' => 400,
+                'discount' => 6,
+                'total' => 394,
+            ]);
+        $response->assertSessionHas('cart_coupon', 'ONLINE3');
+    }
+
     public function test_mixed_cart_discounts_regular_goods_but_not_the_heat_pump(): void
     {
         $regular = $this->orderableProduct();
@@ -344,6 +395,36 @@ class OnlineOrderCouponTest extends TestCase
             'supplier_article' => 'HEAT-PUMP-NO-ONLINE3',
             'in_stock' => false,
             'stock_status' => 'preorder',
+        ]);
+
+        return $product->load('category');
+    }
+
+    private function orderableThermostudioProduct(): Product
+    {
+        $category = Category::query()->create([
+            'name' => 'Товары Термостудии',
+            'slug' => 'thermostudio-online-discount-test',
+            'parent_id' => 0,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Товар Термостудии',
+            'slug' => 'thermostudio-online-order-product',
+            'sku' => 'THERMOSTUDIO-NO-ONLINE3',
+            'price' => 200,
+        ]);
+        $supplier = Supplier::query()->firstOrCreate([
+            'code' => 'thermostudio',
+        ], [
+            'name' => 'Термостудия',
+        ]);
+        SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id,
+            'product_id' => $product->id,
+            'supplier_article' => 'THERMOSTUDIO-NO-ONLINE3',
+            'in_stock' => true,
+            'stock_quantity' => 5,
         ]);
 
         return $product->load('category');

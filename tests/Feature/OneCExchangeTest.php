@@ -317,6 +317,7 @@ class OneCExchangeTest extends TestCase
                 $table->decimal('price_byn', 14, 2)->nullable();
                 $table->decimal('stock_quantity', 12, 3)->nullable();
                 $table->string('match_status')->default('unmatched');
+                $table->boolean('b2b_enabled')->nullable();
                 $table->string('match_method')->nullable();
                 $table->decimal('match_confidence', 5, 4)->nullable();
                 $table->json('candidates')->nullable();
@@ -352,6 +353,12 @@ class OneCExchangeTest extends TestCase
         if (! Schema::hasColumn('integration_products', 'stock_confirmed_at')) {
             Schema::table('integration_products', function (Blueprint $table) {
                 $table->timestamp('stock_confirmed_at')->nullable();
+            });
+        }
+
+        if (! Schema::hasColumn('integration_products', 'b2b_enabled')) {
+            Schema::table('integration_products', function (Blueprint $table) {
+                $table->boolean('b2b_enabled')->nullable();
             });
         }
 
@@ -1423,6 +1430,7 @@ XML;
                 'external_id' => 'price-audit-'.$index,
                 'price' => $price,
                 'stock_quantity' => 1,
+                'b2b_enabled' => null,
             ]);
         }
 

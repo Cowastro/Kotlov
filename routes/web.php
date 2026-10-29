@@ -10,6 +10,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\B2bMarketplaceController;
 use App\Http\Controllers\B2bPriceRequestController;
+use App\Http\Controllers\B2bCabinetController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CatalogIndexController;
@@ -719,6 +720,9 @@ Route::get('/forgot-password', function () {
 
 // ===== Auth действия (POST) =====
 Route::post('/register', [AuthController::class, 'register'])->name('register')->middleware('throttle:5,10');
+Route::post('/registration/phone/send-code', [\App\Http\Controllers\PhoneVerificationController::class, 'store'])
+    ->name('registration.phone.send-code')
+    ->middleware('throttle:10,10');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name('password.email');
@@ -727,6 +731,14 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 
 // ===== Личный кабинет =====
 Route::middleware('auth')->group(function () {
+    Route::get('/b2b/cabinet', [B2bCabinetController::class, 'show'])->name('b2b.cabinet');
+    Route::put('/b2b/cabinet/profile', [B2bCabinetController::class, 'updateProfile'])->name('b2b.cabinet.profile');
+    Route::post('/b2b/cabinet/carts', [B2bCabinetController::class, 'saveCart'])->name('b2b.cabinet.carts.store');
+    Route::post('/b2b/cabinet/carts/{savedCart}/restore', [B2bCabinetController::class, 'restoreCart'])->name('b2b.cabinet.carts.restore');
+    Route::delete('/b2b/cabinet/carts/{savedCart}', [B2bCabinetController::class, 'deleteCart'])->name('b2b.cabinet.carts.destroy');
+    Route::get('/b2b/cabinet/contracts/{contract}/{format}', [B2bCabinetController::class, 'contractFile'])
+        ->where('format', 'pdf|docx')
+        ->name('b2b.cabinet.contracts.file');
     Route::get('/b2b/catalog', B2bMarketplaceController::class)->name('b2b.catalog');
     Route::get('/b2b/catalog/suggest', [B2bMarketplaceController::class, 'suggest'])
         ->middleware('throttle:120,1')
