@@ -7,7 +7,7 @@ return [
     'timezone' => env('A1_TELEPHONY_TIMEZONE', 'Europe/Minsk'),
     'history_lookback_minutes' => (int) env('A1_TELEPHONY_HISTORY_LOOKBACK', 15),
     'company_lines' => [
-        '375293544041' => 'KOTLOV',
+        '375293544041' => 'Оптовый отдел',
         '375293777092' => 'Печкин',
     ],
     'employee_lines' => [

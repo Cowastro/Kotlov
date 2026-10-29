@@ -38,6 +38,9 @@ class B2bMarketplaceTest extends TestCase
         $this->actingAs($admin)
             ->get(route('b2b.catalog'))
             ->assertOk()
+            ->assertSeeText('Оптовый отдел')
+            ->assertSeeText('+375 (29) 354-40-41')
+            ->assertSee('tel:+375293544041', false)
             ->assertSeeText('Товар для проверки администратора');
     }
 

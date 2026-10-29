@@ -26,6 +26,10 @@
                 <strong>{{ auth()->user()->company_name ?: auth()->user()->name }}</strong>
             </div>
             <nav class="b2b-topbar__actions" aria-label="B2B-навигация">
+                <a href="tel:{{ config('shop.b2b_contact.phone_href') }}" class="b2b-topbar__link b2b-topbar__phone" aria-label="Позвонить в оптовый отдел {{ config('shop.b2b_contact.phone') }}">
+                    <i class="icon icon-Phone" aria-hidden="true"></i>
+                    <span><small>Оптовый отдел</small><strong>{{ config('shop.b2b_contact.phone') }}</strong></span>
+                </a>
                 @if ($staffPreview)
                     <span class="b2b-topbar__link b2b-topbar__preview"><i class="icon icon-Eye"></i><span>Только просмотр</span></span>
                 @else
