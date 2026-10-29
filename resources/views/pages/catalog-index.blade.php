@@ -2,6 +2,26 @@
 
 @section('body-class', 'catalog-index-page')
 
+@push('styles')
+    <style>
+        .catalog-sections{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+        .catalog-section-card{display:grid;grid-template-columns:96px minmax(0,1fr);gap:16px;padding:16px;border:1px solid #e6e6e6;border-radius:16px;background:#fff;transition:border-color .18s,box-shadow .18s}
+        .catalog-section-card:hover{border-color:#cfcfcf;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+        .catalog-section-card__image{display:block;width:96px;height:96px;border-radius:12px;overflow:hidden;background:#f5f5f5}
+        .catalog-section-card__image img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+        .catalog-section-card:hover .catalog-section-card__image img{transform:scale(1.05)}
+        .catalog-section-card__body{min-width:0}
+        .catalog-section-card__title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;color:#111;font-size:17px;font-weight:600;line-height:1.25}
+        .catalog-section-card__title span{flex:0 0 auto;padding:1px 8px;border-radius:999px;background:#f1f1f1;color:#6b6b6b;font-size:11px;font-weight:600}
+        .catalog-section-card__title:hover{color:var(--primary)}
+        .catalog-section-card__links{display:flex;flex-wrap:wrap;gap:4px 12px;margin:0;padding:0;list-style:none}
+        .catalog-section-card__links a{color:#555;font-size:13px;line-height:1.5}
+        .catalog-section-card__links a:hover{color:var(--primary);text-decoration:underline}
+        .catalog-section-card__more{display:inline-block;margin-top:8px;color:var(--primary);font-size:13px;font-weight:600}
+        @media(max-width:1199px){.catalog-sections{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    </style>
+@endpush
+
 @section('content')
 <main id="wrapper">
 
@@ -101,32 +121,37 @@
         </div>
     </section>
 
-    {{-- Сетка категорий --}}
-    <div class="flat-spacing d-none d-md-block">
+    {{-- Разделы: компактные карточки — картинка, название, крупнейшие подразделы --}}
+    <div class="flat-spacing pt-0 d-none d-md-block">
         <div class="container">
             @if ($rootCategories->count() > 0)
-                <div class="tf-grid-layout ssm-col-2 xl-col-4 gap-lg-30">
-
+                <div class="catalog-sections">
                     @foreach ($rootCategories as $category)
-                        @php
-                            $catImg = $category->image_url;
-                        @endphp
-                        <div class="category-v03 style-2 hover-img4">
-                            <a href="/{{ $category->slug }}" class="cate-image img-style4">
-                                <img loading="lazy" width="330" height="440"
-                                    src="{{ $catImg }}"
-                                    alt="{{ $category->name }}"
-                                    onerror="this.src='{{ asset('img/categories/placeholder.jpg') }}'">
+                        <article class="catalog-section-card">
+                            <a href="/{{ $category->slug }}" class="catalog-section-card__image" tabindex="-1" aria-hidden="true">
+                                <img loading="lazy" width="96" height="96" src="{{ $category->catalogThumb }}" alt=""
+                                    onerror="this.src='{{ asset('img/popular/catalog.jpg') }}'">
                             </a>
-                            <div class="cate-content text-center">
-                                <a href="/{{ $category->slug }}" class="cate_name h5 fw-medium">
+                            <div class="catalog-section-card__body">
+                                <a href="/{{ $category->slug }}" class="catalog-section-card__title">
                                     {{ $category->name }}
-                                    <i class="icon icon-ArrowUpRight1"></i>
+                                    <span>{{ number_format($category->products_count, 0, '', ' ') }}</span>
                                 </a>
+                                @if ($category->catalogTop->isNotEmpty())
+                                    <ul class="catalog-section-card__links">
+                                        @foreach ($category->catalogTop as $child)
+                                            <li><a href="/{{ $child->slug }}">{{ $child->name }}</a></li>
+                                        @endforeach
+                                    </ul>
+                                    @if ($category->catalogChildren->count() > $category->catalogTop->count())
+                                        <a href="/{{ $category->slug }}" class="catalog-section-card__more">
+                                            Все разделы · {{ $category->catalogChildren->count() }} →
+                                        </a>
+                                    @endif
+                                @endif
                             </div>
-                        </div>
+                        </article>
                     @endforeach
-
                 </div>
             @else
                 <div class="text-center py-60">

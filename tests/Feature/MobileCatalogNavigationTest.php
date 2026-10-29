@@ -46,7 +46,11 @@ class MobileCatalogNavigationTest extends TestCase
             ->assertSee('Поиск в каталоге KOTLOV')
             ->assertSee('/catalog-icons/heater', false)
             ->assertSee('class="mb-cat-icon"', false)
-            ->assertSeeInOrder(['Альфа раздел', 'Бета раздел']);
+            ->assertSeeInOrder(['Альфа раздел', 'Бета раздел'])
+            // Desktop: a compact card per section with its subcategories and a picture.
+            ->assertSee('class="catalog-section-card"', false)
+            ->assertSee('img/popular/boiler_img.jpg', false)
+            ->assertSee('href="/mobile-alpha"', false);
     }
 
     private function createProduct(Category $category, string $sku): void
