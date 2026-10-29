@@ -128,7 +128,7 @@ class B2bMarketplaceTest extends TestCase
             ->assertOk()
             ->assertSeeText('Быстрый заказ товаров')
             ->assertSeeText('Труба со склада')
-            ->assertDontSeeText('Онлайн-цена ниже на 3%')
+            ->assertDontSeeText('Специальные условия онлайн')
             ->assertDontSeeText('Чужой прайс');
 
         $this->actingAs($user)

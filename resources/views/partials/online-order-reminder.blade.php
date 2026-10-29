@@ -8,9 +8,9 @@
 @unless (auth()->user()?->isB2B() || $onlineDiscountExcludedProduct)
 <aside class="online-order-reminder" data-online-order-reminder hidden aria-live="polite">
     <button type="button" class="online-order-reminder__close" data-online-order-reminder-close aria-label="Закрыть">×</button>
-    <span class="online-order-reminder__eyebrow">Выгоднее онлайн</span>
-    <strong>Цена в корзине ниже на 3%</strong>
-    <p>Оформите заказ самостоятельно — скидка применится автоматически. Заказы принимаются 24/7.</p>
+    <span class="online-order-reminder__eyebrow">Удобно онлайн</span>
+    <strong>Итоговая стоимость — в корзине</strong>
+    <p>Оформите заказ самостоятельно — все доступные условия будут учтены автоматически. Заказы принимаются 24/7.</p>
     <a href="{{ session('cart', []) ? route('cart') : '/catalog' }}" class="tf-btn animate-btn" data-analytics-event="online_discount_reminder_click">
         {{ session('cart', []) ? 'Завершить оформление' : 'Выбрать товар' }}
     </a>

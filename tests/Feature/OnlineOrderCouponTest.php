@@ -252,8 +252,10 @@ class OnlineOrderCouponTest extends TestCase
     {
         $this->get('/')
             ->assertOk()
-            ->assertSee('Онлайн-цена ниже на 3%')
-            ->assertSee('скидка применится автоматически')
+            ->assertSee('Специальные условия онлайн')
+            ->assertSee('итоговая стоимость рассчитывается в корзине')
+            ->assertDontSee('Онлайн-цена ниже на 3%')
+            ->assertDontSee('Получить −3%')
             ->assertSee('Заказы принимаются 24/7')
             ->assertDontSee('Скопировать промокод')
             ->assertDontSee('болтовн', false);
