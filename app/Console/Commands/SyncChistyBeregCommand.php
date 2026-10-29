@@ -251,9 +251,13 @@ class SyncChistyBeregCommand extends Command
         'котел', 'котёл', 'газовый', 'настенный', 'напольный', 'двухконтурный', 'одноконтурный', 'электрический', 'электрокотел', 'твердотопливный',
         'конденсационный', 'радиатор', 'радиаторы', 'стальной', 'панельный', 'биметаллический', 'алюминиевый', 'секционный', 'водонагреватель',
         'бойлер', 'косвенного', 'нагрева', 'накопительный', 'электрический', 'бак', 'расширительный', 'мембранный', 'для', 'отопления', 'водоснабжения',
-        'с', 'и', 'в', 'на', 'гвс', 'л', 'литров', 'вт', 'квт', 'мм'];
+        'с', 'и', 'в', 'на', 'гвс', 'л', 'литров', 'вт', 'квт', 'мм',
+        // The supplier ends every title with the country of make.
+        'россия', 'рф', 'китай', 'италия', 'германия', 'беларусь', 'рб', 'польша', 'турция', 'словения', 'чехия', 'сербия', 'франция', 'испания',
+        'дания', 'швеция', 'финляндия', 'корея', 'япония', 'украина', 'венгрия', 'австрия', 'швейцария', 'нидерланды', 'бельгия', 'португалия', 'литва',
+        'латвия', 'эстония', 'болгария', 'румыния', 'словакия', 'великобритания', 'сша', 'индия', 'тайвань', 'вьетнам', 'малайзия', 'израиль', 'казахстан'];
 
-    /** Ordered model tokens without the brand and the descriptive words; empty when the title names no number. */
+    /** Model tokens without the brand, the descriptive words and the country; empty when the title names no number. */
     public static function modelKey(string $name, string $brand): string
     {
         $text = mb_strtolower(str_replace(['ё', 'Ё'], 'е', $name));
@@ -266,6 +270,10 @@ class SyncChistyBeregCommand extends Command
             }
             $tokens[] = ltrim($token, '0') === '' ? '0' : (preg_match('/^\d+$/', $token) ? ltrim($token, '0') : $token);
         }
+
+        // The words in any order: «Котел электрический MK-S 21 ZOTA» and «Электрокотел ZOTA MK-S 21» are one model.
+        $tokens = array_values(array_unique($tokens));
+        sort($tokens);
 
         return count($tokens) >= 2 && preg_grep('/\d/', $tokens) ? implode(' ', $tokens) : '';
     }
