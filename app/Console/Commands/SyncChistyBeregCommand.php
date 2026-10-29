@@ -58,6 +58,12 @@ class SyncChistyBeregCommand extends Command
         $supplier = $this->option('apply') ? $this->supplier() : Supplier::query()->where('code', self::SUPPLIER_CODE)->first();
         [$rows, $stats] = $this->classify($rows, $supplier);
         if (! $this->option('apply')) {
+            // Where the rows go: linked or not, per supplier category and per brand.
+            foreach (['category' => 'category', 'brand' => 'brand'] as $label => $field) {
+                foreach (collect($rows)->groupBy(fn ($row) => Str::slug((string) $row[$field]) ?: 'none') as $group => $items) {
+                    $this->line(sprintf('audit.chisty_bereg.%s=%s:%d:%d', $label, Str::limit($group, 60, ''), $items->count(), $items->whereNotNull('product_id')->count()));
+                }
+            }
             foreach ($stats as $key => $value) {
                 $this->line("metric.chisty_bereg.{$key}={$value}");
             }
