@@ -282,7 +282,7 @@
                             {{-- 4. Необязательное — свёрнуто: e-mail и комментарий (cart_note из session) --}}
                             @php $checkoutExtrasOpen = $errors->has('customer_email') || filled(old('comment', session('cart_note'))); @endphp
                             <details class="box-ip-checkout checkout-extras" @if ($checkoutExtrasOpen) open @endif>
-                                <summary class="h6 fw-medium" style="cursor:pointer;">Дополнительно: e-mail и комментарий</summary>
+                                <summary class="fw-medium cl-text-2" style="cursor:pointer;font-size:15px;">+ Дополнительно: e-mail и комментарий</summary>
                                 <div class="form-content mt-12">
                                     <fieldset class="tf-field">
                                         <label class="tf-lable fw-medium" for="customer-email">Email</label>
