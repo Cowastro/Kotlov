@@ -64,7 +64,7 @@ class B2bClientResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['user', 'counterparty', 'responsibleUser', 'reviewedBy'])
+            ->with(['user', 'counterparty', 'priceLevel', 'responsibleUser', 'reviewedBy'])
             ->withB2bOrderMetrics();
     }
 
@@ -81,6 +81,7 @@ class B2bClientResource extends Resource
                     ->description(fn (B2bClient $record): string => implode(' · ', array_filter([$record->contact_email, $record->contact_phone]))),
                 TextColumn::make('partner_type')->label('Тип')->badge()
                     ->formatStateUsing(fn (string $state): string => B2bClient::PARTNER_TYPES[$state] ?? $state),
+                TextColumn::make('priceLevel.name')->label('Уровень цены')->badge()->placeholder('Не назначен'),
                 TextColumn::make('status')->label('Статус')->badge()
                     ->formatStateUsing(fn (string $state): string => B2bClient::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => match ($state) {
@@ -97,6 +98,8 @@ class B2bClientResource extends Resource
             ->filters([
                 SelectFilter::make('status')->label('Статус')->options(B2bClient::STATUSES),
                 SelectFilter::make('partner_type')->label('Тип клиента')->options(B2bClient::PARTNER_TYPES),
+                SelectFilter::make('b2b_price_level_id')->label('Уровень цены')
+                    ->relationship('priceLevel', 'name')->searchable()->preload(),
                 SelectFilter::make('responsible_user_id')->label('Менеджер')
                     ->relationship('responsibleUser', 'name')->searchable()->preload(),
             ])

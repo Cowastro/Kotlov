@@ -165,11 +165,18 @@ class CheckoutController extends Controller
                     }
                 }
 
-                $currentPrice = $offerResolver->priceWithTax($offer);
+                $currentQuote = $offerResolver->priceQuote($offer, Auth::user());
+                $currentPrice = $currentQuote['price'];
                 if (abs((float) $item['price'] - $currentPrice) >= 0.01) {
                     $cart[$key]['price'] = $currentPrice;
                     $b2bPriceChanged = true;
                 }
+
+                $cart[$key]['b2b_base_price'] = $currentQuote['base_price'];
+                $cart[$key]['b2b_price_level_id'] = $currentQuote['price_level_id'];
+                $cart[$key]['b2b_price_level_code'] = $currentQuote['price_level_code'];
+                $cart[$key]['b2b_price_level_name'] = $currentQuote['price_level_name'];
+                $cart[$key]['b2b_discount_percent'] = $currentQuote['discount_percent'];
             }
 
             if ($b2bPriceChanged) {
@@ -351,6 +358,12 @@ class CheckoutController extends Controller
                     'warehouse_stock_id' => $item['warehouse_stock_id'] ?? null,
                     'supply_warehouse_name' => $item['warehouse_name'] ?? null,
                     'supply_delivery_days' => $item['warehouse_delivery_days'] ?? null,
+                    'b2b_base_price' => $item['b2b_base_price'] ?? null,
+                    'b2b_price_level_id' => $item['b2b_price_level_id'] ?? null,
+                    'b2b_price_level_code' => $item['b2b_price_level_code'] ?? null,
+                    'b2b_price_level_name' => $item['b2b_price_level_name'] ?? null,
+                    'b2b_discount_percent' => $item['b2b_discount_percent'] ?? null,
+                    'b2b_priced_at' => ($item['pricing_type'] ?? 'retail') === 'b2b' ? now() : null,
                 ]);
             }
 

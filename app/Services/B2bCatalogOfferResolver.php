@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\B2bPriceLevel;
 use App\Models\Category;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
@@ -31,7 +32,7 @@ class B2bCatalogOfferResolver
         return $this->offers()
             ->filter(fn (IntegrationProduct $offer): bool => $this->userAllowsSource($user, $offer))
             ->where('product_id', $product->id)
-            ->sortBy(fn (IntegrationProduct $offer): float => $this->priceWithTax($offer))
+            ->sortBy(fn (IntegrationProduct $offer): float => $this->priceWithTax($offer, $user))
             ->first();
     }
 
@@ -117,23 +118,33 @@ class B2bCatalogOfferResolver
         );
     }
 
-    public function priceWithTax(IntegrationProduct $offer): float
+    /** @return array{base_price:float,price:float,price_level_id:?int,price_level_code:?string,price_level_name:?string,discount_percent:float} */
+    public function priceQuote(IntegrationProduct $offer, ?User $user = null): array
     {
         $brandRetailPrice = $offer->product
             ? app(B2bBrandRetailPricing::class)->priceFor($offer->product, $offer)
             : null;
 
-        if ($brandRetailPrice !== null) {
-            return $brandRetailPrice;
-        }
-
-        $price = $offer->normalizedPriceByn();
-
-        if ($price === null) {
+        $basePrice = $brandRetailPrice ?? $offer->normalizedPriceByn();
+        if ($basePrice === null) {
             throw new \LogicException('Для предложения не рассчитана итоговая цена в BYN.');
         }
 
-        return $price;
+        $priceLevel = $this->priceLevelFor($user);
+
+        return [
+            'base_price' => round($basePrice, 2),
+            'price' => $priceLevel?->applyToSalePrice($basePrice) ?? round($basePrice, 2),
+            'price_level_id' => $priceLevel?->id,
+            'price_level_code' => $priceLevel?->code,
+            'price_level_name' => $priceLevel?->name,
+            'discount_percent' => $priceLevel ? (float) $priceLevel->sale_price_discount_percent : 0.0,
+        ];
+    }
+
+    public function priceWithTax(IntegrationProduct $offer, ?User $user = null): float
+    {
+        return $this->priceQuote($offer, $user)['price'];
     }
 
     public function hasFreshStock(IntegrationProduct $offer): bool
@@ -227,7 +238,7 @@ class B2bCatalogOfferResolver
             return null;
         }
 
-        $wholesalePrice = $this->priceWithTax($offer);
+        $wholesalePrice = $this->priceWithTax($offer, $user);
         $retailPrice = round((float) $product->price, 2);
         $difference = max(0, round($retailPrice - $wholesalePrice, 2));
 
@@ -355,5 +366,25 @@ class B2bCatalogOfferResolver
         $allowed = $client->allowed_integration_source_ids;
 
         return is_array($allowed) && in_array((int) $offer->integration_source_id, array_map('intval', $allowed), true);
+    }
+
+    private function priceLevelFor(?User $user): ?B2bPriceLevel
+    {
+        if (! $user || $user->isAdmin() || ! $user->isB2B()) {
+            return null;
+        }
+
+        $client = $user->relationLoaded('b2bClient')
+            ? $user->b2bClient
+            : $user->b2bClient()->with('priceLevel')->first();
+        if (! $client) {
+            return null;
+        }
+
+        if (! $client->relationLoaded('priceLevel')) {
+            $client->load('priceLevel');
+        }
+
+        return $client->priceLevel?->is_active ? $client->priceLevel : null;
     }
 }

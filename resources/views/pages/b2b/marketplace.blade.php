@@ -175,7 +175,7 @@
                                     </div>
                                 </div>
                                 @if ($mode === 'orderable')
-                                    <div class="b2b-price-cell"><strong>{{ number_format($item['price'], 2, ',', ' ') }} <small>BYN</small></strong>@if ($item['retail_price'] > 0)<span>Розница {{ number_format($item['retail_price'], 2, ',', ' ') }}</span>@endif</div>
+                                    <div class="b2b-price-cell"><strong>{{ number_format($item['price'], 2, ',', ' ') }} <small>BYN</small></strong><span>Ваша цена онлайн-склада</span>@if ($item['retail_price'] > 0)<span>Розница {{ number_format($item['retail_price'], 2, ',', ' ') }}</span>@endif</div>
                                     <div class="b2b-stock-cell"><strong><span class="b2b-live-dot"></span>{{ $item['stock_label'] }}</strong><span>{{ $item['offer']->source?->partnerName() }}</span></div>
                                     <div class="b2b-buy-cell">
                                         @if ($staffPreview)

@@ -5,11 +5,14 @@ namespace App\Filament\Resources\B2bClients\Schemas;
 use App\Enums\ClientType;
 use App\Models\B2bClient;
 use App\Models\IntegrationSource;
+use App\Models\IntegrationWarehouse;
 use App\Models\User;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Str;
@@ -66,6 +69,16 @@ class B2bClientForm
                         ->options(B2bClient::PARTNER_TYPES)
                         ->default('wholesale')
                         ->required(),
+                    Select::make('b2b_price_level_id')
+                        ->label('Уровень цены')
+                        ->relationship(
+                            'priceLevel',
+                            'name',
+                            modifyQueryUsing: fn ($query) => $query->where('is_active', true)->orderBy('sort_order'),
+                        )
+                        ->searchable()
+                        ->preload()
+                        ->helperText('Уровень применяется только к готовой продажной B2B-цене.'),
                     Select::make('status')
                         ->label('Статус')
                         ->options(B2bClient::STATUSES)
@@ -87,11 +100,38 @@ class B2bClientForm
                         ->preload(),
                 ]),
             Section::make('Коммерческие условия')
-                ->description('Справочные условия для менеджера. Цена на сайте по-прежнему берётся из разрешённого B2B-источника.')
+                ->description('Отдельно настройте формат обслуживания, цену, склады и индивидуальные условия клиента.')
                 ->columns(2)
                 ->schema([
+                    Select::make('service_mode')
+                        ->label('Формат обслуживания')
+                        ->options(B2bClient::SERVICE_MODES)
+                        ->default('online_warehouse')
+                        ->required(),
+                    DatePicker::make('commercial_terms_valid_until')
+                        ->label('Условия действуют до')
+                        ->native(false),
                     Textarea::make('payment_terms')->label('Условия оплаты')->rows(3),
                     Textarea::make('delivery_terms')->label('Условия доставки')->rows(3),
+                    TextInput::make('minimum_order_amount')
+                        ->label('Минимальная сумма заказа')
+                        ->numeric()
+                        ->minValue(0)
+                        ->suffix('BYN'),
+                    TextInput::make('payment_deferment_days')
+                        ->label('Отсрочка платежа')
+                        ->numeric()
+                        ->minValue(0)
+                        ->suffix('дней'),
+                    TextInput::make('credit_limit')
+                        ->label('Кредитный лимит')
+                        ->numeric()
+                        ->minValue(0)
+                        ->suffix('BYN'),
+                    Toggle::make('specification_service_enabled')
+                        ->label('Комплектация по спецификации')
+                        ->helperText('Показывать клиенту возможность передать готовую спецификацию.')
+                        ->default(true),
                     Select::make('allowed_integration_source_ids')
                         ->label('Доступные прайсы и поставщики')
                         ->options(fn (): array => IntegrationSource::query()
@@ -103,6 +143,22 @@ class B2bClientForm
                         ->searchable()
                         ->preload()
                         ->helperText('Выбранные источники появятся в B2B-каталоге этого клиента. Пусто — не показывать ни один прайс.')
+                        ->columnSpanFull(),
+                    Select::make('allowed_integration_warehouse_ids')
+                        ->label('Доступные склады')
+                        ->options(fn (): array => IntegrationWarehouse::query()
+                            ->with('source:id,name')
+                            ->orderBy('name')
+                            ->get()
+                            ->mapWithKeys(fn (IntegrationWarehouse $warehouse): array => [
+                                $warehouse->id => ($warehouse->source?->name ? $warehouse->source->name.' · ' : '')
+                                    .($warehouse->name ?: $warehouse->external_id),
+                            ])
+                            ->all())
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->helperText('Доступ к складам настраивается независимо от уровня цены.')
                         ->columnSpanFull(),
                 ]),
             Section::make('Реквизиты из личного кабинета')

@@ -10,6 +10,12 @@ use Illuminate\Support\Facades\Auth;
 
 class B2bClient extends Model
 {
+    public const SERVICE_MODES = [
+        'online_warehouse' => 'Онлайн-склад',
+        'specification' => 'Комплектация по спецификации',
+        'engineering' => 'Инженерное сопровождение',
+    ];
+
     public const STATUSES = [
         'pending' => 'Новая заявка',
         'approved' => 'Активный клиент',
@@ -23,17 +29,25 @@ class B2bClient extends Model
     ];
 
     protected $fillable = [
-        'user_id', 'counterparty_id', 'status', 'partner_type', 'company_name', 'unp',
+        'user_id', 'counterparty_id', 'status', 'partner_type', 'b2b_price_level_id', 'service_mode', 'company_name', 'unp',
         'contact_name', 'contact_email', 'contact_phone',
         'responsible_user_id', 'reviewed_by', 'reviewed_at',
-        'payment_terms', 'delivery_terms',
-        'allowed_integration_source_ids',
+        'payment_terms', 'delivery_terms', 'minimum_order_amount',
+        'payment_deferment_days', 'credit_limit', 'commercial_terms_valid_until',
+        'allowed_integration_source_ids', 'allowed_integration_warehouse_ids',
+        'specification_service_enabled',
         'application_comment', 'manager_notes',
     ];
 
     protected $casts = [
         'reviewed_at' => 'datetime',
+        'minimum_order_amount' => 'decimal:2',
+        'payment_deferment_days' => 'integer',
+        'credit_limit' => 'decimal:2',
+        'commercial_terms_valid_until' => 'date',
         'allowed_integration_source_ids' => 'array',
+        'allowed_integration_warehouse_ids' => 'array',
+        'specification_service_enabled' => 'boolean',
     ];
 
     protected static function booted(): void
@@ -66,6 +80,16 @@ class B2bClient extends Model
     public function counterparty(): BelongsTo
     {
         return $this->belongsTo(CrmCounterparty::class, 'counterparty_id');
+    }
+
+    public function priceLevel(): BelongsTo
+    {
+        return $this->belongsTo(B2bPriceLevel::class, 'b2b_price_level_id');
+    }
+
+    public function serviceModeLabel(): string
+    {
+        return self::SERVICE_MODES[$this->service_mode] ?? 'Онлайн-склад';
     }
 
     public function responsibleUser(): BelongsTo

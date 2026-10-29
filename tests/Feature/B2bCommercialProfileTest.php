@@ -1,0 +1,198 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\B2bClient;
+use App\Models\B2bPriceLevel;
+use App\Models\Category;
+use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\User;
+use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bClientWorkflow;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class B2bCommercialProfileTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_approved_client_receives_default_partner_price_level(): void
+    {
+        $partnerLevel = B2bPriceLevel::query()->where('code', 'partner')->firstOrFail();
+        $user = User::factory()->create();
+        $client = B2bClient::query()->create([
+            'user_id' => $user->id,
+            'status' => 'pending',
+            'partner_type' => 'wholesale',
+            'company_name' => 'ООО «Новый партнёр»',
+            'contact_email' => $user->email,
+        ]);
+
+        $approved = app(B2bClientWorkflow::class)->approve($client);
+
+        $this->assertSame('approved', $approved->status);
+        $this->assertSame($partnerLevel->id, $approved->b2b_price_level_id);
+    }
+
+    public function test_price_level_adjusts_only_the_ready_sale_price_and_is_saved_in_cart(): void
+    {
+        [$user, $client, $offer] = $this->fixture();
+        $level = B2bPriceLevel::query()->where('code', 'professional')->firstOrFail();
+        $level->update(['sale_price_discount_percent' => 5]);
+        $client->update(['b2b_price_level_id' => $level->id]);
+
+        $quote = app(B2bCatalogOfferResolver::class)->priceQuote($offer->fresh(['product', 'source']), $user->fresh());
+
+        $this->assertSame(100.0, $quote['base_price']);
+        $this->assertSame(95.0, $quote['price']);
+        $this->assertSame('professional', $quote['price_level_code']);
+        $this->assertSame(5.0, $quote['discount_percent']);
+
+        $this->actingAs($user)
+            ->postJson(route('cart.add'), [
+                'product_id' => $offer->product_id,
+                'quantity' => 2,
+                'pricing_mode' => 'b2b',
+            ])
+            ->assertOk()
+            ->assertJsonPath('subtotal', 190);
+
+        $item = session('cart')[$offer->product_id];
+        $this->assertSame(100.0, $item['b2b_base_price']);
+        $this->assertSame(95.0, $item['price']);
+        $this->assertSame('professional', $item['b2b_price_level_code']);
+    }
+
+    public function test_cabinet_shows_structured_commercial_conditions(): void
+    {
+        [$user, $client] = $this->fixture();
+        $level = B2bPriceLevel::query()->where('code', 'partner')->firstOrFail();
+        $client->update([
+            'b2b_price_level_id' => $level->id,
+            'service_mode' => 'online_warehouse',
+            'payment_terms' => 'Предоплата по счёту',
+            'delivery_terms' => 'Доставка 1–3 рабочих дня',
+            'minimum_order_amount' => 500,
+            'payment_deferment_days' => 0,
+            'commercial_terms_valid_until' => '2026-12-31',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('b2b.cabinet'))
+            ->assertOk()
+            ->assertSeeText('Ваши условия')
+            ->assertSeeText('Опт-1 · Партнёр')
+            ->assertSeeText('Онлайн-склад')
+            ->assertSeeText('Предоплата по счёту')
+            ->assertSeeText('Доставка 1–3 рабочих дня')
+            ->assertSeeText('500,00 BYN')
+            ->assertSeeText('31.12.2026');
+    }
+
+    public function test_order_item_keeps_price_level_snapshot(): void
+    {
+        [$user, , $offer] = $this->fixture();
+        $order = Order::query()->create([
+            'user_id' => $user->id,
+            'number' => 'B2B-SNAPSHOT-1',
+            'status' => 'new',
+            'customer_name' => $user->name,
+            'customer_phone' => '+375290000000',
+            'customer_email' => $user->email,
+            'delivery_type' => 'pickup',
+            'payment_type' => 'invoice',
+            'payment_status' => 'pending',
+            'subtotal' => 95,
+            'total' => 95,
+        ]);
+        $item = OrderItem::query()->create([
+            'order_id' => $order->id,
+            'product_id' => $offer->product_id,
+            'product_name' => $offer->name,
+            'price' => 95,
+            'quantity' => 1,
+            'pricing_type' => 'b2b',
+            'b2b_base_price' => 100,
+            'b2b_price_level_id' => 2,
+            'b2b_price_level_code' => 'professional',
+            'b2b_price_level_name' => 'Опт-2 · Профессионал',
+            'b2b_discount_percent' => 5,
+            'b2b_priced_at' => now(),
+        ]);
+
+        $this->assertSame('professional', $item->fresh()->b2b_price_level_code);
+        $this->assertSame('100.00', $item->fresh()->b2b_base_price);
+        $this->assertNotNull($item->fresh()->b2b_priced_at);
+    }
+
+    /** @return array{User, B2bClient, IntegrationProduct} */
+    private function fixture(): array
+    {
+        $category = Category::query()->create([
+            'name' => 'B2B тест',
+            'slug' => 'b2b-commercial-profile-test',
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Товар собственного склада',
+            'slug' => 'own-warehouse-product',
+            'sku' => 'OWN-1',
+            'price' => 150,
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => true,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'own-warehouse-test',
+            'name' => 'СанБизнесГруп',
+            'is_active' => true,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'own-warehouse-test',
+            'name' => 'Наш оптовый склад',
+            'is_active' => true,
+            'settings' => [
+                'b2b_enabled' => true,
+                'b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_SALE,
+                'b2b_category_ids' => [$category->id],
+                'price_tax_mode' => 'inclusive',
+                'warehouse_label' => 'Наш склад',
+            ],
+        ]);
+        $offer = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'OWN-1',
+            'name' => $product->name,
+            'price' => 100,
+            'price_byn' => 100,
+            'stock_quantity' => 10,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'matched',
+        ]);
+        $user = User::factory()->create([
+            'client_type' => 'wholesale',
+            'b2b_approved' => true,
+            'is_active' => true,
+        ]);
+        $client = B2bClient::query()->create([
+            'user_id' => $user->id,
+            'status' => 'approved',
+            'partner_type' => 'wholesale',
+            'company_name' => 'ООО «Партнёр»',
+            'unp' => '190000001',
+            'contact_name' => $user->name,
+            'contact_email' => $user->email,
+            'allowed_integration_source_ids' => [$source->id],
+        ]);
+
+        return [$user->fresh(), $client, $offer];
+    }
+}

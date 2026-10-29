@@ -139,7 +139,8 @@ class CartController extends Controller
         }
 
         $id = $product->id;
-        $price = $b2bOffer ? $offerResolver->priceWithTax($b2bOffer) : (float) $product->price;
+        $priceQuote = $b2bOffer ? $offerResolver->priceQuote($b2bOffer, $request->user()) : null;
+        $price = $priceQuote['price'] ?? (float) $product->price;
         $pricing = $b2bOffer ? [
             'pricing_type' => 'b2b',
             'price_tax_mode' => 'inclusive',
@@ -149,6 +150,11 @@ class CartController extends Controller
             'warehouse_name' => $warehouseStock?->warehouse_name
                 ?: $this->b2bWarehouseLabel($product, $b2bOffer),
             'warehouse_delivery_days' => $warehouseStock?->delivery_days,
+            'b2b_base_price' => $priceQuote['base_price'],
+            'b2b_price_level_id' => $priceQuote['price_level_id'],
+            'b2b_price_level_code' => $priceQuote['price_level_code'],
+            'b2b_price_level_name' => $priceQuote['price_level_name'],
+            'b2b_discount_percent' => $priceQuote['discount_percent'],
         ] : [
             'pricing_type' => 'retail',
             'price_tax_mode' => null,
@@ -258,7 +264,13 @@ class CartController extends Controller
                     }
                 }
 
-                $cart[$id]['price'] = $offerResolver->priceWithTax($offer);
+                $quote = $offerResolver->priceQuote($offer, $request->user());
+                $cart[$id]['price'] = $quote['price'];
+                $cart[$id]['b2b_base_price'] = $quote['base_price'];
+                $cart[$id]['b2b_price_level_id'] = $quote['price_level_id'];
+                $cart[$id]['b2b_price_level_code'] = $quote['price_level_code'];
+                $cart[$id]['b2b_price_level_name'] = $quote['price_level_name'];
+                $cart[$id]['b2b_discount_percent'] = $quote['discount_percent'];
             }
 
             $cart[$id]['quantity'] = (int) $request->quantity;

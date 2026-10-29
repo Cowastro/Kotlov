@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ClientType;
 use App\Models\B2bClient;
+use App\Models\B2bPriceLevel;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -32,7 +33,22 @@ class B2bClientWorkflow
 
     public function approve(B2bClient $client, ?User $reviewer = null): B2bClient
     {
-        return $this->setStatus($client, 'approved', $reviewer);
+        return DB::transaction(function () use ($client, $reviewer): B2bClient {
+            if (! $client->b2b_price_level_id) {
+                $client->b2b_price_level_id = B2bPriceLevel::query()
+                    ->where('code', 'partner')
+                    ->where('is_active', true)
+                    ->value('id');
+            }
+
+            $client->forceFill([
+                'status' => 'approved',
+                'reviewed_at' => now(),
+                'reviewed_by' => $reviewer?->id,
+            ])->save();
+
+            return $client->fresh();
+        });
     }
 
     public function pause(B2bClient $client, ?User $reviewer = null): B2bClient

@@ -62,7 +62,7 @@ class B2bMarketplaceController extends Controller
             : $allOffers;
         $offers = $listingOffers
             ->groupBy('product_id')
-            ->map(fn (Collection $items) => $items->sortBy(fn ($offer): float => $resolver->priceWithTax($offer))->first());
+            ->map(fn (Collection $items) => $items->sortBy(fn ($offer): float => $resolver->priceWithTax($offer, $offerAccessUser))->first());
 
         $categoryIndex = Category::query()
             ->where('is_active', true)
@@ -97,7 +97,7 @@ class B2bMarketplaceController extends Controller
                 return [
                     'product' => $product,
                     'offer' => $offer,
-                    'price' => $resolver->priceWithTax($offer),
+                    'price' => $resolver->priceWithTax($offer, $offerAccessUser),
                     'retail_price' => (float) $product->price,
                     'stock' => $availability['stock'],
                     'stock_label' => $availability['label'],
@@ -211,7 +211,7 @@ class B2bMarketplaceController extends Controller
             ? $resolver->offersForStaffPreview($user)
             : $resolver->offersForUser($user))
             ->groupBy('product_id')
-            ->map(fn (Collection $offers) => $offers->sortBy(fn ($offer): float => $resolver->priceWithTax($offer))->first())
+            ->map(fn (Collection $offers) => $offers->sortBy(fn ($offer): float => $resolver->priceWithTax($offer, $staffPreview ? null : $user))->first())
             ->filter(function ($offer) use ($needle): bool {
                 $product = $offer->product;
                 $haystack = mb_strtolower(implode(' ', [
@@ -245,7 +245,7 @@ class B2bMarketplaceController extends Controller
                     'category' => (string) ($product->category?->name ?: ''),
                     'brand' => (string) ($product->brand?->name ?: ''),
                     'image' => (string) $product->image_url,
-                    'price' => $resolver->priceWithTax($offer),
+                    'price' => $resolver->priceWithTax($offer, $staffPreview ? null : $user),
                     'stock' => $availability['label'],
                     'url' => route('b2b.catalog', array_filter([
                         'mode' => 'orderable',

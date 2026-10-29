@@ -6,6 +6,8 @@ use App\Models\B2bSavedCart;
 use App\Models\CommercialContract;
 use App\Models\CommercialDocument;
 use App\Models\CrmCounterparty;
+use App\Models\IntegrationSource;
+use App\Models\IntegrationWarehouse;
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
 use Carbon\CarbonImmutable;
@@ -26,7 +28,16 @@ class B2bCabinetController extends Controller
         $user = $request->user();
         abort_unless($user->isB2B(), 403);
 
-        $client = $user->b2bClient()->with('counterparty')->firstOrFail();
+        $client = $user->b2bClient()->with(['counterparty', 'priceLevel'])->firstOrFail();
+        $allowedSources = IntegrationSource::query()
+            ->whereIn('id', array_map('intval', $client->allowed_integration_source_ids ?? []))
+            ->orderBy('name')
+            ->pluck('name');
+        $allowedWarehouses = IntegrationWarehouse::query()
+            ->with('source:id,name')
+            ->whereIn('id', array_map('intval', $client->allowed_integration_warehouse_ids ?? []))
+            ->orderBy('name')
+            ->get();
         $section = in_array($request->string('section')->toString(), self::SECTIONS, true)
             ? $request->string('section')->toString()
             : 'overview';
@@ -66,6 +77,7 @@ class B2bCabinetController extends Controller
 
         return view('pages.b2b.cabinet', compact(
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts',
+            'allowedSources', 'allowedWarehouses',
             'profileCompletion', 'profileMissing',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));
@@ -193,7 +205,7 @@ class B2bCabinetController extends Controller
                 'name' => $product->name,
                 'slug' => $product->slug,
                 'sku' => $product->sku,
-                'price' => $resolver->priceWithTax($offer),
+                'price' => $resolver->priceWithTax($offer, $request->user()),
                 'image' => $product->image_url,
                 'category_slug' => $product->category?->slug ?? 'catalog',
                 'quantity' => $quantity,
