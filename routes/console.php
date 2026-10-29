@@ -147,6 +147,13 @@ Schedule::command('supplier:sync-maitek-group --apply --sync-retail-prices')
 
 // ООО «СаунаОпт»: двери для бани Cooper с cooper.by — розничная цена и наличие.
 // Новые карточки создаются только ручным запуском с --create-new.
+// Чистый берег: the morning xls is uploaded on the supplier page; the sync follows within 10 minutes.
+Schedule::command('supplier:sync-chisty-bereg --apply --if-new')
+    ->everyTenMinutes()
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/chisty-bereg-sync.log'));
+
 Schedule::command('supplier:sync-cooper-doors --apply')
     ->dailyAt('07:50')
     ->timezone($supplierSyncTimezone)

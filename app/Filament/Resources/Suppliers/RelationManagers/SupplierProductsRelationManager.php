@@ -35,7 +35,7 @@ class SupplierProductsRelationManager extends RelationManager
                         $record->supplier_article ? 'Арт. '.$record->supplier_article : null,
                         data_get($record->raw, 'model'),
                     ])->filter()->implode(' · '))
-                    ->searchable(['supplier_name', 'supplier_article', 'supplier_article_normalized'])
+                    ->searchable(['supplier_name', 'supplier_article', 'supplier_article_normalized', 'raw->maker_code'])
                     ->wrap(),
                 TextColumn::make('price_byn')
                     ->label('Опт')

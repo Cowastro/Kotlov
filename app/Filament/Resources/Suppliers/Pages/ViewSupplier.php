@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\Suppliers\Pages;
 
+use App\Console\Commands\SyncChistyBeregCommand;
 use App\Console\Commands\SyncCooperDoorsCommand;
 use App\Filament\Resources\Suppliers\SupplierResource;
+use App\Services\Suppliers\ChistyBeregPriceList;
 use App\Services\Suppliers\CooperWholesalePriceList;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -20,6 +22,38 @@ class ViewSupplier extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('chisty_bereg_stock')
+                ->label('Загрузить остатки и цены')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('primary')
+                ->visible(fn (): bool => $this->getRecord()->code === SyncChistyBeregCommand::SUPPLIER_CODE)
+                ->modalDescription('Утренний файл «Остатки и цены Чистого берега» (xls). Остатки, опт и РРЦ обновятся в течение 10 минут.')
+                ->schema([
+                    FileUpload::make('file')
+                        ->label('Файл xls')
+                        ->required()
+                        ->acceptedFileTypes(['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/octet-stream'])
+                        ->maxSize(30720)
+                        ->disk('local')
+                        ->directory('supplier-price-uploads'),
+                ])
+                ->action(function (array $data): void {
+                    $stored = (string) (is_array($data['file']) ? reset($data['file']) : $data['file']);
+                    $path = Storage::disk('local')->path($stored);
+                    $rows = is_file($path) ? count(ChistyBeregPriceList::parse($path)) : 0;
+                    if ($rows === 0) {
+                        Storage::disk('local')->delete($stored);
+                        Notification::make()->danger()->title('В файле нет листа «Список» с товарами')->send();
+
+                        return;
+                    }
+                    ChistyBeregPriceList::store($path);
+                    Storage::disk('local')->delete($stored);
+                    Notification::make()->success()
+                        ->title('Файл принят: '.$rows.' позиций')
+                        ->body('Остатки, опт и РРЦ обновятся в течение 10 минут.')
+                        ->send();
+                }),
             Action::make('cooper_wholesale')
                 ->label('Загрузить оптовый прайс')
                 ->icon('heroicon-o-arrow-up-tray')
