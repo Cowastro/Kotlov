@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\B2bSavedCart;
+use App\Models\B2bSpecification;
+use App\Models\B2bSpecificationAttachment;
 use App\Models\CommercialContract;
 use App\Models\CommercialDocument;
 use App\Models\CrmCounterparty;
@@ -15,13 +17,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class B2bCabinetController extends Controller
 {
-    private const SECTIONS = ['overview', 'profile', 'carts', 'orders', 'documents', 'contracts', 'reconciliation', 'security'];
+    private const SECTIONS = ['overview', 'profile', 'specifications', 'carts', 'orders', 'documents', 'contracts', 'reconciliation', 'security'];
 
     public function show(Request $request)
     {
@@ -57,6 +60,11 @@ class B2bCabinetController extends Controller
             ->latest('contract_date')
             ->get();
         $savedCarts = $user->b2bSavedCarts()->latest('updated_at')->get();
+        $specifications = $client->specifications()
+            ->with(['attachments', 'commercialDocument'])
+            ->latest('submitted_at')
+            ->paginate(10, ['*'], 'specifications_page')
+            ->withQueryString();
         [$profileCompletion, $profileMissing] = $this->profileCompletion($client, $counterparty, $user);
 
         $dateFrom = $this->date($request->input('date_from'), now()->startOfYear()->toDateString());
@@ -76,7 +84,7 @@ class B2bCabinetController extends Controller
         $closingBalance = $openingBalance + $periodCharges - $periodPayments;
 
         return view('pages.b2b.cabinet', compact(
-            'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts',
+            'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
             'allowedSources', 'allowedWarehouses',
             'profileCompletion', 'profileMissing',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
@@ -236,6 +244,90 @@ class B2bCabinetController extends Controller
         $savedCart->delete();
 
         return to_route('b2b.cabinet', ['section' => 'carts'])->with('success', 'Сохранённая корзина удалена.');
+    }
+
+    public function storeSpecification(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user->isB2B(), 403);
+        $client = $user->b2bClient()->firstOrFail();
+        abort_unless($client->specification_service_enabled, 403);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'comment' => ['nullable', 'string', 'max:3000'],
+            'files' => ['required', 'array', 'min:1', 'max:5'],
+            'files.*' => ['required', 'file', 'max:15360', 'mimes:pdf,xlsx,xls,csv,ods,png,jpg,jpeg,webp'],
+        ], [
+            'files.required' => 'Добавьте хотя бы один файл спецификации.',
+            'files.max' => 'За один раз можно загрузить не более 5 файлов.',
+            'files.*.max' => 'Размер каждого файла не должен превышать 15 МБ.',
+            'files.*.mimes' => 'Допустимы PDF, Excel, CSV и изображения JPG, PNG или WEBP.',
+        ]);
+
+        $storedPaths = [];
+
+        try {
+            $specification = DB::transaction(function () use ($client, $user, $data, $request, &$storedPaths): B2bSpecification {
+                $specification = B2bSpecification::query()->create([
+                    'b2b_client_id' => $client->id,
+                    'user_id' => $user->id,
+                    'title' => $data['title'],
+                    'comment' => $data['comment'] ?? null,
+                    'status' => 'submitted',
+                    'submitted_at' => now(),
+                ]);
+
+                foreach ($request->file('files', []) as $file) {
+                    $extension = mb_strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'bin');
+                    $path = $file->storeAs(
+                        "b2b-specifications/{$client->id}/{$specification->id}",
+                        Str::uuid().'.'.$extension,
+                        'local',
+                    );
+                    if (! $path) {
+                        throw new \RuntimeException('Не удалось сохранить файл спецификации.');
+                    }
+
+                    $storedPaths[] = $path;
+                    $specification->attachments()->create([
+                        'disk' => 'local',
+                        'path' => $path,
+                        'original_name' => Str::limit(basename(str_replace('\\', '/', $file->getClientOriginalName())), 255, ''),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                        'sha256' => hash_file('sha256', $file->getRealPath()),
+                    ]);
+                }
+
+                return $specification;
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($storedPaths);
+            throw $exception;
+        }
+
+        return to_route('b2b.cabinet', [
+            'section' => 'specifications',
+        ])->with('success', "Спецификация {$specification->reference} принята. Статус обработки будет виден в кабинете.");
+    }
+
+    public function specificationAttachment(Request $request, B2bSpecificationAttachment $attachment): StreamedResponse
+    {
+        $user = $request->user();
+        $specification = $attachment->specification()->firstOrFail();
+        $ownsSpecification = $user->isB2B()
+            && (int) $specification->user_id === (int) $user->id;
+        abort_unless($user->isManager() || $ownsSpecification, 404);
+
+        $disk = Storage::disk($attachment->disk);
+        abort_unless($disk->exists($attachment->path), 404);
+
+        return $disk->download($attachment->path, $attachment->original_name, [
+            'Content-Type' => $attachment->mime_type ?: 'application/octet-stream',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function contractFile(Request $request, CommercialContract $contract, string $format): BinaryFileResponse|StreamedResponse

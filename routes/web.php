@@ -754,6 +754,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/b2b/cabinet/carts', [B2bCabinetController::class, 'saveCart'])->name('b2b.cabinet.carts.store');
     Route::post('/b2b/cabinet/carts/{savedCart}/restore', [B2bCabinetController::class, 'restoreCart'])->name('b2b.cabinet.carts.restore');
     Route::delete('/b2b/cabinet/carts/{savedCart}', [B2bCabinetController::class, 'deleteCart'])->name('b2b.cabinet.carts.destroy');
+    Route::post('/b2b/cabinet/specifications', [B2bCabinetController::class, 'storeSpecification'])
+        ->middleware('throttle:10,1')
+        ->name('b2b.cabinet.specifications.store');
+    Route::get('/b2b/cabinet/specification-files/{attachment}', [B2bCabinetController::class, 'specificationAttachment'])
+        ->name('b2b.cabinet.specifications.attachment');
     Route::get('/b2b/cabinet/contracts/{contract}/{format}', [B2bCabinetController::class, 'contractFile'])
         ->where('format', 'pdf|docx')
         ->name('b2b.cabinet.contracts.file');

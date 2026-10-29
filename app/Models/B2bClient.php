@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Facades\Auth;
 
@@ -112,6 +113,11 @@ class B2bClient extends Model
             'user_id',
             'id',
         );
+    }
+
+    public function specifications(): HasMany
+    {
+        return $this->hasMany(B2bSpecification::class);
     }
 
     public function scopeWithB2bOrderMetrics(Builder $query): Builder

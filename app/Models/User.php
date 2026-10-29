@@ -217,6 +217,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
         return $this->hasMany(B2bSavedCart::class);
     }
 
+    public function b2bSpecifications(): HasMany
+    {
+        return $this->hasMany(B2bSpecification::class);
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'supplier_id');
