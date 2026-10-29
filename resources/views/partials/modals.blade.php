@@ -51,12 +51,26 @@
                                     <i class="icon icon-CaretDown"></i>
                                 </button>
                             </div>
+                            @php $mbGroups = \App\Support\CategoryNavigationGroups::for($rootCat->slug, $children->values()); @endphp
                             <ul class="mb-cat-sub">
-                                @foreach ($children->take(8) as $child)
-                                    <li><a href="/{{ $child->slug }}">{{ $child->name }}</a></li>
-                                @endforeach
-                                @if ($children->count() > 8)
-                                    <li><a href="/{{ $rootCat->slug }}" class="cl-text-2">Все разделы →</a></li>
+                                @if ($mbGroups->isNotEmpty())
+                                    {{-- A large section: its groups with headings, the first five of each. --}}
+                                    @foreach ($mbGroups as $group)
+                                        <li class="mb-cat-sub__title">{{ $group['title'] }}</li>
+                                        @foreach ($group['items']->take(5) as $child)
+                                            <li><a href="/{{ $child->slug }}">{{ $child->name }}</a></li>
+                                        @endforeach
+                                    @endforeach
+                                    @if ($mbGroups->sum(fn ($group) => $group['items']->count()) > $mbGroups->sum(fn ($group) => $group['items']->take(5)->count()))
+                                        <li><a href="/{{ $rootCat->slug }}" class="cl-text-2">Все разделы →</a></li>
+                                    @endif
+                                @else
+                                    @foreach ($children->take(8) as $child)
+                                        <li><a href="/{{ $child->slug }}">{{ $child->name }}</a></li>
+                                    @endforeach
+                                    @if ($children->count() > 8)
+                                        <li><a href="/{{ $rootCat->slug }}" class="cl-text-2">Все разделы →</a></li>
+                                    @endif
                                 @endif
                             </ul>
                         </li>

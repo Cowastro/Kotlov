@@ -266,7 +266,7 @@ private function getNavBrands(): \Illuminate\Support\Collection
 
 private function getNavCategories()
 {
-    return Cache::remember('nav:categories:orderable:v2', 3600, function () {
+    return Cache::remember('nav:categories:orderable:v3', 3600, function () {
         $categories = Category::query()
             ->where('is_active', true)
             ->orderBy('name')

@@ -368,14 +368,14 @@
                         <section class="accessories-nav" data-accessories-nav aria-labelledby="accessories-nav-title">
                             <div class="accessories-nav__top">
                                 <div>
-                                    <span class="accessories-nav__eyebrow">Навигация по каталогу</span>
-                                    <h2 id="accessories-nav-title">Быстрый выбор комплектующих</h2>
-                                    <p>Выберите назначение или начните вводить название нужного раздела.</p>
+                                    <span class="accessories-nav__eyebrow">{{ $category->name }}</span>
+                                    <h2 id="accessories-nav-title">Выберите раздел</h2>
+                                    <p>Подразделы собраны по назначению. Начните вводить название, чтобы быстро найти нужный.</p>
                                 </div>
                                 <label class="accessories-nav__search" for="accessories-nav-search">
                                     <i class="icon icon-MagnifyingGlass" aria-hidden="true"></i>
                                     <input type="search" id="accessories-nav-search"
-                                           placeholder="Например: бак, автоматика, арматура"
+                                           placeholder="Например: {{ $catalogNavigationGroups->flatMap(fn ($group) => $group['items'])->take(3)->map(fn ($sub) => Str::lower($sub->name))->implode(', ') }}"
                                            autocomplete="off">
                                 </label>
                             </div>

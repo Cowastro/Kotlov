@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Support\CategoryNavigationGroups;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -11,36 +12,38 @@ class HeatingAccessoriesNavigationGroupsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_groups_heating_accessories_and_links_independent_gas_categories(): void
+    public function test_a_large_section_shows_its_subcategories_in_the_configured_groups(): void
     {
-        $parent = Category::query()->updateOrCreate(['slug' => 'komplektuyushhie-dlya-otopleniya'], [
+        $parent = Category::query()->updateOrCreate(['slug' => 'truby-i-fitingi'], [
             'parent_id' => 0,
-            'name' => 'Комплектующие для отопления',
+            'name' => 'Трубы и фитинги',
             'is_active' => true,
         ]);
 
-        $this->categoryWithProduct($parent->id, 'Газовые шланги', 'gazovye-shlangi');
-        $this->categoryWithProduct(0, 'Счётчики газа', 'schetchiki-gaza');
-        $this->categoryWithProduct($parent->id, 'Гидравлические разделители и коллекторы', 'gidravlicheskie-razdeliteli-i-kollektory');
-        $this->categoryWithProduct($parent->id, 'Автоматика и терморегуляторы', 'regulyatory');
-        $this->categoryWithProduct($parent->id, 'Мембранные баки', 'membrannye-baki');
-        $this->categoryWithProduct($parent->id, 'Комплекты подключения', 'komplekty-podklyucheniya');
-        $this->categoryWithProduct($parent->id, 'Электрические ТЭНы', 'elektricheskie-teny-dlya-otopleniya');
+        $this->categoryWithProduct($parent->id, 'Полипропиленовые трубы', 'polipropilenovye-truby');
+        $this->categoryWithProduct($parent->id, 'Пресс-фитинги', 'press-fitingi');
+        $this->categoryWithProduct($parent->id, 'Внутренняя канализация', 'vnutrennyaya-kanalizatsiya');
+        $this->categoryWithProduct($parent->id, 'Новая категория без группы', 'novaya-kategoriya');
 
         $this->get('/'.$parent->slug)
             ->assertOk()
-            ->assertSee('Газовое оборудование и безопасность')
-            ->assertSee('Обвязка котельной и арматура')
-            ->assertSee('Автоматика, питание и контроль')
-            ->assertSee('Баки, теплоносители и фильтрация')
-            ->assertSee('Монтаж и подключение')
-            ->assertSee('Нагрев и солнечные системы')
-            ->assertSee('Быстрый выбор комплектующих')
+            ->assertSeeInOrder(['Выберите раздел', 'Трубы', 'Полипропиленовые трубы', 'Фитинги', 'Пресс-фитинги', 'Канализация', 'Внутренняя канализация', 'Ещё', 'Новая категория без группы'])
+            ->assertDontSee('Изоляция и крепление')
             ->assertSee('id="accessories-nav-search"', false)
             ->assertSee('data-accessories-group', false)
-            ->assertSee('data-accessories-item', false)
-            ->assertSee('href="/schetchiki-gaza"', false)
-            ->assertSee('href="/gidravlicheskie-razdeliteli-i-kollektory"', false);
+            ->assertSee('href="/press-fitingi"', false);
+    }
+
+    public function test_subcategories_no_group_names_land_in_one_more_group(): void
+    {
+        $children = collect(['press-fitingi', 'novaya-kategoriya', 'polipropilenovye-truby'])
+            ->map(fn (string $slug) => new Category(['slug' => $slug, 'name' => $slug]));
+
+        $groups = CategoryNavigationGroups::for('truby-i-fitingi', $children);
+
+        $this->assertSame(['Трубы', 'Фитинги', 'Ещё'], $groups->pluck('title')->all());
+        $this->assertSame(['novaya-kategoriya'], $groups->last()['items']->pluck('slug')->all());
+        $this->assertTrue(CategoryNavigationGroups::for('radiatory', $children)->isEmpty());
     }
 
     private function categoryWithProduct(int $parentId, string $name, string $slug): void
