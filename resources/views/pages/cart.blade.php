@@ -183,7 +183,7 @@
 
                                 <div id="cart-coupon-summary" @if ($coupon['discount'] <= 0) style="display:none" @endif>
                                     <div id="cart-online-discount-row" class="d-flex justify-content-between align-items-center mb-12" @if ($coupon['coupon_discount'] <= 0) style="display:none" @endif>
-                                        <p class="fw-medium lh-24 mb-0">Онлайн-скидка −3%:</p>
+                                        <p class="fw-medium lh-24 mb-0">{{ $coupon['code'] === config('shop.online_order_discount.code', 'ONLINE3') ? 'Онлайн-скидка −3%:' : 'Скидка по промокоду '.$coupon['code'].':' }}</p>
                                         <span class="fw-semibold" id="cart-online-discount">−{{ number_format($coupon['coupon_discount'], 2, '.', ' ') }} BYN</span>
                                     </div>
                                     <div id="cart-bundle-discount-row" class="d-flex justify-content-between align-items-center mb-12" @if ($coupon['bundle_discount'] <= 0) style="display:none" @endif>

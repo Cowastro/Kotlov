@@ -20,6 +20,8 @@ class ChimneyBundlePromotionTest extends TestCase
 
     public function test_equipment_and_chimney_receive_separate_non_stacking_discounts(): void
     {
+        // The online discount (dumping mode) is off by default; this test covers it switched on.
+        config(['shop.online_order_discount.public' => true]);
         [$equipment, $chimney] = $this->products();
         $cart = [
             $equipment->id => $this->cartItem($equipment, 1000),

@@ -151,6 +151,8 @@ class UnconfirmedProductCheckoutTest extends TestCase
 
     public function test_product_page_keeps_price_and_order_button_while_stock_requires_confirmation(): void
     {
+        // The online discount (dumping mode) is off by default; this test covers it switched on.
+        config(['shop.online_order_discount.public' => true]);
         $product = $this->unconfirmedProduct();
 
         $this->get('/'.$product->category->slug.'/'.$product->slug)

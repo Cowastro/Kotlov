@@ -4,9 +4,12 @@ namespace App\Services;
 
 use App\Models\Coupon;
 use App\Models\Product;
+use App\Models\Setting;
 
 class CartCouponService
 {
+    public const DUMPING_SETTING = 'online_order_discount_enabled';
+
     public function __construct(private readonly ChimneyBundlePromotion $chimneyBundlePromotion) {}
 
     /**
@@ -18,7 +21,10 @@ class CartCouponService
         $coupon = $normalizedCode !== null
             ? Coupon::query()->where('code', $normalizedCode)->first()
             : null;
-        $valid = $coupon !== null && $coupon->isValid($subtotal);
+        // With the online discount (dumping mode) off, its code is not accepted either.
+        $valid = $coupon !== null
+            && ! ($this->isOnlineOrderDiscountCode($normalizedCode) && ! self::onlineDiscountIsPublic())
+            && $coupon->isValid($subtotal);
         $base = min($subtotal, max(0, $discountBase ?? $subtotal));
         $discount = (float) ($valid
             ? min($base, round($coupon->calculateDiscount($base), 2))
@@ -98,6 +104,20 @@ class CartCouponService
             ->reject(fn (array $item): bool => in_array((int) ($item['id'] ?? 0), $promoIds, true))
             ->reject(fn (array $item): bool => in_array((int) ($item['id'] ?? 0), $excludedSupplierProductIds, true))
             ->sum(fn (array $item): float => (float) ($item['price'] ?? 0) * (int) ($item['quantity'] ?? 0)), 2);
+    }
+
+    /** Dumping mode: the −3% online discount, switched on and off in the admin (Промокоды), the .env flag by default. */
+    public static function onlineDiscountIsPublic(): bool
+    {
+        return filter_var(
+            Setting::get(self::DUMPING_SETTING, config('shop.online_order_discount.public', false) ? '1' : '0'),
+            FILTER_VALIDATE_BOOLEAN
+        );
+    }
+
+    public static function setOnlineDiscount(bool $enabled): void
+    {
+        Setting::set(self::DUMPING_SETTING, $enabled ? '1' : '0');
     }
 
     public function isOnlineOrderDiscountCode(?string $code): bool

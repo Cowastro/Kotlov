@@ -6,7 +6,7 @@
         && $product instanceof \App\Models\Product
         && ! $product->qualifiesForOnlineOrderDiscount();
 @endphp
-@unless (auth()->user()?->isB2B() || $onlineDiscountExcludedProduct)
+@unless (! \App\Services\CartCouponService::onlineDiscountIsPublic() || auth()->user()?->isB2B() || $onlineDiscountExcludedProduct)
 <aside class="online-order-promo" aria-label="Специальные условия онлайн-оформления">
     <div class="container online-order-promo__inner">
         <div class="online-order-promo__text">

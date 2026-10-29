@@ -17,6 +17,13 @@ class OnlineOrderCouponTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // These tests cover the public online discount, which is off by default.
+        config(['shop.online_order_discount.public' => true]);
+    }
+
     public function test_online3_coupon_is_seeded_as_an_active_three_percent_discount(): void
     {
         $coupon = Coupon::query()->where('code', 'ONLINE3')->firstOrFail();

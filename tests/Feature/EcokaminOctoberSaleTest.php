@@ -21,6 +21,8 @@ class EcokaminOctoberSaleTest extends TestCase
 
     public function test_promotion_prices_mirror_the_manufacturer_and_end_by_themselves(): void
     {
+        // The online discount (dumping mode) is off by default; this test covers it switched on.
+        config(['shop.online_order_discount.public' => true]);
         Carbon::setTestNow('2026-10-22 12:00:00');
         $category = Category::query()->firstOrCreate(['slug' => 'kaminy'], ['name' => 'Камины', 'parent_id' => 0, 'is_active' => true]);
         $brand = Brand::query()->updateOrCreate(['slug' => 'ecokamin'], ['name' => 'ЭкоКамин', 'is_active' => true]);

@@ -229,7 +229,9 @@
                                         </label>
                                         @if ($key === 'installment_6')
                                             <div class="text-caption-01 ms-4 mt-1">
-                                                <span class="cl-text-2 d-block">Онлайн-скидка −3% при рассрочке не применяется.</span>
+                                                @if (\App\Services\CartCouponService::onlineDiscountIsPublic())
+                                                    <span class="cl-text-2 d-block">Онлайн-скидка −3% при рассрочке не применяется.</span>
+                                                @endif
                                                 <a href="{{ $method['video_url'] }}" target="_blank" rel="noopener noreferrer">
                                                     Смотреть видеоинструкцию
                                                 </a>
@@ -424,8 +426,10 @@
                                     <p class="text-caption-01 cl-text-2">
                                         @if ($coupon['bundle']['active'])
                                             Комплектная скидка на дымоход −{{ number_format($coupon['bundle']['percent'], 0) }}% применена автоматически.
-                                        @else
+                                        @elseif ($coupon['code'] === config('shop.online_order_discount.code', 'ONLINE3'))
                                             Онлайн-скидка применена автоматически.
+                                        @else
+                                            Промокод {{ $coupon['code'] }} применён.
                                         @endif
                                     </p>
                                 </div>
@@ -446,7 +450,7 @@
                                 @if ($coupon['coupon_discount'] > 0)
                                     <li class="total-item lh-24 fw-medium" id="checkout-discount-row"
                                         @if ($onlineOrderDiscountExcludedByPayment) style="display:none" @endif>
-                                        <span>Онлайн-скидка −3%:</span>
+                                        <span>{{ $coupon['code'] === config('shop.online_order_discount.code', 'ONLINE3') ? 'Онлайн-скидка −3%:' : 'Скидка по промокоду:' }}</span>
                                         <span>−{{ number_format($coupon['coupon_discount'], 2, '.', ' ') }} BYN</span>
                                     </li>
                                 @endif

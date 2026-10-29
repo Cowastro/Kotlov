@@ -497,6 +497,9 @@ class Product extends Model
 
     public function qualifiesForOnlineOrderDiscount(): bool
     {
+        if (! \App\Services\CartCouponService::onlineDiscountIsPublic()) {
+            return false;
+        }
         $categorySlug = $this->category?->slug;
         $excludedCategories = (array) config('shop.online_order_discount.excluded_category_slugs', []);
         $excludedSupplierCodes = collect(config('shop.online_order_discount.excluded_supplier_codes', []))

@@ -5,7 +5,7 @@
         && $product instanceof \App\Models\Product
         && ! $product->qualifiesForOnlineOrderDiscount();
 @endphp
-@unless (auth()->user()?->isB2B() || $onlineDiscountExcludedProduct)
+@unless (! \App\Services\CartCouponService::onlineDiscountIsPublic() || auth()->user()?->isB2B() || $onlineDiscountExcludedProduct)
 <aside class="online-order-reminder" data-online-order-reminder hidden aria-live="polite">
     <button type="button" class="online-order-reminder__close" data-online-order-reminder-close aria-label="Закрыть">×</button>
     <span class="online-order-reminder__eyebrow">Удобно онлайн</span>

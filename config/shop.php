@@ -38,6 +38,9 @@ return [
 
     // Публичная выгода за самостоятельное оформление через корзину.
     'online_order_discount' => [
+        // Dumping mode default. Off: no −3% anywhere (no banner, no online prices, no automatic code,
+        // ONLINE3 not accepted). The admin switch on «Промокоды» overrides it (CartCouponService::onlineDiscountIsPublic).
+        'public' => (bool) env('SHOP_ONLINE_DISCOUNT_PUBLIC', false),
         'code' => 'ONLINE3',
         'percent' => 3,
         'excluded_category_slugs' => [

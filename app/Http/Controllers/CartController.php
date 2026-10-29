@@ -531,7 +531,7 @@ class CartController extends Controller
         // Покупателю не нужно запоминать промокод: для обычной розничной
         // корзины онлайн-скидка подключается при первом расчёте автоматически.
         // Партнёрская B2B-цена уже является специальной и не суммируется с ней.
-        if (! $code && $subtotal > 0 && $eligibleOnlineSubtotal > 0 && $this->isRetailCart()) {
+        if (! $code && $subtotal > 0 && $eligibleOnlineSubtotal > 0 && $this->isRetailCart() && CartCouponService::onlineDiscountIsPublic()) {
             $code = (string) config('shop.online_order_discount.code', 'ONLINE3');
         }
 
