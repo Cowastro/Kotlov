@@ -532,7 +532,7 @@ jobs:
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:category-cards" ]]; then
             echo "safe_category_cards_begin"
             grep -E '^metric\.category_cards\.[a-z0-9_]+=[0-9]+$' "$detail_log" || true
-            grep -E '^audit\.category_cards\.(missing=[a-z0-9-]+|category=[a-z0-9-]+:[0-9]+:[0-9]+:[01]:[a-z0-9,-]+|card=[0-9]+:[a-z0-9-]+:[a-z0-9-]+:[0-9]+:[01]:[a-z0-9_,]+)$' "$detail_log" || true
+            grep -E '^audit\.category_cards\.(missing=[a-z0-9-]+|category=[a-z0-9-]+:[0-9]+:[0-9]+:[01]:[a-z0-9,-]+|card=[0-9]+:[a-z0-9-]+:[a-z0-9-]+:[0-9]+:[01]:[a-z0-9_,]+|tree=[0-9]+:[0-9]+:[a-z0-9-]+:[01]:[0-9]+)$' "$detail_log" || true
             echo "safe_category_cards_end"
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:maitek-filters" ]]; then

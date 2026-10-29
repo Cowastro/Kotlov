@@ -14,12 +14,21 @@ use Illuminate\Support\Str;
  */
 class CategoryCardsCommand extends Command
 {
-    protected $signature = 'catalog:category-cards {categories* : Category slugs}';
+    protected $signature = 'catalog:category-cards {categories?* : Category slugs} {--tree : Every category: id, parent, active, cards}';
 
     protected $description = 'List the cards of categories with brand, price and suppliers';
 
     public function handle(): int
     {
+        if ($this->option('tree')) {
+            $counts = DB::table('products')->where('is_archived', false)->groupBy('category_id')->pluck(DB::raw('count(*)'), 'category_id');
+            foreach (DB::table('categories')->orderBy('parent_id')->orderBy('id')->get(['id', 'parent_id', 'slug', 'is_active']) as $category) {
+                $this->line(sprintf('audit.category_cards.tree=%d:%d:%s:%d:%d', $category->id, (int) $category->parent_id, Str::slug((string) $category->slug) ?: 'none',
+                    (int) $category->is_active, (int) ($counts[$category->id] ?? 0)));
+            }
+
+            return self::SUCCESS;
+        }
         foreach ($this->argument('categories') as $slug) {
             $category = DB::table('categories')->where('slug', $slug)->first(['id', 'parent_id', 'is_active']);
             if (! $category) {
