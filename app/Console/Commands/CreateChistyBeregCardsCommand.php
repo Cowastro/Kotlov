@@ -120,12 +120,13 @@ class CreateChistyBeregCardsCommand extends Command
         return match (Str::slug($supplierCategory)) {
             'nasosy' => match (true) {
                 ! Str::startsWith($n, ['насос', 'станция', 'насосная']) => 'komplektuyushchie-dlya-nasosov',
-                $has('скважин') => 'skvajinnye-nasosy',
+                $has('скважин', 'погружн', 'вибрац') => 'skvajinnye-nasosy',
                 $has('дренаж', 'фекал') => 'drenajnyie',
                 $has('станци') => 'nasosnyie-stantsii',
-                $has('циркуляц') => 'tsirkulyatsionnyie',
-                $has('многоступ') => 'mnogostupenchatye-nasosy',
-                $has('поверхност', 'самовсас', 'вихрев', 'центробеж') => 'poverhnostnyie',
+                // The model names the type where the title does not: UPS, Magna, Star, APM — circulators; MHI, MVL — multistage.
+                $has('циркуляц') || (bool) preg_match('/(?<![a-z])(ups|magna|alpha|star|stratos|yonos|calio|apm|ghn|gpd|noc)(?![a-z])/u', $n) => 'tsirkulyatsionnyie',
+                $has('многоступ') || (bool) preg_match('/(?<![a-z])(mhi|mhil|mvl|mvi)(?![a-z])/u', $n) => 'mnogostupenchatye-nasosy',
+                $has('поверхност', 'самовсас', 'вихрев', 'центробеж', 'medana', 'cmf', 'jet') => 'poverhnostnyie',
                 default => null,
             },
             'kotly-i-dymoxody-avtomatika' => match (true) {

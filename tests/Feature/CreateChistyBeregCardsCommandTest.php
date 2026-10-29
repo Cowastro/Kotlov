@@ -18,6 +18,9 @@ class CreateChistyBeregCardsCommandTest extends TestCase
     public function test_supplier_categories_narrow_to_ours_by_the_title(): void
     {
         $this->assertSame('tsirkulyatsionnyie', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос циркуляционный GHN 25/60-180 IMP Pumps Словения'));
+        $this->assertSame('tsirkulyatsionnyie', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос UPS32-55 180 1x230V 50Hz 9H 95906409 GRUNDFOS Сербия'));
+        $this->assertSame('mnogostupenchatye-nasosy', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос MHIL 106-E-1-230-50-2 4083890 WILO Германия'));
+        $this->assertSame('skvajinnye-nasosy', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос вибрационный CPV 333 10 м нижний забор ECO Китай'));
         $this->assertSame('komplektuyushchie-dlya-nasosov', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Трос для скважинного насоса 3 мм'));
         $this->assertSame('elektricheskie', CreateChistyBeregCardsCommand::targetCategory('Котлы и дымоходы, автоматика', 'Котел электрический MK-S 21 кВт ZOTA Россия'));
         $this->assertSame('bimetallicheskie-radiatory', CreateChistyBeregCardsCommand::targetCategory('Отопительное оборудование', 'Радиатор биметаллический 500/80 10 секций'));
