@@ -7,12 +7,14 @@ use App\Models\Product;
 use App\Models\SupplierProduct;
 use App\Services\SupplierProductAvailabilityService;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Collection;
 
 class SupplierProductsRelationManager extends RelationManager
 {
@@ -74,7 +76,9 @@ class SupplierProductsRelationManager extends RelationManager
                     ->placeholder('—'),
                 TextColumn::make('product.name')
                     ->label('Карточка сайта')
-                    ->description(fn (SupplierProduct $record): ?string => $record->product?->sku)
+                    ->state(fn (SupplierProduct $record): ?string => $record->product?->name
+                        ?? (($suggested = self::suggestedProduct($record)) ? 'Предложена: '.$suggested->name : null))
+                    ->description(fn (SupplierProduct $record): ?string => $record->product?->sku ?? self::suggestedProduct($record)?->sku)
                     ->url(fn (SupplierProduct $record): ?string => $record->product
                         ? ProductResource::getUrl('edit', ['record' => $record->product])
                         : null)
@@ -87,6 +91,7 @@ class SupplierProductsRelationManager extends RelationManager
                     ->label('Привязка')
                     ->options([
                         'unmatched' => 'Не привязано',
+                        'suggested' => 'Предложена карточка',
                         'matched' => 'Привязано',
                     ])
                     ->default('unmatched'),
@@ -98,6 +103,15 @@ class SupplierProductsRelationManager extends RelationManager
                     ]),
             ])
             ->recordActions([
+                Action::make('confirmSuggestion')
+                    ->label('Подтвердить')
+                    ->icon('heroicon-o-check')
+                    ->color('success')
+                    ->visible(fn (SupplierProduct $record): bool => ! $record->product_id && self::suggestedProduct($record) !== null)
+                    ->action(function (SupplierProduct $record): void {
+                        self::confirm(collect([$record]));
+                        Notification::make()->title('Привязка подтверждена')->success()->send();
+                    }),
                 Action::make('linkProduct')
                     ->label(fn (SupplierProduct $record): string => $record->product_id ? 'Изменить привязку' : 'Привязать')
                     ->icon('heroicon-o-link')
@@ -151,8 +165,53 @@ class SupplierProductsRelationManager extends RelationManager
                             ->send();
                     }),
             ])
+            ->toolbarActions([
+                BulkAction::make('confirmSuggestions')
+                    ->label('Подтвердить предложенные')
+                    ->icon('heroicon-o-check')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalDescription('Выбранные позиции привяжутся к предложенным карточкам. Позиции без предложения пропускаются.')
+                    ->action(function (Collection $records): void {
+                        $count = self::confirm($records);
+                        Notification::make()->title('Подтверждено: '.$count)->success()->send();
+                    }),
+            ])
             ->defaultSort('supplier_name')
             ->emptyStateHeading('Предложений по этому фильтру нет')
             ->emptyStateDescription('Переключите фильтр привязки или выполните импорт прайса поставщика.');
+    }
+
+    /** The card the price sync found by model but did not link on its own (raw.suggested_product_id). */
+    private static function suggestedProduct(SupplierProduct $record): ?Product
+    {
+        $id = (int) data_get($record->raw, 'suggested_product_id');
+
+        return $id > 0 ? Product::query()->find($id, ['id', 'sku', 'name']) : null;
+    }
+
+    /** @param Collection<int, SupplierProduct> $records */
+    private static function confirm(Collection $records): int
+    {
+        $touched = [];
+        foreach ($records as $record) {
+            $product = $record->product_id ? null : self::suggestedProduct($record);
+            if (! $product) {
+                continue;
+            }
+            $raw = (array) $record->raw;
+            unset($raw['suggested_product_id']);
+            $record->update([
+                'product_id' => $product->id,
+                'product_sku' => $product->sku,
+                'match_status' => 'matched',
+                'match_confidence' => 'manual_admin',
+                'raw' => $raw,
+            ]);
+            $touched[] = $product->id;
+        }
+        app(SupplierProductAvailabilityService::class)->refreshMany($touched);
+
+        return count($touched);
     }
 }

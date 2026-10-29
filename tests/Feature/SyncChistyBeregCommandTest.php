@@ -102,4 +102,37 @@ class SyncChistyBeregCommandTest extends TestCase
         $this->artisan('supplier:sync-chisty-bereg', ['--apply' => true, '--if-new' => true])->expectsOutputToContain('metric.chisty_bereg.offers=1')->assertSuccessful();
         $this->artisan('supplier:sync-chisty-bereg', ['--apply' => true, '--if-new' => true])->expectsOutputToContain('metric.chisty_bereg.new_file=0')->assertSuccessful();
     }
+
+    public function test_the_one_card_of_the_brand_with_the_same_model_is_suggested_not_linked(): void
+    {
+        $this->assertSame(
+            \App\Console\Commands\SyncChistyBeregCommand::modelKey('Насос циркуляционный IMP Pumps GHN 25/60-180', 'imppumps'),
+            \App\Console\Commands\SyncChistyBeregCommand::modelKey('Циркуляционный насос IMP PUMPS GHN 25/60-180', 'imppumps'),
+        );
+        $category = Category::query()->create(['name' => 'Насосы', 'slug' => 'tsirkulyatsionnyie', 'is_active' => true]);
+        $imp = Brand::query()->create(['name' => 'IMP Pumps', 'slug' => 'imp-pumps-cb', 'is_active' => true]);
+        $card = Product::query()->create(['category_id' => $category->id, 'brand_id' => $imp->id, 'name' => 'Циркуляционный насос IMP PUMPS GHN 25/60-180', 'slug' => 'ghn-25-60', 'price' => 400, 'is_active' => true]);
+        Product::query()->create(['category_id' => $category->id, 'brand_id' => $imp->id, 'name' => 'Циркуляционный насос IMP PUMPS GHN 25/80-180', 'slug' => 'ghn-25-80', 'price' => 450, 'is_active' => true]);
+        $path = $this->workbook([[null, '00120001', 'Насосы', 'IMP Pumps', 'Насос циркуляционный IMP Pumps GHN 25/60-180', '979521725', 'шт.', null, 3, 0, 3, 300, 380]]);
+
+        $this->artisan('supplier:sync-chisty-bereg', ['--file' => $path, '--apply' => true])->assertSuccessful();
+        @unlink($path);
+
+        $offer = SupplierProduct::query()->where('supplier_article', '00120001')->firstOrFail();
+        $this->assertNull($offer->product_id);
+        $this->assertSame('suggested', $offer->match_status);
+        $this->assertSame($card->id, data_get($offer->raw, 'suggested_product_id'));
+        $this->assertSame(400.0, (float) $card->fresh()->price);
+
+        // A manager confirms the suggestion on the supplier page.
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $supplier = Supplier::query()->where('code', 'chisty_bereg')->firstOrFail();
+        Livewire::actingAs($admin)
+            ->test(\App\Filament\Resources\Suppliers\RelationManagers\SupplierProductsRelationManager::class, ['ownerRecord' => $supplier, 'pageClass' => ViewSupplier::class])
+            ->filterTable('match_status', 'suggested')
+            ->assertCanSeeTableRecords([$offer])
+            ->callTableAction('confirmSuggestion', $offer);
+        $this->assertSame($card->id, $offer->fresh()->product_id);
+        $this->assertSame('manual_admin', $offer->fresh()->match_confidence);
+    }
 }

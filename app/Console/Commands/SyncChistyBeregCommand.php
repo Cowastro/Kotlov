@@ -87,9 +87,12 @@ class SyncChistyBeregCommand extends Command
             : collect();
         $brands = DB::table('brands')->pluck('name', 'id')->map(fn ($name) => self::brandKey((string) $name));
         $productBrand = [];
-        $bySku = $byName = [];
+        $bySku = $byName = $byModel = [];
         foreach (DB::table('products')->where('is_archived', false)->get(['id', 'sku', 'name', 'brand_id']) as $product) {
             $productBrand[(int) $product->id] = (string) ($brands[$product->brand_id] ?? '');
+            if ($productBrand[(int) $product->id] !== '' && ($model = self::modelKey((string) $product->name, $productBrand[(int) $product->id])) !== '') {
+                $byModel[$productBrand[(int) $product->id]][$model][] = (int) $product->id;
+            }
             if (($sku = self::key((string) $product->sku)) !== '') {
                 $bySku[$sku][] = (int) $product->id;
             }
@@ -113,7 +116,8 @@ class SyncChistyBeregCommand extends Command
             return $brand === '' || $cardBrand === '' || $cardBrand === $brand ? $ids[0] : null;
         };
 
-        $stats = ['rows' => count($rows), 'linked_before' => 0, 'maker_code' => 0, 'exact_name' => 0, 'unlinked' => 0, 'in_stock' => 0];
+        $stats = ['rows' => count($rows), 'linked_before' => 0, 'maker_code' => 0, 'exact_name' => 0, 'suggested' => 0, 'unlinked' => 0, 'in_stock' => 0];
+        $claimed = $links->flip();
         foreach ($rows as &$row) {
             $brand = in_array(mb_strtolower($row['brand']), ['', 'без бренда'], true) ? '' : self::brandKey($row['brand']);
             $productId = (int) ($links[$row['code']] ?? 0);
@@ -128,6 +132,15 @@ class SyncChistyBeregCommand extends Command
             }
             $row['product_id'] = $productId ?: null;
             $row['match_reason'] = $reason;
+            // Not sure enough to link: the one card of the brand with the same model is offered for confirmation.
+            $row['suggested_product_id'] = null;
+            if (! $productId && $brand !== '' && ($model = self::modelKey($row['name'], $brand)) !== '') {
+                $candidates = array_values(array_unique(array_filter($byModel[$brand][$model] ?? [], fn (int $id) => ! isset($claimed[$id]))));
+                if (count($candidates) === 1) {
+                    $row['suggested_product_id'] = $candidates[0];
+                    $reason = 'suggested';
+                }
+            }
             $stats[$reason ?? 'unlinked']++;
             $stats['in_stock'] += (int) ($row['free'] > 0);
         }
@@ -178,9 +191,9 @@ class SyncChistyBeregCommand extends Command
                     'warehouse_name' => 'Чистый берег',
                     'last_stock_synced_at' => now(),
                     // A manual link made in the admin keeps its mark.
-                    'match_status' => $product ? 'matched' : 'unmatched',
+                    'match_status' => $product ? 'matched' : ($row['suggested_product_id'] ? 'suggested' : 'unmatched'),
                     'match_confidence' => $product ? ($link->match_confidence === 'manual_admin' ? 'manual_admin' : $row['match_reason']) : null,
-                    'raw' => ['maker_code' => $row['maker_code'], 'brand' => $row['brand'], 'category' => $row['category'], 'unit' => $row['unit'],
+                    'raw' => ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'maker_code' => $row['maker_code'], 'brand' => $row['brand'], 'category' => $row['category'], 'unit' => $row['unit'],
                         'pack' => $row['pack'], 'stock' => $row['stock'], 'reserve' => $row['reserve'], 'retail' => $row['rrc'] ?: null,
                         'model' => trim(($row['maker_code'] !== '' ? 'Код произв. '.$row['maker_code'] : '').' · '.$row['brand'].' · '.$row['category'], ' ·')],
                     'last_synced_at' => now(),
@@ -231,6 +244,30 @@ class SyncChistyBeregCommand extends Command
             'is_active' => true,
             'notes' => 'Инженерная сантехника и отопление, bereg.by. Остатки и цены — ежедневный xls, загрузка на этой странице.',
         ]);
+    }
+
+    /** Words around the model in a title («Насос циркуляционный …», «Радиатор стальной панельный …»). */
+    private const DESCRIPTIVE = ['насос', 'насосы', 'циркуляционный', 'поверхностный', 'скважинный', 'дренажный', 'погружной', 'насосная', 'станция',
+        'котел', 'котёл', 'газовый', 'настенный', 'напольный', 'двухконтурный', 'одноконтурный', 'электрический', 'электрокотел', 'твердотопливный',
+        'конденсационный', 'радиатор', 'радиаторы', 'стальной', 'панельный', 'биметаллический', 'алюминиевый', 'секционный', 'водонагреватель',
+        'бойлер', 'косвенного', 'нагрева', 'накопительный', 'электрический', 'бак', 'расширительный', 'мембранный', 'для', 'отопления', 'водоснабжения',
+        'с', 'и', 'в', 'на', 'гвс', 'л', 'литров', 'вт', 'квт', 'мм'];
+
+    /** Ordered model tokens without the brand and the descriptive words; empty when the title names no number. */
+    public static function modelKey(string $name, string $brand): string
+    {
+        $text = mb_strtolower(str_replace(['ё', 'Ё'], 'е', $name));
+        $text = preg_replace('/(?<=\d)(?=\p{L})|(?<=\p{L})(?=\d)/u', ' ', $text) ?? $text;
+        $brandTokens = preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower(str_replace('-', ' ', $brand))) ?: [];
+        $tokens = [];
+        foreach (preg_split('/[^\p{L}\p{N}]+/u', $text) ?: [] as $token) {
+            if ($token === '' || in_array($token, self::DESCRIPTIVE, true) || in_array($token, $brandTokens, true) || Str::slug($token, '') === $brand) {
+                continue;
+            }
+            $tokens[] = ltrim($token, '0') === '' ? '0' : (preg_match('/^\d+$/', $token) ? ltrim($token, '0') : $token);
+        }
+
+        return count($tokens) >= 2 && preg_grep('/\d/', $tokens) ? implode(' ', $tokens) : '';
     }
 
     private static function key(string $value): string
