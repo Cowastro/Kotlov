@@ -645,11 +645,6 @@
                 <div class="tf-mini-cart-bottom box-empty_clear">
                     <div class="tf-mini-cart-bottom-wrap">
                         <div class="tf-mini-cart-total">
-                            <p class="online-order-mini-note mb-10" id="mini-cart-online-note" style="display:none;">Онлайн-скидка −3% применяется автоматически</p>
-                            <p class="d-flex justify-content-between mb-8" id="mini-cart-discount-row" style="display:none!important;">
-                                <span>Скидка</span>
-                                <strong id="mini-cart-discount"></strong>
-                            </p>
                             {{-- Промокод: всегда на виду, одной строкой --}}
                             <form class="mini-cart-ajax-form promo-inline mb-12" data-url="{{ route('cart.coupon') }}">
                                 @csrf
@@ -658,6 +653,11 @@
                                 <button type="submit" class="tf-btn btn-stroke">Применить</button>
                                 <p class="mini-cart-form-msg text-caption-01 cl-text-2 mt-4 mb-0" style="display:none;"></p>
                             </form>
+                            <p class="online-order-mini-note mb-10" id="mini-cart-online-note" style="display:none;">Онлайн-скидка −3% применяется автоматически</p>
+                            <p class="d-flex justify-content-between mb-8" id="mini-cart-discount-row" style="display:none!important;">
+                                <span>Скидка</span>
+                                <strong id="mini-cart-discount"></strong>
+                            </p>
                             <h5 class="text-total d-flex align-content-center justify-content-between">
                                 <span class="subtotal">Итого</span>
                                 <span class="total-price tf-totals-total-value">0.00 BYN</span>
