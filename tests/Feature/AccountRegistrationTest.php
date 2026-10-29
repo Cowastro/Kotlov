@@ -3,15 +3,24 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use App\Services\B2bAccessRequestNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
 
 class AccountRegistrationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Notification::fake();
+    }
 
     public function test_legal_entity_registration_creates_pending_b2b_application(): void
     {
@@ -44,7 +53,7 @@ class AccountRegistrationTest extends TestCase
             'privacy_accepted' => '1',
         ]);
 
-        $response->assertRedirect('/account');
+        $response->assertRedirect(route('verification.notice'));
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', [
             'email' => 'office@teplo.by',
@@ -64,9 +73,19 @@ class AccountRegistrationTest extends TestCase
             'legal_name' => 'Общество с ограниченной ответственностью «Теплосервис»',
             'legal_address' => 'г. Минск, ул. Тепловая, 10',
         ]);
-        $this->assertNotNull(
-            User::query()->where('email', 'office@teplo.by')->firstOrFail()->b2bClient?->counterparty_id,
+        $user = User::query()->where('email', 'office@teplo.by')->firstOrFail();
+        $this->assertNotNull($user->b2bClient?->counterparty_id);
+        $this->assertFalse($user->hasVerifiedEmail());
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
+
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)],
         );
+
+        $this->get($verificationUrl)->assertRedirect(route('account'));
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
     }
 
     public function test_registration_company_lookup_returns_official_company_data(): void
@@ -103,12 +122,44 @@ class AccountRegistrationTest extends TestCase
             'password' => 'secret1234',
             'password_confirmation' => 'secret1234',
             'privacy_accepted' => '1',
-        ])->assertRedirect('/account');
+        ])->assertRedirect(route('verification.notice'));
 
         $user = User::query()->where('email', 'anna@example.by')->firstOrFail();
         $this->assertSame('retail', $user->client_type->value);
         $this->assertFalse($user->b2b_approved);
         $this->assertDatabaseMissing('b2b_clients', ['user_id' => $user->id]);
+        Notification::assertSentTo($user, VerifyEmailNotification::class);
+    }
+
+    public function test_unverified_user_is_kept_out_of_account_until_email_is_confirmed(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'email' => 'pending@example.by',
+        ]);
+
+        $this->post(route('login.submit'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertRedirect(route('verification.notice'));
+
+        $this->get(route('account'))->assertRedirect(route('verification.notice'));
+    }
+
+    public function test_email_verification_notification_uses_kotlov_brand_template(): void
+    {
+        $user = User::factory()->unverified()->create([
+            'name' => 'Иван Петров',
+            'email' => 'brand@example.by',
+        ]);
+
+        $message = (new VerifyEmailNotification)->toMail($user);
+        $html = (string) $message->render();
+
+        $this->assertSame('Подтвердите email — KOTLOV.BY', $message->subject);
+        $this->assertStringContainsString('АКТИВАЦИЯ АККАУНТА', $html);
+        $this->assertStringContainsString('Активировать аккаунт', $html);
+        $this->assertStringContainsString('Иван Петров', $html);
+        $this->assertStringContainsString('KOTLOV.BY', $html);
     }
 
     public function test_registration_requires_explicit_privacy_consent(): void
@@ -191,7 +242,7 @@ class AccountRegistrationTest extends TestCase
             'privacy_accepted' => '1',
             'phone_verification_token' => $send->json('verification_token'),
             'phone_code' => '123456',
-        ])->assertRedirect('/account');
+        ])->assertRedirect(route('verification.notice'));
 
         $this->assertNotNull(User::query()->where('email', 'verified@example.by')->firstOrFail()->phone_verified_at);
     }

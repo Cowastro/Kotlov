@@ -25,6 +25,7 @@ use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\CrmMailAttachmentController;
 use App\Http\Controllers\CrmMailAttachmentPreviewController;
 use App\Http\Controllers\CrmMailPdfTextController;
+use App\Http\Controllers\EmailVerificationController;
 use App\Http\Controllers\FireplaceInstallationController;
 use App\Http\Controllers\HeatPumpInstallationController;
 use App\Http\Controllers\HeatPumpLandingController;
@@ -732,8 +733,19 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
-// ===== Личный кабинет =====
 Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
+        ->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+    Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])
+        ->middleware('throttle:3,10')
+        ->name('verification.send');
+});
+
+// ===== Личный кабинет =====
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/b2b/cabinet', [B2bCabinetController::class, 'show'])->name('b2b.cabinet');
     Route::put('/b2b/cabinet/profile', [B2bCabinetController::class, 'updateProfile'])->name('b2b.cabinet.profile');
     Route::post('/b2b/cabinet/carts', [B2bCabinetController::class, 'saveCart'])->name('b2b.cabinet.carts.store');

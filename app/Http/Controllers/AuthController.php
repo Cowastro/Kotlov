@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\ClientType;
 use App\Models\EmailSubscriber;
 use App\Models\User;
-use App\Services\B2bAccessRequestNotifier;
 use App\Services\B2bClientWorkflow;
 use App\Services\Crm\BelarusTaxpayerRegistry;
 use App\Services\Crm\CrmCounterpartyFromTaxpayerLookup;
@@ -14,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
 
@@ -23,7 +23,6 @@ class AuthController extends Controller
     public function register(
         Request $request,
         B2bClientWorkflow $b2bWorkflow,
-        B2bAccessRequestNotifier $b2bNotifier,
         PhoneVerificationService $phoneVerification,
         BelarusTaxpayerRegistry $taxpayerRegistry,
         CrmCounterpartyFromTaxpayerLookup $counterpartyFromLookup,
@@ -117,11 +116,16 @@ class AuthController extends Controller
             return $user;
         });
 
-        if ($isLegal) {
-            $b2bNotifier->notify($user->fresh());
-        }
-
         Auth::login($user);
+
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $exception) {
+            Log::error('Initial email verification notification failed.', [
+                'user_id' => $user->id,
+                'exception' => $exception->getMessage(),
+            ]);
+        }
 
         if ($request->boolean('subscribe')) {
             EmailSubscriber::firstOrCreate(
@@ -130,13 +134,8 @@ class AuthController extends Controller
             );
         }
 
-        $message = $isLegal
-            ? 'Аккаунт создан. Заявка на B2B-доступ отправлена менеджеру.'
-            : 'Добро пожаловать, '.$user->name.'!';
-
-        return redirect()->intended('/account')
-            ->with('success', $message)
-            ->with('open_tab', $isLegal ? 'b2b' : 'orders');
+        return to_route('verification.notice')
+            ->with('status', 'Письмо со ссылкой активации отправлено на '.$user->email.'.');
     }
 
     // ===== ВХОД =====
@@ -156,6 +155,11 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
+
+            if (! Auth::user()->hasVerifiedEmail()) {
+                return to_route('verification.notice')
+                    ->with('status', 'Подтвердите email, чтобы войти в аккаунт.');
+            }
 
             return redirect()->intended('/account')
                 ->with('success', 'Добро пожаловать, '.Auth::user()->name.'!');
