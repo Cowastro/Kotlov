@@ -78,8 +78,19 @@ class CreateChistyBeregCardsCommandTest extends TestCase
         $this->assertSame($card->id, $offer->fresh()->product_id);
         $this->assertSame('Задвижка чугунная 30ч6бр Ру 10 Ду 50', $card->name);
         $this->assertSame(140.98, (float) $card->price);
-        $this->assertContains(['key' => 'Страна производства', 'value' => 'Китай'], $card->specs);
+        $this->assertSame(['Материал корпуса', 'Страна производства'], array_column($card->specs, 'key'));
+        $this->assertContains('Китай', array_column($card->specs, 'value'));
         $this->assertNull($markdown->fresh()->product_id);
+
+        // A card made before the fix, with only its own two specs, gets the site specs once.
+        $card->forceFill(['specs' => [['key' => 'Страна производства', 'value' => 'Китай']]])->save();
+        $this->artisan('supplier:chisty-bereg-create', ['--refill-specs' => true, '--apply' => true])
+            ->expectsOutputToContain('metric.chisty_bereg_create.refill_refilled=1')
+            ->assertSuccessful();
+        $this->assertSame(['Материал корпуса', 'Страна производства'], array_column($card->fresh()->specs, 'key'));
+        $this->artisan('supplier:chisty-bereg-create', ['--refill-specs' => true])
+            ->expectsOutputToContain('metric.chisty_bereg_create.refill_due=0')
+            ->assertSuccessful();
 
         $this->artisan('supplier:chisty-bereg-create', ['--report' => true])
             ->expectsOutputToContain('metric.chisty_bereg_create.cards=1')

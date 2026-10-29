@@ -27,6 +27,7 @@ class CreateChistyBeregCardsCommand extends Command
     protected $signature = 'supplier:chisty-bereg-create
         {--group=* : Supplier categories (slug) instead of all heating ones}
         {--limit=0 : At most this many cards}
+        {--refill-specs : Cards made before the fix get the bereg.by specs (their two own specs had blocked them)}
         {--report : Counts of the cards already made: shown, hidden for a photo, with a description}
         {--apply : Create, link and fill the cards}';
 
@@ -58,6 +59,9 @@ class CreateChistyBeregCardsCommand extends Command
         }
         if ($this->option('report')) {
             return $this->report();
+        }
+        if ($this->option('refill-specs')) {
+            return $this->refillSpecs($bereg, $enricher);
         }
         $groups = (array) $this->option('group') ?: [...self::HEATING, ...self::PLUMBING];
         $categories = DB::table('categories')->pluck('id', 'slug');
@@ -96,10 +100,11 @@ class CreateChistyBeregCardsCommand extends Command
                 if ($page !== null) {
                     $enricher->enrichFromParsed($product, $url, [
                         'images' => [],
-                        'specs' => $page['specs'],
+                        'specs' => self::withOwnSpecs($page['specs'], (array) $product->specs),
                         'description' => $page['description'],
                     ], [
-                        'verified_images' => $page['images'], 'update_images' => $page['images'] !== [], 'update_specs' => true,
+                        // The card already has its maker code and country, so the site specs replace them merged in.
+                        'verified_images' => $page['images'], 'update_images' => $page['images'] !== [], 'update_specs' => true, 'replace_specs' => true,
                         'update_content' => $page['description'] !== '' || count($page['specs']) >= 3, 'update_service' => false,
                         'update_documents' => false, 'update_video' => false,
                     ]);
@@ -120,6 +125,61 @@ class CreateChistyBeregCardsCommand extends Command
         }
         foreach ($stats as $key => $value) {
             $this->line("metric.chisty_bereg_create.{$key}={$value}");
+        }
+
+        return self::SUCCESS;
+    }
+
+    /** The site specs with the card's own ones (maker code, country) the site has not. */
+    public static function withOwnSpecs(array $siteSpecs, array $ownSpecs): array
+    {
+        $keys = collect($siteSpecs)->map(fn ($spec) => mb_strtolower(trim((string) ($spec['key'] ?? ''))))->all();
+        foreach ($ownSpecs as $spec) {
+            if (is_array($spec) && ! in_array(mb_strtolower(trim((string) ($spec['key'] ?? ''))), $keys, true)) {
+                $siteSpecs[] = ['key' => (string) $spec['key'], 'value' => (string) ($spec['value'] ?? ''), 'unit' => (string) ($spec['unit'] ?? '')];
+            }
+        }
+
+        return array_values($siteSpecs);
+    }
+
+    private function refillSpecs(BeregSiteCatalog $bereg, ProductSourceEnricher $enricher): int
+    {
+        // A card tried once is marked on its offer, so a page without specs is not fetched again and again.
+        $offers = SupplierProduct::query()
+            ->whereHas('supplier', fn ($q) => $q->where('code', SyncChistyBeregCommand::SUPPLIER_CODE))
+            ->whereHas('product', fn ($q) => $q->where('sku', 'like', 'BEREG-%')->where('is_archived', false))
+            ->with('product')->orderBy('id')->get()
+            ->filter(fn (SupplierProduct $offer): bool => ! filled($offer->raw['specs_refilled_at'] ?? null) && count((array) $offer->product->specs) < 3)
+            ->values();
+        $stats = ['due' => $offers->count(), 'refilled' => 0, 'no_specs' => 0, 'page_not_found' => 0, 'errors' => 0];
+        $limit = (int) $this->option('limit');
+        if ($this->option('apply')) {
+            foreach ($offers->take($limit > 0 ? $limit : $offers->count()) as $offer) {
+                try {
+                    $product = $offer->product;
+                    $url = $bereg->find((string) $offer->supplier_article);
+                    $page = $url ? $bereg->page($url, (string) $offer->supplier_article) : null;
+                    if ($page === null) {
+                        $stats['page_not_found']++;
+                    } elseif (count($page['specs']) === 0) {
+                        $stats['no_specs']++;
+                    } else {
+                        $enricher->enrichFromParsed($product, $url, ['images' => [], 'specs' => self::withOwnSpecs($page['specs'], (array) $product->specs), 'description' => ''], [
+                            'update_images' => false, 'update_specs' => true, 'replace_specs' => true, 'update_content' => false,
+                            'update_service' => false, 'update_documents' => false, 'update_video' => false,
+                        ]);
+                        $stats['refilled']++;
+                    }
+                    $offer->forceFill(['raw' => array_merge((array) $offer->raw, ['specs_refilled_at' => now()->toDateTimeString()])])->save();
+                } catch (\Throwable $e) {
+                    $stats['errors']++;
+                    $this->warn($offer->supplier_article.': '.$e->getMessage());
+                }
+            }
+        }
+        foreach ($stats as $key => $value) {
+            $this->line("metric.chisty_bereg_create.refill_{$key}={$value}");
         }
 
         return self::SUCCESS;

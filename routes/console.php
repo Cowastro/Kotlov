@@ -161,6 +161,13 @@ Schedule::command('supplier:chisty-bereg-create --limit=120 --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-create.log'));
 
+// Cards made before the specs fix get the bereg.by specs; each card is tried once, so the run soon has nothing to do.
+Schedule::command('supplier:chisty-bereg-create --refill-specs --limit=150 --apply')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/chisty-bereg-refill-specs.log'));
+
 // Cards whose Чистый берег РРЦ equals опт get the market retail price (web research, a few cards at a time).
 Schedule::command('supplier:chisty-bereg-market-prices --limit=10 --apply')
     ->everyThirtyMinutes()
