@@ -108,8 +108,9 @@ class ChistyBeregPhotosCommand extends Command
     }
 
     /**
-     * The page is of this item: its maker code is on it, or its title has the brand and
-     * every size of ours («20», «3,4», «1/2»). A title with neither is too vague to trust.
+     * The page is of this item: its maker code is on it, or its title has every size of ours
+     * («20», «3,4», «1/2») and the brand — or, for an item without a brand, its marking
+     * («15кч19п»). A title with neither is too vague to trust.
      */
     public static function samePage(string $name, string $brand, string $code, string $url, array $page): bool
     {
@@ -122,7 +123,13 @@ class ChistyBeregPhotosCommand extends Command
         }
         $brand = $norm($brand);
         $sizes = preg_match_all('/\d+(?:[.,\/]\d+)?/u', preg_replace('/\s+(PN|Ру|Ду|DN)\s*/iu', ' ', $name) ?? $name, $m) ? array_unique($m[0]) : [];
-        if ($brand === '' || $sizes === [] || ! str_contains($norm($title.' '.urldecode($url)), $brand)) {
+        preg_match_all('/[\p{L}\p{N}-]+/u', mb_strtolower($name), $words);
+        $markings = array_filter(array_map($norm, $words[0]), fn (string $w): bool => mb_strlen($w) >= 4
+            && preg_match('/\p{L}/u', $w) && preg_match('/\d/u', $w) && ! preg_match('/^(pn|dn|ру|ду)\d+$/u', $w));
+        $named = $brand !== ''
+            ? str_contains($norm($title.' '.urldecode($url)), $brand)
+            : $markings !== [] && array_filter($markings, fn (string $w): bool => str_contains($norm($title.' '.urldecode($url)), $w)) !== [];
+        if ($sizes === [] || ! $named) {
             return false;
         }
         $titleSizes = preg_match_all('/\d+(?:[.,\/]\d+)?/u', $title, $t) ? array_map(fn ($s) => str_replace(',', '.', $s), $t[0]) : [];

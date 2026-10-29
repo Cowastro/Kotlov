@@ -23,6 +23,8 @@ class ChistyBeregPhotosCommandTest extends TestCase
         $this->assertTrue(ChistyBeregPhotosCommand::samePage('П/п труба PN20 20х3,4 PRO AQUA', 'PRO AQUA', '', 'https://shop.by/p/1', $page('Труба PRO AQUA PN20 20x3.4')));
         $this->assertFalse(ChistyBeregPhotosCommand::samePage('П/п труба PN20 20х3,4 PRO AQUA', 'PRO AQUA', '', 'https://shop.by/p/1', $page('Труба PRO AQUA PN20 25x4.2')));
         $this->assertFalse(ChistyBeregPhotosCommand::samePage('Муфта 20', '', '', 'https://shop.by/p/1', $page('Муфта 20')));
+        $this->assertTrue(ChistyBeregPhotosCommand::samePage('Вентиль запорный чугунный фланцевый 15кч19п Ру 16 Ду 25', '', '', 'https://shop.by/p/1', $page('Вентиль 15кч19п Ду 25 Ру 16')));
+        $this->assertFalse(ChistyBeregPhotosCommand::samePage('Вентиль запорный чугунный фланцевый 15кч19п Ру 16 Ду 25', '', '', 'https://shop.by/p/1', $page('Вентиль 15кч19п Ду 32 Ру 16')));
     }
 
     public function test_the_hidden_card_gets_the_photo_of_the_matching_page_once(): void
