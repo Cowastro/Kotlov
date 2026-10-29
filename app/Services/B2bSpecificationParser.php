@@ -27,7 +27,7 @@ class B2bSpecificationParser
         'unit' => ['ед', 'ед изм', 'единица', 'единица измерения', 'unit'],
     ];
 
-    /** @return array{status:string,items:int,matched:int,message:string} */
+    /** @return array{status:string,items:int,matched:int,suggested:int,message:string} */
     public function parse(B2bSpecification $specification): array
     {
         $attachments = $specification->attachments()->get();
@@ -41,7 +41,7 @@ class B2bSpecificationParser
             return $this->finish($specification, 'manual', 0, 0, 'PDF и изображения переданы менеджеру для ручной обработки.');
         }
 
-        [$skuMatches, $nameMatches] = $this->productIndexes();
+        [$skuMatches, $nameMatches, $products, $tokenIndex] = $this->productIndexes();
         $rows = [];
         $errors = [];
 
@@ -49,14 +49,16 @@ class B2bSpecificationParser
             try {
                 foreach ($this->readAttachment($attachment) as $item) {
                     [$productId, $confidence, $reason] = $this->match($item, $skuMatches, $nameMatches);
+                    $candidates = $productId ? [] : $this->candidates($item, $products, $tokenIndex);
                     $rows[] = [
                         ...$item,
                         'b2b_specification_id' => $specification->id,
                         'b2b_specification_attachment_id' => $attachment->id,
-                        'status' => $productId ? 'matched' : 'unmatched',
+                        'status' => $productId ? 'matched' : ($candidates === [] ? 'unmatched' : 'suggested'),
                         'product_id' => $productId,
-                        'confidence' => $confidence,
-                        'match_reason' => $reason,
+                        'confidence' => $confidence ?? ($candidates === [] ? null : round((float) $candidates[0]['score'] * 100, 2)),
+                        'match_reason' => $reason ?? ($candidates === [] ? null : 'fuzzy_name'),
+                        'candidates' => $candidates === [] ? null : json_encode($candidates, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
@@ -74,20 +76,24 @@ class B2bSpecificationParser
         });
 
         $matched = collect($rows)->where('status', 'matched')->count();
+        $suggested = collect($rows)->where('status', 'suggested')->count();
         if ($rows === []) {
             $message = $errors === []
                 ? 'В таблице не найдены строки с товарами. Менеджер обработает файл вручную.'
                 : 'Не удалось прочитать таблицу. Менеджер обработает файл вручную.';
 
-            return $this->finish($specification, 'failed', 0, 0, $message);
+            return $this->finish($specification, 'failed', 0, 0, $message, 0);
         }
 
         $message = 'Извлечено позиций: '.count($rows).", автоматически сопоставлено: {$matched}.";
+        if ($suggested > 0) {
+            $message .= " Вариантов для проверки менеджером: {$suggested}.";
+        }
         if ($errors !== []) {
             $message .= ' Не прочитаны файлы: '.implode(', ', $errors).'.';
         }
 
-        return $this->finish($specification, 'parsed', count($rows), $matched, $message);
+        return $this->finish($specification, 'parsed', count($rows), $matched, $message, $suggested);
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -170,24 +176,36 @@ class B2bSpecificationParser
         return [$bestRow, $best];
     }
 
-    /** @return array{array<string, int|null>, array<string, int|null>} */
+    /** @return array{array<string, int|null>, array<string, int|null>, array<int, array{id:int,sku:?string,name:string,normalized:string}>, array<string, array<int, int>>} */
     private function productIndexes(): array
     {
         $sku = [];
         $name = [];
+        $products = [];
+        $tokenIndex = [];
 
-        Product::query()->active()->notArchived()->select(['id', 'sku', 'name'])->chunkById(1000, function ($products) use (&$sku, &$name): void {
-            foreach ($products as $product) {
+        Product::query()->active()->notArchived()->select(['id', 'sku', 'name'])->chunkById(1000, function ($chunk) use (&$sku, &$name, &$products, &$tokenIndex): void {
+            foreach ($chunk as $product) {
                 if (($key = $this->normalize((string) $product->sku)) !== '') {
                     $sku[$key] = array_key_exists($key, $sku) ? null : (int) $product->id;
                 }
-                if (($key = $this->normalize((string) $product->name)) !== '') {
-                    $name[$key] = array_key_exists($key, $name) ? null : (int) $product->id;
+                $normalized = $this->normalize((string) $product->name);
+                if ($normalized !== '') {
+                    $name[$normalized] = array_key_exists($normalized, $name) ? null : (int) $product->id;
+                    $products[$product->id] = [
+                        'id' => (int) $product->id,
+                        'sku' => $product->sku,
+                        'name' => (string) $product->name,
+                        'normalized' => $normalized,
+                    ];
+                    foreach ($this->tokens($normalized) as $token) {
+                        $tokenIndex[$token][] = (int) $product->id;
+                    }
                 }
             }
         });
 
-        return [$sku, $name];
+        return [$sku, $name, $products, $tokenIndex];
     }
 
     /** @return array{?int, ?float, ?string} */
@@ -204,6 +222,82 @@ class B2bSpecificationParser
         }
 
         return [null, null, null];
+    }
+
+    /**
+     * Suggestions are manager-only hints. They never set product_id and can
+     * reach a customer cart only after an explicit staff decision.
+     *
+     * @param  array<int, array{id:int,sku:?string,name:string,normalized:string}>  $products
+     * @param  array<string, array<int, int>>  $tokenIndex
+     * @return array<int, array{product_id:int,sku:?string,name:string,score:float}>
+     */
+    private function candidates(array $item, array $products, array $tokenIndex): array
+    {
+        $sourceName = (string) ($item['source_name'] ?? '');
+        $normalized = $this->normalize($sourceName);
+        if (mb_strlen($normalized) < 8) {
+            return [];
+        }
+
+        $candidateIds = collect($this->tokens($normalized))
+            ->flatMap(fn (string $token): array => $tokenIndex[$token] ?? [])
+            ->countBy()
+            ->sortDesc()
+            ->keys()
+            ->take(300);
+
+        return $candidateIds
+            ->map(fn (int $id): ?array => $products[$id] ?? null)
+            ->filter()
+            ->filter(fn (array $product): bool => $this->hasCompatibleTechnicalValues($sourceName, $product['name']))
+            ->map(function (array $product) use ($normalized): array {
+                similar_text($normalized, $product['normalized'], $score);
+
+                return [
+                    'product_id' => $product['id'],
+                    'sku' => $product['sku'],
+                    'name' => $product['name'],
+                    'score' => round($score / 100, 4),
+                ];
+            })
+            ->filter(fn (array $candidate): bool => $candidate['score'] >= 0.62)
+            ->sortByDesc('score')
+            ->take(5)
+            ->values()
+            ->all();
+    }
+
+    /** @return array<int, string> */
+    private function tokens(string $normalized): array
+    {
+        return collect(explode(' ', $normalized))
+            ->filter(fn (string $token): bool => mb_strlen($token) >= 3)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function hasCompatibleTechnicalValues(string $source, string $candidate): bool
+    {
+        $sourceValues = $this->technicalValues($source);
+        $candidateValues = $this->technicalValues($candidate);
+
+        return $sourceValues === [] || $candidateValues === [] || $sourceValues === $candidateValues;
+    }
+
+    /** @return array<int, string> */
+    private function technicalValues(string $value): array
+    {
+        preg_match_all('/\d+(?:[.,]\d+)?/u', mb_strtolower($value), $matches);
+        $values = array_map(function (string $number): string {
+            $number = str_replace(',', '.', $number);
+
+            return str_contains($number, '.') ? rtrim(rtrim($number, '0'), '.') : $number;
+        }, $matches[0] ?? []);
+        sort($values, SORT_NATURAL);
+
+        return array_values(array_unique($values));
     }
 
     private function cell(array $row, ?int $column): string
@@ -231,8 +325,8 @@ class B2bSpecificationParser
         return trim((string) preg_replace('/[^\pL\pN]+/u', ' ', $value));
     }
 
-    /** @return array{status:string,items:int,matched:int,message:string} */
-    private function finish(B2bSpecification $specification, string $status, int $items, int $matched, string $message): array
+    /** @return array{status:string,items:int,matched:int,suggested:int,message:string} */
+    private function finish(B2bSpecification $specification, string $status, int $items, int $matched, string $message, int $suggested = 0): array
     {
         $specification->update([
             'parsing_status' => $status,
@@ -240,6 +334,6 @@ class B2bSpecificationParser
             'parsed_at' => now(),
         ]);
 
-        return compact('status', 'items', 'matched', 'message');
+        return compact('status', 'items', 'matched', 'suggested', 'message');
     }
 }

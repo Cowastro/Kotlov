@@ -10,6 +10,7 @@ use App\Models\IntegrationSource;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\B2bSpecificationItemDecision;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -221,6 +222,59 @@ class B2bSpecificationTest extends TestCase
             ->assertSessionHas('cart.'.$product->id.'.integration_product_id', $offer->id)
             ->assertSessionHas('cart.'.$product->id.'.quantity', 2)
             ->assertSessionHas('cart.'.$product->id.'.price', 100.0);
+    }
+
+    public function test_fuzzy_candidate_requires_manager_confirmation_and_rejects_conflicting_model_numbers(): void
+    {
+        Storage::fake('local');
+        [$user] = $this->b2bClient();
+        $category = Category::query()->create(['name' => 'Насосы', 'slug' => 'spec-candidate-pumps', 'is_active' => true]);
+        $candidate = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Насос циркуляционный Wilo Star-RS 25/6',
+            'slug' => 'wilo-star-rs-25-6-candidate',
+            'sku' => 'WILO-256',
+            'price' => 350,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $conflicting = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Насос циркуляционный Wilo Star-RS 25/4',
+            'slug' => 'wilo-star-rs-25-4-conflict',
+            'sku' => 'WILO-254',
+            'price' => 330,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $path = $this->spreadsheetFile([
+            ['Наименование', 'Количество'],
+            ['Циркуляционный насос Wilo Star RS 25-6 для отопления', 2],
+        ]);
+
+        try {
+            $this->actingAs($user)->post(route('b2b.cabinet.specifications.store'), [
+                'title' => 'Кандидат для проверки',
+                'files' => [new UploadedFile($path, 'candidate.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true)],
+            ])->assertRedirect();
+        } finally {
+            @unlink($path);
+        }
+
+        $item = B2bSpecification::query()->sole()->items()->sole();
+        $this->assertSame('suggested', $item->status);
+        $this->assertNull($item->product_id);
+        $this->assertSame($candidate->id, $item->topCandidate()['product_id']);
+        $this->assertNotContains($conflicting->id, collect($item->candidates)->pluck('product_id')->all());
+
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $this->assertTrue(app(B2bSpecificationItemDecision::class)->confirmTopCandidate($item, $manager));
+        $item->refresh();
+        $this->assertSame('matched', $item->status);
+        $this->assertSame($candidate->id, $item->product_id);
+        $this->assertSame($manager->id, $item->reviewed_by);
+        $this->assertSame('manager_candidate', $item->match_reason);
+        $this->assertNotNull($item->reviewed_at);
     }
 
     /** @return array{User, B2bClient} */
