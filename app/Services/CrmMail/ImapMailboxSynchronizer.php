@@ -157,6 +157,12 @@ class ImapMailboxSynchronizer
                         $subject,
                     );
 
+                    $previousClientThread = $thread ? null : $this->threadResolver->latestForClient(
+                        $mailbox,
+                        $fromEmail,
+                        $counterparty?->id,
+                    );
+
                     if (! $thread) {
                         $thread = CrmMailThread::withTrashed()->firstOrCreate(
                             [
@@ -169,8 +175,11 @@ class ImapMailboxSynchronizer
                                 'subject' => $subject,
                                 'participant_name' => $fromName,
                                 'participant_email' => $fromEmail,
-                                'status' => $isBlockedSender ? 'spam' : 'new',
-                                'priority' => 'normal',
+                                'assigned_user_id' => $previousClientThread?->assigned_user_id,
+                                'status' => $isBlockedSender
+                                    ? 'spam'
+                                    : ($previousClientThread ? 'waiting_manager' : 'new'),
+                                'priority' => $previousClientThread?->priority ?: 'normal',
                             ],
                         );
                     }
@@ -441,6 +450,7 @@ class ImapMailboxSynchronizer
             ENCQUOTEDPRINTABLE => quoted_printable_decode($body),
             default => $body,
         };
+
         return $this->toUtf8($body, $this->partCharset($part));
     }
 

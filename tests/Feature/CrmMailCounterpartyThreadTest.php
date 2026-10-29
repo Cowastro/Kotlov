@@ -57,6 +57,32 @@ class CrmMailCounterpartyThreadTest extends TestCase
         $this->assertNull($resolved);
     }
 
+    public function test_new_subject_can_inherit_the_existing_client_context_without_merging_threads(): void
+    {
+        [$mailbox, $counterparty] = $this->mailboxAndCounterparty();
+        $manager = User::factory()->create();
+        $thread = $this->thread($mailbox, $counterparty, 'buyer@example.com');
+        $thread->update([
+            'assigned_user_id' => $manager->id,
+            'sales_stage' => 'proposal_sent',
+        ]);
+
+        $resolver = app(CrmMailThreadResolver::class);
+
+        $this->assertNull($resolver->resolve(
+            $mailbox,
+            'buyer@example.com',
+            $counterparty->id,
+            null,
+            'Совершенно новый запрос',
+        ));
+        $this->assertTrue($resolver->latestForClient(
+            $mailbox,
+            'buyer@example.com',
+            $counterparty->id,
+        )?->is($thread));
+    }
+
     public function test_reply_subject_without_message_id_stays_in_the_matching_thread(): void
     {
         [$mailbox, $counterparty] = $this->mailboxAndCounterparty();

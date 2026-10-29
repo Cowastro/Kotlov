@@ -60,6 +60,34 @@ class CrmMailThreadResolver
         return $query->first();
     }
 
+    public function latestForClient(
+        CrmMailbox $mailbox,
+        string $participantEmail,
+        ?int $counterpartyId = null,
+    ): ?CrmMailThread {
+        $email = mb_strtolower(trim($participantEmail));
+
+        return CrmMailThread::query()
+            ->where('mailbox_id', $mailbox->id)
+            ->whereNotIn('status', ['spam', 'draft'])
+            ->where(function (Builder $query) use ($counterpartyId, $email): void {
+                if ($counterpartyId) {
+                    $query->where('crm_counterparty_id', $counterpartyId);
+
+                    if ($email !== '') {
+                        $query->orWhereRaw('LOWER(participant_email) = ?', [$email]);
+                    }
+
+                    return;
+                }
+
+                $query->whereRaw('LOWER(participant_email) = ?', [$email]);
+            })
+            ->orderByDesc('last_message_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
     private function normalizeSubject(string $subject): string
     {
         $subject = mb_strtolower(trim($subject));

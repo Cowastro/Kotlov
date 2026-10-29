@@ -5,9 +5,11 @@ namespace App\Filament\Resources\CrmCounterparties\Pages;
 use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Models\CrmCounterparty;
+use App\Services\Crm\CrmClientTimeline;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Collection;
 
 class ViewCrmCounterparty extends ViewRecord
 {
@@ -41,6 +43,12 @@ class ViewCrmCounterparty extends ViewRecord
             'orders',
             'externalIdentities',
         ]);
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    public function getClientTimeline(): Collection
+    {
+        return app(CrmClientTimeline::class)->for($this->record, auth()->user());
     }
 
     protected function getHeaderActions(): array

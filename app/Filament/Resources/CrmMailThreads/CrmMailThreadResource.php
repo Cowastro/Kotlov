@@ -21,6 +21,7 @@ use App\Models\CrmMailThread;
 use App\Models\User;
 use App\Services\CommercialDocuments\QuickCommercialOfferSaver;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
+use App\Services\CrmMail\CrmMailClientContext;
 use App\Services\CrmMail\CrmMailMessagePreview;
 use App\Services\CrmMail\CrmMailSender;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
@@ -160,14 +161,19 @@ class CrmMailThreadResource extends Resource
                         ? 'mailto:'.$record->participant_email
                         : null)
                     ->color(fn (CrmMailThread $record): string => $record->hasValidRecipient() ? 'primary' : 'danger'),
-                TextEntry::make('counterparty.name')->label('Контрагент CRM')->placeholder('Новый контакт'),
+                TextEntry::make('counterparty.name')->label('Контрагент CRM')->placeholder('Новый контакт')
+                    ->url(fn (CrmMailThread $record): ?string => $record->counterparty
+                        ? CrmCounterpartyResource::getUrl('view', ['record' => $record->counterparty])
+                        : null)
+                    ->color('primary'),
                 TextEntry::make('assignedUser.name')->label('Ответственный')->placeholder('Не назначен'),
                 TextEntry::make('status')->label('Статус')->badge()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => static::statusColor($state)),
                 TextEntry::make('priority')->label('Приоритет')->badge()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::PRIORITIES[$state] ?? $state),
-                TextEntry::make('sales_stage')->label('Потенциальная сделка')->badge()
+                TextEntry::make('client_sales_stage')->label('Сделка клиента')->badge()
+                    ->state(fn (CrmMailThread $record): ?string => static::effectiveSalesStage($record))
                     ->placeholder('Не отмечена')
                     ->formatStateUsing(fn (?string $state): string => CrmMailThread::SALES_STAGES[$state] ?? (string) $state)
                     ->color(fn (?string $state): string => static::salesStageColor($state)),
@@ -192,10 +198,22 @@ class CrmMailThreadResource extends Resource
                     ->color('primary'),
                 TextEntry::make('manager_note')->label('Внутренняя заметка')->placeholder('Не заполнена')->columnSpanFull(),
                 TextEntry::make('follow_up_note')->label('Что напомнить')->placeholder('Не заполнено')->columnSpanFull(),
+                TextEntry::make('client_history')
+                    ->label('История клиента')
+                    ->state(fn (CrmMailThread $record): string => app(CrmMailClientContext::class)->historySummary($record))
+                    ->helperText('Учитываются все темы писем этого контрагента или email.'),
+                TextEntry::make('previous_client_thread')
+                    ->label('Предыдущая переписка')
+                    ->state(fn (CrmMailThread $record): ?string => app(CrmMailClientContext::class)->previousThread($record)?->subject)
+                    ->placeholder('Других тем не найдено')
+                    ->url(fn (CrmMailThread $record): ?string => ($previous = app(CrmMailClientContext::class)->previousThread($record))
+                        ? static::getUrl('view', ['record' => $previous])
+                        : null)
+                    ->color('primary'),
                 TextEntry::make('linked_quote')
-                    ->label('Связанное КП')
+                    ->label('Последнее КП клиента')
                     ->state(fn (CrmMailThread $record): ?string => static::linkedQuote($record)?->reference(true))
-                    ->placeholder('Нет связанного КП')
+                    ->placeholder('КП этому клиенту не найдено')
                     ->url(fn (CrmMailThread $record): ?string => ($quote = static::linkedQuote($record))
                         ? CommercialDocumentResource::getUrl('view', ['record' => $quote])
                         : null)
@@ -276,6 +294,11 @@ class CrmMailThreadResource extends Resource
                     ->grow(),
                 TextColumn::make('counterparty.name')->label('CRM')->placeholder('Новый лид')
                     ->description(fn (CrmMailThread $record): ?string => $record->contact?->full_name)
+                    ->tooltip(fn (CrmMailThread $record): string => app(CrmMailClientContext::class)->historySummary($record))
+                    ->url(fn (CrmMailThread $record): ?string => $record->counterparty
+                        ? CrmCounterpartyResource::getUrl('view', ['record' => $record->counterparty])
+                        : null)
+                    ->color('primary')
                     ->limit(26)
                     ->width('8.5rem')
                     ->grow(false),
@@ -296,7 +319,8 @@ class CrmMailThreadResource extends Resource
                     ->color(fn (string $state): string => static::statusColor($state))
                     ->width('6.5rem')
                     ->grow(false),
-                TextColumn::make('sales_stage')->label('Сделка')->badge()->sortable()
+                TextColumn::make('client_sales_stage')->label('Сделка')->badge()
+                    ->state(fn (CrmMailThread $record): ?string => static::effectiveSalesStage($record))
                     ->placeholder('—')
                     ->formatStateUsing(fn (?string $state): string => CrmMailThread::SALES_STAGES[$state] ?? (string) $state)
                     ->color(fn (?string $state): string => static::salesStageColor($state))
@@ -325,6 +349,16 @@ class CrmMailThreadResource extends Resource
                     ->iconButton()
                     ->tooltip('Открыть письмо')
                     ->visible(fn (CrmMailThread $record): bool => ! $record->trashed()),
+                Action::make('open_client_history')
+                    ->label('Вся цепочка клиента')
+                    ->icon('heroicon-o-clock')
+                    ->iconButton()
+                    ->tooltip('Все письма, звонки, КП, заказы и действия по клиенту')
+                    ->color('primary')
+                    ->visible(fn (CrmMailThread $record): bool => $record->counterparty !== null)
+                    ->url(fn (CrmMailThread $record): string => CrmCounterpartyResource::getUrl('view', [
+                        'record' => $record->counterparty,
+                    ])),
                 Action::make('open_quote')
                     ->label('Открыть КП')
                     ->icon('heroicon-o-document-currency-dollar')
@@ -722,46 +756,47 @@ class CrmMailThreadResource extends Resource
 
     public static function commercialOfferIcon(CrmMailThread $record): ?string
     {
-        if ($record->commercialDocuments->contains(fn ($document): bool => $document->ai_assisted && $document->status === 'sent')) {
+        $documents = app(CrmMailClientContext::class)->commercialDocuments($record);
+
+        if ($documents->contains(fn ($document): bool => $document->ai_assisted && $document->status === 'sent')) {
             return 'heroicon-o-sparkles';
         }
 
-        return $record->commercialDocuments->contains(fn ($document): bool => $document->status === 'sent')
+        return $documents->contains(fn ($document): bool => $document->status === 'sent')
             ? 'heroicon-o-document-check'
             : null;
     }
 
     public static function linkedQuote(CrmMailThread $record): ?CommercialDocument
     {
-        $documents = $record->relationLoaded('commercialDocuments')
-            ? $record->commercialDocuments
-            : $record->commercialDocuments()->get();
+        return app(CrmMailClientContext::class)->latestQuote($record);
+    }
 
-        return $documents
-            ->where('type', 'quote')
-            ->where('status', '!=', 'cancelled')
-            ->sortByDesc(fn (CommercialDocument $document): array => [
-                (int) ($document->revision_number ?: 1),
-                $document->id,
-            ])
-            ->first();
+    public static function effectiveSalesStage(CrmMailThread $record): ?string
+    {
+        return app(CrmMailClientContext::class)->effectiveSalesStage($record);
     }
 
     public static function commercialOfferIconColor(CrmMailThread $record): string
     {
-        return $record->commercialDocuments->contains(fn ($document): bool => $document->ai_assisted && $document->status === 'sent')
+        return app(CrmMailClientContext::class)->commercialDocuments($record)
+            ->contains(fn ($document): bool => $document->ai_assisted && $document->status === 'sent')
             ? 'primary'
             : 'success';
     }
 
     public static function commercialOfferTooltip(CrmMailThread $record): ?string
     {
-        if ($record->commercialDocuments->contains(fn ($document): bool => $document->ai_assisted && $document->status === 'sent')) {
-            return 'КП подготовлено с помощью ИИ и отправлено клиенту';
+        $documents = app(CrmMailClientContext::class)->commercialDocuments($record);
+        $isFromAnotherThread = static::linkedQuote($record)?->crm_mail_thread_id !== $record->id;
+        $historySuffix = $isFromAnotherThread ? ' в другой переписке этого клиента' : '';
+
+        if ($documents->contains(fn ($document): bool => $document->ai_assisted && $document->status === 'sent')) {
+            return 'КП подготовлено с помощью ИИ и отправлено клиенту'.$historySuffix;
         }
 
-        return $record->commercialDocuments->contains(fn ($document): bool => $document->status === 'sent')
-            ? 'Коммерческое предложение отправлено'
+        return $documents->contains(fn ($document): bool => $document->status === 'sent')
+            ? 'Коммерческое предложение отправлено'.$historySuffix
             : null;
     }
 

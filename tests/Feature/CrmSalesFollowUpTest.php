@@ -2,14 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\CrmCounterparties\Pages\ViewCrmCounterparty;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\CrmMailThreads\Pages\ListCrmMailThreads;
 use App\Filament\Resources\CrmMailThreads\Pages\ViewCrmMailThread;
 use App\Models\CommercialDocument;
+use App\Models\CrmCounterparty;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailThread;
 use App\Models\User;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
+use App\Services\Crm\CrmClientTimeline;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
@@ -131,6 +134,86 @@ class CrmSalesFollowUpTest extends TestCase
             ->set('activeTab', 'potential_deals')
             ->assertSee('КП отправлено')
             ->assertSee('Просрочено');
+    }
+
+    public function test_new_email_subject_shows_the_clients_previous_quote_and_deal_stage(): void
+    {
+        $counterparty = CrmCounterparty::query()->create([
+            'type' => 'organization',
+            'classification' => 'b2b_prospect',
+            'business_unit' => 'wholesale',
+            'status' => 'lead',
+            'name' => 'ООО «Мозырский лесозавод»',
+            'source' => 'email',
+        ]);
+        $mailbox = CrmMailbox::create([
+            'name' => 'KOTLOV',
+            'email' => 'sales-history@kotlov.by',
+            'username' => 'sales-history@kotlov.by',
+        ]);
+        $oldThread = CrmMailThread::query()->create([
+            'mailbox_id' => $mailbox->id,
+            'crm_counterparty_id' => $counterparty->id,
+            'thread_key' => hash('sha256', 'old-request'),
+            'participant_email' => 'client@example.com',
+            'subject' => 'Первый запрос',
+            'status' => 'waiting_customer',
+            'sales_stage' => 'proposal_sent',
+            'last_message_at' => now()->subDay(),
+        ]);
+        $newThread = CrmMailThread::query()->create([
+            'mailbox_id' => $mailbox->id,
+            'crm_counterparty_id' => $counterparty->id,
+            'thread_key' => hash('sha256', 'new-request'),
+            'participant_email' => 'client@example.com',
+            'subject' => 'Заявка Гидравлический разделитель',
+            'status' => 'waiting_manager',
+            'last_message_at' => now(),
+        ]);
+        $oldThread->messages()->create([
+            'mailbox_id' => $mailbox->id,
+            'direction' => 'outgoing',
+            'from_email' => 'sales@kotlov.by',
+            'subject' => 'Коммерческое предложение',
+            'text_body' => 'Направляем ранее подготовленное коммерческое предложение.',
+            'is_read' => true,
+            'received_at' => now()->subDay(),
+        ]);
+        $newThread->messages()->create([
+            'mailbox_id' => $mailbox->id,
+            'direction' => 'incoming',
+            'from_email' => 'client@example.com',
+            'subject' => 'Заявка Гидравлический разделитель',
+            'text_body' => 'Просим выставить новое предложение.',
+            'is_read' => false,
+            'received_at' => now(),
+        ]);
+        $quote = CommercialDocument::query()->create([
+            'number' => 'КП-HISTORY-00001',
+            'type' => 'quote',
+            'status' => 'sent',
+            'crm_mail_thread_id' => $oldThread->id,
+            'crm_counterparty_id' => $counterparty->id,
+            'issued_at' => today()->subDay(),
+        ]);
+
+        $this->assertTrue(CrmMailThreadResource::linkedQuote($newThread)?->is($quote));
+        $this->assertSame('proposal_sent', CrmMailThreadResource::effectiveSalesStage($newThread));
+        $this->assertSame('heroicon-o-document-check', CrmMailThreadResource::commercialOfferIcon($newThread));
+        $this->assertStringContainsString('другой переписке', CrmMailThreadResource::commercialOfferTooltip($newThread));
+
+        $timeline = app(CrmClientTimeline::class)->for($counterparty, null);
+        $this->assertTrue($timeline->contains(fn (array $event): bool => str_contains($event['title'], 'Входящее письмо')));
+        $this->assertTrue($timeline->contains(fn (array $event): bool => str_contains($event['title'], 'Исходящее письмо')));
+        $this->assertTrue($timeline->contains(fn (array $event): bool => $event['url_type'] === 'document'));
+
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        Livewire::actingAs($manager)
+            ->test(ViewCrmCounterparty::class, ['record' => $counterparty->getRouteKey()])
+            ->assertSeeText('Единая цепочка клиента')
+            ->assertSeeText('Входящее письмо')
+            ->assertSeeText('Исходящее письмо')
+            ->assertSeeText('КП-HISTORY-00001');
     }
 
     public function test_linked_quote_and_mail_thread_share_stage_reminder_and_required_reaction(): void

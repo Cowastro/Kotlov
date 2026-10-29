@@ -23,6 +23,14 @@
         'delivered' => 'success', 'confirmed', 'processing', 'shipped' => 'info',
         'cancelled' => 'danger', 'new' => 'warning', default => 'gray',
     };
+    $timeline = $this->getClientTimeline();
+    $timelineUrl = fn (array $event) => match ($event['url_type'] ?? null) {
+        'mail' => \App\Filament\Resources\CrmMailThreads\CrmMailThreadResource::getUrl('view', ['record' => $event['url_id']]),
+        'document' => \App\Filament\Resources\CommercialDocuments\CommercialDocumentResource::getUrl('view', ['record' => $event['url_id']]),
+        'order' => \App\Filament\Resources\Orders\OrderResource::getUrl('view', ['record' => $event['url_id']]),
+        'call' => \App\Filament\Resources\TelephonyCalls\TelephonyCallResource::getUrl('view', ['record' => $event['url_id']]),
+        default => null,
+    };
 @endphp
 
 <style>
@@ -75,6 +83,22 @@
     .crm-table tbody tr:last-child td { border-bottom: 0; }
     .crm-table-link { color: rgb(251,191,36); font-weight: 700; text-decoration: none; }
     .crm-table-number { text-align: right !important; white-space: nowrap; }
+    .crm-timeline { display: grid; padding: 2px 18px 8px; }
+    .crm-timeline-item { position: relative; display: grid; grid-template-columns: 34px minmax(0,1fr); gap: 12px; padding: 14px 0; }
+    .crm-timeline-item:not(:last-child)::before { content: ''; position: absolute; top: 45px; bottom: -3px; left: 16px; width: 1px; background: rgba(148,163,184,.2); }
+    .crm-timeline-icon { z-index: 1; display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid rgba(148,163,184,.2); border-radius: 50%; background: rgb(17,24,39); color: rgb(148,163,184); }
+    .crm-timeline-icon svg { width: 17px; height: 17px; }
+    .crm-timeline-icon[data-tone="warning"] { color: rgb(251,191,36); border-color: rgba(251,191,36,.35); }
+    .crm-timeline-icon[data-tone="info"], .crm-timeline-icon[data-tone="primary"] { color: rgb(96,165,250); border-color: rgba(96,165,250,.35); }
+    .crm-timeline-icon[data-tone="success"] { color: rgb(52,211,153); border-color: rgba(52,211,153,.35); }
+    .crm-timeline-icon[data-tone="danger"] { color: rgb(248,113,113); border-color: rgba(248,113,113,.35); }
+    .crm-timeline-main { min-width: 0; padding-top: 1px; }
+    .crm-timeline-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .crm-timeline-title { color: rgb(241,245,249); font-size: 13px; font-weight: 700; line-height: 1.4; }
+    .crm-timeline-title:hover { color: rgb(251,191,36); }
+    .crm-timeline-date { flex: 0 0 auto; color: rgb(100,116,139); font-size: 10px; white-space: nowrap; }
+    .crm-timeline-summary { margin-top: 5px; color: rgb(148,163,184); font-size: 12px; line-height: 1.5; }
+    .crm-timeline-meta { margin-top: 6px; color: rgb(100,116,139); font-size: 10px; }
     .crm-empty { display: grid; justify-items: center; gap: 7px; padding: 28px 18px; color: rgb(148,163,184); text-align: center; }
     .crm-empty svg { width: 28px; height: 28px; opacity: .65; }
     .crm-empty strong { color: rgb(203,213,225); font-size: 13px; }
@@ -162,6 +186,36 @@
                         <div class="crm-empty"><x-heroicon-o-user-plus/><strong>Контактных лиц пока нет</strong><span>Добавьте имя, должность и прямые контакты при следующем общении.</span></div>
                     @endforelse
                 </div>
+            </section>
+
+            <section class="crm-card" id="client-timeline">
+                <div class="crm-card-head"><x-heroicon-o-clock/>Единая цепочка клиента</div>
+                @if($timeline->isNotEmpty())
+                    <div class="crm-timeline">
+                        @foreach($timeline as $event)
+                            @php($eventUrl = $timelineUrl($event))
+                            <article class="crm-timeline-item">
+                                <div class="crm-timeline-icon" data-tone="{{ $event['tone'] }}">
+                                    <x-filament::icon :icon="$event['icon']" />
+                                </div>
+                                <div class="crm-timeline-main">
+                                    <div class="crm-timeline-top">
+                                        @if($eventUrl)
+                                            <a class="crm-timeline-title" href="{{ $eventUrl }}">{{ $event['title'] }}</a>
+                                        @else
+                                            <div class="crm-timeline-title">{{ $event['title'] }}</div>
+                                        @endif
+                                        <time class="crm-timeline-date">{{ $event['date']->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</time>
+                                    </div>
+                                    @if($event['summary'])<div class="crm-timeline-summary">{{ $event['summary'] }}</div>@endif
+                                    @if($event['meta'])<div class="crm-timeline-meta">{{ $event['meta'] }}</div>@endif
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="crm-empty"><x-heroicon-o-clock/><strong>История пока пуста</strong><span>Письма, звонки, КП, заказы и действия менеджеров будут собираться здесь одной цепочкой.</span></div>
+                @endif
             </section>
 
             <section class="crm-card">
