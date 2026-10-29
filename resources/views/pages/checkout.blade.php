@@ -365,7 +365,7 @@
                                     <p class="text-caption-01 cl-text-2">
                                         @if ($coupon['bundle']['active'])
                                             Комплектная скидка на дымоход −{{ number_format($coupon['bundle']['percent'], 0) }}% применена автоматически.
-                                        @elseif ($coupon['code'] === config('shop.online_order_discount.code', 'ONLINE3'))
+                                        @elseif ($coupon['code'] === config('shop.online_order_discount.code', 'ONLINE3') && \App\Services\CartCouponService::onlineDiscountIsPublic())
                                             Онлайн-скидка применена автоматически.
                                         @else
                                             Промокод {{ $coupon['code'] }} применён.

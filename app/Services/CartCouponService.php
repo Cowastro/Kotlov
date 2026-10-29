@@ -21,10 +21,8 @@ class CartCouponService
         $coupon = $normalizedCode !== null
             ? Coupon::query()->where('code', $normalizedCode)->first()
             : null;
-        // With the online discount (dumping mode) off, its code is not accepted either.
-        $valid = $coupon !== null
-            && ! ($this->isOnlineOrderDiscountCode($normalizedCode) && ! self::onlineDiscountIsPublic())
-            && $coupon->isValid($subtotal);
+        // Dumping mode off only stops advertising and auto-applying the online code: typed by hand it still works.
+        $valid = $coupon !== null && $coupon->isValid($subtotal);
         $base = min($subtotal, max(0, $discountBase ?? $subtotal));
         $discount = (float) ($valid
             ? min($base, round($coupon->calculateDiscount($base), 2))

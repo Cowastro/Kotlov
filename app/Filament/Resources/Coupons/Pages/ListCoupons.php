@@ -24,7 +24,7 @@ class ListCoupons extends ListRecords
                 ->requiresConfirmation()
                 ->modalHeading(fn (): string => CartCouponService::onlineDiscountIsPublic() ? 'Выключить демпинг?' : 'Включить демпинг −3%?')
                 ->modalDescription(fn (): string => CartCouponService::onlineDiscountIsPublic()
-                    ? 'Скидка −3% пропадёт с сайта: баннер, онлайн-цены на карточках и автоматическая скидка в корзине. Код ONLINE3 перестанет приниматься.'
+                    ? 'Скидка −3% пропадёт с сайта: баннер, онлайн-цены на карточках и автоматическая скидка в корзине. Код ONLINE3, введённый вручную, продолжит работать.'
                     : 'На сайте появятся баннер и онлайн-цены −3%, скидка сама применится в корзине. Тепловые насосы, рассрочка и товары по акции не участвуют, как раньше.')
                 ->action(function (): void {
                     $enabled = ! CartCouponService::onlineDiscountIsPublic();

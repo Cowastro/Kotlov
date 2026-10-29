@@ -196,7 +196,7 @@
                                     </div>
                                 </div>
 
-                                @if ($coupon['code'] === config('shop.online_order_discount.code', 'ONLINE3'))
+                                @if ($coupon['code'] === config('shop.online_order_discount.code', 'ONLINE3') && \App\Services\CartCouponService::onlineDiscountIsPublic())
                                     <div class="online-order-cart-note mb-20">
                                         <strong>Онлайн-скидка применена автоматически</strong>
                                         <p class="text-caption-01 cl-text-2 mt-4 mb-0">Онлайн-скидка применяется к участвующим в предложении товарам. Тепловые насосы не участвуют. Ничего вводить не нужно.</p>
