@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\B2bAccessRequestNotifier;
+use App\Services\NewRegistrationTelegramNotifier;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class EmailVerificationController extends Controller
     public function verify(
         EmailVerificationRequest $request,
         B2bAccessRequestNotifier $b2bNotifier,
+        NewRegistrationTelegramNotifier $registrationNotifier,
     ): RedirectResponse {
         $user = $request->user();
         $wasUnverified = ! $user->hasVerifiedEmail();
@@ -31,6 +33,10 @@ class EmailVerificationController extends Controller
 
         if ($wasUnverified && $user->b2bClient()->exists()) {
             $b2bNotifier->notify($user->fresh());
+        }
+
+        if ($wasUnverified) {
+            $registrationNotifier->send($user->fresh());
         }
 
         return to_route('account')->with('success', 'Email подтверждён. Аккаунт KOTLOV.BY активирован.');

@@ -71,6 +71,7 @@ return [
         'allow_in_tests' => (bool) env('TELEGRAM_ALLOW_IN_TESTS', false),
         'orders_chat_id' => env('TELEGRAM_ORDERS_CHAT_ID'),
         'contact_requests_chat_id' => env('TELEGRAM_CONTACT_REQUESTS_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
+        'registrations_chat_id' => env('TELEGRAM_REGISTRATIONS_CHAT_ID', env('TELEGRAM_CONTACT_REQUESTS_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID'))),
         'support_chat_id' => env('TELEGRAM_SUPPORT_CHAT_ID', env('TELEGRAM_CONTACT_REQUESTS_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID'))),
         'telephony_chat_id' => env('TELEGRAM_TELEPHONY_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
         'mail_chat_id' => env('TELEGRAM_MAIL_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
 use App\Services\B2bAccessRequestNotifier;
+use App\Services\NewRegistrationTelegramNotifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -39,6 +40,10 @@ class AccountRegistrationTest extends TestCase
         $notifier->shouldReceive('notify')->once()->withArgs(
             fn (User $user): bool => $user->email === 'office@teplo.by',
         );
+        $registrationNotifier = $this->mock(NewRegistrationTelegramNotifier::class);
+        $registrationNotifier->shouldReceive('send')->once()->withArgs(
+            fn (User $user): bool => $user->email === 'office@teplo.by' && $user->hasVerifiedEmail(),
+        )->andReturnTrue();
 
         $response = $this->post(route('register'), [
             '_form' => 'register',
