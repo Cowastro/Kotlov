@@ -19,12 +19,12 @@ class SortSectionProductsCommandTest extends TestCase
         $card = fn (string $name) => Product::query()->create(['category_id' => $root->id, 'name' => $name, 'slug' => 'test-'.md5($name), 'sku' => 'T-'.md5($name), 'price' => 10]);
         $wall = $card('Сплит-система Electrolux EACS-09HAV/N8');
         $mobile = $card('Мобильный кондиционер Electrolux EACM-09');
-        $unknown = $card('Royal Thermo RAFR 100');
+        $unknown = $card('Житомир КНС-2');
 
         $this->artisan('catalog:sort-section-products', ['--section' => ['klimat']])
             ->expectsOutputToContain("audit.sort_section.sorted=klimat:{$wall->id}:kondicionery:")
             ->expectsOutputToContain("audit.sort_section.sorted=klimat:{$mobile->id}:mobilnye-kondicionery:")
-            ->expectsOutputToContain("audit.sort_section.left=klimat:{$unknown->id}:royal-thermo-rafr-100")
+            ->expectsOutputToContain("audit.sort_section.left=klimat:{$unknown->id}:zitomir-kns-2")
             ->assertSuccessful();
         $this->assertSame($root->id, (int) $wall->fresh()->category_id);
 
