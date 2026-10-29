@@ -3937,3 +3937,29 @@ body.mobile-catalog-menu-is-open .ai-selector__assistance-menu { display: none !
     }
 
 }
+
+/* Page title: a long word in a category name («(гидроаккумуляторы)») must not widen the grid past the phone screen. */
+.main-page-title {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.main-page-title > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.main-page-title h1 {
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+.main-page-title .breadcrumbs {
+    flex-wrap: wrap;
+}
+
+@media (max-width: 575px) {
+    .section-page-title .main-page-title h1 {
+        font-size: 28px;
+        line-height: 1.2;
+    }
+}
