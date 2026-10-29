@@ -60,6 +60,15 @@
             <section class="b2b-cabinet-content">
                 @if ($section === 'overview')
                     <div class="b2b-cabinet-heading"><div><span>Обзор</span><h2>Рабочий стол</h2></div><p>Актуальная информация по вашей компании</p></div>
+                    <article class="b2b-profile-progress {{ $profileCompletion === 100 ? 'is-complete' : '' }}">
+                        <div class="b2b-profile-progress__copy">
+                            <span>{{ $profileCompletion === 100 ? 'Готово к документам' : 'Заполните реквизиты компании' }}</span>
+                            <strong>{{ $profileCompletion }}%</strong>
+                            <p>{{ $profileCompletion === 100 ? 'Данных достаточно для автоматического формирования счетов и договоров.' : 'После заполнения менеджер сможет быстрее готовить счета и договоры без уточняющих звонков.' }}</p>
+                            @if($profileMissing)<small>Не хватает: {{ implode(', ', array_slice($profileMissing, 0, 4)) }}{{ count($profileMissing) > 4 ? ' и ещё '.(count($profileMissing) - 4) : '' }}.</small>@endif
+                        </div>
+                        <div class="b2b-profile-progress__side"><div class="b2b-profile-progress__meter"><i style="width:{{ $profileCompletion }}%"></i></div><a href="{{ $sectionUrl('profile') }}">{{ $profileCompletion === 100 ? 'Проверить данные' : 'Дозаполнить реквизиты' }} →</a></div>
+                    </article>
                     <div class="b2b-cabinet-stats">
                         <a href="{{ $sectionUrl('orders') }}"><i class="icon icon-Package"></i><span>Заказы</span><strong>{{ $orders->total() }}</strong><small>на {{ number_format((float) $user->orders()->sum('total'), 2, ',', ' ') }} BYN</small></a>
                         <a href="{{ $sectionUrl('documents') }}"><i class="icon icon-FileText"></i><span>КП и счета</span><strong>{{ $documents->total() }}</strong><small>доступно в кабинете</small></a>
@@ -72,27 +81,46 @@
                     </div>
                 @elseif ($section === 'profile')
                     <div class="b2b-cabinet-heading"><div><span>Профиль</span><h2>Компания и реквизиты</h2></div><p>Эти данные используются в КП, счетах и договорах</p></div>
-                    <form method="POST" action="{{ route('b2b.cabinet.profile') }}" class="b2b-cabinet-form">@csrf @method('PUT')
-                        <h3>Основные данные</h3><div class="b2b-cabinet-form__grid">
-                            <label><span>Краткое название *</span><input name="company_name" value="{{ old('company_name', $client->company_name) }}" required></label>
-                            <label><span>Полное юридическое название</span><input name="legal_name" value="{{ old('legal_name', $counterparty?->legal_name) }}"></label>
-                            <label><span>УНП *</span><input name="unp" value="{{ old('unp', $client->unp) }}" required></label>
-                            <label><span>Контактное лицо *</span><input name="contact_name" value="{{ old('contact_name', $client->contact_name ?: $user->name) }}" required></label>
-                            <label><span>Телефон *</span><input name="contact_phone" value="{{ old('contact_phone', $client->contact_phone ?: $user->phone) }}" required></label>
-                            <label><span>Email *</span><input type="email" name="contact_email" value="{{ old('contact_email', $client->contact_email ?: $user->email) }}" required></label>
-                        </div>
-                        <h3>Адреса</h3><div class="b2b-cabinet-form__grid">
-                            <label><span>Юридический адрес</span><input name="legal_address" value="{{ old('legal_address', $counterparty?->legal_address) }}"></label>
-                            <label><span>Почтовый адрес</span><input name="postal_address" value="{{ old('postal_address', $counterparty?->postal_address) }}"></label>
-                        </div>
-                        <h3>Банк и подписант</h3><div class="b2b-cabinet-form__grid">
-                            <label><span>Банк</span><input name="bank_name" value="{{ old('bank_name', $counterparty?->bank_name) }}"></label>
-                            <label><span>БИК</span><input name="bank_bic" value="{{ old('bank_bic', $counterparty?->bank_bic) }}"></label>
-                            <label class="wide"><span>IBAN / расчётный счёт</span><input name="bank_iban" value="{{ old('bank_iban', $counterparty?->bank_iban) }}"></label>
-                            <label><span>ФИО подписанта</span><input name="authorized_representative" value="{{ old('authorized_representative', $counterparty?->authorized_representative) }}"></label>
-                            <label><span>Должность</span><input name="representative_position" value="{{ old('representative_position', $counterparty?->representative_position) }}"></label>
-                            <label class="wide"><span>Действует на основании</span><input name="authority_basis" value="{{ old('authority_basis', $counterparty?->authority_basis) }}" placeholder="Устава, доверенности…"></label>
-                        </div><button class="b2b-cabinet-primary" type="submit">Сохранить реквизиты</button>
+                    <article class="b2b-profile-progress {{ $profileCompletion === 100 ? 'is-complete' : '' }}">
+                        <div class="b2b-profile-progress__copy"><span>Готовность реквизитов</span><strong>{{ $profileCompletion }}%</strong><p>{{ $profileCompletion === 100 ? 'Все данные для счетов и договоров заполнены.' : 'Можно сохранять данные поэтапно. Поля со звёздочкой нужны для базовой карточки клиента.' }}</p></div>
+                        <div class="b2b-profile-progress__side"><div class="b2b-profile-progress__meter"><i style="width:{{ $profileCompletion }}%"></i></div>@if($profileMissing)<small>Осталось заполнить полей: {{ count($profileMissing) }}</small>@else<small>Реквизиты заполнены полностью</small>@endif</div>
+                    </article>
+                    <form method="POST" action="{{ route('b2b.cabinet.profile') }}" class="b2b-cabinet-form" data-b2b-profile data-company-lookup-url="{{ route('b2b.cabinet.company-lookup') }}">@csrf @method('PUT')
+                        <section class="b2b-form-section">
+                            <div class="b2b-form-section__head"><div><h3>Данные организации</h3><p>Введите УНП — название и юридический адрес заполнятся из реестра МНС.</p></div></div>
+                            <div class="b2b-cabinet-form__grid">
+                                <label><span>УНП *</span><div class="b2b-unp-row"><input name="unp" value="{{ old('unp', $client->unp) }}" inputmode="numeric" maxlength="9" required data-company-unp><button type="button" data-company-lookup>Заполнить по УНП</button></div><small data-company-lookup-status>Проверим 9 цифр в реестре и подставим доступные данные.</small></label>
+                                <label><span>Краткое название *</span><input name="company_name" value="{{ old('company_name', $client->company_name) }}" required data-company-short-name></label>
+                                <label class="wide"><span>Полное юридическое название</span><input name="legal_name" value="{{ old('legal_name', $counterparty?->legal_name) }}" data-company-legal-name></label>
+                                <label class="wide"><span>Юридический адрес</span><input name="legal_address" value="{{ old('legal_address', $counterparty?->legal_address) }}" data-company-legal-address></label>
+                                <label class="wide"><span>Почтовый адрес</span><input name="postal_address" value="{{ old('postal_address', $counterparty?->postal_address) }}"><small><button type="button" class="b2b-inline-action" data-copy-legal-address>Совпадает с юридическим адресом</button></small></label>
+                            </div>
+                        </section>
+                        <section class="b2b-form-section">
+                            <div class="b2b-form-section__head"><div><h3>Контактное лицо</h3><p>Кому менеджер направляет счета, договоры и информацию по заказам.</p></div></div>
+                            <div class="b2b-cabinet-form__grid">
+                                <label><span>Имя и фамилия *</span><input name="contact_name" value="{{ old('contact_name', $client->contact_name ?: $user->name) }}" autocomplete="name" required></label>
+                                <label><span>Телефон *</span><input type="tel" name="contact_phone" value="{{ old('contact_phone', $client->contact_phone ?: $user->phone) }}" autocomplete="tel" required></label>
+                                <label class="wide"><span>Email *</span><input type="email" name="contact_email" value="{{ old('contact_email', $client->contact_email ?: $user->email) }}" autocomplete="email" required></label>
+                            </div>
+                        </section>
+                        <section class="b2b-form-section">
+                            <div class="b2b-form-section__head"><div><h3>Банковские реквизиты</h3><p>Нужны для автоматического заполнения договоров и бухгалтерских документов.</p></div><span>Заполняются вручную</span></div>
+                            <div class="b2b-cabinet-form__grid">
+                                <label class="wide"><span>Наименование банка</span><input name="bank_name" value="{{ old('bank_name', $counterparty?->bank_name) }}" placeholder="Например, ОАО «Приорбанк»"></label>
+                                <label><span>BIC банка</span><input name="bank_bic" value="{{ old('bank_bic', $counterparty?->bank_bic) }}" maxlength="11" placeholder="PJCBBY2X" data-uppercase></label>
+                                <label><span>IBAN / расчётный счёт</span><input name="bank_iban" value="{{ old('bank_iban', $counterparty?->bank_iban) }}" maxlength="28" placeholder="BY00AAAA00000000000000000000" data-uppercase></label>
+                            </div>
+                        </section>
+                        <section class="b2b-form-section">
+                            <div class="b2b-form-section__head"><div><h3>Подписант</h3><p>Представитель организации, который подписывает договор.</p></div></div>
+                            <div class="b2b-cabinet-form__grid">
+                                <label><span>ФИО подписанта</span><input name="authorized_representative" value="{{ old('authorized_representative', $counterparty?->authorized_representative) }}" placeholder="Иванов Иван Иванович"></label>
+                                <label><span>Должность</span><input name="representative_position" value="{{ old('representative_position', $counterparty?->representative_position) }}" placeholder="Директор"></label>
+                                <label class="wide"><span>Действует на основании</span><input name="authority_basis" value="{{ old('authority_basis', $counterparty?->authority_basis) }}" placeholder="Устава или доверенности №…"></label>
+                            </div>
+                        </section>
+                        <div class="b2b-form-submit"><div><strong>Сохраните изменения</strong><span>Обновлённые данные сразу будут доступны вашему менеджеру.</span></div><button class="b2b-cabinet-primary" type="submit">Сохранить реквизиты</button></div>
                     </form>
                 @elseif ($section === 'carts')
                     <div class="b2b-cabinet-heading"><div><span>Покупки</span><h2>Сохранённые корзины</h2></div><p>Возвращайтесь к подборке с обновлением цен и остатков</p></div>
@@ -128,4 +156,94 @@ body.b2b-body{background:#f4f7fb}.b2b-cabinet *{box-sizing:border-box}.b2b-cabin
 @media(max-width:700px){.b2b-cabinet-topbar__inner,.b2b-cabinet-shell{padding:14px}.b2b-cabinet-topbar nav a{font-size:0}.b2b-cabinet-topbar nav a i,.b2b-cabinet-topbar nav a b{font-size:16px}.b2b-cabinet-welcome{padding:22px;display:block}.b2b-cabinet-welcome>a{display:inline-block;margin-top:15px}.b2b-cabinet-content{padding:18px}.b2b-cabinet-heading{display:block}.b2b-cabinet-heading p{margin-top:5px}.b2b-cabinet-stats,.b2b-cabinet-grid,.b2b-cabinet-form__grid{grid-template-columns:1fr}.b2b-cabinet-form label.wide{grid-column:auto}.b2b-save-current{grid-template-columns:1fr}.b2b-cabinet-list article{align-items:flex-start;display:block}.b2b-cabinet-actions,.b2b-cabinet-order-total{margin-top:12px;text-align:left}.b2b-reconciliation-filter{align-items:stretch;flex-direction:column}.b2b-reconciliation-filter label{width:100%}.b2b-reconciliation-sheet{padding:15px;overflow:auto}.b2b-reconciliation-sheet table{min-width:620px}}
 @media print{.b2b-cabinet-topbar,.b2b-cabinet-welcome,.b2b-cabinet-nav,.b2b-cabinet-heading,.b2b-reconciliation-filter,.footer{display:none!important}.b2b-cabinet-shell,.b2b-cabinet-content{padding:0;border:0}.b2b-cabinet-layout{display:block}.b2b-reconciliation-sheet{border:0}.b2b-cabinet-content>*:not(.b2b-reconciliation-sheet){display:none}}
 </style>
+@endpush
+
+@push('styles')
+<style>
+.b2b-profile-progress{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,340px);align-items:center;gap:26px;margin-bottom:20px;padding:20px;border:1px solid #f1d89b;border-radius:13px;background:#fffaf0}.b2b-profile-progress.is-complete{border-color:#bce8da;background:#f1fbf8}.b2b-profile-progress__copy>span{display:block;color:#9a6b00;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.b2b-profile-progress.is-complete .b2b-profile-progress__copy>span{color:#087453}.b2b-profile-progress__copy strong{display:block;margin-top:3px;color:#142338;font-size:28px;line-height:1}.b2b-profile-progress__copy p{margin:7px 0 0;color:#53657a}.b2b-profile-progress__copy small{display:block;margin-top:5px;color:#78889b}.b2b-profile-progress__side{display:grid;gap:9px}.b2b-profile-progress__side>a{justify-self:end;color:#0b8966;font-weight:800}.b2b-profile-progress__side>small{text-align:right;color:#78889b}.b2b-profile-progress__meter{height:9px;border-radius:99px;background:#e2e8ef;overflow:hidden}.b2b-profile-progress__meter i{display:block;height:100%;border-radius:inherit;background:#e8a619}.b2b-profile-progress.is-complete .b2b-profile-progress__meter i{background:#16b88b}
+.b2b-form-section{border:1px solid #e1e8f0;border-radius:13px;padding:20px;margin-bottom:16px}.b2b-form-section__head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:15px;margin-bottom:17px;border-bottom:1px solid #edf1f5}.b2b-cabinet-form .b2b-form-section h3{margin:0;color:#142338}.b2b-form-section__head p{margin:4px 0 0;color:#78889b;font-size:13px}.b2b-form-section__head>span{flex:0 0 auto;border-radius:99px;background:#f1f4f8;color:#65768a;padding:5px 9px;font-size:11px;font-weight:700}.b2b-cabinet-form__grid{gap:16px 18px}.b2b-cabinet-form input{height:46px;padding:0 13px;background:#fff;color:#142338}.b2b-cabinet-form label>span{font-weight:700}.b2b-cabinet-form label>small{display:block;min-height:18px;margin-top:6px;color:#78889b;font-size:12px;line-height:1.45}.b2b-cabinet-form label>small.is-success{color:#087453}.b2b-cabinet-form label>small.is-error{color:#b62635}.b2b-unp-row{display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:8px}.b2b-unp-row button{display:flex;align-items:center;justify-content:center;border:0;border-radius:9px;background:#132238;color:#fff;font-size:12px;font-weight:700;line-height:1.2}.b2b-unp-row button:disabled{opacity:.6;cursor:wait}.b2b-inline-action{border:0;background:transparent;color:#0b8966;padding:0;font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px}.b2b-form-submit{display:flex;align-items:center;justify-content:space-between;gap:20px;border-radius:13px;background:#eef8f5;padding:17px 20px}.b2b-form-submit div>*{display:block}.b2b-form-submit strong{color:#142338}.b2b-form-submit span{margin-top:3px;color:#617286;font-size:13px}.b2b-form-submit .b2b-cabinet-primary{margin:0;white-space:nowrap}
+@media(max-width:700px){.b2b-profile-progress{grid-template-columns:1fr;gap:16px}.b2b-profile-progress__side>a,.b2b-profile-progress__side>small{justify-self:start;text-align:left}.b2b-form-section{padding:16px}.b2b-form-section__head,.b2b-form-submit{align-items:stretch;display:block}.b2b-form-section__head>span{display:inline-block;margin-top:9px}.b2b-form-submit .b2b-cabinet-primary{width:100%;margin-top:14px}.b2b-unp-row{grid-template-columns:1fr}.b2b-unp-row button{height:42px}}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('[data-b2b-profile]');
+    if (!form) return;
+
+    const unp = form.querySelector('[data-company-unp]');
+    const lookupButton = form.querySelector('[data-company-lookup]');
+    const lookupStatus = form.querySelector('[data-company-lookup-status]');
+    const shortName = form.querySelector('[data-company-short-name]');
+    const legalName = form.querySelector('[data-company-legal-name]');
+    const legalAddress = form.querySelector('[data-company-legal-address]');
+    const postalAddress = form.querySelector('input[name="postal_address"]');
+    let lookupTimer = null;
+    let lastLookup = '';
+
+    function showLookupStatus(message, type) {
+        lookupStatus.textContent = message;
+        lookupStatus.classList.toggle('is-success', type === 'success');
+        lookupStatus.classList.toggle('is-error', type === 'error');
+    }
+
+    async function lookupCompany() {
+        const value = unp.value.replace(/\D/g, '').slice(0, 9);
+        unp.value = value;
+        if (value.length !== 9) {
+            showLookupStatus('Введите 9 цифр УНП.', 'error');
+            return;
+        }
+        if (lastLookup === value) return;
+
+        lookupButton.disabled = true;
+        lookupButton.textContent = 'Проверяем…';
+        showLookupStatus('Ищем организацию в реестре МНС…', '');
+        try {
+            const response = await fetch(form.dataset.companyLookupUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': form.querySelector('input[name="_token"]').value
+                },
+                body: JSON.stringify({unp: value})
+            });
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.message || 'Организация не найдена.');
+
+            const data = payload.data || {};
+            shortName.value = data.short_name || data.legal_name || shortName.value;
+            legalName.value = data.legal_name || legalName.value;
+            legalAddress.value = data.address || legalAddress.value;
+            lastLookup = value;
+            showLookupStatus('Организация найдена. Название и адрес заполнены.', 'success');
+        } catch (error) {
+            showLookupStatus((error.message || 'Не удалось проверить УНП.') + ' Заполните данные вручную.', 'error');
+        } finally {
+            lookupButton.disabled = false;
+            lookupButton.textContent = 'Заполнить по УНП';
+        }
+    }
+
+    unp.addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').slice(0, 9);
+        lastLookup = '';
+        clearTimeout(lookupTimer);
+        if (this.value.length === 9) lookupTimer = setTimeout(lookupCompany, 450);
+        else showLookupStatus('Проверим 9 цифр в реестре и подставим доступные данные.', '');
+    });
+    lookupButton.addEventListener('click', lookupCompany);
+    form.querySelector('[data-copy-legal-address]').addEventListener('click', function () {
+        postalAddress.value = legalAddress.value;
+        postalAddress.focus();
+    });
+    form.querySelectorAll('[data-uppercase]').forEach(function (input) {
+        input.addEventListener('input', function () {
+            this.value = this.value.toUpperCase().replace(/\s/g, '');
+        });
+    });
+});
+</script>
 @endpush

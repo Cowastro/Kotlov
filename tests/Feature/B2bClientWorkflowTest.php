@@ -26,7 +26,6 @@ class B2bClientWorkflowTest extends TestCase
         ]);
 
         $client = app(B2bClientWorkflow::class)->registerApplication($user);
-
         $this->assertSame('pending', $client->status);
         $this->assertSame('wholesale', $client->partner_type);
         $this->assertSame('ООО Партнёр', $client->company_name);
@@ -88,6 +87,20 @@ class B2bClientWorkflowTest extends TestCase
             'company_name' => 'ООО Отдельный B2B',
         ]);
         $client = app(B2bClientWorkflow::class)->registerApplication($user);
+        $counterparty = CrmCounterparty::query()->create([
+            'type' => 'organization',
+            'classification' => 'b2b_partner',
+            'business_unit' => 'wholesale',
+            'status' => 'active',
+            'source' => 'manual',
+            'name' => 'ООО Отдельный B2B',
+            'legal_name' => 'Общество с ограниченной ответственностью «Отдельный B2B»',
+            'unp' => '190000999',
+            'bank_name' => 'ОАО «Тестбанк»',
+            'bank_bic' => 'TESTBY2X',
+            'bank_iban' => 'BY00TEST00000000000000000000',
+        ]);
+        $client->update(['counterparty_id' => $counterparty->id]);
 
         $this->actingAs($admin)
             ->get(B2bClientResource::getUrl('index'))
@@ -98,6 +111,8 @@ class B2bClientWorkflowTest extends TestCase
             ->get(B2bClientResource::getUrl('edit', ['record' => $client]))
             ->assertOk()
             ->assertSee('Коммерческие условия')
+            ->assertSee('Реквизиты из личного кабинета')
+            ->assertSee('ОАО «Тестбанк»')
             ->assertSee('Аккаунт партнёра на сайте');
     }
 }

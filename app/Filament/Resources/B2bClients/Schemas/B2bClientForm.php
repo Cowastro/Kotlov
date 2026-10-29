@@ -6,6 +6,7 @@ use App\Enums\ClientType;
 use App\Models\B2bClient;
 use App\Models\IntegrationSource;
 use App\Models\User;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -102,6 +103,42 @@ class B2bClientForm
                         ->searchable()
                         ->preload()
                         ->helperText('Выбранные источники появятся в B2B-каталоге этого клиента. Пусто — не показывать ни один прайс.')
+                        ->columnSpanFull(),
+                ]),
+            Section::make('Реквизиты из личного кабинета')
+                ->description('Клиент заполняет эти данные в B2B-кабинете. Они используются при подготовке счетов и договоров.')
+                ->visible(fn (?B2bClient $record): bool => filled($record?->counterparty_id))
+                ->columns(2)
+                ->schema([
+                    Placeholder::make('counterparty_legal_name')
+                        ->label('Полное юридическое название')
+                        ->content(fn (?B2bClient $record): string => $record?->counterparty?->legal_name ?: 'Не заполнено')
+                        ->columnSpanFull(),
+                    Placeholder::make('counterparty_legal_address')
+                        ->label('Юридический адрес')
+                        ->content(fn (?B2bClient $record): string => $record?->counterparty?->legal_address ?: 'Не заполнено'),
+                    Placeholder::make('counterparty_postal_address')
+                        ->label('Почтовый адрес')
+                        ->content(fn (?B2bClient $record): string => $record?->counterparty?->postal_address ?: 'Не заполнено'),
+                    Placeholder::make('counterparty_bank_name')
+                        ->label('Банк')
+                        ->content(fn (?B2bClient $record): string => $record?->counterparty?->bank_name ?: 'Не заполнено')
+                        ->columnSpanFull(),
+                    Placeholder::make('counterparty_bank_bic')
+                        ->label('BIC')
+                        ->content(fn (?B2bClient $record): string => $record?->counterparty?->bank_bic ?: 'Не заполнено'),
+                    Placeholder::make('counterparty_bank_iban')
+                        ->label('IBAN')
+                        ->content(fn (?B2bClient $record): string => $record?->counterparty?->bank_iban ?: 'Не заполнено'),
+                    Placeholder::make('counterparty_representative')
+                        ->label('ФИО подписанта')
+                        ->content(fn (?B2bClient $record): string => $record?->counterparty?->authorized_representative ?: 'Не заполнено'),
+                    Placeholder::make('counterparty_position')
+                        ->label('Должность')
+                        ->content(fn (?B2bClient $record): string => $record?->counterparty?->representative_position ?: 'Не заполнено'),
+                    Placeholder::make('counterparty_authority_basis')
+                        ->label('Действует на основании')
+                        ->content(fn (?B2bClient $record): string => $record?->counterparty?->authority_basis ?: 'Не заполнено')
                         ->columnSpanFull(),
                 ]),
             Section::make('Заявка и внутренние заметки')

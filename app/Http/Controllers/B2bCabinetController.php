@@ -46,6 +46,7 @@ class B2bCabinetController extends Controller
             ->latest('contract_date')
             ->get();
         $savedCarts = $user->b2bSavedCarts()->latest('updated_at')->get();
+        [$profileCompletion, $profileMissing] = $this->profileCompletion($client, $counterparty, $user);
 
         $dateFrom = $this->date($request->input('date_from'), now()->startOfYear()->toDateString());
         $dateTo = $this->date($request->input('date_to'), now()->toDateString());
@@ -65,6 +66,7 @@ class B2bCabinetController extends Controller
 
         return view('pages.b2b.cabinet', compact(
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts',
+            'profileCompletion', 'profileMissing',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));
     }
@@ -74,21 +76,33 @@ class B2bCabinetController extends Controller
         $user = $request->user();
         abort_unless($user->isB2B(), 403);
 
+        $bankBic = mb_strtoupper(preg_replace('/\s+/', '', (string) $request->input('bank_bic')));
+        $bankIban = mb_strtoupper(preg_replace('/\s+/', '', (string) $request->input('bank_iban')));
+        $request->merge([
+            'unp' => preg_replace('/\D+/', '', (string) $request->input('unp')),
+            'bank_bic' => $bankBic !== '' ? $bankBic : null,
+            'bank_iban' => $bankIban !== '' ? $bankIban : null,
+        ]);
+
         $data = $request->validate([
             'company_name' => ['required', 'string', 'max:255'],
             'legal_name' => ['nullable', 'string', 'max:255'],
-            'unp' => ['required', 'string', 'max:50'],
+            'unp' => ['required', 'regex:/^\d{9}$/'],
             'contact_name' => ['required', 'string', 'max:255'],
             'contact_phone' => ['required', 'string', 'max:40'],
             'contact_email' => ['required', 'email', 'max:255'],
             'legal_address' => ['nullable', 'string', 'max:1000'],
             'postal_address' => ['nullable', 'string', 'max:1000'],
             'bank_name' => ['nullable', 'string', 'max:255'],
-            'bank_bic' => ['nullable', 'string', 'max:32'],
-            'bank_iban' => ['nullable', 'string', 'max:64'],
+            'bank_bic' => ['nullable', 'regex:/^[A-Z0-9]{8,11}$/'],
+            'bank_iban' => ['nullable', 'regex:/^BY[A-Z0-9]{26}$/'],
             'authorized_representative' => ['nullable', 'string', 'max:255'],
             'representative_position' => ['nullable', 'string', 'max:255'],
             'authority_basis' => ['nullable', 'string', 'max:255'],
+        ], [
+            'unp.regex' => 'УНП должен состоять из 9 цифр.',
+            'bank_bic.regex' => 'Проверьте BIC: требуется от 8 до 11 латинских букв и цифр.',
+            'bank_iban.regex' => 'Проверьте IBAN: белорусский счёт должен начинаться с BY и содержать 28 символов.',
         ]);
 
         DB::transaction(function () use ($user, $data): void {
@@ -170,6 +184,7 @@ class B2bCabinetController extends Controller
             $offer = $product ? $resolver->forProduct($product, $request->user()) : null;
             if (! $product || ! $offer || ! $resolver->canOrder($offer, $quantity)) {
                 $skipped++;
+
                 continue;
             }
 
@@ -278,5 +293,32 @@ class B2bCabinetController extends Controller
         $payments = (float) $orders->where('payment_status', 'paid')->sum('total');
 
         return $charges - $payments;
+    }
+
+    /** @return array{int, array<int, string>} */
+    private function profileCompletion($client, ?CrmCounterparty $counterparty, $user): array
+    {
+        $fields = [
+            'Полное юридическое название' => $counterparty?->legal_name,
+            'УНП' => $client->unp,
+            'Юридический адрес' => $counterparty?->legal_address,
+            'Контактное лицо' => $client->contact_name ?: $user->name,
+            'Телефон' => $client->contact_phone ?: $user->phone,
+            'Email' => $client->contact_email ?: $user->email,
+            'Банк' => $counterparty?->bank_name,
+            'BIC банка' => $counterparty?->bank_bic,
+            'IBAN' => $counterparty?->bank_iban,
+            'ФИО подписанта' => $counterparty?->authorized_representative,
+            'Должность подписанта' => $counterparty?->representative_position,
+            'Основание полномочий' => $counterparty?->authority_basis,
+        ];
+        $missing = collect($fields)
+            ->filter(fn (mixed $value): bool => blank($value))
+            ->keys()
+            ->values()
+            ->all();
+        $completed = count($fields) - count($missing);
+
+        return [(int) round($completed / count($fields) * 100), $missing];
     }
 }

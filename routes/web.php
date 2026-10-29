@@ -748,6 +748,9 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/b2b/cabinet', [B2bCabinetController::class, 'show'])->name('b2b.cabinet');
     Route::put('/b2b/cabinet/profile', [B2bCabinetController::class, 'updateProfile'])->name('b2b.cabinet.profile');
+    Route::post('/b2b/cabinet/company-lookup', TaxpayerLookupController::class)
+        ->middleware('throttle:15,1')
+        ->name('b2b.cabinet.company-lookup');
     Route::post('/b2b/cabinet/carts', [B2bCabinetController::class, 'saveCart'])->name('b2b.cabinet.carts.store');
     Route::post('/b2b/cabinet/carts/{savedCart}/restore', [B2bCabinetController::class, 'restoreCart'])->name('b2b.cabinet.carts.restore');
     Route::delete('/b2b/cabinet/carts/{savedCart}', [B2bCabinetController::class, 'deleteCart'])->name('b2b.cabinet.carts.destroy');

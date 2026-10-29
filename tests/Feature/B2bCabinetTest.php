@@ -40,9 +40,13 @@ class B2bCabinetTest extends TestCase
             'contact_phone' => '+375291112233',
             'contact_email' => 'office@example.by',
             'legal_address' => 'г. Минск, ул. Тестовая, 1',
+            'postal_address' => '220000, г. Минск, а/я 1',
             'bank_name' => 'Тестовый банк',
-            'bank_bic' => 'TESTBY2X',
-            'bank_iban' => 'BY00TEST00000000000000000000',
+            'bank_bic' => 'pjcbby2x',
+            'bank_iban' => 'BY44 PJCB 3012 0211 4710 0000 0933',
+            'authorized_representative' => 'Иванов Иван Иванович',
+            'representative_position' => 'Директор',
+            'authority_basis' => 'Устава',
         ])->assertRedirect(route('b2b.cabinet', ['section' => 'profile']));
 
         $client->refresh();
@@ -51,13 +55,22 @@ class B2bCabinetTest extends TestCase
         $this->assertDatabaseHas('crm_counterparties', [
             'id' => $client->counterparty_id,
             'unp' => '190000001',
-            'bank_bic' => 'TESTBY2X',
+            'bank_bic' => 'PJCBBY2X',
+            'bank_iban' => 'BY44PJCB30120211471000000933',
+            'authorized_representative' => 'Иванов Иван Иванович',
+            'authority_basis' => 'Устава',
         ]);
         $this->assertDatabaseHas('users', [
             'id' => $partner->id,
             'name' => 'Иван Петров',
             'phone' => '+375291112233',
         ]);
+
+        $this->actingAs($partner->fresh())
+            ->get(route('b2b.cabinet', ['section' => 'profile']))
+            ->assertOk()
+            ->assertSeeText('100%')
+            ->assertSeeText('Все данные для счетов и договоров заполнены.');
     }
 
     public function test_partner_can_save_current_b2b_cart_and_cannot_delete_another_clients_cart(): void
