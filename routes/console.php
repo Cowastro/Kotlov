@@ -154,6 +154,13 @@ Schedule::command('supplier:sync-chisty-bereg --apply --if-new')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-sync.log'));
 
+// New heating offers of Чистый берег become cards (bereg.by photos and specs), a batch at a time.
+Schedule::command('supplier:chisty-bereg-create --limit=120 --apply')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/chisty-bereg-create.log'));
+
 Schedule::command('supplier:sync-cooper-doors --apply')
     ->dailyAt('07:50')
     ->timezone($supplierSyncTimezone)
