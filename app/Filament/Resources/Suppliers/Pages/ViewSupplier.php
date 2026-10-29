@@ -32,7 +32,8 @@ class ViewSupplier extends ViewRecord
                     FileUpload::make('file')
                         ->label('Файл xls')
                         ->required()
-                        ->acceptedFileTypes(['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/octet-stream'])
+                        // An old .xls is seen by the server as application/CDFV2 or x-ole-storage: the sheet check below decides.
+                        ->rules(['extensions:xls,xlsx'])
                         ->maxSize(30720)
                         ->disk('local')
                         ->directory('supplier-price-uploads'),
@@ -64,7 +65,7 @@ class ViewSupplier extends ViewRecord
                     FileUpload::make('file')
                         ->label('Файл xlsx')
                         ->required()
-                        ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])
+                        ->rules(['extensions:xls,xlsx'])
                         ->disk('local')
                         ->directory('supplier-price-uploads')
                         ->storeFileNamesIn('file_name'),
