@@ -14,10 +14,12 @@
         .catalog-section-card__title{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;color:#111;font-size:17px;font-weight:600;line-height:1.25}
         .catalog-section-card__title span{flex:0 0 auto;padding:1px 8px;border-radius:999px;background:#f1f1f1;color:#6b6b6b;font-size:11px;font-weight:600}
         .catalog-section-card__title:hover{color:var(--primary)}
-        .catalog-section-card__links{display:flex;flex-wrap:wrap;gap:4px 12px;margin:0;padding:0;list-style:none}
+        .catalog-section-card__links{display:flex;flex-wrap:wrap;gap:0 12px;max-height:calc(13px * 1.5 * 3);margin:0;padding:0;overflow:hidden;list-style:none}
         .catalog-section-card__links a{color:#555;font-size:13px;line-height:1.5}
         .catalog-section-card__links a:hover{color:var(--primary);text-decoration:underline}
         .catalog-section-card__more{display:inline-block;margin-top:8px;color:var(--primary);font-size:13px;font-weight:600}
+        .catalog-section-card__links li{white-space:nowrap}
+        @media(min-width:1440px){.catalog-sections{grid-template-columns:repeat(4,minmax(0,1fr))}}
         @media(max-width:1199px){.catalog-sections{grid-template-columns:repeat(2,minmax(0,1fr))}}
     </style>
 @endpush
