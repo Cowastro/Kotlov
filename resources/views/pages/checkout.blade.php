@@ -70,48 +70,32 @@
                             <input type="hidden" name="order_token" value="{{ \Illuminate\Support\Str::uuid() }}">
                             <x-form-protection />
 
-                            {{-- 1. Контактная информация --}}
+                            {{-- 1. Контакты: только имя и телефон; у вернувшегося покупателя — из прошлого заказа --}}
                             <div class="box-ip-checkout estimate-shipping">
-                                <div class="h5 title">Контактная информация</div>
+                                <div class="h5 title">Контакты</div>
                                 <div class="form-content">
-
                                     <div class="tf-grid-layout sm-col-2">
                                         <fieldset class="tf-field">
-                                            <label class="tf-lable fw-medium">
-                                                Имя и фамилия <span class="text-primary">*</span>
+                                            <label class="tf-lable fw-medium" for="customer-name">
+                                                Имя <span class="text-primary">*</span>
                                             </label>
-                                            <input type="text" name="customer_name"
+                                            <input type="text" name="customer_name" id="customer-name" autocomplete="name"
                                                 class="{{ $errors->has('customer_name') ? 'is-invalid' : '' }}"
-                                                value="{{ old('customer_name', $user->name ?? '') }}"
-                                                placeholder="Иванов Иван" required>
+                                                value="{{ old('customer_name', $user->name ?? $lastOrder?->customer_name ?? '') }}"
+                                                placeholder="Иван" required>
                                             @error('customer_name') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                         </fieldset>
                                         <fieldset class="tf-field">
-                                            <label class="tf-lable fw-medium">
+                                            <label class="tf-lable fw-medium" for="customer-phone">
                                                 Телефон <span class="text-primary">*</span>
                                             </label>
-                                            <input type="tel" name="customer_phone"
+                                            <input type="tel" name="customer_phone" id="customer-phone" autocomplete="tel" inputmode="tel"
                                                 class="{{ $errors->has('customer_phone') ? 'is-invalid' : '' }}"
-                                                value="{{ old('customer_phone', $user->phone ?? '') }}"
+                                                value="{{ old('customer_phone', $user->phone ?? $lastOrder?->customer_phone ?? '') }}"
                                                 placeholder="+375 (29) 000-00-00" required>
                                             @error('customer_phone') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                         </fieldset>
                                     </div>
-
-                                    <fieldset class="tf-field">
-                                        <label class="tf-lable fw-medium">Email для связи</label>
-                                        @if ($user)
-                                            <input type="email" value="{{ $user->email }}" readonly>
-                                            <input type="hidden" name="customer_email" value="{{ $user->email }}">
-                                            <div class="text-caption-01 cl-text-3 mt-4">Подтверждение заказа придёт на email вашего аккаунта: {{ $user->email }}.</div>
-                                        @else
-                                            <input type="email" name="customer_email"
-                                                value="{{ old('customer_email') }}"
-                                                placeholder="example@mail.by">
-                                            <div class="text-caption-01 cl-text-3 mt-4">Письмо-подтверждение получают только зарегистрированные покупатели. Для гостевого заказа менеджер свяжется по телефону.</div>
-                                        @endif
-                                    </fieldset>
-
                                 </div>
                             </div>
 
@@ -136,7 +120,7 @@
                                                         $methodPrice = \App\Http\Controllers\CheckoutController::calcDelivery($key, (float) $subtotal);
                                                     @endphp
                                                     <option value="{{ $key }}"
-                                                        {{ old('delivery_type', 'courier') === $key ? 'selected' : '' }}>
+                                                        {{ old('delivery_type', $lastOrder?->delivery_type ?: 'courier') === $key ? 'selected' : '' }}>
                                                         {{ $method['name'] }}
                                                         @if ($methodPrice === 0.0)
                                                             — Бесплатно
@@ -153,47 +137,35 @@
 
                                     @include('partials.own-transport-schedule', ['collapsible' => true])
 
+                                    {{-- Город и адрес; область заказа определяется по городу на сервере --}}
                                     <div id="delivery-address-fields">
                                         <div class="tf-grid-layout sm-col-2">
                                             <fieldset class="tf-field">
-                                                <label class="tf-lable fw-medium">
-                                                    Область / Регион <span class="text-primary delivery-required-mark">*</span>
-                                                </label>
-                                                <div class="tf-select">
-                                                    <select name="delivery_region" id="delivery-region"
-                                                        class="{{ $errors->has('delivery_region') ? 'is-invalid' : '' }}" required>
-                                                        <option value="">— выберите —</option>
-                                                        @foreach(['Минск','Минская область','Брестская область','Гродненская область','Витебская область','Могилёвская область','Гомельская область'] as $region)
-                                                            <option value="{{ $region }}"
-                                                                {{ old('delivery_region', session('cart_delivery_region')) === $region ? 'selected' : '' }}>
-                                                                {{ $region }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                @error('delivery_region') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
-                                            </fieldset>
-                                            <fieldset class="tf-field">
-                                                <label class="tf-lable fw-medium">
+                                                <label class="tf-lable fw-medium" for="delivery-city">
                                                     Город <span class="text-primary delivery-required-mark">*</span>
                                                 </label>
-                                                <input type="text" name="delivery_city" id="delivery-city"
+                                                <input type="text" name="delivery_city" id="delivery-city" list="delivery-city-list" autocomplete="address-level2"
                                                     class="{{ $errors->has('delivery_city') ? 'is-invalid' : '' }}"
-                                                    value="{{ old('delivery_city', session('cart_delivery_city')) }}"
+                                                    value="{{ old('delivery_city', session('cart_delivery_city') ?: $lastOrder?->delivery_city) }}"
                                                     placeholder="Минск" required>
+                                                <datalist id="delivery-city-list">
+                                                    @foreach ($deliveryCities as $deliveryCity)
+                                                        <option value="{{ $deliveryCity }}"></option>
+                                                    @endforeach
+                                                </datalist>
                                                 @error('delivery_city') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                             </fieldset>
+                                            <fieldset class="tf-field">
+                                                <label class="tf-lable fw-medium" for="delivery-address">
+                                                    Улица, дом, квартира <span class="text-primary delivery-required-mark">*</span>
+                                                </label>
+                                                <input type="text" name="delivery_address" id="delivery-address" autocomplete="street-address"
+                                                    class="{{ $errors->has('delivery_address') ? 'is-invalid' : '' }}"
+                                                    value="{{ old('delivery_address', $lastOrder?->delivery_address) }}"
+                                                    placeholder="ул. Ленина, 1, кв. 5" required>
+                                                @error('delivery_address') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
+                                            </fieldset>
                                         </div>
-                                        <fieldset class="tf-field">
-                                            <label class="tf-lable fw-medium">
-                                                Адрес доставки <span class="text-primary delivery-required-mark">*</span>
-                                            </label>
-                                            <input type="text" name="delivery_address" id="delivery-address"
-                                                class="{{ $errors->has('delivery_address') ? 'is-invalid' : '' }}"
-                                                value="{{ old('delivery_address') }}"
-                                                placeholder="ул. Ленина, д. 1, кв. 5" required>
-                                            @error('delivery_address') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
-                                        </fieldset>
                                     </div>
 
                                 </div>
@@ -245,53 +217,6 @@
                                     @endforeach
 
                                 </div>
-                            </div>
-
-                            {{-- 3а. Информационные блоки об оплате --}}
-                            <div class="box-ip-checkout" id="payment-info-accordion">
-                                <div class="h5 title">Как оплатить заказ</div>
-
-                                @php
-                                $paymentInfoSections = [
-                                    'order-process' => [
-                                        'title' => 'Как оформить заказ через сайт',
-                                        'body'  => <<<'HTML'
-                                            <ol class="payment-info-list">
-                                                <li>Добавьте товар в корзину.</li>
-                                                <li>Нажмите «Оформить заказ».</li>
-                                                <li>Заполните информацию о доставке и оплате.</li>
-                                                <li>Нажмите «Подтвердить заказ».</li>
-                                            </ol>
-                                            <p class="mt-12 cl-text-2">После оформления заказа наш менеджер свяжется с вами для уточнения и подтверждения условий заказа.</p>
-                                        HTML,
-                                    ],
-                                ];
-                                @endphp
-
-                                <div class="accordion payment-info-accordion" id="paymentInfoAccordion">
-                                    @foreach ($paymentInfoSections as $id => $section)
-                                    <div class="accordion-item border-0 border-bottom">
-                                        <h6 class="accordion-header m-0">
-                                            <button class="accordion-button collapsed px-0 py-12 fw-medium bg-transparent shadow-none"
-                                                type="button"
-                                                data-bs-toggle="collapse"
-                                                data-bs-target="#pi-{{ $id }}"
-                                                aria-expanded="false"
-                                                aria-controls="pi-{{ $id }}">
-                                                {{ $section['title'] }}
-                                            </button>
-                                        </h6>
-                                        <div id="pi-{{ $id }}"
-                                            class="accordion-collapse collapse"
-                                            data-bs-parent="#paymentInfoAccordion">
-                                            <div class="accordion-body px-0 pb-16 pt-4 text-body-1 cl-text-2">
-                                                {!! $section['body'] !!}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    @endforeach
-                                </div>
-
                             </div>
 
                             {{-- 3б. Реквизиты для счёта (только при invoice) --}}
@@ -354,16 +279,30 @@
                             </div>
                             @endif
 
-                            {{-- 4. Комментарий — подтягиваем cart_note из session --}}
-                            <div class="box-ip-checkout">
-                                <div class="h5 title">Комментарий к заказу</div>
-                                <div class="form-content">
+                            {{-- 4. Необязательное — свёрнуто: e-mail и комментарий (cart_note из session) --}}
+                            @php $checkoutExtrasOpen = $errors->has('customer_email') || filled(old('comment', session('cart_note'))); @endphp
+                            <details class="box-ip-checkout checkout-extras" @if ($checkoutExtrasOpen) open @endif>
+                                <summary class="h6 fw-medium" style="cursor:pointer;">Дополнительно: e-mail и комментарий</summary>
+                                <div class="form-content mt-12">
+                                    <fieldset class="tf-field">
+                                        <label class="tf-lable fw-medium" for="customer-email">Email</label>
+                                        @if ($user)
+                                            <input type="email" id="customer-email" value="{{ $user->email }}" readonly>
+                                            <input type="hidden" name="customer_email" value="{{ $user->email }}">
+                                            <div class="text-caption-01 cl-text-3 mt-4">Подтверждение заказа придёт на {{ $user->email }}.</div>
+                                        @else
+                                            <input type="email" name="customer_email" id="customer-email" autocomplete="email"
+                                                value="{{ old('customer_email') }}" placeholder="example@mail.by">
+                                            @error('customer_email') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
+                                        @endif
+                                    </fieldset>
                                     <fieldset class="tf-field d-grid">
-                                        <textarea name="comment" rows="3"
-                                            placeholder="Уточните удобное время доставки, этаж, подъезд...">{{ old('comment', session('cart_note')) }}</textarea>
+                                        <label class="tf-lable fw-medium" for="order-comment">Комментарий</label>
+                                        <textarea name="comment" id="order-comment" rows="3"
+                                            placeholder="Удобное время доставки, этаж, подъезд...">{{ old('comment', session('cart_note')) }}</textarea>
                                     </fieldset>
                                 </div>
-                            </div>
+                            </details>
 
                             <x-order-confirmation-notice class="mt-20" />
 
@@ -506,7 +445,7 @@
     var deliverySelect   = document.getElementById('delivery-type');
     var ownTransportSchedule = document.getElementById('own-transport-schedule');
     var addressFields    = document.getElementById('delivery-address-fields');
-    var addressInputs    = ['delivery-region', 'delivery-city', 'delivery-address'].map(function(id) { return document.getElementById(id); }).filter(Boolean);
+    var addressInputs    = ['delivery-city', 'delivery-address'].map(function(id) { return document.getElementById(id); }).filter(Boolean);
     var requiredMarks    = document.querySelectorAll('.delivery-required-mark');
     if (deliverySelect && addressFields) {
         function toggleAddress() {
@@ -520,6 +459,50 @@
         }
         deliverySelect.addEventListener('change', toggleAddress);
         toggleAddress();
+    }
+
+    // ── Способ доставки по городу: Минск — наш транспорт, город маршрута — по графику, иначе — транспортная
+    //    компания. Только пока покупатель сам не выбрал способ доставки.
+    var cityInput = document.getElementById('delivery-city');
+    var ownRouteCities = @json(collect(config('shop.delivery_methods.own_transport.routes', []))->pluck('destinations')->flatten()->map(fn ($c) => mb_strtolower($c))->values());
+    var deliveryChosenByHand = @json(old('delivery_type') !== null);
+    if (deliverySelect) {
+        deliverySelect.addEventListener('change', function (event) { if (event.isTrusted) deliveryChosenByHand = true; });
+    }
+    function deliveryForCity(city) {
+        var key = String(city || '').trim().toLowerCase().replace(/^(г\.|город)\s*/, '');
+        if (!key) return null;
+        if (key === 'минск') return 'courier';
+        return ownRouteCities.indexOf(key) !== -1 ? 'own_transport' : 'transport';
+    }
+    if (cityInput && deliverySelect) {
+        cityInput.addEventListener('change', function () {
+            var pick = deliveryForCity(cityInput.value);
+            if (deliveryChosenByHand || !pick || deliverySelect.value === 'pickup' || !deliverySelect.querySelector('option[value="' + pick + '"]')) return;
+            deliverySelect.value = pick;
+            deliverySelect.dispatchEvent(new Event('change'));
+        });
+    }
+
+    // ── Гость: контакты и адрес прошлого заказа хранятся в браузере и подставляются в пустые поля ──
+    var checkoutForm = document.querySelector('form.tf-checkout-cart-main');
+    var rememberKey = 'kotlov-checkout-contact';
+    var rememberIds = ['customer-name', 'customer-phone', 'delivery-city', 'delivery-address'];
+    try {
+        var remembered = JSON.parse(localStorage.getItem(rememberKey) || '{}');
+        rememberIds.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el && !el.value && remembered[id]) el.value = remembered[id];
+        });
+    } catch (e) {}
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', function () {
+            try {
+                var data = {};
+                rememberIds.forEach(function (id) { var el = document.getElementById(id); if (el) data[id] = el.value; });
+                localStorage.setItem(rememberKey, JSON.stringify(data));
+            } catch (e) {}
+        });
     }
 
     // ── Динамический пересчёт стоимости доставки ──

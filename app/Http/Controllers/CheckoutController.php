@@ -72,12 +72,18 @@ class CheckoutController extends Controller
         $onlineOrderDiscountExcludedByPayment = $onlineOrderDiscountCoupon
             && ! $couponService->onlineOrderDiscountAppliesToPayment($selectedPayment);
         $user = Auth::user();
+        // A returning customer finds the contacts and address of the last order already filled in.
+        $lastOrder = $user ? Order::query()->where('user_id', $user->id)->latest('id')
+            ->first(['customer_name', 'customer_phone', 'delivery_type', 'delivery_city', 'delivery_address']) : null;
+        $deliveryCities = self::deliveryCities();
 
         return view('pages.checkout', compact(
             'cart',
             'subtotal',
             'coupon',
             'user',
+            'lastOrder',
+            'deliveryCities',
             'selectedPayment',
             'onlineOrderDiscountCoupon',
             'onlineOrderDiscountExcludedByPayment',
@@ -220,7 +226,8 @@ class CheckoutController extends Controller
             'customer_phone' => ['required', 'string', 'max:30', 'regex:/^[\d\s\+\(\)\-]{7,}$/'],
             'customer_email' => ['nullable', 'email', 'max:255'],
             'delivery_type' => ['required', 'in:'.implode(',', array_keys(config('shop.delivery_methods', [])))],
-            'delivery_region' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
+            // The region is no longer asked: it follows from the city (self::regionOf).
+            'delivery_region' => ['nullable', 'string', 'max:255'],
             'delivery_city' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
             'delivery_address' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:500'],
             'payment_type' => ['required', 'in:'.implode(',', config('shop.checkout_payment_methods', []))],
@@ -237,7 +244,6 @@ class CheckoutController extends Controller
             'delivery_type.required' => 'Выберите способ доставки.',
             'payment_type.required' => 'Выберите способ оплаты.',
             'payment_type.in' => 'Выбранный способ оплаты сейчас недоступен.',
-            'delivery_region.required_unless' => 'Выберите область / регион доставки.',
             'delivery_city.required_unless' => 'Укажите город доставки.',
             'delivery_address.required_unless' => 'Укажите адрес доставки.',
             'company_name.required_if' => 'Введите название организации для оплаты по счёту.',
@@ -311,7 +317,8 @@ class CheckoutController extends Controller
                 'customer_email' => $request->customer_email,
 
                 'delivery_type' => $request->delivery_type,
-                'delivery_region' => $request->delivery_region,
+                'delivery_region' => $request->delivery_type === 'pickup' ? null
+                    : ($request->delivery_region ?: self::regionOf((string) $request->delivery_city)),
                 'delivery_city' => $request->delivery_city,
                 'delivery_address' => $request->delivery_address,
                 'delivery_price' => $deliveryPrice,
@@ -431,6 +438,37 @@ class CheckoutController extends Controller
      * Рассчитать стоимость доставки.
      * Возвращает float (0 = бесплатно) или null (уточняется / по тарифам).
      */
+    /** Region of a Belarusian city for the order card; null for a place the list does not know. */
+    public static function regionOf(string $city): ?string
+    {
+        $key = mb_strtolower(trim(preg_replace('/^(г\.|город|аг\.|д\.|п\.)\s*/u', '', trim($city)) ?? $city));
+        foreach (self::REGION_CITIES as $region => $cities) {
+            if (in_array($key, array_map('mb_strtolower', $cities), true)) {
+                return $region;
+            }
+        }
+
+        return null;
+    }
+
+    /** Cities offered as hints in the checkout: Minsk, regional centres and the own transport routes. */
+    public static function deliveryCities(): array
+    {
+        return collect(self::REGION_CITIES)->flatten()->unique()->values()->all();
+    }
+
+    private const REGION_CITIES = [
+        'Минск' => ['Минск'],
+        'Минская область' => ['Борисов', 'Солигорск', 'Молодечно', 'Жодино', 'Слуцк', 'Дзержинск', 'Смолевичи', 'Заславль', 'Фаниполь', 'Столбцы',
+            'Несвиж', 'Вилейка', 'Логойск', 'Марьина Горка', 'Червень', 'Березино', 'Крупки', 'Узда', 'Копыль', 'Клецк', 'Любань', 'Старые Дороги',
+            'Мядель', 'Воложин', 'Бегомль', 'Руденск', 'Мачулищи', 'Колодищи', 'Лесной', 'Ждановичи'],
+        'Брестская область' => ['Брест', 'Барановичи', 'Пинск', 'Кобрин', 'Береза', 'Ивацевичи', 'Лунинец', 'Пружаны', 'Дрогичин', 'Ляховичи', 'Ганцевичи', 'Столин', 'Жабинка', 'Иваново', 'Каменец', 'Малорита'],
+        'Гродненская область' => ['Гродно', 'Лида', 'Слоним', 'Волковыск', 'Новогрудок', 'Сморгонь', 'Ошмяны', 'Островец', 'Вороново', 'Зельва', 'Мосты', 'Щучин', 'Ивье', 'Дятлово', 'Кореличи', 'Свислочь', 'Берестовица', 'Скидель'],
+        'Витебская область' => ['Витебск', 'Орша', 'Новополоцк', 'Полоцк', 'Глубокое', 'Лепель', 'Докшицы', 'Ушачи', 'Чашники', 'Новолукомль', 'Сенно', 'Поставы', 'Браслав', 'Толочин', 'Городок', 'Миоры', 'Дубровно'],
+        'Могилёвская область' => ['Могилёв', 'Могилев', 'Бобруйск', 'Горки', 'Осиповичи', 'Кричев', 'Быхов', 'Шклов', 'Климовичи', 'Костюковичи', 'Белыничи', 'Кировск', 'Чаусы'],
+        'Гомельская область' => ['Гомель', 'Мозырь', 'Жлобин', 'Светлогорск', 'Речица', 'Калинковичи', 'Рогачёв', 'Рогачев', 'Добруш', 'Житковичи', 'Хойники', 'Петриков', 'Ельск', 'Наровля', 'Буда-Кошелёво'],
+    ];
+
     public static function calcDelivery(string $deliveryType, float $subtotal): ?float
     {
         $methods = config('shop.delivery_methods', []);
