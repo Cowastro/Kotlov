@@ -29,8 +29,8 @@ return [
         'kotly' => [
             ['title' => 'Котлы', 'icon' => 'icon-Lightning', 'description' => 'Газовые, электрические, твердотопливные и пеллетные котлы.',
                 'slugs' => ['gazovye', 'elektricheskie', 'tverdotoplivnye', 'kotly-na-pelletah']],
-            ['title' => 'Горелки', 'icon' => 'icon-Sparkle', 'description' => 'Пеллетные горелки для переоборудования котлов.',
-                'slugs' => ['pelletnye-gorelki']],
+            ['title' => 'Горелки и запчасти', 'icon' => 'icon-Sparkle', 'description' => 'Пеллетные горелки, бункеры, шнеки и запчасти для котлов.',
+                'slugs' => ['pelletnye-gorelki', 'zapchasti-dlya-kotlov']],
             ['title' => 'Автоматика и электропитание', 'icon' => 'icon-Devices', 'description' => 'Термостаты, датчики, стабилизаторы и ИБП для котла.',
                 'slugs' => ['regulyatory', 'datchiki', 'stabilizatory-napryazheniya', 'istochniki-besperebojnogo-pitaniya', 'avtotransformatory-latr', 'komplektuyushchie-stabilizatorov']],
             ['title' => 'Газовое оборудование', 'icon' => 'icon-ShieldCheck', 'description' => 'Сигнализаторы загазованности, газовые шланги, регуляторы и счётчики газа.',
