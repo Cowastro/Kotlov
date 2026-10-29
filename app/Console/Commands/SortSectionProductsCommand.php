@@ -24,17 +24,21 @@ class SortSectionProductsCommand extends Command
     private const RULES = [
         'komplektuyushhie-dlya-otopleniya' => [
             // Flue pipes of condensing boilers come before the Джилекс fittings: both have «otvod», «troinik».
-            ['/(^|-)f(80|130)-|kondensatootvodcik|reviziia-s-zagluskoi|xomut-zazimnoi|udlinenie-mf/', 'koaxial-dymoxod'],
+            // Str::slug transliterates «ш» as «s», «ж» as «z», «ц» as «c», «й» as «i»: «кран шаровой» is «kran-sarovoi».
+            ['/kondensatootvodcik|reviziia-s-zagluskoi/', 'kondensatootvody'],
+            ['/(^|-)f(80|130)-|xomut-zazimnoi|udlinenie-mf/', 'koaxial-dymoxod'],
             ['/^truba-pe(100)?-/', 'polietilenovye-truby'],
-            ['/^(mufta-komb|mufta-kombinirovannaya|mufta-soed|otvod-|troynik-|zaglushka-dlya-truby|flanets-|shtutser-)/', 'fitingi-dlya-pe-trub'],
             ['/stahlmann/', 'press-fitingi'],
-            ['/^(korpus-dlya-kartridzhnogo|vodozabornyy-filtr)/', 'filtry'],
+            ['/^(mufta-komb|mufta-kombinirovannaia|mufta-soed|otvod-|troinik-|zagluska-dlia-truby|flanec-|stucer-)/', 'fitingi-dlya-pe-trub'],
+            ['/^(korpus-dlia-kartridznogo|vodozabornyi-filtr)/', 'filtry'],
             ['/^(elektronasos|krot-)/', 'skvajinnye-nasosy'],
-            ['/^(shlang-|udlinitel-shlanga|uzh-|klapan-slivnoy|slivnoy-klapan|adapter-kolodeznyy|rele-davleniya|vyklyuchatel-poplavkovyy|termousadochnyy|demonstratsionnyy|klyuch-montazhnyy|rezbovoe-trubnoe|master-shteker)/', 'komplektuyushchie-dlya-nasosov'],
+            ['/^(slang-|udlinitel-slanga|uz-|klapan-slivnoi|slivnoi-klapan|adapter-kolodeznyi|rele-davleniia|vykliucatel-poplavkovyi|termousadocnyi|demonstracionnyi|kliuc-montaznyi|rezbovoe-trubnoe|master-steker)/', 'komplektuyushchie-dlya-nasosov'],
             ['/^(sani|sanicondens)/', 'drenajnyie'],
-            ['/^kran-(sharovoy|2-xodovoi)/', 'sharovye-krany'],
-            ['/^klapan-obratnyy/', 'obratnye-klapany'],
-            ['/^shibernaya-zadvizhka/', 'zadvizhki'],
+            ['/^kran-(sarovoi|2-xodovoi)/', 'sharovye-krany'],
+            ['/^klapan-obratnyi/', 'obratnye-klapany'],
+            ['/sibernaia-zadvizka/', 'zadvizhki'],
+            ['/^komplekt-iz-dvux/', 'komplekty-podklyucheniya'],
+            ['/termostaticeskii-element/', 'smesitelnye-klapany-i-uzly'],
             ['/^gruppy-avtonomnoi-cirkuliacii/', 'gruppy-bystrogo-montazha-kotelnyx'],
             ['/trexxodov|servoprivod|^privod-|esbe-ata|perexodniki-dlia-privodov|smesitelnyi-uzel/', 'smesitelnye-klapany-i-uzly'],
             ['/termometr|termomanometr|^manometr/', 'manometry-i-termometry'],
@@ -65,6 +69,7 @@ class SortSectionProductsCommand extends Command
             ['/^nasos-dab-evoplus/', 'tsirkulyatsionnyie'],
             ['/^nasos-dab-(genix|emkost)/', 'nasosnyie-stantsii'],
             ['/^aksessuar-dab/', 'komplektuyushchie-dlya-nasosov'],
+            ['/feka/', 'drenajnyie'],
         ],
         'vodonagrevateli' => [
             ['/kosvenn|kospel-sw/', 'kosvennye'],
@@ -77,10 +82,11 @@ class SortSectionProductsCommand extends Command
         ],
         'klimat' => [
             ['/mobiln|electrolux-eacm|ballu-bpac|shuft-sfpac/', 'mobilnye-kondicionery'],
-            ['/kondicioner|split-sistem|vnutrennii-blok|vnesnii-blok|napolno-potolocn|electrolux-eacs|toshiba-ras|shuft-sf(t|l|m)|ac-electric-ace|ballu-bsgri/', 'kondicionery'],
+            ['/kondicioner|split-sistem|vnutrennii-blok|vnesnii-blok|napolno-potolocn|electrolux-eacs|toshiba-ras|shuft-sf(t|l|m)|ac-electric-ace|ballu-bsgri|royal-thermo-rt(si|pi|b)-/', 'kondicionery'],
             ['/moika-vozdux|electrolux-ehaw|boneco-w/', 'mojki-vozdukha'],
-            ['/uvlaznitel|osusitel|ocistitel|filtr-dlia-ocistki|boneco|electrolux-ehu|ballu-uhb|electrolux-edl|ballu-bdi|electrolux-eafr|electrolux-eafe|electrolux-fap|smola-vodorodnaia/', 'uvlazhniteli-vozdukha'],
-            ['/ventiliator|pritocn|electrolux-ef[ft]|electrolux-etf|ballu-bf[ft]/', 'ventilyatory'],
+            ['/uvlaznitel|osusitel|ocistitel|filtr-dlia-ocistki|boneco|electrolux-ehu|ballu-uhb|electrolux-edl|ballu-bdi|electrolux-eafr|electrolux-eafe|electrolux-fap|smola-vodorodnaia|ballu-ap-/', 'uvlazhniteli-vozdukha'],
+            // Royal Thermo RAF* and Ballu BAF* are exhaust fans.
+            ['/ventiliator|pritocn|electrolux-ef[ft]|electrolux-etf|ballu-bf[ft]|royal-thermo-raf|ballu-baf/', 'ventilyatory'],
         ],
     ];
 
