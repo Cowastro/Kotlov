@@ -106,38 +106,10 @@
                                     ->filter();
                             @endphp
                             <div class="box-ip-checkout estimate-shipping">
-                                <div class="h5 title">Доставка</div>
+                                <div class="h5 title">Куда доставить</div>
                                 <div class="form-content">
 
-                                    <fieldset class="tf-field">
-                                        <label class="tf-lable fw-medium">
-                                            Способ доставки <span class="text-primary">*</span>
-                                        </label>
-                                        <div class="tf-select">
-                                            <select name="delivery_type" id="delivery-type" required>
-                                                @foreach ($checkoutDelivery as $key => $method)
-                                                    @php
-                                                        $methodPrice = \App\Http\Controllers\CheckoutController::calcDelivery($key, (float) $subtotal);
-                                                    @endphp
-                                                    <option value="{{ $key }}"
-                                                        {{ old('delivery_type', $lastOrder?->delivery_type ?: 'courier') === $key ? 'selected' : '' }}>
-                                                        {{ $method['name'] }}
-                                                        @if ($methodPrice === 0.0)
-                                                            — Бесплатно
-                                                        @elseif ($methodPrice !== null)
-                                                            — {{ number_format($methodPrice, 2, '.', ' ') }} BYN
-                                                        @else
-                                                            — стоимость уточняется
-                                                        @endif
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </fieldset>
-
-                                    @include('partials.own-transport-schedule', ['collapsible' => true])
-
-                                    {{-- Город и адрес; область заказа определяется по городу на сервере --}}
+                                    {{-- Сначала куда: город и адрес (область — по городу на сервере), затем способы, подходящие этому городу --}}
                                     <div id="delivery-address-fields">
                                         <div class="tf-grid-layout sm-col-2">
                                             <fieldset class="tf-field">
@@ -167,6 +139,35 @@
                                             </fieldset>
                                         </div>
                                     </div>
+
+                                    <fieldset class="tf-field">
+                                        <label class="tf-lable fw-medium">
+                                            Способ доставки <span class="text-primary">*</span>
+                                            <span class="text-caption-01 cl-text-2 fw-normal d-block" id="delivery-type-hint">Доступные способы для указанного города</span>
+                                        </label>
+                                        <div class="tf-select">
+                                            <select name="delivery_type" id="delivery-type" required>
+                                                @foreach ($checkoutDelivery as $key => $method)
+                                                    @php
+                                                        $methodPrice = \App\Http\Controllers\CheckoutController::calcDelivery($key, (float) $subtotal);
+                                                    @endphp
+                                                    <option value="{{ $key }}"
+                                                        {{ old('delivery_type', $lastOrder?->delivery_type ?: 'courier') === $key ? 'selected' : '' }}>
+                                                        {{ $method['name'] }}
+                                                        @if ($methodPrice === 0.0)
+                                                            — Бесплатно
+                                                        @elseif ($methodPrice !== null)
+                                                            — {{ number_format($methodPrice, 2, '.', ' ') }} BYN
+                                                        @else
+                                                            — стоимость уточняется
+                                                        @endif
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </fieldset>
+
+                                    @include('partials.own-transport-schedule', ['collapsible' => true])
 
                                 </div>
                             </div>
@@ -450,8 +451,9 @@
     if (deliverySelect && addressFields) {
         function toggleAddress() {
             var isPickup = deliverySelect.value === 'pickup';
-            addressFields.style.display = isPickup ? 'none' : '';
+            // The address stays visible above (it is asked first); for pickup it is just not required.
             addressInputs.forEach(function(el) { el.required = !isPickup; });
+            if (ownTransportSchedule) ownTransportSchedule.style.display = deliverySelect.value === 'own_transport' ? '' : 'none';
             requiredMarks.forEach(function(el) { el.style.display = isPickup ? 'none' : ''; });
             if (ownTransportSchedule && deliverySelect.value === 'own_transport') {
                 ownTransportSchedule.open = true;
@@ -475,13 +477,33 @@
         if (key === 'минск') return 'courier';
         return ownRouteCities.indexOf(key) !== -1 ? 'own_transport' : 'transport';
     }
-    if (cityInput && deliverySelect) {
-        cityInput.addEventListener('change', function () {
-            var pick = deliveryForCity(cityInput.value);
-            if (deliveryChosenByHand || !pick || deliverySelect.value === 'pickup' || !deliverySelect.querySelector('option[value="' + pick + '"]')) return;
-            deliverySelect.value = pick;
-            deliverySelect.dispatchEvent(new Event('change'));
+    // Ways that make sense for the city: Minsk — pickup and our transport; a route city — also by schedule
+    // and a carrier; any other city — pickup and a carrier. Unknown city: everything.
+    function allowedFor(city) {
+        var pick = deliveryForCity(city);
+        if (pick === 'courier') return ['pickup', 'courier'];
+        if (pick === 'own_transport') return ['pickup', 'own_transport', 'transport'];
+        if (pick === 'transport') return ['pickup', 'transport'];
+        return null;
+    }
+    function applyCity() {
+        var allowed = allowedFor(cityInput.value);
+        Array.prototype.forEach.call(deliverySelect.options, function (option) {
+            var ok = !allowed || allowed.indexOf(option.value) !== -1;
+            option.hidden = !ok;
+            option.disabled = !ok;
         });
+        var current = deliverySelect.querySelector('option[value="' + deliverySelect.value + '"]');
+        var pick = deliveryForCity(cityInput.value);
+        if ((current && current.disabled) || (!deliveryChosenByHand && pick && deliverySelect.value !== 'pickup')) {
+            if (pick && deliverySelect.querySelector('option[value="' + pick + '"]')) deliverySelect.value = pick;
+        }
+        deliverySelect.dispatchEvent(new Event('change'));
+    }
+    if (cityInput && deliverySelect) {
+        cityInput.addEventListener('change', applyCity);
+        cityInput.addEventListener('input', function () { if (deliveryForCity(cityInput.value) && cityInput.value.trim().length > 2) applyCity(); });
+        if (cityInput.value) applyCity();
     }
 
     // ── Гость: контакты и адрес прошлого заказа хранятся в браузере и подставляются в пустые поля ──
