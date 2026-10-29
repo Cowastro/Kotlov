@@ -153,8 +153,9 @@
                                                     @endphp
                                                     <option value="{{ $key }}"
                                                         {{ old('delivery_type', $lastOrder?->delivery_type ?: 'courier') === $key ? 'selected' : '' }}>
-                                                        {{ $method['name'] }}
-                                                        @if ($methodPrice === 0.0)
+                                                        {{ $method['checkout_name'] ?? $method['name'] }}
+                                                        @if ($key === 'pickup')
+                                                        @elseif ($methodPrice === 0.0)
                                                             — Бесплатно
                                                         @elseif ($methodPrice !== null)
                                                             — {{ number_format($methodPrice, 2, '.', ' ') }} BYN

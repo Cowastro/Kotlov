@@ -102,6 +102,8 @@ return [
     'delivery_methods' => [
         'pickup' => [
             'name' => 'Самовывоз',
+            // In the checkout: a fallback, the date is agreed with the manager.
+            'checkout_name' => 'Самовывоз со склада — дату согласует менеджер',
             'price' => 0,
             'free_from' => null,
             'address' => 'г. Минск, ул. Селицкого, д. 23/10',
@@ -250,10 +252,11 @@ return [
         : ['cash', 'card', 'bank_transfer', 'installment_6', 'invoice'],
 
     // Типы доставки доступные в форме checkout
+    // Delivery first; pickup from the warehouse last, never preselected.
     'checkout_delivery_methods' => [
-        'pickup',
         'courier',
         'own_transport',
         'transport',
+        'pickup',
     ],
 ];
