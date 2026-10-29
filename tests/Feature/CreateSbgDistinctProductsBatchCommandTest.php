@@ -11449,4 +11449,93 @@ XML;
             'is_active' => true,
         ]);
     }
+
+    public function test_it_creates_plain_obm_k_basalt_cardboard_as_two_thickness_variants(): void
+    {
+        $supplier = Supplier::query()->create([
+            'code' => 'sbg-obm-k',
+            'name' => 'ООО «СанБизнесГруп»',
+        ]);
+        $source = IntegrationSource::query()->create([
+            'code' => 'onec-sbg-obm-k',
+            'name' => '1С СанБизнесГруп',
+            'supplier_id' => $supplier->id,
+            'settings' => ['partner_name' => 'ООО «СанБизнесГруп»'],
+            'is_active' => true,
+            'update_stock' => true,
+        ]);
+        $category = Category::query()->create([
+            'name' => 'Огнезащитные плиты и листы',
+            'slug' => 'ognezashchitnye-plity-i-listy',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+        $this->assertTrue(Product::query()
+            ->where('slug', 'bazaltovyy-karton-1000x500x5-mm')
+            ->exists());
+
+        $five = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'obm-k-1000-600-5',
+            'external_code' => 'УТ-00006032',
+            'name' => 'ОБМ-К(1000*600*5мм)',
+            'price_byn' => 8.40,
+            'stock_quantity' => 101,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+        $ten = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'external_id' => 'obm-k-1000-600-10',
+            'external_code' => 'УТ-00006033',
+            'name' => 'ОБМ-К(1000*600*10мм)',
+            'price_byn' => 13.20,
+            'stock_quantity' => 39,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'unmatched',
+        ]);
+
+        $this->artisan('integration:create-sbg-distinct-products', [
+            '--batch' => 'unmatched-researched-20261029-ff',
+            '--apply' => true,
+        ])->assertSuccessful();
+
+        $five->refresh();
+        $ten->refresh();
+        $this->assertNotNull($five->product);
+        $this->assertNotNull($ten->product);
+        $this->assertNotSame($five->product_id, $ten->product_id);
+        $this->assertSame('matched', $five->match_status);
+        $this->assertSame('matched', $ten->match_status);
+        $this->assertSame('manual_created', $five->match_method);
+        $this->assertSame('manual_created', $ten->match_method);
+        $this->assertSame($category->id, $five->product->category_id);
+        $this->assertSame($category->id, $ten->product->category_id);
+        $this->assertNull($five->product->brand_id);
+        $this->assertNull($ten->product->brand_id);
+        $this->assertSame('8.40', $five->product->price);
+        $this->assertSame('13.20', $ten->product->price);
+        $this->assertSame('101', (string) $five->product->stock_qty);
+        $this->assertSame('39', (string) $ten->product->stock_qty);
+        $this->assertSame('5 мм', collect($five->product->specs)->firstWhere('key', 'Толщина')['value']);
+        $this->assertSame('10 мм', collect($ten->product->specs)->firstWhere('key', 'Толщина')['value']);
+        $this->assertSame('Без покрытия', collect($five->product->specs)->firstWhere('key', 'Покрытие')['value']);
+        $this->assertSame('Без покрытия', collect($ten->product->specs)->firstWhere('key', 'Покрытие')['value']);
+        $this->assertStringContainsString('обычный ОБМ-К', $five->product->content);
+        $this->assertStringContainsString('обычный ОБМ-К', $ten->product->content);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00006032',
+            'product_id' => $five->product_id,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('supplier_product_mappings', [
+            'supplier_code' => $source->matchingSupplierCode(),
+            'supplier_article' => 'УТ-00006033',
+            'product_id' => $ten->product_id,
+            'confidence' => 'manual',
+            'is_active' => true,
+        ]);
+    }
 }

@@ -6051,6 +6051,74 @@ class CreateSbgDistinctProductsBatchCommand extends Command
         ],
     ];
 
+    // ОБМ-К and foil-faced ОБМ-К-1Ф are different products. These two 1C
+    // rows are the plain, uncoated basalt cardboard in 5 and 10 mm variants.
+    // The client prices and live quantities come directly from the 1C feed.
+    private const BATCH_UNMATCHED_RESEARCHED_20261029_FF = [
+        'УТ-00006032' => [
+            'template_slug' => 'bazaltovyy-karton-1000x500x5-mm',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'force_brandless' => true,
+            'category_slug' => 'ognezashchitnye-plity-i-listy',
+            'fragments' => ['ОБМ-К', '1000', '600', '5мм'],
+            'name' => 'Базальтовый картон ОБМ-К 1000×600×5 мм',
+            'retail' => 8.40,
+            'images' => [
+                'https://dompechei.ru/upload/iblock/1c7/sf0cqs3yfij5emc1l7jb0esfek21bg7j.png',
+            ],
+            'source_url' => 'https://pech.pro/izolyaciya/ognezashita-i-teploizolyaciya/ognezashitnyj-bazaltovyj-material-obm-k-1000%2A600%2A5-tu-5769-002-38653408-2014',
+            'short' => 'Негорючий базальтовый картон ОБМ-К без фольги, лист 1000×600 мм толщиной 5 мм для теплоизоляции и огнезащиты.',
+            'content' => '<p><strong>Базальтовый картон ОБМ-К 1000×600×5 мм</strong> — листовой негорючий материал на основе базальтового супертонкого волокна. Применяется как тонкослойная теплоизоляция и огнезащита печей, каминов, отопительных приборов, трубопроводов и строительных конструкций.</p><p>Это обычный ОБМ-К <strong>без фольгированной обкладки</strong>. Материал необходимо защищать от прямого воздействия воды и монтировать с соблюдением проекта, пожарных расстояний и требований изготовителя оборудования.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Базальтовый картон'],
+                ['key' => 'Марка', 'value' => 'ОБМ-К'],
+                ['key' => 'Покрытие', 'value' => 'Без покрытия'],
+                ['key' => 'Материал', 'value' => 'Базальтовое супертонкое волокно'],
+                ['key' => 'Длина', 'value' => '1000 мм'],
+                ['key' => 'Ширина', 'value' => '600 мм'],
+                ['key' => 'Толщина', 'value' => '5 мм'],
+                ['key' => 'Площадь листа', 'value' => '0,6 м²'],
+                ['key' => 'Плотность', 'value' => '45–80 кг/м³'],
+                ['key' => 'Группа горючести', 'value' => 'НГ'],
+                ['key' => 'Температура эксплуатации', 'value' => 'от −180 до +750 °C'],
+                ['key' => 'Теплопроводность при 25 °C', 'value' => '0,04 Вт/(м·К)'],
+                ['key' => 'Стандарт', 'value' => 'ТУ 5769-002-38653408-2014'],
+            ],
+        ],
+        'УТ-00006033' => [
+            'template_slug' => 'bazaltovyy-karton-1000x500x5-mm',
+            'allow_unmatched' => true,
+            'allow_brandless' => true,
+            'force_brandless' => true,
+            'category_slug' => 'ognezashchitnye-plity-i-listy',
+            'fragments' => ['ОБМ-К', '1000', '600', '10мм'],
+            'name' => 'Базальтовый картон ОБМ-К 1000×600×10 мм',
+            'retail' => 13.20,
+            'images' => [
+                'https://dompechei.ru/upload/iblock/1c7/sf0cqs3yfij5emc1l7jb0esfek21bg7j.png',
+            ],
+            'source_url' => 'https://pech.pro/izolyaciya/ognezashita-i-teploizolyaciya/ognezashitnyj-bazaltovyj-material-obm-k-1000%2A600%2A10-tu-5769-002-38653408-2014',
+            'short' => 'Негорючий базальтовый картон ОБМ-К без фольги, лист 1000×600 мм толщиной 10 мм для теплоизоляции и огнезащиты.',
+            'content' => '<p><strong>Базальтовый картон ОБМ-К 1000×600×10 мм</strong> — листовой негорючий материал на основе базальтового супертонкого волокна. Применяется как тонкослойная теплоизоляция и огнезащита печей, каминов, отопительных приборов, трубопроводов и строительных конструкций.</p><p>Это обычный ОБМ-К <strong>без фольгированной обкладки</strong>. Материал необходимо защищать от прямого воздействия воды и монтировать с соблюдением проекта, пожарных расстояний и требований изготовителя оборудования.</p>',
+            'specs' => [
+                ['key' => 'Тип', 'value' => 'Базальтовый картон'],
+                ['key' => 'Марка', 'value' => 'ОБМ-К'],
+                ['key' => 'Покрытие', 'value' => 'Без покрытия'],
+                ['key' => 'Материал', 'value' => 'Базальтовое супертонкое волокно'],
+                ['key' => 'Длина', 'value' => '1000 мм'],
+                ['key' => 'Ширина', 'value' => '600 мм'],
+                ['key' => 'Толщина', 'value' => '10 мм'],
+                ['key' => 'Площадь листа', 'value' => '0,6 м²'],
+                ['key' => 'Плотность', 'value' => '45–80 кг/м³'],
+                ['key' => 'Группа горючести', 'value' => 'НГ'],
+                ['key' => 'Температура эксплуатации', 'value' => 'от −180 до +750 °C'],
+                ['key' => 'Теплопроводность при 25 °C', 'value' => '0,04 Вт/(м·К)'],
+                ['key' => 'Стандарт', 'value' => 'ТУ 5769-002-38653408-2014'],
+            ],
+        ],
+    ];
+
     public function handle(
         IntegrationProductCreator $creator,
         IntegrationProductMatchDecision $matchDecision,
@@ -6219,6 +6287,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'ole-pro-protect-review-20261015-fc' => self::BATCH_OLE_PRO_PROTECT_REVIEW_20261015_FC,
             'unmatched-researched-20261028-fd' => self::BATCH_UNMATCHED_RESEARCHED_20261028_FD,
             'unmatched-researched-20261028-fe' => self::BATCH_UNMATCHED_RESEARCHED_20261028_FE,
+            'unmatched-researched-20261029-ff' => self::BATCH_UNMATCHED_RESEARCHED_20261029_FF,
             default => null,
         };
 
