@@ -30,8 +30,8 @@
             </div>
 
             <div class="d-flex align-items-center gap-3">
-                <a href="tel:{{ $pCall1 ?? '+375293544041' }}" class="text-white">
-                    {{ $phone1 ?? '+375 (29) 354-40-41' }}
+                <a href="tel:{{ $pCall1 ?? '+375293777092' }}" class="text-white">
+                    {{ $phone1 ?? '+375 (29) 377-70-92' }}
                 </a>
 
                 <a href="/partners" class="text-white">

@@ -1,6 +1,6 @@
 @php
     $webpaySeller = config('legal.seller', []);
-    $webpayPhones = $webpaySeller['phones'] ?? ['+375 (29) 354-40-41', '+375 (33) 377-70-93'];
+    $webpayPhones = $webpaySeller['phones'] ?? ['+375 (29) 377-70-92', '+375 (33) 377-70-93'];
     $webpayEmail = $webpaySeller['email'] ?? 'info@kotlov.by';
     $webpaySellerName = $webpaySeller['short_name'] ?? 'ООО «СанБизнесГруп»';
     $webpaySellerUnp = $webpaySeller['unp'] ?? '191355768';

@@ -57,8 +57,8 @@
                             <div class="d-grid gap-8">
                                 <h6>Телефон:</h6>
                                 <p>
-                                    <a href="tel:+375293544041" class="cl-text-2 link">
-                                        +375 (29) 354-40-41
+                                    <a href="tel:+375293777092" class="cl-text-2 link">
+                                        +375 (29) 377-70-92
                                     </a>
                                 </p>
                                 <p>

@@ -45,7 +45,7 @@
                     <a class="home-webpay__requisites" href="{{ url('/rekvizity') }}">Полные реквизиты</a>
                 </div>
                 <div class="home-webpay__contacts">
-                    @foreach(($homeSeller['phones'] ?? ['+375 (29) 354-40-41', '+375 (33) 377-70-93']) as $phone)
+                    @foreach(($homeSeller['phones'] ?? ['+375 (29) 377-70-92', '+375 (33) 377-70-93']) as $phone)
                         <a href="tel:{{ preg_replace('/\D+/', '', $phone) }}">{{ $phone }}</a>
                     @endforeach
                     <a href="mailto:{{ $homeSellerEmail }}">{{ $homeSellerEmail }}</a>

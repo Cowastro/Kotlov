@@ -62,8 +62,8 @@
                         <p class="footer-heading footer-heading-mobile text-white">НАШ МАГАЗИН</p>
                         <div class="tf-collapse-content">
                             <p class="cl-text-3 mb-4">Консультации и заказы:</p>
-                            <a href="tel:+375293544041" class="text-white link h4 fw-medium mb-12">
-                                +375 (29) 354-40-41
+                            <a href="tel:+375293777092" class="text-white link h4 fw-medium mb-12">
+                                +375 (29) 377-70-92
                             </a>
                             <a href="tel:+375333777093" class="text-white link h4 fw-medium mb-12">
                                 +375 (33) 377-70-93

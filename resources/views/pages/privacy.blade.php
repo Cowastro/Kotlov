@@ -120,7 +120,7 @@
                         <ul>
                             <li>Продавец и оператор персональных данных: {{ config('legal.seller.name') }}, УНП {{ config('legal.seller.unp') }}</li>
                             <li>Email: <a href="mailto:info@kotlov.by">info@kotlov.by</a></li>
-                            <li>Телефон: <a href="tel:+375293544041">+375 (29) 354-40-41</a></li>
+                            <li>Телефон: <a href="tel:+375293777092">+375 (29) 377-70-92</a></li>
                             <li>Телефон: <a href="tel:+375333777093">+375 (33) 377-70-93</a></li>
                             <li>Юридический адрес: {{ config('legal.seller.address') }}</li>
                         </ul>

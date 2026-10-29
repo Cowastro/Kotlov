@@ -137,7 +137,7 @@ class CommercialDocumentWorkflowTest extends TestCase
     public function test_pdf_uses_current_website_contacts_even_for_an_older_document_snapshot(): void
     {
         config()->set('legal.commercial_documents.phones', [
-            '+375 (29) 354-40-41',
+            '+375 (29) 377-70-92',
             '+375 (33) 377-70-93',
         ]);
 
@@ -151,7 +151,7 @@ class CommercialDocumentWorkflowTest extends TestCase
         $seller = app(CommercialDocumentPdf::class)->sellerDetails($document);
 
         $this->assertSame([
-            '+375 (29) 354-40-41',
+            '+375 (29) 377-70-92',
             '+375 (33) 377-70-93',
         ], $seller['phones']);
         $this->assertSame('ООО «СанБизнесГруп»', $seller['short_name']);

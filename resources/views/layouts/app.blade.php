@@ -109,7 +109,7 @@
 
     <div class="go-call phone-ring"></div>
 
-    <a href="tel:{{ $phoneCall ?? '+375293544041' }}" class="call-container">
+    <a href="tel:{{ $phoneCall ?? '+375293777092' }}" class="call-container">
         <i></i>
     </a>
 
