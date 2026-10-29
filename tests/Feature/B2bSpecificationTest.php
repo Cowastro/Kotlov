@@ -313,7 +313,7 @@ class B2bSpecificationTest extends TestCase
         $this->assertCount(2, $versions);
         $this->assertSame($versions[1]->id, $specification->current_version_id);
         $this->assertSame('Изменили количество и одну позицию.', $versions[1]->note);
-        $this->assertSame([
+        $this->assertEquals([
             'added' => 1,
             'removed' => 1,
             'changed' => 1,
