@@ -365,6 +365,57 @@ class B2bMarketplaceTest extends TestCase
             ->assertDontSeeText('Котёл вне ветки');
     }
 
+    public function test_category_tree_is_sorted_alphabetically_on_every_level(): void
+    {
+        $zRoot = Category::query()->create([
+            'name' => 'Ящики',
+            'slug' => 'b2b-alpha-z-root',
+            'parent_id' => 0,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $aRoot = Category::query()->create([
+            'name' => 'Арматура',
+            'slug' => 'b2b-alpha-a-root',
+            'parent_id' => 0,
+            'sort_order' => 999,
+            'is_active' => true,
+        ]);
+        $zChild = Category::query()->create([
+            'name' => 'Фитинги',
+            'slug' => 'b2b-alpha-z-child',
+            'parent_id' => $aRoot->id,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+        $aChild = Category::query()->create([
+            'name' => 'Краны',
+            'slug' => 'b2b-alpha-a-child',
+            'parent_id' => $aRoot->id,
+            'sort_order' => 999,
+            'is_active' => true,
+        ]);
+
+        $source = $this->source('alpha-tree-source', $aRoot);
+        $settings = $source->settings;
+        $settings['b2b_category_ids'] = [$aRoot->id, $zRoot->id];
+        $source->update(['settings' => $settings]);
+        $this->offer($source, $this->product($zRoot, 'Товар из ящиков', 'ALPHA-ROOT-Z'), 20, 1);
+        $this->offer($source, $this->product($zChild, 'Фитинг тестовый', 'ALPHA-CHILD-Z'), 30, 1);
+        $this->offer($source, $this->product($aChild, 'Кран тестовый', 'ALPHA-CHILD-A'), 40, 1);
+        $user = $this->approvedUser([$source->id]);
+
+        $content = $this->actingAs($user)
+            ->get(route('b2b.catalog'))
+            ->assertOk()
+            ->getContent();
+        $treeStart = strpos($content, 'id="b2b-category-tree"');
+
+        $this->assertNotFalse($treeStart);
+        $this->assertLessThan(strpos($content, 'Ящики', $treeStart), strpos($content, 'Арматура', $treeStart));
+        $this->assertLessThan(strpos($content, 'Фитинги', $treeStart), strpos($content, 'Краны', $treeStart));
+    }
+
     public function test_search_switches_from_selected_category_to_the_whole_catalog(): void
     {
         $selectedCategory = Category::query()->create([

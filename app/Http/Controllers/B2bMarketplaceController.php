@@ -379,12 +379,16 @@ class B2bMarketplaceController extends Controller
                 'count' => (int) ($branchCounts[$category->id] ?? 0),
                 'selected' => (int) $category->id === $selectedId,
                 'expanded' => isset($selectedPath[$category->id]),
-                'children' => $children->get((int) $category->id, collect())->map($build)->values(),
+                'children' => $children->get((int) $category->id, collect())
+                    ->sortBy(fn (Category $child): string => mb_strtolower(trim($child->name)), SORT_NATURAL | SORT_FLAG_CASE)
+                    ->map($build)
+                    ->values(),
             ];
         };
 
         return $visible
             ->filter(fn (Category $category): bool => (int) $category->parent_id === 0 || ! isset($branchCounts[(int) $category->parent_id]))
+            ->sortBy(fn (Category $category): string => mb_strtolower(trim($category->name)), SORT_NATURAL | SORT_FLAG_CASE)
             ->map($build)
             ->values();
     }
