@@ -4,6 +4,7 @@ namespace App\Filament\Resources\B2bSpecifications;
 
 use App\Filament\Resources\B2bSpecifications\Pages\EditB2bSpecification;
 use App\Filament\Resources\B2bSpecifications\Pages\ListB2bSpecifications;
+use App\Filament\Resources\B2bSpecifications\RelationManagers\ItemsRelationManager;
 use App\Models\B2bSpecification;
 use BackedEnum;
 use Filament\Actions\EditAction;
@@ -82,6 +83,12 @@ class B2bSpecificationResource extends Resource
                             return new HtmlString($links);
                         })
                         ->columnSpanFull(),
+                    Placeholder::make('parsing_view')
+                        ->label('Автоматический разбор')
+                        ->content(fn (?B2bSpecification $record): string => $record
+                            ? $record->parsingStatusLabel().($record->parse_message ? ': '.$record->parse_message : '')
+                            : 'Ожидает разбора')
+                        ->columnSpanFull(),
                 ]),
             Section::make('Обработка')
                 ->columns(2)
@@ -127,6 +134,7 @@ class B2bSpecificationResource extends Resource
                     ->description(fn (B2bSpecification $record): string => $record->client?->unp ? 'УНП '.$record->client->unp : ''),
                 TextColumn::make('title')->label('Объект / закупка')->searchable()->wrap(),
                 TextColumn::make('attachments_count')->label('Файлов')->counts('attachments')->numeric(),
+                TextColumn::make('items_count')->label('Позиций')->counts('items')->numeric(),
                 TextColumn::make('status')->label('Статус')->badge()
                     ->formatStateUsing(fn (string $state): string => B2bSpecification::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => match ($state) {
@@ -155,5 +163,10 @@ class B2bSpecificationResource extends Resource
             'index' => ListB2bSpecifications::route('/'),
             'edit' => EditB2bSpecification::route('/{record}/edit'),
         ];
+    }
+
+    public static function getRelations(): array
+    {
+        return [ItemsRelationManager::class];
     }
 }

@@ -4,10 +4,17 @@ namespace Tests\Feature;
 
 use App\Models\B2bClient;
 use App\Models\B2bSpecification;
+use App\Models\Category;
+use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
+use App\Models\Product;
+use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
 
 class B2bSpecificationTest extends TestCase
@@ -112,6 +119,110 @@ class B2bSpecificationTest extends TestCase
             ->assertDontSee('Проверить маржу перед отправкой КП.');
     }
 
+    public function test_excel_rows_are_extracted_and_matched_by_exact_sku(): void
+    {
+        Storage::fake('local');
+        [$user] = $this->b2bClient();
+        $category = Category::query()->create(['name' => 'Спецификации', 'slug' => 'spec-items', 'is_active' => true]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Насос циркуляционный TEST 25-60',
+            'slug' => 'test-pump-25-60',
+            'sku' => 'PUMP-2560',
+            'price' => 250,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $path = $this->spreadsheetFile([
+            ['Артикул', 'Наименование', 'Количество', 'Ед. изм.'],
+            ['PUMP-2560', 'Насос по проекту', 3, 'шт.'],
+            ['UNKNOWN-1', 'Неизвестная позиция', 2, 'шт.'],
+        ]);
+
+        try {
+            $this->actingAs($user)->post(route('b2b.cabinet.specifications.store'), [
+                'title' => 'Спецификация из Excel',
+                'files' => [new UploadedFile($path, 'specification.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true)],
+            ])->assertRedirect();
+        } finally {
+            @unlink($path);
+        }
+
+        $specification = B2bSpecification::query()->with('items')->sole();
+        $this->assertSame('parsed', $specification->parsing_status);
+        $this->assertCount(2, $specification->items);
+        $matched = $specification->items->firstWhere('source_sku', 'PUMP-2560');
+        $this->assertSame('matched', $matched->status);
+        $this->assertSame($product->id, $matched->product_id);
+        $this->assertSame('3.000', $matched->quantity);
+        $this->assertSame('unmatched', $specification->items->firstWhere('source_sku', 'UNKNOWN-1')->status);
+    }
+
+    public function test_owner_can_add_matched_specification_items_to_personal_b2b_cart(): void
+    {
+        [$user, $client] = $this->b2bClient();
+        $category = Category::query()->create(['name' => 'B2B склад', 'slug' => 'b2b-spec-cart', 'is_active' => true]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Товар из спецификации',
+            'slug' => 'specification-cart-product',
+            'sku' => 'SPEC-1',
+            'price' => 150,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'specification-cart-supplier',
+            'name' => 'Оптовый склад',
+            'is_active' => true,
+        ]);
+        $source = IntegrationSource::query()->create([
+            'supplier_id' => $supplier->id,
+            'code' => 'specification-cart-source',
+            'name' => 'Оптовый склад',
+            'is_active' => true,
+            'settings' => [
+                'b2b_enabled' => true,
+                'b2b_price_role' => IntegrationSource::B2B_PRICE_ROLE_SALE,
+                'b2b_category_ids' => [$category->id],
+                'price_tax_mode' => IntegrationSource::PRICE_TAX_INCLUSIVE,
+                'warehouse_label' => 'Основной склад',
+            ],
+        ]);
+        $offer = IntegrationProduct::query()->create([
+            'integration_source_id' => $source->id,
+            'product_id' => $product->id,
+            'external_id' => 'SPEC-1',
+            'name' => $product->name,
+            'price' => 100,
+            'price_byn' => 100,
+            'stock_quantity' => 10,
+            'stock_confirmed_at' => now(),
+            'match_status' => 'matched',
+        ]);
+        $client->update(['allowed_integration_source_ids' => [$source->id]]);
+        $specification = B2bSpecification::query()->create([
+            'b2b_client_id' => $client->id,
+            'user_id' => $user->id,
+            'title' => 'Корзина из спецификации',
+            'status' => 'submitted',
+        ]);
+        $specification->items()->create([
+            'source_sku' => 'SPEC-1',
+            'source_name' => $product->name,
+            'quantity' => 2,
+            'status' => 'matched',
+            'product_id' => $product->id,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('b2b.cabinet.specifications.cart', $specification))
+            ->assertRedirect(route('cart'))
+            ->assertSessionHas('cart.'.$product->id.'.integration_product_id', $offer->id)
+            ->assertSessionHas('cart.'.$product->id.'.quantity', 2)
+            ->assertSessionHas('cart.'.$product->id.'.price', 100.0);
+    }
+
     /** @return array{User, B2bClient} */
     private function b2bClient(?string $email = null): array
     {
@@ -134,5 +245,18 @@ class B2bSpecificationTest extends TestCase
         ]);
 
         return [$user->fresh(), $client->fresh()];
+    }
+
+    private function spreadsheetFile(array $rows): string
+    {
+        $spreadsheet = new Spreadsheet;
+        $spreadsheet->getActiveSheet()->fromArray($rows);
+        $temporary = tempnam(sys_get_temp_dir(), 'b2b-spec-');
+        $path = $temporary.'.xlsx';
+        @unlink($temporary);
+        (new Xlsx($spreadsheet))->save($path);
+        $spreadsheet->disconnectWorksheets();
+
+        return $path;
     }
 }

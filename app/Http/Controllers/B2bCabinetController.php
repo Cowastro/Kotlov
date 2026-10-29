@@ -12,6 +12,7 @@ use App\Models\IntegrationSource;
 use App\Models\IntegrationWarehouse;
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bSpecificationParser;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -61,7 +62,7 @@ class B2bCabinetController extends Controller
             ->get();
         $savedCarts = $user->b2bSavedCarts()->latest('updated_at')->get();
         $specifications = $client->specifications()
-            ->with(['attachments', 'commercialDocument'])
+            ->with(['attachments', 'commercialDocument', 'items.product'])
             ->latest('submitted_at')
             ->paginate(10, ['*'], 'specifications_page')
             ->withQueryString();
@@ -246,7 +247,7 @@ class B2bCabinetController extends Controller
         return to_route('b2b.cabinet', ['section' => 'carts'])->with('success', 'Сохранённая корзина удалена.');
     }
 
-    public function storeSpecification(Request $request)
+    public function storeSpecification(Request $request, B2bSpecificationParser $parser)
     {
         $user = $request->user();
         abort_unless($user->isB2B(), 403);
@@ -307,9 +308,90 @@ class B2bCabinetController extends Controller
             throw $exception;
         }
 
+        try {
+            $result = $parser->parse($specification->fresh('attachments'));
+        } catch (\Throwable) {
+            $specification->update([
+                'parsing_status' => 'failed',
+                'parse_message' => 'Автоматический разбор временно недоступен. Файл сохранён и будет обработан менеджером.',
+                'parsed_at' => now(),
+            ]);
+            $result = ['matched' => 0];
+        }
+
+        $message = "Спецификация {$specification->reference} принята.";
+        if (($result['matched'] ?? 0) > 0) {
+            $message .= " Автоматически найдено позиций: {$result['matched']}.";
+        }
+
         return to_route('b2b.cabinet', [
             'section' => 'specifications',
-        ])->with('success', "Спецификация {$specification->reference} принята. Статус обработки будет виден в кабинете.");
+        ])->with('success', $message.' Статус обработки виден в кабинете.');
+    }
+
+    public function specificationCart(Request $request, B2bSpecification $specification, B2bCatalogOfferResolver $resolver)
+    {
+        $user = $request->user();
+        abort_unless($user->isB2B() && (int) $specification->user_id === (int) $user->id, 404);
+
+        $items = $specification->items()
+            ->where('status', 'matched')
+            ->whereNotNull('product_id')
+            ->with('product.category')
+            ->get();
+        $cart = $request->session()->get('cart', []);
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($items as $item) {
+            $product = $item->product;
+            $quantity = min(999, max(1, (int) ceil((float) $item->quantity)));
+            $offer = $product ? $resolver->forProduct($product, $user) : null;
+            if (! $product || ! $offer || ! $resolver->canOrder($offer, $quantity)) {
+                $skipped++;
+
+                continue;
+            }
+
+            $quote = $resolver->priceQuote($offer, $user);
+            $existingQuantity = (int) ($cart[$product->id]['quantity'] ?? 0);
+            $cart[$product->id] = [
+                'id' => $product->id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'sku' => $product->sku,
+                'price' => $quote['price'],
+                'image' => $product->image_url,
+                'category_slug' => $product->category?->slug ?? 'catalog',
+                'quantity' => min(999, $existingQuantity + $quantity),
+                'chimney_selector_selected' => false,
+                'pricing_type' => 'b2b',
+                'price_tax_mode' => 'inclusive',
+                'integration_product_id' => $offer->id,
+                'source_name' => $offer->source?->name,
+                'warehouse_stock_id' => null,
+                'warehouse_name' => data_get($offer->source?->settings, 'warehouse_label'),
+                'warehouse_delivery_days' => null,
+                'b2b_base_price' => $quote['base_price'],
+                'b2b_price_level_id' => $quote['price_level_id'],
+                'b2b_price_level_code' => $quote['price_level_code'],
+                'b2b_price_level_name' => $quote['price_level_name'],
+                'b2b_discount_percent' => $quote['discount_percent'],
+            ];
+            $added++;
+        }
+
+        if ($added === 0) {
+            return back()->withErrors(['specification' => 'Сопоставленные товары сейчас недоступны для заказа. Менеджер проверит остальные позиции.']);
+        }
+
+        $request->session()->put('cart', $cart);
+        $message = "В корзину добавлено позиций: {$added}.";
+        if ($skipped > 0) {
+            $message .= " Требуют проверки менеджера: {$skipped}.";
+        }
+
+        return to_route('cart')->with('success', $message);
     }
 
     public function specificationAttachment(Request $request, B2bSpecificationAttachment $attachment): StreamedResponse

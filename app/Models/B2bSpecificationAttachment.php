@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class B2bSpecificationAttachment extends Model
 {
@@ -18,5 +19,10 @@ class B2bSpecificationAttachment extends Model
     public function specification(): BelongsTo
     {
         return $this->belongsTo(B2bSpecification::class, 'b2b_specification_id');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(B2bSpecificationItem::class, 'b2b_specification_attachment_id');
     }
 }

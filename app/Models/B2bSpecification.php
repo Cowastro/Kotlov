@@ -18,14 +18,23 @@ class B2bSpecification extends Model
         'cancelled' => 'Отменена',
     ];
 
+    public const PARSING_STATUSES = [
+        'pending' => 'Ожидает разбора',
+        'parsed' => 'Таблица распознана',
+        'manual' => 'Ручная обработка',
+        'failed' => 'Не удалось распознать',
+    ];
+
     protected $fillable = [
         'b2b_client_id', 'user_id', 'reference', 'title', 'comment', 'status',
         'manager_id', 'commercial_document_id', 'client_message', 'manager_note', 'submitted_at', 'reviewed_at',
+        'parsing_status', 'parse_message', 'parsed_at',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'parsed_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -67,8 +76,18 @@ class B2bSpecification extends Model
         return $this->hasMany(B2bSpecificationAttachment::class);
     }
 
+    public function items(): HasMany
+    {
+        return $this->hasMany(B2bSpecificationItem::class);
+    }
+
     public function statusLabel(): string
     {
         return self::STATUSES[$this->status] ?? $this->status;
+    }
+
+    public function parsingStatusLabel(): string
+    {
+        return self::PARSING_STATUSES[$this->parsing_status] ?? $this->parsing_status;
     }
 }
