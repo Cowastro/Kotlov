@@ -3963,3 +3963,60 @@ body.mobile-catalog-menu-is-open .ai-selector__assistance-menu { display: none !
         line-height: 1.2;
     }
 }
+
+/* Mini cart: quantity stepper − n + */
+.mini-cart-qty {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    border: 1px solid #e3e3e3;
+    border-radius: 999px;
+    padding: 2px;
+}
+
+.mini-cart-qty__btn {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 50%;
+    background: #f3f3f3;
+    color: #111;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.mini-cart-qty__btn:hover {
+    background: #e6e6e6;
+}
+
+.mini-cart-qty .number {
+    min-width: 24px;
+    text-align: center;
+}
+
+/* Promo code in one line: mini cart and cart page */
+.promo-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.promo-inline input {
+    flex: 1 1 140px;
+    min-width: 0;
+    height: 44px;
+    padding: 0 14px;
+    border: 1px solid #e3e3e3;
+    border-radius: 10px;
+}
+
+.promo-inline .tf-btn {
+    height: 44px;
+    padding: 0 16px;
+    width: auto;
+}
+
+.promo-inline .mini-cart-form-msg {
+    flex-basis: 100%;
+}

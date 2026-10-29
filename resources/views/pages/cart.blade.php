@@ -203,6 +203,14 @@
                                     </div>
                                 @endif
 
+                                {{-- Промокод: всегда на виду --}}
+                                <form method="POST" action="{{ route('cart.coupon') }}" class="promo-inline mb-20">
+                                    @csrf
+                                    <input type="text" name="coupon" id="cart-coupon" value="{{ session('cart_coupon') }}"
+                                        placeholder="Промокод" maxlength="50" autocomplete="off" aria-label="Промокод">
+                                    <button type="submit" class="tf-btn btn-stroke">Применить</button>
+                                </form>
+
                                 @if ($coupon['bundle']['active'])
                                     <div class="online-order-cart-note mb-20">
                                         <strong>Скидка на дымоход применена</strong>

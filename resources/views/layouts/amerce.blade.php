@@ -258,10 +258,14 @@
                                 'data-product-id="' + item.id + '">' +
                                 '<span class="text-caption-01 fw-semibold">Удалить</span>' +
                             '</button>' +
-                            '<div class="fw-semibold d-flex align-items-center justify-content-between gap-4">' +
-                                '<span class="number">' + item.quantity + '</span>' +
-                                '<span>x</span>' +
-                                '<span class="price tf-mini-card-price">' + parseFloat(item.price).toFixed(2) + ' BYN</span>' +
+                            // Quantity right in the mini cart: − n + × price.
+                            '<div class="fw-semibold d-flex align-items-center justify-content-between gap-8">' +
+                                '<span class="mini-cart-qty" aria-label="Количество">' +
+                                    '<button type="button" class="mini-cart-qty__btn" data-product-id="' + item.id + '" data-quantity="' + (parseInt(item.quantity) - 1) + '" aria-label="Меньше">−</button>' +
+                                    '<span class="number">' + item.quantity + '</span>' +
+                                    '<button type="button" class="mini-cart-qty__btn" data-product-id="' + item.id + '" data-quantity="' + (parseInt(item.quantity) + 1) + '" aria-label="Больше">+</button>' +
+                                '</span>' +
+                                '<span class="price tf-mini-card-price">× ' + parseFloat(item.price).toFixed(2) + ' BYN</span>' +
                             '</div>' +
                         '</div>' +
                     '</div>';
@@ -278,7 +282,8 @@
             if (discountRow) discountRow.style.setProperty('display', parseFloat(data.discount) > 0 ? 'flex' : 'none', 'important');
             if (discountEl) discountEl.textContent = '−' + parseFloat(data.discount).toFixed(2) + ' BYN';
             if (couponCodeEl) couponCodeEl.textContent = data.coupon || '';
-            if (onlineNote) onlineNote.style.display = data.coupon === @json(config('shop.online_order_discount.code', 'ONLINE3')) ? '' : 'none';
+            // «Applied automatically» is true only in dumping mode; a code typed by hand is not announced.
+            if (onlineNote) onlineNote.style.display = @json(\App\Services\CartCouponService::onlineDiscountIsPublic()) && data.coupon === @json(config('shop.online_order_discount.code', 'ONLINE3')) ? '' : 'none';
         }
 
         // Загрузить данные корзины и отрисовать
@@ -467,6 +472,21 @@
                 updateCartCount(data.count);
                 loadMiniCart();
             });
+        });
+
+        // Количество в мини-корзине: 0 — удалить товар
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.mini-cart-qty__btn');
+            if (!btn) return;
+            e.preventDefault();
+            var quantity = parseInt(btn.dataset.quantity, 10);
+            btn.closest('.mini-cart-qty').style.opacity = '.5';
+            fetch(quantity > 0 ? '/cart/update' : '/cart/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                body: JSON.stringify(quantity > 0 ? { product_id: btn.dataset.productId, quantity: quantity } : { product_id: btn.dataset.productId }),
+            })
+            .then(function () { loadMiniCart(); });
         });
 
         // Загружаем корзину при открытии offcanvas
