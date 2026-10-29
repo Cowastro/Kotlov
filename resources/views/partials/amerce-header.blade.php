@@ -214,14 +214,14 @@
                                 $iconClass = $iconClasses[$rootCat->slug] ?? null;
                                 $children = $rootCat->children->where('is_active', true)->values();
                                 $cols = config('navigation.columns.' . $rootCat->slug, 2);
-                                // A large section: one column per group of config('navigation.groups'), at most 8 links each.
+                                // A large section: one column per group of config('navigation.groups'), at most 10 links each.
                                 $navGroups = \App\Support\CategoryNavigationGroups::for($rootCat->slug, $children);
                                 if ($navGroups->isNotEmpty()) {
                                     $editorial = [];
                                     $childGroups = $navGroups->map(fn ($group) => [
                                         'title' => $group['title'],
-                                        'items' => $group['items']->take(8),
-                                        'more' => max(0, $group['items']->count() - 8),
+                                        'items' => $group['items']->take(10),
+                                        'more' => max(0, $group['items']->count() - 10),
                                     ]);
                                     $renderedCols = max(1, min(3, $childGroups->count()));
                                 } else {

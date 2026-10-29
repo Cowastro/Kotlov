@@ -43,12 +43,13 @@ return [
                 'slugs' => ['nagrevatelynye-maty', 'nagrevatelynye-kabeli', 'ik-plenochnyj-pol', 'termoregulyatory-dlya-teplogo-pola']],
         ],
         'bani-i-sauny' => [
-            ['title' => 'Печи и каменки', 'icon' => 'icon-Sparkle', 'description' => 'Дровяные печи для бани и электрокаменки.',
-                'slugs' => ['drovianye-peci-bannye', 'pechi-dlya-bani', 'elektrokamenki']],
-            ['title' => 'Двери, окна, купели', 'icon' => 'icon-HouseLine', 'description' => 'Стеклянные двери и окна для парной, купели.',
-                'slugs' => ['dveri-dlya-ban-i-saun', 'okna-dlya-bani-i-sauny', 'kupeli']],
-            ['title' => 'Аксессуары и отдых', 'icon' => 'icon-Package', 'description' => 'Камни, шайки, абажуры, мангалы и казаны.',
-                'slugs' => ['aksessuary-dlya-bani', 'mangalyi']],
+            // Slugs here are historical: «kupeli» is water tanks, «pechi-dlya-bani» is steam room accessories.
+            ['title' => 'Печи и каменки', 'icon' => 'icon-Sparkle', 'description' => 'Дровяные печи, электрокаменки, баки и всё для печи.',
+                'slugs' => ['drovianye-peci-bannye', 'elektrokamenki', 'aksessuary-dlya-bani', 'kupeli']],
+            ['title' => 'Двери и окна', 'icon' => 'icon-HouseLine', 'description' => 'Стеклянные двери и окна для парной.',
+                'slugs' => ['dveri-dlya-ban-i-saun', 'okna-dlya-bani-i-sauny']],
+            ['title' => 'Парная и отдых', 'icon' => 'icon-Package', 'description' => 'Аксессуары для парной, купели, мангалы и казаны.',
+                'slugs' => ['pechi-dlya-bani', 'kupeli-2', 'mangalyi']],
         ],
         'dymohody' => [
             ['title' => 'Системы', 'icon' => 'icon-ArrowFatUp', 'description' => 'Одностенные, утеплённые сэндвич и коаксиальные дымоходы.',
@@ -170,12 +171,11 @@ return [
 
         'teplovyie-nasosyi' => [
             [
-                'title' => 'По типу',
+                'title' => 'Как выбрать',
                 'links' => [
-                    ['name' => 'Воздух-вода',       'url' => '/teplovyie-nasosyi'],
                     ['name' => 'Для тёплого пола',  'url' => '/teplovyie-nasosyi#heat-pump-guide-title'],
                     ['name' => 'Для радиаторов',    'url' => '/blog/teplovye-nasosy-ge-r290-vysokotemperaturnye'],
-                    ['name' => 'Как выбрать',       'url' => '/blog/kak-vybrat-teplovoy-nasos'],
+                    ['name' => 'Как выбрать насос', 'url' => '/blog/kak-vybrat-teplovoy-nasos'],
                 ],
             ],
             [
@@ -236,7 +236,7 @@ return [
                 'links' => [
                     ['name' => 'Камины',    'url' => '/kaminy'],
                     ['name' => 'Дымоходы', 'url' => '/dymohody'],
-                    ['name' => 'Для бани',  'url' => '/pechi-dlya-bani'],
+                    ['name' => 'Для бани',  'url' => '/drovianye-peci-bannye'],
                 ],
             ],
         ],
@@ -255,8 +255,8 @@ return [
                 'title' => 'Дополнительно',
                 'links' => [
                     ['name' => 'Аксессуары',           'url' => '/aksessuary-kaminy'],
-                    ['name' => 'Комплектующие',         'url' => '/komplektuyushhie-dlya-otopleniya'],
                     ['name' => 'Дымоходы',             'url' => '/dymohody'],
+                    ['name' => 'Печи',                 'url' => '/pechki'],
                 ],
             ],
         ],
@@ -357,7 +357,7 @@ return [
             'cta' => [
                 ['name' => 'Камины →',        'url' => '/kaminy'],
                 ['name' => 'Дымоходы →',      'url' => '/dymohody'],
-                ['name' => 'Для бани →',      'url' => '/pechi-dlya-bani'],
+                ['name' => 'Для бани →',      'url' => '/drovianye-peci-bannye'],
             ],
         ],
 

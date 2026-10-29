@@ -68,7 +68,6 @@ return new class extends Migration
     private const FOLD = [
         'nagrevatelnye-maty' => 'nagrevatelynye-maty',
         'nagrevatelnye-kabeli' => 'nagrevatelynye-kabeli',
-        'kupeli-2' => 'kupeli',
     ];
 
     /** Empty categories off the menu. */
