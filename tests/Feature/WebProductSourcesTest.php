@@ -16,7 +16,7 @@ class WebProductSourcesTest extends TestCase
 
     public function test_it_finds_shop_pages_and_builds_a_hidden_card_from_the_chosen_one(): void
     {
-        config(['services.serper.key' => 'test-key']);
+        config(['services.serper.key' => 'test-key', 'services.ai.market_research_provider' => 'openai', 'services.ai.openai_key' => null]);
         Http::fake([
             'google.serper.dev/*' => Http::response(['organic' => [
                 ['link' => 'https://www.wildberries.ru/catalog/123/detail.aspx', 'title' => 'Насос на WB'],
@@ -56,7 +56,7 @@ class WebProductSourcesTest extends TestCase
         $this->assertSame([], app(WebProductSources::class)->search('Grundfos MAGNA3'));
     }
 
-    public function test_without_google_credits_the_ai_web_search_finds_the_pages(): void
+    public function test_the_ai_web_search_goes_first_and_google_is_not_asked(): void
     {
         config(['services.serper.key' => 'test-key', 'services.ai.market_research_provider' => 'openai', 'services.ai.openai_key' => 'sk-test']);
         Http::fake(['google.serper.dev/*' => Http::response(['message' => 'Not enough credits', 'statusCode' => 400], 400)]);
@@ -72,6 +72,6 @@ class WebProductSourcesTest extends TestCase
 
         $this->assertSame(['https://aqualider.by/p/sdvoennyy-cirkulyacionnyy-wellmix-wrs-d-50-120sf-17109972'], array_keys($found));
         $this->assertSame('ai', $sources->engine);
-        $this->assertSame('Not enough credits', $sources->lastError);
+        Http::assertNothingSent();
     }
 }

@@ -55,9 +55,8 @@ class ChistyBeregPhotosCommand extends Command
                 $urls = [];
                 foreach (array_unique(array_filter([$code !== '' ? trim($brand.' '.$code) : null, $product->name])) as $query) {
                     $urls += $sources->search($query);
-                    // Which search answered: Google (serper) or, without credits, the much slower AI search.
+                    // Which search answered: the AI search (DeepSeek), or Google where no AI key is set.
                     $stats['engine_'.$sources->engine] = ($stats['engine_'.$sources->engine] ?? 0) + 1;
-                    $stats['serper_status'] = $sources->lastStatus;
                 }
                 $urls = array_values(array_filter(array_keys($urls), fn (string $url): bool => ! str_contains($url, 'bereg.by') && ! preg_match('/\.(pdf|docx?|xlsx?)(\?|$)/i', $url)));
                 $found = null;

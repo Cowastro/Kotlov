@@ -9,7 +9,8 @@ use Illuminate\Support\Str;
 
 /**
  * Product pages on the internet for a model that is in no supplier price
- * (phase 2 of creating cards from a КП). Google results via serper.dev:
+ * (phase 2 of creating cards from a КП). The AI web search (DeepSeek) answers
+ * first, being far cheaper; Google via serper.dev only where no AI key is set:
  * marketplaces, social networks and our own site are dropped, manufacturer
  * and known shop pages come first. The manager picks one page; its photos
  * and specs fill the card (SupplierOfferCards::createFromWeb).
@@ -60,7 +61,8 @@ class WebProductSources
         }
         $found = (function () use ($query, $limit): array {
             $results = [];
-            if ($this->key() === '') {
+            // The AI search costs a fraction of the Google queries (up to four a card), so it goes first.
+            if ($this->aiConfigured() || $this->key() === '') {
                 return $this->aiSearch($query, $limit);
             }
             foreach ([['gl' => 'by', 'hl' => 'ru'], ['gl' => 'ru', 'hl' => 'ru']] as $locale) {
@@ -81,10 +83,6 @@ class WebProductSources
                 if (count($results) >= $limit) {
                     break;
                 }
-            }
-            // No Google credits or a failed request: the AI web search finds the pages instead.
-            if ($results === [] && $this->lastError !== '') {
-                return $this->aiSearch($query, $limit);
             }
             $this->engine = 'serper';
             uasort($results, fn (array $a, array $b): int => $b['score'] <=> $a['score']);
