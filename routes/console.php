@@ -161,6 +161,13 @@ Schedule::command('supplier:chisty-bereg-create --limit=120 --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-create.log'));
 
+// Cards whose Чистый берег РРЦ equals опт get the market retail price (web research, a few cards at a time).
+Schedule::command('supplier:chisty-bereg-market-prices --limit=10 --apply')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping(120)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/chisty-bereg-market.log'));
+
 Schedule::command('supplier:sync-cooper-doors --apply')
     ->dailyAt('07:50')
     ->timezone($supplierSyncTimezone)

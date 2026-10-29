@@ -17,7 +17,8 @@ use Illuminate\Support\Str;
  * Every row is kept as a supplier offer (article = the supplier's 8-digit code); a row is linked to a
  * card only by a sure key — its earlier link, the manufacturer code (as a card SKU or another supplier's
  * article) or the exact name — and only within the same brand. The rest wait for manual linking.
- * The recommended retail becomes the card price where Чистый берег is the card's only supplier.
+ * The recommended retail becomes the card price where Чистый берег is the card's only supplier; where the file
+ * gives no margin (РРЦ equals опт) the market price found by supplier:chisty-bereg-market-prices is used instead.
  *
  *   php artisan supplier:sync-chisty-bereg                 # dry run on the last uploaded file
  *   php artisan supplier:sync-chisty-bereg --apply
@@ -164,7 +165,7 @@ class SyncChistyBeregCommand extends Command
             'last_run_at' => now(),
             'last_status' => 'running',
         ]);
-        $stats = ['offers' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'gone_from_file' => 0, 'errors' => 0];
+        $stats = ['offers' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'retail_no_margin' => 0, 'retail_market' => 0, 'gone_from_file' => 0, 'errors' => 0];
         $touched = [];
         $seen = [];
         foreach ($rows as $row) {
@@ -172,6 +173,7 @@ class SyncChistyBeregCommand extends Command
             try {
                 $link = SupplierProduct::query()->firstOrNew(['supplier_id' => $supplier->id, 'supplier_article' => $row['code']]);
                 $product = $row['product_id'] ? Product::query()->find($row['product_id']) : null;
+                $market = (array) $link->raw;
                 $link->fill([
                     'supplier_sync_id' => $sync->id,
                     'product_id' => $product?->id,
@@ -195,6 +197,7 @@ class SyncChistyBeregCommand extends Command
                     'match_confidence' => $product ? ($link->match_confidence === 'manual_admin' ? 'manual_admin' : $row['match_reason']) : null,
                     'raw' => ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'maker_code' => $row['maker_code'], 'brand' => $row['brand'], 'category' => $row['category'], 'unit' => $row['unit'],
                         'pack' => $row['pack'], 'stock' => $row['stock'], 'reserve' => $row['reserve'], 'retail' => $row['rrc'] ?: null,
+                        'market_price' => $market['market_price'] ?? null, 'market_checked_at' => $market['market_checked_at'] ?? null,
                         'model' => trim(($row['maker_code'] !== '' ? 'Код произв. '.$row['maker_code'] : '').' · '.$row['brand'].' · '.$row['category'], ' ·')],
                     'last_synced_at' => now(),
                 ])->save();
@@ -206,9 +209,17 @@ class SyncChistyBeregCommand extends Command
                     $otherSupplier = $product->operationalSupplierProducts()->contains(fn (SupplierProduct $item): bool => (int) $item->supplier_id !== (int) $supplier->id);
                     if ($otherSupplier) {
                         $stats['retail_kept_other_supplier']++;
-                    } elseif (abs((float) $product->price - $row['rrc']) > 0.005 || $product->requires_price_confirmation) {
-                        $product->forceFill(['price' => $row['rrc'], 'requires_price_confirmation' => false])->save();
-                        $stats['retail_updated']++;
+                    } else {
+                        $retail = self::retailPrice((float) $row['wholesale'], (float) $row['rrc'], $market['market_price'] ?? null);
+                        if ($retail !== (float) $row['rrc']) {
+                            $stats['retail_market']++;
+                        } elseif ($row['rrc'] <= $row['wholesale'] + 0.005) {
+                            $stats['retail_no_margin']++;
+                        }
+                        if (abs((float) $product->price - $retail) > 0.005 || $product->requires_price_confirmation) {
+                            $product->forceFill(['price' => $retail, 'requires_price_confirmation' => false])->save();
+                            $stats['retail_updated']++;
+                        }
                     }
                 }
                 if ($product->brand_id) {
@@ -233,6 +244,16 @@ class SyncChistyBeregCommand extends Command
         $sync->forceFill(['last_status' => $stats['errors'] ? 'partial' : 'updated', 'last_exit_code' => $stats['errors'] ? 1 : 0, 'last_run_at' => now()])->save();
 
         return $stats;
+    }
+
+    /** The РРЦ, or the market price above опт where the file leaves no margin. */
+    public static function retailPrice(float $wholesale, float $rrc, mixed $market): float
+    {
+        if ($rrc > $wholesale + 0.005 || ! is_numeric($market) || (float) $market <= $wholesale + 0.005) {
+            return $rrc;
+        }
+
+        return round((float) $market, 2);
     }
 
     private function supplier(): Supplier
