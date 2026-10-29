@@ -73,5 +73,10 @@ class CreateChistyBeregCardsCommandTest extends TestCase
         $this->assertSame(140.98, (float) $card->price);
         $this->assertContains(['key' => 'Страна производства', 'value' => 'Китай'], $card->specs);
         $this->assertNull($markdown->fresh()->product_id);
+
+        $this->artisan('supplier:chisty-bereg-create', ['--report' => true])
+            ->expectsOutputToContain('metric.chisty_bereg_create.cards=1')
+            ->expectsOutputToContain('audit.chisty_bereg_create.report=zadvizhki:1:')
+            ->assertSuccessful();
     }
 }

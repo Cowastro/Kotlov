@@ -26,6 +26,7 @@ class CreateChistyBeregCardsCommand extends Command
     protected $signature = 'supplier:chisty-bereg-create
         {--group=* : Supplier categories (slug) instead of all heating ones}
         {--limit=0 : At most this many cards}
+        {--report : Counts of the cards already made: shown, hidden for a photo, with a description}
         {--apply : Create, link and fill the cards}';
 
     protected $description = 'Create cards for Чистый берег offers (heating) with bereg.by photos and specs';
@@ -44,6 +45,9 @@ class CreateChistyBeregCardsCommand extends Command
             $this->line('metric.chisty_bereg_create.supplier=0');
 
             return self::FAILURE;
+        }
+        if ($this->option('report')) {
+            return $this->report();
         }
         $groups = (array) $this->option('group') ?: self::HEATING;
         $categories = DB::table('categories')->pluck('id', 'slug');
@@ -103,6 +107,28 @@ class CreateChistyBeregCardsCommand extends Command
         }
         foreach ($plan as $slug => $count) {
             $this->line(sprintf('audit.chisty_bereg_create.category=%s:%d', $slug, $count));
+        }
+        foreach ($stats as $key => $value) {
+            $this->line("metric.chisty_bereg_create.{$key}={$value}");
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function report(): int
+    {
+        $cards = Product::query()->where('sku', 'like', 'BEREG-%')->where('is_archived', false)->with('category')->get();
+        $stats = [
+            'cards' => $cards->count(),
+            'shown' => $cards->where('is_active', true)->count(),
+            'hidden_awaiting_photo' => $cards->where('created_via', Product::CREATED_VIA_AWAITING_PHOTOS)->count(),
+            'hidden_other' => $cards->where('is_active', false)->where('created_via', '!=', Product::CREATED_VIA_AWAITING_PHOTOS)->count(),
+            'with_photo' => $cards->filter(fn (Product $card): bool => $card->imagePaths() !== [])->count(),
+            'with_description' => $cards->filter(fn (Product $card): bool => trim(strip_tags((string) $card->content)) !== '')->count(),
+            'with_specs' => $cards->filter(fn (Product $card): bool => count((array) $card->specs) >= 3)->count(),
+        ];
+        foreach ($cards->groupBy(fn (Product $card): string => (string) $card->category?->slug) as $slug => $items) {
+            $this->line(sprintf('audit.chisty_bereg_create.report=%s:%d:%d', $slug ?: 'none', $items->count(), $items->where('is_active', true)->count()));
         }
         foreach ($stats as $key => $value) {
             $this->line("metric.chisty_bereg_create.{$key}={$value}");
