@@ -169,7 +169,7 @@ Schedule::command('supplier:chisty-bereg-create --refill-specs --limit=150 --app
     ->appendOutputTo(storage_path('logs/chisty-bereg-refill-specs.log'));
 
 // Cards whose Чистый берег РРЦ equals опт get the market retail price (web research, a few cards at a time).
-Schedule::command('supplier:chisty-bereg-market-prices --limit=10 --apply')
+Schedule::command('supplier:chisty-bereg-market-prices --limit=30 --apply')
     ->everyThirtyMinutes()
     ->withoutOverlapping(120)
     ->runInBackground()
