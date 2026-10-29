@@ -56,7 +56,7 @@ class ChistyBeregPhotosCommand extends Command
                 foreach (array_unique(array_filter([$code !== '' ? trim($brand.' '.$code) : null, $product->name])) as $query) {
                     $urls += $sources->search($query);
                 }
-                $urls = array_values(array_filter(array_keys($urls), fn (string $url): bool => ! str_contains($url, 'bereg.by')));
+                $urls = array_values(array_filter(array_keys($urls), fn (string $url): bool => ! str_contains($url, 'bereg.by') && ! preg_match('/\.(pdf|docx?|xlsx?)(\?|$)/i', $url)));
                 $found = null;
                 foreach (array_slice($urls, 0, self::PAGES) as $url) {
                     try {

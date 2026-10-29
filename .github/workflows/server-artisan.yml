@@ -460,8 +460,8 @@ jobs:
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:chisty-bereg-photos" ]]; then
             echo "safe_chisty_bereg_photos_begin"
-            grep -E '^metric\.chisty_bereg_photos\.[a-z_]+=[0-9]+$' "$detail_log" || true
-            grep -E '^audit\.chisty_bereg_photos\.card=[0-9]+:[a-z0-9-]+:[a-z0-9-]+$' "$detail_log" || true
+            grep -aE '^metric\.chisty_bereg_photos\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -aE '^audit\.chisty_bereg_photos\.card=[0-9]+:[a-z0-9-]+:[a-z0-9-]+$' "$detail_log" || true
             echo "safe_chisty_bereg_photos_end"
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-chisty-bereg" ]]; then
