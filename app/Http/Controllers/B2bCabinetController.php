@@ -140,14 +140,27 @@ class B2bCabinetController extends Controller
             [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
         }
 
-        $reconciliationOrders = B2bOrder::query()->where('b2b_client_id', $client->id)
-            ->whereBetween('created_at', [$dateFrom->startOfDay(), $dateTo->endOfDay()])
-            ->oldest('created_at')
+        $reconciliationIsAccounting = $client->accountingEntries()->exists();
+        $reconciliationEntries = $client->accountingEntries()
+            ->whereBetween('occurred_at', [$dateFrom->startOfDay(), $dateTo->endOfDay()])
+            ->oldest('occurred_at')
             ->get();
-        $openingOrders = B2bOrder::query()->where('b2b_client_id', $client->id)->where('created_at', '<', $dateFrom->startOfDay())->get();
-        $openingBalance = $this->balance($openingOrders);
-        $periodCharges = (float) $reconciliationOrders->where('status', '!=', 'cancelled')->sum('total');
-        $periodPayments = (float) $reconciliationOrders->where('payment_status', 'paid')->sum('total');
+        $reconciliationOrders = collect();
+        if ($reconciliationIsAccounting) {
+            $openingEntries = $client->accountingEntries()->where('occurred_at', '<', $dateFrom->startOfDay())->get();
+            $openingBalance = (float) $openingEntries->sum('debit') - (float) $openingEntries->sum('credit');
+            $periodCharges = (float) $reconciliationEntries->sum('debit');
+            $periodPayments = (float) $reconciliationEntries->sum('credit');
+        } else {
+            $reconciliationOrders = B2bOrder::query()->where('b2b_client_id', $client->id)
+                ->whereBetween('created_at', [$dateFrom->startOfDay(), $dateTo->endOfDay()])
+                ->oldest('created_at')
+                ->get();
+            $openingOrders = B2bOrder::query()->where('b2b_client_id', $client->id)->where('created_at', '<', $dateFrom->startOfDay())->get();
+            $openingBalance = $this->balance($openingOrders);
+            $periodCharges = (float) $reconciliationOrders->where('status', '!=', 'cancelled')->sum('total');
+            $periodPayments = (float) $reconciliationOrders->where('payment_status', 'paid')->sum('total');
+        }
         $closingBalance = $openingBalance + $periodCharges - $periodPayments;
 
         $members = $client->members()->with('user:id,name,email,is_active')->orderByRaw("case role when 'owner' then 0 when 'buyer' then 1 when 'accountant' then 2 else 3 end")->get();
@@ -177,7 +190,8 @@ class B2bCabinetController extends Controller
             'invoiceProfileReady', 'invoiceProfileMissing',
             'role', 'permissions', 'permissionLabels', 'rolePermissionLabels', 'passwordRecentlyConfirmed',
             'members', 'pendingInvitations', 'auditLogs', 'financialAuditLogs', 'companyOrderTotal',
-            'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
+            'dateFrom', 'dateTo', 'reconciliationIsAccounting', 'reconciliationEntries', 'reconciliationOrders',
+            'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));
     }
 

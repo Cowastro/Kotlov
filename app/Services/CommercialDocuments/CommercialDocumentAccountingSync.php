@@ -10,6 +10,8 @@ use App\Models\Order;
 
 class CommercialDocumentAccountingSync
 {
+    public function __construct(private readonly B2bAccountingLedgerSync $ledger) {}
+
     public function sync(
         Order $order,
         IntegrationSource $source,
@@ -51,6 +53,7 @@ class CommercialDocumentAccountingSync
 
         $client = $this->clientFor($order);
         if ($client) {
+            $this->ledger->sync($client, $order, $document, $source);
             B2bClientAuditLog::query()->create([
                 'b2b_client_id' => $client->id,
                 'actor_user_id' => null,

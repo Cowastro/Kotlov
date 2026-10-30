@@ -116,6 +116,11 @@ class B2bClient extends Model
         return $this->hasMany(B2bOrder::class);
     }
 
+    public function accountingEntries(): HasMany
+    {
+        return $this->hasMany(B2bAccountingEntry::class);
+    }
+
     public function specifications(): HasMany
     {
         return $this->hasMany(B2bSpecification::class);
