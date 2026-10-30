@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\B2bClient;
+use App\Models\B2bClientInvitation;
 use App\Models\B2bClientMember;
 use App\Models\B2bSavedCart;
 use App\Models\B2bSpecification;
@@ -16,14 +17,18 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Notifications\B2bCompanyInvitationNotification;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bCheckoutTerms;
 use App\Services\B2bCompanyAccess;
 use App\Services\B2bSpecificationParser;
+use App\Services\B2bTeamService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -124,13 +129,24 @@ class B2bCabinetController extends Controller
         $closingBalance = $openingBalance + $periodCharges - $periodPayments;
 
         $members = $client->members()->with('user:id,name,email,is_active')->orderByRaw("case role when 'owner' then 0 when 'buyer' then 1 when 'accountant' then 2 else 3 end")->get();
+        $pendingInvitations = $client->invitations()
+            ->whereNull('accepted_at')
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->get();
+        $auditLogs = $client->auditLogs()
+            ->with(['actor:id,name,email', 'target:id,name,email'])
+            ->latest()
+            ->limit(30)
+            ->get();
         $companyOrderTotal = (float) Order::query()->whereIn('user_id', $companyUserIds)->sum('total');
 
         return view('pages.b2b.cabinet', compact(
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
             'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers', 'creditSummary',
             'profileCompletion', 'profileMissing',
-            'role', 'permissions', 'members', 'companyOrderTotal',
+            'role', 'permissions', 'members', 'pendingInvitations', 'auditLogs', 'companyOrderTotal',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));
     }
@@ -595,7 +611,7 @@ class B2bCabinetController extends Controller
         abort_unless($this->access->allUserIds($client)->contains((int) $savedCart->user_id), 404);
     }
 
-    public function addMember(Request $request)
+    public function addMember(Request $request, B2bTeamService $teams)
     {
         $owner = $request->user();
         $client = $owner->activeB2bClient();
@@ -605,38 +621,57 @@ class B2bCabinetController extends Controller
             'email' => ['required', 'email', 'max:255'],
             'role' => ['required', 'in:buyer,accountant,viewer'],
         ]);
-        $memberUser = User::query()->whereRaw('lower(email) = ?', [mb_strtolower($data['email'])])->first();
-        if (! $memberUser || ! $memberUser->is_active || ! $memberUser->hasVerifiedEmail()) {
-            return back()->withErrors(['email' => 'Сотрудник должен сначала зарегистрироваться и подтвердить этот email.']);
-        }
-        if ($memberUser->isManager() || $memberUser->isSupplier()) {
-            return back()->withErrors(['email' => 'Служебный аккаунт нельзя подключить к кабинету клиента.']);
-        }
-        if ((int) $memberUser->id === (int) $client->user_id) {
-            return back()->withErrors(['email' => 'Владелец кабинета уже подключён и его роль нельзя изменить.']);
-        }
-        $existingMembership = B2bClientMember::query()->where('user_id', $memberUser->id)->first();
-        if ($existingMembership && (int) $existingMembership->b2b_client_id !== (int) $client->id) {
-            return back()->withErrors(['email' => 'Этот аккаунт уже связан с другой компанией.']);
+        [$invitation, $token] = $teams->invite($client, $owner, $data['email'], $data['role']);
+
+        try {
+            Notification::route('mail', $invitation->email)
+                ->notify(new B2bCompanyInvitationNotification($invitation->load(['client', 'inviter']), $token));
+        } catch (\Throwable $exception) {
+            $teams->revokeInvitation($invitation, $owner);
+            Log::error('B2B company invitation email failed.', [
+                'b2b_client_id' => $client->id,
+                'invitation_id' => $invitation->id,
+                'exception' => $exception->getMessage(),
+            ]);
+
+            return back()->withErrors(['email' => 'Не удалось отправить приглашение. Повторите попытку позже.']);
         }
 
-        $client->members()->updateOrCreate(
-            ['user_id' => $memberUser->id],
-            ['role' => $data['role'], 'is_active' => true, 'invited_by' => $owner->id, 'joined_at' => now()],
-        );
-
-        return to_route('b2b.cabinet', ['section' => 'team'])->with('success', 'Сотрудник добавлен в кабинет компании.');
+        return to_route('b2b.cabinet', ['section' => 'team'])->with('success', 'Одноразовое приглашение отправлено на '.$invitation->email.'.');
     }
 
-    public function removeMember(Request $request, B2bClientMember $member)
+    public function updateMember(Request $request, B2bClientMember $member, B2bTeamService $teams)
     {
         $owner = $request->user();
         $client = $owner->activeB2bClient();
         abort_unless($client && $this->access->allows($owner, 'team', $client), 403);
         abort_unless((int) $member->b2b_client_id === (int) $client->id && $member->role !== 'owner', 404);
-        $member->update(['is_active' => false]);
+        $data = $request->validate(['role' => ['required', 'in:buyer,accountant,viewer']]);
+        $teams->changeRole($member, $owner, $data['role']);
 
-        return to_route('b2b.cabinet', ['section' => 'team'])->with('success', 'Доступ сотрудника отключён.');
+        return to_route('b2b.cabinet', ['section' => 'team'])->with('success', 'Роль сотрудника обновлена.');
+    }
+
+    public function removeMember(Request $request, B2bClientMember $member, B2bTeamService $teams)
+    {
+        $owner = $request->user();
+        $client = $owner->activeB2bClient();
+        abort_unless($client && $this->access->allows($owner, 'team', $client), 403);
+        abort_unless((int) $member->b2b_client_id === (int) $client->id && $member->role !== 'owner', 404);
+        $teams->revokeMember($member, $owner);
+
+        return to_route('b2b.cabinet', ['section' => 'team'])->with('success', 'Доступ сотрудника отключён, его активные сессии завершены.');
+    }
+
+    public function revokeInvitation(Request $request, B2bClientInvitation $invitation, B2bTeamService $teams)
+    {
+        $owner = $request->user();
+        $client = $owner->activeB2bClient();
+        abort_unless($client && $this->access->allows($owner, 'team', $client), 403);
+        abort_unless((int) $invitation->b2b_client_id === (int) $client->id && $invitation->isAvailable(), 404);
+        $teams->revokeInvitation($invitation, $owner);
+
+        return to_route('b2b.cabinet', ['section' => 'team'])->with('success', 'Приглашение отозвано.');
     }
 
     private function allows(Request $request, string $permission): bool

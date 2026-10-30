@@ -22,9 +22,13 @@ class NewRegistrationTelegramNotifier
             return false;
         }
 
-        $user->loadMissing('b2bClient');
-        $client = $user->b2bClient;
-        $isLegal = $client !== null;
+        $user->loadMissing(['b2bClient', 'b2bMembership.client']);
+        $membership = $user->b2bMembership;
+        $client = $user->b2bClient ?: $membership?->client;
+        $isCompanyEmployee = $membership !== null && $user->b2bClient === null;
+        $accountType = $user->b2bClient
+            ? 'Юридическое лицо / B2B'
+            : ($membership ? 'Сотрудник B2B-компании · '.$membership->roleLabel() : 'Физическое лицо');
         $escape = fn (mixed $value): string => htmlspecialchars(
             (string) $value,
             ENT_QUOTES | ENT_SUBSTITUTE,
@@ -40,12 +44,12 @@ class NewRegistrationTelegramNotifier
         $lines = [
             '👤 <b>Новая регистрация на KOTLOV.BY</b>',
             '',
-            '<b>Тип:</b> '.($isLegal ? 'Юридическое лицо / B2B' : 'Физическое лицо'),
+            '<b>Тип:</b> '.$escape($accountType),
             $client?->company_name ? '<b>Компания:</b> '.$escape($client->company_name) : null,
             $client?->unp ? '<b>УНП:</b> '.$escape($client->unp) : null,
-            '<b>Контакт:</b> '.$escape($client?->contact_name ?: $user->name),
-            '<b>Телефон:</b> '.$escape($client?->contact_phone ?: $user->phone ?: 'Не указан'),
-            '<b>Email:</b> '.$escape($client?->contact_email ?: $user->email),
+            '<b>Контакт:</b> '.$escape($isCompanyEmployee ? $user->name : ($client?->contact_name ?: $user->name)),
+            '<b>Телефон:</b> '.$escape($isCompanyEmployee ? ($user->phone ?: 'Не указан') : ($client?->contact_phone ?: $user->phone ?: 'Не указан')),
+            '<b>Email:</b> '.$escape($isCompanyEmployee ? $user->email : ($client?->contact_email ?: $user->email)),
             '<b>Проверка:</b> email подтверждён ✅',
             '',
             '<a href="'.$escape($adminUrl).'">Открыть карточку в админке</a>',

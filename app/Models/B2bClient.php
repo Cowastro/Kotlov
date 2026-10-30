@@ -133,6 +133,16 @@ class B2bClient extends Model
         return $this->hasMany(B2bClientMember::class);
     }
 
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(B2bClientInvitation::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(B2bClientAuditLog::class);
+    }
+
     public function scopeWithB2bOrderMetrics(Builder $query): Builder
     {
         return $query

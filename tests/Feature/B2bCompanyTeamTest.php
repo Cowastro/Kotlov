@@ -6,8 +6,12 @@ use App\Models\B2bClient;
 use App\Models\B2bClientMember;
 use App\Models\Order;
 use App\Models\User;
+use App\Notifications\B2bCompanyInvitationNotification;
 use App\Services\B2bCheckoutTerms;
+use App\Services\B2bTeamService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class B2bCompanyTeamTest extends TestCase
@@ -26,11 +30,23 @@ class B2bCompanyTeamTest extends TestCase
         ]);
         $order = $this->order($owner, 'B2B-COMPANY-ORDER');
         $order->update(['status' => 'confirmed', 'availability_confirmed_at' => now()]);
+        Notification::fake();
 
         $this->actingAs($owner)->post(route('b2b.cabinet.team.store'), [
             'email' => $buyer->email,
             'role' => 'buyer',
         ])->assertRedirect(route('b2b.cabinet', ['section' => 'team']));
+
+        Notification::assertSentOnDemand(B2bCompanyInvitationNotification::class);
+        $this->assertDatabaseHas('b2b_client_invitations', [
+            'b2b_client_id' => $client->id,
+            'email' => $buyer->email,
+            'role' => 'buyer',
+        ]);
+
+        [$invitation, $token] = app(B2bTeamService::class)->invite($client, $owner, $buyer->email, 'buyer');
+        $this->actingAs($buyer)->post(route('b2b.invitation.accept', ['token' => $token]))
+            ->assertRedirect(route('b2b.cabinet'));
 
         $this->assertDatabaseHas('b2b_client_members', [
             'b2b_client_id' => $client->id,
@@ -65,16 +81,87 @@ class B2bCompanyTeamTest extends TestCase
 
         $buyerOrder = $this->order($buyer, 'B2B-FORMER-EMPLOYEE');
         $this->assertSame(2, $client->fresh()->orders()->count());
+        DB::table('sessions')->insert([
+            'id' => 'buyer-session',
+            'user_id' => $buyer->id,
+            'ip_address' => '127.0.0.1',
+            'payload' => 'test',
+            'last_activity' => now()->timestamp,
+        ]);
         $membership = B2bClientMember::query()->where('user_id', $buyer->id)->firstOrFail();
         $this->actingAs($owner)
             ->delete(route('b2b.cabinet.team.destroy', $membership))
             ->assertRedirect(route('b2b.cabinet', ['section' => 'team']));
         $this->assertFalse($membership->fresh()->is_active);
         $this->assertFalse($buyer->fresh()->isB2B());
+        $this->assertDatabaseMissing('sessions', ['id' => 'buyer-session']);
+        $this->assertDatabaseHas('b2b_client_audit_logs', [
+            'b2b_client_id' => $client->id,
+            'target_user_id' => $buyer->id,
+            'event' => 'access_revoked',
+        ]);
         $this->actingAs($owner)
             ->get(route('b2b.cabinet', ['section' => 'orders']))
             ->assertOk()
             ->assertSeeText($buyerOrder->number);
+    }
+
+    public function test_new_employee_can_register_directly_from_one_time_invitation(): void
+    {
+        [$owner, $client] = $this->company();
+        [$invitation, $token] = app(B2bTeamService::class)->invite($client, $owner, 'new-buyer@example.by', 'buyer');
+
+        $this->get(route('b2b.invitation.show', ['token' => $token]))
+            ->assertOk()
+            ->assertSeeText('ООО «Команда»')
+            ->assertSeeText('new-buyer@example.by')
+            ->assertSeeText('Создать рабочий аккаунт');
+
+        $this->post(route('b2b.invitation.accept', ['token' => $token]), [
+            'name' => 'Новый Закупщик',
+            'phone' => '+375291112233',
+            'password' => 'Strong-pass-123',
+            'password_confirmation' => 'Strong-pass-123',
+            'privacy_accepted' => '1',
+        ])->assertRedirect(route('b2b.cabinet'));
+
+        $user = User::query()->where('email', 'new-buyer@example.by')->firstOrFail();
+        $this->assertAuthenticatedAs($user);
+        $this->assertNotNull($user->email_verified_at);
+        $this->assertDatabaseHas('b2b_client_members', [
+            'b2b_client_id' => $client->id,
+            'user_id' => $user->id,
+            'role' => 'buyer',
+            'is_active' => true,
+        ]);
+        $this->assertNotNull($invitation->fresh()->accepted_at);
+
+        $this->post(route('b2b.invitation.accept', ['token' => $token]))
+            ->assertSessionHasErrors('invitation');
+    }
+
+    public function test_owner_can_change_role_and_audit_log_preserves_the_change(): void
+    {
+        [$owner, $client] = $this->company();
+        $employee = User::factory()->create(['role' => 'client', 'is_active' => true]);
+        $member = $client->members()->create([
+            'user_id' => $employee->id,
+            'role' => 'viewer',
+            'is_active' => true,
+            'joined_at' => now(),
+        ]);
+
+        $this->actingAs($owner)->patch(route('b2b.cabinet.team.update', $member), [
+            'role' => 'accountant',
+        ])->assertRedirect(route('b2b.cabinet', ['section' => 'team']));
+
+        $this->assertSame('accountant', $member->fresh()->role);
+        $this->assertDatabaseHas('b2b_client_audit_logs', [
+            'b2b_client_id' => $client->id,
+            'actor_user_id' => $owner->id,
+            'target_user_id' => $employee->id,
+            'event' => 'role_changed',
+        ]);
     }
 
     public function test_accountant_can_view_finance_but_cannot_open_catalog_or_checkout(): void

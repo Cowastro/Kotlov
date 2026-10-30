@@ -96,4 +96,51 @@ class NewRegistrationTelegramNotifierTest extends TestCase
 
         $this->assertTrue((new NewRegistrationTelegramNotifier($telegram))->send($user));
     }
+
+    public function test_invited_company_employee_is_identified_with_company_and_role(): void
+    {
+        config()->set([
+            'services.telegram.bot_token' => 'test-token',
+            'services.telegram.registrations_chat_id' => '-100123456789',
+        ]);
+        $owner = User::factory()->create(['client_type' => 'wholesale']);
+        $client = B2bClient::query()->create([
+            'user_id' => $owner->id,
+            'status' => 'approved',
+            'partner_type' => 'wholesale',
+            'company_name' => 'ООО «Командный кабинет»',
+            'unp' => '190555444',
+            'contact_name' => $owner->name,
+            'contact_email' => $owner->email,
+        ]);
+        $employee = User::factory()->create([
+            'name' => 'Мария Бухгалтер',
+            'email' => 'accountant@example.by',
+            'phone' => '+375293334455',
+            'email_verified_at' => now(),
+            'client_type' => 'retail',
+        ]);
+        $client->members()->create([
+            'user_id' => $employee->id,
+            'role' => 'accountant',
+            'is_active' => true,
+            'joined_at' => now(),
+        ]);
+
+        $sentMessage = '';
+        $telegram = Mockery::mock(TelegramApi::class);
+        $telegram->shouldReceive('sendMessage')->once()->withArgs(
+            function ($chatId, $message, $extra) use (&$sentMessage): bool {
+                $sentMessage = $message;
+
+                return $chatId === '-100123456789' && ($extra['parse_mode'] ?? null) === 'HTML';
+            },
+        )->andReturn(['ok' => true, 'result' => ['message_id' => 323]]);
+
+        $this->assertTrue((new NewRegistrationTelegramNotifier($telegram))->send($employee));
+        $this->assertStringContainsString('Сотрудник B2B-компании · Бухгалтер', $sentMessage);
+        $this->assertStringContainsString('ООО «Командный кабинет»', $sentMessage);
+        $this->assertStringContainsString('accountant@example.by', $sentMessage);
+        $this->assertStringContainsString('/admin/b2b-clients/', $sentMessage);
+    }
 }

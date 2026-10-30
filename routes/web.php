@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminChimneyCalculationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\B2bInvitationController;
 use App\Http\Controllers\B2bMarketplaceController;
 use App\Http\Controllers\B2bPriceRequestController;
 use App\Http\Controllers\B2bCabinetController;
@@ -733,6 +734,13 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
+Route::get('/b2b/invitation/{token}', [B2bInvitationController::class, 'show'])
+    ->middleware('throttle:30,1')
+    ->name('b2b.invitation.show');
+Route::post('/b2b/invitation/{token}', [B2bInvitationController::class, 'accept'])
+    ->middleware('throttle:10,10')
+    ->name('b2b.invitation.accept');
+
 Route::middleware('auth')->group(function () {
     Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
         ->name('verification.notice');
@@ -753,6 +761,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('b2b.cabinet.team.store');
     Route::delete('/b2b/cabinet/team/{member}', [B2bCabinetController::class, 'removeMember'])
         ->name('b2b.cabinet.team.destroy');
+    Route::patch('/b2b/cabinet/team/{member}', [B2bCabinetController::class, 'updateMember'])
+        ->name('b2b.cabinet.team.update');
+    Route::delete('/b2b/cabinet/invitations/{invitation}', [B2bCabinetController::class, 'revokeInvitation'])
+        ->name('b2b.cabinet.invitations.destroy');
     Route::post('/b2b/cabinet/company-lookup', TaxpayerLookupController::class)
         ->middleware('throttle:15,1')
         ->name('b2b.cabinet.company-lookup');
