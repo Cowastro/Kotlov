@@ -7,6 +7,7 @@ use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\OrderStatusHistory;
+use App\Services\CommercialDocuments\CommercialDocumentAccountingSync;
 use Illuminate\Support\Facades\DB;
 use SimpleXMLElement;
 
@@ -15,6 +16,7 @@ class CommerceMlOrderImporter
     public function __construct(
         private readonly OrderIntegrationRouter $orderRouter,
         private readonly IntegrationOrderStatusMapper $statusMapper,
+        private readonly CommercialDocumentAccountingSync $documentAccounting,
     ) {}
 
     /** @return array{documents:int,matched:int,updated:int,unchanged:int,unmatched:int,conflicts:int,unknown_statuses:int,attention:int} */
@@ -57,6 +59,13 @@ class CommerceMlOrderImporter
                 $rawStatus = $this->text($node, './*[local-name()="Статус"]')
                     ?: $this->requisite($node, ['Статус заказа', 'Статус']);
                 $rawPaymentStatus = $this->requisite($node, ['Статус оплаты', 'Оплата']);
+                $invoiceExternalId = $this->requisite($node, [
+                    'GUID счета 1С', 'GUID счёта 1С', 'Идентификатор счета 1С', 'Идентификатор счёта 1С',
+                ]);
+                $invoiceNumber = $this->requisite($node, [
+                    'Номер счета 1С', 'Номер счёта 1С', 'Номер счета на оплату', 'Номер счёта на оплату',
+                ]);
+                $invoiceStatus = $this->requisite($node, ['Статус счета', 'Статус счёта']);
                 $status = $this->statusMapper->orderStatus($rawStatus, $source);
                 $paymentStatus = $this->statusMapper->paymentStatus($rawPaymentStatus, $source);
                 $oldStatus = $order->status;
@@ -91,6 +100,18 @@ class CommerceMlOrderImporter
 
                 if ($changes !== []) {
                     Order::withoutEvents(fn () => $order->update($changes));
+                }
+
+                if ($updatesCentralOrder && $source) {
+                    $order->loadMissing('commercialDocument');
+                    $this->documentAccounting->sync(
+                        $order,
+                        $source,
+                        $invoiceExternalId,
+                        $invoiceNumber,
+                        $invoiceStatus,
+                        $paymentStatus,
+                    );
                 }
 
                 if ($delivery) {

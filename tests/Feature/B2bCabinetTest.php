@@ -7,8 +7,11 @@ use App\Models\B2bOrder;
 use App\Models\B2bSavedCart;
 use App\Models\CommercialDocument;
 use App\Models\CrmCounterparty;
+use App\Models\IntegrationSource;
 use App\Models\Order;
+use App\Models\OrderIntegrationDelivery;
 use App\Models\User;
+use App\Services\Integrations\CommerceMlOrderImporter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -260,11 +263,30 @@ class B2bCabinetTest extends TestCase
         $this->assertSame(1, CommercialDocument::query()->where('type', 'invoice')->count());
         $this->assertSame(1, $client->auditLogs()->where('event', 'invoice_generated')->count());
 
+        $invoice->update([
+            'accounting_number' => 'СФ-00000456',
+            'accounting_status' => 'Проведён',
+            'accounting_payment_status' => 'paid',
+            'accounting_confirmed_at' => now(),
+        ]);
+        $client->auditLogs()->create([
+            'event' => 'invoice_accounting_synced',
+            'metadata' => [
+                'document_number' => $invoice->number,
+                'accounting_number' => 'СФ-00000456',
+                'order_number' => $order->number,
+            ],
+        ]);
+
         $this->get(route('b2b.cabinet', ['section' => 'documents']))
             ->assertOk()
             ->assertSeeText($invoice->number)
+            ->assertSeeText('Подтверждено 1С')
+            ->assertSeeText('счёт № СФ-00000456')
+            ->assertSeeText('Оплачен')
             ->assertSeeText('История действий с документами')
             ->assertSeeText('Сформирован счёт')
+            ->assertSeeText('Счёт подтверждён 1С')
             ->assertSeeText('заказ B2B-INVOICE-1');
     }
 
@@ -295,6 +317,64 @@ class B2bCabinetTest extends TestCase
         [$other] = $this->partner('foreign-invoice@example.by', 'ООО «Чужой счёт»');
         $foreign = $this->order($other, 'B2B-FOREIGN-INVOICE');
         $this->post(route('b2b.cabinet.orders.invoice', $foreign))->assertNotFound();
+    }
+
+    public function test_onec_invoice_confirmation_is_synced_to_b2b_document_once(): void
+    {
+        [$partner, $client] = $this->partner('onec-invoice@example.by', 'ООО «Тест 1С»');
+        $source = IntegrationSource::query()->firstOrCreate(['code' => 'onec'], ['name' => '1С']);
+        $invoice = CommercialDocument::query()->create([
+            'type' => 'invoice',
+            'status' => 'sent',
+            'client_email' => $partner->email,
+            'currency' => 'BYN',
+            'total' => 120,
+        ]);
+        $order = $this->order($partner, 'ORD-1C-INVOICE-CONFIRMATION');
+        $order->update([
+            'commercial_document_id' => $invoice->id,
+            'status' => 'processing',
+            'onec_exported_at' => now(),
+            'b2b_commercial_terms_snapshot' => ['b2b_client_id' => $client->id],
+        ]);
+        OrderIntegrationDelivery::query()->create([
+            'order_id' => $order->id,
+            'integration_source_id' => $source->id,
+            'status' => OrderIntegrationDelivery::STATUS_SENT,
+            'external_id' => 'kotlov-order-'.$order->id,
+            'exported_at' => now(),
+        ]);
+        $xml = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<КоммерческаяИнформация>
+  <Документ>
+    <Ид>kotlov-order-{$order->id}</Ид>
+    <Номер>{$order->number}</Номер>
+    <ЗначенияРеквизитов>
+      <ЗначениеРеквизита><Наименование>GUID счёта 1С</Наименование><Значение>invoice-guid-456</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Номер счёта 1С</Наименование><Значение>СФ-00000456</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Статус счёта</Наименование><Значение>Проведён</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Статус оплаты</Наименование><Значение>Оплачен</Значение></ЗначениеРеквизита>
+    </ЗначенияРеквизитов>
+  </Документ>
+</КоммерческаяИнформация>
+XML;
+
+        $importer = app(CommerceMlOrderImporter::class);
+        $this->assertSame(1, $importer->import($xml, $source)['matched']);
+        $this->assertSame(1, $importer->import($xml, $source)['matched']);
+
+        $invoice->refresh();
+        $this->assertSame($source->id, $invoice->accounting_source_id);
+        $this->assertSame('invoice-guid-456', $invoice->accounting_external_id);
+        $this->assertSame('СФ-00000456', $invoice->accounting_number);
+        $this->assertSame('Проведён', $invoice->accounting_status);
+        $this->assertSame('paid', $invoice->accounting_payment_status);
+        $this->assertSame('paid', $invoice->status);
+        $this->assertNotNull($invoice->accounting_confirmed_at);
+        $this->assertNotNull($invoice->closed_at);
+        $this->assertSame('paid', $order->fresh()->payment_status);
+        $this->assertSame(1, $client->auditLogs()->where('event', 'invoice_accounting_synced')->count());
     }
 
     /** @return array{User, B2bClient} */

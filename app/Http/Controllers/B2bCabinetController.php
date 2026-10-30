@@ -183,7 +183,7 @@ class B2bCabinetController extends Controller
             ->limit(30)
             ->get();
         $financialAuditLogs = $client->auditLogs()
-            ->whereIn('event', ['invoice_generated', 'document_downloaded'])
+            ->whereIn('event', ['invoice_generated', 'invoice_accounting_synced', 'document_downloaded'])
             ->with('actor:id,name,email')
             ->latest()
             ->limit(20)
