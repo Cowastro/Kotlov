@@ -20,6 +20,12 @@ class MarketWebResearchService
     private bool $light = false;
 
     /** A background search (scheduled commands) within the daily limit; takes one from it. */
+    /** Background AI searches spent today, of the daily limit. */
+    public static function backgroundSearchesToday(): int
+    {
+        return (int) Cache::get('market-research:background:'.now()->format('Y-m-d'), 0);
+    }
+
     public static function takeBackgroundSearch(): bool
     {
         $key = 'market-research:background:'.now()->format('Y-m-d');

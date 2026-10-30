@@ -129,6 +129,7 @@ class ChistyBeregPhotosCommand extends Command
                 $this->warn($offer->supplier_article.': '.$e->getMessage());
             }
         }
+        $stats['daily_used'] = \App\Services\Market\MarketWebResearchService::backgroundSearchesToday();
         foreach ($stats as $key => $value) {
             $this->line("metric.chisty_bereg_photos.{$key}={$value}");
         }
