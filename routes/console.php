@@ -169,7 +169,7 @@ Schedule::command('supplier:chisty-bereg-create --refill-specs --limit=150 --app
     ->appendOutputTo(storage_path('logs/chisty-bereg-refill-specs.log'));
 
 // Hidden Чистый берег cards get photos from a shop page naming the item; each card is tried once.
-// Without Google credits the AI search answers, about a minute a card, hence a dozen a run.
+// One light AI search a card, within the daily limit of background searches (services.ai.market_research_daily_background_limit).
 Schedule::command('supplier:chisty-bereg-photos --limit=12 --apply')
     ->everyFifteenMinutes()
     ->withoutOverlapping(60)
@@ -177,7 +177,7 @@ Schedule::command('supplier:chisty-bereg-photos --limit=12 --apply')
     ->appendOutputTo(storage_path('logs/chisty-bereg-photos.log'));
 
 // Cards whose Чистый берег РРЦ equals опт get the market retail price (web research, a few cards at a time).
-Schedule::command('supplier:chisty-bereg-market-prices --limit=30 --apply')
+Schedule::command('supplier:chisty-bereg-market-prices --limit=10 --apply')
     ->everyThirtyMinutes()
     ->withoutOverlapping(120)
     ->runInBackground()

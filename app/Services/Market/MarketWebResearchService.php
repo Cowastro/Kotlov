@@ -16,7 +16,23 @@ use Throwable;
 class MarketWebResearchService
 {
     /** @return array<string, mixed> */
-    public function researchQuery(string $query): array
+    /** Light: a page finder (photos, specs) — two web searches and a short answer instead of a full price survey. */
+    private bool $light = false;
+
+    /** A background search (scheduled commands) within the daily limit; takes one from it. */
+    public static function takeBackgroundSearch(): bool
+    {
+        $key = 'market-research:background:'.now()->format('Y-m-d');
+        $used = (int) Cache::get($key, 0);
+        if ($used >= max(0, (int) config('services.ai.market_research_daily_background_limit', 300))) {
+            return false;
+        }
+        Cache::put($key, $used + 1, now()->addDays(2));
+
+        return true;
+    }
+
+    public function researchQuery(string $query, bool $light = false): array
     {
         $query = trim($query);
         if (mb_strlen($query) < 3) {
@@ -28,7 +44,13 @@ class MarketWebResearchService
         $product->sku = null;
         $product->price = 0;
 
-        return $this->research($product, 0);
+        // The light mode lasts for this search only: a full price survey after it is not cut short.
+        $this->light = $light;
+        try {
+            return $this->research($product, 0);
+        } finally {
+            $this->light = false;
+        }
     }
 
     /** @return array<string, mixed> */
@@ -289,9 +311,9 @@ class MarketWebResearchService
 
             $payload = [
                 'model' => $model,
-                'max_tokens' => $safeMode
+                'max_tokens' => $this->light ? 2500 : ($safeMode
                     ? max(2000, min(12000, (int) config('services.ai.market_research_max_output_tokens', 8000)))
-                    : 16000,
+                    : 16000),
                 'metadata' => ['user_id' => 'kotlov-market-research'],
                 'system' => $this->instructions()."\n\n".$this->deepSeekJsonContract(),
                 'messages' => [[
@@ -301,9 +323,9 @@ class MarketWebResearchService
                 'tools' => [[
                     'type' => 'web_search_20250305',
                     'name' => 'web_search',
-                    'max_uses' => $safeMode
+                    'max_uses' => $this->light ? 2 : ($safeMode
                         ? max(1, min(8, (int) config('services.ai.market_research_max_search_uses', 6)))
-                        : 12,
+                        : 12),
                 ]],
             ];
 

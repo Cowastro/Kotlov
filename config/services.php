@@ -121,6 +121,8 @@ return [
         'market_research_max_search_uses' => (int) env('MARKET_RESEARCH_MAX_SEARCH_USES', 6),
         'market_research_max_output_tokens' => (int) env('MARKET_RESEARCH_MAX_OUTPUT_TOKENS', 8000),
         'market_research_cache_minutes' => (int) env('MARKET_RESEARCH_CACHE_MINUTES', 360),
+        // Background AI web searches a day (photo search, market prices); the manager's own searches are not counted.
+        'market_research_daily_background_limit' => (int) env('MARKET_RESEARCH_DAILY_BACKGROUND_LIMIT', 300),
         'azure_openai_key' => env('AZURE_OPENAI_API_KEY', ''),
         'azure_openai_responses_url' => env('AZURE_OPENAI_RESPONSES_URL', ''),
         'azure_openai_research_model' => env('AZURE_OPENAI_RESEARCH_MODEL', 'gpt-5.5'),

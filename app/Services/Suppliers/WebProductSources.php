@@ -31,6 +31,9 @@ class WebProductSources
         'vodopad.ru', 'santehnika-online.ru', 'teplodom.ru', 'ecokamin.ru',
     ];
 
+    /** Background caller: a light AI search, within the daily limit of background searches. */
+    public bool $background = false;
+
     /** Which search answered: serper, ai or none. */
     public string $engine = 'none';
 
@@ -104,7 +107,12 @@ class WebProductSources
         if (! $this->aiConfigured()) {
             return [];
         }
-        $research = app(MarketWebResearchService::class)->researchQuery($query);
+        if ($this->background && ! MarketWebResearchService::takeBackgroundSearch()) {
+            $this->lastError = 'daily limit of background AI searches reached';
+
+            return [];
+        }
+        $research = app(MarketWebResearchService::class)->researchQuery($query, $this->background);
         // A failed search (no AI balance, a network error) is not «nothing found»: the caller may try later.
         if (($research['status'] ?? null) !== 'ready') {
             $this->lastError = (string) ($research['message'] ?? 'AI search failed');

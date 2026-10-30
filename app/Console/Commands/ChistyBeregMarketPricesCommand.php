@@ -52,6 +52,11 @@ class ChistyBeregMarketPricesCommand extends Command
 
         if ($this->option('apply')) {
             foreach ($due->take(max(1, (int) $this->option('limit'))) as $offer) {
+                // The daily limit of background AI searches is spent: the rest waits for tomorrow.
+                if (! MarketWebResearchService::takeBackgroundSearch()) {
+                    $stats['daily_limit'] = 1;
+                    break;
+                }
                 try {
                     $this->research($offer, $research, $stats);
                 } catch (\Throwable $e) {

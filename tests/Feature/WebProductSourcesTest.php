@@ -61,7 +61,7 @@ class WebProductSourcesTest extends TestCase
         config(['services.serper.key' => 'test-key', 'services.ai.market_research_provider' => 'openai', 'services.ai.openai_key' => 'sk-test']);
         Http::fake(['google.serper.dev/*' => Http::response(['message' => 'Not enough credits', 'statusCode' => 400], 400)]);
         $this->mock(\App\Services\Market\MarketWebResearchService::class)
-            ->shouldReceive('researchQuery')->once()->with('Wellmix WRS D 50-120SF')
+            ->shouldReceive('researchQuery')->once()->with('Wellmix WRS D 50-120SF', false)
             ->andReturn(['status' => 'ready', 'offers' => [
                 ['url' => 'https://aqualider.by/p/sdvoennyy-cirkulyacionnyy-wellmix-wrs-d-50-120sf-17109972', 'title' => 'Сдвоенный циркуляционный Wellmix WRS D 50-120SF', 'seller' => 'Аквалидер'],
                 ['url' => 'https://www.ozon.ru/product/123', 'title' => 'Ozon'],

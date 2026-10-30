@@ -32,6 +32,7 @@ class ChistyBeregPhotosCommand extends Command
 
     public function handle(WebProductSources $sources, ProductSourceEnricher $enricher): int
     {
+        $sources->background = true;
         $offers = SupplierProduct::query()
             ->whereHas('supplier', fn ($q) => $q->where('code', SyncChistyBeregCommand::SUPPLIER_CODE))
             ->whereHas('product', fn ($q) => $q->where('sku', 'like', 'BEREG-%')->where('is_archived', false)
@@ -71,7 +72,8 @@ class ChistyBeregPhotosCommand extends Command
             $stats['searched']++;
             try {
                 $urls = [];
-                $queries = array_unique(array_filter([$code !== '' ? trim($brand.' '.$code) : null, $product->name]));
+                // One AI search a card: each costs a web survey.
+                $queries = [$code !== '' ? trim($brand.' '.$code) : $product->name];
                 $failed = 0;
                 foreach ($queries as $query) {
                     $urls += $sources->search($query);
