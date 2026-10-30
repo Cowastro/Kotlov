@@ -27,6 +27,7 @@ class SyncPrometallCommand extends Command
 {
     protected $signature = 'supplier:sync-prometall
         {--file= : An xlsx instead of the last uploaded one}
+        {--link=* : Link by hand: article:product id (p0010:16756), kept like a link made in the admin}
         {--apply : Write offers, links and prices}';
 
     protected $description = 'Sync the ProMetall price list of «Бани и печи»';
@@ -47,7 +48,8 @@ class SyncPrometallCommand extends Command
         }
 
         $supplier = $this->option('apply') ? $this->supplier() : Supplier::query()->where('code', self::SUPPLIER_CODE)->first();
-        [$rows, $stats] = $this->classify($rows, $supplier);
+        $manual = $this->manualLinks();
+        [$rows, $stats] = $this->classify($rows, $supplier, $manual);
         foreach ($rows as $row) {
             $this->line(sprintf('audit.prometall.row=%s:%s:%s:%s', Str::slug($row['code']), $row['product_id'] ?: ($row['suggested_product_id'] ? 's'.$row['suggested_product_id'] : 'none'),
                 $row['match_reason'] ?? ($row['suggested_product_id'] ? 'suggested' : 'unlinked'), Str::limit(Str::slug($row['name']), 60, '')));
@@ -63,7 +65,21 @@ class SyncPrometallCommand extends Command
     }
 
     /** @return array{0:list<array<string,mixed>>,1:array<string,int>} */
-    private function classify(array $rows, ?Supplier $supplier): array
+    /** @return array<string, int> article => product id */
+    private function manualLinks(): array
+    {
+        $links = [];
+        foreach ((array) $this->option('link') as $pair) {
+            [$code, $id] = array_pad(explode(':', (string) $pair, 2), 2, '');
+            if (trim($code) !== '' && ctype_digit(trim($id)) && Product::query()->whereKey((int) $id)->exists()) {
+                $links[trim($code)] = (int) $id;
+            }
+        }
+
+        return $links;
+    }
+
+    private function classify(array $rows, ?Supplier $supplier, array $manual = []): array
     {
         $links = $supplier
             ? SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->pluck('product_id', 'supplier_article')
@@ -96,11 +112,11 @@ class SyncPrometallCommand extends Command
         }
         $one = fn (array $ids): ?int => count($ids = array_values(array_unique($ids))) === 1 ? $ids[0] : null;
 
-        $stats = ['rows' => count($rows), 'linked_before' => 0, 'ean' => 0, 'article' => 0, 'exact_name' => 0, 'suggested' => 0, 'unlinked' => 0];
+        $stats = ['rows' => count($rows), 'manual_admin' => 0, 'linked_before' => 0, 'ean' => 0, 'article' => 0, 'exact_name' => 0, 'suggested' => 0, 'unlinked' => 0];
         $claimed = $links->flip();
         foreach ($rows as &$row) {
-            $productId = (int) ($links[$row['code']] ?? 0);
-            $reason = $productId ? 'linked_before' : null;
+            $productId = (int) ($manual[$row['code']] ?? $links[$row['code']] ?? 0);
+            $reason = isset($manual[$row['code']]) ? 'manual_admin' : ($productId ? 'linked_before' : null);
             if (! $productId && strlen($row['ean']) >= 8 && ($id = $one($byEan[$row['ean']] ?? []))) {
                 [$productId, $reason] = [$id, 'ean'];
             }

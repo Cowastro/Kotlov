@@ -78,4 +78,19 @@ class SyncPrometallCommandTest extends TestCase
 
         return $path;
     }
+
+    public function test_price_list_sections_go_to_our_categories(): void
+    {
+        $category = fn (string $section, string $name) => \App\Console\Commands\CreatePrometallCardsCommand::targetCategory($section, $name);
+        $this->assertSame('drovianye-peci-bannye', $category('Печи "Атмосфера" в ламелях', 'Печь банная "Атмосфера L" в ламелях'));
+        $this->assertSame('kamni-dlya-bani', $category('Аксессуары для бани', 'Керамические камни для бани "МОВИ"'));
+        $this->assertSame('pechi-dlya-bani', $category('Аксессуары для бани', 'Ковш для бани'));
+        $this->assertSame('teplosyomniki', $category('Дымоходные элементы на банные печи', 'Дымоход-конвектор "Жадеит" наборный'));
+        $this->assertSame('truby-mono', $category('Дымоходные элементы на банные печи', 'Стартовый дымоход 115-136'));
+        $this->assertSame('stekla-dlya-pechey-i-kaminov', $category('Комплектующие к печам', 'Изделие из стекла (кромка) 245*273*4'));
+        $this->assertSame('pechi-kaminy', $category('Печи отопительные и аксессуары', 'Печь- камин отопительно-варочная "Бахта"'));
+        $this->assertSame('peci-drovianye-otopitelnye', $category('Печи отопительные и аксессуары', 'Печь отопительная "Бахтинка"'));
+        $this->assertSame('pechnoe-i-kaminnoe-lite', $category('Печное литье', 'Дверца поддувальная "Арктика"'));
+        $this->assertNull($category('Камни скидка', 'Камень'));
+    }
 }
