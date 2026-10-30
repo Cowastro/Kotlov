@@ -1,26 +1,27 @@
 <?php
 
+use App\Console\Commands\ApplyEcokaminOctoberSaleCommand;
 use App\Http\Controllers\A1CallRecordingController;
 use App\Http\Controllers\A1TelephonyWebhookController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AccountOrderController;
 use App\Http\Controllers\AdminChimneyCalculationController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\BlogController;
-use App\Http\Controllers\BrandController;
+use App\Http\Controllers\B2bCabinetController;
 use App\Http\Controllers\B2bInvitationController;
 use App\Http\Controllers\B2bMarketplaceController;
 use App\Http\Controllers\B2bPriceRequestController;
-use App\Http\Controllers\B2bCabinetController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CatalogIndexController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ChimneyCalculationRequestController;
 use App\Http\Controllers\ChimneySelectorController;
+use App\Http\Controllers\CommercialContractFileController;
 use App\Http\Controllers\CommercialDocumentPdfController;
 use App\Http\Controllers\CommercialDocumentPortalController;
-use App\Http\Controllers\CommercialContractFileController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\ContactRequestController;
 use App\Http\Controllers\CrmMailAttachmentController;
@@ -35,21 +36,22 @@ use App\Http\Controllers\InstallerController;
 use App\Http\Controllers\InstallRequestController;
 use App\Http\Controllers\MarketResearchReportPdfController;
 use App\Http\Controllers\OneCExchangeController;
-use App\Http\Controllers\OrderProcurementController;
 use App\Http\Controllers\OrderPortalController;
+use App\Http\Controllers\OrderProcurementController;
 use App\Http\Controllers\PartnerApplicationController;
+use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\ProductController;
-use App\Http\Controllers\ReleaseNotesController;
 use App\Http\Controllers\ProductPurchasePriceSourceAttachmentController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\PublicAiSelectionController;
+use App\Http\Controllers\ReleaseNotesController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SupportChatController;
 use App\Http\Controllers\TaxpayerLookupController;
 use App\Http\Controllers\TelegramWebhookController;
-use App\Http\Controllers\TisStandard30PriceListController;
 use App\Http\Controllers\TisFerrit1mmPriceListController;
+use App\Http\Controllers\TisStandard30PriceListController;
 use App\Http\Controllers\TisStandard50PriceListController;
 use App\Http\Controllers\WebpayPaymentController;
 use App\Http\Controllers\WishlistController;
@@ -66,6 +68,7 @@ use App\Support\Catalog\BelomoGasMeterDesignations;
 use App\Support\Catalog\BelomoSelectorLineup;
 use App\Support\Catalog\GasMeterSelectionGuide;
 use App\Support\KnowledgeBase;
+use App\Support\Promotions\EcokaminPromotion;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
@@ -288,7 +291,7 @@ Route::get('/', function () {
 
         // Акция ЭкоКамин: акционные товары первыми в витрине бренда; хиты серий
         // — для слайда наверху и баннеров внизу главной.
-        $ecokaminPromo = \App\Support\Promotions\EcokaminPromotion::showcase();
+        $ecokaminPromo = EcokaminPromotion::showcase();
         $ecokaminPromoAll = $ecokaminPromo['all'];
         $ecokaminPromoHits = $ecokaminPromo['hits'];
         $ecokaminPromoMaxDiscount = $ecokaminPromo['maxDiscount'];
@@ -408,7 +411,7 @@ Route::get('/', function () {
         $bannerPromoAkcii = Banner::active()->byPosition('promo_akcii')->first();
         $bannerPartners = Banner::active()->byPosition('partners')->first();
         $ecokaminSaleCount = Product::query()->orderable()
-            ->inActiveSaleCampaign(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::CAMPAIGN)
+            ->inActiveSaleCampaign(ApplyEcokaminOctoberSaleCommand::CAMPAIGN)
             ->count();
 
         $homeBlogPosts = BlogPost::published()
@@ -478,7 +481,7 @@ Route::get(GasMeterSelectionGuide::PAGE_URL, function () {
     ]);
 })->name('knowledge-base.gas-meter-selection');
 Route::permanentRedirect(BelomoGasMeterDesignations::LEGACY_PAGE_URL, BelomoGasMeterDesignations::PAGE_URL);
-Route::permanentRedirect(BelomoGasMeterDesignations::LEGACY_PAGE_URL . '.csv', BelomoGasMeterDesignations::CSV_URL);
+Route::permanentRedirect(BelomoGasMeterDesignations::LEGACY_PAGE_URL.'.csv', BelomoGasMeterDesignations::CSV_URL);
 Route::get(BelomoGasMeterDesignations::PAGE_URL, fn () => view('pages.knowledge-base-belomo-designations', [
     'models' => BelomoGasMeterDesignations::models(),
     'variants' => BelomoGasMeterDesignations::variants(),
@@ -494,7 +497,7 @@ Route::get(BelomoGasMeterDesignations::CSV_URL, function () {
                 $row['code'],
                 $row['size'],
                 $row['option'] ?? '',
-                $row['thread'] ? $row['thread'] . ' (' . BelomoGasMeterDesignations::THREADS[$row['thread']] . ')' : '',
+                $row['thread'] ? $row['thread'].' ('.BelomoGasMeterDesignations::THREADS[$row['thread']].')' : '',
                 $row['network'] ?? '',
                 $row['adapter'] === 'pc' ? 'ПК' : ($row['adapter'] === 'modbus' ? 'Modbus' : ''),
                 $row['name'],
@@ -722,7 +725,7 @@ Route::get('/forgot-password', function () {
 
 // ===== Auth действия (POST) =====
 Route::post('/register', [AuthController::class, 'register'])->name('register')->middleware('throttle:5,10');
-Route::post('/registration/phone/send-code', [\App\Http\Controllers\PhoneVerificationController::class, 'store'])
+Route::post('/registration/phone/send-code', [PhoneVerificationController::class, 'store'])
     ->name('registration.phone.send-code')
     ->middleware('throttle:10,10');
 Route::post('/registration/company-lookup', TaxpayerLookupController::class)
@@ -755,15 +758,23 @@ Route::middleware('auth')->group(function () {
 // ===== Личный кабинет =====
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/b2b/cabinet', [B2bCabinetController::class, 'show'])->name('b2b.cabinet');
-    Route::put('/b2b/cabinet/profile', [B2bCabinetController::class, 'updateProfile'])->name('b2b.cabinet.profile');
+    Route::post('/b2b/cabinet/confirm-password', [B2bCabinetController::class, 'confirmSensitiveActions'])
+        ->middleware('throttle:6,1')
+        ->name('b2b.cabinet.confirm-password');
+    Route::put('/b2b/cabinet/profile', [B2bCabinetController::class, 'updateProfile'])
+        ->middleware('b2b.password.recent:profile')
+        ->name('b2b.cabinet.profile');
     Route::post('/b2b/cabinet/team', [B2bCabinetController::class, 'addMember'])
-        ->middleware('throttle:10,1')
+        ->middleware(['b2b.password.recent:team', 'throttle:10,1'])
         ->name('b2b.cabinet.team.store');
     Route::delete('/b2b/cabinet/team/{member}', [B2bCabinetController::class, 'removeMember'])
+        ->middleware('b2b.password.recent:team')
         ->name('b2b.cabinet.team.destroy');
     Route::patch('/b2b/cabinet/team/{member}', [B2bCabinetController::class, 'updateMember'])
+        ->middleware('b2b.password.recent:team')
         ->name('b2b.cabinet.team.update');
     Route::delete('/b2b/cabinet/invitations/{invitation}', [B2bCabinetController::class, 'revokeInvitation'])
+        ->middleware('b2b.password.recent:team')
         ->name('b2b.cabinet.invitations.destroy');
     Route::post('/b2b/cabinet/company-lookup', TaxpayerLookupController::class)
         ->middleware('throttle:15,1')
@@ -785,6 +796,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/b2b/cabinet/contracts/{contract}/{format}', [B2bCabinetController::class, 'contractFile'])
         ->where('format', 'pdf|docx')
         ->name('b2b.cabinet.contracts.file');
+    Route::get('/b2b/cabinet/documents/{document}/pdf', [B2bCabinetController::class, 'documentPdf'])
+        ->name('b2b.cabinet.documents.pdf');
     Route::get('/b2b/catalog', B2bMarketplaceController::class)->name('b2b.catalog');
     Route::get('/b2b/catalog/suggest', [B2bMarketplaceController::class, 'suggest'])
         ->middleware('throttle:120,1')

@@ -27,7 +27,7 @@ class B2bMarketplaceController extends Controller
             && ! $resolver->canViewPartnerPrices($user)
             && $resolver->canPreviewPartnerPrices($user);
         abort_unless($resolver->canViewPartnerPrices($user) || $staffPreview, 403);
-        abort_unless($staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog')), 403);
+        abort_unless($staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog.view')), 403);
 
         $mode = $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
@@ -185,7 +185,7 @@ class B2bMarketplaceController extends Controller
             && ! $resolver->canViewPartnerPrices($user)
             && $resolver->canPreviewPartnerPrices($user);
         abort_unless($resolver->canViewPartnerPrices($user) || $staffPreview, 403);
-        abort_unless($staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog')), 403);
+        abort_unless($staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog.view')), 403);
 
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
         if (mb_strlen($query) < 2) {

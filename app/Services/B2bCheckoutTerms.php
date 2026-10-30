@@ -33,7 +33,7 @@ class B2bCheckoutTerms
         if ($isB2b && (! $user?->isB2B() || ! $client || $client->status !== 'approved')) {
             $issues[] = 'Партнёрский доступ изменился. Обновите корзину или обратитесь к менеджеру.';
         }
-        if ($isB2b && $user && $client && ! $this->access->allows($user, 'order', $client)) {
+        if ($isB2b && $user && $client && ! $this->access->allows($user, 'orders.create', $client)) {
             $issues[] = 'Ваша роль в компании не позволяет оформлять заказы. Обратитесь к владельцу B2B-кабинета.';
         }
         if ($client?->commercial_terms_valid_until?->isBefore(today())) {

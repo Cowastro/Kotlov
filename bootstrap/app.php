@@ -1,8 +1,14 @@
 <?php
 
+use App\Http\Middleware\AdminNoIndex;
+use App\Http\Middleware\CitySubdomain;
+use App\Http\Middleware\HandleRedirects;
+use App\Http\Middleware\ProtectPublicForm;
+use App\Http\Middleware\RequireRecentB2bPassword;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -11,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function () {
             // Sitemap без session/cookie middleware
-            \Illuminate\Support\Facades\Route::middleware([])->group(
+            Route::middleware([])->group(
                 base_path('routes/sitemap.php')
             );
         },
@@ -33,12 +39,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
 
         // 301 редиректы со старого сайта — обрабатывает 404 и ищет в таблице redirects
-        $middleware->append(\App\Http\Middleware\HandleRedirects::class);
-        $middleware->append(\App\Http\Middleware\CitySubdomain::class);
-        $middleware->append(\App\Http\Middleware\AdminNoIndex::class);
+        $middleware->append(HandleRedirects::class);
+        $middleware->append(CitySubdomain::class);
+        $middleware->append(AdminNoIndex::class);
 
         $middleware->alias([
-            'public.form.protect' => \App\Http\Middleware\ProtectPublicForm::class,
+            'public.form.protect' => ProtectPublicForm::class,
+            'b2b.password.recent' => RequireRecentB2bPassword::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

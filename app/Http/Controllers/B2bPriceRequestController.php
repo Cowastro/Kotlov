@@ -19,7 +19,7 @@ class B2bPriceRequestController extends Controller
         ContactRequestNotifier $notifier,
     ): JsonResponse {
         $user = $request->user();
-        abort_unless($user && $access->allows($user, 'catalog'), 403);
+        abort_unless($user && $access->allows($user, 'catalog.view'), 403);
 
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],

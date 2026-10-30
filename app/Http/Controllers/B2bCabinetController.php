@@ -23,15 +23,18 @@ use App\Services\B2bCheckoutTerms;
 use App\Services\B2bCompanyAccess;
 use App\Services\B2bSpecificationParser;
 use App\Services\B2bTeamService;
+use App\Services\CommercialDocuments\CommercialDocumentPdf;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -40,14 +43,14 @@ class B2bCabinetController extends Controller
     private const SECTIONS = ['overview', 'profile', 'team', 'specifications', 'carts', 'orders', 'documents', 'contracts', 'reconciliation', 'security'];
 
     private const SECTION_PERMISSIONS = [
-        'profile' => 'profile',
-        'team' => 'team',
-        'specifications' => 'specifications',
-        'carts' => 'order',
-        'orders' => 'documents',
-        'documents' => 'documents',
-        'contracts' => 'documents',
-        'reconciliation' => 'finance',
+        'profile' => 'profile.manage',
+        'team' => 'team.manage',
+        'specifications' => 'specifications.manage',
+        'carts' => 'orders.create',
+        'orders' => 'orders.view',
+        'documents' => 'documents.view',
+        'contracts' => 'documents.view',
+        'reconciliation' => 'finance.view',
     ];
 
     public function __construct(private readonly B2bCompanyAccess $access) {}
@@ -61,6 +64,13 @@ class B2bCabinetController extends Controller
         abort_unless($client, 403);
         $role = $this->access->role($user, $client);
         $permissions = collect(B2bCompanyAccess::PERMISSIONS[$role] ?? []);
+        $permissionLabels = $this->access->permissionLabels((string) $role);
+        $rolePermissionLabels = collect(B2bClientMember::ROLES)
+            ->mapWithKeys(fn (string $label, string $roleCode): array => [
+                $roleCode => $this->access->permissionLabels($roleCode),
+            ]);
+        $passwordRecentlyConfirmed = (int) $request->session()->get('auth.password_confirmed_at', 0)
+            >= time() - max(60, (int) config('auth.password_timeout', 10800));
         $companyUserIds = $this->access->allUserIds($client);
         $allowedSources = IntegrationSource::query()
             ->whereIn('id', array_map('intval', $client->allowed_integration_source_ids ?? []))
@@ -146,7 +156,8 @@ class B2bCabinetController extends Controller
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
             'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers', 'creditSummary',
             'profileCompletion', 'profileMissing',
-            'role', 'permissions', 'members', 'pendingInvitations', 'auditLogs', 'companyOrderTotal',
+            'role', 'permissions', 'permissionLabels', 'rolePermissionLabels', 'passwordRecentlyConfirmed',
+            'members', 'pendingInvitations', 'auditLogs', 'companyOrderTotal',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));
     }
@@ -155,7 +166,7 @@ class B2bCabinetController extends Controller
     {
         $user = $request->user();
         $resolvedClient = $user->activeB2bClient();
-        abort_unless($resolvedClient && $this->access->allows($user, 'profile', $resolvedClient), 403);
+        abort_unless($resolvedClient && $this->access->allows($user, 'profile.manage', $resolvedClient), 403);
 
         $bankBic = mb_strtoupper(preg_replace('/\s+/', '', (string) $request->input('bank_bic')));
         $bankIban = mb_strtoupper(preg_replace('/\s+/', '', (string) $request->input('bank_iban')));
@@ -224,9 +235,29 @@ class B2bCabinetController extends Controller
         return to_route('b2b.cabinet', ['section' => 'profile'])->with('success', 'Реквизиты компании сохранены.');
     }
 
+    public function confirmSensitiveActions(Request $request)
+    {
+        $data = $request->validate([
+            'password' => ['required', 'string'],
+            'section' => ['required', 'in:profile,team,security'],
+        ], [
+            'password.required' => 'Введите пароль от аккаунта.',
+        ]);
+
+        if (! Hash::check($data['password'], $request->user()->password)) {
+            return to_route('b2b.cabinet', ['section' => $data['section']])
+                ->withErrors(['password' => 'Неверный пароль.']);
+        }
+
+        $request->session()->put('auth.password_confirmed_at', time());
+
+        return to_route('b2b.cabinet', ['section' => $data['section']])
+            ->with('success', 'Личность подтверждена. Защищённые действия доступны на '.max(1, (int) ceil(config('auth.password_timeout') / 3600)).' ч.');
+    }
+
     public function saveCart(Request $request)
     {
-        abort_unless($this->allows($request, 'order'), 403);
+        abort_unless($this->allows($request, 'orders.create'), 403);
         $data = $request->validate(['name' => ['required', 'string', 'max:120']]);
         $items = collect($request->session()->get('cart', []))
             ->filter(fn (array $item): bool => ($item['pricing_type'] ?? null) === 'b2b')
@@ -311,7 +342,7 @@ class B2bCabinetController extends Controller
     {
         $user = $request->user();
         $client = $user->activeB2bClient();
-        abort_unless($client && $this->access->allows($user, 'specifications', $client), 403);
+        abort_unless($client && $this->access->allows($user, 'specifications.manage', $client), 403);
         abort_unless($client->specification_service_enabled, 403);
 
         $data = $request->validate([
@@ -396,7 +427,7 @@ class B2bCabinetController extends Controller
     ) {
         $user = $request->user();
         $client = $user->activeB2bClient();
-        abort_unless($client && $this->access->allows($user, 'specifications', $client) && (int) $specification->b2b_client_id === (int) $client->id, 404);
+        abort_unless($client && $this->access->allows($user, 'specifications.manage', $client) && (int) $specification->b2b_client_id === (int) $client->id, 404);
         abort_unless($client->specification_service_enabled, 403);
         abort_if(in_array($specification->status, ['closed', 'cancelled'], true), 422, 'Завершённую заявку нельзя изменить.');
 
@@ -472,7 +503,7 @@ class B2bCabinetController extends Controller
     {
         $user = $request->user();
         $client = $user->activeB2bClient();
-        abort_unless($client && $this->access->allows($user, 'order', $client) && (int) $specification->b2b_client_id === (int) $client->id, 404);
+        abort_unless($client && $this->access->allows($user, 'orders.create', $client) && (int) $specification->b2b_client_id === (int) $client->id, 404);
 
         $items = $specification->items()
             ->where('status', 'matched')
@@ -540,7 +571,7 @@ class B2bCabinetController extends Controller
         $specification = $attachment->specification()->firstOrFail();
         $client = $user->activeB2bClient();
         $ownsSpecification = $client
-            && $this->access->allows($user, 'documents', $client)
+            && $this->access->allows($user, 'documents.view', $client)
             && (int) $specification->b2b_client_id === (int) $client->id;
         abort_unless($user->isManager() || $ownsSpecification, 404);
 
@@ -556,7 +587,7 @@ class B2bCabinetController extends Controller
 
     public function contractFile(Request $request, CommercialContract $contract, string $format): BinaryFileResponse|StreamedResponse
     {
-        abort_unless($this->allows($request, 'documents'), 403);
+        abort_unless($this->allows($request, 'contracts.download'), 403);
         abort_unless(in_array($format, ['pdf', 'docx'], true), 404);
         abort_unless($this->documentsFor($request)->whereKey($contract->commercial_document_id)->exists(), 404);
 
@@ -574,6 +605,25 @@ class B2bCabinetController extends Controller
 
         return Storage::disk('local')->download($path, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ]);
+    }
+
+    public function documentPdf(
+        Request $request,
+        CommercialDocument $document,
+        CommercialDocumentPdf $pdf,
+    ): Response {
+        abort_unless($this->allows($request, 'documents.download'), 403);
+        abort_unless($this->documentsFor($request)->whereKey($document->id)->exists(), 404);
+
+        $filename = ($document->type === 'invoice' ? 'Счет-' : 'Коммерческое-предложение-').$document->number.'.pdf';
+        $fallback = ($document->type === 'invoice' ? 'invoice-' : 'quote-').$document->id.'.pdf';
+
+        return response($pdf->render($document), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => (new ResponseHeaderBag)->makeDisposition('inline', $filename, $fallback),
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 
@@ -607,7 +657,7 @@ class B2bCabinetController extends Controller
     private function authorizeSavedCart(Request $request, B2bSavedCart $savedCart): void
     {
         $client = $request->user()->activeB2bClient();
-        abort_unless($client && $this->access->allows($request->user(), 'order', $client), 404);
+        abort_unless($client && $this->access->allows($request->user(), 'orders.create', $client), 404);
         abort_unless($this->access->allUserIds($client)->contains((int) $savedCart->user_id), 404);
     }
 
@@ -615,7 +665,7 @@ class B2bCabinetController extends Controller
     {
         $owner = $request->user();
         $client = $owner->activeB2bClient();
-        abort_unless($client && $this->access->allows($owner, 'team', $client), 403);
+        abort_unless($client && $this->access->allows($owner, 'team.manage', $client), 403);
 
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
@@ -644,7 +694,7 @@ class B2bCabinetController extends Controller
     {
         $owner = $request->user();
         $client = $owner->activeB2bClient();
-        abort_unless($client && $this->access->allows($owner, 'team', $client), 403);
+        abort_unless($client && $this->access->allows($owner, 'team.manage', $client), 403);
         abort_unless((int) $member->b2b_client_id === (int) $client->id && $member->role !== 'owner', 404);
         $data = $request->validate(['role' => ['required', 'in:buyer,accountant,viewer']]);
         $teams->changeRole($member, $owner, $data['role']);
@@ -656,7 +706,7 @@ class B2bCabinetController extends Controller
     {
         $owner = $request->user();
         $client = $owner->activeB2bClient();
-        abort_unless($client && $this->access->allows($owner, 'team', $client), 403);
+        abort_unless($client && $this->access->allows($owner, 'team.manage', $client), 403);
         abort_unless((int) $member->b2b_client_id === (int) $client->id && $member->role !== 'owner', 404);
         $teams->revokeMember($member, $owner);
 
@@ -667,7 +717,7 @@ class B2bCabinetController extends Controller
     {
         $owner = $request->user();
         $client = $owner->activeB2bClient();
-        abort_unless($client && $this->access->allows($owner, 'team', $client), 403);
+        abort_unless($client && $this->access->allows($owner, 'team.manage', $client), 403);
         abort_unless((int) $invitation->b2b_client_id === (int) $client->id && $invitation->isAvailable(), 404);
         $teams->revokeInvitation($invitation, $owner);
 

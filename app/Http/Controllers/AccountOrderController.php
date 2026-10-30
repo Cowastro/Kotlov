@@ -14,7 +14,7 @@ class AccountOrderController extends Controller
         $ownsOrder = (int) $order->user_id === (int) $request->user()->id;
         $client = $request->user()->activeB2bClient();
         $companyCanView = $client
-            && $access->allows($request->user(), 'documents', $client)
+            && $access->allows($request->user(), 'orders.view', $client)
             && $access->allUserIds($client)->contains((int) $order->user_id);
         abort_unless($ownsOrder || $companyCanView, 404);
         abort_unless($order->customerDetailsAreAvailable(), 404);

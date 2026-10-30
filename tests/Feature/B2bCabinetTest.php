@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\B2bClient;
 use App\Models\B2bSavedCart;
+use App\Models\CommercialDocument;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,7 +33,7 @@ class B2bCabinetTest extends TestCase
     {
         [$partner, $client] = $this->partner();
 
-        $this->actingAs($partner)->put(route('b2b.cabinet.profile'), [
+        $this->actingAs($partner)->withSession(['auth.password_confirmed_at' => time()])->put(route('b2b.cabinet.profile'), [
             'company_name' => 'ООО «Новый партнёр»',
             'legal_name' => 'Общество с ограниченной ответственностью «Новый партнёр»',
             'unp' => '190000001',
@@ -118,6 +119,39 @@ class B2bCabinetTest extends TestCase
             ->assertOk()
             ->assertSeeText('B2B-OWN-1')
             ->assertDontSeeText('B2B-FOREIGN-1');
+    }
+
+    public function test_partner_can_open_only_its_own_commercial_document_pdf(): void
+    {
+        [$partner] = $this->partner();
+        [$other] = $this->partner('pdf-other@example.by', 'ООО «Другой PDF»');
+        $own = CommercialDocument::query()->create([
+            'type' => 'invoice',
+            'status' => 'sent',
+            'client_name' => $partner->name,
+            'client_email' => $partner->email,
+            'currency' => 'BYN',
+            'subtotal' => 125,
+            'total' => 125,
+        ]);
+        $foreign = CommercialDocument::query()->create([
+            'type' => 'invoice',
+            'status' => 'sent',
+            'client_name' => $other->name,
+            'client_email' => $other->email,
+            'currency' => 'BYN',
+            'subtotal' => 250,
+            'total' => 250,
+        ]);
+
+        $this->actingAs($partner)
+            ->get(route('b2b.cabinet.documents.pdf', $own))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('cache-control', 'max-age=0, no-store, private');
+        $this->actingAs($partner)
+            ->get(route('b2b.cabinet.documents.pdf', $foreign))
+            ->assertNotFound();
     }
 
     /** @return array{User, B2bClient} */

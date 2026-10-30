@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Notifications\B2bCompanyInvitationNotification;
 use App\Services\B2bCheckoutTerms;
+use App\Services\B2bCompanyAccess;
 use App\Services\B2bTeamService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,7 @@ class B2bCompanyTeamTest extends TestCase
         $order->update(['status' => 'confirmed', 'availability_confirmed_at' => now()]);
         Notification::fake();
 
-        $this->actingAs($owner)->post(route('b2b.cabinet.team.store'), [
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => time()])->post(route('b2b.cabinet.team.store'), [
             'email' => $buyer->email,
             'role' => 'buyer',
         ])->assertRedirect(route('b2b.cabinet', ['section' => 'team']));
@@ -72,6 +73,7 @@ class B2bCompanyTeamTest extends TestCase
             ->assertDontSeeText('Сотрудники и роли');
 
         $this->actingAs($buyer->fresh())
+            ->withSession(['auth.password_confirmed_at' => time()])
             ->put(route('b2b.cabinet.profile'), [])
             ->assertForbidden();
         $this->actingAs($buyer->fresh())
@@ -90,6 +92,7 @@ class B2bCompanyTeamTest extends TestCase
         ]);
         $membership = B2bClientMember::query()->where('user_id', $buyer->id)->firstOrFail();
         $this->actingAs($owner)
+            ->withSession(['auth.password_confirmed_at' => time()])
             ->delete(route('b2b.cabinet.team.destroy', $membership))
             ->assertRedirect(route('b2b.cabinet', ['section' => 'team']));
         $this->assertFalse($membership->fresh()->is_active);
@@ -151,7 +154,7 @@ class B2bCompanyTeamTest extends TestCase
             'joined_at' => now(),
         ]);
 
-        $this->actingAs($owner)->patch(route('b2b.cabinet.team.update', $member), [
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => time()])->patch(route('b2b.cabinet.team.update', $member), [
             'role' => 'accountant',
         ])->assertRedirect(route('b2b.cabinet', ['section' => 'team']));
 
@@ -162,6 +165,62 @@ class B2bCompanyTeamTest extends TestCase
             'target_user_id' => $employee->id,
             'event' => 'role_changed',
         ]);
+    }
+
+    public function test_sensitive_team_actions_require_a_recent_password_confirmation(): void
+    {
+        [$owner, $client] = $this->company();
+        $employee = User::factory()->create(['role' => 'client', 'is_active' => true]);
+        $member = $client->members()->create([
+            'user_id' => $employee->id,
+            'role' => 'viewer',
+            'is_active' => true,
+            'joined_at' => now(),
+        ]);
+
+        $this->actingAs($owner)->get(route('b2b.cabinet', ['section' => 'team']))
+            ->assertOk()
+            ->assertSeeText('Управление доступом защищено')
+            ->assertDontSeeText('Пригласить сотрудника');
+
+        $this->patch(route('b2b.cabinet.team.update', $member), ['role' => 'buyer'])
+            ->assertRedirect(route('b2b.cabinet', ['section' => 'team']))
+            ->assertSessionHasErrors('security');
+        $this->assertSame('viewer', $member->fresh()->role);
+
+        $this->post(route('b2b.cabinet.confirm-password'), [
+            'password' => 'wrong-password',
+            'section' => 'team',
+        ])->assertSessionHasErrors('password');
+
+        $this->post(route('b2b.cabinet.confirm-password'), [
+            'password' => 'password',
+            'section' => 'team',
+        ])->assertRedirect(route('b2b.cabinet', ['section' => 'team']))
+            ->assertSessionHas('auth.password_confirmed_at');
+
+        $this->patch(route('b2b.cabinet.team.update', $member), ['role' => 'buyer'])
+            ->assertRedirect(route('b2b.cabinet', ['section' => 'team']));
+        $this->assertSame('buyer', $member->fresh()->role);
+    }
+
+    public function test_company_roles_have_separate_read_write_and_finance_capabilities(): void
+    {
+        [$owner, $client] = $this->company();
+        $accountant = User::factory()->create(['role' => 'client', 'is_active' => true]);
+        $viewer = User::factory()->create(['role' => 'client', 'is_active' => true]);
+        $client->members()->create(['user_id' => $accountant->id, 'role' => 'accountant', 'is_active' => true]);
+        $client->members()->create(['user_id' => $viewer->id, 'role' => 'viewer', 'is_active' => true]);
+        $access = app(B2bCompanyAccess::class);
+
+        $this->assertTrue($access->allows($owner, 'team.manage', $client));
+        $this->assertTrue($access->allows($accountant, 'documents.download', $client));
+        $this->assertTrue($access->allows($accountant, 'finance.view', $client));
+        $this->assertFalse($access->allows($accountant, 'orders.create', $client));
+        $this->assertTrue($access->allows($viewer, 'orders.view', $client));
+        $this->assertTrue($access->allows($viewer, 'documents.view', $client));
+        $this->assertFalse($access->allows($viewer, 'finance.view', $client));
+        $this->assertFalse($access->allows($viewer, 'catalog.view', $client));
     }
 
     public function test_accountant_can_view_finance_but_cannot_open_catalog_or_checkout(): void
@@ -226,10 +285,11 @@ class B2bCompanyTeamTest extends TestCase
         $ownerMembership = B2bClientMember::query()->where('b2b_client_id', $client->id)->where('role', 'owner')->firstOrFail();
 
         $this->actingAs($owner)
+            ->withSession(['auth.password_confirmed_at' => time()])
             ->delete(route('b2b.cabinet.team.destroy', $ownerMembership))
             ->assertNotFound();
 
-        $this->actingAs($owner)->post(route('b2b.cabinet.team.store'), [
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => time()])->post(route('b2b.cabinet.team.store'), [
             'email' => $otherOwner->email,
             'role' => 'buyer',
         ])->assertSessionHasErrors('email');

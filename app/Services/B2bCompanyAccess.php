@@ -9,11 +9,43 @@ use Illuminate\Support\Collection;
 
 class B2bCompanyAccess
 {
+    public const LABELS = [
+        'catalog.view' => 'Просмотр доступного B2B-каталога и цен',
+        'orders.create' => 'Корзины и оформление заказов',
+        'specifications.manage' => 'Загрузка и обновление спецификаций',
+        'orders.view' => 'История заказов компании',
+        'documents.view' => 'Просмотр КП и счетов',
+        'documents.download' => 'Скачивание КП и счетов в PDF',
+        'contracts.download' => 'Просмотр и скачивание договоров',
+        'finance.view' => 'Сверка и кредитный лимит',
+        'profile.manage' => 'Реквизиты компании',
+        'team.manage' => 'Сотрудники, роли и журнал доступа',
+    ];
+
     public const PERMISSIONS = [
-        'owner' => ['catalog', 'order', 'specifications', 'documents', 'finance', 'profile', 'team'],
-        'buyer' => ['catalog', 'order', 'specifications', 'documents'],
-        'accountant' => ['documents', 'finance'],
-        'viewer' => ['documents'],
+        'owner' => [
+            'catalog.view', 'orders.create', 'specifications.manage', 'orders.view',
+            'documents.view', 'documents.download', 'contracts.download', 'finance.view',
+            'profile.manage', 'team.manage',
+        ],
+        'buyer' => [
+            'catalog.view', 'orders.create', 'specifications.manage', 'orders.view',
+            'documents.view', 'documents.download', 'contracts.download',
+        ],
+        'accountant' => [
+            'orders.view', 'documents.view', 'documents.download', 'contracts.download', 'finance.view',
+        ],
+        'viewer' => ['orders.view', 'documents.view', 'documents.download', 'contracts.download'],
+    ];
+
+    private const LEGACY_ALIASES = [
+        'catalog' => 'catalog.view',
+        'order' => 'orders.create',
+        'specifications' => 'specifications.manage',
+        'documents' => 'documents.view',
+        'finance' => 'finance.view',
+        'profile' => 'profile.manage',
+        'team' => 'team.manage',
     ];
 
     public function role(User $user, ?B2bClient $client = null): ?string
@@ -38,8 +70,19 @@ class B2bCompanyAccess
     public function allows(User $user, string $permission, ?B2bClient $client = null): bool
     {
         $role = $this->role($user, $client);
+        $permission = self::LEGACY_ALIASES[$permission] ?? $permission;
 
         return $role !== null && in_array($permission, self::PERMISSIONS[$role] ?? [], true);
+    }
+
+    /** @return array<string, string> */
+    public function permissionLabels(string $role): array
+    {
+        return collect(self::PERMISSIONS[$role] ?? [])
+            ->mapWithKeys(fn (string $permission): array => [
+                $permission => self::LABELS[$permission] ?? $permission,
+            ])
+            ->all();
     }
 
     /** @return Collection<int, int> */

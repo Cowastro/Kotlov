@@ -30,7 +30,7 @@ class AccountController extends Controller
 
         $installerProfile = $user->installerProfile;
         $b2bClient = $user->activeB2bClient();
-        $b2bCanCatalog = $user->isAdmin() || $access->allows($user, 'catalog', $b2bClient);
+        $b2bCanCatalog = $user->isAdmin() || $access->allows($user, 'catalog.view', $b2bClient);
         $b2bCatalogGroups = $b2bCanCatalog ? $offerResolver->catalogGroups($user) : collect();
         $b2bPartnerNames = $b2bCanCatalog ? $offerResolver->partnerNames($user) : collect();
 
