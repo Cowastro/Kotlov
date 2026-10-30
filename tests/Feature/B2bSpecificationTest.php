@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\B2bSpecificationItemDecision;
+use App\Services\B2bSpecificationOcrQueue;
 use App\Services\B2bSpecificationOcrService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -472,6 +473,124 @@ class B2bSpecificationTest extends TestCase
         $this->assertDatabaseCount('b2b_specification_versions', 0);
         $this->assertDatabaseHas('b2b_specification_attachments', ['id' => $attachment->id]);
         $this->assertSame('manual', $specification->fresh()->parsing_status);
+    }
+
+    public function test_ocr_queue_processes_selected_files_in_background_command(): void
+    {
+        Storage::fake('local');
+        Cache::flush();
+        [$user, $client] = $this->b2bClient();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $category = Category::query()->create(['name' => 'OCR queue', 'slug' => 'b2b-ocr-queue', 'is_active' => true]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Клапан очереди 20',
+            'slug' => 'ocr-queue-valve-20',
+            'sku' => 'QUEUE-20',
+            'price' => 80,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        $specification = B2bSpecification::query()->create([
+            'b2b_client_id' => $client->id,
+            'user_id' => $user->id,
+            'title' => 'Фоновая спецификация',
+            'status' => 'submitted',
+            'parsing_status' => 'manual',
+        ]);
+        Storage::disk('local')->put('b2b-specifications/test/queued.jpg', 'queued-image');
+        $attachment = $specification->attachments()->create([
+            'disk' => 'local',
+            'path' => 'b2b-specifications/test/queued.jpg',
+            'original_name' => 'queued.jpg',
+            'mime_type' => 'image/jpeg',
+            'size' => 12,
+            'sha256' => hash('sha256', 'queued-image'),
+        ]);
+        config()->set([
+            'services.ai.api_key' => 'deepseek-test-key',
+            'services.ai.api_url' => 'https://deepseek.example.test/chat/completions',
+            'services.ai.proxy' => '',
+        ]);
+        Http::fake(['deepseek.example.test/*' => Http::response([
+            'choices' => [['message' => ['content' => json_encode(['rows' => [[
+                'sku' => 'QUEUE-20', 'name' => 'Клапан очереди 20', 'quantity' => 3, 'unit' => 'шт',
+            ]]], JSON_UNESCAPED_UNICODE)]]],
+        ], 200)]);
+
+        $queued = app(B2bSpecificationOcrQueue::class)->enqueue($specification, [$attachment->id], $manager);
+
+        $this->assertSame(1, $queued['count']);
+        $this->assertSame('queued', $attachment->fresh()->ocr_status);
+        $this->assertSame('pending', $specification->fresh()->parsing_status);
+        $this->assertDatabaseCount('b2b_specification_versions', 0);
+        Http::assertNothingSent();
+
+        $this->artisan('b2b:process-specification-ocr', ['--limit' => 1])
+            ->expectsOutput('batches=1')
+            ->expectsOutput('completed=1')
+            ->assertSuccessful();
+
+        $specification->refresh();
+        $attachment->refresh();
+        $this->assertSame('completed', $attachment->ocr_status);
+        $this->assertSame(1, $attachment->ocr_attempts);
+        $this->assertNotNull($attachment->ocr_started_at);
+        $this->assertNotNull($attachment->ocr_completed_at);
+        $this->assertSame('ocr', $specification->currentVersion->source);
+        $this->assertSame($product->id, $specification->items()->sole()->product_id);
+        $this->assertSame(1, $manager->notifications()->count());
+    }
+
+    public function test_failed_ocr_file_can_be_requeued_without_touching_other_attachment(): void
+    {
+        Storage::fake('local');
+        Cache::flush();
+        [$user, $client] = $this->b2bClient();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $specification = B2bSpecification::query()->create([
+            'b2b_client_id' => $client->id,
+            'user_id' => $user->id,
+            'title' => 'Повтор OCR',
+            'status' => 'submitted',
+            'parsing_status' => 'manual',
+        ]);
+        Storage::disk('local')->put('b2b-specifications/test/retry.jpg', 'retry-image');
+        Storage::disk('local')->put('b2b-specifications/test/untouched.jpg', 'untouched-image');
+        $retry = $specification->attachments()->create([
+            'disk' => 'local', 'path' => 'b2b-specifications/test/retry.jpg', 'original_name' => 'retry.jpg',
+            'mime_type' => 'image/jpeg', 'size' => 11, 'sha256' => hash('sha256', 'retry-image'),
+        ]);
+        $untouched = $specification->attachments()->create([
+            'disk' => 'local', 'path' => 'b2b-specifications/test/untouched.jpg', 'original_name' => 'untouched.jpg',
+            'mime_type' => 'image/jpeg', 'size' => 15, 'sha256' => hash('sha256', 'untouched-image'),
+        ]);
+        config()->set([
+            'services.ai.api_key' => 'deepseek-test-key',
+            'services.ai.api_url' => 'https://deepseek.example.test/chat/completions',
+            'services.ai.proxy' => '',
+        ]);
+        Http::fake(['deepseek.example.test/*' => Http::sequence()
+            ->push(['choices' => [['message' => ['content' => 'invalid-json']]]], 200)
+            ->push(['choices' => [['message' => ['content' => json_encode(['rows' => [[
+                'sku' => null, 'name' => 'Распознанная позиция', 'quantity' => 1, 'unit' => 'шт',
+            ]]], JSON_UNESCAPED_UNICODE)]]]], 200)]);
+
+        app(B2bSpecificationOcrQueue::class)->enqueue($specification, [$retry->id], $manager);
+        $this->artisan('b2b:process-specification-ocr', ['--limit' => 1])->assertSuccessful();
+
+        $this->assertSame('failed', $retry->fresh()->ocr_status);
+        $this->assertSame('idle', $untouched->fresh()->ocr_status);
+        $this->assertDatabaseCount('b2b_specification_versions', 0);
+
+        app(B2bSpecificationOcrQueue::class)->enqueue($specification->fresh(), [$retry->id], $manager);
+        $this->artisan('b2b:process-specification-ocr', ['--limit' => 1])->assertSuccessful();
+
+        $retry->refresh();
+        $this->assertSame('completed', $retry->ocr_status, (string) $retry->ocr_message);
+        $this->assertSame(2, $retry->fresh()->ocr_attempts);
+        $this->assertSame('idle', $untouched->fresh()->ocr_status);
+        $this->assertDatabaseCount('b2b_specification_versions', 1);
     }
 
     /** @return array{User, B2bClient} */

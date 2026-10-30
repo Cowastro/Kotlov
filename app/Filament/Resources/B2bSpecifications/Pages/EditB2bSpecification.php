@@ -3,10 +3,11 @@
 namespace App\Filament\Resources\B2bSpecifications\Pages;
 
 use App\Filament\Resources\B2bSpecifications\B2bSpecificationResource;
-use App\Services\B2bSpecificationOcrService;
+use App\Services\B2bSpecificationOcrQueue;
 use App\Services\B2bSpecificationParser;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
@@ -30,23 +31,29 @@ class EditB2bSpecification extends EditRecord
                 ->icon(Heroicon::OutlinedDocumentMagnifyingGlass)
                 ->color('info')
                 ->requiresConfirmation()
-                ->modalHeading('Распознать спецификацию через DeepSeek?')
-                ->modalDescription('Будет создана новая редакция. Точные совпадения свяжутся автоматически, похожие позиции останутся на проверку менеджеру.')
-                ->visible(fn (): bool => $this->record->attachments->contains(function ($attachment): bool {
-                    return in_array(mb_strtolower(pathinfo($attachment->original_name, PATHINFO_EXTENSION)), ['pdf', 'png', 'jpg', 'jpeg', 'webp'], true);
-                }))
-                ->action(function (): void {
+                ->modalHeading('Поставить документы в очередь DeepSeek?')
+                ->modalDescription('Обработка пройдёт в фоне. После завершения будет создана новая редакция; похожие позиции останутся на проверку менеджеру.')
+                ->schema([
+                    CheckboxList::make('attachment_ids')
+                        ->label('Файлы для распознавания')
+                        ->options(fn (): array => $this->ocrAttachmentOptions())
+                        ->default(fn (): array => array_keys($this->ocrAttachmentOptions()))
+                        ->columns(1)
+                        ->required(),
+                ])
+                ->visible(fn (): bool => $this->ocrAttachmentOptions() !== [])
+                ->action(function (array $data): void {
                     try {
-                        $result = app(B2bSpecificationOcrService::class)->recognize(
+                        $result = app(B2bSpecificationOcrQueue::class)->enqueue(
                             $this->record->fresh(['attachments', 'currentVersion']),
-                            null,
+                            $data['attachment_ids'] ?? [],
                             Filament::auth()->user(),
                         );
                         $this->record->refresh();
 
                         Notification::make()
-                            ->title('Документы распознаны')
-                            ->body($result['message'])
+                            ->title('Документы поставлены в очередь')
+                            ->body('Файлов: '.$result['count'].'. Статус будет обновлён автоматически.')
                             ->success()
                             ->send();
                     } catch (\Throwable $exception) {
@@ -83,5 +90,21 @@ class EditB2bSpecification extends EditRecord
                         ->send();
                 }),
         ];
+    }
+
+    /** @return array<int, string> */
+    private function ocrAttachmentOptions(): array
+    {
+        return $this->record->attachments
+            ->filter(function ($attachment): bool {
+                $extension = mb_strtolower(pathinfo($attachment->original_name, PATHINFO_EXTENSION));
+
+                return in_array($extension, ['pdf', 'png', 'jpg', 'jpeg', 'webp'], true)
+                    && ! in_array($attachment->ocr_status, ['queued', 'processing'], true);
+            })
+            ->mapWithKeys(fn ($attachment): array => [
+                $attachment->id => $attachment->original_name.' · '.$attachment->ocrStatusLabel(),
+            ])
+            ->all();
     }
 }

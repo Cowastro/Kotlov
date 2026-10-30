@@ -4,6 +4,12 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
+Schedule::command('b2b:process-specification-ocr --limit=2')
+    ->everyMinute()
+    ->withoutOverlapping(20)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/b2b-specification-ocr.log'));
+
 Schedule::command('integration:scan-issues')
     ->everyMinute()
     ->withoutOverlapping(5)

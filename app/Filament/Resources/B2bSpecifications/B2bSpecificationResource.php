@@ -7,6 +7,7 @@ use App\Filament\Resources\B2bSpecifications\Pages\ListB2bSpecifications;
 use App\Filament\Resources\B2bSpecifications\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\B2bSpecifications\RelationManagers\VersionsRelationManager;
 use App\Models\B2bSpecification;
+use App\Models\B2bSpecificationAttachment;
 use BackedEnum;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Placeholder;
@@ -78,7 +79,11 @@ class B2bSpecificationResource extends Resource
                                 $name = e($attachment->original_name);
                                 $size = number_format($attachment->size / 1024, 0, ',', ' ');
 
-                                return "<a href=\"{$url}\" target=\"_blank\" class=\"text-primary-600 underline\">{$name} ({$size} КБ)</a>";
+                                $ocr = in_array(mb_strtolower(pathinfo($attachment->original_name, PATHINFO_EXTENSION)), ['pdf', 'png', 'jpg', 'jpeg', 'webp'], true)
+                                    ? ' · '.e(B2bSpecificationAttachment::OCR_STATUSES[$attachment->ocr_status] ?? $attachment->ocr_status)
+                                    : '';
+
+                                return "<a href=\"{$url}\" target=\"_blank\" class=\"text-primary-600 underline\">{$name} ({$size} КБ)</a>{$ocr}";
                             })->join('<br>');
 
                             return new HtmlString($links);
