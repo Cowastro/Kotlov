@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\B2bClient;
 use App\Models\B2bPriceLevel;
 use App\Models\Category;
+use App\Models\CrmCounterparty;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
 use App\Models\Order;
@@ -92,6 +93,106 @@ class B2bCommercialProfileTest extends TestCase
             ->assertSeeText('Доставка 1–3 рабочих дня')
             ->assertSeeText('500,00 BYN')
             ->assertSeeText('31.12.2026');
+    }
+
+    public function test_b2b_checkout_uses_business_payments_and_prefills_company_details(): void
+    {
+        config()->set('shop.checkout_payment_methods', ['cash', 'installment_6']);
+        [$user, $client, $offer] = $this->fixture();
+        $counterparty = CrmCounterparty::query()->create([
+            'type' => 'organization',
+            'classification' => 'b2b_partner',
+            'business_unit' => 'wholesale',
+            'status' => 'active',
+            'name' => 'ООО «Партнёр»',
+            'legal_name' => 'Общество с ограниченной ответственностью «Партнёр»',
+            'unp' => '190000001',
+            'legal_address' => '220000, г. Минск, ул. Деловая, 1',
+            'source' => 'manual',
+        ]);
+        $client->update([
+            'counterparty_id' => $counterparty->id,
+            'contact_email' => 'buh@partner.by',
+            'payment_terms' => 'Предоплата по счёту',
+        ]);
+
+        $this->actingAs($user)->postJson(route('cart.add'), [
+            'product_id' => $offer->product_id,
+            'quantity' => 2,
+            'pricing_mode' => 'b2b',
+        ])->assertOk();
+
+        $this->get(route('checkout'))
+            ->assertOk()
+            ->assertSee('value="invoice"', false)
+            ->assertDontSee('value="installment_6"', false)
+            ->assertSee('value="190000001"', false)
+            ->assertSee('value="Общество с ограниченной ответственностью «Партнёр»"', false)
+            ->assertSee('value="buh@partner.by"', false)
+            ->assertSee('value="220000, г. Минск, ул. Деловая, 1"', false)
+            ->assertSeeText('Партнёрская цена действует для самостоятельного онлайн-заказа');
+    }
+
+    public function test_minimum_b2b_order_is_enforced_before_checkout_and_on_submission(): void
+    {
+        [$user, $client, $offer] = $this->fixture();
+        $client->update(['minimum_order_amount' => 500]);
+
+        $this->actingAs($user)->postJson(route('cart.add'), [
+            'product_id' => $offer->product_id,
+            'quantity' => 2,
+            'pricing_mode' => 'b2b',
+        ])->assertOk();
+
+        $this->get(route('checkout'))
+            ->assertRedirect(route('cart'))
+            ->assertSessionHas('error', 'До минимальной суммы B2B-заказа не хватает 300,00 BYN.');
+
+        $this->post(route('checkout.store'), [
+            'order_token' => 'minimum-b2b-order',
+            'customer_name' => 'ООО Партнёр',
+            'customer_phone' => '+375291112233',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'invoice',
+        ])->assertRedirect(route('cart'))
+            ->assertSessionHas('error', 'До минимальной суммы B2B-заказа не хватает 300,00 BYN.');
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_expired_commercial_terms_block_b2b_checkout(): void
+    {
+        [$user, $client, $offer] = $this->fixture();
+        $client->update(['commercial_terms_valid_until' => now()->subDay()->toDateString()]);
+
+        $this->actingAs($user)->postJson(route('cart.add'), [
+            'product_id' => $offer->product_id,
+            'quantity' => 1,
+            'pricing_mode' => 'b2b',
+        ])->assertOk();
+
+        $this->get(route('checkout'))
+            ->assertRedirect(route('cart'))
+            ->assertSessionHas('error', 'Срок ваших коммерческих условий истёк. Менеджер должен подтвердить новые условия перед заказом.');
+    }
+
+    public function test_cabinet_lists_explicitly_allowed_partner_warehouses(): void
+    {
+        [$user, $client] = $this->fixture();
+        $supplier = Supplier::query()->create([
+            'code' => 'partner-warehouse-test',
+            'name' => 'Поставщик для клиента',
+            'is_active' => true,
+            'b2b_partner_enabled' => true,
+            'b2b_client_warehouse_label' => 'Склад партнёра · Гомель',
+        ]);
+        $client->update(['allowed_supplier_ids' => [$supplier->id]]);
+
+        $this->actingAs($user)
+            ->get(route('b2b.cabinet'))
+            ->assertOk()
+            ->assertSeeText('Партнёрские склады')
+            ->assertSeeText('Склад партнёра · Гомель');
     }
 
     public function test_order_item_keeps_price_level_snapshot(): void

@@ -251,6 +251,10 @@ return [
         ? ['cash', 'installment_6']
         : ['cash', 'card', 'bank_transfer', 'installment_6', 'invoice'],
 
+    // Партнёрская цена не совмещается с розничной рассрочкой. Оплата по счёту
+    // доступна B2B-клиенту независимо от временного ограничения эквайринга.
+    'b2b_checkout_payment_methods' => ['invoice', 'cash'],
+
     // Типы доставки доступные в форме checkout
     // Delivery first; pickup from the warehouse last, never preselected.
     'checkout_delivery_methods' => [

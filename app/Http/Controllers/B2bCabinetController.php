@@ -11,6 +11,7 @@ use App\Models\CrmCounterparty;
 use App\Models\IntegrationSource;
 use App\Models\IntegrationWarehouse;
 use App\Models\Product;
+use App\Models\Supplier;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bSpecificationParser;
 use Carbon\CarbonImmutable;
@@ -42,6 +43,12 @@ class B2bCabinetController extends Controller
             ->whereIn('id', array_map('intval', $client->allowed_integration_warehouse_ids ?? []))
             ->orderBy('name')
             ->get();
+        $allowedPartnerSuppliers = Supplier::query()
+            ->whereIn('id', array_map('intval', $client->allowed_supplier_ids ?? []))
+            ->where('is_active', true)
+            ->where('b2b_partner_enabled', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'b2b_client_warehouse_label']);
         $section = in_array($request->string('section')->toString(), self::SECTIONS, true)
             ? $request->string('section')->toString()
             : 'overview';
@@ -89,7 +96,7 @@ class B2bCabinetController extends Controller
 
         return view('pages.b2b.cabinet', compact(
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
-            'allowedSources', 'allowedWarehouses',
+            'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers',
             'profileCompletion', 'profileMissing',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));

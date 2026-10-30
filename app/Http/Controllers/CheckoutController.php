@@ -7,6 +7,7 @@ use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Services\B2bCheckoutTerms;
 use App\Services\B2bSupplyOptionResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
@@ -24,8 +25,12 @@ class CheckoutController extends Controller
     // ─────────────────────────────────────────
     // Страница оформления заказа  GET /checkout
     // ─────────────────────────────────────────
-    public function index(Request $request, CartAvailabilityGuard $availabilityGuard, CartCouponService $couponService)
-    {
+    public function index(
+        Request $request,
+        CartAvailabilityGuard $availabilityGuard,
+        CartCouponService $couponService,
+        B2bCheckoutTerms $b2bTerms,
+    ) {
         $cart = session(self::CART_KEY, []);
 
         $availability = $availabilityGuard->reconcileRetailItems($cart);
@@ -52,8 +57,15 @@ class CheckoutController extends Controller
         }
 
         $subtotal = $this->calcSubtotal($cart);
+        $user = Auth::user();
+        $b2bCheckout = $b2bTerms->evaluate($user, $cart);
+        if (! $b2bCheckout['can_checkout']) {
+            return redirect()->route('cart')->with('error', $b2bCheckout['message']);
+        }
+        $checkoutPaymentMethods = $b2bCheckout['payment_methods'];
+        $invoiceProfile = $b2bCheckout['invoice_profile'];
         $requestedPayment = (string) $request->query('payment_type', '');
-        $selectedPayment = in_array($requestedPayment, config('shop.checkout_payment_methods', []), true)
+        $selectedPayment = in_array($requestedPayment, $checkoutPaymentMethods, true)
             ? $requestedPayment
             : null;
         $couponCode = session('cart_coupon');
@@ -70,7 +82,6 @@ class CheckoutController extends Controller
             && $couponService->isOnlineOrderDiscountCode($coupon['code']);
         $onlineOrderDiscountExcludedByPayment = $onlineOrderDiscountCoupon
             && ! $couponService->onlineOrderDiscountAppliesToPayment($selectedPayment);
-        $user = Auth::user();
         // A returning customer finds the contacts and address of the last order already filled in.
         $lastOrder = $user ? Order::query()->where('user_id', $user->id)->latest('id')
             ->first(['customer_name', 'customer_phone', 'delivery_type', 'delivery_city', 'delivery_address']) : null;
@@ -86,6 +97,9 @@ class CheckoutController extends Controller
             'selectedPayment',
             'onlineOrderDiscountCoupon',
             'onlineOrderDiscountExcludedByPayment',
+            'b2bCheckout',
+            'checkoutPaymentMethods',
+            'invoiceProfile',
         ));
     }
 
@@ -95,6 +109,7 @@ class CheckoutController extends Controller
     public function store(
         Request $request,
         B2bSupplyOptionResolver $supplyOptions,
+        B2bCheckoutTerms $b2bTerms,
         CartAvailabilityGuard $availabilityGuard,
         CartCouponService $couponService,
         BelarusTaxpayerRegistry $taxpayerRegistry,
@@ -208,6 +223,12 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with('error', 'Некоторые товары сняты с продажи и были удалены из корзины. Проверьте заказ.');
         }
 
+        $b2bCheckout = $b2bTerms->evaluate(Auth::user(), $cart);
+        if (! $b2bCheckout['can_checkout']) {
+            return redirect()->route('cart')->with('error', $b2bCheckout['message']);
+        }
+        $checkoutPaymentMethods = $b2bCheckout['payment_methods'];
+
         // Защита от двойного сабмита — один токен = один заказ
         $token = $request->input('order_token');
         if (! $token || session('order_token_used_'.$token)) {
@@ -224,7 +245,7 @@ class CheckoutController extends Controller
             'delivery_region' => ['nullable', 'string', 'max:255'],
             'delivery_city' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
             'delivery_address' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:500'],
-            'payment_type' => ['required', 'in:'.implode(',', config('shop.checkout_payment_methods', []))],
+            'payment_type' => ['required', 'in:'.implode(',', $checkoutPaymentMethods)],
             'comment' => ['nullable', 'string', 'max:1000'],
             // Реквизиты для счёта
             'company_name' => ['required_if:payment_type,invoice', 'nullable', 'string', 'max:255'],
@@ -283,7 +304,7 @@ class CheckoutController extends Controller
         }
         $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
 
-        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon, $invoiceCompany, $checkoutInvoices, $couponService) {
+        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon, $invoiceCompany, $checkoutInvoices, $couponService, $b2bCheckout) {
 
             $lockedCoupon = null;
             if ($coupon['code']) {
@@ -338,6 +359,7 @@ class CheckoutController extends Controller
                     'chimney_product_ids' => $finalQuote['bundle']['chimney_product_ids'],
                     'equipment_product_ids' => $finalQuote['bundle']['equipment_product_ids'],
                 ],
+                'b2b_commercial_terms_snapshot' => $b2bCheckout['terms_snapshot'],
                 'total' => $total,
 
                 // comment: что пользователь написал в форме; если поле пустое — null

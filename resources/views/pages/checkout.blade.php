@@ -175,13 +175,20 @@
 
                             {{-- 3. Оплата (из config/shop.php) --}}
                             @php
-                                $checkoutPayment = collect(config('shop.checkout_payment_methods', []))
+                                $checkoutPayment = collect($checkoutPaymentMethods ?? config('shop.checkout_payment_methods', []))
                                     ->mapWithKeys(fn($key) => [$key => config("shop.payment_methods.$key")])
                                     ->filter();
                                 $firstPayment = $checkoutPayment->keys()->first();
                             @endphp
                             <div class="box-ip-payment">
                                 <h5 class="title">Способ оплаты</h5>
+                                @if(($b2bCheckout['is_b2b'] ?? false) && $b2bCheckout['client'])
+                                    <div class="alert alert-info mb-16">
+                                        <strong>{{ $b2bCheckout['client']->priceLevel?->name ?: 'B2B-условия' }}</strong>
+                                        · {{ $b2bCheckout['client']->payment_terms ?: 'Оплата по счёту после подтверждения заказа' }}.
+                                        Партнёрская цена действует для самостоятельного онлайн-заказа и не совмещается с розничной рассрочкой.
+                                    </div>
+                                @endif
                                 <div class="payment-method-box" id="payment-method-box">
 
                                     @foreach ($checkoutPayment as $key => $method)
@@ -232,7 +239,7 @@
                                         </label>
                                         <div class="d-flex gap-8 align-items-stretch">
                                             <input type="text" name="company_unp" id="company-unp"
-                                                value="{{ old('company_unp') }}"
+                                                value="{{ old('company_unp', $invoiceProfile['company_unp'] ?? '') }}"
                                                 inputmode="numeric" maxlength="9"
                                                 placeholder="100000000" style="flex:1;">
                                             <button type="button" class="tf-btn btn-outline" id="company-lookup-button"
@@ -251,7 +258,7 @@
                                                 Организация / ИП <span class="text-primary">*</span>
                                             </label>
                                             <input type="text" name="company_name" id="company-name"
-                                                value="{{ old('company_name') }}"
+                                                value="{{ old('company_name', $invoiceProfile['company_name'] ?? '') }}"
                                                 placeholder="ООО Теплосервис">
                                             @error('company_name') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                         </fieldset>
@@ -260,7 +267,7 @@
                                                 Email для счёта <span class="text-primary">*</span>
                                             </label>
                                             <input type="email" name="company_email" id="company-email"
-                                                value="{{ old('company_email', old('customer_email', $user->email ?? '')) }}"
+                                                value="{{ old('company_email', $invoiceProfile['company_email'] ?? old('customer_email', $user->email ?? '')) }}"
                                                 placeholder="buh@company.by">
                                             @error('company_email') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                         </fieldset>
@@ -270,7 +277,7 @@
                                             Юридический адрес <span class="text-primary">*</span>
                                         </label>
                                         <input type="text" name="company_address" id="company-address"
-                                            value="{{ old('company_address') }}"
+                                            value="{{ old('company_address', $invoiceProfile['company_address'] ?? '') }}"
                                             placeholder="г. Минск, ул. Ленина, 1">
                                         @error('company_address') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                     </fieldset>

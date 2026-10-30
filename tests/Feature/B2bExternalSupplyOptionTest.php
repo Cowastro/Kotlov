@@ -6,6 +6,7 @@ use App\Models\B2bClient;
 use App\Models\B2bPriceLevel;
 use App\Models\B2bPricingRule;
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -138,12 +139,16 @@ class B2bExternalSupplyOptionTest extends TestCase
             ->assertRedirect();
 
         $item = OrderItem::query()->sole();
+        $order = Order::query()->sole();
         $this->assertSame($offer->id, $item->supplier_product_id);
         $this->assertNull($item->integration_product_id);
         $this->assertSame($supplier->id, $item->supply_supplier_id);
         $this->assertSame('legacy', $item->supply_channel);
         $this->assertSame(100.0, (float) $item->supply_purchase_price);
         $this->assertSame(125.0, (float) $item->price);
+        $this->assertSame($user->b2bClient->id, $order->b2b_commercial_terms_snapshot['b2b_client_id']);
+        $this->assertSame('Онлайн-склад', $order->b2b_commercial_terms_snapshot['service_mode_name']);
+        $this->assertArrayHasKey('captured_at', $order->b2b_commercial_terms_snapshot);
     }
 
     /** @return array{Supplier, Product, SupplierProduct} */
