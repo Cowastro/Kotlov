@@ -4,12 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Coupon;
 use App\Models\Product;
-use App\Models\ProductWarehouseStock;
-use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bSupplyOptionResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
 use App\Services\ChimneyBundlePromotion;
-use App\Services\EcokaminB2bOfferPublisher;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -37,7 +35,7 @@ class CartController extends Controller
     // ─────────────────────────────────────────
     // Добавить товар  POST /cart/add
     // ─────────────────────────────────────────
-    public function add(Request $request, B2bCatalogOfferResolver $offerResolver)
+    public function add(Request $request, B2bSupplyOptionResolver $supplyOptions)
     {
         $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],
@@ -45,6 +43,7 @@ class CartController extends Controller
             'warehouse_stock_id' => ['sometimes', 'nullable', 'integer', 'exists:product_warehouse_stocks,id'],
             'chimney_selector_token' => ['sometimes', 'nullable', 'string', 'max:100'],
             'pricing_mode' => ['sometimes', 'string', 'in:retail,b2b'],
+            'supply_option' => ['sometimes', 'nullable', 'string', 'max:80'],
         ]);
 
         $product = Product::query()
@@ -52,11 +51,11 @@ class CartController extends Controller
             ->with(['category:id,slug', 'brand:id,slug,name', 'warehouseStocks'])
             ->findOrFail($request->product_id);
         $isB2bRequest = $request->input('pricing_mode') === 'b2b';
-        $b2bOffer = $isB2bRequest
-            ? $offerResolver->forProduct($product, $request->user())
+        $b2bOption = $isB2bRequest
+            ? $supplyOptions->optionForKey($product, $request->user(), $request->string('supply_option')->toString())
             : null;
 
-        if ($isB2bRequest && ! $b2bOffer) {
+        if ($isB2bRequest && ! $b2bOption) {
             $message = 'Товар недоступен для B2B-заказа: требуется подтверждённая привязка, цена и свежий остаток 1С.';
 
             return $request->expectsJson()
@@ -82,8 +81,8 @@ class CartController extends Controller
                 : back()->with('error', $message);
         }
 
-        $canBeOrdered = $b2bOffer
-            ? $product->is_active && ! $product->is_archived && $offerResolver->canOrder($b2bOffer)
+        $canBeOrdered = $b2bOption
+            ? $product->is_active && ! $product->is_archived && $supplyOptions->canOrder($b2bOption, 1)
             : $product->canBeAddedToCart();
 
         if (! $canBeOrdered) {
@@ -102,28 +101,7 @@ class CartController extends Controller
             && hash_equals($sessionSelectorToken, $requestSelectorToken)
             && $this->chimneyBundlePromotion->productIsChimney($product);
 
-        $warehouseStock = null;
-        if ($b2bOffer) {
-            $requestedWarehouseStockId = (int) $request->input('warehouse_stock_id', 0);
-            if ($requestedWarehouseStockId > 0) {
-                $warehouseStock = $product->warehouseStocks->firstWhere('id', $requestedWarehouseStockId);
-                if (! $warehouseStock || (float) $warehouseStock->available_quantity < $qty) {
-                    $message = 'На выбранном складе недостаточно товара. Выберите другой склад или уменьшите количество.';
-
-                    return $request->expectsJson()
-                        ? response()->json(['message' => $message], 422)
-                        : back()->with('error', $message);
-                }
-            } elseif ($b2bOffer->source?->code === EcokaminB2bOfferPublisher::SOURCE_CODE
-                || ! $offerResolver->hasFreshStock($b2bOffer)) {
-                $warehouseStock = $product->warehouseStocks
-                    ->filter(fn ($stock): bool => (float) $stock->available_quantity >= $qty)
-                    ->sortBy('delivery_days')
-                    ->first();
-            }
-        }
-
-        if ($b2bOffer && ! $warehouseStock && ! $offerResolver->canOrder($b2bOffer, $qty)) {
+        if ($b2bOption && ! $supplyOptions->canOrder($b2bOption, $qty)) {
             $message = 'Запрошенное количество превышает доступный остаток поставщика.';
 
             return $request->expectsJson()
@@ -139,32 +117,37 @@ class CartController extends Controller
         }
 
         $id = $product->id;
-        $priceQuote = $b2bOffer ? $offerResolver->priceQuote($b2bOffer, $request->user()) : null;
-        $price = $priceQuote['price'] ?? (float) $product->price;
-        $pricing = $b2bOffer ? [
+        $price = $b2bOption['price'] ?? (float) $product->price;
+        $pricing = $b2bOption ? [
             'pricing_type' => 'b2b',
             'price_tax_mode' => 'inclusive',
-            'integration_product_id' => $b2bOffer->id,
-            'source_name' => $b2bOffer->source?->name,
-            'warehouse_stock_id' => $warehouseStock?->id,
-            'warehouse_name' => $warehouseStock?->warehouse_name
-                ?: $this->b2bWarehouseLabel($product, $b2bOffer),
-            'warehouse_delivery_days' => $warehouseStock?->delivery_days,
-            'b2b_base_price' => $priceQuote['base_price'],
-            'b2b_price_level_id' => $priceQuote['price_level_id'],
-            'b2b_price_level_code' => $priceQuote['price_level_code'],
-            'b2b_price_level_name' => $priceQuote['price_level_name'],
-            'b2b_discount_percent' => $priceQuote['discount_percent'],
+            'supply_option' => $b2bOption['key'],
+            'integration_product_id' => $b2bOption['integration_product_id'],
+            'supplier_product_id' => $b2bOption['supplier_product_id'],
+            'source_name' => $b2bOption['source_label'],
+            'warehouse_stock_id' => $b2bOption['warehouse_stock_id'],
+            'warehouse_name' => $b2bOption['warehouse_name'],
+            'warehouse_delivery_days' => $b2bOption['delivery_days'],
+            'b2b_base_price' => $b2bOption['base_price'],
+            'b2b_price_level_id' => $b2bOption['price_level_id'],
+            'b2b_price_level_code' => $b2bOption['price_level_code'],
+            'b2b_price_level_name' => $b2bOption['price_level_name'],
+            'b2b_discount_percent' => $b2bOption['discount_percent'],
         ] : [
             'pricing_type' => 'retail',
             'price_tax_mode' => null,
             'integration_product_id' => null,
+            'supplier_product_id' => null,
             'source_name' => null,
             'requires_availability_confirmation' => $product->requiresAvailabilityConfirmation(),
         ];
 
         if (isset($cart[$id])) {
-            $cart[$id]['quantity'] = min($cart[$id]['quantity'] + $qty, 999);
+            $sameSupplyOption = ! $b2bOption
+                || ($cart[$id]['supply_option'] ?? null) === $b2bOption['key'];
+            $cart[$id]['quantity'] = $sameSupplyOption
+                ? min($cart[$id]['quantity'] + $qty, 999)
+                : $qty;
             $cart[$id]['price'] = $price;
             $cart[$id] = array_merge($cart[$id], $pricing);
             $cart[$id]['chimney_selector_selected'] = ($cart[$id]['chimney_selector_selected'] ?? false)
@@ -212,7 +195,7 @@ class CartController extends Controller
     // ─────────────────────────────────────────
     public function update(
         Request $request,
-        B2bCatalogOfferResolver $offerResolver,
+        B2bSupplyOptionResolver $supplyOptions,
         CartAvailabilityGuard $availabilityGuard,
     ) {
         $request->validate([
@@ -238,12 +221,14 @@ class CartController extends Controller
         if (isset($cart[$id])) {
             if (($cart[$id]['pricing_type'] ?? 'retail') === 'b2b') {
                 $product = Product::query()->find($id);
-                $offer = $product ? $offerResolver->forProduct($product, $request->user()) : null;
+                $option = $product ? $supplyOptions->optionForKey(
+                    $product,
+                    $request->user(),
+                    (string) ($cart[$id]['supply_option'] ?? ''),
+                ) : null;
                 $quantity = (int) $request->quantity;
 
-                if (! $offer
-                    || (int) ($cart[$id]['integration_product_id'] ?? 0) !== (int) $offer->id
-                    || ! $offerResolver->canOrder($offer, $quantity)) {
+                if (! $option || ! $supplyOptions->canOrder($option, $quantity)) {
                     $message = 'B2B-позиция изменилась или её уже нельзя заказать в указанном количестве. Обновите корзину.';
 
                     return $request->expectsJson()
@@ -251,26 +236,12 @@ class CartController extends Controller
                         : back()->with('error', $message);
                 }
 
-                if ($warehouseStockId = (int) ($cart[$id]['warehouse_stock_id'] ?? 0)) {
-                    $warehouseStock = ProductWarehouseStock::query()->find($warehouseStockId);
-                    if (! $warehouseStock
-                        || (int) $warehouseStock->product_id !== $id
-                        || (float) $warehouseStock->available_quantity < $quantity) {
-                        $message = 'На выбранном складе больше нет нужного количества. Выберите склад заново.';
-
-                        return $request->expectsJson()
-                            ? response()->json(['message' => $message], 422)
-                            : back()->with('error', $message);
-                    }
-                }
-
-                $quote = $offerResolver->priceQuote($offer, $request->user());
-                $cart[$id]['price'] = $quote['price'];
-                $cart[$id]['b2b_base_price'] = $quote['base_price'];
-                $cart[$id]['b2b_price_level_id'] = $quote['price_level_id'];
-                $cart[$id]['b2b_price_level_code'] = $quote['price_level_code'];
-                $cart[$id]['b2b_price_level_name'] = $quote['price_level_name'];
-                $cart[$id]['b2b_discount_percent'] = $quote['discount_percent'];
+                $cart[$id]['price'] = $option['price'];
+                $cart[$id]['b2b_base_price'] = $option['base_price'];
+                $cart[$id]['b2b_price_level_id'] = $option['price_level_id'];
+                $cart[$id]['b2b_price_level_code'] = $option['price_level_code'];
+                $cart[$id]['b2b_price_level_name'] = $option['price_level_name'];
+                $cart[$id]['b2b_discount_percent'] = $option['discount_percent'];
             }
 
             $cart[$id]['quantity'] = (int) $request->quantity;
@@ -297,16 +268,6 @@ class CartController extends Controller
         }
 
         return back();
-    }
-
-    private function b2bWarehouseLabel(Product $product, $offer): string
-    {
-        $label = trim((string) data_get($offer?->source?->settings, 'warehouse_label'));
-        if (($product->brand?->slug === 'ecokamin') && in_array(mb_strtolower($label), ['', 'основной', 'основной склад'], true)) {
-            return 'Склад Минск';
-        }
-
-        return $label !== '' ? $label : 'Основной склад';
     }
 
     // ─────────────────────────────────────────

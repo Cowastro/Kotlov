@@ -160,28 +160,21 @@ class B2bCatalogOfferResolver
     /** @return array{stock: float|null, label: string, procurement_fallback: bool} */
     public function availabilityFor(IntegrationProduct $offer, ?User $user = null): array
     {
-        $stockOffer = $this->stockOffers()
-            ->filter(fn (IntegrationProduct $candidate): bool => (int) $candidate->product_id === (int) $offer->product_id
-                && $this->userAllowsSource($user, $candidate))
-            ->sortBy(fn (IntegrationProduct $candidate): array => [
-                $this->isProcurementOffer($candidate) ? 1 : 0,
-                $candidate->source?->code === 'onec' ? 0 : 1,
-                -(float) $candidate->stock_quantity,
-            ])
-            ->first();
-
-        if ($stockOffer) {
-            $warehouse = trim((string) data_get($stockOffer->source?->settings, 'warehouse_label', 'Основной'));
+        if ($this->hasFreshStock($offer)) {
+            $warehouse = trim((string) data_get($offer->source?->settings, 'warehouse_label', 'Основной'));
 
             return [
-                'stock' => (float) $stockOffer->stock_quantity,
-                'label' => ($warehouse !== '' ? $warehouse : 'Основной').': '.$stockOffer->formattedStockQuantity(),
+                'stock' => (float) $offer->stock_quantity,
+                'label' => ($warehouse !== '' ? $warehouse : 'Основной').': '.$offer->formattedStockQuantity(),
                 'procurement_fallback' => false,
             ];
         }
 
+        $supplierId = (int) ($offer->source?->supplier_id ?? 0);
         $warehouseStock = collect($offer->product?->warehouseStocks)
-            ->filter(fn ($stock): bool => (float) $stock->available_quantity > 0)
+            ->filter(fn ($stock): bool => $supplierId > 0
+                && (int) $stock->supplier_id === $supplierId
+                && (float) $stock->available_quantity > 0)
             ->sortBy(fn ($stock): array => [(int) ($stock->delivery_days ?? 0), -(float) $stock->available_quantity])
             ->first();
 
@@ -220,12 +213,15 @@ class B2bCatalogOfferResolver
             return true;
         }
 
+        $supplierId = (int) ($offer->source?->supplier_id ?? 0);
         $warehouseStocks = $offer->product?->relationLoaded('warehouseStocks')
             ? $offer->product->warehouseStocks
             : $offer->product?->warehouseStocks()->available()->get();
 
         return collect($warehouseStocks)->contains(
-            fn ($stock): bool => (float) $stock->available_quantity >= $quantity,
+            fn ($stock): bool => $supplierId > 0
+                && (int) $stock->supplier_id === $supplierId
+                && (float) $stock->available_quantity >= $quantity,
         );
     }
 
@@ -310,7 +306,8 @@ class B2bCatalogOfferResolver
                 && ($this->isProcurementOffer($offer)
                     || $this->hasFreshStock($offer)
                     || $offer->product?->warehouseStocks->contains(
-                        fn ($stock): bool => (float) $stock->available_quantity > 0,
+                        fn ($stock): bool => (int) $stock->supplier_id === (int) $offer->source?->supplier_id
+                            && (float) $stock->available_quantity > 0,
                     ))
                 && $this->sourceAllowsCategory($offer))
             ->values();

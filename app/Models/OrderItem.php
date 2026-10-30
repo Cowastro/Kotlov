@@ -35,7 +35,7 @@ class OrderItem extends Model
         'order_id', 'product_id',
         'product_name', 'product_sku',
         'price', 'quantity', 'total',
-        'pricing_type', 'price_tax_mode', 'integration_product_id', 'warehouse_stock_id',
+        'pricing_type', 'price_tax_mode', 'integration_product_id', 'supplier_product_id', 'warehouse_stock_id',
         'b2b_base_price', 'b2b_price_level_id', 'b2b_price_level_code',
         'b2b_price_level_name', 'b2b_discount_percent', 'b2b_priced_at',
         'supply_status', 'supply_route_label', 'supply_supplier_id',
@@ -104,6 +104,7 @@ class OrderItem extends Model
             // product. Never carry them over when a manager replaces a line.
             $item->forceFill([
                 'integration_product_id' => null,
+                'supplier_product_id' => null,
                 'supply_captured_at' => null,
                 'fulfillment_route' => $replacementRoute,
                 'fulfillment_supplier_id' => $replacementSupplierId,
@@ -117,6 +118,7 @@ class OrderItem extends Model
             ]);
             $item->unsetRelation('product');
             $item->unsetRelation('integrationProduct');
+            $item->unsetRelation('supplierProduct');
 
             self::captureSupplySnapshot($item);
         });
@@ -163,6 +165,11 @@ class OrderItem extends Model
     public function integrationProduct(): BelongsTo
     {
         return $this->belongsTo(IntegrationProduct::class);
+    }
+
+    public function supplierProduct(): BelongsTo
+    {
+        return $this->belongsTo(SupplierProduct::class);
     }
 
     public function warehouseStock(): BelongsTo

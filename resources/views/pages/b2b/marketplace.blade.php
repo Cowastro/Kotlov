@@ -175,14 +175,34 @@
                                     </div>
                                 </div>
                                 @if ($mode === 'orderable')
-                                    <div class="b2b-price-cell"><strong>{{ number_format($item['price'], 2, ',', ' ') }} <small>BYN</small></strong><span>Ваша цена онлайн-склада</span>@if ($item['retail_price'] > 0)<span>Розница {{ number_format($item['retail_price'], 2, ',', ' ') }}</span>@endif</div>
-                                    <div class="b2b-stock-cell"><strong><span class="b2b-live-dot"></span>{{ $item['stock_label'] }}</strong><span>{{ $item['offer']->source?->partnerName() }}</span></div>
+                                    <div class="b2b-price-cell"><strong data-option-price="{{ $product->id }}">{{ number_format($item['price'], 2, ',', ' ') }} <small>BYN</small></strong><span>Ваша цена онлайн-склада</span>@if ($item['retail_price'] > 0)<span>Розница {{ number_format($item['retail_price'], 2, ',', ' ') }}</span>@endif</div>
+                                    <div class="b2b-stock-cell">
+                                        <strong data-option-stock="{{ $product->id }}"><span class="b2b-live-dot"></span>{{ $item['stock_label'] }}</strong>
+                                        <span data-option-source="{{ $product->id }}">{{ $item['option']['source_label'] }} · {{ $item['option']['delivery_label'] }}</span>
+                                        @if ($item['options']->count() > 1)
+                                            <label class="b2b-supply-choice">
+                                                <span>Вариант поставки</span>
+                                                <select id="b2b-option-{{ $product->id }}" data-supply-option data-product-id="{{ $product->id }}">
+                                                    @foreach ($item['options'] as $option)
+                                                        <option value="{{ $option['key'] }}"
+                                                            data-price="{{ number_format((float) $option['price'], 2, '.', '') }}"
+                                                            data-stock="{{ $option['stock_label'] }}"
+                                                            data-source="{{ $option['source_label'] }} · {{ $option['delivery_label'] }}">
+                                                            {{ $option['warehouse_name'] }} · {{ $option['delivery_label'] }} · {{ number_format((float) $option['price'], 2, ',', ' ') }} BYN
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </label>
+                                        @else
+                                            <input id="b2b-option-{{ $product->id }}" type="hidden" value="{{ $item['option']['key'] }}">
+                                        @endif
+                                    </div>
                                     <div class="b2b-buy-cell">
                                         @if ($staffPreview)
                                             <span class="b2b-preview-action">Тестовый просмотр</span>
                                         @else
                                             <input id="b2b-qty-{{ $product->id }}" type="number" value="1" min="1" max="999" inputmode="numeric" aria-label="Количество">
-                                            <button type="button" class="b2b-add-button b2b-add-to-cart" data-product-id="{{ $product->id }}" data-qty-input="#b2b-qty-{{ $product->id }}"><i class="icon icon-Handbag"></i><span>Добавить</span></button>
+                                            <button type="button" class="b2b-add-button b2b-add-to-cart" data-product-id="{{ $product->id }}" data-qty-input="#b2b-qty-{{ $product->id }}" data-option-input="#b2b-option-{{ $product->id }}"><i class="icon icon-Handbag"></i><span>Добавить</span></button>
                                         @endif
                                     </div>
                                 @else

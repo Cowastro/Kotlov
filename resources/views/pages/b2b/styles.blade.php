@@ -119,6 +119,7 @@ body.b2b-body { margin:0; color:var(--b2b-ink); background:var(--b2b-bg); font-f
 .b2b-price-cell span,.b2b-stock-cell span { margin-top:3px; color:#87919a; font-size:10px; }
 .b2b-stock-cell strong { color:var(--b2b-green); font-size:12px; }
 .b2b-stock-cell .b2b-live-dot { display:inline-block; vertical-align:1px; }
+.b2b-supply-choice{display:block;margin-top:8px}.b2b-supply-choice>span{display:block;margin:0 0 4px;color:#66717a;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}.b2b-supply-choice select{width:100%;min-height:34px;padding:6px 28px 6px 8px;border:1px solid #d7dde2;border-radius:8px;background:#fff;color:#17212b;font-size:10px;line-height:1.25}
 .b2b-buy-cell { display:flex; align-items:center; gap:6px; }
 .b2b-request-cell { min-width:0; }
 .b2b-price-request-form { display:grid; grid-template-columns:54px minmax(0,1fr); align-items:center; gap:7px; width:100%; min-width:0; }
@@ -205,9 +206,10 @@ body.b2b-body { margin:0; color:var(--b2b-ink); background:var(--b2b-bg); font-f
     .b2b-product-name{font-size:12px;line-height:1.25;-webkit-line-clamp:3}
     .b2b-price-cell{grid-column:2;grid-row:2;align-self:end;min-width:0;padding-top:2px}
     .b2b-price-cell strong{font-size:14px}
-    .b2b-stock-cell{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;padding-top:3px;text-align:left}
+    .b2b-stock-cell{grid-column:1/3;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4px 8px;min-width:0;padding-top:3px;text-align:left}
     .b2b-stock-cell>strong{flex:0 0 auto;white-space:nowrap}
     .b2b-stock-cell>span{min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+    .b2b-supply-choice{grid-column:1/-1;margin-top:3px}.b2b-supply-choice select{font-size:11px}
     .b2b-buy-cell,.b2b-product-table.is-reference .b2b-request-cell{grid-column:1/3}
     .b2b-product-table.is-reference .b2b-price-cell{grid-column:2;grid-row:2}
     .b2b-buy-cell input,.b2b-price-request-form input{width:58px;height:40px}

@@ -29,13 +29,14 @@ class B2bPricingRule extends Model
 
     protected $fillable = [
         'supplier_id', 'name', 'scope_type', 'scope_id', 'calculation_type', 'value',
-        'minimum_profit_byn', 'rounding_step_byn', 'minimum_retail_discount_percent',
+        'minimum_profit_byn', 'minimum_margin_percent', 'rounding_step_byn', 'minimum_retail_discount_percent',
         'priority', 'status', 'valid_from', 'valid_until', 'notes',
     ];
 
     protected $casts = [
         'value' => 'decimal:4',
         'minimum_profit_byn' => 'decimal:2',
+        'minimum_margin_percent' => 'decimal:4',
         'rounding_step_byn' => 'decimal:2',
         'minimum_retail_discount_percent' => 'decimal:4',
         'priority' => 'integer',

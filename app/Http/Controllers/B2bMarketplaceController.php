@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\ContactRequest;
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bSupplyOptionResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -14,8 +15,11 @@ use Illuminate\Support\Collection;
 
 class B2bMarketplaceController extends Controller
 {
-    public function __invoke(Request $request, B2bCatalogOfferResolver $resolver)
-    {
+    public function __invoke(
+        Request $request,
+        B2bCatalogOfferResolver $resolver,
+        B2bSupplyOptionResolver $supplyOptions,
+    ) {
         $user = $request->user();
         $staffPreview = $request->boolean('b2b-preview')
             && ! $resolver->canViewPartnerPrices($user)
@@ -39,15 +43,32 @@ class B2bMarketplaceController extends Controller
         $allOffers = $staffPreview
             ? $resolver->offersForStaffPreview($user)
             : $resolver->offersForUser($user);
-        $offerAccessUser = $staffPreview ? null : $user;
-        $orderableProductIds = $allOffers->pluck('product_id')->unique()->map(fn ($id): int => (int) $id);
-        $sourceGroups = $allOffers
-            ->groupBy(fn ($offer): string => mb_strtolower(trim($offer->source->partnerName())))
+        $allOptions = $staffPreview
+            ? $allOffers->map(function ($offer) use ($resolver): array {
+                $availability = $resolver->availabilityFor($offer);
+
+                return [
+                    'key' => 'integration:'.$offer->id,
+                    'product_id' => (int) $offer->product_id,
+                    'product' => $offer->product,
+                    'source_key' => 'integration:'.$offer->integration_source_id,
+                    'source_label' => $offer->source->partnerName(),
+                    'price' => $resolver->priceWithTax($offer),
+                    'base_price' => $resolver->priceWithTax($offer),
+                    'stock' => $availability['stock'],
+                    'stock_label' => $availability['label'],
+                    'delivery_label' => 'Срок уточняется',
+                ];
+            })
+            : $supplyOptions->optionsForUser($user);
+        $orderableProductIds = $allOptions->pluck('product_id')->unique()->map(fn ($id): int => (int) $id);
+        $sourceGroups = $allOptions
+            ->groupBy(fn (array $option): string => mb_strtolower(trim((string) $option['source_label'])))
             ->map(function (Collection $items, string $normalizedName): array {
                 return [
                     'key' => substr(sha1($normalizedName), 0, 12),
-                    'label' => $items->first()->source->partnerName(),
-                    'source_ids' => $items->pluck('integration_source_id')->map(fn ($id): int => (int) $id)->unique()->values(),
+                    'label' => $items->first()['source_label'],
+                    'source_keys' => $items->pluck('source_key')->unique()->values(),
                 ];
             })
             ->sortBy('label')
@@ -57,12 +78,9 @@ class B2bMarketplaceController extends Controller
             $sourceKey = '';
         }
 
-        $listingOffers = $selectedSource
-            ? $allOffers->whereIn('integration_source_id', $selectedSource['source_ids'])
-            : $allOffers;
-        $offers = $listingOffers
-            ->groupBy('product_id')
-            ->map(fn (Collection $items) => $items->sortBy(fn ($offer): float => $resolver->priceWithTax($offer, $offerAccessUser))->first());
+        $listingOptions = $selectedSource
+            ? $allOptions->whereIn('source_key', $selectedSource['source_keys'])
+            : $allOptions;
 
         $categoryIndex = Category::query()
             ->where('is_active', true)
@@ -74,7 +92,7 @@ class B2bMarketplaceController extends Controller
 
         $brands = $mode === 'reference'
             ? Brand::query()->whereHas('products', fn ($query) => $query->active()->notArchived())->orderBy('name')->get()
-            : $allOffers->pluck('product.brand')->filter()->unique('id')->sortBy('name')->values();
+            : $allOptions->pluck('product.brand')->filter()->unique('id')->sortBy('name')->values();
 
         if ($mode === 'reference') {
             $referenceBaseQuery = Product::query()
@@ -87,20 +105,21 @@ class B2bMarketplaceController extends Controller
             $this->applyProductFilters($productsQuery, $query, $categoryId, $categoryFilterIds, $brandId);
             $products = $productsQuery->orderBy('name')->paginate(30)->withQueryString();
         } else {
-            $availableCategoryIds = $listingOffers
+            $availableCategoryIds = $listingOptions
                 ->unique('product_id')
                 ->pluck('product.category_id');
-            $rows = $offers->map(function ($offer) use ($resolver, $offerAccessUser): array {
-                $product = $offer->product;
-                $availability = $resolver->availabilityFor($offer, $offerAccessUser);
+            $rows = $listingOptions->groupBy('product_id')->map(function (Collection $options): array {
+                $option = $options->first();
+                $product = $option['product'];
 
                 return [
                     'product' => $product,
-                    'offer' => $offer,
-                    'price' => $resolver->priceWithTax($offer, $offerAccessUser),
+                    'option' => $option,
+                    'options' => $options->values(),
+                    'price' => $option['price'],
                     'retail_price' => (float) $product->price,
-                    'stock' => $availability['stock'],
-                    'stock_label' => $availability['label'],
+                    'stock' => $option['stock'],
+                    'stock_label' => $option['stock_label'],
                 ];
             })->filter(function (array $row) use ($query, $categoryId, $categoryFilterIds, $brandId): bool {
                 $product = $row['product'];
@@ -128,7 +147,7 @@ class B2bMarketplaceController extends Controller
 
         $representativeProducts = $mode === 'reference'
             ? $products->getCollection()
-            : $listingOffers->unique('product_id')->pluck('product')->filter();
+            : $listingOptions->unique('product_id')->pluck('product')->filter();
         $categoryTree = $this->categoryTree($categoryIndex, $availableCategoryIds, $categoryId, $representativeProducts);
         $minimalLayout = true;
 
@@ -152,8 +171,11 @@ class B2bMarketplaceController extends Controller
         ));
     }
 
-    public function suggest(Request $request, B2bCatalogOfferResolver $resolver): JsonResponse
-    {
+    public function suggest(
+        Request $request,
+        B2bCatalogOfferResolver $resolver,
+        B2bSupplyOptionResolver $supplyOptions,
+    ): JsonResponse {
         $user = $request->user();
         $staffPreview = $request->boolean('b2b-preview')
             && ! $resolver->canViewPartnerPrices($user)
@@ -171,9 +193,9 @@ class B2bMarketplaceController extends Controller
 
         if ($mode === 'reference') {
             $orderableProductIds = ($staffPreview
-                ? $resolver->offersForStaffPreview($user)
-                : $resolver->offersForUser($user))
-                ->pluck('product_id')->unique();
+                ? $resolver->offersForStaffPreview($user)->pluck('product_id')
+                : $supplyOptions->optionsForUser($user)->pluck('product_id'))
+                ->unique();
             $items = Product::query()
                 ->active()
                 ->notArchived()
@@ -207,13 +229,24 @@ class B2bMarketplaceController extends Controller
             return response()->json(['items' => $items]);
         }
 
-        $items = ($staffPreview
-            ? $resolver->offersForStaffPreview($user)
-            : $resolver->offersForUser($user))
+        $options = $staffPreview
+            ? $resolver->offersForStaffPreview($user)->map(function ($offer) use ($resolver): array {
+                $availability = $resolver->availabilityFor($offer);
+
+                return [
+                    'product_id' => (int) $offer->product_id,
+                    'product' => $offer->product,
+                    'price' => $resolver->priceWithTax($offer),
+                    'stock_label' => $availability['label'],
+                ];
+            })
+            : $supplyOptions->optionsForUser($user);
+
+        $items = $options
             ->groupBy('product_id')
-            ->map(fn (Collection $offers) => $offers->sortBy(fn ($offer): float => $resolver->priceWithTax($offer, $staffPreview ? null : $user))->first())
-            ->filter(function ($offer) use ($needle): bool {
-                $product = $offer->product;
+            ->map(fn (Collection $productOptions): array => $productOptions->first())
+            ->filter(function (array $option) use ($needle): bool {
+                $product = $option['product'];
                 $haystack = mb_strtolower(implode(' ', [
                     $product?->name,
                     $product?->sku,
@@ -223,8 +256,8 @@ class B2bMarketplaceController extends Controller
 
                 return str_contains($haystack, $needle);
             })
-            ->sortBy(function ($offer) use ($needle): array {
-                $product = $offer->product;
+            ->sortBy(function (array $option) use ($needle): array {
+                $product = $option['product'];
                 $sku = mb_strtolower((string) $product?->sku);
                 $name = mb_strtolower((string) $product?->name);
 
@@ -234,9 +267,8 @@ class B2bMarketplaceController extends Controller
                 ];
             })
             ->take(8)
-            ->map(function ($offer) use ($resolver, $preview, $staffPreview, $user): array {
-                $product = $offer->product;
-                $availability = $resolver->availabilityFor($offer, $staffPreview ? null : $user);
+            ->map(function (array $option) use ($preview): array {
+                $product = $option['product'];
 
                 return [
                     'id' => (int) $product->id,
@@ -245,8 +277,8 @@ class B2bMarketplaceController extends Controller
                     'category' => (string) ($product->category?->name ?: ''),
                     'brand' => (string) ($product->brand?->name ?: ''),
                     'image' => (string) $product->image_url,
-                    'price' => $resolver->priceWithTax($offer, $staffPreview ? null : $user),
-                    'stock' => $availability['label'],
+                    'price' => $option['price'],
+                    'stock' => $option['stock_label'],
                     'url' => route('b2b.catalog', array_filter([
                         'mode' => 'orderable',
                         'q' => $product->sku ?: $product->name,

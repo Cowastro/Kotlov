@@ -35,7 +35,7 @@ class B2bClient extends Model
         'responsible_user_id', 'reviewed_by', 'reviewed_at',
         'payment_terms', 'delivery_terms', 'minimum_order_amount',
         'payment_deferment_days', 'credit_limit', 'commercial_terms_valid_until',
-        'allowed_integration_source_ids', 'allowed_integration_warehouse_ids',
+        'allowed_integration_source_ids', 'allowed_integration_warehouse_ids', 'allowed_supplier_ids',
         'specification_service_enabled',
         'application_comment', 'manager_notes',
     ];
@@ -48,6 +48,7 @@ class B2bClient extends Model
         'commercial_terms_valid_until' => 'date',
         'allowed_integration_source_ids' => 'array',
         'allowed_integration_warehouse_ids' => 'array',
+        'allowed_supplier_ids' => 'array',
         'specification_service_enabled' => 'boolean',
     ];
 

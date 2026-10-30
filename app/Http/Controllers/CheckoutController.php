@@ -7,8 +7,7 @@ use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
-use App\Models\ProductWarehouseStock;
-use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bSupplyOptionResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
 use App\Services\CommercialDocuments\CheckoutInvoiceService;
@@ -95,7 +94,7 @@ class CheckoutController extends Controller
     // ─────────────────────────────────────────
     public function store(
         Request $request,
-        B2bCatalogOfferResolver $offerResolver,
+        B2bSupplyOptionResolver $supplyOptions,
         CartAvailabilityGuard $availabilityGuard,
         CartCouponService $couponService,
         BelarusTaxpayerRegistry $taxpayerRegistry,
@@ -149,40 +148,35 @@ class CheckoutController extends Controller
                 }
 
                 $product = $products->get((int) $item['id']);
-                $offer = $product ? $offerResolver->forProduct($product, Auth::user()) : null;
-                if (! $offer
-                    || (int) ($item['integration_product_id'] ?? 0) !== (int) $offer->id
-                    || ! $offerResolver->canOrder($offer, (int) $item['quantity'])) {
+                $option = $product ? $supplyOptions->optionForKey(
+                    $product,
+                    Auth::user(),
+                    (string) ($item['supply_option'] ?? ''),
+                ) : null;
+                if (! $option || ! $supplyOptions->canOrder($option, (int) $item['quantity'])) {
                     return redirect()->route('cart')->with(
                         'error',
                         'B2B-заказ не создан: одна из позиций потеряла привязку или больше недоступна в указанном количестве.'
                     );
                 }
 
-                if ($warehouseStockId = (int) ($item['warehouse_stock_id'] ?? 0)) {
-                    $warehouseStock = ProductWarehouseStock::query()->find($warehouseStockId);
-                    if (! $warehouseStock
-                        || (int) $warehouseStock->product_id !== (int) $item['id']
-                        || (float) $warehouseStock->available_quantity < (int) $item['quantity']) {
-                        return redirect()->route('cart')->with(
-                            'error',
-                            'B2B-заказ не создан: выбранный склад больше не располагает нужным количеством.'
-                        );
-                    }
-                }
-
-                $currentQuote = $offerResolver->priceQuote($offer, Auth::user());
-                $currentPrice = $currentQuote['price'];
+                $currentPrice = $option['price'];
                 if (abs((float) $item['price'] - $currentPrice) >= 0.01) {
                     $cart[$key]['price'] = $currentPrice;
                     $b2bPriceChanged = true;
                 }
 
-                $cart[$key]['b2b_base_price'] = $currentQuote['base_price'];
-                $cart[$key]['b2b_price_level_id'] = $currentQuote['price_level_id'];
-                $cart[$key]['b2b_price_level_code'] = $currentQuote['price_level_code'];
-                $cart[$key]['b2b_price_level_name'] = $currentQuote['price_level_name'];
-                $cart[$key]['b2b_discount_percent'] = $currentQuote['discount_percent'];
+                $cart[$key]['integration_product_id'] = $option['integration_product_id'];
+                $cart[$key]['supplier_product_id'] = $option['supplier_product_id'];
+                $cart[$key]['warehouse_stock_id'] = $option['warehouse_stock_id'];
+                $cart[$key]['source_name'] = $option['source_label'];
+                $cart[$key]['warehouse_name'] = $option['warehouse_name'];
+                $cart[$key]['warehouse_delivery_days'] = $option['delivery_days'];
+                $cart[$key]['b2b_base_price'] = $option['base_price'];
+                $cart[$key]['b2b_price_level_id'] = $option['price_level_id'];
+                $cart[$key]['b2b_price_level_code'] = $option['price_level_code'];
+                $cart[$key]['b2b_price_level_name'] = $option['price_level_name'];
+                $cart[$key]['b2b_discount_percent'] = $option['discount_percent'];
             }
 
             if ($b2bPriceChanged) {
@@ -362,6 +356,7 @@ class CheckoutController extends Controller
                     'pricing_type' => $item['pricing_type'] ?? 'retail',
                     'price_tax_mode' => $item['price_tax_mode'] ?? null,
                     'integration_product_id' => $item['integration_product_id'] ?? null,
+                    'supplier_product_id' => $item['supplier_product_id'] ?? null,
                     'warehouse_stock_id' => $item['warehouse_stock_id'] ?? null,
                     'supply_warehouse_name' => $item['warehouse_name'] ?? null,
                     'supply_delivery_days' => $item['warehouse_delivery_days'] ?? null,

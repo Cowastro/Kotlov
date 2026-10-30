@@ -297,9 +297,9 @@ class B2bMarketplaceTest extends TestCase
         $this->actingAs($user)
             ->get(route('b2b.catalog', ['q' => 'TSAR-LOCAL-1']))
             ->assertOk()
-            ->assertSeeText('80,00 BYN')
+            ->assertSeeText('110,00 BYN')
             ->assertSeeText('Основной: 3 шт.')
-            ->assertDontSeeText('Склад Москва · поставка 7 дней');
+            ->assertSeeText('Склад Москва · поставка 7 дней');
 
         $this->actingAs($user)
             ->getJson(route('b2b.catalog.suggest', ['q' => 'TSAR-LOCAL-1']))

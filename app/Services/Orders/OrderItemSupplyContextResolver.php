@@ -39,6 +39,7 @@ class OrderItemSupplyContextResolver
 
         $item->loadMissing([
             'integrationProduct.source.supplier',
+            'supplierProduct.supplier',
             'product.purchasePriceSources.supplier',
             'product.integrationProducts.source.supplier.latestChannelTransition',
             'product.supplierProducts.supplier.latestChannelTransition',
@@ -68,6 +69,10 @@ class OrderItemSupplyContextResolver
 
         if ($item->integrationProduct) {
             return $this->fromIntegrationProduct($item, $item->integrationProduct, true);
+        }
+
+        if ($item->supplierProduct) {
+            return $this->fromSupplierProduct($item, $item->supplierProduct, 1);
         }
 
         $confirmedSources = $this->confirmedPurchasePriceSources($item);
@@ -156,6 +161,7 @@ class OrderItemSupplyContextResolver
     {
         $order->loadMissing([
             'items.integrationProduct.source.supplier.latestChannelTransition',
+            'items.supplierProduct.supplier.latestChannelTransition',
             'items.product.purchasePriceSources.supplier',
             'items.product.integrationProducts.source.supplier.latestChannelTransition',
             'items.product.supplierProducts.supplier.latestChannelTransition',

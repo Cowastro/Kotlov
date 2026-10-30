@@ -6,6 +6,7 @@ use App\Enums\ClientType;
 use App\Models\B2bClient;
 use App\Models\IntegrationSource;
 use App\Models\IntegrationWarehouse;
+use App\Models\Supplier;
 use App\Models\User;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
@@ -159,6 +160,19 @@ class B2bClientForm
                         ->searchable()
                         ->preload()
                         ->helperText('Доступ к складам настраивается независимо от уровня цены.')
+                        ->columnSpanFull(),
+                    Select::make('allowed_supplier_ids')
+                        ->label('Внешние партнёрские склады')
+                        ->options(fn (): array => Supplier::query()
+                            ->where('is_active', true)
+                            ->where('b2b_partner_enabled', true)
+                            ->orderBy('name')
+                            ->pluck('name', 'id')
+                            ->all())
+                        ->multiple()
+                        ->searchable()
+                        ->preload()
+                        ->helperText('Выдаются отдельно от прайсов 1С. Пусто — внешние склады этому клиенту не показывать.')
                         ->columnSpanFull(),
                 ]),
             Section::make('Реквизиты из личного кабинета')

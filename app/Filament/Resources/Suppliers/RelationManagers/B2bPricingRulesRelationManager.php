@@ -64,6 +64,10 @@ class B2bPricingRulesRelationManager extends RelationManager
                 ->helperText('Для маржи и наценки — процент; для фиксированной цены — BYN.')
                 ->numeric()->minValue(0)->required(),
             TextInput::make('minimum_profit_byn')->label('Минимальная прибыль')->numeric()->minValue(0)->default(0)->suffix('BYN'),
+            TextInput::make('minimum_margin_percent')
+                ->label('Минимально допустимая маржа')
+                ->helperText('Ни ценовой уровень клиента, ни скидка не смогут опустить продажную цену ниже этого порога.')
+                ->numeric()->minValue(0)->maxValue(99)->default(10)->suffix('%'),
             Select::make('rounding_step_byn')->label('Округлять вверх до')->options([
                 '0.1' => '0,10 BYN',
                 '1' => '1 BYN',

@@ -2,6 +2,7 @@
 
 namespace App\Services\Pricing;
 
+use App\Models\B2bPriceLevel;
 use App\Models\B2bPricingRule;
 use App\Models\Category;
 use App\Models\Supplier;
@@ -10,6 +11,9 @@ use Illuminate\Support\Collection;
 
 class B2bPartnerPricingEngine
 {
+    /** @var array<int, int>|null */
+    private ?array $categoryParents = null;
+
     public const REASON_READY = 'ready';
 
     public const REASON_UNMATCHED = 'unmatched';
@@ -53,6 +57,8 @@ class B2bPartnerPricingEngine
             'purchase_price' => $purchasePrice > 0 ? $purchasePrice : null,
             'retail_price' => $retailPrice > 0 ? $retailPrice : null,
             'b2b_price' => null,
+            'minimum_safe_price' => null,
+            'minimum_margin_percent' => $rule ? max(0, min(99, (float) $rule->minimum_margin_percent)) : null,
             'profit' => null,
             'margin_percent' => null,
             'stock_quantity' => (float) $offer->stock_quantity,
@@ -88,11 +94,13 @@ class B2bPartnerPricingEngine
             return $base + $this->reason(self::REASON_INVALID_RULE, 'В правиле указано недопустимое значение');
         }
 
-        $b2bPrice = $this->calculatePrice($purchasePrice, $rule);
+        $minimumSafePrice = $this->minimumSafePrice($purchasePrice, $rule);
+        $b2bPrice = max($this->calculatePrice($purchasePrice, $rule), $minimumSafePrice);
         $maximumPrice = $retailPrice * (1 - max(0, (float) $rule->minimum_retail_discount_percent) / 100);
         if ($b2bPrice >= $retailPrice || $b2bPrice > $maximumPrice + 0.005) {
             return array_merge($base, [
                 'b2b_price' => $b2bPrice,
+                'minimum_safe_price' => $minimumSafePrice,
                 'profit' => round($b2bPrice - $purchasePrice, 2),
                 'margin_percent' => $b2bPrice > 0 ? round(($b2bPrice - $purchasePrice) / $b2bPrice * 100, 2) : null,
             ], $this->reason(self::REASON_PRICE_CONFLICT, 'B2B-цена не ниже розничной'));
@@ -102,10 +110,61 @@ class B2bPartnerPricingEngine
 
         return array_merge($base, [
             'b2b_price' => $b2bPrice,
+            'minimum_safe_price' => $minimumSafePrice,
             'profit' => $profit,
             'margin_percent' => round($profit / $b2bPrice * 100, 2),
             'publishable' => $supplier->b2b_partner_enabled && $rule->status === B2bPricingRule::STATUS_ACTIVE,
         ], $this->reason(self::REASON_READY, 'Готово к публикации'));
+    }
+
+    /**
+     * Public sale quote for a client. Purchase price and calculated profit are
+     * deliberately omitted so this array is safe to pass to the storefront.
+     *
+     * @return array{base_price:float,price:float,price_level_id:?int,price_level_code:?string,price_level_name:?string,discount_percent:float}|null
+     */
+    public function clientQuote(SupplierProduct $offer, ?B2bPriceLevel $priceLevel = null): ?array
+    {
+        $offer->loadMissing(['supplier.b2bPricingRules', 'product.brand', 'product.category']);
+        $supplier = $offer->supplier;
+        if (! $supplier) {
+            return null;
+        }
+
+        $categoryParents = $this->categoryParents ??= Category::query()
+            ->pluck('parent_id', 'id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+        $evaluation = $this->evaluate(
+            $offer,
+            $supplier,
+            $supplier->b2bPricingRules,
+            $categoryParents,
+            false,
+        );
+        if (! ($evaluation['publishable'] ?? false)) {
+            return null;
+        }
+
+        $basePrice = (float) $evaluation['b2b_price'];
+        $minimumSafePrice = (float) $evaluation['minimum_safe_price'];
+        $discounted = $priceLevel?->applyToSalePrice($basePrice) ?? $basePrice;
+        $step = max(0.01, (float) ($evaluation['rule_id']
+            ? $supplier->b2bPricingRules->firstWhere('id', $evaluation['rule_id'])?->rounding_step_byn
+            : 0.01));
+        $price = min($basePrice, $this->roundUp(max($discounted, $minimumSafePrice), $step));
+        $actualDiscount = $basePrice > 0
+            ? round(max(0, ($basePrice - $price) / $basePrice * 100), 2)
+            : 0.0;
+
+        return [
+            'base_price' => round($basePrice, 2),
+            'price' => round($price, 2),
+            'price_level_id' => $priceLevel?->id,
+            'price_level_code' => $priceLevel?->code,
+            'price_level_name' => $priceLevel?->name,
+            'discount_percent' => $actualDiscount,
+        ];
     }
 
     /** @return array{total:int,would_publish:int,published:int,reasons:array<string,int>,items:Collection<int,array<string,mixed>>} */
@@ -182,8 +241,26 @@ class B2bPartnerPricingEngine
         };
 
         $price = max($price, $purchasePrice + max(0, (float) $rule->minimum_profit_byn));
-        $step = max(0.01, (float) $rule->rounding_step_byn);
 
+        return $this->roundUp($price, max(0.01, (float) $rule->rounding_step_byn));
+    }
+
+    private function minimumSafePrice(float $purchasePrice, B2bPricingRule $rule): float
+    {
+        $minimumMargin = max(0, min(99, (float) $rule->minimum_margin_percent));
+        $marginFloor = $minimumMargin > 0
+            ? $purchasePrice / (1 - $minimumMargin / 100)
+            : $purchasePrice;
+        $profitFloor = $purchasePrice + max(0, (float) $rule->minimum_profit_byn);
+
+        return $this->roundUp(
+            max($marginFloor, $profitFloor),
+            max(0.01, (float) $rule->rounding_step_byn),
+        );
+    }
+
+    private function roundUp(float $price, float $step): float
+    {
         return round(ceil(($price - 0.000001) / $step) * $step, 2);
     }
 

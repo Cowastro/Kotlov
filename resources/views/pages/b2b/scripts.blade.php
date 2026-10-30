@@ -145,10 +145,24 @@
         showToast.timer = setTimeout(function () { toast.hidden = true; }, 2200);
     }
 
+    document.addEventListener('change', function (event) {
+        var select = event.target.closest('[data-supply-option]');
+        if (!select) return;
+        var option = select.options[select.selectedIndex];
+        var productId = select.dataset.productId;
+        var price = document.querySelector('[data-option-price="' + productId + '"]');
+        var stock = document.querySelector('[data-option-stock="' + productId + '"]');
+        var source = document.querySelector('[data-option-source="' + productId + '"]');
+        if (price) price.innerHTML = Number(option.dataset.price).toLocaleString('ru-RU', { minimumFractionDigits:2, maximumFractionDigits:2 }) + ' <small>BYN</small>';
+        if (stock) stock.innerHTML = '<span class="b2b-live-dot"></span>' + option.dataset.stock;
+        if (source) source.textContent = option.dataset.source;
+    });
+
     document.addEventListener('click', function (event) {
         var button = event.target.closest('.b2b-add-to-cart');
         if (!button || button.disabled) return;
         var quantityInput = document.querySelector(button.dataset.qtyInput);
+        var optionInput = document.querySelector(button.dataset.optionInput);
         var qty = Math.max(1, parseInt(quantityInput.value, 10) || 1);
         var original = button.innerHTML;
         button.disabled = true;
@@ -156,7 +170,7 @@
         fetch('{{ route('cart.add') }}', {
             method: 'POST',
             headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN':csrf },
-            body: JSON.stringify({ product_id:Number(button.dataset.productId), quantity:qty, pricing_mode:'b2b' }),
+            body: JSON.stringify({ product_id:Number(button.dataset.productId), quantity:qty, pricing_mode:'b2b', supply_option:optionInput ? optionInput.value : null }),
         }).then(function (response) {
             return response.json().then(function (data) { if (!response.ok) throw new Error(data.message || 'Не удалось добавить товар'); return data; });
         }).then(function (data) {
