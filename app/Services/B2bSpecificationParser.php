@@ -111,6 +111,61 @@ class B2bSpecificationParser
         return $this->persistSnapshot($specification, $attachments, $rows, 'parsed', $message, $source, $actor, $note);
     }
 
+    /**
+     * Persist already extracted document rows through the same conservative
+     * catalogue matcher as spreadsheets. Fuzzy suggestions remain manager-only.
+     *
+     * @param  Collection<int, B2bSpecificationAttachment>  $attachments
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array{status:string,items:int,matched:int,suggested:int,message:string,version:int,diff:array<string,int>}
+     */
+    public function parseExtractedRows(
+        B2bSpecification $specification,
+        Collection $attachments,
+        array $items,
+        string $source,
+        ?User $actor = null,
+        ?string $note = null,
+        ?string $message = null,
+    ): array {
+        [$skuMatches, $nameMatches, $products, $tokenIndex] = $this->productIndexes();
+        $rows = [];
+
+        foreach (array_slice($items, 0, self::MAX_ROWS) as $item) {
+            [$productId, $confidence, $reason] = $this->match($item, $skuMatches, $nameMatches);
+            $candidates = $productId ? [] : $this->candidates($item, $products, $tokenIndex);
+            $rows[] = [
+                ...$item,
+                'b2b_specification_id' => $specification->id,
+                'status' => $productId ? 'matched' : ($candidates === [] ? 'unmatched' : 'suggested'),
+                'product_id' => $productId,
+                'confidence' => $confidence ?? ($candidates === [] ? null : round((float) $candidates[0]['score'] * 100, 2)),
+                'match_reason' => $reason ?? ($candidates === [] ? null : 'fuzzy_name'),
+                'candidates' => $candidates === [] ? null : json_encode($candidates, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        $matched = collect($rows)->where('status', 'matched')->count();
+        $suggested = collect($rows)->where('status', 'suggested')->count();
+        $message ??= 'DeepSeek извлёк позиций: '.count($rows).", точно сопоставлено: {$matched}.";
+        if ($suggested > 0) {
+            $message .= " Вариантов для проверки менеджером: {$suggested}.";
+        }
+
+        return $this->persistSnapshot(
+            $specification,
+            $attachments,
+            $rows,
+            $rows === [] ? 'failed' : 'parsed',
+            $message,
+            $source,
+            $actor,
+            $note,
+        );
+    }
+
     /** @return array<int, array<string, mixed>> */
     private function readAttachment(B2bSpecificationAttachment $attachment): array
     {

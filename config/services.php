@@ -108,6 +108,7 @@ return [
         'pdftotext_binary' => env('PDFTOTEXT_BINARY', 'pdftotext'),
         'pdftoppm_binary' => env('PDFTOPPM_BINARY', 'pdftoppm'),
         'deepseek_document_model' => env('DEEPSEEK_DOCUMENT_MODEL', 'deepseek-flash'),
+        'proxy' => env('AI_PROXY', env('OPENAI_PROXY', '')),
         'openai_research_model' => env('OPENAI_RESEARCH_MODEL', 'gpt-6.1-sol'),
         'openai_research_timeout' => env('OPENAI_RESEARCH_TIMEOUT', 180),
         'openai_proxy' => env('OPENAI_PROXY', ''),

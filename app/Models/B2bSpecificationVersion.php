@@ -12,6 +12,7 @@ class B2bSpecificationVersion extends Model
         'upload' => 'Первая загрузка',
         'revision' => 'Новая редакция клиента',
         'reparse' => 'Повторный разбор',
+        'ocr' => 'Распознавание DeepSeek',
         'migration' => 'Исходная версия',
     ];
 
