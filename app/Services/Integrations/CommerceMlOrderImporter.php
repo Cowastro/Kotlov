@@ -66,8 +66,15 @@ class CommerceMlOrderImporter
                     'Номер счета 1С', 'Номер счёта 1С', 'Номер счета на оплату', 'Номер счёта на оплату',
                 ]);
                 $invoiceStatus = $this->requisite($node, ['Статус счета', 'Статус счёта']);
+                $accountingEntries = $this->accountingEntries($node);
                 $status = $this->statusMapper->orderStatus($rawStatus, $source);
                 $paymentStatus = $this->statusMapper->paymentStatus($rawPaymentStatus, $source);
+                if ($paymentStatus === null) {
+                    $entryTypes = array_column($accountingEntries, 'type');
+                    $paymentStatus = in_array('refund', $entryTypes, true)
+                        ? 'refunded'
+                        : (in_array('payment', $entryTypes, true) ? 'paid' : null);
+                }
                 $oldStatus = $order->status;
                 $oldPaymentStatus = $order->payment_status;
                 $updatesCentralOrder = ! $source || $source->code === 'onec';
@@ -111,6 +118,7 @@ class CommerceMlOrderImporter
                         $invoiceNumber,
                         $invoiceStatus,
                         $paymentStatus,
+                        $accountingEntries,
                     );
                 }
 
@@ -452,6 +460,69 @@ class CommerceMlOrderImporter
         }
 
         return $remoteNumber;
+    }
+
+    /**
+     * @return array<int, array{type:string, external_id:string, number:string, date:string, amount:string, currency:string, description:string}>
+     */
+    private function accountingEntries(SimpleXMLElement $node): array
+    {
+        $entries = [];
+        $currency = $this->requisite($node, ['Валюта платежа', 'Валюта оплаты', 'Валюта корректировки']);
+
+        $payment = [
+            'type' => 'payment',
+            'external_id' => $this->requisite($node, ['GUID платежа 1С', 'GUID оплаты 1С', 'Идентификатор платежа 1С']),
+            'number' => $this->requisite($node, ['Номер платежа 1С', 'Номер оплаты 1С', 'Номер платёжного поручения', 'Номер платежного поручения']),
+            'date' => $this->requisite($node, ['Дата платежа 1С', 'Дата оплаты 1С', 'Дата платежа', 'Дата оплаты']),
+            'amount' => $this->requisite($node, ['Сумма платежа 1С', 'Сумма оплаты 1С', 'Сумма платежа', 'Оплачено']),
+            'currency' => $currency,
+            'description' => $this->requisite($node, ['Назначение платежа', 'Комментарий оплаты']),
+        ];
+        if ($this->hasAccountingIdentity($payment)) {
+            $entries[] = $payment;
+        }
+
+        $refund = [
+            'type' => 'refund',
+            'external_id' => $this->requisite($node, ['GUID возврата 1С', 'Идентификатор возврата 1С']),
+            'number' => $this->requisite($node, ['Номер возврата 1С', 'Номер документа возврата']),
+            'date' => $this->requisite($node, ['Дата возврата 1С', 'Дата возврата']),
+            'amount' => $this->requisite($node, ['Сумма возврата 1С', 'Сумма возврата']),
+            'currency' => $currency,
+            'description' => $this->requisite($node, ['Основание возврата', 'Комментарий возврата']),
+        ];
+        if ($this->hasAccountingIdentity($refund)) {
+            $entries[] = $refund;
+        }
+
+        $adjustmentKind = mb_strtolower($this->requisite($node, ['Вид корректировки', 'Направление корректировки']));
+        $adjustment = [
+            'type' => str_contains($adjustmentKind, 'уменьш') || str_contains($adjustmentKind, 'сторно')
+                ? 'adjustment_credit'
+                : 'adjustment_debit',
+            'external_id' => $this->requisite($node, ['GUID корректировки 1С', 'Идентификатор корректировки 1С']),
+            'number' => $this->requisite($node, ['Номер корректировки 1С', 'Номер документа корректировки']),
+            'date' => $this->requisite($node, ['Дата корректировки 1С', 'Дата корректировки']),
+            'amount' => $this->requisite($node, ['Сумма корректировки 1С', 'Сумма корректировки']),
+            'currency' => $currency,
+            'description' => $this->requisite($node, ['Основание корректировки', 'Комментарий корректировки']),
+        ];
+        if ($this->hasAccountingIdentity($adjustment)) {
+            $entries[] = $adjustment;
+        }
+
+        return $entries;
+    }
+
+    /** @param array<string, string> $entry */
+    private function hasAccountingIdentity(array $entry): bool
+    {
+        if (trim($entry['external_id']) !== '' || trim($entry['number']) !== '') {
+            return true;
+        }
+
+        return trim($entry['date']) !== '' && trim($entry['amount']) !== '';
     }
 
     /** @param array<int, string> $names */
