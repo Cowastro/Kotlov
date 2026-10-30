@@ -13,7 +13,7 @@ class SyncDealByBrandPricesCommand extends Command
 {
     private const PAGE_SIZE = 100;
 
-    private const SUPPORTED_SUPPLIERS = ['bania'];
+    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall'];
 
     private ?string $supplierCode = null;
 
@@ -293,6 +293,16 @@ class SyncDealByBrandPricesCommand extends Command
         $this->line('metric.deal_brand_prices.ambiguous='.$plan['ambiguous']);
         $this->line('metric.deal_brand_prices.invalid_remote_price='.$plan['invalid_remote_price']);
 
+        // ProMetall goods on the shop as they are named there: to link the rest by hand.
+        if ($this->supplierCode === 'prometall') {
+            foreach ($remoteProducts as $remote) {
+                if (preg_match('/атмосфер|прометалл|prometall|эйфори|бахт|арктик/ui', (string) ($remote['name'] ?? ''))) {
+                    $this->line(sprintf('audit.deal_brand_prices.remote=%d:%s:%s:%d:%s', (int) ($remote['id'] ?? 0),
+                        \Illuminate\Support\Str::slug((string) ($remote['sku'] ?? '')) ?: 'none', \Illuminate\Support\Str::slug((string) ($remote['external_id'] ?? '')) ?: 'none',
+                        (int) round((float) ($remote['price'] ?? 0) * 100), \Illuminate\Support\Str::limit(\Illuminate\Support\Str::slug((string) ($remote['name'] ?? '')), 80, '')));
+                }
+            }
+        }
         foreach ($plan['updates'] as $item) {
             $this->line(sprintf(
                 'audit.deal_brand_prices=%d:%d:%s:%d:%d',
