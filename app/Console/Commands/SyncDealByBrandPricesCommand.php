@@ -99,7 +99,7 @@ class SyncDealByBrandPricesCommand extends Command
     private function targetProducts(): Collection
     {
         $query = Product::query()
-            ->with(['brand:id,name', 'supplierProducts:id,product_id,supplier_article'])
+            ->with(['brand:id,name', 'supplierProducts:id,product_id,supplier_id,supplier_article'])
             ->where('is_active', true)
             ->where(function ($query): void {
                 $query->where('is_archived', false)->orWhereNull('is_archived');
@@ -139,6 +139,18 @@ class SyncDealByBrandPricesCommand extends Command
     private function buildPlan(Collection $localProducts, Collection $remoteProducts): array
     {
         $localById = $localProducts->keyBy('id');
+        // The shop keeps the manufacturer's article (ProMetall p0048) as its SKU: the supplier's article of the card.
+        $supplierId = $this->supplierCode !== null
+            ? (int) \Illuminate\Support\Facades\DB::table('suppliers')->where('code', $this->supplierCode)->value('id')
+            : 0;
+        $localByArticle = $supplierId > 0
+            ? $localProducts->flatMap(fn (Product $product) => $product->supplierProducts
+                ->where('supplier_id', $supplierId)
+                ->map(fn ($offer) => [$this->normalizeSku((string) $offer->supplier_article), $product]))
+                ->filter(fn (array $pair): bool => $pair[0] !== '')
+                ->groupBy(fn (array $pair): string => $pair[0], true)
+                ->map(fn ($pairs) => collect($pairs)->map(fn (array $pair) => $pair[1])->unique('id')->values())
+            : collect();
         $localBySku = $localProducts
             ->filter(fn (Product $product): bool => $this->normalizeSku($product->sku) !== '')
             ->groupBy(fn (Product $product): string => $this->normalizeSku($product->sku));
@@ -195,7 +207,8 @@ class SyncDealByBrandPricesCommand extends Command
             if (! $local && $remoteSku !== '' && ($remoteSkuCounts[$remoteSku] ?? 0) === 1) {
                 $slugCandidates = $localBySlug->get($remoteSku, collect());
                 $skuCandidates = $localBySku->get($remoteSku, collect());
-                $candidates = $slugCandidates->concat($skuCandidates)->unique('id')->values();
+                $articleCandidates = $localByArticle->get($remoteSku, collect());
+                $candidates = $slugCandidates->concat($skuCandidates)->concat($articleCandidates)->unique('id')->values();
 
                 if ($candidates->count() === 1) {
                     $local = $candidates->first();
