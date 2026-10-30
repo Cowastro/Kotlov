@@ -74,12 +74,18 @@ class SyncChistyBeregCommandTest extends TestCase
         $this->assertNull(SupplierProduct::query()->where('supplier_article', '00150000')->value('product_id'));
         $this->assertSame(300.0, (float) $otherBrand->fresh()->price);
 
+        // Marks of the background jobs survive the next file.
+        $kept = SupplierProduct::query()->where('supplier_article', '00142022')->firstOrFail();
+        $kept->forceFill(['raw' => array_merge((array) $kept->raw, ['photo_searched_at' => '2026-10-30 06:00:00', 'specs_refilled_at' => '2026-10-30 06:00:00'])])->save();
+
         // Tomorrow the row is gone from the file: no stock.
         $tomorrow = $this->workbook([[null, '00142022', 'Баки расширительные мембранные', null, 'Кронштейн настенный для расширительного бака 3/4" регулируемый Россия', 'кррб-3/4', 'шт.', null, 10, 0, 10, 12.7, 14.54]]);
         $this->artisan('supplier:sync-chisty-bereg', ['--file' => $tomorrow, '--apply' => true])
             ->expectsOutputToContain('metric.chisty_bereg.gone_from_file=2')
             ->assertSuccessful();
         $this->assertFalse((bool) $offer->fresh()->in_stock);
+        $this->assertSame('2026-10-30 06:00:00', data_get($kept->fresh()->raw, 'photo_searched_at'));
+        $this->assertSame('2026-10-30 06:00:00', data_get($kept->fresh()->raw, 'specs_refilled_at'));
         $this->assertSame($byCode->id, $offer->fresh()->product_id);
         @unlink($path);
         @unlink($tomorrow);

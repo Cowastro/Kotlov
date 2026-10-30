@@ -198,6 +198,8 @@ class SyncChistyBeregCommand extends Command
                     'raw' => ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'maker_code' => $row['maker_code'], 'brand' => $row['brand'], 'category' => $row['category'], 'unit' => $row['unit'],
                         'pack' => $row['pack'], 'stock' => $row['stock'], 'reserve' => $row['reserve'], 'retail' => $row['rrc'] ?: null,
                         'market_price' => $market['market_price'] ?? null, 'market_checked_at' => $market['market_checked_at'] ?? null,
+                        // Marks of the background jobs: a new file must not send the cards back to their queues.
+                        'photo_searched_at' => $market['photo_searched_at'] ?? null, 'specs_refilled_at' => $market['specs_refilled_at'] ?? null,
                         'model' => trim(($row['maker_code'] !== '' ? 'Код произв. '.$row['maker_code'] : '').' · '.$row['brand'].' · '.$row['category'], ' ·')],
                     'last_synced_at' => now(),
                 ])->save();
