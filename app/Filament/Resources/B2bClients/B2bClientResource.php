@@ -8,6 +8,7 @@ use App\Filament\Resources\B2bClients\Pages\ListB2bClients;
 use App\Filament\Resources\B2bClients\Schemas\B2bClientForm;
 use App\Models\B2bClient;
 use App\Services\B2bClientWorkflow;
+use App\Services\CommercialDocuments\B2bReconciliationStatements;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -20,6 +21,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\ValidationException;
 
 class B2bClientResource extends Resource
 {
@@ -65,6 +67,9 @@ class B2bClientResource extends Resource
     {
         return parent::getEloquentQuery()
             ->with(['user', 'counterparty', 'priceLevel', 'responsibleUser', 'reviewedBy'])
+            ->withCount(['reconciliationStatements as pending_reconciliation_count' => fn (Builder $query): Builder => $query
+                ->whereNotNull('client_confirmed_at')
+                ->whereNull('manager_confirmed_at')])
             ->withB2bOrderMetrics();
     }
 
@@ -140,6 +145,31 @@ class B2bClientResource extends Resource
                     ->action(function (B2bClient $record): void {
                         app(B2bClientWorkflow::class)->reject($record, auth()->user());
                         Notification::make()->danger()->title('Заявка отклонена')->send();
+                    }),
+                Action::make('confirmReconciliation')
+                    ->label('Согласовать акт')
+                    ->icon('heroicon-o-document-check')
+                    ->color('success')
+                    ->visible(fn (B2bClient $record): bool => (int) $record->pending_reconciliation_count > 0)
+                    ->requiresConfirmation()
+                    ->modalHeading('Согласовать последнюю версию акта?')
+                    ->modalDescription('Система повторно проверит, что проводки 1С не изменились после подтверждения партнёром.')
+                    ->action(function (B2bClient $record): void {
+                        $statement = $record->reconciliationStatements()
+                            ->whereNotNull('client_confirmed_at')
+                            ->whereNull('manager_confirmed_at')
+                            ->latest('id')
+                            ->firstOrFail();
+                        try {
+                            app(B2bReconciliationStatements::class)->confirmByManager($statement, auth()->user());
+                            Notification::make()->success()->title('Акт согласован обеими сторонами')->send();
+                        } catch (ValidationException $exception) {
+                            Notification::make()
+                                ->danger()
+                                ->title('Акт нельзя согласовать')
+                                ->body(collect($exception->errors())->flatten()->first() ?: 'Проверьте актуальность проводок.')
+                                ->send();
+                        }
                     }),
                 EditAction::make()->label('Карточка'),
             ])

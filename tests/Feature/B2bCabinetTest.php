@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\B2bClient;
 use App\Models\B2bOrder;
+use App\Models\B2bReconciliationStatement;
 use App\Models\B2bSavedCart;
 use App\Models\CommercialDocument;
 use App\Models\CrmCounterparty;
@@ -11,8 +12,11 @@ use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\User;
+use App\Services\CommercialDocuments\B2bReconciliationStatements;
 use App\Services\Integrations\CommerceMlOrderImporter;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class B2bCabinetTest extends TestCase
@@ -420,6 +424,94 @@ XML,
             ->assertSeeText('20,00 BYN')
             ->assertSeeText('Закупочные цены и внутренняя маржа не раскрываются')
             ->assertDontSeeText('Предварительная сверка сформирована');
+    }
+
+    public function test_reconciliation_version_is_confirmed_by_both_sides_and_invalidated_by_new_ledger_data(): void
+    {
+        [$partner, $client] = $this->partner('reconciliation@example.by', 'ООО «Сверка»');
+        $entry = $client->accountingEntries()->create([
+            'external_key' => 'invoice:statement-1',
+            'entry_type' => 'charge',
+            'occurred_at' => '2026-10-15 00:00:00',
+            'document_number' => 'СФ-00000001',
+            'description' => 'Счёт СФ-00000001',
+            'debit' => 150,
+            'credit' => 0,
+            'currency' => 'BYN',
+            'imported_at' => now(),
+        ]);
+        $dates = ['date_from' => '2026-10-01', 'date_to' => '2026-10-31'];
+
+        $this->actingAs($partner)
+            ->get(route('b2b.cabinet', ['section' => 'reconciliation'] + $dates))
+            ->assertOk()
+            ->assertSeeText('Подтверждение акта защищено');
+
+        $this->post(route('b2b.cabinet.reconciliation.confirm'), $dates + ['confirmation' => '1'])
+            ->assertRedirect(route('b2b.cabinet', ['section' => 'reconciliation']));
+        $this->assertDatabaseCount('b2b_reconciliation_statements', 0);
+
+        $response = $this->withSession(['auth.password_confirmed_at' => time()])
+            ->post(route('b2b.cabinet.reconciliation.confirm'), $dates + ['confirmation' => '1']);
+        $response->assertRedirect(route('b2b.cabinet', ['section' => 'reconciliation'] + $dates));
+
+        $statement = B2bReconciliationStatement::query()->sole();
+        $this->assertSame('client_confirmed', $statement->status);
+        $this->assertSame($partner->id, $statement->client_confirmed_by);
+        $this->assertSame('150.00', $statement->closing_balance);
+        $this->assertSame('СФ-00000001', $statement->entries_snapshot[0]['document_number']);
+        $this->assertArrayNotHasKey('purchase_price', $statement->entries_snapshot[0]);
+        $this->assertSame(1, $client->auditLogs()->where('event', 'reconciliation_client_confirmed')->count());
+
+        $this->withSession(['auth.password_confirmed_at' => time()])
+            ->post(route('b2b.cabinet.reconciliation.confirm'), $dates + ['confirmation' => '1'])
+            ->assertRedirect();
+        $this->assertDatabaseCount('b2b_reconciliation_statements', 1);
+        $this->assertSame(1, $client->auditLogs()->where('event', 'reconciliation_client_confirmed')->count());
+
+        $manager = User::factory()->create(['role' => 'admin']);
+        app(B2bReconciliationStatements::class)->confirmByManager($statement, $manager);
+        $statement->refresh();
+        $this->assertSame('agreed', $statement->status);
+        $this->assertSame($manager->id, $statement->manager_confirmed_by);
+        $this->assertSame(1, $client->auditLogs()->where('event', 'reconciliation_manager_confirmed')->count());
+
+        $entry->update(['debit' => 175]);
+        $this->get(route('b2b.cabinet', ['section' => 'reconciliation'] + $dates))
+            ->assertOk()
+            ->assertSeeText('Требуется новая версия')
+            ->assertSeeText('После предыдущего подтверждения состав проводок изменился');
+
+        $this->withSession(['auth.password_confirmed_at' => time()])
+            ->post(route('b2b.cabinet.reconciliation.confirm'), $dates + ['confirmation' => '1'])
+            ->assertRedirect();
+        $this->assertDatabaseCount('b2b_reconciliation_statements', 2);
+    }
+
+    public function test_manager_cannot_agree_a_reconciliation_version_after_entries_change(): void
+    {
+        [$partner, $client] = $this->partner('stale-reconciliation@example.by', 'ООО «Старая сверка»');
+        $entry = $client->accountingEntries()->create([
+            'external_key' => 'invoice:stale-statement',
+            'entry_type' => 'charge',
+            'occurred_at' => '2026-10-10 00:00:00',
+            'document_number' => 'СФ-00000002',
+            'debit' => 100,
+            'credit' => 0,
+            'currency' => 'BYN',
+            'imported_at' => now(),
+        ]);
+        $service = app(B2bReconciliationStatements::class);
+        $statement = $service->confirmByClient(
+            $client,
+            $partner,
+            CarbonImmutable::parse('2026-10-01'),
+            CarbonImmutable::parse('2026-10-31'),
+        );
+        $entry->update(['debit' => 101]);
+
+        $this->expectException(ValidationException::class);
+        $service->confirmByManager($statement, User::factory()->create(['role' => 'admin']));
     }
 
     /** @return array{User, B2bClient} */
