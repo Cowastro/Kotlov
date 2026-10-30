@@ -53,7 +53,8 @@ class BanipechiCatalog
      */
     public function page(string $url): ?array
     {
-        $html = $this->get($url);
+        // The dealer's pages carry stray bytes that are not UTF-8: with them every /u pattern fails and finds nothing.
+        $html = mb_scrub($this->get($url), 'UTF-8');
         if ($html === '') {
             return null;
         }

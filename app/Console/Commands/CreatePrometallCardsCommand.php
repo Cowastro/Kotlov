@@ -24,6 +24,7 @@ class CreatePrometallCardsCommand extends Command
 {
     protected $signature = 'supplier:prometall-create
         {--limit=0 : At most this many cards}
+        {--refill : Cards made before the page fix get the specs and description of the dealer page again}
         {--apply : Create, link and fill the cards}';
 
     protected $description = 'Create cards for ProMetall offers with banipechi.by photos and specs';
@@ -35,6 +36,9 @@ class CreatePrometallCardsCommand extends Command
             $this->line('metric.prometall_create.supplier=0');
 
             return self::FAILURE;
+        }
+        if ($this->option('refill')) {
+            return $this->refill($supplier, $site, $enricher);
         }
         $categories = DB::table('categories')->pluck('id', 'slug');
         $brandId = (int) DB::table('brands')->get(['id', 'name'])->first(fn ($brand) => SyncPrometallCommand::isBrand((string) $brand->name))?->id;
@@ -90,6 +94,56 @@ class CreatePrometallCardsCommand extends Command
         }
         foreach ($stats as $key => $value) {
             $this->line("metric.prometall_create.{$key}={$value}");
+        }
+
+        return self::SUCCESS;
+    }
+
+    /** The dealer's specs and description for the cards made from this price list (and photos where a card has none). */
+    private function refill(Supplier $supplier, BanipechiCatalog $site, ProductSourceEnricher $enricher): int
+    {
+        $offers = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereHas('product', fn ($q) => $q->where('sku', 'like', 'PROMETALL-%'))
+            ->with('product')->orderBy('id')->get();
+        $stats = ['cards' => $offers->count(), 'on_site' => 0, 'refilled' => 0, 'photos_added' => 0, 'errors' => 0];
+        $limit = (int) $this->option('limit');
+        foreach ($offers as $offer) {
+            $url = $site->find((string) $offer->supplier_article);
+            if (! $url) {
+                continue;
+            }
+            $stats['on_site']++;
+            if (! $this->option('apply') || ($limit > 0 && $stats['refilled'] >= $limit)) {
+                continue;
+            }
+            try {
+                $page = $site->page($url);
+                $product = $offer->product;
+                if (! $page) {
+                    continue;
+                }
+                $noPhoto = $product->imagePaths() === [];
+                $enricher->enrichFromParsed($product, $url, [
+                    'images' => [],
+                    'specs' => CreateChistyBeregCardsCommand::withOwnSpecs($page['specs'], (array) $product->specs),
+                    'description' => $page['description'],
+                ], [
+                    'verified_images' => $noPhoto ? $page['images'] : [], 'update_images' => $noPhoto && $page['images'] !== [], 'update_specs' => true, 'replace_specs' => true,
+                    'update_content' => $page['description'] !== '' || count($page['specs']) >= 3, 'update_service' => false,
+                    'update_documents' => false, 'update_video' => false,
+                ]);
+                $stats['refilled']++;
+                $product->refresh();
+                if ($noPhoto && $product->imagePaths() !== []) {
+                    $product->forceFill(['is_active' => true, 'created_via' => null])->save();
+                    $stats['photos_added']++;
+                }
+            } catch (\Throwable $e) {
+                $stats['errors']++;
+                $this->warn($offer->supplier_article.': '.$e->getMessage());
+            }
+        }
+        foreach ($stats as $key => $value) {
+            $this->line("metric.prometall_create.refill_{$key}={$value}");
         }
 
         return self::SUCCESS;
