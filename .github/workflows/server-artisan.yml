@@ -940,6 +940,11 @@ jobs:
             grep -E '^metric\.deal_price_format\.[0-9]+_[0-9]+=[a-z0-9_,]+$' "$detail_log" || true
             echo "safe_deal_price_format_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "deal:order-inbox-status" ]]; then
+            echo "safe_deal_order_inbox_begin"
+            grep -E '^metric\.deal_order_inbox\.[a-z_]+=-?[0-9]+$' "$detail_log" || true
+            echo "safe_deal_order_inbox_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "deal:sync-brand-prices" ]]; then
             echo "safe_deal_brand_prices_begin"
             grep -E '^metric\.deal_brand_prices\.[a-z_]+=[0-9]+$' "$detail_log" || true

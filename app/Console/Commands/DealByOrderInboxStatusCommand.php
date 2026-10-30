@@ -31,6 +31,32 @@ class DealByOrderInboxStatusCommand extends Command
             ['Последняя ошибка загрузки', $cursor?->last_error ?: '—'],
         ]);
 
+        // The same health as counts and minutes only: safe to print in the server workflow.
+        $minutes = fn ($at): int => $at ? (int) now()->diffInMinutes($at, true) : -1;
+        $error = (string) ($cursor?->last_error ?? '');
+        $metrics = [
+            'enabled' => (int) (bool) config('services.deal_by.orders_capture_enabled'),
+            'token' => (int) filled(config('services.deal_by.token')),
+            'inbox_total' => DealByOrderInbox::query()->count(),
+            'pending' => DealByOrderInbox::query()->where('processing_status', DealByOrderInbox::STATUS_PENDING)->count(),
+            'processed' => DealByOrderInbox::query()->where('processing_status', DealByOrderInbox::STATUS_PROCESSED)->count(),
+            'failed' => DealByOrderInbox::query()->where('processing_status', DealByOrderInbox::STATUS_FAILED)->count(),
+            'last_seen_min' => $minutes(DealByOrderInbox::query()->max('last_seen_at')),
+            'newest_order_min' => $minutes(DealByOrderInbox::query()->max('remote_created_at')),
+            'cursor_min' => $minutes($cursor?->cursor_at),
+            'last_started_min' => $minutes($cursor?->last_started_at),
+            'last_success_min' => $minutes($cursor?->last_succeeded_at),
+            'last_failed_min' => $minutes($cursor?->last_failed_at),
+            'has_error' => (int) ($error !== ''),
+            'error_http' => preg_match('/\b([45]\d\d)\b/', $error, $m) ? (int) $m[1] : 0,
+            'error_lock' => (int) str_contains($error, 'Другой процесс'),
+            'error_timeout' => (int) (bool) preg_match('/timed? ?out|cURL error 28/i', $error),
+            'error_params' => (int) str_contains($error, 'отклонил параметры'),
+        ];
+        foreach ($metrics as $key => $value) {
+            $this->line("metric.deal_order_inbox.{$key}={$value}");
+        }
+
         return self::SUCCESS;
     }
 }
