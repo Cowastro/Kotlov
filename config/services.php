@@ -139,6 +139,8 @@ return [
         'orders_capture_enabled' => (bool) env('DEAL_BY_ORDERS_CAPTURE_ENABLED', false),
         'orders_initial_lookback_days' => (int) env('DEAL_BY_ORDERS_INITIAL_LOOKBACK_DAYS', 30),
         'orders_overlap_minutes' => (int) env('DEAL_BY_ORDERS_OVERLAP_MINUTES', 15),
+        // Deal.by misses orders in a short «modified since» window: every run asks again for the last days.
+        'orders_recheck_days' => (int) env('DEAL_BY_ORDERS_RECHECK_DAYS', 3),
     ],
 
     'webpay' => [

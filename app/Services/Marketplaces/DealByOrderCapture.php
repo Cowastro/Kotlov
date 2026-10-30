@@ -58,6 +58,12 @@ class DealByOrderCapture
             ?? ($cursor->cursor_at
                 ? CarbonImmutable::instance($cursor->cursor_at)->utc()->subMinutes($overlapMinutes)
                 : $now->subDays($lookbackDays));
+        // Deal.by does not return a new order in a window of minutes (orders of 25-29.10 were lost so):
+        // each run asks for the last days again; the inbox keeps a seen order unchanged by its hash.
+        $recheckDays = max(0, (int) config('services.deal_by.orders_recheck_days', 0));
+        if ($from === null && $recheckDays > 0 && $effectiveFrom->greaterThan($now->subDays($recheckDays))) {
+            $effectiveFrom = $now->subDays($recheckDays);
+        }
         $effectiveTo = ($to ?? $now)->utc();
 
         if ($effectiveFrom->greaterThanOrEqualTo($effectiveTo)) {

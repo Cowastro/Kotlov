@@ -177,6 +177,18 @@ class DealByOrderCaptureTest extends TestCase
         Event::assertDispatched(NewOrderCreated::class, 1);
     }
 
+    public function test_each_run_asks_deal_by_for_the_last_days_again(): void
+    {
+        config()->set('services.deal_by.orders_recheck_days', 3);
+        MarketplaceSyncCursor::query()->create(['channel' => 'deal_by', 'stream' => 'orders', 'cursor_at' => now()->subMinutes(2)]);
+        Http::fake(['https://my.deal.test/api/v1/orders/list*' => Http::response(['orders' => []])]);
+
+        $this->artisan('deal:pull-orders')->assertSuccessful();
+
+        Http::assertSent(fn (Request $request): bool => str_contains($request->url(), 'orders/list')
+            && $request['last_modified_from'] === '2026-10-16 08:00:00');
+    }
+
     public function test_disabled_capture_does_not_call_deal_by(): void
     {
         config()->set('services.deal_by.orders_capture_enabled', false);
