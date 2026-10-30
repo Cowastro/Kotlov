@@ -85,7 +85,10 @@ class ViewSupplier extends ViewRecord
                     PrometallPriceList::store($path);
                     Storage::disk('local')->delete($stored);
                     Artisan::call('supplier:sync-prometall', ['--apply' => true]);
-                    preg_match_all('/^metric\.prometall\.([a-z_]+)=(\d+)$/m', Artisan::output(), $m);
+                    $syncOutput = Artisan::output();
+                    // The same prices on sbg.by: the ProMetall goods of the shop take the new RRC right away.
+                    Artisan::call('deal:sync-brand-prices', ['--supplier' => 'prometall', '--apply' => true]);
+                    preg_match_all('/^metric\.prometall\.([a-z_]+)=(\d+)$/m', $syncOutput, $m);
                     $metrics = array_combine($m[1], $m[2]);
                     $linked = (int) ($metrics['linked_before'] ?? 0) + (int) ($metrics['ean'] ?? 0) + (int) ($metrics['article'] ?? 0) + (int) ($metrics['exact_name'] ?? 0);
                     Notification::make()->success()

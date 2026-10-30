@@ -182,6 +182,13 @@ Schedule::command('supplier:chisty-bereg-photos --limit=12 --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-photos.log'));
 
+// sbg.by (deal.by) keeps the ProMetall prices of kotlov.by: shop items found by the manufacturer article.
+Schedule::command('deal:sync-brand-prices --supplier=prometall --apply')
+    ->dailyAt('07:40')
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/deal-prometall-prices.log'));
+
 // Cards whose Чистый берег РРЦ equals опт get the market retail price (web research, a few cards at a time).
 Schedule::command('supplier:chisty-bereg-market-prices --limit=10 --apply')
     ->everyThirtyMinutes()
