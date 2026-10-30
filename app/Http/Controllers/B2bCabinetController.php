@@ -26,6 +26,7 @@ use App\Services\B2bCompanyAccess;
 use App\Services\B2bOrders\B2bOrderWorkflow;
 use App\Services\B2bSpecificationParser;
 use App\Services\B2bTeamService;
+use App\Services\CommercialDocuments\B2bReconciliationStatements;
 use App\Services\CommercialDocuments\B2bSelfServiceInvoice;
 use App\Services\CommercialDocuments\CommercialDocumentPdf;
 use App\Services\InstallerPageProvisioner;
@@ -72,11 +73,14 @@ class B2bCabinetController extends Controller
         $request->setUserResolver(fn (): User => $client->user);
         $request->attributes->set('b2b_admin_preview', true);
 
-        return $this->show($request, $checkoutTerms);
+        return $this->show($request, $checkoutTerms, app(B2bReconciliationStatements::class));
     }
 
-    public function show(Request $request, B2bCheckoutTerms $checkoutTerms)
-    {
+    public function show(
+        Request $request,
+        B2bCheckoutTerms $checkoutTerms,
+        B2bReconciliationStatements $reconciliationStatements,
+    ) {
         $user = $request->user();
         abort_unless($user->isB2B(), 403);
 
@@ -182,6 +186,17 @@ class B2bCabinetController extends Controller
             $periodPayments = (float) $reconciliationOrders->where('payment_status', 'paid')->sum('total');
         }
         $closingBalance = $openingBalance + $periodCharges - $periodPayments;
+        $currentReconciliationStatement = $reconciliationIsAccounting
+            ? $reconciliationStatements->current($client, $dateFrom, $dateTo)
+            : null;
+        $latestReconciliationStatement = $client->reconciliationStatements()
+            ->whereDate('date_from', $dateFrom->toDateString())
+            ->whereDate('date_to', $dateTo->toDateString())
+            ->latest('id')
+            ->first();
+        $reconciliationVersionChanged = $latestReconciliationStatement
+            && (! $currentReconciliationStatement
+                || $latestReconciliationStatement->id !== $currentReconciliationStatement->id);
 
         $members = $client->members()->with('user:id,name,email,is_active')->orderByRaw("case role when 'owner' then 0 when 'buyer' then 1 when 'accountant' then 2 else 3 end")->get();
         $pendingInvitations = $client->invitations()
@@ -196,7 +211,10 @@ class B2bCabinetController extends Controller
             ->limit(30)
             ->get();
         $financialAuditLogs = $client->auditLogs()
-            ->whereIn('event', ['invoice_generated', 'invoice_accounting_synced', 'document_downloaded'])
+            ->whereIn('event', [
+                'invoice_generated', 'invoice_accounting_synced', 'accounting_ledger_synced',
+                'reconciliation_client_confirmed', 'reconciliation_manager_confirmed', 'document_downloaded',
+            ])
             ->with('actor:id,name,email')
             ->latest()
             ->limit(20)
@@ -235,6 +253,7 @@ class B2bCabinetController extends Controller
             'dateFrom', 'dateTo', 'reconciliationIsAccounting', 'reconciliationEntries', 'reconciliationOrders',
             'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
             'adminPreview', 'branchCities',
+            'currentReconciliationStatement', 'latestReconciliationStatement', 'reconciliationVersionChanged',
         ));
     }
 
@@ -361,7 +380,7 @@ class B2bCabinetController extends Controller
     {
         $data = $request->validate([
             'password' => ['required', 'string'],
-            'section' => ['required', 'in:profile,team,security'],
+            'section' => ['required', 'in:profile,team,reconciliation,security'],
         ], [
             'password.required' => 'Введите пароль от аккаунта.',
         ]);
@@ -375,6 +394,32 @@ class B2bCabinetController extends Controller
 
         return to_route('b2b.cabinet', ['section' => $data['section']])
             ->with('success', 'Личность подтверждена. Защищённые действия доступны на '.max(1, (int) ceil(config('auth.password_timeout') / 3600)).' ч.');
+    }
+
+    public function confirmReconciliation(Request $request, B2bReconciliationStatements $statements)
+    {
+        $client = $request->user()->activeB2bClient();
+        abort_unless($client && $this->access->allows($request->user(), 'finance.view', $client), 403);
+        $data = $request->validate([
+            'date_from' => ['required', 'date'],
+            'date_to' => ['required', 'date'],
+            'confirmation' => ['accepted'],
+        ], [
+            'confirmation.accepted' => 'Подтвердите согласие с данными сформированного акта.',
+        ]);
+
+        $statements->confirmByClient(
+            $client,
+            $request->user(),
+            CarbonImmutable::parse($data['date_from']),
+            CarbonImmutable::parse($data['date_to']),
+        );
+
+        return to_route('b2b.cabinet', [
+            'section' => 'reconciliation',
+            'date_from' => $data['date_from'],
+            'date_to' => $data['date_to'],
+        ])->with('success', 'Версия акта подтверждена и передана менеджеру на согласование.');
     }
 
     public function saveCart(Request $request)
