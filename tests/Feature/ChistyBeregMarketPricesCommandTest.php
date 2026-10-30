@@ -71,4 +71,28 @@ class ChistyBeregMarketPricesCommandTest extends TestCase
             ->expectsOutputToContain('metric.chisty_bereg_market.due=0')
             ->assertSuccessful();
     }
+
+    public function test_a_failed_research_leaves_the_card_in_the_queue_and_outage_misses_go_back(): void
+    {
+        $category = Category::query()->create(['name' => 'Радиаторы', 'slug' => 'stalnye-radiatory', 'is_active' => true]);
+        $supplier = Supplier::query()->where('code', 'chisty_bereg')->firstOrFail();
+        $card = Product::query()->create(['category_id' => $category->id, 'name' => 'Радиатор 22х500х600', 'slug' => 'rad-600', 'sku' => 'BEREG-00102400', 'price' => 90, 'is_active' => true]);
+        $offer = SupplierProduct::query()->create([
+            'supplier_id' => $supplier->id, 'product_id' => $card->id, 'supplier_article' => '00102400', 'supplier_name' => 'Радиатор 22х500х600',
+            'price_byn' => 90, 'in_stock' => true, 'match_status' => 'matched', 'raw' => ['retail' => 90],
+        ]);
+        $this->mock(MarketWebResearchService::class, fn (MockInterface $mock) => $mock->shouldReceive('research')
+            ->andReturn(['status' => 'error', 'message' => 'Insufficient Balance', 'offers' => []]));
+
+        $this->artisan('supplier:chisty-bereg-market-prices', ['--apply' => true])
+            ->expectsOutputToContain('metric.chisty_bereg_market.errors=1')
+            ->assertSuccessful();
+        $this->assertArrayNotHasKey('market_checked_at', (array) $offer->fresh()->raw);
+
+        // A miss marked during an outage goes back to the queue.
+        $offer->forceFill(['raw' => ['retail' => 90, 'market_checked_at' => now()->toDateTimeString(), 'market_price' => null]])->save();
+        $this->artisan('supplier:chisty-bereg-market-prices', ['--reset-misses-since' => now()->subHour()->toDateTimeString(), '--limit' => 1])
+            ->expectsOutputToContain('metric.chisty_bereg_market.reset=1')
+            ->assertSuccessful();
+    }
 }

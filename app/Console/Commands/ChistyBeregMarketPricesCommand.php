@@ -21,6 +21,7 @@ class ChistyBeregMarketPricesCommand extends Command
     protected $signature = 'supplier:chisty-bereg-market-prices
         {--limit=10 : Cards researched in one run}
         {--recheck-days=30 : Research a card again after this many days}
+        {--reset-misses-since= : Put back to the queue the cards checked since then without a price (an AI outage)}
         {--apply : Research and write the market prices}';
 
     protected $description = 'Market retail prices for Чистый берег cards whose РРЦ equals опт';
@@ -35,6 +36,18 @@ class ChistyBeregMarketPricesCommand extends Command
         $stats = ['no_margin' => $offers->count(), 'researched' => 0, 'priced' => 0, 'below_cost' => 0, 'not_found' => 0, 'errors' => 0];
         $due = $offers->filter(fn (SupplierProduct $offer): bool => ! filled($offer->raw['market_checked_at'] ?? null)
             || now()->subDays(max(1, (int) $this->option('recheck-days')))->gt($offer->raw['market_checked_at']));
+        if ($since = $this->option('reset-misses-since')) {
+            $stats['reset'] = 0;
+            foreach ($offers as $offer) {
+                $checked = $offer->raw['market_checked_at'] ?? null;
+                if (filled($checked) && ($offer->raw['market_price'] ?? null) === null && $checked >= $since) {
+                    $stats['reset']++;
+                    if ($this->option('apply')) {
+                        $offer->forceFill(['raw' => array_merge((array) $offer->raw, ['market_checked_at' => null])])->save();
+                    }
+                }
+            }
+        }
         $stats['due'] = $due->count();
 
         if ($this->option('apply')) {
@@ -82,6 +95,13 @@ class ChistyBeregMarketPricesCommand extends Command
         $product = $offer->product;
         $wholesale = (float) $offer->price_byn;
         $report = $research->research($product, $wholesale);
+        // No AI balance or a network error: the card stays in the queue for the next run.
+        if (($report['status'] ?? null) !== 'ready') {
+            $stats['errors']++;
+            $this->warn($offer->supplier_article.': '.($report['message'] ?? 'research failed'));
+
+            return;
+        }
         $stats['researched']++;
         $market = self::marketPrice((array) ($report['offers'] ?? []));
 

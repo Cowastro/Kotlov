@@ -21,7 +21,9 @@ use Illuminate\Support\Str;
  */
 class ChistyBeregPhotosCommand extends Command
 {
-    protected $signature = 'supplier:chisty-bereg-photos {--limit=20} {--apply : Save the photos}';
+    protected $signature = 'supplier:chisty-bereg-photos {--limit=20}
+        {--reset-misses-since= : Put back to the queue the cards searched since then that got no photo (an AI outage)}
+        {--apply : Save the photos}';
 
     protected $description = 'Find photos on the internet for the hidden Чистый берег cards';
 
@@ -35,9 +37,25 @@ class ChistyBeregPhotosCommand extends Command
             ->whereHas('product', fn ($q) => $q->where('sku', 'like', 'BEREG-%')->where('is_archived', false)
                 ->where('created_via', Product::CREATED_VIA_AWAITING_PHOTOS))
             ->with('product.brand:id,name')->orderBy('id')->get()
-            ->filter(fn (SupplierProduct $offer): bool => ! filled($offer->raw['photo_searched_at'] ?? null)
-                && array_filter((array) $offer->product->images) === [])
+            ->filter(fn (SupplierProduct $offer): bool => array_filter((array) $offer->product->images) === [])
             ->values();
+        $reset = 0;
+        if ($since = $this->option('reset-misses-since')) {
+            foreach ($offers as $offer) {
+                $searched = $offer->raw['photo_searched_at'] ?? null;
+                if (filled($searched) && $searched >= $since) {
+                    $reset++;
+                    if ($this->option('apply')) {
+                        $offer->forceFill(['raw' => array_merge((array) $offer->raw, ['photo_searched_at' => null])])->save();
+                    }
+                }
+            }
+            $this->line("metric.chisty_bereg_photos.reset={$reset}");
+            if ($this->option('apply')) {
+                $offers->each->refresh();
+            }
+        }
+        $offers = $offers->filter(fn (SupplierProduct $offer): bool => ! filled($offer->raw['photo_searched_at'] ?? null))->values();
         $stats = ['due' => $offers->count(), 'searched' => 0, 'found' => 0, 'saved' => 0, 'not_found' => 0, 'errors' => 0];
         if (! $sources->isConfigured()) {
             $this->line('metric.chisty_bereg_photos.search_configured=0');
@@ -53,10 +71,20 @@ class ChistyBeregPhotosCommand extends Command
             $stats['searched']++;
             try {
                 $urls = [];
-                foreach (array_unique(array_filter([$code !== '' ? trim($brand.' '.$code) : null, $product->name])) as $query) {
+                $queries = array_unique(array_filter([$code !== '' ? trim($brand.' '.$code) : null, $product->name]));
+                $failed = 0;
+                foreach ($queries as $query) {
                     $urls += $sources->search($query);
+                    $failed += (int) ($sources->lastError !== '');
                     // Which search answered: the AI search (DeepSeek), or Google where no AI key is set.
                     $stats['engine_'.$sources->engine] = ($stats['engine_'.$sources->engine] ?? 0) + 1;
+                }
+                // Every search failed (no AI balance): not «no photo», the card is tried again next run.
+                if ($failed === count($queries)) {
+                    $stats['errors']++;
+                    $this->warn($offer->supplier_article.': '.$sources->lastError);
+
+                    continue;
                 }
                 $urls = array_values(array_filter(array_keys($urls), fn (string $url): bool => ! str_contains($url, 'bereg.by') && ! preg_match('/\.(pdf|docx?|xlsx?)(\?|$)/i', $url)));
                 $found = null;

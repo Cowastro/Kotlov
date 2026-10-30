@@ -54,6 +54,7 @@ class WebProductSources
             return [];
         }
         $this->engine = 'none';
+        $this->lastError = '';
 
         $cacheKey = 'web-product-sources:'.sha1(mb_strtolower($query));
         if (is_array($cached = Cache::get($cacheKey))) {
@@ -104,6 +105,12 @@ class WebProductSources
             return [];
         }
         $research = app(MarketWebResearchService::class)->researchQuery($query);
+        // A failed search (no AI balance, a network error) is not «nothing found»: the caller may try later.
+        if (($research['status'] ?? null) !== 'ready') {
+            $this->lastError = (string) ($research['message'] ?? 'AI search failed');
+
+            return [];
+        }
         $pages = array_merge((array) ($research['offers'] ?? []), (array) ($research['sources'] ?? []));
         $results = [];
         foreach ($pages as $page) {
