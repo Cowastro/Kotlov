@@ -143,7 +143,7 @@ class OpenAiMarketSmokeCommand extends Command
         }
 
         $request = $request->withToken($apiKey);
-        $proxy = trim((string) config('services.ai.openai_proxy'));
+        $proxy = trim((string) config('services.ai.proxy'));
 
         return $proxy === '' ? $request : $request->withOptions(['proxy' => $proxy]);
     }

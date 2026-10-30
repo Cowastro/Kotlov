@@ -142,7 +142,7 @@ PROMPT;
             ->connectTimeout(5)
             ->timeout(max(5, (int) config('services.ai.support_chat_timeout', 12)));
 
-        $proxy = trim((string) config('services.ai.openai_proxy', ''));
+        $proxy = trim((string) config('services.ai.proxy', ''));
 
         return $proxy !== '' ? $client->withOptions(['proxy' => $proxy]) : $client;
     }

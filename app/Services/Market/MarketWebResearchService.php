@@ -95,7 +95,7 @@ class MarketWebResearchService
 
         $lock = Cache::lock($cacheKey.':lock', max(
             30,
-            (int) config('services.ai.openai_research_timeout', 180) + 10
+            (int) config('services.ai.research_timeout', 180) + 10
         ));
         if (! $lock->get()) {
             return $this->failure('Этот поиск уже выполняется. Дождитесь результата, повторный запрос не отправлен.');
@@ -117,7 +117,7 @@ class MarketWebResearchService
             foreach ($models as $model) {
                 try {
                     $request = Http::acceptJson()
-                        ->timeout((int) config('services.ai.openai_research_timeout', 180));
+                        ->timeout((int) config('services.ai.research_timeout', 180));
                     if (! $safeMode) {
                         $request = $request->retry(2, 1500, throw: false);
                     }
@@ -130,7 +130,7 @@ class MarketWebResearchService
                         ]);
                     } else {
                         $request = $request->withToken($apiKey);
-                        $proxy = trim((string) config('services.ai.openai_proxy'));
+                        $proxy = trim((string) config('services.ai.proxy'));
                         if ($proxy !== '') {
                             $request = $request->withOptions(['proxy' => $proxy]);
                         }
@@ -499,7 +499,7 @@ PROMPT;
 
         try {
             $repair = Http::acceptJson()
-                ->timeout(min(60, (int) config('services.ai.openai_research_timeout', 180)))
+                ->timeout(min(60, (int) config('services.ai.research_timeout', 180)))
                 ->withHeaders([
                     'x-api-key' => $provider['api_key'],
                     'anthropic-version' => '2023-06-01',

@@ -202,7 +202,7 @@ PROMPT,
         $client = Http::withToken($key)
             ->acceptJson()
             ->timeout(150);
-        $proxy = trim((string) config('services.ai.openai_proxy', ''));
+        $proxy = trim((string) config('services.ai.proxy', ''));
         if ($proxy !== '') {
             $client = $client->withOptions(['proxy' => $proxy]);
         }
