@@ -19,8 +19,9 @@ class ProcessB2bSpecificationOcrCommand extends Command
         $batchIds = B2bSpecificationAttachment::query()
             ->where('ocr_status', 'queued')
             ->whereNotNull('ocr_batch_id')
-            ->orderBy('ocr_requested_at')
-            ->distinct()
+            ->select('ocr_batch_id')
+            ->groupBy('ocr_batch_id')
+            ->orderByRaw('MIN(ocr_requested_at)')
             ->limit($limit)
             ->pluck('ocr_batch_id');
         $counts = ['completed' => 0, 'failed' => 0, 'skipped' => 0];

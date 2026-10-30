@@ -542,6 +542,15 @@ class B2bSpecificationTest extends TestCase
         $this->assertSame(1, $manager->notifications()->count());
     }
 
+    public function test_ocr_background_command_succeeds_when_queue_is_empty(): void
+    {
+        $this->artisan('b2b:process-specification-ocr', ['--limit' => 1])
+            ->expectsOutput('batches=0')
+            ->expectsOutput('completed=0')
+            ->expectsOutput('failed=0')
+            ->assertSuccessful();
+    }
+
     public function test_failed_ocr_file_can_be_requeued_without_touching_other_attachment(): void
     {
         Storage::fake('local');
