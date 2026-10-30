@@ -17,6 +17,7 @@ class NotifyAdminOnNewOrder implements ShouldQueue
     public function handle(NewOrderCreated $event): void
     {
         $order = $event->order;
+        $isInvoice = in_array($order->payment_type, ['invoice', 'invoice_deferred'], true);
 
         $recipients = User::query()
             ->whereIn('role', ['admin', 'manager', 'sales_manager'])
@@ -29,7 +30,7 @@ class NotifyAdminOnNewOrder implements ShouldQueue
 
         $requiresStockConfirmation = $order->items
             ->contains(fn ($item): bool => $item->supply_is_available !== true)
-            || $order->payment_type === 'invoice';
+            || $isInvoice;
         $requiresInstallmentFollowUp = $order->payment_type === 'installment_6';
         $orderLabel = ($order->dealByInbox()->exists() ? 'Deal.by ' : '').$order->number;
         $title = "Новый заказ {$orderLabel}";
@@ -39,7 +40,7 @@ class NotifyAdminOnNewOrder implements ShouldQueue
         if ($requiresInstallmentFollowUp) {
             $title = "Заявка на рассрочку {$orderLabel}";
         }
-        if ($order->payment_type === 'invoice') {
+        if ($isInvoice) {
             $title = "Запрос счёта {$orderLabel} — проверить наличие";
         }
         $body = "{$order->customer_name} · {$order->customer_phone} · {$order->total} BYN";
@@ -49,7 +50,7 @@ class NotifyAdminOnNewOrder implements ShouldQueue
         if ($requiresStockConfirmation) {
             $body .= ' · До подтверждения клиенту проверьте остаток и срок поставки.';
         }
-        if ($order->payment_type === 'invoice' && $order->commercialDocument) {
+        if ($isInvoice && $order->commercialDocument) {
             $body .= ' · Черновик счёта '.$order->commercialDocument->number.' уже сформирован.';
         }
 

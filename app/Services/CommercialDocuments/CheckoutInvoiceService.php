@@ -20,6 +20,11 @@ class CheckoutInvoiceService
             contactName: $order->customer_name,
         );
 
+        $defermentDays = max(0, (int) data_get($order->b2b_commercial_terms_snapshot, 'payment_deferment_days', 0));
+        $paymentTerms = $order->payment_type === 'invoice_deferred' && $defermentDays > 0
+            ? 'Оплата с отсрочкой '.$defermentDays.' календарных дней в пределах согласованного кредитного лимита.'
+            : '100% предоплата по счёту после подтверждения наличия менеджером.';
+
         $document = CommercialDocument::query()->create([
             'type' => 'invoice',
             'status' => 'draft',
@@ -37,7 +42,7 @@ class CheckoutInvoiceService
             'delivery_price' => $order->delivery_price,
             'delivery_to_client' => $order->delivery_type !== 'pickup',
             'vat_rate' => 20,
-            'payment_terms' => '100% предоплата по счёту после подтверждения наличия менеджером.',
+            'payment_terms' => $paymentTerms,
             'delivery_terms' => 'Наличие и срок поставки подтверждает менеджер до отправки счёта.',
             'notes' => 'Черновик создан автоматически из заказа '.$order->number.'. Не отправлять клиенту до ручного подтверждения наличия и срока поставки всех позиций.',
         ]);

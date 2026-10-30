@@ -175,8 +175,12 @@
 
                             {{-- 3. Оплата (из config/shop.php) --}}
                             @php
+                                $paymentOverrides = $b2bCheckout['payment_method_overrides'] ?? [];
                                 $checkoutPayment = collect($checkoutPaymentMethods ?? config('shop.checkout_payment_methods', []))
-                                    ->mapWithKeys(fn($key) => [$key => config("shop.payment_methods.$key")])
+                                    ->mapWithKeys(fn($key) => [$key => array_replace(
+                                        config("shop.payment_methods.$key", []),
+                                        $paymentOverrides[$key] ?? [],
+                                    )])
                                     ->filter();
                                 $firstPayment = $checkoutPayment->keys()->first();
                             @endphp
@@ -187,6 +191,11 @@
                                         <strong>{{ $b2bCheckout['client']->priceLevel?->name ?: 'B2B-условия' }}</strong>
                                         · {{ $b2bCheckout['client']->payment_terms ?: 'Оплата по счёту после подтверждения заказа' }}.
                                         Партнёрская цена действует для самостоятельного онлайн-заказа и не совмещается с розничной рассрочкой.
+                                        @if($b2bCheckout['credit']['enabled'])
+                                            <span class="d-block mt-4">Отсрочка {{ $b2bCheckout['credit']['deferment_days'] }} дней: доступно {{ number_format((float)$b2bCheckout['credit']['available'], 2, ',', ' ') }} BYN из {{ number_format((float)$b2bCheckout['credit']['limit'], 2, ',', ' ') }} BYN.</span>
+                                        @elseif($b2bCheckout['credit']['deferment_days'] > 0 && $b2bCheckout['credit']['issue'])
+                                            <span class="d-block mt-4">Отсрочка сейчас недоступна: {{ $b2bCheckout['credit']['issue'] }}</span>
+                                        @endif
                                     </div>
                                 @endif
                                 <div class="payment-method-box" id="payment-method-box">
@@ -612,7 +621,7 @@
     if (paymentRadios.length && invoiceFields) {
         function toggleInvoice() {
             var checked = document.querySelector('input[name="payment_type"]:checked');
-            var isInvoice = checked && checked.value === 'invoice';
+            var isInvoice = checked && ['invoice', 'invoice_deferred'].indexOf(checked.value) !== -1;
             invoiceFields.style.display = isInvoice ? '' : 'none';
             ['company-unp', 'company-name', 'company-address', 'company-email'].forEach(function (id) {
                 var input = document.getElementById(id);

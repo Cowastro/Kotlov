@@ -28,10 +28,11 @@ class SendNewOrderToTelegram implements ShouldQueue
         $order = $event->order;
         $isDealByOrder = $order->dealByInbox()->exists();
         $orderLabel = ($isDealByOrder ? 'Deal.by ' : '').$order->number;
+        $isInvoice = in_array($order->payment_type, ['invoice', 'invoice_deferred'], true);
         $requiresInstallmentFollowUp = $order->payment_type === 'installment_6';
         $requiresStockConfirmation = $order->items
             ->contains(fn ($item): bool => $item->supply_is_available !== true)
-            || $order->payment_type === 'invoice';
+            || $isInvoice;
 
         $deliveryNames = collect(config('shop.delivery_methods', []))
             ->mapWithKeys(fn ($m, $k) => [$k => $m['name'] ?? $k])
@@ -72,7 +73,7 @@ class SendNewOrderToTelegram implements ShouldQueue
         $lines = [
             $requiresInstallmentFollowUp
                 ? "📅 *Заявка на рассрочку {$orderLabel}*"
-                : ($order->payment_type === 'invoice'
+                : ($isInvoice
                     ? "🧾 *Запрос счёта {$orderLabel}*"
                     : "🛒 *Новый заказ {$orderLabel}*"),
             $requiresStockConfirmation ? '⚠️ *Сначала подтвердить наличие и срок поставки*' : null,
@@ -85,10 +86,10 @@ class SendNewOrderToTelegram implements ShouldQueue
             $address ? '📍 *Адрес:* '.$escape($address) : null,
             '💳 *Оплата:* '.$escape($payment),
             $requiresInstallmentFollowUp ? '📞 *Менеджеру: связаться с клиентом и оформить рассрочку*' : null,
-            $order->payment_type === 'invoice' && $order->commercialDocument
+            $isInvoice && $order->commercialDocument
                 ? '🧾 *Черновик счёта:* '.$escape($order->commercialDocument->number)
                 : null,
-            $order->payment_type === 'invoice'
+            $isInvoice
                 ? '⚠️ *Не отправлять счёт до ручной проверки наличия и срока поставки*'
                 : null,
             '',

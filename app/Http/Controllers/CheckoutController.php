@@ -248,10 +248,10 @@ class CheckoutController extends Controller
             'payment_type' => ['required', 'in:'.implode(',', $checkoutPaymentMethods)],
             'comment' => ['nullable', 'string', 'max:1000'],
             // Реквизиты для счёта
-            'company_name' => ['required_if:payment_type,invoice', 'nullable', 'string', 'max:255'],
-            'company_unp' => ['required_if:payment_type,invoice', 'nullable', 'regex:/^\d{9}$/'],
-            'company_address' => ['required_if:payment_type,invoice', 'nullable', 'string', 'max:500'],
-            'company_email' => ['required_if:payment_type,invoice', 'nullable', 'email', 'max:255'],
+            'company_name' => ['required_if:payment_type,invoice,invoice_deferred', 'nullable', 'string', 'max:255'],
+            'company_unp' => ['required_if:payment_type,invoice,invoice_deferred', 'nullable', 'regex:/^\d{9}$/'],
+            'company_address' => ['required_if:payment_type,invoice,invoice_deferred', 'nullable', 'string', 'max:500'],
+            'company_email' => ['required_if:payment_type,invoice,invoice_deferred', 'nullable', 'email', 'max:255'],
         ], [
             'customer_name.required' => 'Введите имя.',
             'customer_phone.required' => 'Введите телефон.',
@@ -269,7 +269,8 @@ class CheckoutController extends Controller
         ]);
 
         $invoiceCompany = null;
-        if ($request->payment_type === 'invoice') {
+        $isInvoicePayment = in_array($request->payment_type, ['invoice', 'invoice_deferred'], true);
+        if ($isInvoicePayment) {
             $registryCompany = $taxpayerRegistry->lookup((string) $request->company_unp);
             $invoiceCompany = [
                 'unp' => preg_replace('/\D+/', '', (string) $request->company_unp),
@@ -304,7 +305,7 @@ class CheckoutController extends Controller
         }
         $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
 
-        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon, $invoiceCompany, $checkoutInvoices, $couponService, $b2bCheckout) {
+        $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon, $invoiceCompany, $checkoutInvoices, $couponService, $b2bCheckout, $b2bTerms, $isInvoicePayment) {
 
             $lockedCoupon = null;
             if ($coupon['code']) {
@@ -321,6 +322,16 @@ class CheckoutController extends Controller
             $finalQuote = $couponService->quoteForCart($lockedCoupon?->code, $cart);
             $discount = $finalQuote['discount'];
             $total = round($subtotal - $discount + $deliveryPrice, 2);
+            $termsSnapshot = $b2bCheckout['terms_snapshot'];
+
+            if ($request->payment_type === 'invoice_deferred') {
+                $credit = $b2bTerms->assertDeferredPaymentAvailable($request->user(), $total);
+                $termsSnapshot = array_merge($termsSnapshot ?? [], [
+                    'credit_exposure_before' => $credit['exposure'],
+                    'credit_available_before' => $credit['available'],
+                    'credit_available_after' => round((float) $credit['available'] - $total, 2),
+                ]);
+            }
 
             $order = Order::create([
                 'user_id' => Auth::id(),
@@ -341,11 +352,11 @@ class CheckoutController extends Controller
                 'payment_type' => $request->payment_type,
                 'payment_status' => 'pending',
 
-                // Реквизиты для счёта (только если выбран invoice)
-                'company_name' => $request->payment_type === 'invoice' ? $request->company_name : null,
-                'company_unp' => $request->payment_type === 'invoice' ? $request->company_unp : null,
-                'company_address' => $request->payment_type === 'invoice' ? $request->company_address : null,
-                'company_email' => $request->payment_type === 'invoice' ? $request->company_email : null,
+                // Реквизиты для счёта: предоплата или согласованная отсрочка.
+                'company_name' => $isInvoicePayment ? $request->company_name : null,
+                'company_unp' => $isInvoicePayment ? $request->company_unp : null,
+                'company_address' => $isInvoicePayment ? $request->company_address : null,
+                'company_email' => $isInvoicePayment ? $request->company_email : null,
 
                 'subtotal' => $subtotal,
                 'coupon_code' => $coupon['code'],
@@ -359,7 +370,7 @@ class CheckoutController extends Controller
                     'chimney_product_ids' => $finalQuote['bundle']['chimney_product_ids'],
                     'equipment_product_ids' => $finalQuote['bundle']['equipment_product_ids'],
                 ],
-                'b2b_commercial_terms_snapshot' => $b2bCheckout['terms_snapshot'],
+                'b2b_commercial_terms_snapshot' => $termsSnapshot,
                 'total' => $total,
 
                 // comment: что пользователь написал в форме; если поле пустое — null

@@ -122,6 +122,7 @@ class Order extends Model
         'cherepaha' => 'Карта «Черепаха» от ВТБ',
         'webpay' => 'WEBPAY',
         'invoice' => 'По счёту (для организаций)',
+        'invoice_deferred' => 'По счёту с отсрочкой',
     ];
 
     public const DELIVERY_TYPES = [

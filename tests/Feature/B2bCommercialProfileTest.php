@@ -14,8 +14,11 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bCheckoutTerms;
 use App\Services\B2bClientWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class B2bCommercialProfileTest extends TestCase
@@ -131,6 +134,104 @@ class B2bCommercialProfileTest extends TestCase
             ->assertSee('value="buh@partner.by"', false)
             ->assertSee('value="220000, г. Минск, ул. Деловая, 1"', false)
             ->assertSeeText('Партнёрская цена действует для самостоятельного онлайн-заказа');
+    }
+
+    public function test_deferred_invoice_uses_and_updates_the_company_credit_limit(): void
+    {
+        Mail::fake();
+        Http::fake([
+            'grp.nalog.gov.by/*' => Http::response([
+                'row' => [
+                    'vunp' => '190000001',
+                    'vnaimp' => 'Общество с ограниченной ответственностью «Партнёр»',
+                    'vnaimk' => 'ООО «Партнёр»',
+                    'vpadres' => 'г. Минск, ул. Деловая, 1',
+                    'vkods' => 'Действующий',
+                ],
+            ]),
+        ]);
+        [$user, $client, $offer] = $this->fixture();
+        $client->update([
+            'payment_deferment_days' => 14,
+            'credit_limit' => 1000,
+            'payment_terms' => 'Отсрочка 14 календарных дней',
+        ]);
+
+        $this->actingAs($user)->postJson(route('cart.add'), [
+            'product_id' => $offer->product_id,
+            'quantity' => 2,
+            'pricing_mode' => 'b2b',
+        ])->assertOk();
+
+        $this->get(route('checkout'))
+            ->assertOk()
+            ->assertSee('value="invoice_deferred"', false)
+            ->assertSeeText('По счёту с отсрочкой 14 дней')
+            ->assertSeeText('Доступный кредитный лимит: 1 000,00 BYN');
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0')->post(route('checkout.store'), [
+            'order_token' => 'deferred-b2b-order',
+            'customer_name' => 'ООО Партнёр',
+            'customer_phone' => '+375291112233',
+            'customer_email' => 'buh@partner.by',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'invoice_deferred',
+            'company_name' => 'ООО «Партнёр»',
+            'company_unp' => '190000001',
+            'company_address' => 'г. Минск, ул. Деловая, 1',
+            'company_email' => 'buh@partner.by',
+        ])->assertRedirect();
+
+        $order = Order::query()->latest('id')->with('commercialDocument')->firstOrFail();
+        $this->assertSame('invoice_deferred', $order->payment_type);
+        $this->assertSame(200.0, (float) $order->total);
+        $this->assertStringContainsString('14 календарных дней', $order->commercialDocument->payment_terms);
+
+        $credit = app(B2bCheckoutTerms::class)->creditSummary($client->fresh());
+        $this->assertSame(200.0, $credit['exposure']);
+        $this->assertSame(800.0, $credit['available']);
+    }
+
+    public function test_deferred_invoice_is_not_offered_when_the_order_exceeds_available_credit(): void
+    {
+        [$user, $client, $offer] = $this->fixture();
+        $client->update([
+            'payment_deferment_days' => 14,
+            'credit_limit' => 1000,
+        ]);
+        Order::query()->create([
+            'user_id' => $user->id,
+            'number' => 'B2B-CREDIT-USED',
+            'status' => 'new',
+            'customer_name' => $user->name,
+            'customer_phone' => '+375290000000',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'invoice_deferred',
+            'payment_status' => 'pending',
+            'subtotal' => 900,
+            'total' => 900,
+        ]);
+
+        $this->actingAs($user)->postJson(route('cart.add'), [
+            'product_id' => $offer->product_id,
+            'quantity' => 2,
+            'pricing_mode' => 'b2b',
+        ])->assertOk();
+
+        $this->get(route('checkout'))
+            ->assertOk()
+            ->assertDontSee('value="invoice_deferred"', false)
+            ->assertSeeText('доступно 100,00 BYN из 1 000,00 BYN');
+
+        $this->post(route('checkout.store'), [
+            'order_token' => 'over-credit-limit',
+            'customer_name' => 'ООО Партнёр',
+            'customer_phone' => '+375291112233',
+            'delivery_type' => 'pickup',
+            'payment_type' => 'invoice_deferred',
+        ])->assertSessionHasErrors('payment_type');
+
+        $this->assertDatabaseCount('orders', 1);
     }
 
     public function test_minimum_b2b_order_is_enforced_before_checkout_and_on_submission(): void

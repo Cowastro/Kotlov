@@ -237,6 +237,10 @@ return [
             'name' => 'По счёту (для организаций)',
             'desc' => 'Реквизиты по УНП; счёт после проверки наличия менеджером',
         ],
+        'invoice_deferred' => [
+            'name' => 'По счёту с отсрочкой',
+            'desc' => 'Только в пределах согласованного кредитного лимита B2B-клиента',
+        ],
     ],
 
     // Номер терминала для карт рассрочки
@@ -253,7 +257,7 @@ return [
 
     // Партнёрская цена не совмещается с розничной рассрочкой. Оплата по счёту
     // доступна B2B-клиенту независимо от временного ограничения эквайринга.
-    'b2b_checkout_payment_methods' => ['invoice', 'cash'],
+    'b2b_checkout_payment_methods' => ['invoice_deferred', 'invoice', 'cash'],
 
     // Типы доставки доступные в форме checkout
     // Delivery first; pickup from the warehouse last, never preselected.

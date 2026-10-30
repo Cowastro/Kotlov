@@ -88,7 +88,9 @@ final class QuickOrderAction
                     ]),
                     TextInput::make('delivery_address')->label('Адрес доставки')->visible(fn (Get $get): bool => $get('delivery_type') !== 'pickup'),
                     Grid::make(3)->schema([
-                        Select::make('payment_type')->label('Оплата')->options(Order::PAYMENT_TYPES)->default('cash')->required()->live()->native(false),
+                        Select::make('payment_type')->label('Оплата')->options(
+                            collect(Order::PAYMENT_TYPES)->except('invoice_deferred')->all()
+                        )->default('cash')->required()->live()->native(false),
                         TextInput::make('company_name')->label('Организация')->visible(fn (Get $get): bool => in_array($get('payment_type'), ['invoice', 'bank_transfer'], true)),
                         TextInput::make('company_unp')->label('УНП')->visible(fn (Get $get): bool => in_array($get('payment_type'), ['invoice', 'bank_transfer'], true)),
                     ]),

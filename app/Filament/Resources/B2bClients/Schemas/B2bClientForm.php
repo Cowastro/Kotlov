@@ -123,11 +123,13 @@ class B2bClientForm
                         ->label('Отсрочка платежа')
                         ->numeric()
                         ->minValue(0)
+                        ->helperText('Отсрочка появится в checkout только вместе с положительным кредитным лимитом.')
                         ->suffix('дней'),
                     TextInput::make('credit_limit')
                         ->label('Кредитный лимит')
                         ->numeric()
                         ->minValue(0)
+                        ->helperText('Система вычитает неоплаченные B2B-заказы с отсрочкой и не позволяет превысить остаток лимита.')
                         ->suffix('BYN'),
                     Toggle::make('specification_service_enabled')
                         ->label('Комплектация по спецификации')

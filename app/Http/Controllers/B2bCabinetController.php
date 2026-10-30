@@ -13,6 +13,7 @@ use App\Models\IntegrationWarehouse;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bCheckoutTerms;
 use App\Services\B2bSpecificationParser;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,7 +29,7 @@ class B2bCabinetController extends Controller
 {
     private const SECTIONS = ['overview', 'profile', 'specifications', 'carts', 'orders', 'documents', 'contracts', 'reconciliation', 'security'];
 
-    public function show(Request $request)
+    public function show(Request $request, B2bCheckoutTerms $checkoutTerms)
     {
         $user = $request->user();
         abort_unless($user->isB2B(), 403);
@@ -53,6 +54,7 @@ class B2bCabinetController extends Controller
             ? $request->string('section')->toString()
             : 'overview';
         $counterparty = $client->counterparty;
+        $creditSummary = $checkoutTerms->creditSummary($client);
         $ordersQuery = $user->orders()->with('items')->latest();
         $documentsQuery = $this->documentsFor($request);
 
@@ -96,7 +98,7 @@ class B2bCabinetController extends Controller
 
         return view('pages.b2b.cabinet', compact(
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
-            'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers',
+            'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers', 'creditSummary',
             'profileCompletion', 'profileMissing',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));
