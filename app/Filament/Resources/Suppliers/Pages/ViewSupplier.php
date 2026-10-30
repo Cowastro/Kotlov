@@ -4,9 +4,11 @@ namespace App\Filament\Resources\Suppliers\Pages;
 
 use App\Console\Commands\SyncChistyBeregCommand;
 use App\Console\Commands\SyncCooperDoorsCommand;
+use App\Console\Commands\SyncPrometallCommand;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Services\Suppliers\ChistyBeregPriceList;
 use App\Services\Suppliers\CooperWholesalePriceList;
+use App\Services\Suppliers\PrometallPriceList;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
@@ -53,6 +55,44 @@ class ViewSupplier extends ViewRecord
                     Notification::make()->success()
                         ->title('Файл принят: '.$rows.' позиций')
                         ->body('Остатки, опт и РРЦ обновятся в течение 10 минут.')
+                        ->send();
+                }),
+            Action::make('prometall_price')
+                ->label('Загрузить прайс')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('primary')
+                ->visible(fn (): bool => $this->getRecord()->code === SyncPrometallCommand::SUPPLIER_CODE)
+                ->modalDescription('«ПРАЙС-ЛИСТ PROMETALL Опт» (xlsx). Опт и РРЦ обновятся сразу, строки привяжутся к карточкам ProMetall.')
+                ->schema([
+                    FileUpload::make('file')
+                        ->label('Файл xlsx')
+                        ->required()
+                        ->rules(['extensions:xls,xlsx'])
+                        ->maxSize(30720)
+                        ->disk('local')
+                        ->directory('supplier-price-uploads'),
+                ])
+                ->action(function (array $data): void {
+                    $stored = (string) (is_array($data['file']) ? reset($data['file']) : $data['file']);
+                    $path = Storage::disk('local')->path($stored);
+                    $rows = is_file($path) ? count(PrometallPriceList::parse($path)) : 0;
+                    if ($rows === 0) {
+                        Storage::disk('local')->delete($stored);
+                        Notification::make()->danger()->title('В файле нет строк прайса ProMetall (артикул p…, РРЦ)')->send();
+
+                        return;
+                    }
+                    PrometallPriceList::store($path);
+                    Storage::disk('local')->delete($stored);
+                    Artisan::call('supplier:sync-prometall', ['--apply' => true]);
+                    preg_match_all('/^metric\.prometall\.([a-z_]+)=(\d+)$/m', Artisan::output(), $m);
+                    $metrics = array_combine($m[1], $m[2]);
+                    $linked = (int) ($metrics['linked_before'] ?? 0) + (int) ($metrics['ean'] ?? 0) + (int) ($metrics['article'] ?? 0) + (int) ($metrics['exact_name'] ?? 0);
+                    Notification::make()->success()
+                        ->title('Прайс загружен: '.$rows.' позиций')
+                        ->body(sprintf('Привязано к карточкам: %d. Предложено на подтверждение: %d. Без карточки: %d. Цен на сайте обновлено: %d.',
+                            $linked, (int) ($metrics['suggested'] ?? 0), (int) ($metrics['unlinked'] ?? 0), (int) ($metrics['retail_updated'] ?? 0)))
+                        ->persistent()
                         ->send();
                 }),
             Action::make('cooper_wholesale')

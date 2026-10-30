@@ -547,6 +547,12 @@ jobs:
             grep -E '^audit\.cooper_doors\.(no_price=[0-9]+|unlinked=[0-9]+|create=[0-9]+:[a-z0-9-]+:[0-9]+|no_cost=[0-9]+|rrc_differs=[0-9]+:[0-9]+:[0-9]+|price_list_only=[a-z0-9-]+)$' "$detail_log" || true
             echo "safe_cooper_doors_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-prometall" ]]; then
+            echo "safe_prometall_begin"
+            grep -aE '^metric\.prometall\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -aE '^audit\.prometall\.row=[a-z0-9-]+:(s?[0-9]+|none):[a-z_]+:[a-z0-9-]*$' "$detail_log" || true
+            echo "safe_prometall_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:sort-section-products" ]]; then
             echo "safe_sort_section_begin"
             grep -aE '^metric\.sort_section\.[a-z_]+=[0-9]+$' "$detail_log" || true
