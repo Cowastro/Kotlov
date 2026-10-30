@@ -65,10 +65,18 @@ class StorefrontProductSearch
         'вытяжная' => ['труба'],
         'вытяжной' => ['труба'],
         'вытяжные' => ['труба'],
+        // Electric convectors live in «Обогреватели», their titles carry only the model.
+        'конвектор' => ['конвектор', 'обогревател'],
+        'конвекторы' => ['конвектор', 'обогревател'],
+        'конвектора' => ['конвектор', 'обогревател'],
     ];
 
     public function apply(Builder $query, string $search, bool $includeInternal = false): Builder
     {
+        if ($includeInternal) {
+            return $this->withSupplierMatches($query, $search, fn (Builder $public) => $this->apply($public, $search));
+        }
+
         $tokens = array_slice($this->tokens($search), 0, self::MAX_TOKENS);
         $heatingElementQuery = $this->isHeatingElementQuery($search);
 
@@ -130,6 +138,11 @@ class StorefrontProductSearch
         bool $includeInternal = false,
         bool $includeCategoryMatches = true
     ): Builder {
+        if ($includeInternal) {
+            return $this->withSupplierMatches($query, $search,
+                fn (Builder $public) => $this->applyForSuggestions($public, $search, false, $includeCategoryMatches));
+        }
+
         $tokens = array_slice($this->directTokens($search), 0, self::MAX_TOKENS);
         $heatingElementQuery = $this->isHeatingElementQuery($search);
 
@@ -262,6 +275,10 @@ class StorefrontProductSearch
      */
     private function applyRelaxedForResults(Builder $query, string $search, bool $includeInternal): Builder
     {
+        if ($includeInternal) {
+            return $this->withSupplierMatches($query, $search, fn (Builder $public) => $this->applyRelaxedForResults($public, $search, false));
+        }
+
         $tokens = array_slice($this->directTokens($search), 0, self::MAX_TOKENS);
 
         if (count($tokens) < 4) {
@@ -289,6 +306,55 @@ class StorefrontProductSearch
                 });
             }
         });
+    }
+
+    /**
+     * A manager also finds cards by the supplier's article and name. Checking those relations for every
+     * card took 2-16 s a keystroke; the public (indexed) search plus one short lookup of the supplier
+     * rows gives the same cards in a fraction of it.
+     *
+     * @param  callable(Builder): mixed  $public
+     */
+    private function withSupplierMatches(Builder $query, string $search, callable $public): Builder
+    {
+        $ids = $this->supplierMatchIds($search);
+
+        return $query->where(function (Builder $matches) use ($public, $ids): void {
+            $matches->where(fn (Builder $catalogue) => $public($catalogue));
+            if ($ids !== []) {
+                $matches->orWhereIn('products.id', $ids);
+            }
+        });
+    }
+
+    /** @return list<int> Cards whose supplier offer (article, name, supplier) or integration item carries every word of the query. */
+    private function supplierMatchIds(string $search): array
+    {
+        $tokens = array_slice($this->directTokens($search), 0, self::MAX_TOKENS);
+        if ($tokens === []) {
+            return [];
+        }
+        $filter = function ($rows, array $columns, string $productColumn) use ($tokens) {
+            foreach ($tokens as $alternatives) {
+                $rows->where(function ($word) use ($alternatives, $columns): void {
+                    foreach ($alternatives as $alternative) {
+                        foreach ($this->fastCaseVariants($alternative) as $variant) {
+                            foreach ($columns as $column) {
+                                $word->orWhere($column, 'like', '%'.$variant.'%');
+                            }
+                        }
+                    }
+                });
+            }
+
+            return $rows->whereNotNull($productColumn)->limit(300)->pluck($productColumn)->all();
+        };
+
+        return array_values(array_unique(array_map('intval', array_merge(
+            $filter(\Illuminate\Support\Facades\DB::table('supplier_products')->leftJoin('suppliers', 'suppliers.id', '=', 'supplier_products.supplier_id'),
+                ['supplier_products.supplier_article', 'supplier_products.supplier_name', 'suppliers.name'], 'supplier_products.product_id'),
+            $filter(\Illuminate\Support\Facades\DB::table('integration_products'), ['external_sku', 'name'], 'product_id'),
+        ))));
     }
 
     /**
