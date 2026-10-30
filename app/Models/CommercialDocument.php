@@ -61,6 +61,8 @@ class CommercialDocument extends Model
         'number', 'type', 'status', 'follow_up_stage', 'last_contact_result', 'outcome_reason', 'outcome_note', 'ai_assisted',
         'source_document_id', 'revision_of_id', 'revision_number', 'created_by', 'manager_id', 'crm_mail_thread_id',
         'crm_counterparty_id', 'crm_contact_id',
+        'accounting_source_id', 'accounting_external_id', 'accounting_number', 'accounting_status',
+        'accounting_payment_status', 'accounting_confirmed_at',
         'client_name', 'client_company', 'client_legal_name', 'client_email', 'client_phone', 'client_unp', 'client_address',
         'issued_at', 'valid_until', 'currency', 'subtotal', 'discount_total', 'delivery_price', 'delivery_to_client', 'total',
         'vat_rate', 'payment_terms', 'delivery_terms', 'notes', 'seller_snapshot', 'sent_at', 'accepted_at', 'closed_at',
@@ -74,6 +76,7 @@ class CommercialDocument extends Model
         'sent_at' => 'datetime',
         'accepted_at' => 'datetime',
         'closed_at' => 'datetime',
+        'accounting_confirmed_at' => 'datetime',
         'last_contacted_at' => 'datetime',
         'next_follow_up_at' => 'datetime',
         'contact_history' => 'array',
@@ -211,6 +214,16 @@ class CommercialDocument extends Model
         return self::STATUSES[$this->status] ?? $this->status;
     }
 
+    public function accountingPaymentStatusLabel(): ?string
+    {
+        return match ($this->accounting_payment_status) {
+            'pending' => 'Ожидает оплаты',
+            'paid' => 'Оплачен',
+            'refunded' => 'Возврат',
+            default => $this->accounting_payment_status,
+        };
+    }
+
     public function scopeCurrentRevision(Builder $query): Builder
     {
         return $query->where(function (Builder $current): void {
@@ -268,6 +281,11 @@ class CommercialDocument extends Model
     public function clientContact(): BelongsTo
     {
         return $this->belongsTo(CrmContact::class, 'crm_contact_id');
+    }
+
+    public function accountingSource(): BelongsTo
+    {
+        return $this->belongsTo(IntegrationSource::class, 'accounting_source_id');
     }
 
     public function order(): HasOne
