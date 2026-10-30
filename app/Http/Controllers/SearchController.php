@@ -74,7 +74,7 @@ class SearchController extends Controller
 
         $search = app(StorefrontProductSearch::class);
         $includeInternal = auth()->user()?->is_active === true && auth()->user()?->isManager();
-        $cacheKey = 'storefront-search-suggest:v4:'.($includeInternal ? 'internal:' : 'public:').sha1(mb_strtolower($q));
+        $cacheKey = 'storefront-search-suggest:v5:'.($includeInternal ? 'internal:' : 'public:').sha1(mb_strtolower($q));
 
         $suggestions = Cache::remember(
             $cacheKey,
@@ -107,6 +107,19 @@ class SearchController extends Controller
         $search->applyForSuggestions($productsQuery, $q, $includeInternal);
         $products = $productsQuery->get();
 
+        $bestMatch = function () use ($productQuery, $search, $q) {
+            $productsQuery = $productQuery();
+            $search->applyBestMatch($productsQuery, $q);
+
+            return $productsQuery->orderByDesc('rating')->orderByDesc('id')->get();
+        };
+
+        // A long copied title with words our card lacks: the cards matching most of it, before
+        // the slow typo/layout pass, which such a title hardly needs.
+        if ($products->isEmpty() && $search->isLongQuery($q)) {
+            $products = $bestMatch();
+        }
+
         // Transliteration, a wrong keyboard layout and visual model-code
         // substitutions are uncommon, but remain available as a fallback.
         if ($products->isEmpty()) {
@@ -115,11 +128,8 @@ class SearchController extends Controller
             $products = $productsQuery->get();
         }
 
-        // A long copied title with words our card lacks: the cards matching most of it.
-        if ($products->isEmpty()) {
-            $productsQuery = $productQuery();
-            $search->applyBestMatch($productsQuery, $q);
-            $products = $productsQuery->orderByDesc('rating')->orderByDesc('id')->get();
+        if ($products->isEmpty() && ! $search->isLongQuery($q)) {
+            $products = $bestMatch();
         }
 
         $products = $products

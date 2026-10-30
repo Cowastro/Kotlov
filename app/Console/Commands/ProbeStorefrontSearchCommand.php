@@ -25,6 +25,10 @@ class ProbeStorefrontSearchCommand extends Command
                 $query = fn () => Product::active()->notArchived()->select('id')->orderByDesc('rating')->orderByDesc('id')->limit(8);
                 $found = $search->applyForSuggestions($query(), $q, $internal)->get();
                 $step = 'fast';
+                if ($found->isEmpty() && $search->isLongQuery($q)) {
+                    $found = $search->applyBestMatch($query(), $q)->get();
+                    $step = 'best';
+                }
                 if ($found->isEmpty()) {
                     $found = $search->apply($query(), $q, $internal)->get();
                     $step = 'full';

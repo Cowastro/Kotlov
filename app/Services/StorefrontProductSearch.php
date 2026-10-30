@@ -208,11 +208,15 @@ class StorefrontProductSearch
             return $this->applyForSuggestions($query, $search, $includeInternal);
         }
 
-        $exhaustiveQuery = clone $query;
-        $this->apply($exhaustiveQuery, $search, $includeInternal);
+        // A long copied title is rarely typed in a wrong layout: its closest cards come before
+        // the expensive typo/layout pass (1.3 s of the 1.5 s such a query took).
+        if (! $this->isLongQuery($search)) {
+            $exhaustiveQuery = clone $query;
+            $this->apply($exhaustiveQuery, $search, $includeInternal);
 
-        if ($exhaustiveQuery->exists()) {
-            return $this->apply($query, $search, $includeInternal);
+            if ($exhaustiveQuery->exists()) {
+                return $this->apply($query, $search, $includeInternal);
+            }
         }
 
         $relaxedQuery = clone $query;
@@ -226,6 +230,12 @@ class StorefrontProductSearch
         }
 
         return $this->apply($query, $search, $includeInternal);
+    }
+
+    /** Four words or more: a copied title rather than a typed query. */
+    public function isLongQuery(string $search): bool
+    {
+        return count($this->directTokens($search)) >= 4;
     }
 
     /**
