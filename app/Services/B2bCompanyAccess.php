@@ -15,6 +15,7 @@ class B2bCompanyAccess
         'specifications.manage' => 'Загрузка и обновление спецификаций',
         'orders.view' => 'История заказов компании',
         'documents.view' => 'Просмотр КП и счетов',
+        'documents.generate' => 'Формирование счёта из подтверждённого заказа',
         'documents.download' => 'Скачивание КП и счетов в PDF',
         'contracts.download' => 'Просмотр и скачивание договоров',
         'finance.view' => 'Сверка и кредитный лимит',
@@ -25,15 +26,15 @@ class B2bCompanyAccess
     public const PERMISSIONS = [
         'owner' => [
             'catalog.view', 'orders.create', 'specifications.manage', 'orders.view',
-            'documents.view', 'documents.download', 'contracts.download', 'finance.view',
+            'documents.view', 'documents.generate', 'documents.download', 'contracts.download', 'finance.view',
             'profile.manage', 'team.manage',
         ],
         'buyer' => [
             'catalog.view', 'orders.create', 'specifications.manage', 'orders.view',
-            'documents.view', 'documents.download', 'contracts.download',
+            'documents.view', 'documents.generate', 'documents.download', 'contracts.download',
         ],
         'accountant' => [
-            'orders.view', 'documents.view', 'documents.download', 'contracts.download', 'finance.view',
+            'orders.view', 'documents.view', 'documents.generate', 'documents.download', 'contracts.download', 'finance.view',
         ],
         'viewer' => ['orders.view', 'documents.view', 'documents.download', 'contracts.download'],
     ];

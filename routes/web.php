@@ -798,6 +798,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('b2b.cabinet.contracts.file');
     Route::get('/b2b/cabinet/documents/{document}/pdf', [B2bCabinetController::class, 'documentPdf'])
         ->name('b2b.cabinet.documents.pdf');
+    Route::post('/b2b/cabinet/orders/{order}/invoice', [B2bCabinetController::class, 'generateInvoice'])
+        ->middleware('throttle:10,1')
+        ->name('b2b.cabinet.orders.invoice');
     Route::get('/b2b/catalog', B2bMarketplaceController::class)->name('b2b.catalog');
     Route::get('/b2b/catalog/suggest', [B2bMarketplaceController::class, 'suggest'])
         ->middleware('throttle:120,1')

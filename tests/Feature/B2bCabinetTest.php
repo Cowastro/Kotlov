@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\B2bClient;
 use App\Models\B2bSavedCart;
 use App\Models\CommercialDocument;
+use App\Models\CrmCounterparty;
 use App\Models\Order;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -149,9 +150,118 @@ class B2bCabinetTest extends TestCase
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf')
             ->assertHeader('cache-control', 'max-age=0, no-store, private');
+        $this->assertDatabaseHas('b2b_client_audit_logs', [
+            'b2b_client_id' => $partner->activeB2bClient()->id,
+            'actor_user_id' => $partner->id,
+            'event' => 'document_downloaded',
+        ]);
         $this->actingAs($partner)
             ->get(route('b2b.cabinet.documents.pdf', $foreign))
             ->assertNotFound();
+    }
+
+    public function test_partner_generates_one_immutable_invoice_from_confirmed_b2b_order_and_audit_is_visible(): void
+    {
+        [$partner, $client] = $this->partner();
+        $this->completeInvoiceProfile($client);
+        $order = $this->order($partner, 'B2B-INVOICE-1');
+        $order->update([
+            'status' => 'confirmed',
+            'availability_confirmed_at' => now(),
+            'company_name' => $client->company_name,
+            'company_unp' => $client->unp,
+            'company_address' => $client->counterparty->legal_address,
+            'company_email' => $client->contact_email,
+            'delivery_type' => 'transport',
+            'delivery_address' => 'Минск, Складская, 5',
+            'delivery_price' => 50,
+            'discount' => 5,
+            'subtotal' => 200,
+            'total' => 245,
+        ]);
+        $order->items()->create([
+            'product_name' => 'Подтверждённый B2B товар',
+            'product_sku' => 'B2B-100',
+            'price' => 100,
+            'quantity' => 2,
+            'pricing_type' => 'b2b',
+            'supply_captured_at' => now(),
+            'fulfillment_route' => 'own_stock',
+            'fulfillment_availability_status' => 'reserved',
+            'fulfillment_confirmed_at' => now(),
+        ]);
+        $draft = CommercialDocument::query()->create([
+            'type' => 'invoice',
+            'status' => 'draft',
+            'client_email' => $partner->email,
+            'currency' => 'BYN',
+        ]);
+        $draft->items()->create([
+            'name' => 'Старая строка',
+            'quantity' => 1,
+            'unit_price' => 1,
+        ]);
+        $order->update(['commercial_document_id' => $draft->id]);
+
+        $this->actingAs($partner)
+            ->post(route('b2b.cabinet.orders.invoice', $order))
+            ->assertRedirect(route('b2b.cabinet', ['section' => 'documents']))
+            ->assertSessionHas('success');
+
+        $invoice = $order->fresh()->commercialDocument()->with('items')->firstOrFail();
+        $this->assertSame($draft->id, $invoice->id);
+        $this->assertSame('sent', $invoice->status);
+        $this->assertSame('245.00', $invoice->total);
+        $this->assertSame('5.00', $invoice->discount_total);
+        $this->assertCount(1, $invoice->items);
+        $this->assertSame('Подтверждённый B2B товар', $invoice->items->first()->name);
+        $this->assertSame('100.00', $invoice->items->first()->unit_price);
+        $this->assertDatabaseHas('b2b_client_audit_logs', [
+            'b2b_client_id' => $client->id,
+            'actor_user_id' => $partner->id,
+            'event' => 'invoice_generated',
+        ]);
+
+        $this->post(route('b2b.cabinet.orders.invoice', $order))
+            ->assertRedirect(route('b2b.cabinet', ['section' => 'documents']));
+        $this->assertSame(1, CommercialDocument::query()->where('type', 'invoice')->count());
+        $this->assertSame(1, $client->auditLogs()->where('event', 'invoice_generated')->count());
+
+        $this->get(route('b2b.cabinet', ['section' => 'documents']))
+            ->assertOk()
+            ->assertSeeText($invoice->number)
+            ->assertSeeText('История действий с документами')
+            ->assertSeeText('Сформирован счёт')
+            ->assertSeeText('заказ B2B-INVOICE-1');
+    }
+
+    public function test_invoice_generation_rejects_unconfirmed_non_b2b_and_foreign_orders(): void
+    {
+        [$partner, $client] = $this->partner();
+        $this->completeInvoiceProfile($client);
+        $unconfirmed = $this->order($partner, 'B2B-NOT-CONFIRMED');
+
+        $this->actingAs($partner)
+            ->post(route('b2b.cabinet.orders.invoice', $unconfirmed))
+            ->assertSessionHasErrors('invoice');
+        $this->assertNull($unconfirmed->fresh()->commercial_document_id);
+
+        $retail = $this->order($partner, 'B2B-RETAIL-LINE');
+        $retail->update(['status' => 'confirmed', 'availability_confirmed_at' => now()]);
+        $retail->items()->create([
+            'product_name' => 'Розничная строка',
+            'price' => 100,
+            'quantity' => 1,
+            'pricing_type' => 'retail',
+            'supply_captured_at' => now(),
+            'fulfillment_confirmed_at' => now(),
+        ]);
+        $this->post(route('b2b.cabinet.orders.invoice', $retail))
+            ->assertSessionHasErrors('invoice');
+
+        [$other] = $this->partner('foreign-invoice@example.by', 'ООО «Чужой счёт»');
+        $foreign = $this->order($other, 'B2B-FOREIGN-INVOICE');
+        $this->post(route('b2b.cabinet.orders.invoice', $foreign))->assertNotFound();
     }
 
     /** @return array{User, B2bClient} */
@@ -193,5 +303,26 @@ class B2bCabinetTest extends TestCase
             'subtotal' => 100,
             'total' => 100,
         ]);
+    }
+
+    private function completeInvoiceProfile(B2bClient $client): void
+    {
+        $counterparty = CrmCounterparty::query()->create([
+            'type' => 'organization',
+            'classification' => 'b2b_partner',
+            'business_unit' => 'wholesale',
+            'status' => 'active',
+            'source' => 'manual',
+            'name' => $client->company_name,
+            'public_name' => $client->company_name,
+            'legal_name' => 'Общество с ограниченной ответственностью «Партнёр»',
+            'unp' => $client->unp,
+            'legal_address' => '220000, г. Минск, ул. Партнёрская, 1',
+        ]);
+        $client->update([
+            'counterparty_id' => $counterparty->id,
+            'contact_phone' => '+375291234567',
+        ]);
+        $client->refresh()->load('counterparty');
     }
 }

@@ -306,6 +306,26 @@ class Order extends Model
             && in_array($this->status, ['confirmed', 'processing', 'shipped', 'delivered', 'cancelled'], true);
     }
 
+    public function isB2bInvoiceOrder(): bool
+    {
+        return in_array($this->payment_type, ['invoice', 'invoice_deferred'], true);
+    }
+
+    public function canGenerateB2bInvoice(): bool
+    {
+        $hasOnlyB2bItems = $this->relationLoaded('items')
+            ? $this->items->isNotEmpty() && $this->items->every(fn (OrderItem $item): bool => $item->pricing_type === 'b2b')
+            : $this->items()->exists() && ! $this->items()
+                ->where(fn ($query) => $query->whereNull('pricing_type')->orWhere('pricing_type', '!=', 'b2b'))
+                ->exists();
+
+        return $this->isB2bInvoiceOrder()
+            && $this->customerDetailsAreAvailable()
+            && $this->status !== 'cancelled'
+            && $this->hasConfirmedFulfillmentForAllItems()
+            && $hasOnlyB2bItems;
+    }
+
     public function availabilityConfirmedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'availability_confirmed_by');

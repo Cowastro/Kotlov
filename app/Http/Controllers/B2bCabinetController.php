@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\B2bClient;
+use App\Models\B2bClientAuditLog;
 use App\Models\B2bClientInvitation;
 use App\Models\B2bClientMember;
 use App\Models\B2bSavedCart;
@@ -23,6 +24,7 @@ use App\Services\B2bCheckoutTerms;
 use App\Services\B2bCompanyAccess;
 use App\Services\B2bSpecificationParser;
 use App\Services\B2bTeamService;
+use App\Services\CommercialDocuments\B2bSelfServiceInvoice;
 use App\Services\CommercialDocuments\CommercialDocumentPdf;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -97,7 +99,7 @@ class B2bCabinetController extends Controller
         }
         $counterparty = $client->counterparty;
         $creditSummary = $checkoutTerms->creditSummary($client);
-        $ordersQuery = Order::query()->whereIn('user_id', $companyUserIds)->with('items')->latest();
+        $ordersQuery = Order::query()->whereIn('user_id', $companyUserIds)->with(['items', 'commercialDocument'])->latest();
         $documentsQuery = $this->documentsFor($request);
 
         $orders = (clone $ordersQuery)->paginate(12, ['*'], 'orders_page')->withQueryString();
@@ -121,6 +123,8 @@ class B2bCabinetController extends Controller
             ->paginate(10, ['*'], 'specifications_page')
             ->withQueryString();
         [$profileCompletion, $profileMissing] = $this->profileCompletion($client, $counterparty, $user);
+        $invoiceProfileMissing = $this->invoiceProfileMissing($client, $counterparty, $user);
+        $invoiceProfileReady = $invoiceProfileMissing === [];
 
         $dateFrom = $this->date($request->input('date_from'), now()->startOfYear()->toDateString());
         $dateTo = $this->date($request->input('date_to'), now()->toDateString());
@@ -150,14 +154,21 @@ class B2bCabinetController extends Controller
             ->latest()
             ->limit(30)
             ->get();
+        $financialAuditLogs = $client->auditLogs()
+            ->whereIn('event', ['invoice_generated', 'document_downloaded'])
+            ->with('actor:id,name,email')
+            ->latest()
+            ->limit(20)
+            ->get();
         $companyOrderTotal = (float) Order::query()->whereIn('user_id', $companyUserIds)->sum('total');
 
         return view('pages.b2b.cabinet', compact(
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
             'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers', 'creditSummary',
             'profileCompletion', 'profileMissing',
+            'invoiceProfileReady', 'invoiceProfileMissing',
             'role', 'permissions', 'permissionLabels', 'rolePermissionLabels', 'passwordRecentlyConfirmed',
-            'members', 'pendingInvitations', 'auditLogs', 'companyOrderTotal',
+            'members', 'pendingInvitations', 'auditLogs', 'financialAuditLogs', 'companyOrderTotal',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));
     }
@@ -619,12 +630,41 @@ class B2bCabinetController extends Controller
         $filename = ($document->type === 'invoice' ? 'Счет-' : 'Коммерческое-предложение-').$document->number.'.pdf';
         $fallback = ($document->type === 'invoice' ? 'invoice-' : 'quote-').$document->id.'.pdf';
 
-        return response($pdf->render($document), 200, [
+        $contents = $pdf->render($document);
+        $client = $request->user()->activeB2bClient();
+        B2bClientAuditLog::query()->create([
+            'b2b_client_id' => $client->id,
+            'actor_user_id' => $request->user()->id,
+            'event' => 'document_downloaded',
+            'metadata' => [
+                'document_id' => $document->id,
+                'document_number' => $document->number,
+                'document_type' => $document->type,
+            ],
+        ]);
+
+        return response($contents, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => (new ResponseHeaderBag)->makeDisposition('inline', $filename, $fallback),
             'Cache-Control' => 'private, no-store, max-age=0',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    public function generateInvoice(
+        Request $request,
+        Order $order,
+        B2bSelfServiceInvoice $invoices,
+    ) {
+        $user = $request->user();
+        $client = $user->activeB2bClient(['counterparty']);
+        abort_unless($client && $this->access->allows($user, 'documents.generate', $client), 403);
+        abort_unless($this->access->allUserIds($client)->contains((int) $order->user_id), 404);
+
+        $document = $invoices->generate($client, $user, $order);
+
+        return to_route('b2b.cabinet', ['section' => 'documents'])
+            ->with('success', 'Счёт '.$document->number.' сформирован из подтверждённого заказа. Состав и цены зафиксированы.');
     }
 
     private function documentsFor(Request $request): Builder
@@ -773,5 +813,17 @@ class B2bCabinetController extends Controller
         $completed = count($fields) - count($missing);
 
         return [(int) round($completed / count($fields) * 100), $missing];
+    }
+
+    /** @return array<int, string> */
+    private function invoiceProfileMissing(B2bClient $client, ?CrmCounterparty $counterparty, User $user): array
+    {
+        return collect([
+            'полное юридическое название' => $counterparty?->legal_name,
+            'УНП' => preg_match('/^\d{9}$/', (string) $client->unp) ? $client->unp : null,
+            'юридический адрес' => $counterparty?->legal_address,
+            'email' => filter_var((string) ($client->contact_email ?: $user->email), FILTER_VALIDATE_EMAIL),
+            'карточка контрагента' => $counterparty?->id,
+        ])->filter(fn ($value): bool => blank($value))->keys()->values()->all();
     }
 }

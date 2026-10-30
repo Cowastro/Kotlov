@@ -215,10 +215,12 @@ class B2bCompanyTeamTest extends TestCase
 
         $this->assertTrue($access->allows($owner, 'team.manage', $client));
         $this->assertTrue($access->allows($accountant, 'documents.download', $client));
+        $this->assertTrue($access->allows($accountant, 'documents.generate', $client));
         $this->assertTrue($access->allows($accountant, 'finance.view', $client));
         $this->assertFalse($access->allows($accountant, 'orders.create', $client));
         $this->assertTrue($access->allows($viewer, 'orders.view', $client));
         $this->assertTrue($access->allows($viewer, 'documents.view', $client));
+        $this->assertFalse($access->allows($viewer, 'documents.generate', $client));
         $this->assertFalse($access->allows($viewer, 'finance.view', $client));
         $this->assertFalse($access->allows($viewer, 'catalog.view', $client));
     }
