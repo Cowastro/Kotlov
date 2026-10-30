@@ -375,6 +375,31 @@ XML;
         $this->assertNotNull($invoice->closed_at);
         $this->assertSame('paid', $order->fresh()->payment_status);
         $this->assertSame(1, $client->auditLogs()->where('event', 'invoice_accounting_synced')->count());
+        $this->assertDatabaseCount('b2b_accounting_entries', 2);
+        $this->assertDatabaseHas('b2b_accounting_entries', [
+            'b2b_client_id' => $client->id,
+            'entry_type' => 'charge',
+            'document_number' => 'СФ-00000456',
+            'debit' => 120,
+            'credit' => 0,
+        ]);
+        $this->assertDatabaseHas('b2b_accounting_entries', [
+            'b2b_client_id' => $client->id,
+            'entry_type' => 'payment',
+            'document_number' => 'СФ-00000456',
+            'debit' => 0,
+            'credit' => 120,
+        ]);
+
+        $this->actingAs($partner)
+            ->get(route('b2b.cabinet', ['section' => 'reconciliation']))
+            ->assertOk()
+            ->assertSeeText('Акт по подтверждённым данным 1С')
+            ->assertSeeText('Акт сверки по данным 1С')
+            ->assertSeeText('СФ-00000456 · Начисление по счёту')
+            ->assertSeeText('СФ-00000456 · Оплата')
+            ->assertSeeText('Закупочные цены и внутренняя маржа не раскрываются')
+            ->assertDontSeeText('Предварительная сверка сформирована');
     }
 
     /** @return array{User, B2bClient} */
