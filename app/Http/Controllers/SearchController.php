@@ -74,7 +74,7 @@ class SearchController extends Controller
 
         $search = app(StorefrontProductSearch::class);
         $includeInternal = auth()->user()?->is_active === true && auth()->user()?->isManager();
-        $cacheKey = 'storefront-search-suggest:v3:'.($includeInternal ? 'internal:' : 'public:').sha1(mb_strtolower($q));
+        $cacheKey = 'storefront-search-suggest:v4:'.($includeInternal ? 'internal:' : 'public:').sha1(mb_strtolower($q));
 
         $suggestions = Cache::remember(
             $cacheKey,
@@ -113,6 +113,13 @@ class SearchController extends Controller
             $productsQuery = $productQuery();
             $search->apply($productsQuery, $q, $includeInternal);
             $products = $productsQuery->get();
+        }
+
+        // A long copied title with words our card lacks: the cards matching most of it.
+        if ($products->isEmpty()) {
+            $productsQuery = $productQuery();
+            $search->applyBestMatch($productsQuery, $q);
+            $products = $productsQuery->orderByDesc('rating')->orderByDesc('id')->get();
         }
 
         $products = $products

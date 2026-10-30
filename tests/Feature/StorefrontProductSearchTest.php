@@ -37,6 +37,24 @@ class StorefrontProductSearchTest extends TestCase
             ->assertDontSee('autofocus', false);
     }
 
+    public function test_a_long_copied_title_finds_the_card_with_the_short_model_name(): void
+    {
+        $category = Category::create(['name' => 'Электрические конвекторы', 'slug' => 'best-match-convectors', 'parent_id' => 0, 'is_active' => true]);
+        $card = Product::create(['category_id' => $category->id, 'name' => 'Ballu BEC/EVU-2000', 'slug' => 'best-match-ballu-evu-2000',
+            'sku' => 'BALLU-EVU-2000', 'price' => 265, 'is_active' => true, 'is_archived' => false]);
+        Product::create(['category_id' => $category->id, 'name' => 'Ballu BEC/EVU-1500', 'slug' => 'best-match-ballu-evu-1500',
+            'sku' => 'BALLU-EVU-1500', 'price' => 230, 'is_active' => true, 'is_archived' => false]);
+        $query = 'Электрический конвектор Ballu Evolution Transformer System BEC/EVU-2000';
+
+        $suggestions = $this->getJson('/search/suggest?'.http_build_query(['q' => $query]))->assertOk()->json();
+        $products = collect($suggestions)->where('type', 'product')->values();
+        $this->assertSame('Ballu BEC/EVU-2000', $products->first()['name'] ?? null);
+
+        $this->get('/search?'.http_build_query(['q' => $query]))->assertOk()->assertSee($card->name);
+        // An unrelated long phrase stays empty: a third of its words must match.
+        $this->assertSame([], collect($this->getJson('/search/suggest?'.http_build_query(['q' => 'Газовый котел настенный двухконтурный Ballu']))->json())->where('type', 'product')->values()->all());
+    }
+
     public function test_fast_suggestion_pass_handles_normal_queries_without_expensive_variants(): void
     {
         $category = Category::create([

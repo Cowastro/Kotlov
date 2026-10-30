@@ -4020,3 +4020,5 @@ body.mobile-catalog-menu-is-open .ai-selector__assistance-menu { display: none !
 .promo-inline .mini-cart-form-msg {
     flex-basis: 100%;
 }
+
+.suggest-empty { padding: 14px 16px; color: var(--text-2, #6b6b6b); font-size: 14px; line-height: 1.4; }

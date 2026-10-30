@@ -207,7 +207,51 @@ class StorefrontProductSearch
             return $this->applyRelaxedForResults($query, $search, $includeInternal);
         }
 
+        $bestQuery = clone $query;
+        if ($this->applyBestMatch($bestQuery, $search)->exists()) {
+            return $this->applyBestMatch($query, $search);
+        }
+
         return $this->apply($query, $search, $includeInternal);
+    }
+
+    /**
+     * The last resort for a long copied title («Электрический конвектор Ballu Evolution Transformer
+     * System BEC/EVU-2000» for the card «Ballu BEC/EVU-2000»): cards matching the most words, model
+     * codes with digits weighing double, best first. A third of the query weight is the minimum.
+     */
+    public function applyBestMatch(Builder $query, string $search): Builder
+    {
+        $words = collect($this->directTokens($search))
+            ->map(fn (array $alternatives): array => $alternatives)
+            ->filter(fn (array $alternatives): bool => mb_strlen($alternatives[0]) >= 3 || preg_match('/\d/', $alternatives[0]) === 1)
+            ->take(self::MAX_TOKENS)
+            ->values();
+        if ($words->count() < 2) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $parts = [];
+        $bindings = [];
+        $total = 0;
+        foreach ($words as $alternatives) {
+            $weight = preg_match('/\d/', $alternatives[0]) === 1 ? 2 : 1;
+            $total += $weight;
+            $conditions = [];
+            foreach ($alternatives as $alternative) {
+                foreach ($this->fastCaseVariants($alternative) as $variant) {
+                    $like = '%'.$variant.'%';
+                    $conditions[] = '`products`.`name` LIKE ? OR `products`.`sku` LIKE ? OR EXISTS (SELECT 1 FROM `categories` WHERE `categories`.`id` = `products`.`category_id` AND `categories`.`name` LIKE ?)';
+                    array_push($bindings, $like, $like, $like);
+                }
+            }
+            $parts[] = 'CASE WHEN '.implode(' OR ', $conditions).' THEN '.$weight.' ELSE 0 END';
+        }
+        $score = '('.implode(' + ', $parts).')';
+
+        return $query->whereRaw($score.' >= ?', [...$bindings, max(2, (int) ceil($total / 3))])
+            ->reorder()
+            ->orderByRaw($score.' DESC', $bindings);
     }
 
     /**

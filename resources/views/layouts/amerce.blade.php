@@ -654,8 +654,16 @@
             if (window.kotlovActiveSearchSuggestInput !== input) return;
 
             if (!data.length) {
-                closeSuggestions();
-                suggest.replaceChildren();
+                // Nothing found is said aloud: a silently closed list looks like a hung search.
+                var empty = document.createElement('div');
+                empty.className = 'suggest-empty';
+                empty.textContent = 'Ничего не найдено. Попробуйте короче: бренд и модель или артикул.';
+                closeOtherSuggestions();
+                suggest.replaceChildren(empty);
+                suggest.style.display = 'block';
+                activeIndex = -1;
+                input.setAttribute('aria-expanded', 'true');
+                document.body.classList.add('search-suggest-open');
                 return;
             }
 
