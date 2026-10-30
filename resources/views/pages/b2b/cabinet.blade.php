@@ -12,17 +12,18 @@
     $statusLabels = \App\Models\Order::STATUSES;
     $documentStatuses = \App\Models\CommercialDocument::STATUSES;
     $contractStatuses = \App\Models\CommercialContract::STATUSES;
+    $can = fn (string $permission) => $permissions->contains($permission);
 @endphp
 
 <div class="b2b-portal b2b-cabinet">
     <header class="b2b-cabinet-topbar">
         <div class="b2b-cabinet-topbar__inner">
-            <a href="{{ route('b2b.catalog') }}" class="b2b-cabinet-brand">
+            <a href="{{ $can('catalog') ? route('b2b.catalog') : $sectionUrl('overview') }}" class="b2b-cabinet-brand">
                 <img src="{{ asset('img/logo.svg') }}" width="126" height="26" alt="KOTLOV"><span>B2B</span>
             </a>
             <nav aria-label="B2B-навигация">
-                <a href="{{ route('b2b.catalog') }}"><i class="icon icon-SquaresFour"></i> Каталог</a>
-                <a href="{{ route('cart') }}"><i class="icon icon-Handbag"></i> Корзина <b>{{ $cartCount }}</b></a>
+                @if($can('catalog'))<a href="{{ route('b2b.catalog') }}"><i class="icon icon-SquaresFour"></i> Каталог</a>@endif
+                @if($can('order'))<a href="{{ route('cart') }}"><i class="icon icon-Handbag"></i> Корзина <b>{{ $cartCount }}</b></a>@endif
                 <form action="{{ route('logout') }}" method="POST">@csrf<button type="submit">Выйти</button></form>
             </nav>
         </div>
@@ -35,24 +36,26 @@
         @endif
 
         <section class="b2b-cabinet-welcome">
-            <div><span>Кабинет партнёра</span><h1>{{ $client->company_name }}</h1><p>Заказы, документы и реквизиты компании в одном месте.</p></div>
-            <a href="{{ route('b2b.catalog') }}">Открыть B2B-каталог <span>→</span></a>
+            <div><span>Кабинет партнёра · {{ \App\Models\B2bClientMember::ROLES[$role] ?? $role }}</span><h1>{{ $client->company_name }}</h1><p>Заказы, документы и реквизиты компании в одном месте.</p></div>
+            @if($can('catalog'))<a href="{{ route('b2b.catalog') }}">Открыть B2B-каталог <span>→</span></a>@endif
         </section>
 
         <div class="b2b-cabinet-layout">
             <aside class="b2b-cabinet-nav">
                 <div class="b2b-cabinet-nav__company"><small>{{ $client->partner_type === 'installer' ? 'Монтажная организация' : 'Оптовый покупатель' }}</small><strong>{{ $client->company_name }}</strong>@if($client->unp)<span>УНП {{ $client->unp }}</span>@endif</div>
                 @foreach ([
-                    'overview' => ['icon-House', 'Главная'],
-                    'profile' => ['icon-User', 'Компания и реквизиты'],
-                    'specifications' => ['icon-FileText', 'Спецификации'],
-                    'carts' => ['icon-Handbag', 'Сохранённые корзины'],
-                    'orders' => ['icon-Package', 'История заказов'],
-                    'documents' => ['icon-FileText', 'КП и счета'],
-                    'contracts' => ['icon-Note', 'Договоры'],
-                    'reconciliation' => ['icon-ChartBar', 'Сверка взаиморасчётов'],
-                    'security' => ['icon-ShieldCheck', 'Безопасность'],
-                ] as $key => [$icon, $label])
+                    'overview' => ['icon-House', 'Главная', null],
+                    'profile' => ['icon-User', 'Компания и реквизиты', 'profile'],
+                    'team' => ['icon-Users', 'Сотрудники и роли', 'team'],
+                    'specifications' => ['icon-FileText', 'Спецификации', 'specifications'],
+                    'carts' => ['icon-Handbag', 'Сохранённые корзины', 'order'],
+                    'orders' => ['icon-Package', 'История заказов', 'documents'],
+                    'documents' => ['icon-FileText', 'КП и счета', 'documents'],
+                    'contracts' => ['icon-Note', 'Договоры', 'documents'],
+                    'reconciliation' => ['icon-ChartBar', 'Сверка взаиморасчётов', 'finance'],
+                    'security' => ['icon-ShieldCheck', 'Безопасность', null],
+                ] as $key => [$icon, $label, $permission])
+                    @continue($permission && !$can($permission))
                     <a href="{{ $sectionUrl($key) }}" class="{{ $section === $key ? 'active' : '' }}"><i class="icon {{ $icon }}"></i><span>{{ $label }}</span>@if($key === 'carts' && $savedCarts->count())<b>{{ $savedCarts->count() }}</b>@elseif($key === 'specifications' && $specifications->total())<b>{{ $specifications->total() }}</b>@endif</a>
                 @endforeach
                 <a href="{{ route('account') }}" class="b2b-cabinet-nav__retail"><i class="icon icon-ArrowLeft"></i><span>Обычный личный кабинет</span></a>
@@ -68,14 +71,14 @@
                             <p>{{ $profileCompletion === 100 ? 'Данных достаточно для автоматического формирования счетов и договоров.' : 'После заполнения менеджер сможет быстрее готовить счета и договоры без уточняющих звонков.' }}</p>
                             @if($profileMissing)<small>Не хватает: {{ implode(', ', array_slice($profileMissing, 0, 4)) }}{{ count($profileMissing) > 4 ? ' и ещё '.(count($profileMissing) - 4) : '' }}.</small>@endif
                         </div>
-                        <div class="b2b-profile-progress__side"><div class="b2b-profile-progress__meter"><i style="width:{{ $profileCompletion }}%"></i></div><a href="{{ $sectionUrl('profile') }}">{{ $profileCompletion === 100 ? 'Проверить данные' : 'Дозаполнить реквизиты' }} →</a></div>
+                        <div class="b2b-profile-progress__side"><div class="b2b-profile-progress__meter"><i style="width:{{ $profileCompletion }}%"></i></div>@if($can('profile'))<a href="{{ $sectionUrl('profile') }}">{{ $profileCompletion === 100 ? 'Проверить данные' : 'Дозаполнить реквизиты' }} →</a>@endif</div>
                     </article>
                     <article class="b2b-commercial-profile">
                         <div class="b2b-commercial-profile__intro">
                             <span>Ваши условия</span>
                             <h3>{{ $client->priceLevel?->name ?: 'Уровень цены назначается' }}</h3>
                             <p><strong>{{ $client->serviceModeLabel() }}.</strong> Специальная цена действует при самостоятельном выборе и оформлении. В неё входят комплектация, документы и организация доставки.</p>
-                            @if($client->specification_service_enabled)<a href="{{ $sectionUrl('specifications') }}" class="b2b-commercial-profile__service"><i class="icon icon-FileText"></i><div><strong>Есть готовая спецификация?</strong><small>Загрузите PDF, Excel или фотографию. Статус обработки останется в кабинете.</small></div><b>Загрузить →</b></a>@endif
+                            @if($client->specification_service_enabled && $can('specifications'))<a href="{{ $sectionUrl('specifications') }}" class="b2b-commercial-profile__service"><i class="icon icon-FileText"></i><div><strong>Есть готовая спецификация?</strong><small>Загрузите PDF, Excel или фотографию. Статус обработки останется в кабинете.</small></div><b>Загрузить →</b></a>@endif
                         </div>
                         <dl class="b2b-commercial-profile__terms">
                             <div><dt>Доступные прайсы</dt><dd>{{ $allowedSources->isNotEmpty() ? $allowedSources->join(', ') : 'Назначаются менеджером' }}</dd></div>
@@ -96,15 +99,23 @@
                         </dl>
                     </article>
                     <div class="b2b-cabinet-stats">
-                        <a href="{{ $sectionUrl('orders') }}"><i class="icon icon-Package"></i><span>Заказы</span><strong>{{ $orders->total() }}</strong><small>на {{ number_format((float) $user->orders()->sum('total'), 2, ',', ' ') }} BYN</small></a>
+                        @if($can('documents'))<a href="{{ $sectionUrl('orders') }}"><i class="icon icon-Package"></i><span>Заказы</span><strong>{{ $orders->total() }}</strong><small>на {{ number_format($companyOrderTotal, 2, ',', ' ') }} BYN</small></a>@endif
+                        @if($can('documents'))
                         <a href="{{ $sectionUrl('documents') }}"><i class="icon icon-FileText"></i><span>КП и счета</span><strong>{{ $documents->total() }}</strong><small>доступно в кабинете</small></a>
+                        @endif
+                        @if($can('specifications'))
                         <a href="{{ $sectionUrl('specifications') }}"><i class="icon icon-FileText"></i><span>Спецификации</span><strong>{{ $specifications->total() }}</strong><small>загружено вами</small></a>
+                        @endif
+                        @if($can('documents'))
                         <a href="{{ $sectionUrl('contracts') }}"><i class="icon icon-Note"></i><span>Договоры</span><strong>{{ $contracts->count() }}</strong><small>{{ $contracts->where('status', 'signed')->count() }} подписано</small></a>
+                        @endif
+                        @if($can('order'))
                         <a href="{{ $sectionUrl('carts') }}"><i class="icon icon-Handbag"></i><span>Корзины</span><strong>{{ $savedCarts->count() }}</strong><small>{{ $cartCount }} товаров сейчас</small></a>
+                        @endif
                     </div>
                     <div class="b2b-cabinet-grid">
-                        <article class="b2b-cabinet-card"><div class="b2b-cabinet-card__head"><h3>Последние заказы</h3><a href="{{ $sectionUrl('orders') }}">Все заказы</a></div>@forelse($orders->take(4) as $order)<a class="b2b-cabinet-row" href="{{ $order->customerDetailsAreAvailable() ? route('account.orders.show', $order) : $sectionUrl('orders') }}"><span><strong>{{ $order->number }}</strong><small>{{ $order->created_at?->format('d.m.Y') }}</small></span><span>{{ $statusLabels[$order->status] ?? $order->status }}</span><b>{{ number_format((float) $order->total, 2, ',', ' ') }} BYN</b></a>@empty<p class="b2b-cabinet-empty">Заказов пока нет. Начните с B2B-каталога.</p>@endforelse</article>
-                        <article class="b2b-cabinet-card"><div class="b2b-cabinet-card__head"><h3>Данные компании</h3><a href="{{ $sectionUrl('profile') }}">Изменить</a></div><dl class="b2b-cabinet-details"><div><dt>Компания</dt><dd>{{ $client->company_name }}</dd></div><div><dt>УНП</dt><dd>{{ $client->unp ?: 'Не указан' }}</dd></div><div><dt>Контакт</dt><dd>{{ $client->contact_name ?: $user->name }}</dd></div><div><dt>Условия оплаты</dt><dd>{{ $client->payment_terms ?: 'По согласованию с менеджером' }}</dd></div></dl></article>
+                        <article class="b2b-cabinet-card"><div class="b2b-cabinet-card__head"><h3>Последние заказы</h3><a href="{{ $sectionUrl('orders') }}">Все заказы</a></div>@forelse($orders->take(4) as $order)<a class="b2b-cabinet-row" href="{{ $order->customerDetailsAreAvailable() ? route('account.orders.show', $order) : $sectionUrl('orders') }}"><span><strong>{{ $order->number }}</strong><small>{{ $order->created_at?->format('d.m.Y') }}</small></span><span>{{ $statusLabels[$order->status] ?? $order->status }}</span><b>{{ number_format((float) $order->total, 2, ',', ' ') }} BYN</b></a>@empty<p class="b2b-cabinet-empty">Заказов пока нет.@if($can('catalog')) Начните с B2B-каталога.@endif</p>@endforelse</article>
+                        <article class="b2b-cabinet-card"><div class="b2b-cabinet-card__head"><h3>Данные компании</h3>@if($can('profile'))<a href="{{ $sectionUrl('profile') }}">Изменить</a>@endif</div><dl class="b2b-cabinet-details"><div><dt>Компания</dt><dd>{{ $client->company_name }}</dd></div><div><dt>УНП</dt><dd>{{ $client->unp ?: 'Не указан' }}</dd></div><div><dt>Контакт</dt><dd>{{ $client->contact_name ?: $user->name }}</dd></div><div><dt>Условия оплаты</dt><dd>{{ $client->payment_terms ?: 'По согласованию с менеджером' }}</dd></div></dl></article>
                     </div>
                 @elseif ($section === 'profile')
                     <div class="b2b-cabinet-heading"><div><span>Профиль</span><h2>Компания и реквизиты</h2></div><p>Эти данные используются в КП, счетах и договорах</p></div>
@@ -148,6 +159,23 @@
                             </div>
                         </section>
                         <div class="b2b-form-submit"><div><strong>Сохраните изменения</strong><span>Обновлённые данные сразу будут доступны вашему менеджеру.</span></div><button class="b2b-cabinet-primary" type="submit">Сохранить реквизиты</button></div>
+                    </form>
+                @elseif ($section === 'team')
+                    <div class="b2b-cabinet-heading"><div><span>Компания</span><h2>Сотрудники и роли</h2></div><p>Доступы разделены по рабочим задачам</p></div>
+                    <article class="b2b-cabinet-card b2b-team-intro"><strong>Один кабинет — одна компания</strong><p>Закупщик работает с каталогом и заказами, бухгалтер — с документами и сверкой, наблюдатель получает доступ только для чтения. Кредитный лимит и история заказов общие для всей компании.</p></article>
+                    <div class="b2b-team-list">
+                        @foreach($members as $member)
+                            <article class="b2b-cabinet-card b2b-team-member">
+                                <div><strong>{{ $member->user?->name ?: $member->user?->email }}</strong><span>{{ $member->user?->email }}</span></div>
+                                <b>{{ $member->roleLabel() }}{{ $member->is_active ? '' : ' · доступ отключён' }}</b>
+                                @if($member->role !== 'owner' && $member->is_active)<form method="POST" action="{{ route('b2b.cabinet.team.destroy', $member) }}">@csrf @method('DELETE')<button type="submit" onclick="return confirm('Отключить доступ сотрудника?')">Отключить</button></form>@endif
+                            </article>
+                        @endforeach
+                    </div>
+                    <form method="POST" action="{{ route('b2b.cabinet.team.store') }}" class="b2b-cabinet-form b2b-team-add">@csrf
+                        <h3>Добавить сотрудника</h3><p>Сотрудник должен заранее зарегистрироваться на сайте и подтвердить email.</p>
+                        <div class="b2b-cabinet-form__grid"><label><span>Email *</span><input type="email" name="email" value="{{ old('email') }}" required></label><label><span>Роль *</span><select name="role" required><option value="buyer">Закупщик</option><option value="accountant">Бухгалтер</option><option value="viewer">Наблюдатель</option></select></label></div>
+                        <button class="b2b-cabinet-primary" type="submit">Добавить в кабинет</button>
                     </form>
                 @elseif ($section === 'specifications')
                     <div class="b2b-cabinet-heading"><div><span>Комплектация</span><h2>Спецификации</h2></div><p>Передайте готовый перечень без обязательной индивидуальной консультации</p></div>
@@ -257,6 +285,7 @@ body.b2b-body{background:#f4f7fb}.b2b-cabinet *{box-sizing:border-box}.b2b-cabin
 
 @push('styles')
 <style>
+.b2b-cabinet-form select{width:100%;height:46px;padding:0 13px;border:1px solid #ccd6e1;border-radius:9px;background:#fff;color:#142338}.b2b-team-intro{margin-bottom:14px;background:#f1fbf8;border-color:#bce8da}.b2b-team-intro p{margin:6px 0 0;color:#617286;line-height:1.5}.b2b-team-list{display:grid;gap:10px}.b2b-team-member{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:18px}.b2b-team-member div>*{display:block}.b2b-team-member span{margin-top:3px;color:#78889b;font-size:12px}.b2b-team-member>b{border-radius:99px;background:#edf4f8;color:#31506e;padding:6px 10px;font-size:12px}.b2b-team-member button{border:1px solid #e2b9bd;border-radius:8px;background:#fff;color:#a92b38;padding:8px 11px;font-weight:700}.b2b-team-add{margin-top:20px;padding:20px;border:1px solid #e1e8f0;border-radius:13px}.b2b-team-add>p{margin:-5px 0 16px;color:#78889b}.b2b-team-add .b2b-cabinet-primary{margin-top:16px}@media(max-width:700px){.b2b-team-member{grid-template-columns:1fr}.b2b-team-member form{justify-self:start}}
 .b2b-profile-progress{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,340px);align-items:center;gap:26px;margin-bottom:20px;padding:20px;border:1px solid #f1d89b;border-radius:13px;background:#fffaf0}.b2b-profile-progress.is-complete{border-color:#bce8da;background:#f1fbf8}.b2b-profile-progress__copy>span{display:block;color:#9a6b00;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.b2b-profile-progress.is-complete .b2b-profile-progress__copy>span{color:#087453}.b2b-profile-progress__copy strong{display:block;margin-top:3px;color:#142338;font-size:28px;line-height:1}.b2b-profile-progress__copy p{margin:7px 0 0;color:#53657a}.b2b-profile-progress__copy small{display:block;margin-top:5px;color:#78889b}.b2b-profile-progress__side{display:grid;gap:9px}.b2b-profile-progress__side>a{justify-self:end;color:#0b8966;font-weight:800}.b2b-profile-progress__side>small{text-align:right;color:#78889b}.b2b-profile-progress__meter{height:9px;border-radius:99px;background:#e2e8ef;overflow:hidden}.b2b-profile-progress__meter i{display:block;height:100%;border-radius:inherit;background:#e8a619}.b2b-profile-progress.is-complete .b2b-profile-progress__meter i{background:#16b88b}
 .b2b-form-section{border:1px solid #e1e8f0;border-radius:13px;padding:20px;margin-bottom:16px}.b2b-form-section__head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:15px;margin-bottom:17px;border-bottom:1px solid #edf1f5}.b2b-cabinet-form .b2b-form-section h3{margin:0;color:#142338}.b2b-form-section__head p{margin:4px 0 0;color:#78889b;font-size:13px}.b2b-form-section__head>span{flex:0 0 auto;border-radius:99px;background:#f1f4f8;color:#65768a;padding:5px 9px;font-size:11px;font-weight:700}.b2b-cabinet-form__grid{gap:16px 18px}.b2b-cabinet-form input{height:46px;padding:0 13px;background:#fff;color:#142338}.b2b-cabinet-form label>span{font-weight:700}.b2b-cabinet-form label>small{display:block;min-height:18px;margin-top:6px;color:#78889b;font-size:12px;line-height:1.45}.b2b-cabinet-form label>small.is-success{color:#087453}.b2b-cabinet-form label>small.is-error{color:#b62635}.b2b-unp-row{display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:8px}.b2b-unp-row button{display:flex;align-items:center;justify-content:center;border:0;border-radius:9px;background:#132238;color:#fff;font-size:12px;font-weight:700;line-height:1.2}.b2b-unp-row button:disabled{opacity:.6;cursor:wait}.b2b-inline-action{border:0;background:transparent;color:#0b8966;padding:0;font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px}.b2b-form-submit{display:flex;align-items:center;justify-content:space-between;gap:20px;border-radius:13px;background:#eef8f5;padding:17px 20px}.b2b-form-submit div>*{display:block}.b2b-form-submit strong{color:#142338}.b2b-form-submit span{margin-top:3px;color:#617286;font-size:13px}.b2b-form-submit .b2b-cabinet-primary{margin:0;white-space:nowrap}
 .b2b-specification-upload{display:grid;grid-template-columns:minmax(260px,.75fr) minmax(0,1.25fr);gap:26px;padding:22px;margin-bottom:22px;border:1px solid #bce8da;border-radius:14px;background:linear-gradient(135deg,#f3fbf8,#fff)}.b2b-specification-upload__copy>span{color:#0b9d76;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.b2b-specification-upload__copy h3{margin:5px 0 8px;color:#142338;font-size:22px}.b2b-specification-upload__copy p{margin:0;color:#617286;line-height:1.55}.b2b-specification-upload__fields{display:grid;gap:13px}.b2b-specification-upload__fields label>span{display:block;margin-bottom:6px;color:#53657a;font-size:12px;font-weight:700}.b2b-specification-upload__fields input:not([type=file]),.b2b-specification-upload__fields textarea{width:100%;border:1px solid #ccd6e1;border-radius:9px;background:#fff;color:#142338;padding:12px 13px;outline:none}.b2b-specification-upload__fields textarea{resize:vertical}.b2b-specification-upload__fields input:focus,.b2b-specification-upload__fields textarea:focus{border-color:#16b88b;box-shadow:0 0 0 3px #16b88b1a}.b2b-specification-file{padding:13px;border:1px dashed #9fb3c6;border-radius:10px;background:#fff}.b2b-specification-file input{display:block;width:100%}.b2b-specification-file small{display:block;margin-top:6px;color:#78889b}.b2b-specification-upload .b2b-cabinet-primary{justify-self:start;margin:0}.b2b-specification-list article{padding:20px;margin-bottom:13px;border:1px solid #e1e8f0;border-radius:13px}.b2b-specification-list article>header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.b2b-specification-list article>header span,.b2b-specification-list article>header small{display:block;color:#8a98a8;font-size:12px}.b2b-specification-list article h3{margin:3px 0;color:#142338;font-size:18px}.b2b-specification-list article>header>b{border-radius:99px;padding:6px 10px;background:#edf1f5;color:#53657a;font-size:12px;white-space:nowrap}.b2b-specification-list article>header>b.is-submitted{background:#fff4d7;color:#8a6200}.b2b-specification-list article>header>b.is-reviewing{background:#eaf2ff;color:#2861a5}.b2b-specification-list article>header>b.is-clarification{background:#fff0f1;color:#a92b38}.b2b-specification-list article>header>b.is-quoted,.b2b-specification-list article>header>b.is-closed{background:#e8f8f2;color:#087453}.b2b-specification-list article>p{margin:12px 0;color:#617286}.b2b-specification-message{display:grid;gap:3px;margin-top:12px;padding:12px;border-radius:9px;background:#f1f4f8}.b2b-specification-message span{color:#53657a}.b2b-specification-files{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.b2b-specification-files a{display:flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid #dce4ec;border-radius:8px;color:#31506e;font-size:12px}.b2b-specification-files a small{color:#8a98a8}.b2b-specification-result{display:inline-block;margin-top:14px;color:#0b8966;font-weight:800}.b2b-specification-parsing{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:14px;padding:12px 14px;border-radius:10px;background:#f3f6f9}.b2b-specification-parsing>div{display:grid;gap:3px}.b2b-specification-parsing strong{color:#24384d}.b2b-specification-parsing span{color:#66788b;font-size:12px}.b2b-specification-parsing.is-pending{background:#fff7df}.b2b-specification-parsing.is-parsed{background:#eaf8f3}.b2b-specification-parsing.is-failed{background:#fff0f1}.b2b-specification-parsing button{border:0;border-radius:8px;background:#0b9d76;color:#fff;padding:10px 13px;font-weight:800;cursor:pointer;white-space:nowrap}.b2b-specification-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;margin-top:12px;overflow:hidden;border:1px solid #e3eaf1;border-radius:10px;background:#e3eaf1}.b2b-specification-items>div{display:grid;gap:2px;padding:10px 12px;background:#fff}.b2b-specification-items span,.b2b-specification-items small{color:#77889a;font-size:11px}.b2b-specification-items strong{overflow:hidden;color:#24384d;font-size:13px;text-overflow:ellipsis;white-space:nowrap}.b2b-specification-items>p{grid-column:1/-1;margin:0!important;padding:8px 12px;background:#f7f9fb;color:#66788b!important;font-size:12px}

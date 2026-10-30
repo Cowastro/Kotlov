@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\ContactRequest;
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bCompanyAccess;
 use App\Services\B2bSupplyOptionResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,12 +20,14 @@ class B2bMarketplaceController extends Controller
         Request $request,
         B2bCatalogOfferResolver $resolver,
         B2bSupplyOptionResolver $supplyOptions,
+        B2bCompanyAccess $access,
     ) {
         $user = $request->user();
         $staffPreview = $request->boolean('b2b-preview')
             && ! $resolver->canViewPartnerPrices($user)
             && $resolver->canPreviewPartnerPrices($user);
         abort_unless($resolver->canViewPartnerPrices($user) || $staffPreview, 403);
+        abort_unless($staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog')), 403);
 
         $mode = $request->string('mode')->toString() === 'reference' ? 'reference' : 'orderable';
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
@@ -175,12 +178,14 @@ class B2bMarketplaceController extends Controller
         Request $request,
         B2bCatalogOfferResolver $resolver,
         B2bSupplyOptionResolver $supplyOptions,
+        B2bCompanyAccess $access,
     ): JsonResponse {
         $user = $request->user();
         $staffPreview = $request->boolean('b2b-preview')
             && ! $resolver->canViewPartnerPrices($user)
             && $resolver->canPreviewPartnerPrices($user);
         abort_unless($resolver->canViewPartnerPrices($user) || $staffPreview, 403);
+        abort_unless($staffPreview || $user?->isAdmin() || ($user && $access->allows($user, 'catalog')), 403);
 
         $query = mb_substr(trim($request->string('q')->toString()), 0, 100);
         if (mb_strlen($query) < 2) {

@@ -627,18 +627,23 @@ class OneCExchangeController extends Controller
 
         $xml->startElement('Контрагенты');
         $xml->startElement('Контрагент');
-        $isB2bPartner = $order->user?->isB2B() === true
+        $b2bSnapshot = is_array($order->b2b_commercial_terms_snapshot)
+            ? $order->b2b_commercial_terms_snapshot
+            : [];
+        $isB2bPartner = (filled($b2bSnapshot['b2b_client_id'] ?? null) || $order->user?->isB2B() === true)
             && $order->items->contains(fn (OrderItem $item): bool => $item->pricing_type === 'b2b');
+        $companyAccountUserId = (int) ($b2bSnapshot['company_account_user_id'] ?? $order->user_id);
         $partnerExternalId = $isB2bPartner
-            ? 'kotlov-b2b-user-'.$order->user_id
+            ? 'kotlov-b2b-user-'.$companyAccountUserId
             : 'kotlov-customer-'.$order->id;
         $partnerName = $isB2bPartner
-            ? ($order->user?->company_name ?: $order->company_name ?: $order->customer_name)
+            ? (($b2bSnapshot['company_name'] ?? null) ?: $order->user?->company_name ?: $order->company_name ?: $order->customer_name)
             : $order->customer_name;
         $partnerFullName = $order->company_name
+            ?: ($b2bSnapshot['company_name'] ?? null)
             ?: $order->user?->company_name
             ?: $order->customer_name;
-        $partnerTaxId = trim((string) ($order->company_unp ?: $order->user?->company_inn));
+        $partnerTaxId = trim((string) ($order->company_unp ?: ($b2bSnapshot['company_unp'] ?? null) ?: $order->user?->company_inn));
 
         $this->element($xml, 'Ид', $partnerExternalId);
         $this->element($xml, 'Наименование', $partnerName);

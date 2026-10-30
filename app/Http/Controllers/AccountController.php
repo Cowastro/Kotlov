@@ -6,6 +6,7 @@ use App\Enums\ClientType;
 use App\Services\B2bAccessRequestNotifier;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bClientWorkflow;
+use App\Services\B2bCompanyAccess;
 use App\Services\Payments\WebpayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +15,7 @@ use Illuminate\Validation\Rule;
 
 class AccountController extends Controller
 {
-    public function index(B2bCatalogOfferResolver $offerResolver, WebpayService $webpay)
+    public function index(B2bCatalogOfferResolver $offerResolver, B2bCompanyAccess $access, WebpayService $webpay)
     {
         $user = Auth::user();
 
@@ -28,8 +29,10 @@ class AccountController extends Controller
             ->modelKeys();
 
         $installerProfile = $user->installerProfile;
-        $b2bCatalogGroups = $offerResolver->catalogGroups($user);
-        $b2bPartnerNames = $offerResolver->partnerNames($user);
+        $b2bClient = $user->activeB2bClient();
+        $b2bCanCatalog = $user->isAdmin() || $access->allows($user, 'catalog', $b2bClient);
+        $b2bCatalogGroups = $b2bCanCatalog ? $offerResolver->catalogGroups($user) : collect();
+        $b2bPartnerNames = $b2bCanCatalog ? $offerResolver->partnerNames($user) : collect();
 
         return view('pages.account', compact(
             'user',
@@ -37,6 +40,8 @@ class AccountController extends Controller
             'installerProfile',
             'b2bCatalogGroups',
             'b2bPartnerNames',
+            'b2bClient',
+            'b2bCanCatalog',
             'webpayPayableOrderIds',
         ));
     }

@@ -9,6 +9,8 @@ use Illuminate\Validation\ValidationException;
 
 class B2bCheckoutTerms
 {
+    public function __construct(private readonly B2bCompanyAccess $access) {}
+
     /**
      * @param  array<int|string, array<string, mixed>>  $cart
      * @return array<string, mixed>
@@ -21,7 +23,7 @@ class B2bCheckoutTerms
         );
         $isB2b = $b2bItems->isNotEmpty();
         $client = $isB2b && $user
-            ? $user->b2bClient()->with(['counterparty', 'priceLevel'])->first()
+            ? $user->activeB2bClient(['counterparty', 'priceLevel'])
             : null;
         $subtotal = round((float) $b2bItems->sum(
             fn (array $item): float => (float) ($item['price'] ?? 0) * (int) ($item['quantity'] ?? 0)
@@ -30,6 +32,9 @@ class B2bCheckoutTerms
         $issues = [];
         if ($isB2b && (! $user?->isB2B() || ! $client || $client->status !== 'approved')) {
             $issues[] = 'Партнёрский доступ изменился. Обновите корзину или обратитесь к менеджеру.';
+        }
+        if ($isB2b && $user && $client && ! $this->access->allows($user, 'order', $client)) {
+            $issues[] = 'Ваша роль в компании не позволяет оформлять заказы. Обратитесь к владельцу B2B-кабинета.';
         }
         if ($client?->commercial_terms_valid_until?->isBefore(today())) {
             $issues[] = 'Срок ваших коммерческих условий истёк. Менеджер должен подтвердить новые условия перед заказом.';
@@ -57,7 +62,7 @@ class B2bCheckoutTerms
             'payment_methods' => $this->paymentMethods($isB2b, $credit, $subtotal),
             'payment_method_overrides' => $this->paymentMethodOverrides($credit),
             'invoice_profile' => $this->invoiceProfile($user, $client),
-            'terms_snapshot' => $isB2b && $client ? $this->snapshot($client) : null,
+            'terms_snapshot' => $isB2b && $client ? $this->snapshot($client, $user) : null,
             'credit' => $credit,
         ];
     }
@@ -69,7 +74,7 @@ class B2bCheckoutTerms
         $limit = $client->credit_limit !== null ? max(0, (float) $client->credit_limit) : null;
         $exposure = $days > 0 && $limit !== null
             ? round((float) Order::query()
-                ->where('user_id', $client->user_id)
+                ->whereIn('user_id', $this->access->allUserIds($client))
                 ->where('payment_type', 'invoice_deferred')
                 ->whereNotIn('payment_status', ['paid', 'refunded'])
                 ->where('status', '!=', 'cancelled')
@@ -100,8 +105,9 @@ class B2bCheckoutTerms
     /** @return array{enabled:bool,deferment_days:int,limit:?float,exposure:float,available:?float,issue:?string} */
     public function assertDeferredPaymentAvailable(User $user, float $orderTotal): array
     {
+        $resolvedClient = $user->activeB2bClient();
         $client = B2bClient::query()
-            ->where('user_id', $user->id)
+            ->whereKey($resolvedClient?->id)
             ->lockForUpdate()
             ->first();
         $credit = $client ? $this->creditSummary($client) : $this->emptyCreditSummary();
@@ -173,10 +179,15 @@ class B2bCheckoutTerms
     }
 
     /** @return array<string, mixed> */
-    private function snapshot(B2bClient $client): array
+    private function snapshot(B2bClient $client, ?User $user): array
     {
         return [
             'b2b_client_id' => (int) $client->id,
+            'company_account_user_id' => (int) $client->user_id,
+            'company_name' => $client->company_name,
+            'company_unp' => $client->unp,
+            'placed_by_user_id' => $user?->id,
+            'placed_by_company_role' => $user ? $this->access->role($user, $client) : null,
             'price_level_id' => $client->b2b_price_level_id ? (int) $client->b2b_price_level_id : null,
             'price_level_code' => $client->priceLevel?->code,
             'price_level_name' => $client->priceLevel?->name,

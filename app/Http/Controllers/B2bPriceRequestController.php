@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ContactRequest;
 use App\Models\Product;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\B2bCompanyAccess;
 use App\Services\ContactRequestNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,10 +15,11 @@ class B2bPriceRequestController extends Controller
     public function __invoke(
         Request $request,
         B2bCatalogOfferResolver $resolver,
+        B2bCompanyAccess $access,
         ContactRequestNotifier $notifier,
     ): JsonResponse {
         $user = $request->user();
-        abort_unless($user?->isB2B(), 403);
+        abort_unless($user && $access->allows($user, 'catalog'), 403);
 
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,id'],

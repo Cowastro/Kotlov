@@ -311,7 +311,7 @@
                         </div>
 
                         {{-- СПЕЦУСЛОВИЯ B2B --}}
-                        @if ($user->isRetailClient() && ! $isB2bPreview)
+                        @if (! $isPartnerView)
                             <div id="account-tab-b2b" class="account-tab">
                                 <h4 class="account-title">Специальные условия</h4>
                                 <div class="account-my_address setting">
@@ -388,7 +388,7 @@
                             <div id="account-tab-b2b" class="account-tab">
                                 <h4 class="account-title">B2B-доступ</h4>
                                 <div class="account-my_address setting">
-                                    @if ($user->b2b_approved || $isB2bPreview)
+                                    @if ($user->isB2B() || $isB2bPreview)
                                         @if ($isB2bPreview)
                                             <div class="alert alert-warning mb-16">
                                                 Предпросмотр кабинета одобренного B2B-партнёра
@@ -404,7 +404,7 @@
                                             </div>
                                         </div>
                                         <p class="cl-text-2 mb-20">
-                                            Тип: {{ $user->client_type_label }} · Компания: {{ $user->company_name ?: 'не указана' }}
+                                            Тип: {{ $b2bClient?->serviceModeLabel() ?: $user->client_type_label }} · Компания: {{ $b2bClient?->company_name ?: $user->company_name ?: 'не указана' }}
                                         </p>
 
                                         @if (! $isB2bPreview)
@@ -413,10 +413,9 @@
                                                 Открыть кабинет партнёра
                                             </a>
                                         @endif
-                                        <a href="{{ route('b2b.catalog', $isB2bPreview ? ['b2b-preview' => 1] : []) }}" class="tf-btn btn-primary mb-24">
-                                            <i class="icon icon-SquaresFour"></i>
-                                            Открыть оптовый каталог
-                                        </a>
+                                        @if($b2bCanCatalog || $isB2bPreview)<a href="{{ route('b2b.catalog', $isB2bPreview ? ['b2b-preview' => 1] : []) }}" class="tf-btn btn-primary mb-24">
+                                            <i class="icon icon-SquaresFour"></i> Открыть оптовый каталог
+                                        </a>@endif
 
                                         <div class="d-flex align-items-end justify-content-between gap-12 mb-12">
                                             <div>

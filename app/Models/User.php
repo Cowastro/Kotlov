@@ -110,8 +110,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
 
     public function isB2B(): bool
     {
-        return $this->client_type !== ClientType::Retail
-            && $this->b2b_approved;
+        if ($this->client_type !== ClientType::Retail && $this->b2b_approved) {
+            return true;
+        }
+
+        return $this->activeB2bClient() !== null;
     }
 
     public function isRetailClient(): bool
@@ -210,6 +213,28 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
     public function b2bClient(): HasOne
     {
         return $this->hasOne(B2bClient::class);
+    }
+
+    public function b2bMembership(): HasOne
+    {
+        return $this->hasOne(B2bClientMember::class)
+            ->where('is_active', true);
+    }
+
+    public function activeB2bClient(array $with = []): ?B2bClient
+    {
+        $owned = $this->b2bClient()->where('status', 'approved')->with($with)->first();
+        if ($owned) {
+            return $owned;
+        }
+
+        return B2bClient::query()
+            ->where('status', 'approved')
+            ->whereHas('members', fn (Builder $query): Builder => $query
+                ->where('user_id', $this->id)
+                ->where('is_active', true))
+            ->with($with)
+            ->first();
     }
 
     public function b2bSavedCarts(): HasMany

@@ -225,7 +225,7 @@ class B2bSupplyOptionResolver
                 ->pluck('id')->map(fn ($id): int => (int) $id)->all();
         }
 
-        $client = $user->relationLoaded('b2bClient') ? $user->b2bClient : $user->b2bClient()->first();
+        $client = $user->activeB2bClient();
         $allowed = $client?->allowed_supplier_ids;
 
         return is_array($allowed)
@@ -239,7 +239,7 @@ class B2bSupplyOptionResolver
             return null;
         }
 
-        $client = $user->relationLoaded('b2bClient') ? $user->b2bClient : $user->b2bClient()->with('priceLevel')->first();
+        $client = $user->activeB2bClient(['priceLevel']);
         if (! $client) {
             return null;
         }

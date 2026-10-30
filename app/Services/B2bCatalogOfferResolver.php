@@ -351,9 +351,7 @@ class B2bCatalogOfferResolver
             return true;
         }
 
-        $client = $user->relationLoaded('b2bClient')
-            ? $user->b2bClient
-            : $user->b2bClient()->first();
+        $client = $user->activeB2bClient();
 
         // Legacy approved accounts without a B2B profile retain their access.
         if (! $client) {
@@ -371,9 +369,7 @@ class B2bCatalogOfferResolver
             return null;
         }
 
-        $client = $user->relationLoaded('b2bClient')
-            ? $user->b2bClient
-            : $user->b2bClient()->with('priceLevel')->first();
+        $client = $user->activeB2bClient(['priceLevel']);
         if (! $client) {
             return null;
         }

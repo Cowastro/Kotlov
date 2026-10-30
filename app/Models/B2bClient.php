@@ -54,6 +54,13 @@ class B2bClient extends Model
 
     protected static function booted(): void
     {
+        static::created(function (B2bClient $client): void {
+            $client->members()->updateOrCreate(
+                ['user_id' => $client->user_id],
+                ['role' => 'owner', 'is_active' => true, 'joined_at' => now()],
+            );
+        });
+
         static::saving(function (B2bClient $client): void {
             if (! $client->isDirty('status') || $client->status === 'pending') {
                 return;
@@ -108,17 +115,22 @@ class B2bClient extends Model
     {
         return $this->hasManyThrough(
             Order::class,
-            User::class,
+            B2bClientMember::class,
+            'b2b_client_id',
+            'user_id',
             'id',
             'user_id',
-            'user_id',
-            'id',
         );
     }
 
     public function specifications(): HasMany
     {
         return $this->hasMany(B2bSpecification::class);
+    }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(B2bClientMember::class);
     }
 
     public function scopeWithB2bOrderMetrics(Builder $query): Builder

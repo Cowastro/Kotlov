@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\B2bClient;
+use App\Models\B2bClientMember;
 use App\Models\B2bSavedCart;
 use App\Models\B2bSpecification;
 use App\Models\B2bSpecificationAttachment;
@@ -10,10 +12,13 @@ use App\Models\CommercialDocument;
 use App\Models\CrmCounterparty;
 use App\Models\IntegrationSource;
 use App\Models\IntegrationWarehouse;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\User;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bCheckoutTerms;
+use App\Services\B2bCompanyAccess;
 use App\Services\B2bSpecificationParser;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,14 +32,31 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class B2bCabinetController extends Controller
 {
-    private const SECTIONS = ['overview', 'profile', 'specifications', 'carts', 'orders', 'documents', 'contracts', 'reconciliation', 'security'];
+    private const SECTIONS = ['overview', 'profile', 'team', 'specifications', 'carts', 'orders', 'documents', 'contracts', 'reconciliation', 'security'];
+
+    private const SECTION_PERMISSIONS = [
+        'profile' => 'profile',
+        'team' => 'team',
+        'specifications' => 'specifications',
+        'carts' => 'order',
+        'orders' => 'documents',
+        'documents' => 'documents',
+        'contracts' => 'documents',
+        'reconciliation' => 'finance',
+    ];
+
+    public function __construct(private readonly B2bCompanyAccess $access) {}
 
     public function show(Request $request, B2bCheckoutTerms $checkoutTerms)
     {
         $user = $request->user();
         abort_unless($user->isB2B(), 403);
 
-        $client = $user->b2bClient()->with(['counterparty', 'priceLevel'])->firstOrFail();
+        $client = $user->activeB2bClient(['counterparty', 'priceLevel']);
+        abort_unless($client, 403);
+        $role = $this->access->role($user, $client);
+        $permissions = collect(B2bCompanyAccess::PERMISSIONS[$role] ?? []);
+        $companyUserIds = $this->access->allUserIds($client);
         $allowedSources = IntegrationSource::query()
             ->whereIn('id', array_map('intval', $client->allowed_integration_source_ids ?? []))
             ->orderBy('name')
@@ -50,12 +72,17 @@ class B2bCabinetController extends Controller
             ->where('b2b_partner_enabled', true)
             ->orderBy('name')
             ->get(['id', 'name', 'b2b_client_warehouse_label']);
-        $section = in_array($request->string('section')->toString(), self::SECTIONS, true)
+        $requestedSection = $request->string('section')->toString();
+        $section = in_array($requestedSection, self::SECTIONS, true)
             ? $request->string('section')->toString()
             : 'overview';
+        $sectionPermission = self::SECTION_PERMISSIONS[$section] ?? null;
+        if ($sectionPermission && ! $permissions->contains($sectionPermission)) {
+            $section = 'overview';
+        }
         $counterparty = $client->counterparty;
         $creditSummary = $checkoutTerms->creditSummary($client);
-        $ordersQuery = $user->orders()->with('items')->latest();
+        $ordersQuery = Order::query()->whereIn('user_id', $companyUserIds)->with('items')->latest();
         $documentsQuery = $this->documentsFor($request);
 
         $orders = (clone $ordersQuery)->paginate(12, ['*'], 'orders_page')->withQueryString();
@@ -69,7 +96,7 @@ class B2bCabinetController extends Controller
             ->with('commercialDocument')
             ->latest('contract_date')
             ->get();
-        $savedCarts = $user->b2bSavedCarts()->latest('updated_at')->get();
+        $savedCarts = B2bSavedCart::query()->whereIn('user_id', $companyUserIds)->with('user:id,name')->latest('updated_at')->get();
         $specifications = $client->specifications()
             ->with([
                 'attachments', 'commercialDocument', 'items.product',
@@ -86,20 +113,24 @@ class B2bCabinetController extends Controller
             [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
         }
 
-        $reconciliationOrders = $user->orders()
+        $reconciliationOrders = Order::query()->whereIn('user_id', $companyUserIds)
             ->whereBetween('created_at', [$dateFrom->startOfDay(), $dateTo->endOfDay()])
             ->oldest('created_at')
             ->get();
-        $openingOrders = $user->orders()->where('created_at', '<', $dateFrom->startOfDay())->get();
+        $openingOrders = Order::query()->whereIn('user_id', $companyUserIds)->where('created_at', '<', $dateFrom->startOfDay())->get();
         $openingBalance = $this->balance($openingOrders);
         $periodCharges = (float) $reconciliationOrders->where('status', '!=', 'cancelled')->sum('total');
         $periodPayments = (float) $reconciliationOrders->where('payment_status', 'paid')->sum('total');
         $closingBalance = $openingBalance + $periodCharges - $periodPayments;
 
+        $members = $client->members()->with('user:id,name,email,is_active')->orderByRaw("case role when 'owner' then 0 when 'buyer' then 1 when 'accountant' then 2 else 3 end")->get();
+        $companyOrderTotal = (float) Order::query()->whereIn('user_id', $companyUserIds)->sum('total');
+
         return view('pages.b2b.cabinet', compact(
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
             'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers', 'creditSummary',
             'profileCompletion', 'profileMissing',
+            'role', 'permissions', 'members', 'companyOrderTotal',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));
     }
@@ -107,7 +138,8 @@ class B2bCabinetController extends Controller
     public function updateProfile(Request $request)
     {
         $user = $request->user();
-        abort_unless($user->isB2B(), 403);
+        $resolvedClient = $user->activeB2bClient();
+        abort_unless($resolvedClient && $this->access->allows($user, 'profile', $resolvedClient), 403);
 
         $bankBic = mb_strtoupper(preg_replace('/\s+/', '', (string) $request->input('bank_bic')));
         $bankIban = mb_strtoupper(preg_replace('/\s+/', '', (string) $request->input('bank_iban')));
@@ -138,8 +170,8 @@ class B2bCabinetController extends Controller
             'bank_iban.regex' => 'Проверьте IBAN: белорусский счёт должен начинаться с BY и содержать 28 символов.',
         ]);
 
-        DB::transaction(function () use ($user, $data): void {
-            $client = $user->b2bClient()->lockForUpdate()->firstOrFail();
+        DB::transaction(function () use ($user, $data, $resolvedClient): void {
+            $client = B2bClient::query()->whereKey($resolvedClient->id)->lockForUpdate()->firstOrFail();
             $counterparty = $client->counterparty ?: new CrmCounterparty([
                 'type' => 'organization',
                 'classification' => 'b2b_partner',
@@ -178,7 +210,7 @@ class B2bCabinetController extends Controller
 
     public function saveCart(Request $request)
     {
-        abort_unless($request->user()->isB2B(), 403);
+        abort_unless($this->allows($request, 'order'), 403);
         $data = $request->validate(['name' => ['required', 'string', 'max:120']]);
         $items = collect($request->session()->get('cart', []))
             ->filter(fn (array $item): bool => ($item['pricing_type'] ?? null) === 'b2b')
@@ -262,8 +294,8 @@ class B2bCabinetController extends Controller
     public function storeSpecification(Request $request, B2bSpecificationParser $parser)
     {
         $user = $request->user();
-        abort_unless($user->isB2B(), 403);
-        $client = $user->b2bClient()->firstOrFail();
+        $client = $user->activeB2bClient();
+        abort_unless($client && $this->access->allows($user, 'specifications', $client), 403);
         abort_unless($client->specification_service_enabled, 403);
 
         $data = $request->validate([
@@ -347,8 +379,8 @@ class B2bCabinetController extends Controller
         B2bSpecificationParser $parser,
     ) {
         $user = $request->user();
-        abort_unless($user->isB2B() && (int) $specification->user_id === (int) $user->id, 404);
-        $client = $user->b2bClient()->firstOrFail();
+        $client = $user->activeB2bClient();
+        abort_unless($client && $this->access->allows($user, 'specifications', $client) && (int) $specification->b2b_client_id === (int) $client->id, 404);
         abort_unless($client->specification_service_enabled, 403);
         abort_if(in_array($specification->status, ['closed', 'cancelled'], true), 422, 'Завершённую заявку нельзя изменить.');
 
@@ -423,7 +455,8 @@ class B2bCabinetController extends Controller
     public function specificationCart(Request $request, B2bSpecification $specification, B2bCatalogOfferResolver $resolver)
     {
         $user = $request->user();
-        abort_unless($user->isB2B() && (int) $specification->user_id === (int) $user->id, 404);
+        $client = $user->activeB2bClient();
+        abort_unless($client && $this->access->allows($user, 'order', $client) && (int) $specification->b2b_client_id === (int) $client->id, 404);
 
         $items = $specification->items()
             ->where('status', 'matched')
@@ -489,8 +522,10 @@ class B2bCabinetController extends Controller
     {
         $user = $request->user();
         $specification = $attachment->specification()->firstOrFail();
-        $ownsSpecification = $user->isB2B()
-            && (int) $specification->user_id === (int) $user->id;
+        $client = $user->activeB2bClient();
+        $ownsSpecification = $client
+            && $this->access->allows($user, 'documents', $client)
+            && (int) $specification->b2b_client_id === (int) $client->id;
         abort_unless($user->isManager() || $ownsSpecification, 404);
 
         $disk = Storage::disk($attachment->disk);
@@ -505,7 +540,7 @@ class B2bCabinetController extends Controller
 
     public function contractFile(Request $request, CommercialContract $contract, string $format): BinaryFileResponse|StreamedResponse
     {
-        abort_unless($request->user()->isB2B(), 403);
+        abort_unless($this->allows($request, 'documents'), 403);
         abort_unless(in_array($format, ['pdf', 'docx'], true), 404);
         abort_unless($this->documentsFor($request)->whereKey($contract->commercial_document_id)->exists(), 404);
 
@@ -533,26 +568,82 @@ class B2bCabinetController extends Controller
 
     private function scopeDocuments(Builder $query, Request $request): Builder
     {
-        $client = $request->user()->b2bClient;
+        $client = $request->user()->activeB2bClient();
         $counterpartyId = (int) ($client?->counterparty_id ?? 0);
+        $companyEmails = $client
+            ? User::query()->whereIn('id', $this->access->allUserIds($client))->pluck('email')->filter()->all()
+            : [$request->user()->email];
 
         return $query
             ->where('status', '!=', 'draft')
-            ->where(function (Builder $owned) use ($request, $counterpartyId): void {
+            ->where(function (Builder $owned) use ($companyEmails, $counterpartyId): void {
                 if ($counterpartyId > 0) {
                     $owned->where('crm_counterparty_id', $counterpartyId)
-                        ->orWhere(function (Builder $email) use ($request): void {
-                            $email->whereNull('crm_counterparty_id')->where('client_email', $request->user()->email);
+                        ->orWhere(function (Builder $email) use ($companyEmails): void {
+                            $email->whereNull('crm_counterparty_id')->whereIn('client_email', $companyEmails);
                         });
                 } else {
-                    $owned->where('client_email', $request->user()->email);
+                    $owned->whereIn('client_email', $companyEmails);
                 }
             });
     }
 
     private function authorizeSavedCart(Request $request, B2bSavedCart $savedCart): void
     {
-        abort_unless($request->user()->isB2B() && (int) $savedCart->user_id === (int) $request->user()->id, 404);
+        $client = $request->user()->activeB2bClient();
+        abort_unless($client && $this->access->allows($request->user(), 'order', $client), 404);
+        abort_unless($this->access->allUserIds($client)->contains((int) $savedCart->user_id), 404);
+    }
+
+    public function addMember(Request $request)
+    {
+        $owner = $request->user();
+        $client = $owner->activeB2bClient();
+        abort_unless($client && $this->access->allows($owner, 'team', $client), 403);
+
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'role' => ['required', 'in:buyer,accountant,viewer'],
+        ]);
+        $memberUser = User::query()->whereRaw('lower(email) = ?', [mb_strtolower($data['email'])])->first();
+        if (! $memberUser || ! $memberUser->is_active || ! $memberUser->hasVerifiedEmail()) {
+            return back()->withErrors(['email' => 'Сотрудник должен сначала зарегистрироваться и подтвердить этот email.']);
+        }
+        if ($memberUser->isManager() || $memberUser->isSupplier()) {
+            return back()->withErrors(['email' => 'Служебный аккаунт нельзя подключить к кабинету клиента.']);
+        }
+        if ((int) $memberUser->id === (int) $client->user_id) {
+            return back()->withErrors(['email' => 'Владелец кабинета уже подключён и его роль нельзя изменить.']);
+        }
+        $existingMembership = B2bClientMember::query()->where('user_id', $memberUser->id)->first();
+        if ($existingMembership && (int) $existingMembership->b2b_client_id !== (int) $client->id) {
+            return back()->withErrors(['email' => 'Этот аккаунт уже связан с другой компанией.']);
+        }
+
+        $client->members()->updateOrCreate(
+            ['user_id' => $memberUser->id],
+            ['role' => $data['role'], 'is_active' => true, 'invited_by' => $owner->id, 'joined_at' => now()],
+        );
+
+        return to_route('b2b.cabinet', ['section' => 'team'])->with('success', 'Сотрудник добавлен в кабинет компании.');
+    }
+
+    public function removeMember(Request $request, B2bClientMember $member)
+    {
+        $owner = $request->user();
+        $client = $owner->activeB2bClient();
+        abort_unless($client && $this->access->allows($owner, 'team', $client), 403);
+        abort_unless((int) $member->b2b_client_id === (int) $client->id && $member->role !== 'owner', 404);
+        $member->update(['is_active' => false]);
+
+        return to_route('b2b.cabinet', ['section' => 'team'])->with('success', 'Доступ сотрудника отключён.');
+    }
+
+    private function allows(Request $request, string $permission): bool
+    {
+        $client = $request->user()->activeB2bClient();
+
+        return $client !== null && $this->access->allows($request->user(), $permission, $client);
     }
 
     private function date(mixed $value, string $fallback): CarbonImmutable
