@@ -271,6 +271,8 @@ class StorefrontProductSearch
             $parts[] = 'CASE WHEN '.implode(' OR ', $conditions).' THEN '.$weight.' ELSE 0 END';
         }
         $score = '('.implode(' + ', $parts).')';
+        // Only the cards the FULLTEXT index finds by any word are scored (1.1 s → a fraction on 11k cards).
+        $this->applyIndexedCandidateFilter($query, $search, false);
 
         return $query->whereRaw($score.' >= ?', [...$bindings, max(2, (int) ceil($total / 3))])
             ->reorder()
