@@ -20,22 +20,42 @@ class MarketWebResearchService
     private bool $light = false;
 
     /** A background search (scheduled commands) within the daily limit; takes one from it. */
+    /** The day's count lives in the settings table: a deploy clears the cache, and with it a cached limit. */
+    private const USAGE_SETTING = 'market_research_background_usage';
+
     /** Background AI searches spent today, of the daily limit. */
     public static function backgroundSearchesToday(): int
     {
-        return (int) Cache::get('market-research:background:'.now()->format('Y-m-d'), 0);
+        return self::usageOn(now()->format('Y-m-d'), \Illuminate\Support\Facades\DB::table('settings')->where('key', self::USAGE_SETTING)->value('value'));
     }
 
     public static function takeBackgroundSearch(): bool
     {
-        $key = 'market-research:background:'.now()->format('Y-m-d');
-        $used = (int) Cache::get($key, 0);
-        if ($used >= max(0, (int) config('services.ai.market_research_daily_background_limit', 300))) {
-            return false;
-        }
-        Cache::put($key, $used + 1, now()->addDays(2));
+        $limit = max(0, (int) config('services.ai.market_research_daily_background_limit', 300));
+        $today = now()->format('Y-m-d');
 
-        return true;
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($limit, $today): bool {
+            $settings = \Illuminate\Support\Facades\DB::table('settings');
+            $row = (clone $settings)->where('key', self::USAGE_SETTING)->lockForUpdate()->first();
+            $used = self::usageOn($today, $row?->value);
+            if ($used >= $limit) {
+                return false;
+            }
+            $value = $today.':'.($used + 1);
+            $row
+                ? (clone $settings)->where('key', self::USAGE_SETTING)->update(['value' => $value, 'updated_at' => now()])
+                : (clone $settings)->insert(['key' => self::USAGE_SETTING, 'value' => $value, 'created_at' => now(), 'updated_at' => now()]);
+
+            return true;
+        });
+    }
+
+    /** «2026-10-30:57» → 57 on that day, 0 on any other. */
+    private static function usageOn(string $day, ?string $value): int
+    {
+        [$stored, $count] = array_pad(explode(':', (string) $value, 2), 2, '0');
+
+        return $stored === $day ? (int) $count : 0;
     }
 
     public function researchQuery(string $query, bool $light = false): array
