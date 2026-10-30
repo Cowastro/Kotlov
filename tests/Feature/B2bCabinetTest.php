@@ -364,6 +364,25 @@ XML;
         $this->assertSame(1, $importer->import($xml, $source)['matched']);
         $this->assertSame(1, $importer->import($xml, $source)['matched']);
 
+        $exactPaymentXml = str_replace(
+            '    </ЗначенияРеквизитов>',
+            <<<'XML'
+      <ЗначениеРеквизита><Наименование>GUID платежа 1С</Наименование><Значение>payment-guid-182</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Номер платёжного поручения</Наименование><Значение>ПП-00000182</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Дата платежа 1С</Наименование><Значение>20.10.2026</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Сумма платежа 1С</Наименование><Значение>80,00 BYN</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>GUID корректировки 1С</Наименование><Значение>adjustment-guid-19</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Номер корректировки 1С</Наименование><Значение>КР-00000019</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Дата корректировки 1С</Наименование><Значение>22.10.2026</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Сумма корректировки 1С</Наименование><Значение>20,00 BYN</Значение></ЗначениеРеквизита>
+      <ЗначениеРеквизита><Наименование>Вид корректировки</Наименование><Значение>Уменьшение</Значение></ЗначениеРеквизита>
+    </ЗначенияРеквизитов>
+XML,
+            $xml,
+        );
+        $this->assertSame(1, $importer->import($exactPaymentXml, $source)['matched']);
+        $this->assertSame(1, $importer->import($exactPaymentXml, $source)['matched']);
+
         $invoice->refresh();
         $this->assertSame($source->id, $invoice->accounting_source_id);
         $this->assertSame('invoice-guid-456', $invoice->accounting_external_id);
@@ -375,7 +394,8 @@ XML;
         $this->assertNotNull($invoice->closed_at);
         $this->assertSame('paid', $order->fresh()->payment_status);
         $this->assertSame(1, $client->auditLogs()->where('event', 'invoice_accounting_synced')->count());
-        $this->assertDatabaseCount('b2b_accounting_entries', 2);
+        $this->assertSame(2, $client->auditLogs()->where('event', 'accounting_ledger_synced')->count());
+        $this->assertDatabaseCount('b2b_accounting_entries', 3);
         $this->assertDatabaseHas('b2b_accounting_entries', [
             'b2b_client_id' => $client->id,
             'entry_type' => 'charge',
@@ -386,9 +406,24 @@ XML;
         $this->assertDatabaseHas('b2b_accounting_entries', [
             'b2b_client_id' => $client->id,
             'entry_type' => 'payment',
-            'document_number' => 'СФ-00000456',
+            'external_key' => 'payment:payment-guid-182',
+            'document_number' => 'ПП-00000182',
+            'occurred_at' => '2026-10-20 00:00:00',
             'debit' => 0,
-            'credit' => 120,
+            'credit' => 80,
+        ]);
+        $this->assertSame(
+            'payment-guid-182',
+            $client->accountingEntries()->where('entry_type', 'payment')->sole()->metadata['external_document_id']
+        );
+        $this->assertDatabaseHas('b2b_accounting_entries', [
+            'b2b_client_id' => $client->id,
+            'entry_type' => 'adjustment',
+            'external_key' => 'adjustment:adjustment-guid-19',
+            'document_number' => 'КР-00000019',
+            'occurred_at' => '2026-10-22 00:00:00',
+            'debit' => 0,
+            'credit' => 20,
         ]);
 
         $this->actingAs($partner)
@@ -397,7 +432,9 @@ XML;
             ->assertSeeText('Акт по подтверждённым данным 1С')
             ->assertSeeText('Акт сверки по данным 1С')
             ->assertSeeText('СФ-00000456 · Начисление по счёту')
-            ->assertSeeText('СФ-00000456 · Оплата')
+            ->assertSeeText('ПП-00000182 · Оплата')
+            ->assertSeeText('КР-00000019 · Корректировка')
+            ->assertSeeText('20,00 BYN')
             ->assertSeeText('Закупочные цены и внутренняя маржа не раскрываются')
             ->assertDontSeeText('Предварительная сверка сформирована');
     }
