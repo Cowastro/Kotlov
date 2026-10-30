@@ -1181,10 +1181,23 @@ class OrderInfolist
                             ->label('Комментарий клиента')
                             ->placeholder('Комментарий отсутствует'),
 
-                        TextEntry::make('admin_comment')
-                            ->label('Комментарий менеджера')
-                            ->placeholder('Комментарий отсутствует')
-                            ->helperText(fn (Order $record): ?string => self::managerCommentAttribution($record)),
+                        RepeatableEntry::make('managerComments')
+                            ->label('Хронология комментариев менеджеров')
+                            ->placeholder('Комментарии отсутствуют')
+                            ->columns(4)
+                            ->schema([
+                                TextEntry::make('created_at')
+                                    ->label('Когда')
+                                    ->dateTime('d.m.Y H:i', config('app.display_timezone', 'Europe/Minsk')),
+                                TextEntry::make('author_name')
+                                    ->label('Кто')
+                                    ->formatStateUsing(fn (?string $state, $record): string => $state
+                                        ?: $record->user?->name
+                                        ?: 'Автор не зафиксирован'),
+                                TextEntry::make('body')
+                                    ->label('Что сделал / комментарий')
+                                    ->columnSpan(2),
+                            ]),
                     ]),
 
                 // ── История: полная ширина ────────────────────────────────────
@@ -1378,24 +1391,4 @@ class OrderInfolist
         return new HtmlString($escaped);
     }
 
-    private static function managerCommentAttribution(Order $order): ?string
-    {
-        if (blank($order->admin_comment)) {
-            return null;
-        }
-
-        preg_match_all(
-            '/\[(\d{2}\.\d{2}\.\d{4} \d{2}:\d{2})\]\s+(.+?)\s+—/u',
-            (string) $order->admin_comment,
-            $matches,
-        );
-
-        if (! empty($matches[1])) {
-            $last = array_key_last($matches[1]);
-
-            return 'Последний автор: '.$matches[2][$last].' · '.$matches[1][$last];
-        }
-
-        return 'Автор не зафиксирован: комментарий создан до включения журнала сотрудников.';
-    }
 }

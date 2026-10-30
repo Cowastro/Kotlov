@@ -392,8 +392,18 @@
                 <x-heroicon-o-chat-bubble-left-ellipsis class="h-4 w-4 text-primary-500 shrink-0"/>
                 <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Комментарий менеджера</span>
             </div>
-            @if($order->admin_comment)
-                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ $order->admin_comment }}</p>
+            @if($order->managerComments->count())
+                <div class="space-y-3">
+                    @foreach($order->managerComments as $managerComment)
+                        <article class="rounded-lg border border-gray-200 p-3 dark:border-white/10">
+                            <div class="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                                <strong class="text-gray-800 dark:text-gray-200">{{ $managerComment->author_name ?: $managerComment->user?->name ?: 'Автор не зафиксирован' }}</strong>
+                                <time>{{ $managerComment->created_at?->timezone('Europe/Minsk')->format('d.m.Y H:i') }}</time>
+                            </div>
+                            <p class="whitespace-pre-line text-sm leading-relaxed text-gray-700 dark:text-gray-300">{{ $managerComment->body }}</p>
+                        </article>
+                    @endforeach
+                </div>
             @else
                 <p class="text-sm text-gray-400 dark:text-gray-500 italic">Комментарий отсутствует</p>
             @endif

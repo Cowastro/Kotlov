@@ -425,6 +425,13 @@ class Order extends Model
         return $this->hasMany(OrderStatusHistory::class);
     }
 
+    public function managerComments(): HasMany
+    {
+        return $this->hasMany(OrderManagerComment::class)
+            ->latest('created_at')
+            ->latest('id');
+    }
+
     public function fulfillmentHistory(): HasManyThrough
     {
         return $this->hasManyThrough(

@@ -61,10 +61,12 @@ class OrderForm
                             ->required()
                             ->native(false),
                         Textarea::make('admin_comment')
-                            ->label('Комментарий менеджера')
+                            ->label('Архив комментариев менеджеров')
                             ->rows(3)
                             ->columnSpanFull()
-                            ->helperText('Внутренняя заметка. Для отказа или неактуального заказа используйте красную кнопку сверху.'),
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->helperText('История защищена от перезаписи. Новый комментарий добавляйте отдельной кнопкой на странице заказа.'),
                     ]),
 
                 Section::make('Клиент')

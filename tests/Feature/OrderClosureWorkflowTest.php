@@ -140,6 +140,40 @@ class OrderClosureWorkflowTest extends TestCase
         $comment = (string) $order->fresh()->admin_comment;
         $this->assertStringContainsString('Анна Офис — Комментарий менеджера', $comment);
         $this->assertStringContainsString('Доставка согласована на понедельник.', $comment);
+        $this->assertDatabaseHas('order_manager_comments', [
+            'order_id' => $order->id,
+            'user_id' => $manager->id,
+            'author_name' => 'Анна Офис',
+            'body' => 'Доставка согласована на понедельник.',
+        ]);
+    }
+
+    public function test_manager_comments_are_kept_as_separate_chronological_entries(): void
+    {
+        $firstManager = User::factory()->create(['name' => 'Первый менеджер', 'role' => 'manager', 'is_active' => true]);
+        $secondManager = User::factory()->create(['name' => 'Второй менеджер', 'role' => 'manager', 'is_active' => true]);
+        $order = $this->order('confirmed');
+
+        Livewire::actingAs($firstManager)
+            ->test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->callAction('addManagerComment', ['comment' => 'Позвонил клиенту.'])
+            ->assertHasNoActionErrors();
+
+        $this->travel(5)->minutes();
+
+        Livewire::actingAs($secondManager)
+            ->test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->callAction('addManagerComment', ['comment' => 'Согласовал доставку.'])
+            ->assertHasNoActionErrors()
+            ->assertSeeText('Первый менеджер')
+            ->assertSeeText('Позвонил клиенту.')
+            ->assertSeeText('Второй менеджер')
+            ->assertSeeText('Согласовал доставку.');
+
+        $comments = $order->fresh()->managerComments()->get();
+        $this->assertCount(2, $comments);
+        $this->assertSame('Согласовал доставку.', $comments[0]->body);
+        $this->assertSame('Позвонил клиенту.', $comments[1]->body);
     }
 
     public function test_order_with_catalog_product_has_visible_public_site_action(): void

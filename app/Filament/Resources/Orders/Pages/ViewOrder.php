@@ -68,6 +68,7 @@ class ViewOrder extends ViewRecord
             'accountingRequests.requestedBy',
             'accountingRequests.completedBy',
             'statusHistory.user',
+            'managerComments.user',
             'user',
             'manager',
             'correctedBy',
@@ -788,14 +789,23 @@ class ViewOrder extends ViewRecord
                 ->action(function (array $data): void {
                     $user = auth()->user();
                     $timezone = config('app.display_timezone', 'Europe/Minsk');
+                    $body = trim((string) $data['comment']);
                     $note = '['.now()->timezone($timezone)->format('d.m.Y H:i').'] '
                         .($user?->name ?: 'Сотрудник').' — Комментарий менеджера: '
-                        .trim((string) $data['comment']);
+                        .$body;
                     $comment = filled($this->record->admin_comment)
                         ? rtrim((string) $this->record->admin_comment)."\n\n".$note
                         : $note;
 
-                    $this->record->forceFill(['admin_comment' => $comment])->save();
+                    DB::transaction(function () use ($user, $body, $comment): void {
+                        $this->record->managerComments()->create([
+                            'user_id' => $user?->id,
+                            'author_name' => $user?->name ?: 'Сотрудник',
+                            'body' => $body,
+                        ]);
+                        // Поле оставляем как совместимый снимок для старых экспортов.
+                        $this->record->forceFill(['admin_comment' => $comment])->save();
+                    });
                     $this->reloadRecord();
 
                     Notification::make()->success()->title('Комментарий добавлен')->send();
@@ -894,6 +904,7 @@ class ViewOrder extends ViewRecord
             'items.fulfillmentConfirmedBy',
             'items.fulfillmentSupplier',
             'statusHistory.user',
+            'managerComments.user',
             'manager',
             'correctedBy',
             'procurementSentBy',
