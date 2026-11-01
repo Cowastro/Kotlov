@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  */
 class MergeDuplicateCardsCommand extends Command
 {
-    protected $signature = 'catalog:merge-duplicate-cards {pairs* : id,id per duplicate pair} {--keep=* : Card ids that stay whatever their fullness} {--apply : Merge and archive the duplicates}';
+    protected $signature = 'catalog:merge-duplicate-cards {pairs* : id,id (or slug,slug) per duplicate pair} {--keep=* : Card ids or slugs that stay whatever their fullness} {--apply : Merge and archive the duplicates}';
 
     protected $description = 'Merge pairs of duplicate product cards (keep the fuller card, redirect the other)';
 
@@ -31,7 +31,8 @@ class MergeDuplicateCardsCommand extends Command
 
         $run = function () use (&$stats, $apply): void {
             foreach ((array) $this->argument('pairs') as $pair) {
-                $ids = array_map('intval', explode(',', (string) $pair));
+                // A slug works as well as an id (the workflow log may mask digits of an id).
+                $ids = array_map(fn (string $value): int => $this->cardId($value), explode(',', (string) $pair));
                 $cards = Product::query()->with('category')->whereIn('id', $ids)->where('is_archived', false)->get();
                 if (count($ids) !== 2 || $cards->count() !== 2 || $this->digits($cards[0]->name) !== $this->digits($cards[1]->name)) {
                     $stats['skipped']++;
@@ -39,7 +40,7 @@ class MergeDuplicateCardsCommand extends Command
 
                     continue;
                 }
-                $keepIds = array_map('intval', (array) $this->option('keep'));
+                $keepIds = array_map(fn ($value): int => $this->cardId((string) $value), (array) $this->option('keep'));
                 [$keep, $dupe] = $cards->sortByDesc(fn (Product $p) => [(int) in_array((int) $p->id, $keepIds, true), $this->fullness($p), -$p->id])->values()->all();
                 $keepId = (int) $keep->id;
                 $dupeId = (int) $dupe->id;
@@ -112,5 +113,12 @@ class MergeDuplicateCardsCommand extends Command
             + min(count(array_filter((array) $p->images)), 5)
             + (mb_strlen(strip_tags((string) $p->content)) > 200 ? 3 : 0)
             + min(DB::table('product_attribute_values')->where('product_id', $p->id)->count(), 5);
+    }
+
+    private function cardId(string $value): int
+    {
+        $value = trim($value);
+
+        return ctype_digit($value) ? (int) $value : (int) Product::query()->where('slug', $value)->where('is_archived', false)->value('id');
     }
 }
