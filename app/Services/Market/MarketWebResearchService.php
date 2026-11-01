@@ -31,7 +31,7 @@ class MarketWebResearchService
 
     public static function takeBackgroundSearch(): bool
     {
-        $limit = max(0, (int) config('services.ai.market_research_daily_background_limit', 600));
+        $limit = max(0, (int) config('services.ai.market_research_daily_background_limit', 1000));
         $today = now()->format('Y-m-d');
 
         return \Illuminate\Support\Facades\DB::transaction(function () use ($limit, $today): bool {
