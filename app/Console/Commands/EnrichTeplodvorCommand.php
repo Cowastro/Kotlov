@@ -442,7 +442,7 @@ class EnrichTeplodvorCommand extends Command
             return;
         }
 
-        $card = $this->parsePage($html);
+        $card = self::parsePage($html);
 
         if (! $this->apply) {
             $this->line(sprintf('    name on page: %s', mb_substr($card['name'], 0, 60)));
@@ -549,9 +549,10 @@ class EnrichTeplodvorCommand extends Command
 
     // ── Page parsing ──────────────────────────────────────────────────────────────
 
-    private function parsePage(string $html): array
+    /** @return array{name:string,images:list<string>,specs:array<string,string>,serviceInfo:array<string,string>,desc:string} */
+    public static function parsePage(string $html): array
     {
-        $name = $this->cleanText(preg_match('/<h1[^>]*>([\s\S]*?)<\/h1>/u', $html, $m) ? $m[1] : '');
+        $name = self::cleanText(preg_match('/<h1[^>]*>([\s\S]*?)<\/h1>/u', $html, $m) ? $m[1] : '');
 
         // Full-size images: prefer /large/, fall back to /product/
         preg_match_all('/userfls\/shop\/large\/([\d\/]+[^"\']+\.(?:jpg|jpeg|png|webp))/iu', $html, $m);
@@ -573,8 +574,8 @@ class EnrichTeplodvorCommand extends Command
             $html, $m, PREG_SET_ORDER
         );
         foreach ($m as $row) {
-            $k = $this->cleanText($row[1]);
-            $v = $this->cleanText($row[2]);
+            $k = self::cleanText($row[1]);
+            $v = self::cleanText($row[2]);
             if ($k !== '' && $v !== '' && $k !== $v) {
                 $specs[$k] = $v;
             }
@@ -588,7 +589,7 @@ class EnrichTeplodvorCommand extends Command
         if (preg_match('/<div[^>]*class="info-spec"[^>]*>([\s\S]*?)<\/div>/ui', $html, $m)) {
             $blocks = preg_split('/<br\s*\/?>/ui', $m[1]);
             foreach ($blocks as $block) {
-                $text = $this->cleanText($block);
+                $text = self::cleanText($block);
                 if ($text === '') {
                     continue;
                 }
@@ -616,7 +617,7 @@ class EnrichTeplodvorCommand extends Command
         return compact('name', 'images', 'specs', 'serviceInfo', 'desc');
     }
 
-    private function cleanText(string $value): string
+    private static function cleanText(string $value): string
     {
         $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         return trim((string) preg_replace('/\s+/u', ' ', $value));

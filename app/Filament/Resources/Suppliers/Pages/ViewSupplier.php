@@ -4,10 +4,12 @@ namespace App\Filament\Resources\Suppliers\Pages;
 
 use App\Console\Commands\SyncChistyBeregCommand;
 use App\Console\Commands\SyncCooperDoorsCommand;
+use App\Console\Commands\SyncKaminproffCommand;
 use App\Console\Commands\SyncPrometallCommand;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Services\Suppliers\ChistyBeregPriceList;
 use App\Services\Suppliers\CooperWholesalePriceList;
+use App\Services\Suppliers\KaminproffPriceList;
 use App\Services\Suppliers\PrometallPriceList;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -91,6 +93,44 @@ class ViewSupplier extends ViewRecord
                     preg_match_all('/^metric\.prometall\.([a-z_]+)=(\d+)$/m', $syncOutput, $m);
                     $metrics = array_combine($m[1], $m[2]);
                     $linked = (int) ($metrics['linked_before'] ?? 0) + (int) ($metrics['ean'] ?? 0) + (int) ($metrics['article'] ?? 0) + (int) ($metrics['exact_name'] ?? 0);
+                    Notification::make()->success()
+                        ->title('Прайс загружен: '.$rows.' позиций')
+                        ->body(sprintf('Привязано к карточкам: %d. Предложено на подтверждение: %d. Без карточки: %d. Цен на сайте обновлено: %d.',
+                            $linked, (int) ($metrics['suggested'] ?? 0), (int) ($metrics['unlinked'] ?? 0), (int) ($metrics['retail_updated'] ?? 0)))
+                        ->persistent()
+                        ->send();
+                }),
+            Action::make('kaminproff_price')
+                ->label('Загрузить прайс')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('primary')
+                ->visible(fn (): bool => $this->getRecord()->code === SyncKaminproffCommand::SUPPLIER_CODE)
+                ->modalDescription('«Прайс Fireway» Камин-профессионал (xlsx, все листы). Опт и РРЦ обновятся сразу, строки привяжутся к карточкам Fireway.')
+                ->schema([
+                    FileUpload::make('file')
+                        ->label('Файл xlsx')
+                        ->required()
+                        ->rules(['extensions:xls,xlsx'])
+                        ->maxSize(30720)
+                        ->disk('local')
+                        ->directory('supplier-price-uploads'),
+                ])
+                ->action(function (array $data): void {
+                    $stored = (string) (is_array($data['file']) ? reset($data['file']) : $data['file']);
+                    $path = Storage::disk('local')->path($stored);
+                    $rows = is_file($path) ? count(KaminproffPriceList::parse($path)) : 0;
+                    if ($rows === 0) {
+                        Storage::disk('local')->delete($stored);
+                        Notification::make()->danger()->title('В файле нет строк прайса Fireway (название, опт, ррц)')->send();
+
+                        return;
+                    }
+                    KaminproffPriceList::store($path);
+                    Storage::disk('local')->delete($stored);
+                    Artisan::call('supplier:sync-kaminproff', ['--apply' => true]);
+                    preg_match_all('/^metric\.kaminproff\.([a-z_]+)=(\d+)$/m', Artisan::output(), $m);
+                    $metrics = array_combine($m[1], $m[2]);
+                    $linked = (int) ($metrics['linked_before'] ?? 0) + (int) ($metrics['model'] ?? 0) + (int) ($metrics['manual'] ?? 0);
                     Notification::make()->success()
                         ->title('Прайс загружен: '.$rows.' позиций')
                         ->body(sprintf('Привязано к карточкам: %d. Предложено на подтверждение: %d. Без карточки: %d. Цен на сайте обновлено: %d.',
