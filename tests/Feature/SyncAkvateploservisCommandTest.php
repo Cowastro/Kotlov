@@ -54,6 +54,26 @@ class SyncAkvateploservisCommandTest extends TestCase
         $this->assertNull($offer('06-084970')->price_byn);
     }
 
+    public function test_a_card_without_side_is_offered_to_the_first_row_and_a_discontinued_twin_never_links(): void
+    {
+        $file = $this->priceList();
+        $category = Category::query()->create(['name' => 'Комбинированные', 'slug' => 'kombi-test', 'parent_id' => 0, 'is_active' => true]);
+        $brand = Brand::query()->firstOrCreate(['slug' => 'galmet'], ['name' => 'Galmet', 'is_active' => true]);
+        $card = fn (string $name) => Product::query()->create(['name' => $name, 'slug' => Str::slug($name), 'category_id' => $category->id,
+            'brand_id' => $brand->id, 'price' => 1, 'is_active' => true]);
+        $sideless = $card('Водонагреватель комбинированный Galmet Neptun Kombi SGW(S)100');
+        $exact = $card('Водонагреватель комбинированный Galmet Neptun Kombi SGW(S) 80-R SH');
+
+        $this->artisan('supplier:sync-akvateploservis', ['--file' => $file, '--apply' => true])->assertSuccessful();
+
+        $supplier = Supplier::query()->where('code', 'akvateploservis')->sole();
+        $offer = fn (string $code) => SupplierProduct::query()->where('supplier_id', $supplier->id)->where('supplier_article', $code)->sole();
+        $this->assertSame($sideless->id, $offer('06-104870')->raw['suggested_product_id']);
+        $this->assertNull($offer('06-104871')->raw['suggested_product_id'] ?? null);
+        $this->assertSame($exact->id, $offer('06-084870')->product_id);
+        $this->assertNull($offer('06-084970')->product_id);
+    }
+
     public function test_titles_specs_and_categories_of_new_cards(): void
     {
         $this->assertSame('Бойлер косвенного нагрева Galmet TOWER SGW(S) 300 Skay (w/s) FL, белый (26-308070N)',

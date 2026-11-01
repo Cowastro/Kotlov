@@ -131,7 +131,8 @@ class SyncAkvateploservisCommand extends Command
             if (! $productId && $row['article'] !== '' && ($id = $one($byArticle[$compact($row['article'])] ?? []))) {
                 [$productId, $reason] = [$id, 'article'];
             }
-            if (! $productId && ($id = $one($byModel[$row['key']] ?? []))) {
+            // One card is one row: a later row of the same model (a discontinued twin) does not take it.
+            if (! $productId && ($id = $one($byModel[$row['key']] ?? [])) && ! isset($claimed[$id])) {
                 [$productId, $reason] = [$id, 'model'];
             }
             $row['product_id'] = $productId ?: null;
@@ -143,11 +144,28 @@ class SyncAkvateploservisCommand extends Command
         }
         unset($row);
 
-        // A card whose model words all stand in the row («Neptun Kombi SGW(S)80 левое подключение» for «… 80-L SH»):
-        // offered when it fits this one row only and no row has it already.
+        // A card linked to two rows before keeps the priced one (the first in the list); the other is unlinked.
+        $holder = [];
+        foreach ($rows as $index => $row) {
+            if ($row['product_id'] && $row['match_reason'] !== 'manual') {
+                $current = $holder[$row['product_id']] ?? null;
+                if ($current === null || ($rows[$current]['rrc'] <= 0 && $row['rrc'] > 0)) {
+                    $holder[$row['product_id']] = $index;
+                }
+            }
+        }
+        foreach ($rows as $index => &$row) {
+            if ($row['product_id'] && $row['match_reason'] !== 'manual' && ($holder[$row['product_id']] ?? $index) !== $index) {
+                [$row['product_id'], $row['match_reason']] = [null, null];
+            }
+        }
+        unset($row);
+
+        // A card whose model words all stand in the row («Neptun Kombi SGW(S)100» for «… 100-R SH» and «… 100-L SH»):
+        // offered to the row it fits closest — the fewest extra words, or of rows with one price the first.
         $offered = [];
         foreach ($rows as $index => $row) {
-            if ($row['product_id']) {
+            if ($row['product_id'] || $row['rrc'] <= 0) {
                 continue;
             }
             $words = explode(' ', $row['key']);
@@ -158,8 +176,11 @@ class SyncAkvateploservisCommand extends Command
             }
         }
         foreach ($offered as $id => $indexes) {
-            if (count($indexes) === 1) {
-                $rows[$indexes[0]]['suggested_product_id'] = $id;
+            $extra = fn (int $index): int => count(explode(' ', $rows[$index]['key'])) - count($cardKeys[$id]);
+            usort($indexes, fn (int $a, int $b): int => $extra($a) <=> $extra($b) ?: $a <=> $b);
+            $closest = array_values(array_filter($indexes, fn (int $index) => $extra($index) === $extra($indexes[0])));
+            if (count($closest) === 1 || count(array_unique(array_map(fn (int $index) => $rows[$index]['rrc'], $closest))) === 1) {
+                $rows[$closest[0]]['suggested_product_id'] = $id;
             }
         }
         foreach ($rows as $row) {
