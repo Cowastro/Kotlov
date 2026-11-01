@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
 class ChistyBeregPhotosCommand extends Command
 {
     protected $signature = 'supplier:chisty-bereg-photos {--limit=20}
-        {--supplier=chisty_bereg : chisty_bereg, or kaminproff for the Fireway cards made from its price list}
+        {--supplier=chisty_bereg : chisty_bereg, kaminproff (Fireway) or akvateploservis (Galmet, Apamet): the cards made from its price list}
         {--reset-misses-since= : Put back to the queue the cards searched since then that got no photo (an AI outage)}
         {--apply : Save the photos}';
 
@@ -36,12 +36,15 @@ class ChistyBeregPhotosCommand extends Command
     {
         $sources->background = true;
         // Cards made from a price list keep its prefix in the SKU.
-        [$supplierCode, $skuPrefix, $ownSite] = $this->option('supplier') === SyncKaminproffCommand::SUPPLIER_CODE
-            ? [SyncKaminproffCommand::SUPPLIER_CODE, 'FIREWAY-', 'kaminproff.by']
-            : [SyncChistyBeregCommand::SUPPLIER_CODE, 'BEREG-', 'bereg.by'];
+        [$supplierCode, $skuPrefixes, $ownSite] = match ($this->option('supplier')) {
+            SyncKaminproffCommand::SUPPLIER_CODE => [SyncKaminproffCommand::SUPPLIER_CODE, ['FIREWAY-'], 'kaminproff.by'],
+            SyncAkvateploservisCommand::SUPPLIER_CODE => [SyncAkvateploservisCommand::SUPPLIER_CODE, ['GALMET-', 'APAMET-'], 'galmet.by'],
+            default => [SyncChistyBeregCommand::SUPPLIER_CODE, ['BEREG-'], 'bereg.by'],
+        };
         $offers = SupplierProduct::query()
             ->whereHas('supplier', fn ($q) => $q->where('code', $supplierCode))
-            ->whereHas('product', fn ($q) => $q->where('sku', 'like', $skuPrefix.'%')->where('is_archived', false)
+            ->whereHas('product', fn ($q) => $q->where(fn ($sku) => collect($skuPrefixes)->each(fn (string $prefix) => $sku->orWhere('sku', 'like', $prefix.'%')))
+                ->where('is_archived', false)
                 ->where('created_via', Product::CREATED_VIA_AWAITING_PHOTOS))
             ->with('product.brand:id,name')->orderBy('id')->get()
             ->filter(fn (SupplierProduct $offer): bool => array_filter((array) $offer->product->images) === [])
