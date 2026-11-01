@@ -182,6 +182,13 @@ Schedule::command('supplier:chisty-bereg-photos --limit=12 --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-photos.log'));
 
+// sbg.by (deal.by) keeps the Fireway prices of kotlov.by (Камин-профессионал): shop items found by the model.
+Schedule::command('deal:sync-brand-prices --supplier=kaminproff --apply')
+    ->dailyAt('07:45')
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/deal-fireway-prices.log'));
+
 // sbg.by (deal.by) keeps the ProMetall prices of kotlov.by: shop items found by the manufacturer article.
 Schedule::command('deal:sync-brand-prices --supplier=prometall --apply')
     ->dailyAt('07:40')

@@ -13,7 +13,10 @@ class SyncDealByBrandPricesCommand extends Command
 {
     private const PAGE_SIZE = 100;
 
-    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall'];
+    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall', 'kaminproff'];
+
+    /** Fireway goods of the shop by their name: no articles, the model decides (Камин-профессионал). */
+    private const FIREWAY_NAME = '/fire\s*way|файрвей|паровар|alma/ui';
 
     private ?string $supplierCode = null;
 
@@ -171,6 +174,22 @@ class SyncDealByBrandPricesCommand extends Command
                 ) ?? '' => $product,
             ])
             ->forget('');
+        // Fireway (Камин-профессионал) has no articles: the shop item and the card meet by the model of the name.
+        $fireway = $this->supplierCode === 'kaminproff';
+        $localByModel = $fireway
+            ? $localProducts->flatMap(fn (Product $product) => collect([$product->name])
+                ->concat($product->supplierProducts->where('supplier_id', $supplierId)->pluck('supplier_name'))
+                ->flatMap(fn ($name) => self::firewayKeys((string) $name))
+                ->unique()
+                ->map(fn (string $key) => [$key, $product]))
+                ->groupBy(fn (array $pair): string => $pair[0], true)
+                ->map(fn ($pairs) => collect($pairs)->map(fn (array $pair) => $pair[1])->unique('id')->values())
+            : collect();
+        $remoteModelCounts = $fireway
+            ? $remoteProducts->filter(fn (array $product): bool => preg_match(self::FIREWAY_NAME, (string) ($product['name'] ?? '')) === 1)
+                ->flatMap(fn (array $product) => self::firewayKeys((string) ($product['name'] ?? '')))
+                ->countBy()
+            : collect();
         $remoteSkuCounts = $remoteProducts
             ->map(fn (array $product): string => $this->normalizeSku($product['sku'] ?? null))
             ->filter()
@@ -224,6 +243,20 @@ class SyncDealByBrandPricesCommand extends Command
                     $local = $nameCandidates->first();
                 } elseif ($nameCandidates->count() > 1) {
                     $ambiguous++;
+                }
+            }
+
+            if (! $local && $fireway && preg_match(self::FIREWAY_NAME, (string) ($remote['name'] ?? '')) === 1) {
+                foreach (self::firewayKeys((string) $remote['name']) as $key) {
+                    $modelCandidates = $localByModel->get($key, collect());
+                    if (($remoteModelCounts[$key] ?? 0) === 1 && $modelCandidates->count() === 1) {
+                        $local = $modelCandidates->first();
+                        break;
+                    }
+                    if ($modelCandidates->count() > 1) {
+                        $ambiguous++;
+                        break;
+                    }
                 }
             }
 
@@ -306,10 +339,11 @@ class SyncDealByBrandPricesCommand extends Command
         $this->line('metric.deal_brand_prices.ambiguous='.$plan['ambiguous']);
         $this->line('metric.deal_brand_prices.invalid_remote_price='.$plan['invalid_remote_price']);
 
-        // ProMetall goods on the shop as they are named there: to link the rest by hand.
-        if ($this->supplierCode === 'prometall') {
+        // ProMetall and Fireway goods on the shop as they are named there: to link the rest by hand.
+        if (in_array($this->supplierCode, ['prometall', 'kaminproff'], true)) {
+            $pattern = $this->supplierCode === 'prometall' ? '/атмосфер|прометалл|prometall|эйфори|бахт|арктик/ui' : self::FIREWAY_NAME;
             foreach ($remoteProducts as $remote) {
-                if (preg_match('/атмосфер|прометалл|prometall|эйфори|бахт|арктик/ui', (string) ($remote['name'] ?? ''))) {
+                if (preg_match($pattern, (string) ($remote['name'] ?? ''))) {
                     $this->line(sprintf('audit.deal_brand_prices.remote=%d:%s:%s:%d:%s', (int) ($remote['id'] ?? 0),
                         \Illuminate\Support\Str::slug((string) ($remote['sku'] ?? '')) ?: 'none', \Illuminate\Support\Str::slug((string) ($remote['external_id'] ?? '')) ?: 'none',
                         (int) round((float) ($remote['price'] ?? 0) * 100), \Illuminate\Support\Str::limit(\Illuminate\Support\Str::slug((string) ($remote['name'] ?? '')), 80, '')));
@@ -353,6 +387,15 @@ class SyncDealByBrandPricesCommand extends Command
         }
 
         throw new RuntimeException('Превышен безопасный предел в 200 000 товаров Deal.by.');
+    }
+
+    /** @return list<string> the exact model key first, then the looser one teplodvor-style names need */
+    private static function firewayKeys(string $name): array
+    {
+        return array_values(array_unique(array_filter([
+            \App\Services\Suppliers\KaminproffPriceList::modelKey($name),
+            \App\Services\Suppliers\FirewayTeplodvorCatalog::looseKey($name),
+        ])));
     }
 
     private function normalize(string $value): string

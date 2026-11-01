@@ -128,7 +128,10 @@ class ViewSupplier extends ViewRecord
                     KaminproffPriceList::store($path);
                     Storage::disk('local')->delete($stored);
                     Artisan::call('supplier:sync-kaminproff', ['--apply' => true]);
-                    preg_match_all('/^metric\.kaminproff\.([a-z_]+)=(\d+)$/m', Artisan::output(), $m);
+                    $syncOutput = Artisan::output();
+                    // The same prices on sbg.by: the Fireway goods of the shop take the new РРЦ right away.
+                    Artisan::call('deal:sync-brand-prices', ['--supplier' => 'kaminproff', '--apply' => true]);
+                    preg_match_all('/^metric\.kaminproff\.([a-z_]+)=(\d+)$/m', $syncOutput, $m);
                     $metrics = array_combine($m[1], $m[2]);
                     $linked = (int) ($metrics['linked_before'] ?? 0) + (int) ($metrics['model'] ?? 0) + (int) ($metrics['manual'] ?? 0);
                     Notification::make()->success()
