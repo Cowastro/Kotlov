@@ -26,7 +26,7 @@ class SyncKaminproffCommand extends Command
 {
     protected $signature = 'supplier:sync-kaminproff
         {--file= : An xlsx instead of the last uploaded one}
-        {--link=* : Link by hand: product id:row code or a part of its name (16756:ilma)}
+        {--link=* : Link by hand: product id or slug:row code or a part of its name (16756:ilma)}
         {--apply : Write offers, links and prices}';
 
     protected $description = 'Sync the Fireway price list of Камин-профессионал';
@@ -73,7 +73,9 @@ class SyncKaminproffCommand extends Command
         foreach ((array) $this->option('link') as $pair) {
             [$id, $needle] = array_pad(explode(':', (string) $pair, 2), 2, '');
             $needle = mb_strtolower(trim($needle));
-            if (! ctype_digit(trim($id)) || $needle === '' || ! Product::query()->whereKey((int) $id)->exists()) {
+            // A card by its id or its address (the workflow log may mask digits of an id).
+            $id = ctype_digit(trim($id)) ? (int) $id : (int) Product::query()->where('slug', trim($id))->value('id');
+            if (! $id || $needle === '' || ! Product::query()->whereKey($id)->exists()) {
                 continue;
             }
             $hits = array_values(array_filter($rows, fn (array $row) => $row['code'] === $needle || str_contains(mb_strtolower($row['name']), $needle)));
