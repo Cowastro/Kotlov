@@ -146,10 +146,10 @@ class CreateAkvateploservisCardsCommand extends Command
             $has('maxima') => ['teplovye-nasosy-rassol-voda', 'teplovye-nasosy', 'teplovyie-nasosyi', 'teplovye-nasosy-vozduh-voda'],
             $has('тепловых насосов', 'тепловой насос') && $has('теплообменник') => ['komplektuyushchie-dlya-vodonagrevateley'],
             $has('блок-тэн', 'блок тэн', 'комплект электрический') || preg_match('/^\d+(,\d+)?\s*квт/u', mb_strtolower($name)) === 1 => ['komplektuyushchie-dlya-vodonagrevateley', 'elektricheskie-teny-dlya-otopleniya'],
+            $has('электрические', 'max sg') => ['electric'],
             $has('крепление', 'прокладка', 'фланец', 'гильза', 'тэн ') => ['komplektuyushchie-dlya-vodonagrevateley'],
             $has('neptun') => ['kombinirovannye'],
             $has('multi-inox', 'kumulo', 'буфер', 'bufor') => ['bufernye-emkosti'],
-            $has('электрические', 'max sg') => ['electric'],
             default => ['kosvennye'],
         };
     }

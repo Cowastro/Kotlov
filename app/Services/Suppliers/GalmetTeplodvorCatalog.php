@@ -17,9 +17,12 @@ class GalmetTeplodvorCatalog extends FirewayTeplodvorCatalog
         return ($article !== '' ? $this->byModel['art:'.mb_strtoupper($article)] ?? null : null) ?? $this->find($name);
     }
 
+    /** teplodvor.by titles rarely name the colour or «SH»: the page is found without them. */
     protected static function matchKey(string $name): string
     {
-        return AkvateploservisPriceList::modelKey($name);
+        $words = array_diff(explode(' ', AkvateploservisPriceList::modelKey($name)), ['серый', 'белый', 'черный', 'графит', 'sh']);
+
+        return implode(' ', $words);
     }
 
     protected function titleNames(string $title): array
