@@ -264,6 +264,8 @@ class SyncAkvateploservisCommand extends Command
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->warn($row['code'].': '.$e->getMessage());
+                // Which row and what kind of failure, safe for the workflow log.
+                $this->line(sprintf('audit.akvateploservis.error=%s:%s', Str::slug($row['code']), Str::slug(class_basename($e).' '.Str::limit($e->getMessage(), 60, ''))));
             }
         }
         // Rows missing from the new list are not offered any more.
