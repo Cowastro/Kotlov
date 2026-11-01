@@ -396,7 +396,8 @@ class SyncDealByBrandPricesCommand extends Command
             'Ссылка_изображения', 'Наличие', 'Название_группы', 'Идентификатор_товара', 'Производитель', 'Страна_производитель']]);
         $row = 2;
         foreach ($products as $product) {
-            $images = collect($product->imagePaths())->take(5)->map(fn (string $path) => url('/'.ltrim($path, '/')))->implode(', ');
+            // A photo kept as a full address of the source stays as it is.
+            $images = collect($product->imagePaths())->take(5)->map(fn (string $path) => preg_match('~^https?://~i', $path) ? $path : url('/'.ltrim($path, '/')))->implode(', ');
             $sheet->fromArray([[
                 $product->sku ?: 'KOTLOV-'.$product->id,
                 $product->name,
