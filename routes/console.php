@@ -182,6 +182,13 @@ Schedule::command('supplier:chisty-bereg-photos --limit=12 --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-photos.log'));
 
+// sbg.by (deal.by) keeps the Galmet and Apamet prices of kotlov.by (Акватеплосервис): by article or model.
+Schedule::command('deal:sync-brand-prices --supplier=akvateploservis --apply')
+    ->dailyAt('07:50')
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/deal-galmet-prices.log'));
+
 // Hidden Fireway cards made from the Камин-профессионал price list look for a photo the same way, each card once.
 Schedule::command('supplier:chisty-bereg-photos --supplier=kaminproff --limit=30 --apply')
     ->dailyAt('08:20')

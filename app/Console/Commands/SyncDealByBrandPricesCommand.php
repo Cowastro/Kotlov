@@ -13,7 +13,10 @@ class SyncDealByBrandPricesCommand extends Command
 {
     private const PAGE_SIZE = 100;
 
-    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall', 'kaminproff'];
+    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall', 'kaminproff', 'akvateploservis'];
+
+    /** Galmet and Apamet goods of the shop by their name (Акватеплосервис). */
+    private const GALMET_NAME = '/galmet|apamet|галмет|апамет/ui';
 
     /** Fireway goods of the shop by their name: no articles, the model decides (Камин-профессионал). */
     private const FIREWAY_NAME = '/fire\s*way|файрвей|паровар|alma/ui';
@@ -183,20 +186,22 @@ class SyncDealByBrandPricesCommand extends Command
                 ) ?? '' => $product,
             ])
             ->forget('');
-        // Fireway (Камин-профессионал) has no articles: the shop item and the card meet by the model of the name.
-        $fireway = $this->supplierCode === 'kaminproff';
+        // Fireway (Камин-профессионал) has no articles, Galmet shop items often lack them: the shop item and the
+        // card meet by the model of the name.
+        $fireway = in_array($this->supplierCode, ['kaminproff', 'akvateploservis'], true);
+        $namePattern = $this->supplierCode === 'akvateploservis' ? self::GALMET_NAME : self::FIREWAY_NAME;
         $localByModel = $fireway
             ? $localProducts->flatMap(fn (Product $product) => collect([$product->name])
                 ->concat($product->supplierProducts->where('supplier_id', $supplierId)->pluck('supplier_name'))
-                ->flatMap(fn ($name) => self::firewayKeys((string) $name))
+                ->flatMap(fn ($name) => $this->modelKeys((string) $name))
                 ->unique()
                 ->map(fn (string $key) => [$key, $product]))
                 ->groupBy(fn (array $pair): string => $pair[0], true)
                 ->map(fn ($pairs) => collect($pairs)->map(fn (array $pair) => $pair[1])->unique('id')->values())
             : collect();
         $remoteModelCounts = $fireway
-            ? $remoteProducts->filter(fn (array $product): bool => preg_match(self::FIREWAY_NAME, (string) ($product['name'] ?? '')) === 1)
-                ->flatMap(fn (array $product) => self::firewayKeys((string) ($product['name'] ?? '')))
+            ? $remoteProducts->filter(fn (array $product): bool => preg_match($namePattern, (string) ($product['name'] ?? '')) === 1)
+                ->flatMap(fn (array $product) => $this->modelKeys((string) ($product['name'] ?? '')))
                 ->countBy()
             : collect();
         $remoteSkuCounts = $remoteProducts
@@ -259,8 +264,8 @@ class SyncDealByBrandPricesCommand extends Command
                 }
             }
 
-            if (! $local && $fireway && preg_match(self::FIREWAY_NAME, (string) ($remote['name'] ?? '')) === 1) {
-                foreach (self::firewayKeys((string) $remote['name']) as $key) {
+            if (! $local && $fireway && preg_match($namePattern, (string) ($remote['name'] ?? '')) === 1) {
+                foreach ($this->modelKeys((string) $remote['name']) as $key) {
                     $modelCandidates = $localByModel->get($key, collect());
                     if (($remoteModelCounts[$key] ?? 0) === 1 && $modelCandidates->count() === 1) {
                         $local = $modelCandidates->first();
@@ -340,10 +345,10 @@ class SyncDealByBrandPricesCommand extends Command
      */
     private function dealPairs(Collection $localProducts, Collection $remoteProducts): array
     {
-        if ($this->supplierCode !== 'kaminproff') {
+        if (! in_array($this->supplierCode, ['kaminproff', 'akvateploservis'], true)) {
             return [];
         }
-        $supplierId = (int) \Illuminate\Support\Facades\DB::table('suppliers')->where('code', 'kaminproff')->value('id');
+        $supplierId = (int) \Illuminate\Support\Facades\DB::table('suppliers')->where('code', $this->supplierCode)->value('id');
         $offers = \App\Models\SupplierProduct::query()->where('supplier_id', $supplierId)->whereNotNull('product_id')->get();
         $pairs = [];
         foreach ($offers as $offer) {
@@ -443,12 +448,16 @@ class SyncDealByBrandPricesCommand extends Command
         $this->line('metric.deal_brand_prices.invalid_remote_price='.$plan['invalid_remote_price']);
 
         // ProMetall and Fireway goods on the shop as they are named there: to link the rest by hand.
-        if (in_array($this->supplierCode, ['prometall', 'kaminproff'], true)) {
-            $pattern = $this->supplierCode === 'prometall' ? '/атмосфер|прометалл|prometall|эйфори|бахт|арктик/ui' : self::FIREWAY_NAME;
+        if (in_array($this->supplierCode, ['prometall', 'kaminproff', 'akvateploservis'], true)) {
+            $pattern = match ($this->supplierCode) {
+                'prometall' => '/атмосфер|прометалл|prometall|эйфори|бахт|арктик/ui',
+                'akvateploservis' => self::GALMET_NAME,
+                default => self::FIREWAY_NAME,
+            };
             $matchedRemote = array_flip($plan['matched_remote_ids']);
             foreach ($remoteProducts as $remote) {
                 // Fireway: only the shop items left without a card.
-                if ($this->supplierCode === 'kaminproff' && isset($matchedRemote[(int) ($remote['id'] ?? 0)])) {
+                if ($this->supplierCode !== 'prometall' && isset($matchedRemote[(int) ($remote['id'] ?? 0)])) {
                     continue;
                 }
                 if (preg_match($pattern, (string) ($remote['name'] ?? ''))) {
@@ -495,6 +504,16 @@ class SyncDealByBrandPricesCommand extends Command
         }
 
         throw new RuntimeException('Превышен безопасный предел в 200 000 товаров Deal.by.');
+    }
+
+    /** @return list<string> the model keys of a name for the supplier: Galmet ones, or Fireway exact and loose */
+    private function modelKeys(string $name): array
+    {
+        if ($this->supplierCode === 'akvateploservis') {
+            return array_values(array_filter([\App\Services\Suppliers\AkvateploservisPriceList::modelKey($name)]));
+        }
+
+        return self::firewayKeys($name);
     }
 
     /** @return list<string> the exact model key first, then the looser one teplodvor-style names need */

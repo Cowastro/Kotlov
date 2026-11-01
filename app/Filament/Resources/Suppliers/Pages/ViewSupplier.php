@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\Suppliers\Pages;
 
+use App\Console\Commands\SyncAkvateploservisCommand;
 use App\Console\Commands\SyncChistyBeregCommand;
 use App\Console\Commands\SyncCooperDoorsCommand;
 use App\Console\Commands\SyncKaminproffCommand;
 use App\Console\Commands\SyncPrometallCommand;
 use App\Filament\Resources\Suppliers\SupplierResource;
+use App\Services\Suppliers\AkvateploservisPriceList;
 use App\Services\Suppliers\ChistyBeregPriceList;
 use App\Services\Suppliers\CooperWholesalePriceList;
 use App\Services\Suppliers\KaminproffPriceList;
@@ -97,6 +99,47 @@ class ViewSupplier extends ViewRecord
                         ->title('Прайс загружен: '.$rows.' позиций')
                         ->body(sprintf('Привязано к карточкам: %d. Предложено на подтверждение: %d. Без карточки: %d. Цен на сайте обновлено: %d.',
                             $linked, (int) ($metrics['suggested'] ?? 0), (int) ($metrics['unlinked'] ?? 0), (int) ($metrics['retail_updated'] ?? 0)))
+                        ->persistent()
+                        ->send();
+                }),
+            Action::make('akvateploservis_price')
+                ->label('Загрузить прайс')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('primary')
+                ->visible(fn (): bool => $this->getRecord()->code === SyncAkvateploservisCommand::SUPPLIER_CODE)
+                ->modalDescription('«GALMET прайс-лист» Акватеплосервис (xls). Опт, РРЦ и остатки склада обновятся сразу, строки привяжутся к карточкам Galmet и Apamet.')
+                ->schema([
+                    FileUpload::make('file')
+                        ->label('Файл xls / xlsx')
+                        ->required()
+                        ->rules(['extensions:xls,xlsx'])
+                        ->maxSize(30720)
+                        ->disk('local')
+                        ->directory('supplier-price-uploads'),
+                ])
+                ->action(function (array $data): void {
+                    $stored = (string) (is_array($data['file']) ? reset($data['file']) : $data['file']);
+                    $path = Storage::disk('local')->path($stored);
+                    $rows = is_file($path) ? count(AkvateploservisPriceList::parse($path)) : 0;
+                    if ($rows === 0) {
+                        Storage::disk('local')->delete($stored);
+                        Notification::make()->danger()->title('В файле нет строк прайса Galmet (артикул, наименование, опт, РРЦ)')->send();
+
+                        return;
+                    }
+                    AkvateploservisPriceList::store($path);
+                    Storage::disk('local')->delete($stored);
+                    Artisan::call('supplier:sync-akvateploservis', ['--apply' => true]);
+                    $syncOutput = Artisan::output();
+                    // The same prices on sbg.by: the Galmet goods of the shop take the new РРЦ right away.
+                    Artisan::call('deal:sync-brand-prices', ['--supplier' => 'akvateploservis', '--apply' => true]);
+                    preg_match_all('/^metric\.akvateploservis\.([a-z_]+)=(\d+)$/m', $syncOutput, $m);
+                    $metrics = array_combine($m[1], $m[2]);
+                    $linked = (int) ($metrics['linked_before'] ?? 0) + (int) ($metrics['article'] ?? 0) + (int) ($metrics['model'] ?? 0) + (int) ($metrics['manual'] ?? 0);
+                    Notification::make()->success()
+                        ->title('Прайс загружен: '.$rows.' позиций')
+                        ->body(sprintf('Привязано к карточкам: %d. Предложено на подтверждение: %d. Без карточки: %d. На складе: %d. Цен на сайте обновлено: %d.',
+                            $linked, (int) ($metrics['suggested'] ?? 0), (int) ($metrics['unlinked'] ?? 0), (int) ($metrics['in_stock'] ?? 0), (int) ($metrics['retail_updated'] ?? 0)))
                         ->persistent()
                         ->send();
                 }),

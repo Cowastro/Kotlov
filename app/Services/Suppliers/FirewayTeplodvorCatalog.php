@@ -15,14 +15,38 @@ class FirewayTeplodvorCatalog
 {
     private const BASE = 'https://www.teplodvor.by';
 
+    /** The brand in the teplodvor.by page addresses (a regex alternation). */
+    protected const BRAND = 'fireway';
+
     /** @var array<string, string>|null model key => page URL */
-    private ?array $byModel = null;
+    protected ?array $byModel = null;
 
     public function find(string $name): ?string
     {
         $this->byModel ??= $this->index();
 
-        return $this->byModel[self::looseKey($name)] ?? null;
+        return $this->byModel[static::matchKey($name)] ?? null;
+    }
+
+    /** The key a price row and a page title meet by. */
+    protected static function matchKey(string $name): string
+    {
+        return self::looseKey($name);
+    }
+
+    /**
+     * The names a page title stands for: «SOFIA (левая/правая)» is two cards; a patinated stove is the same
+     * model in another colour, its photos are not the card's.
+     *
+     * @return list<string>
+     */
+    protected function titleNames(string $title): array
+    {
+        if (str_contains(mb_strtolower($title), 'патина')) {
+            return [];
+        }
+
+        return KaminproffPriceList::variants(str_replace(['(левая/правая)', 'левая/правая'], 'левая/правая', $title));
     }
 
     /**
@@ -53,22 +77,22 @@ class FirewayTeplodvorCatalog
     /** @return array{name:string,images:list<string>,specs:array<string,string>,serviceInfo:array<string,string>,desc:string}|null */
     public function page(string $url): ?array
     {
-        $html = Cache::remember('fireway-teplodvor:page:'.md5($url), now()->addWeek(), fn () => $this->fetch($url));
+        $html = Cache::remember('teplodvor-brand:page:'.md5($url), now()->addWeek(), fn () => $this->fetch($url));
 
         return $html !== '' ? EnrichTeplodvorCommand::parsePage($html) : null;
     }
 
     /** @return array<string, string> */
-    private function index(): array
+    protected function index(): array
     {
-        $urls = Cache::remember('fireway-teplodvor:urls', now()->addWeek(), function (): array {
+        $urls = Cache::remember('teplodvor-brand:urls:'.static::BRAND, now()->addWeek(), function (): array {
             $urls = [];
             for ($page = 1; $page <= 12; $page++) {
                 $xml = $this->fetch(self::BASE.'/map/sitemap/'.$page.'/');
                 if ($xml === '') {
                     break;
                 }
-                preg_match_all('~<loc>(https://www\.teplodvor\.by/shop/[^<]*fireway[^<]*/)</loc>~iu', $xml, $m);
+                preg_match_all('~<loc>(https://www\.teplodvor\.by/shop/[^<]*(?:'.static::BRAND.')[^<]*/)</loc>~iu', $xml, $m);
                 $urls = array_merge($urls, $m[1]);
             }
 
@@ -78,16 +102,15 @@ class FirewayTeplodvorCatalog
         $ambiguous = [];
         foreach ($urls as $url) {
             // Brand and category listings end in /fireway/.
-            if (preg_match('~/fireway/$~', $url)) {
+            if (preg_match('~/(?:'.static::BRAND.')/$~', $url)) {
                 continue;
             }
             $page = $this->page($url);
-            // A patinated stove is the same model in another colour: its photos are not the card's.
-            if (! $page || $page['name'] === '' || str_contains(mb_strtolower($page['name']), 'патина')) {
+            if (! $page || $page['name'] === '') {
                 continue;
             }
-            foreach (KaminproffPriceList::variants(str_replace(['(левая/правая)', 'левая/правая'], 'левая/правая', $page['name'])) as $variant) {
-                $key = self::looseKey($variant);
+            foreach ($this->titleNames($page['name']) as $variant) {
+                $key = static::matchKey($variant);
                 if ($key === '') {
                     continue;
                 }

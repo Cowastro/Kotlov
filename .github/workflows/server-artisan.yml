@@ -559,6 +559,18 @@ jobs:
             grep -aE '^audit\.kaminproff_create\.(category=[a-z0-9-]+:[0-9]+|no_category=[a-z0-9-]+|offer=[a-z0-9-]+:[a-z0-9-]+:(teplodvor|price))$' "$detail_log" || true
             echo "safe_kaminproff_create_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-akvateploservis" ]]; then
+            echo "safe_akvateploservis_begin"
+            grep -aE '^metric\.akvateploservis\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -aE '^audit\.akvateploservis\.row=[a-z0-9-]+:(s?[0-9]+|none):[a-z_]+:[a-z0-9-]*$' "$detail_log" || true
+            echo "safe_akvateploservis_end"
+          fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:akvateploservis-create" ]]; then
+            echo "safe_akvateploservis_create_begin"
+            grep -aE '^metric\.akvateploservis_create\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -aE '^audit\.akvateploservis_create\.(category=[a-z0-9-]+:[0-9]+|no_category=[a-z0-9-]+|card_exists=[a-z0-9-]+|offer=[a-z0-9-]+:[a-z0-9-]+:(teplodvor|price))$' "$detail_log" || true
+            echo "safe_akvateploservis_create_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:fireway-duplicates" ]]; then
             echo "safe_fireway_duplicates_begin"
             grep -aE '^metric\.fireway_duplicates\.[a-z_]+=[0-9]+$' "$detail_log" || true
@@ -976,7 +988,7 @@ jobs:
           if [[ "${ARTISAN_ARGV[0]:-}" == "deal:sync-brand-prices" ]]; then
             echo "safe_deal_brand_prices_begin"
             grep -E '^metric\.deal_brand_prices\.[a-z_]+=[0-9]+$' "$detail_log" || true
-            grep -E '^audit\.deal_brand_prices=[0-9]+:[0-9]+:(vezuviy|tatra_boilers|bania|prometall|kaminproff):[0-9]+:[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.deal_brand_prices=[0-9]+:[0-9]+:(vezuviy|tatra_boilers|bania|prometall|kaminproff|akvateploservis):[0-9]+:[0-9]+$' "$detail_log" || true
             grep -E '^audit\.deal_brand_prices\.remote=[0-9]+:[a-z0-9-]+:[a-z0-9-]+:[0-9]+:[a-z0-9-]*$' "$detail_log" || true
             grep -E '^audit\.deal_brand_prices\.field=[0-9]+:[a-zA-Z0-9_.-]+:-?[0-9]+$' "$detail_log" || true
             grep -E '^audit\.deal_brand_prices\.export=exports/[a-z0-9-]+\.xlsx$' "$detail_log" || true
