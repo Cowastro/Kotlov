@@ -853,7 +853,7 @@ class CatalogController extends Controller
         $ecokaminPromo = in_array($category->slug, ['kaminy', 'pechi-kaminy', 'topki', 'pechki'], true) || $category->parent?->slug === 'kaminy'
             ? \App\Support\Promotions\EcokaminPromotion::showcase()
             : null;
-        // Свой вариант баннера: в топках — про топки Дельта, в печах и печах-каминах — про камины.
+        // Свой вариант баннера: в топках — про топки Дельта, Альфа, Вега, Primo; в печах и печах-каминах — про камины.
         $ecokaminPromoVariant = match (true) {
             ! $ecokaminPromo => 'all',
             $category->slug === 'topki' || $category->parent?->slug === 'topki' => 'delta',
@@ -861,7 +861,7 @@ class CatalogController extends Controller
             default => 'all',
         };
         [$hitsKey, $discountKey] = match ($ecokaminPromoVariant) {
-            'delta' => ['deltaHits', 'deltaMaxDiscount'],
+            'delta' => ['fireboxHits', 'fireboxMaxDiscount'],
             'fireplaces' => ['fireplaceHits', 'fireplaceMaxDiscount'],
             default => ['hits', 'maxDiscount'],
         };

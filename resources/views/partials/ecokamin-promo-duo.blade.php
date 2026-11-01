@@ -1,19 +1,21 @@
-{{-- Два баннера акции ЭкоКамин внизу главной: топки Дельта и камины. --}}
+{{-- Два баннера акции ЭкоКамин внизу главной: каминные топки и камины с печами-каминами. --}}
 @php
-    $ecoIsDelta = fn ($product) => str_contains(mb_strtolower($product->name), 'дельта');
-    $ecoDelta = $ecokaminPromoHits->filter($ecoIsDelta)->first();
-    $ecoFireplaces = $ecokaminPromoHits->reject($ecoIsDelta)->take(3);
+    $ecoIsFirebox = fn ($product) => \App\Support\Promotions\EcokaminPromotion::isFirebox($product);
+    $ecoDelta = $ecokaminPromoHits->filter($ecoIsFirebox)->first();
+    $ecoFireplaces = $ecokaminPromoHits->reject($ecoIsFirebox)->take(3);
     $ecoMaxFireplace = (int) $ecoFireplaces->max(fn ($product) => (int) $product->discount_percent);
+    $ecoMaxFirebox = (int) $ecokaminPromoHits->filter($ecoIsFirebox)->max(fn ($product) => (int) $product->discount_percent);
+    $ecoEndsAt = \App\Support\Promotions\EcokaminPromotion::endsAt();
 @endphp
 <section class="container flat-spacing eco-promo-duo">
     @if($ecoDelta)
-    <a href="{{ route('promotions.ecokamin') }}#delta" class="eco-promo-duo__card eco-promo-duo__card--delta">
+    <a href="{{ route('promotions.ecokamin') }}#topki" class="eco-promo-duo__card eco-promo-duo__card--delta">
         <span class="eco-promo-duo__copy">
-            <span class="eco-promo-duo__eyebrow">Акция ЭкоКамин · до 31.10</span>
-            <strong class="eco-promo-duo__title">Все топки<br>Дельта <em>−20%</em></strong>
-            <span class="eco-promo-duo__text">Фронтальные, угловые и трёхсторонние, с подовым горением и вертикальной ламелью.</span>
-            @if($ecokaminPromoFrom['delta'] ?? null)
-            <span class="eco-promo-duo__from">от <b>{{ number_format((float) $ecokaminPromoFrom['delta'], 0, '.', ' ') }} BYN</b></span>
+            <span class="eco-promo-duo__eyebrow">Акция ЭкоКамин · до {{ $ecoEndsAt->format('d.m') }}</span>
+            <strong class="eco-promo-duo__title">Каминные<br>топки до <em>−{{ max($ecoMaxFirebox, 20) }}%</em></strong>
+            <span class="eco-promo-duo__text">Дельта и Вега −20%, Альфа −25% с белым шамотом и −15% с чёрным, чугунная Primo 700.</span>
+            @if($ecokaminPromoFrom['topki'] ?? null)
+            <span class="eco-promo-duo__from">от <b>{{ number_format((float) $ecokaminPromoFrom['topki'], 0, '.', ' ') }} BYN</b></span>
             @endif
             <span class="tf-btn btn-white eco-promo-duo__btn">Выбрать топку</span>
         </span>
@@ -26,8 +28,8 @@
     <a href="{{ route('promotions.ecokamin') }}#kaminy" class="eco-promo-duo__card eco-promo-duo__card--kaminy">
         <span class="eco-promo-duo__copy">
             <span class="eco-promo-duo__eyebrow">Таких цен больше не будет</span>
-            <strong class="eco-promo-duo__title">Камины<br>до <em>−{{ max($ecoMaxFireplace, $ecokaminPromoMaxDiscount) }}%</em></strong>
-            <span class="eco-promo-duo__text">Мадрид, Рио, Крит, Эклипс, Родос, Прага, Мюнхен и Три стекла — скидки от 15 до {{ max($ecoMaxFireplace, $ecokaminPromoMaxDiscount) }}%.</span>
+            <strong class="eco-promo-duo__title">Камины<br>до <em>−{{ max($ecoMaxFireplace, 15) }}%</em></strong>
+            <span class="eco-promo-duo__text">Угловые Прага −30%; Мадрид, Рио, Крит, Эклипс, Родос −20%; Мюнхен, Три стекла и печи-камины Бавария −15%.</span>
             @if($ecokaminPromoFrom['kaminy'] ?? null)
             <span class="eco-promo-duo__from">от <b>{{ number_format((float) $ecokaminPromoFrom['kaminy'], 0, '.', ' ') }} BYN</b></span>
             @endif

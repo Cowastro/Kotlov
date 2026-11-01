@@ -18,14 +18,14 @@
         <div class="eco-promo-slide__copy">
             <span class="eco-promo-slide__eyebrow">Акция производителя ЭкоКамин</span>
             @if($ecoDelta)
-            <h2>Топки Дельта<br><span>−{{ $ecokaminPromoMaxDiscount }}%</span></h2>
-            <p>Все каминные топки ЭкоКамин Дельта — фронтальные, угловые и трёхсторонние, с подовым горением и вертикальной ламелью — по акционным ценам производителя.</p>
+            <h2>Каминные топки<br><span>до −{{ $ecokaminPromoMaxDiscount }}%</span></h2>
+            <p>Дельта и Вега −20%, Альфа −25% с белым шамотом и −15% с чёрным, чугунная Primo 700 — по акционным ценам производителя.</p>
             @elseif($ecoFireplaces)
-            <h2>Камины ЭкоКамин<br><span>до −{{ $ecokaminPromoMaxDiscount }}%</span></h2>
-            <p>Мадрид, Рио, Крит, Эклипс, Родос, Прага, Мюнхен и Три стекла — по акционным ценам производителя. Таких цен больше не будет.</p>
+            <h2>Камины и печи-камины<br><span>до −{{ $ecokaminPromoMaxDiscount }}%</span></h2>
+            <p>Угловые камины Прага −30%; Мадрид, Рио, Крит, Эклипс, Родос −20%; Мюнхен, Три стекла и печи-камины Бавария −15%. Таких цен больше не будет.</p>
             @else
             <h2>Камины и топки<br><span>до −{{ $ecokaminPromoMaxDiscount }}%</span></h2>
-            <p>Топки Дельта, камины Мадрид, Рио, Крит, Мюнхен, Прага и Эклипс по акционным ценам производителя. Таких цен больше не будет.</p>
+            <p>Угловые камины Прага −30%, топки Дельта, Вега и Альфа, камины Мадрид, Рио, Родос, Мюнхен и печи-камины Бавария по акционным ценам производителя.</p>
             @endif
             <div class="eco-promo-slide__timer" data-eco-countdown="{{ $ecoEnds->toIso8601String() }}" aria-label="До конца акции">
                 <span><b data-unit="d">–</b><small>дней</small></span>
@@ -35,18 +35,18 @@
             </div>
             <div class="eco-promo-slide__actions">
                 @if($ecoDelta)
-                <a href="{{ route('promotions.ecokamin') }}#delta" class="tf-btn animate-btn eco-promo-slide__cta">Все топки Дельта</a>
+                <a href="{{ route('promotions.ecokamin') }}#topki" class="tf-btn animate-btn eco-promo-slide__cta">Все топки по акции</a>
                 <a href="{{ route('promotions.ecokamin') }}#kaminy" class="eco-promo-slide__more">Камины по акции</a>
                 @elseif($ecoFireplaces)
                 <a href="{{ route('promotions.ecokamin') }}#kaminy" class="tf-btn animate-btn eco-promo-slide__cta">Все камины по акции</a>
-                <a href="{{ route('promotions.ecokamin') }}#delta" class="eco-promo-slide__more">Топки Дельта −20%</a>
+                <a href="{{ route('promotions.ecokamin') }}#bavaria" class="eco-promo-slide__more">Печи-камины Бавария −15%</a>
                 @else
                 <a href="{{ route('promotions.ecokamin') }}" class="tf-btn animate-btn eco-promo-slide__cta">Все товары акции</a>
-                <a href="{{ route('promotions.ecokamin') }}#delta" class="eco-promo-slide__more">Топки Дельта −20%</a>
+                <a href="{{ route('promotions.ecokamin') }}#topki" class="eco-promo-slide__more">Топки до −25%</a>
                 @endif
             </div>
         </div>
-        <div class="eco-promo-slide__products" aria-label="{{ $ecoDelta ? 'Топки Дельта по акции' : ($ecoFireplaces ? 'Камины по акции' : 'Хиты акции ЭкоКамин') }}">
+        <div class="eco-promo-slide__products" aria-label="{{ $ecoDelta ? 'Каминные топки по акции' : ($ecoFireplaces ? 'Камины по акции' : 'Хиты акции ЭкоКамин') }}">
             @foreach($ecokaminPromoHits->take(3) as $hit)
             <a href="/{{ $hit->category->slug }}/{{ $hit->slug }}" class="eco-promo-slide__product">
                 <span class="eco-promo-slide__offer">−{{ $hit->discount_percent }}%</span>

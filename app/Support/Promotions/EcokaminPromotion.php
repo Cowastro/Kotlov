@@ -15,9 +15,13 @@ use Illuminate\Support\Facades\Cache;
  */
 final class EcokaminPromotion
 {
-    public const CACHE_KEY = 'ecokamin-promotion:showcase:v3';
+    public const CACHE_KEY = 'ecokamin-promotion:showcase:v4';
 
-    private const SERIES = ['дельта', 'бавария', 'рио', 'мюнхен', 'мадрид', 'крит', 'прага', 'эклипс', 'родос', 'три стекла'];
+    /** One hit per series, in this order on the home slide. */
+    private const SERIES = ['дельта', 'бавария', 'прага', 'альфа', 'вега', 'primo', 'рио', 'мюнхен', 'мадрид', 'крит', 'эклипс', 'родос', 'три стекла'];
+
+    /** Firebox series of the promotion; everything else is a fireplace or a stove-fireplace. */
+    public const FIREBOX_SERIES = ['дельта', 'альфа', 'вега', 'primo'];
 
     public static function endsAt(): CarbonImmutable
     {
@@ -29,11 +33,29 @@ final class EcokaminPromotion
         return now()->lt(self::endsAt());
     }
 
-    /** @return array{all: Collection<int, Product>, hits: Collection<int, Product>, deltaHits: Collection<int, Product>, fireplaceHits: Collection<int, Product>, maxDiscount: int, deltaMaxDiscount: int, fireplaceMaxDiscount: int, from: array{delta: ?float, kaminy: ?float}} */
+    public static function isFirebox(Product $product): bool
+    {
+        return self::seriesOf($product, self::FIREBOX_SERIES) !== null;
+    }
+
+    /** @param  list<string>  $series */
+    public static function seriesOf(Product $product, array $series = self::SERIES): ?string
+    {
+        $name = mb_strtolower($product->name);
+        foreach ($series as $candidate) {
+            if (str_contains($name, $candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /** @return array{all: Collection<int, Product>, hits: Collection<int, Product>, fireboxHits: Collection<int, Product>, fireplaceHits: Collection<int, Product>, maxDiscount: int, fireboxMaxDiscount: int, fireplaceMaxDiscount: int, from: array{topki: ?float, kaminy: ?float}} */
     public static function showcase(): array
     {
         if (! self::isRunning()) {
-            return ['all' => collect(), 'hits' => collect(), 'deltaHits' => collect(), 'fireplaceHits' => collect(), 'maxDiscount' => 0, 'deltaMaxDiscount' => 0, 'fireplaceMaxDiscount' => 0, 'from' => ['delta' => null, 'kaminy' => null]];
+            return ['all' => collect(), 'hits' => collect(), 'fireboxHits' => collect(), 'fireplaceHits' => collect(), 'maxDiscount' => 0, 'fireboxMaxDiscount' => 0, 'fireplaceMaxDiscount' => 0, 'from' => ['topki' => null, 'kaminy' => null]];
         }
 
         return Cache::remember(self::CACHE_KEY, 600, function (): array {
@@ -46,35 +68,29 @@ final class EcokaminPromotion
                 ->get()
                 ->filter(fn (Product $product): bool => $product->canBeAddedToCart())
                 ->values();
+            // The biggest discount of a series first, then a card with a photo.
+            $best = fn (Collection $products) => $products
+                ->sortByDesc(fn (Product $product): int => (int) $product->discount_percent * 10 + (count($product->imagePaths()) > 0 ? 1 : 0))
+                ->first();
             $hits = collect(self::SERIES)
-                ->map(fn (string $series) => $all
-                    ->filter(fn (Product $product): bool => str_contains(mb_strtolower($product->name), $series))
-                    ->sortByDesc(fn (Product $product): int => count($product->imagePaths()) > 0 ? 1 : 0)
-                    ->first())
+                ->map(fn (string $series) => $best($all->filter(fn (Product $product): bool => self::seriesOf($product) === $series)))
                 ->filter()
-                ->unique('id')
                 ->values();
-            $isDelta = fn (Product $product): bool => str_contains(mb_strtolower($product->name), 'дельта');
-            $delta = $all->filter($isDelta);
-            // One Дельта per width (700, 800, 1000…), photos first, cheapest first.
-            $deltaHits = $delta
-                ->sortBy(fn (Product $product): string => (count($product->imagePaths()) > 0 ? '0' : '1').str_pad((string) (int) $product->price, 9, '0', STR_PAD_LEFT))
-                ->unique(fn (Product $product): string => preg_match('/дельта\s*(\d{3,4})/iu', $product->name, $m) ? $m[1] : (string) $product->id)
-                ->sortBy(fn (Product $product): int => (int) (preg_match('/дельта\s*(\d{3,4})/iu', $product->name, $m) ? $m[1] : 9999))
-                ->take(3)
-                ->values();
+            $fireboxes = $all->filter(fn (Product $product): bool => self::isFirebox($product));
+            $fireplaces = $all->reject(fn (Product $product): bool => self::isFirebox($product));
 
             return [
                 'all' => $all,
                 'hits' => $hits,
-                'deltaHits' => $deltaHits,
-                'fireplaceHits' => $hits->reject($isDelta)->take(3)->values(),
-                'fireplaceMaxDiscount' => (int) $all->reject($isDelta)->max(fn (Product $product): int => (int) $product->discount_percent),
-                'deltaMaxDiscount' => (int) $delta->max(fn (Product $product): int => (int) $product->discount_percent),
+                // A catalogue banner needs three cards: one per series first, then more of the same group.
+                'fireboxHits' => $hits->filter(fn (Product $product): bool => self::isFirebox($product))->concat($fireboxes)->unique('id')->take(3)->values(),
+                'fireplaceHits' => $hits->reject(fn (Product $product): bool => self::isFirebox($product))->concat($fireplaces)->unique('id')->take(3)->values(),
+                'fireboxMaxDiscount' => (int) $fireboxes->max(fn (Product $product): int => (int) $product->discount_percent),
+                'fireplaceMaxDiscount' => (int) $fireplaces->max(fn (Product $product): int => (int) $product->discount_percent),
                 'maxDiscount' => (int) $all->max(fn (Product $product): int => (int) $product->discount_percent),
                 'from' => [
-                    'delta' => $all->filter($isDelta)->min('price'),
-                    'kaminy' => $all->reject($isDelta)->min('price'),
+                    'topki' => $fireboxes->min('price'),
+                    'kaminy' => $fireplaces->min('price'),
                 ],
             ];
         });

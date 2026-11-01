@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Console\Commands\ApplyEcokaminOctoberSaleCommand;
 use App\Models\Product;
-use Carbon\CarbonImmutable;
+use App\Support\Promotions\EcokaminPromotion;
 
 class PromotionController extends Controller
 {
@@ -67,15 +67,19 @@ class PromotionController extends Controller
             return redirect()->route('promotions.index');
         }
 
-        $isDelta = fn (Product $product): bool => preg_match('/дельта|delta/iu', $product->name) === 1;
-        $deltaProducts = $products->filter($isDelta)->values();
-        $fireplaceProducts = $products->reject($isDelta)->values();
-        $endsAt = CarbonImmutable::parse(ApplyEcokaminOctoberSaleCommand::ENDS_AT, 'Europe/Minsk');
-        $title = 'Акция ЭкоКамин: скидка до 20% на топки Дельта и камины | KOTLOV';
-        $description = 'Скидка 20% на топки ЭкоКамин Дельта и камины Мадрид, Рио, Крит, Эклипс, Родос, Прага, 15% на Мюнхен и Три стекла до '.$endsAt->format('d.m.Y').'. Цены на сайте уже со скидкой, доставка по Беларуси.';
+        $isBavaria = fn (Product $product): bool => EcokaminPromotion::seriesOf($product) === 'бавария';
+        // Fireboxes grouped by series in the order of the manufacturer banners.
+        $fireboxProducts = $products->filter(fn (Product $product): bool => EcokaminPromotion::isFirebox($product))
+            ->sortBy(fn (Product $product): string => array_search(EcokaminPromotion::seriesOf($product, EcokaminPromotion::FIREBOX_SERIES), EcokaminPromotion::FIREBOX_SERIES, true).str_pad((string) (int) $product->price, 9, '0', STR_PAD_LEFT))
+            ->values();
+        $bavariaProducts = $products->filter($isBavaria)->values();
+        $fireplaceProducts = $products->reject(fn (Product $product): bool => EcokaminPromotion::isFirebox($product) || $isBavaria($product))->values();
+        $endsAt = EcokaminPromotion::endsAt();
+        $title = 'Акция ЭкоКамин: скидки до 30% на камины, топки и печи-камины | KOTLOV';
+        $description = 'Угловые камины Прага −30%, топки Дельта и Вега −20%, Альфа до −25%, камины Мадрид, Рио, Крит, Эклипс, Родос −20%, Мюнхен, Три стекла и печи-камины Бавария −15% до '.$endsAt->format('d.m.Y').'. Цены на сайте уже со скидкой, доставка по Беларуси.';
         $canonical = 'https://kotlov.by/akcii/ecokamin-skidki';
 
-        return view('pages.promotion-ecokamin', compact('deltaProducts', 'fireplaceProducts', 'endsAt', 'title', 'description', 'canonical'));
+        return view('pages.promotion-ecokamin', compact('fireboxProducts', 'fireplaceProducts', 'bavariaProducts', 'endsAt', 'title', 'description', 'canonical'));
     }
 
     /** Products of the running ЭкоКамин promotion, cheapest first. */

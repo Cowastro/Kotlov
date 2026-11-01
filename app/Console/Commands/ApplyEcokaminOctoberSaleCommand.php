@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /**
- * ЭкоКамин promotion until 31.10.2026 (Дельта fireboxes, Мадрид, Рио, Крит,
- * Эклипс, Родос, Прага, Мюнхен, Три стекла; from 23.10 also the Бавария
- * stove-fireplaces −15% and the corner Дельта 800/1000 from stock −28%). Prices mirror the manufacturer:
+ * ЭкоКамин promotion, extended to 30.11.2026: Дельта fireboxes, Мадрид, Рио, Крит,
+ * Эклипс, Родос, Прага (corner models −30%), Мюнхен, Три стекла, the Бавария
+ * stove-fireplaces −15% and the corner Дельта 800/1000 from stock −28%; from
+ * November also the Вега (−20%) and Альфа (−25% white / −15% black chamotte)
+ * fireboxes and the cast-iron Primo 700. The campaign id stays from October so
+ * running cards keep their regular price in price_old. Prices mirror the manufacturer:
  * ecokamin.ru shows the promotional and the regular rouble price of every
  * model, the card gets both, converted with the same rate as its current
  * price. Our retail prices were already synced from ecokamin.ru, so no own
@@ -32,11 +35,11 @@ class ApplyEcokaminOctoberSaleCommand extends Command
 
     public const CAMPAIGN = 'ecokamin-2026-10';
 
-    public const ENDS_AT = '2026-10-31 23:59:59';
+    public const ENDS_AT = '2026-11-30 23:59:59';
 
     /** ecokamin.ru catalogue sections of the promotion. */
     public const SECTIONS = [
-        'kaminnye_topki/delta', 'kaminy/kaminy_madrid', 'kaminy/kaminy_rio', 'kaminy/kamin_krit', 'kaminy/eklips',
+        'kaminnye_topki/delta', 'kaminnye_topki/vega', 'kaminnye_topki/alfa', 'kaminnye_topki/chugunnye_topki', 'kaminy/kaminy_madrid', 'kaminy/kaminy_rio', 'kaminy/kamin_krit', 'kaminy/eklips',
         'kaminy/rodos', 'kaminy/praga', 'kaminy/myunkhen', 'kaminy/kaminy_tri_stekla', 'pechi_kaminy/bavariya',
     ];
 

@@ -19,6 +19,12 @@
     .eco-promo__head h2{margin:12px 0 0;font-size:clamp(28px,3vw,42px);letter-spacing:-.03em}
     .eco-promo__badge{padding:8px 14px;border-radius:999px;background:var(--red);color:#fff;font-weight:700}
     .eco-promo__terms{padding:56px 0;color:var(--muted);font-size:14px;line-height:1.6}
+    .eco-promo__series{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,560px);gap:28px;align-items:center;margin-bottom:36px}
+    .eco-promo__series img{display:block;width:100%;height:auto;border-radius:18px;box-shadow:0 18px 44px rgba(17,19,22,.12)}
+    .eco-promo__series ul{margin:0;padding:0;list-style:none;color:var(--ink);font-size:17px;line-height:1.5}
+    .eco-promo__series li{padding:10px 0;border-bottom:1px solid var(--line)}
+    .eco-promo__series b{color:var(--red)}
+    @media(max-width:991px){.eco-promo__series{grid-template-columns:1fr}}
     @media(max-width:767px){.eco-promo__banners{grid-template-columns:1fr}.eco-promo__section{padding:52px 0}}
 </style>
 @endpush
@@ -29,25 +35,37 @@
         <div class="container">
             <div class="breadcrumbs mb-32"><a href="/" class="text-caption-01 link">Главная</a><i class="icon icon-CaretRightThin"></i><a href="/akcii" class="text-caption-01 link">Акции</a><i class="icon icon-CaretRightThin"></i><p class="text-caption-01">Акция ЭкоКамин</p></div>
             <span class="eco-promo__kicker">Акция производителя ЭкоКамин</span>
-            <h1 class="mt-20 mb-20">Скидка до 20% на&nbsp;топки Дельта и&nbsp;камины ЭкоКамин</h1>
-            <p class="eco-promo__lead mb-0">−20% на все топки Дельта и камины Мадрид, Рио, Крит, Эклипс, Родос, Прага; −15% на камины Мюнхен и Три стекла. Цены на сайте уже со скидкой.</p>
-            <span class="eco-promo__deadline">Акция действует до {{ $endsAt->format('d.m.Y') }} включительно</span>
+            <h1 class="mt-20 mb-20">Скидки до 30% на&nbsp;камины, топки и&nbsp;печи-камины ЭкоКамин</h1>
+            <p class="eco-promo__lead mb-0">−30% на угловые камины Прага; −20% на топки Дельта и Вега, камины Мадрид, Рио, Крит, Эклипс, Родос; Альфа −25% с белым и −15% с чёрным шамотом; −15% на камины Мюнхен, Три стекла и печи-камины Бавария; чугунная топка Primo 700 по акционной цене. Цены на сайте уже со скидкой.</p>
+            <span class="eco-promo__deadline">Акция продлена до {{ $endsAt->format('d.m.Y') }} включительно</span>
             <div class="eco-promo__banners">
-                <a href="#delta" aria-label="Скидка до 20% на все топки Дельта"><img loading="eager" width="1000" height="300" src="{{ asset('img/promotions/ecokamin-2026-10/delta.webp') }}" alt="Акция ЭкоКамин: скидка до 20% на все топки Дельта"></a>
-                <a href="#kaminy" aria-label="Скидка 20% и 15% на камины ЭкоКамин"><img loading="eager" width="1000" height="300" src="{{ asset('img/promotions/ecokamin-2026-10/kaminy.webp') }}" alt="Акция ЭкоКамин: скидка 20% на камины Мадрид, Рио, Крит, Эклипс, Родос, Прага и 15% на Мюнхен, Три стекла"></a>
+                <a href="#topki" aria-label="Скидка до 20% на все топки Дельта"><img loading="eager" width="1000" height="300" src="{{ asset('img/promotions/ecokamin-2026-11/delta.webp') }}" alt="Акция ЭкоКамин: скидка до 20% на все топки Дельта"></a>
+                <a href="#topki" aria-label="Скидка 20% на каминные топки Вега"><img loading="eager" width="1000" height="300" src="{{ asset('img/promotions/ecokamin-2026-11/vega.webp') }}" alt="Акция ЭкоКамин: скидка 20% на каминные топки Вега с большими стёклами"></a>
+                <a href="#kaminy" aria-label="Скидка 20% и 15% на камины ЭкоКамин"><img loading="lazy" width="1000" height="300" src="{{ asset('img/promotions/ecokamin-2026-11/kaminy.webp') }}" alt="Акция ЭкоКамин: скидка 20% на камины Мадрид, Рио, Крит, Эклипс, Родос, Прага и 15% на Мюнхен, Три стекла"></a>
+                <a href="#bavaria" aria-label="Скидка 15% на печи-камины Бавария"><img loading="lazy" width="1000" height="300" src="{{ asset('img/promotions/ecokamin-2026-11/bavaria.webp') }}" alt="Акция ЭкоКамин: скидка 15% на все печи-камины Бавария"></a>
             </div>
         </div>
     </section>
 
-    @if($deltaProducts->isNotEmpty())
-    <section class="eco-promo__section" id="delta">
+    @if($fireboxProducts->isNotEmpty())
+    <section class="eco-promo__section" id="topki">
+        <span id="delta"></span>
         <div class="container">
             <div class="eco-promo__head">
-                <div><span class="eco-promo__kicker">Каминные топки</span><h2>Топки ЭкоКамин Дельта</h2></div>
-                <span class="eco-promo__badge">−20%</span>
+                <div><span class="eco-promo__kicker">Каминные топки</span><h2>Дельта, Вега, Альфа и Primo 700</h2></div>
+                <span class="eco-promo__badge">до −25%</span>
+            </div>
+            <div class="eco-promo__series">
+                <ul>
+                    <li>Топки Дельта — <b>до −20%</b></li>
+                    <li>Топки Вега с большими стёклами — <b>−20%</b></li>
+                    <li>Топки Альфа — <b>−25%</b> с белым шамотом, <b>−15%</b> с чёрным</li>
+                    <li>Чугунная топка Primo 700 — акционная цена, решётка-гриль в подарок</li>
+                </ul>
+                <img loading="lazy" width="1280" height="720" src="{{ asset('img/promotions/ecokamin-2026-11/alfa.webp') }}" alt="Акция ЭкоКамин: скидка на все топки серии Альфа — 25% с белым шамотом, 15% с чёрным">
             </div>
             <div class="tf-grid-layout sm-col-2 lg-col-3 xl-col-4">
-                @foreach($deltaProducts as $product)
+                @foreach($fireboxProducts as $product)
                     @include('partials.product-card', ['product' => $product])
                 @endforeach
             </div>
@@ -59,11 +77,27 @@
     <section class="eco-promo__section eco-promo__section--alt" id="kaminy">
         <div class="container">
             <div class="eco-promo__head">
-                <div><span class="eco-promo__kicker">Камины</span><h2>Мадрид, Рио, Крит, Эклипс, Родос, Прага, Мюнхен, Три стекла</h2></div>
-                <span class="eco-promo__badge">−20% / −15%</span>
+                <div><span class="eco-promo__kicker">Камины</span><h2>Прага, Мадрид, Рио, Крит, Эклипс, Родос, Мюнхен, Три стекла</h2></div>
+                <span class="eco-promo__badge">−30% / −20% / −15%</span>
             </div>
             <div class="tf-grid-layout sm-col-2 lg-col-3 xl-col-4">
                 @foreach($fireplaceProducts as $product)
+                    @include('partials.product-card', ['product' => $product])
+                @endforeach
+            </div>
+        </div>
+    </section>
+    @endif
+
+    @if($bavariaProducts->isNotEmpty())
+    <section class="eco-promo__section" id="bavaria">
+        <div class="container">
+            <div class="eco-promo__head">
+                <div><span class="eco-promo__kicker">Печи-камины</span><h2>Все печи-камины Бавария</h2></div>
+                <span class="eco-promo__badge">−15%</span>
+            </div>
+            <div class="tf-grid-layout sm-col-2 lg-col-3 xl-col-4">
+                @foreach($bavariaProducts as $product)
                     @include('partials.product-card', ['product' => $product])
                 @endforeach
             </div>

@@ -43,15 +43,15 @@
     <section class="promo-feature" id="ecokamin-promo">
         <div class="container">
             <article class="promo-feature__card">
-                <a href="{{ route('promotions.ecokamin') }}" class="promo-feature__media" aria-label="Акция ЭкоКамин: скидки до 20%">
-                    <img loading="eager" src="{{ asset('img/promotions/ecokamin-2026-10/kaminy.webp') }}" alt="Акция ЭкоКамин: скидки на камины">
+                <a href="{{ route('promotions.ecokamin') }}" class="promo-feature__media" aria-label="Акция ЭкоКамин: скидки до 30%">
+                    <img loading="eager" src="{{ asset('img/promotions/ecokamin-2026-11/kaminy.webp') }}" alt="Акция ЭкоКамин: скидки на камины">
                 </a>
                 <div class="promo-feature__copy">
-                    <span class="promo-feature__badge">ДО −20% · ДО 31.10.2026</span>
+                    <span class="promo-feature__badge">ДО −30% · ДО 30.11.2026</span>
                     <h2 class="mb-16">Акция ЭкоКамин</h2>
-                    <p class="mb-0" style="color:rgba(255,255,255,.7)">−20% на все топки Дельта и камины Мадрид, Рио, Крит, Эклипс, Родос, Прага; −15% на камины Мюнхен и Три стекла. Цены на сайте уже со скидкой.</p>
+                    <p class="mb-0" style="color:rgba(255,255,255,.7)">−30% на угловые камины Прага; −20% на топки Дельта и Вега, камины Мадрид, Рио, Крит, Эклипс, Родос; Альфа −25% с белым и −15% с чёрным шамотом; −15% на Мюнхен, Три стекла и печи-камины Бавария; Primo 700 по акционной цене. Цены на сайте уже со скидкой.</p>
                     <div class="promo-feature__actions mt-24">
-                        <a href="{{ route('promotions.ecokamin') }}#delta" class="tf-btn animate-btn">Топки Дельта</a>
+                        <a href="{{ route('promotions.ecokamin') }}#topki" class="tf-btn animate-btn">Топки по акции</a>
                         <a href="{{ route('promotions.ecokamin') }}#kaminy" class="tf-btn btn-white">Камины по акции</a>
                     </div>
                 </div>
