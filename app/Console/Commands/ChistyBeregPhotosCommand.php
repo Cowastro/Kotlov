@@ -18,10 +18,12 @@ use Illuminate\Support\Str;
  *
  *   php artisan supplier:chisty-bereg-photos --limit=20            # dry run: the chosen pages
  *   php artisan supplier:chisty-bereg-photos --limit=20 --apply
+ *   php artisan supplier:chisty-bereg-photos --supplier=kaminproff --apply   # the hidden Fireway cards
  */
 class ChistyBeregPhotosCommand extends Command
 {
     protected $signature = 'supplier:chisty-bereg-photos {--limit=20}
+        {--supplier=chisty_bereg : chisty_bereg, or kaminproff for the Fireway cards made from its price list}
         {--reset-misses-since= : Put back to the queue the cards searched since then that got no photo (an AI outage)}
         {--apply : Save the photos}';
 
@@ -33,9 +35,13 @@ class ChistyBeregPhotosCommand extends Command
     public function handle(WebProductSources $sources, ProductSourceEnricher $enricher): int
     {
         $sources->background = true;
+        // Cards made from a price list keep its prefix in the SKU.
+        [$supplierCode, $skuPrefix, $ownSite] = $this->option('supplier') === SyncKaminproffCommand::SUPPLIER_CODE
+            ? [SyncKaminproffCommand::SUPPLIER_CODE, 'FIREWAY-', 'kaminproff.by']
+            : [SyncChistyBeregCommand::SUPPLIER_CODE, 'BEREG-', 'bereg.by'];
         $offers = SupplierProduct::query()
-            ->whereHas('supplier', fn ($q) => $q->where('code', SyncChistyBeregCommand::SUPPLIER_CODE))
-            ->whereHas('product', fn ($q) => $q->where('sku', 'like', 'BEREG-%')->where('is_archived', false)
+            ->whereHas('supplier', fn ($q) => $q->where('code', $supplierCode))
+            ->whereHas('product', fn ($q) => $q->where('sku', 'like', $skuPrefix.'%')->where('is_archived', false)
                 ->where('created_via', Product::CREATED_VIA_AWAITING_PHOTOS))
             ->with('product.brand:id,name')->orderBy('id')->get()
             ->filter(fn (SupplierProduct $offer): bool => array_filter((array) $offer->product->images) === [])
@@ -88,7 +94,7 @@ class ChistyBeregPhotosCommand extends Command
 
                     continue;
                 }
-                $urls = array_values(array_filter(array_keys($urls), fn (string $url): bool => ! str_contains($url, 'bereg.by') && ! preg_match('/\.(pdf|docx?|xlsx?)(\?|$)/i', $url)));
+                $urls = array_values(array_filter(array_keys($urls), fn (string $url): bool => ! str_contains($url, $ownSite) && ! preg_match('/\.(pdf|docx?|xlsx?)(\?|$)/i', $url)));
                 $found = null;
                 $started = microtime(true);
                 foreach (array_slice($urls, 0, self::PAGES) as $url) {

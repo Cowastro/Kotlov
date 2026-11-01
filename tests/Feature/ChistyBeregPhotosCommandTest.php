@@ -67,6 +67,29 @@ class ChistyBeregPhotosCommandTest extends TestCase
         $this->artisan('supplier:chisty-bereg-photos')->expectsOutputToContain('metric.chisty_bereg_photos.due=0')->assertSuccessful();
     }
 
+    public function test_a_hidden_fireway_card_is_searched_with_the_kaminproff_option(): void
+    {
+        $category = Category::query()->create(['name' => 'Литьё', 'slug' => 'lite-fw-test', 'is_active' => true]);
+        $card = Product::query()->create(['category_id' => $category->id, 'name' => 'Дверца Fireway К-402 топочная 250×280 мм застекленная', 'slug' => 'dverca-fw-k402',
+            'sku' => 'FIREWAY-DVERCA-K-402', 'price' => 355, 'images' => [], 'is_active' => false, 'created_via' => Product::CREATED_VIA_AWAITING_PHOTOS]);
+        $supplier = Supplier::query()->updateOrCreate(['code' => 'kaminproff'], ['name' => 'Каминпрофессионал', 'currency' => 'BYN', 'is_active' => true]);
+        SupplierProduct::query()->create(['supplier_id' => $supplier->id, 'supplier_article' => 'pecnoe-lite-dverca-k-402', 'supplier_name' => 'Дверца К-402 топочная 250х280мм застекленная',
+            'product_id' => $card->id, 'match_status' => 'matched', 'raw' => ['brand' => 'Fireway']]);
+        $this->mock(WebProductSources::class, function ($mock) {
+            $mock->shouldReceive('isConfigured')->andReturn(true);
+            $mock->shouldReceive('search')->andReturn(['https://pechi.by/fireway-k-402' => 'pechi.by']);
+        });
+        Http::fake([
+            'pechi.by/fireway*' => Http::response('<html><h1>Дверца топочная Fireway К-402 250х280 мм застеклённая</h1><img src="https://pechi.by/upload/k402.jpg"></html>'),
+            '*' => Http::response(''),
+        ]);
+
+        $this->artisan('supplier:chisty-bereg-photos', ['--supplier' => 'kaminproff'])
+            ->expectsOutputToContain("audit.chisty_bereg_photos.card={$card->id}:dverca-fw-k402:pechiby")
+            ->assertSuccessful();
+        $this->artisan('supplier:chisty-bereg-photos')->expectsOutputToContain('metric.chisty_bereg_photos.due=0')->assertSuccessful();
+    }
+
     private function jpeg(): string
     {
         $image = imagecreatetruecolor(600, 600);
