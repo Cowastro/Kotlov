@@ -98,7 +98,8 @@ class SyncAkvateploservisCommand extends Command
         $cards = DB::table('products')->where('is_archived', false)
             ->where(fn ($q) => $q->whereIn('brand_id', $brandIds)->orWhereIn('id', $links->values()->all()))
             ->get(['id', 'name', 'sku']);
-        $compact = fn (string $value): string => preg_replace('/[^A-Z0-9]+/', '', mb_strtoupper($value)) ?? '';
+        // 26-408100N and 26-408100 (a card title without the last N) are one article.
+        $compact = fn (string $value): string => rtrim(preg_replace('/[^A-Z0-9]+/', '', mb_strtoupper($value)) ?? '', 'N');
         $byArticle = [];
         $byModel = [];
         $cardKeys = [];

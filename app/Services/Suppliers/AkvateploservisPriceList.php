@@ -139,7 +139,8 @@ class AkvateploservisPriceList
         // The specs after « - » or the first comma of the price list name («, возможность установки ТЭНа…»).
         $name = preg_match('/^(.*?\d.*?)\s+-\s(?!\d)/u', $name, $m) ? $m[1] : $name;
         $name = preg_match('/^(.*?\d.*?),\s/u', $name, $m) ? $m[1] : $name;
-        $name = str_replace(['sg-w', 'sg(k)', 'sg(к)'], ['sgw', 'sgk', 'sgk'], $name);
+        // «BUFOR SG(B) 500» is the card «BUFOR SG 500».
+        $name = str_replace(['sg-w', 'sg(k)', 'sg(к)', 'sg(b)'], ['sgw', 'sgk', 'sgk', 'sg'], $name);
         $name = (string) preg_replace('/\(([a-zа-я])\)/u', '$1', $name);
         $name = (string) preg_replace('/(\d)([a-zа-я])\b/u', '$1 $2', $name);
         $name = (string) preg_replace('/([a-z])(\d)/u', '$1 $2', $name);
