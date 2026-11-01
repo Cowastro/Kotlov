@@ -23,7 +23,12 @@ class SyncDealByBrandPricesCommand extends Command
     protected $signature = 'deal:sync-brand-prices
         {--supplier= : Audit products linked to an allowed supplier code instead of the default brands}
         {--inspect-id= : Emit safe price and discount fields for one Deal.by product ID}
+        {--pair=* : Fireway: a shop item linked by hand, deal id:card slug (kept on the offer with --apply)}
+        {--export-missing= : Fireway: a deal.by import xlsx of the cards missing on the shop, a file name under public/exports}
         {--apply : Update matched Deal.by product prices}';
+
+    /** @var array<int, int> deal.by id => card id, linked by hand */
+    private array $dealPairs = [];
 
     protected $description = 'Safely audit or synchronize selected KOTLOV.BY prices to Deal.by';
 
@@ -38,9 +43,13 @@ class SyncDealByBrandPricesCommand extends Command
                 return $this->inspectRemoteProduct($remoteProducts, (int) $this->option('inspect-id'));
             }
 
+            $this->dealPairs = $this->dealPairs($localProducts);
             $plan = $this->buildPlan($localProducts, $remoteProducts);
 
             $this->metrics($localProducts, $remoteProducts, $plan);
+            if (filled($this->option('export-missing'))) {
+                $this->exportMissing($localProducts->whereNotIn('id', $plan['matched_local_ids'])->values(), (string) $this->option('export-missing'));
+            }
 
             if ($this->supplierCode === null) {
                 $localVezuviy = $localProducts->filter(
@@ -213,6 +222,7 @@ class SyncDealByBrandPricesCommand extends Command
         $ambiguous = 0;
         $invalidRemotePrice = 0;
         $matchedLocalIds = collect();
+        $matchedRemoteIds = collect();
 
         foreach ($remoteProducts as $remote) {
             $local = null;
@@ -221,6 +231,9 @@ class SyncDealByBrandPricesCommand extends Command
 
             if (preg_match('/^kotlov-(\d+)$/i', $externalId, $match) === 1) {
                 $local = $localById->get((int) $match[1]);
+            }
+            if (! $local && isset($this->dealPairs[(int) ($remote['id'] ?? 0)])) {
+                $local = $localById->get($this->dealPairs[(int) $remote['id']]);
             }
 
             if (! $local && $remoteSku !== '' && ($remoteSkuCounts[$remoteSku] ?? 0) === 1) {
@@ -277,6 +290,7 @@ class SyncDealByBrandPricesCommand extends Command
 
             $matched++;
             $matchedLocalIds->push($local->id);
+            $matchedRemoteIds->push((int) ($remote['id'] ?? 0));
 
             if (! is_numeric($remote['price'] ?? null)) {
                 $invalidRemotePrice++;
@@ -312,7 +326,91 @@ class SyncDealByBrandPricesCommand extends Command
             'unmatched' => $localProducts->pluck('id')->diff($matchedLocalIds->unique())->count(),
             'ambiguous' => $ambiguous,
             'invalid_remote_price' => $invalidRemotePrice,
+            'matched_local_ids' => $matchedLocalIds->unique()->values()->all(),
+            'matched_remote_ids' => $matchedRemoteIds->unique()->values()->all(),
         ];
+    }
+
+    /**
+     * Shop items linked by hand to Fireway cards: kept on the Камин-профессионал offer of the card (raw.deal_by_id),
+     * new pairs of --pair saved with --apply.
+     *
+     * @param  Collection<int, Product>  $localProducts
+     * @return array<int, int>
+     */
+    private function dealPairs(Collection $localProducts): array
+    {
+        if ($this->supplierCode !== 'kaminproff') {
+            return [];
+        }
+        $supplierId = (int) \Illuminate\Support\Facades\DB::table('suppliers')->where('code', 'kaminproff')->value('id');
+        $offers = \App\Models\SupplierProduct::query()->where('supplier_id', $supplierId)->whereNotNull('product_id')->get();
+        $pairs = [];
+        foreach ($offers as $offer) {
+            if ((int) ($offer->raw['deal_by_id'] ?? 0) > 0) {
+                $pairs[(int) $offer->raw['deal_by_id']] = (int) $offer->product_id;
+            }
+        }
+        foreach ((array) $this->option('pair') as $pair) {
+            [$dealId, $slug] = array_pad(explode(':', (string) $pair, 2), 2, '');
+            $product = $localProducts->firstWhere('slug', trim($slug));
+            $offer = $product ? $offers->firstWhere('product_id', $product->id) : null;
+            if (! ctype_digit(trim($dealId)) || ! $offer) {
+                $this->warn("--pair {$pair}: карточка поставщика не найдена.");
+
+                continue;
+            }
+            $pairs[(int) $dealId] = (int) $product->id;
+            if ($this->option('apply')) {
+                $offer->forceFill(['raw' => array_merge((array) $offer->raw, ['deal_by_id' => (int) $dealId])])->save();
+            }
+        }
+
+        return $pairs;
+    }
+
+    /**
+     * The deal.by (Prom) import file of the cards the shop lacks. «Идентификатор_товара» kotlov-<id> links the new
+     * shop item to its card by itself (external_id) in the next price sync. Cards without a photo are left out.
+     *
+     * @param  Collection<int, Product>  $products
+     */
+    private function exportMissing(Collection $products, string $name): void
+    {
+        $name = \Illuminate\Support\Str::slug(pathinfo($name, PATHINFO_FILENAME)) ?: 'deal-export';
+        $products = Product::query()->with(['category:id,name', 'brand:id,name'])->whereIn('id', $products->pluck('id'))
+            ->get()->filter(fn (Product $product): bool => $product->imagePaths() !== [])->values();
+        $book = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+        $sheet = $book->getActiveSheet()->setTitle('Export Products Sheet');
+        $sheet->fromArray([['Код_товара', 'Название_позиции', 'Поисковые_запросы', 'Описание', 'Тип_товара', 'Цена', 'Валюта', 'Единица_измерения',
+            'Ссылка_изображения', 'Наличие', 'Название_группы', 'Идентификатор_товара', 'Производитель', 'Страна_производитель']]);
+        $row = 2;
+        foreach ($products as $product) {
+            $images = collect($product->imagePaths())->take(5)->map(fn (string $path) => url('/'.ltrim($path, '/')))->implode(', ');
+            $sheet->fromArray([[
+                $product->sku ?: 'KOTLOV-'.$product->id,
+                $product->name,
+                implode(', ', array_filter([$product->brand?->name, $product->category?->name])),
+                (string) ($product->content ?: $product->short_description),
+                'r',
+                (float) $product->price,
+                'BYN',
+                $product->unit ?: 'шт.',
+                $images,
+                '+',
+                (string) $product->category?->name,
+                'kotlov-'.$product->id,
+                (string) $product->brand?->name,
+                'Россия',
+            ]], null, 'A'.$row++);
+        }
+        $dir = public_path('exports');
+        if (! is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save($dir.'/'.$name.'.xlsx');
+        $this->line('metric.deal_brand_prices.exported='.$products->count());
+        $this->line('audit.deal_brand_prices.export=exports/'.$name.'.xlsx');
     }
 
     /**
@@ -342,7 +440,12 @@ class SyncDealByBrandPricesCommand extends Command
         // ProMetall and Fireway goods on the shop as they are named there: to link the rest by hand.
         if (in_array($this->supplierCode, ['prometall', 'kaminproff'], true)) {
             $pattern = $this->supplierCode === 'prometall' ? '/атмосфер|прометалл|prometall|эйфори|бахт|арктик/ui' : self::FIREWAY_NAME;
+            $matchedRemote = array_flip($plan['matched_remote_ids']);
             foreach ($remoteProducts as $remote) {
+                // Fireway: only the shop items left without a card.
+                if ($this->supplierCode === 'kaminproff' && isset($matchedRemote[(int) ($remote['id'] ?? 0)])) {
+                    continue;
+                }
                 if (preg_match($pattern, (string) ($remote['name'] ?? ''))) {
                     $this->line(sprintf('audit.deal_brand_prices.remote=%d:%s:%s:%d:%s', (int) ($remote['id'] ?? 0),
                         \Illuminate\Support\Str::slug((string) ($remote['sku'] ?? '')) ?: 'none', \Illuminate\Support\Str::slug((string) ($remote['external_id'] ?? '')) ?: 'none',
