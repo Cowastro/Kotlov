@@ -175,6 +175,8 @@ class CreateAkvateploservisCardsCommand extends Command
         $brand = str_starts_with(mb_strtolower($model), mb_strtolower($brand)) ? '' : $brand;
         $title = trim((string) preg_replace('/\s+/u', ' ', $type.' '.$brand.' '.$model)).implode('', array_map(fn ($extra) => ', '.$extra, array_filter([$colour, $side])));
 
+        $title = Str::limit($title, 200, '');
+
         return $article !== '' ? $title.' ('.$article.')' : $title;
     }
 

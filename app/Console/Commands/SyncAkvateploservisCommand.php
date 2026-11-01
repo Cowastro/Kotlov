@@ -222,7 +222,8 @@ class SyncAkvateploservisCommand extends Command
                     'product_sku' => $product?->sku,
                     'supplier_article_normalized' => $row['code'],
                     'supplier_article_compact' => preg_replace('/[^A-Z0-9]+/', '', mb_strtoupper($row['code'])),
-                    'supplier_name' => $row['brand'].' '.$row['name'],
+                    // A solar kit is described in a name longer than the column.
+                    'supplier_name' => Str::limit($row['brand'].' '.$row['name'], 250, ''),
                     'source_url' => 'http://galmet.by/',
                     'price' => $priced ? ($row['wholesale'] ?: null) : null,
                     'price_byn' => $priced ? ($row['wholesale'] ?: null) : null,
