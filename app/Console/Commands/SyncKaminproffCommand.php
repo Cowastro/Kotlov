@@ -48,10 +48,13 @@ class SyncKaminproffCommand extends Command
 
         $supplier = $this->option('apply') ? $this->supplier() : Supplier::query()->where('code', self::SUPPLIER_CODE)->first();
         [$rows, $stats] = $this->classify($rows, $supplier, $this->manualLinks($rows));
+        // The card address next to each row, to check a link by eye.
+        $slugs = DB::table('products')->whereIn('id', array_filter(array_merge(array_column($rows, 'product_id'), array_column($rows, 'suggested_product_id'))))->pluck('slug', 'id');
         foreach ($rows as $row) {
-            $this->line(sprintf('audit.kaminproff.row=%s:%s:%s', $row['code'],
+            $id = $row['product_id'] ?: $row['suggested_product_id'];
+            $this->line(sprintf('audit.kaminproff.row=%s:%s:%s:%s', $row['code'],
                 $row['product_id'] ?: ($row['suggested_product_id'] ? 's'.$row['suggested_product_id'] : 'none'),
-                $row['match_reason'] ?? ($row['suggested_product_id'] ? 'suggested' : 'unlinked')));
+                $row['match_reason'] ?? ($row['suggested_product_id'] ? 'suggested' : 'unlinked'), $id ? (string) ($slugs[$id] ?? '') : ''));
         }
         if ($this->option('apply')) {
             $stats += $this->apply($rows, $supplier);
