@@ -945,6 +945,11 @@ jobs:
             grep -E '^metric\.search_probe\.q[0-9]+_(pub|int)_[a-z]+=[0-9]+$' "$detail_log" || true
             echo "safe_search_probe_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:freshness" ]]; then
+            echo "safe_supplier_fresh_begin"
+            grep -E '^metric\.supplier_fresh\.[a-z0-9_]+\.[a-z_]+=-?[0-9]+$' "$detail_log" || true
+            echo "safe_supplier_fresh_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "deal:order-inbox-status" ]]; then
             echo "safe_deal_order_inbox_begin"
             grep -E '^metric\.deal_order_inbox\.[a-z_]+=-?[0-9]+$' "$detail_log" || true
