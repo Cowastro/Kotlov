@@ -21,6 +21,18 @@ class SyncRusklimatCommandTest extends TestCase
         $this->assertSame(6, $map['quantity']);
     }
 
+    public function test_it_reads_the_renamed_ns_code_column(): void
+    {
+        $map = $this->invoke('detectColumns', [[
+            'Группа', 'Модель', 'Наличие,шт', 'Розница, BYN', 'Дилер, BYN', 'НС-код', 'Бренд',
+        ]]);
+
+        $this->assertSame(5, $map['article']);
+        $this->assertSame(4, $map['price']);
+        $this->assertSame(3, $map['retail_price']);
+        $this->assertSame(2, $map['quantity']);
+    }
+
     public function test_only_linked_mode_does_not_infer_a_new_product_relation(): void
     {
         $command = $this->command();

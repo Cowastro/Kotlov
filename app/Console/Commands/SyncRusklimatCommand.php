@@ -563,7 +563,8 @@ class SyncRusklimatCommand extends Command
             // Русклимат's stable identifier is its internal НС code. Some
             // category tabs also contain a manufacturer article, which is not
             // guaranteed to be present or unique in the consolidated upload.
-            'article'   => ['код нс', 'код', 'артикул', 'article', 'sku', 'code', 'vendor_code', 'арт'],
+            // The sheet renamed «Код НС» to «НС-код» on 21.10.2026.
+            'article'   => ['код нс', 'нс-код', 'нс код', 'код', 'артикул', 'article', 'sku', 'code', 'vendor_code', 'арт'],
             'name'      => ['наименование', 'название', 'товар', 'name', 'product', 'позиция', 'модель', 'model'],
             'brand'     => ['бренд', 'производитель', 'brand', 'марка', 'manufacturer'],
             'category'  => ['категория', 'группа', 'раздел', 'category', 'group', 'section'],
