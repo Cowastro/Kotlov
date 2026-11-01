@@ -23,7 +23,7 @@ class SyncDealByBrandPricesCommand extends Command
     protected $signature = 'deal:sync-brand-prices
         {--supplier= : Audit products linked to an allowed supplier code instead of the default brands}
         {--inspect-id= : Emit safe price and discount fields for one Deal.by product ID}
-        {--pair=* : Fireway: a shop item linked by hand, deal id:card slug (kept on the offer with --apply)}
+        {--pair=* : Fireway: a shop item linked by hand, deal id or the slug of its name:card slug (kept on the offer with --apply)}
         {--export-missing= : Fireway: a deal.by import xlsx of the cards missing on the shop, a file name under public/exports}
         {--apply : Update matched Deal.by product prices}';
 
@@ -43,7 +43,7 @@ class SyncDealByBrandPricesCommand extends Command
                 return $this->inspectRemoteProduct($remoteProducts, (int) $this->option('inspect-id'));
             }
 
-            $this->dealPairs = $this->dealPairs($localProducts);
+            $this->dealPairs = $this->dealPairs($localProducts, $remoteProducts);
             $plan = $this->buildPlan($localProducts, $remoteProducts);
 
             $this->metrics($localProducts, $remoteProducts, $plan);
@@ -338,7 +338,7 @@ class SyncDealByBrandPricesCommand extends Command
      * @param  Collection<int, Product>  $localProducts
      * @return array<int, int>
      */
-    private function dealPairs(Collection $localProducts): array
+    private function dealPairs(Collection $localProducts, Collection $remoteProducts): array
     {
         if ($this->supplierCode !== 'kaminproff') {
             return [];
@@ -353,6 +353,11 @@ class SyncDealByBrandPricesCommand extends Command
         }
         foreach ((array) $this->option('pair') as $pair) {
             [$dealId, $slug] = array_pad(explode(':', (string) $pair, 2), 2, '');
+            // The workflow log may mask digits of a deal.by id: the slug of the shop item name works too.
+            if (! ctype_digit(trim($dealId))) {
+                $named = $remoteProducts->filter(fn (array $remote): bool => \Illuminate\Support\Str::slug((string) ($remote['name'] ?? '')) === trim($dealId));
+                $dealId = $named->count() === 1 ? (string) ($named->first()['id'] ?? '') : '';
+            }
             $product = $localProducts->firstWhere('slug', trim($slug));
             $offer = $product ? $offers->firstWhere('product_id', $product->id) : null;
             if (! ctype_digit(trim($dealId)) || ! $offer) {
