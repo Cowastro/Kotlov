@@ -36,7 +36,7 @@ class CityContactSelectionTest extends TestCase
         $this->get('https://kotlov.by/city/select/gomel?return=%2Fcontacts')
             ->assertRedirect('/contacts')
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
-            ->assertCookie('selected_city', 'gomel');
+            ->assertPlainCookie('selected_city', 'gomel');
 
         $response = $this->withCookie('selected_city', 'gomel')
             ->get('https://kotlov.by/contacts');
@@ -60,7 +60,7 @@ class CityContactSelectionTest extends TestCase
     {
         $this->get('https://kotlov.by/city/select/minsk?return=https%3A%2F%2Fevil.example')
             ->assertRedirect('/')
-            ->assertCookie('selected_city', 'minsk');
+            ->assertPlainCookie('selected_city', 'minsk');
     }
 
     public function test_unknown_or_disabled_cookie_falls_back_to_minsk_contacts(): void
