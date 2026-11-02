@@ -21,11 +21,13 @@ class B2bCheckoutTerms
         $b2bItems = $items->filter(
             fn (array $item): bool => ($item['pricing_type'] ?? 'retail') === 'b2b'
         );
-        $isB2b = $b2bItems->isNotEmpty();
-        $client = $isB2b && $user
-            ? $user->activeB2bClient(['counterparty', 'priceLevel'])
-            : null;
-        $subtotal = round((float) $b2bItems->sum(
+        // A B2B partner never places a retail order: even goods added from the
+        // storefront at the retail price go to the B2B module, where the manager
+        // confirms the partner price and stock.
+        $partnerClient = $user?->activeB2bClient(['counterparty', 'priceLevel']);
+        $isB2b = $b2bItems->isNotEmpty() || ($partnerClient !== null && $items->isNotEmpty());
+        $client = $isB2b ? $partnerClient : null;
+        $subtotal = round((float) ($partnerClient ? $items : $b2bItems)->sum(
             fn (array $item): float => (float) ($item['price'] ?? 0) * (int) ($item['quantity'] ?? 0)
         ), 2);
 

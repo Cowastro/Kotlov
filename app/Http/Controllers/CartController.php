@@ -54,6 +54,14 @@ class CartController extends Controller
         $b2bOption = $isB2bRequest
             ? $supplyOptions->optionForKey($product, $request->user(), $request->string('supply_option')->toString())
             : null;
+        // A B2B partner adding from the storefront gets the partner price of the
+        // best available stock pool straight away.
+        if (! $isB2bRequest && $request->user()?->activeB2bClient()) {
+            $preferred = $supplyOptions->preferredForProduct($product, $request->user());
+            $b2bOption = $preferred && $supplyOptions->canOrder($preferred, max(1, (int) $request->input('quantity', 1)))
+                ? $preferred
+                : null;
+        }
 
         if ($isB2bRequest && ! $b2bOption) {
             $message = 'Товар недоступен для B2B-заказа: требуется подтверждённая привязка, цена и свежий остаток 1С.';

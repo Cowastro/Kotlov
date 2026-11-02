@@ -163,6 +163,84 @@ class B2bExternalSupplyOptionTest extends TestCase
         $this->assertDatabaseHas('b2b_order_events', ['b2b_order_id' => $order->id, 'event' => 'created']);
     }
 
+    public function test_partner_adding_from_storefront_gets_the_partner_price(): void
+    {
+        [$supplier, $product, $offer] = $this->externalFixture();
+        $user = $this->approvedPartner([$supplier->id]);
+
+        $this->actingAs($user)
+            ->postJson(route('cart.add'), ['product_id' => $product->id, 'quantity' => 1])
+            ->assertOk();
+
+        $item = session('cart')[$product->id];
+        $this->assertSame('b2b', $item['pricing_type']);
+        $this->assertSame('supplier:'.$offer->id, $item['supply_option']);
+        $this->assertSame(125.0, (float) $item['price']);
+    }
+
+    public function test_partner_storefront_order_without_partner_offer_still_goes_to_b2b_module(): void
+    {
+        Mail::fake();
+        Http::fake(['grp.nalog.gov.by/*' => Http::response(['row' => [
+            'vunp' => '190000001', 'vnaimp' => 'ООО Внешний склад', 'vpadres' => 'г. Минск, ул. Складская, 1',
+        ]])]);
+        [$supplier, $product] = $this->externalFixture();
+        $user = $this->approvedPartner([]);
+
+        $this->actingAs($user)
+            ->postJson(route('cart.add'), ['product_id' => $product->id, 'quantity' => 1])
+            ->assertOk();
+        $this->assertSame('retail', session('cart')[$product->id]['pricing_type']);
+
+        $this->withHeader('User-Agent', 'Mozilla/5.0')
+            ->post(route('checkout.store'), [
+                'order_token' => 'storefront-partner-order',
+                'customer_name' => 'ООО Внешний склад',
+                'customer_phone' => '+375291112233',
+                'delivery_type' => 'pickup',
+                'payment_type' => 'invoice',
+                'company_name' => 'ООО Внешний склад',
+                'company_unp' => '190000001',
+                'company_address' => 'г. Минск, ул. Складская, 1',
+                'company_email' => 'buh@example.test',
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseCount('orders', 0);
+        $line = B2bOrderItem::query()->sole();
+        $this->assertSame('retail', $line->price_level_code);
+        $this->assertSame(200.0, (float) $line->price);
+        $this->assertSame($user->b2bClient->id, B2bOrder::query()->sole()->b2b_client_id);
+    }
+
+    public function test_retail_order_of_a_partner_is_moved_to_b2b_by_number(): void
+    {
+        $user = $this->approvedPartner([]);
+        $order = \App\Models\Order::query()->create([
+            'user_id' => $user->id, 'number' => 'ORD-2026-0205', 'status' => 'new',
+            'customer_name' => 'Алексей Максимов', 'customer_phone' => '+375293579650',
+            'delivery_type' => 'pickup', 'payment_type' => 'cash', 'payment_status' => 'pending',
+            'subtotal' => 13818, 'total' => 13818,
+        ]);
+        $order->items()->create([
+            'product_name' => 'Тепловой насос', 'price' => 13818, 'quantity' => 1, 'total' => 13818, 'pricing_type' => 'retail',
+        ]);
+
+        $this->artisan('b2b:orders:migrate-legacy', ['--apply' => true])->assertSuccessful();
+        $this->assertDatabaseCount('b2b_orders', 0);
+
+        $this->artisan('b2b:orders:migrate-legacy', ['--order' => ['ORD-2026-0205']])->assertSuccessful();
+        $this->assertDatabaseCount('b2b_orders', 0);
+        $this->artisan('b2b:orders:migrate-legacy', ['--order' => ['ORD-2026-0205'], '--apply' => true])->assertSuccessful();
+        $this->artisan('b2b:orders:migrate-legacy', ['--order' => ['ORD-2026-0205'], '--apply' => true])->assertSuccessful();
+
+        $b2b = B2bOrder::query()->sole();
+        $this->assertSame('B2B-ORD-2026-0205', $b2b->number);
+        $this->assertSame($order->id, $b2b->legacy_order_id);
+        $this->assertSame('invoice', $b2b->payment_type);
+        $this->assertSame('ООО «Внешний склад»', $b2b->company_name);
+    }
+
     /** @return array{Supplier, Product, SupplierProduct} */
     private function externalFixture(): array
     {

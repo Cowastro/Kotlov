@@ -98,7 +98,10 @@ class B2bOrderPlacement
                     'base_price' => $item['b2b_base_price'] ?? null,
                     'purchase_price' => $purchasePrice,
                     'supplier_name' => $supplier?->name,
-                    'price_level_code' => $item['b2b_price_level_code'] ?? null,
+                    // Storefront goods of a partner: retail price until the manager sets the partner price.
+                    'price_level_code' => ($item['pricing_type'] ?? 'retail') === 'b2b'
+                        ? ($item['b2b_price_level_code'] ?? null)
+                        : 'retail',
                     'discount_percent' => $item['b2b_discount_percent'] ?? null,
                     'warehouse_name' => $item['warehouse_name'] ?? null,
                     'delivery_days' => $item['warehouse_delivery_days'] ?? null,
