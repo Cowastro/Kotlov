@@ -9,17 +9,15 @@ use Illuminate\Http\Request;
 
 class CitySubdomain
 {
-    public function __construct(private CityContactResolver $contactResolver)
-    {
-    }
+    public function __construct(private CityContactResolver $contactResolver) {}
 
     public function handle(Request $request, Closure $next)
     {
         $host = $request->getHost();
         $baseDomain = config('app.base_domain', 'kotlov.by');
 
-        if (str_ends_with($host, '.' . $baseDomain)) {
-            $subdomain = str_replace('.' . $baseDomain, '', $host);
+        if (str_ends_with($host, '.'.$baseDomain)) {
+            $subdomain = str_replace('.'.$baseDomain, '', $host);
 
             if ($subdomain && ! in_array($subdomain, ['www', 'new', 'admin'], true)) {
                 $city = City::findBySlug($subdomain);
@@ -40,13 +38,13 @@ class CitySubdomain
             $minsk = City::findBySlug('minsk');
             if ($minsk) {
                 view()->share('currentCity', $minsk);
-                view()->share('cityIn',    $minsk->name_in);
+                view()->share('cityIn', $minsk->name_in);
                 view()->share('cityTitle', $minsk->name_title);
-                view()->share('cityName',  $minsk->name);
+                view()->share('cityName', $minsk->name);
             } else {
-                view()->share('cityIn',    'в Минске');
+                view()->share('cityIn', 'в Минске');
                 view()->share('cityTitle', 'Минске');
-                view()->share('cityName',  'Минск');
+                view()->share('cityName', 'Минск');
             }
         }
 
@@ -55,6 +53,22 @@ class CitySubdomain
         view()->share('selectedCityName', $selected['city_name']);
         view()->share('cityContact', $selected['contact']);
 
-        return $next($request);
+        $response = $next($request);
+
+        if ($selected['auto_detected'] && $selected['city']) {
+            $response->headers->setCookie(cookie(
+                'selected_city',
+                $selected['city']->slug,
+                60 * 24 * 365,
+                '/',
+                null,
+                $request->isSecure(),
+                true,
+                false,
+                'lax',
+            ));
+        }
+
+        return $response;
     }
 }

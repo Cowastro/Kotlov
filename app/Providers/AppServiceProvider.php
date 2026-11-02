@@ -105,8 +105,9 @@ class AppServiceProvider extends ServiceProvider
         View::share('navCategoryUrls', $this->getNavCategoryUrls($navCategories));
         View::share('navBrands', $this->getNavBrands());
 
-        // Показываем выбор города только когда посетителю действительно есть
-        // из чего выбирать. Пустые области не должны выглядеть доступными.
+        // Location selection is independent from SEO storefront activation.
+        // Every active delivery city is selectable; storefront_enabled still
+        // controls only dedicated city storefronts/subdomains.
         $citySelector = $this->getCitySelectorState();
         $cities = $citySelector['regions'];
         View::share('citySelectorRegions', $cities);
@@ -265,11 +266,6 @@ private function getCitiesByRegion(): array
     $activeCitySlugs = null;
     if (Schema::hasTable('cities')) {
         $activeCities = City::query()->where('is_active', true);
-
-        if (Schema::hasColumn('cities', 'storefront_enabled')) {
-            $activeCities->where('storefront_enabled', true);
-        }
-
         $activeCitySlugs = $activeCities->pluck('slug')->all();
     }
 
