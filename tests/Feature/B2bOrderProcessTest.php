@@ -125,6 +125,43 @@ class B2bOrderProcessTest extends TestCase
         $this->assertStringContainsString('Резерв по заказу снят', (new B2bOrderStageMail($order->fresh(), 'cancelled', 'Отказ'))->render());
     }
 
+    public function test_every_client_letter_is_recorded_in_order_history_queued_and_sent(): void
+    {
+        // Real sending through the sync queue into the array transport.
+        config(['mail.mailers.transactional' => ['transport' => 'array']]);
+        [$order, $partner, $manager] = $this->scenario('invoice');
+        $this->actingAs($manager);
+        Livewire::test(EditB2bOrder::class, ['record' => $order->getRouteKey()])
+            ->callAction('accept')->callAction('sendToClient', data: ['message' => null]);
+
+        $this->assertDatabaseHas('b2b_order_events', ['b2b_order_id' => $order->id, 'event' => 'client_email_queued',
+            'comment' => 'Письмо «Наличие подтверждено, товар в резерве» поставлено в очередь на buh@process.test.']);
+        $this->assertDatabaseHas('b2b_order_events', ['b2b_order_id' => $order->id, 'event' => 'client_email_sent',
+            'comment' => 'Письмо «Наличие подтверждено, товар в резерве» отправлено на buh@process.test.']);
+
+        $this->actingAs($partner)->post(route('b2b.cabinet.orders.confirm', $order));
+        $this->assertDatabaseHas('b2b_order_events', ['b2b_order_id' => $order->id, 'event' => 'client_email_sent',
+            'comment' => 'Письмо «Счёт» отправлено на buh@process.test.']);
+
+        $this->actingAs($manager);
+        Livewire::test(\App\Filament\Resources\B2bOrders\RelationManagers\EventsRelationManager::class, [
+            'ownerRecord' => $order, 'pageClass' => EditB2bOrder::class,
+        ])->assertSee('Письмо отправлено')->assertSee('buh@process.test');
+    }
+
+    public function test_letter_without_valid_address_is_recorded_as_not_sent(): void
+    {
+        Mail::fake();
+        [$order, $partner, $manager] = $this->scenario('invoice');
+        $order->forceFill(['company_email' => 'нет-почты', 'contact_email' => null])->save();
+        $this->actingAs($manager);
+        Livewire::test(EditB2bOrder::class, ['record' => $order->getRouteKey()])
+            ->callAction('accept')->callAction('sendToClient', data: ['message' => null]);
+
+        $this->assertDatabaseHas('b2b_order_events', ['b2b_order_id' => $order->id, 'event' => 'client_email_skipped']);
+        Mail::assertNothingQueued();
+    }
+
     /** @return array{B2bOrder, User, User} */
     private function scenario(string $paymentType, int $stock = 10): array
     {

@@ -87,13 +87,19 @@ class B2bOrderNotifier
         $recipient = mb_strtolower(trim((string) (
             $order->company_email ?: $order->contact_email ?: $order->client?->user?->email
         )));
+        $letter = B2bOrderStageMail::SUBJECTS[$stage] ?? 'Этап заказа';
+        $log = app(B2bOrderMailLog::class);
         if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            $log->skipped($order, $letter);
+
             return;
         }
 
         try {
             Mail::mailer('transactional')->to($recipient)->queue(new B2bOrderStageMail($order, $stage, $message));
+            $log->queued($order, $letter, $recipient);
         } catch (\Throwable $exception) {
+            $log->failed($order, $letter, $recipient, $exception->getMessage());
             Log::error('B2B order client email failed.', [
                 'b2b_order_id' => $order->id,
                 'stage' => $stage,

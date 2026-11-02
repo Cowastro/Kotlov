@@ -27,7 +27,18 @@ class EventsRelationManager extends RelationManager
                         'item_checked' => 'Проверена позиция',
                         'manager_assigned' => 'Назначен менеджер',
                         'legacy_migrated' => 'Перенесено из старого модуля',
+                        'stock_checked' => 'Проверены остатки',
+                        'client_email_queued' => 'Письмо в очереди',
+                        'client_email_sent' => 'Письмо отправлено',
+                        'client_email_skipped' => 'Письмо не отправлено',
+                        'client_email_failed' => 'Ошибка письма',
                         default => $state,
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'client_email_sent' => 'success',
+                        'client_email_queued' => 'info',
+                        'client_email_skipped', 'client_email_failed' => 'danger',
+                        default => 'gray',
                     }),
                 TextColumn::make('from_status')->label('Было')
                     ->formatStateUsing(fn (?string $state): string => $state ? (B2bOrder::STATUSES[$state] ?? $state) : '—'),

@@ -100,6 +100,8 @@ class B2bOrderInvoice
             $document->client_email ?: $order->company_email ?: $order->contact_email ?: $order->client?->user?->email
         )));
         if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+            app(B2bOrderMailLog::class)->skipped($order, 'Счёт');
+
             return;
         }
 
@@ -113,7 +115,9 @@ class B2bOrderInvoice
         try {
             $order->forceFill(['invoice_notified_at' => $notifiedAt]);
             Mail::mailer('transactional')->to($recipient)->queue(new B2bOrderInvoiceIssuedMail($order));
+            app(B2bOrderMailLog::class)->queued($order, 'Счёт', $recipient);
         } catch (\Throwable $exception) {
+            app(B2bOrderMailLog::class)->failed($order, 'Счёт', $recipient, $exception->getMessage());
             B2bOrder::query()->whereKey($order->id)->where('invoice_notified_at', $notifiedAt)
                 ->update(['invoice_notified_at' => null]);
             Log::error('B2B invoice email notification failed.', [
