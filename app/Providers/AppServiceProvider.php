@@ -280,9 +280,12 @@ private function getCitiesByRegion(): array
             continue;
         }
 
-        $link = $city['slug'] ? "https://{$city['slug']}.kotlov.by" : 'https://kotlov.by';
+        $selectorSlug = $city['slug'] ?: 'minsk';
+        $returnTo = rawurlencode(request()->getRequestUri());
+        $link = "/city/select/{$selectorSlug}?return={$returnTo}";
         $grouped[$city['region']][] = [
             'name'   => $city['name'],
+            'slug'   => $selectorSlug,
             'link'   => $link,
             'active' => '',
         ];

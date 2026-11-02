@@ -19,6 +19,7 @@ use App\Http\Controllers\CatalogIndexController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ChimneyCalculationRequestController;
 use App\Http\Controllers\ChimneySelectorController;
+use App\Http\Controllers\CitySelectionController;
 use App\Http\Controllers\CommercialContractFileController;
 use App\Http\Controllers\CommercialDocumentPdfController;
 use App\Http\Controllers\CommercialDocumentPortalController;
@@ -438,6 +439,9 @@ Route::get('/', function () {
 
 // ===== Статичные страницы — ДО динамических! =====
 Route::view('/about', 'pages.about');
+Route::get('/city/select/{slug}', CitySelectionController::class)
+    ->where('slug', '[a-z0-9-]+')
+    ->name('city.select');
 Route::get('/akcii', [PromotionController::class, 'index'])->name('promotions.index');
 Route::get('/akcii/ecokamin-skidki', [PromotionController::class, 'ecokamin'])->name('promotions.ecokamin');
 Route::get('/akcii/kotlov-xo-ceramic-pro', [PromotionController::class, 'xoCeramicPro'])->name('promotions.xo-ceramic-pro');

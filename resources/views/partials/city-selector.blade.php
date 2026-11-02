@@ -22,8 +22,8 @@
                     <div class="city-region-panel {{ $loop->first ? '' : 'd-none' }}" data-panel="{{ $loop->index }}">
                         <div class="d-flex flex-wrap gap-8">
                             @foreach($cities as $city)
-                                <a href="{{ $city['link'] }}"
-                                   class="city-link {{ ($cityName ?? 'Минск') === $city['name'] ? 'active' : '' }}"
+                                <a href="{{ $city['link'] }}" rel="nofollow"
+                                   class="city-link {{ ($selectedCityName ?? $cityName ?? 'Минск') === $city['name'] ? 'active' : '' }}"
                                    style="padding:6px 14px;border:1px solid var(--line,#e0e0e0);border-radius:20px;font-size:14px;color:var(--text,#222);text-decoration:none;transition:all .2s;white-space:nowrap;">
                                     {{ $city['name'] }}
                                 </a>

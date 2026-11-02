@@ -11,12 +11,12 @@
                 <span class="icon icon-MapPin"></span>
                 @if($citySelectorEnabled ?? false)
                     <a href="#citySelector" data-bs-toggle="offcanvas" class="text-white d-flex align-items-center gap-1">
-                        <span>г. {{ $cityName ?? $geo ?? 'Минск' }}</span>
+                        <span>г. {{ $selectedCityName ?? $cityName ?? $geo ?? 'Минск' }}</span>
                         <i class="icon icon-CaretDown"></i>
                     </a>
                 @else
                     <span class="text-white d-flex align-items-center" data-city-selector="static">
-                        г. {{ $cityName ?? $geo ?? 'Минск' }}
+                        г. {{ $selectedCityName ?? $cityName ?? $geo ?? 'Минск' }}
                     </span>
                 @endif
 
@@ -32,8 +32,9 @@
             </div>
 
             <div class="d-flex align-items-center gap-3">
-                <a href="tel:{{ $pCall1 ?? '+375293777092' }}" class="text-white">
-                    {{ $phone1 ?? '+375 (29) 377-70-92' }}
+                @php($headerPhone = $cityContact['phone_links'][0] ?? ['href' => ($pCall1 ?? '+375293777092'), 'display' => ($phone1 ?? '+375 (29) 377-70-92')])
+                <a href="tel:{{ $headerPhone['href'] }}" class="text-white">
+                    {{ $headerPhone['display'] }}
                 </a>
 
                 <a href="/partners" class="text-white">
