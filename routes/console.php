@@ -401,9 +401,9 @@ Schedule::command('supplier:sync-domkotlov-venma --apply')
     ->appendOutputTo(storage_path('logs/domkotlov-venma-sync.log'));
 
 // Акции поставщиков со сроком: после даты окончания возвращаем обычную цену.
-// Supplier cards hidden for lack of a photo come back once one is found.
+// Supplier cards hidden for lack of a photo come back as soon as one is found.
 Schedule::command('catalog:hide-cards-awaiting-photos --publish --apply')
-    ->dailyAt('06:20')
+    ->everyTenMinutes()
     ->withoutOverlapping(30)
     ->appendOutputTo(storage_path('logs/awaiting-photos.log'));
 
