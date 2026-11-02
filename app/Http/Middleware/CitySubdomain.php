@@ -9,7 +9,11 @@ use Illuminate\Http\Request;
 
 class CitySubdomain
 {
-    public function handle(Request $request, Closure $next, CityContactResolver $contactResolver)
+    public function __construct(private CityContactResolver $contactResolver)
+    {
+    }
+
+    public function handle(Request $request, Closure $next)
     {
         $host = $request->getHost();
         $baseDomain = config('app.base_domain', 'kotlov.by');
@@ -46,7 +50,7 @@ class CitySubdomain
             }
         }
 
-        $selected = $contactResolver->resolve($request);
+        $selected = $this->contactResolver->resolve($request);
         view()->share('selectedCity', $selected['city']);
         view()->share('selectedCityName', $selected['city_name']);
         view()->share('cityContact', $selected['contact']);
