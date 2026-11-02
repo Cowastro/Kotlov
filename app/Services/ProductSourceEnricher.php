@@ -2743,23 +2743,30 @@ class ProductSourceEnricher
         }
         $width = imagesx($image);
         $height = imagesy($image);
-        $grid = 240;
-        $dark = [];
-        $extreme = 0;
-        for ($row = 0; $row < $grid; $row++) {
-            for ($col = 0; $col < $grid; $col++) {
-                $color = imagecolorsforindex($image, imagecolorat($image, (int) (($col + 0.5) * $width / $grid), (int) (($row + 0.5) * $height / $grid)));
-                if ($color['alpha'] > 100) {
-                    $color = ['red' => 255, 'green' => 255, 'blue' => 255];
+        $read = function (int $grid) use ($image, $width, $height): array {
+            $dark = [];
+            $extreme = 0;
+            for ($row = 0; $row < $grid; $row++) {
+                for ($col = 0; $col < $grid; $col++) {
+                    $color = imagecolorsforindex($image, imagecolorat($image, (int) (($col + 0.5) * $width / $grid), (int) (($row + 0.5) * $height / $grid)));
+                    if ($color['alpha'] > 100) {
+                        $color = ['red' => 255, 'green' => 255, 'blue' => 255];
+                    }
+                    $light = 0.299 * $color['red'] + 0.587 * $color['green'] + 0.114 * $color['blue'];
+                    $saturation = max($color['red'], $color['green'], $color['blue']) - min($color['red'], $color['green'], $color['blue']);
+                    $extreme += (int) ($saturation < 40 && ($light < 70 || $light > 200));
+                    $dark[$row][$col] = $light < 128;
                 }
-                $light = 0.299 * $color['red'] + 0.587 * $color['green'] + 0.114 * $color['blue'];
-                $saturation = max($color['red'], $color['green'], $color['blue']) - min($color['red'], $color['green'], $color['blue']);
-                $extreme += (int) ($saturation < 40 && ($light < 70 || $light > 200));
-                $dark[$row][$col] = $light < 128;
             }
-        }
+
+            return [$dark, $extreme / ($grid * $grid)];
+        };
+        // A coarse look first: a photo has its greys and colours, only a black-and-white picture is read closely.
+        $grid = 240;
+        [, $share] = $read(60);
+        [$dark, $share] = $share >= 0.85 ? $read($grid) : [[], 0];
         imagedestroy($image);
-        if ($extreme / ($grid * $grid) < 0.9) {
+        if ($share < 0.9) {
             return false;
         }
         $near = (int) ($grid * 0.45);
