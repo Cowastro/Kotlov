@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\ContactRequest;
 use App\Models\Product;
+use App\Services\StorefrontProductSearch;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bCompanyAccess;
 use App\Services\B2bSupplyOptionResolver;
@@ -124,16 +125,12 @@ class B2bMarketplaceController extends Controller
                     'stock' => $option['stock'],
                     'stock_label' => $option['stock_label'],
                 ];
-            })->filter(function (array $row) use ($query, $categoryId, $categoryFilterIds, $brandId): bool {
+            });
+            $matchIds = $query === '' ? [] : array_flip($this->smartMatches($query, $rows->keys()->all(), false));
+            $rows = $rows->filter(function (array $row) use ($query, $matchIds, $categoryId, $categoryFilterIds, $brandId): bool {
                 $product = $row['product'];
-                $haystack = mb_strtolower(implode(' ', [
-                    $product->name,
-                    $product->sku,
-                    $product->category?->name,
-                    $product->brand?->name,
-                ]));
 
-                return ($query === '' || str_contains($haystack, mb_strtolower($query)))
+                return ($query === '' || isset($matchIds[(int) $product->id]))
                     && ($categoryId === 0 || in_array((int) $product->category_id, $categoryFilterIds, true))
                     && ($brandId === 0 || (int) $product->brand_id === $brandId);
             });
@@ -205,13 +202,8 @@ class B2bMarketplaceController extends Controller
                 ->active()
                 ->notArchived()
                 ->with(['category', 'brand'])
-                ->whereNotIn('id', $orderableProductIds)
-                ->where(function ($builder) use ($query): void {
-                    $builder->where('name', 'like', "%{$query}%")
-                        ->orWhere('sku', 'like', "%{$query}%")
-                        ->orWhereHas('brand', fn ($brand) => $brand->where('name', 'like', "%{$query}%"))
-                        ->orWhereHas('category', fn ($category) => $category->where('name', 'like', "%{$query}%"));
-                })
+                ->whereIn('id', $this->smartMatches($query, Product::query()->active()->notArchived()
+                    ->whereNotIn('id', $orderableProductIds)->select('id'), true))
                 ->orderBy('name')
                 ->limit(8)
                 ->get()
@@ -247,20 +239,12 @@ class B2bMarketplaceController extends Controller
             })
             : $supplyOptions->optionsForUser($user);
 
-        $items = $options
+        $byProduct = $options
             ->groupBy('product_id')
-            ->map(fn (Collection $productOptions): array => $productOptions->first())
-            ->filter(function (array $option) use ($needle): bool {
-                $product = $option['product'];
-                $haystack = mb_strtolower(implode(' ', [
-                    $product?->name,
-                    $product?->sku,
-                    $product?->brand?->name,
-                    $product?->category?->name,
-                ]));
-
-                return str_contains($haystack, $needle);
-            })
+            ->map(fn (Collection $productOptions): array => $productOptions->first());
+        $matchIds = array_flip($this->smartMatches($query, $byProduct->keys()->all(), true));
+        $items = $byProduct
+            ->filter(fn (array $option): bool => isset($matchIds[(int) $option['product_id']]))
             ->sortBy(function (array $option) use ($needle): array {
                 $product = $option['product'];
                 $sku = mb_strtolower((string) $product?->sku);
@@ -296,15 +280,45 @@ class B2bMarketplaceController extends Controller
         return response()->json(['items' => $items]);
     }
 
+    /**
+     * The storefront smart search (word order, word forms, transliteration,
+     * keyboard layout, best match for a long copied title) over the given
+     * products, exactly as the site search and its suggestions run it.
+     *
+     * @param list<int>|\Illuminate\Database\Eloquent\Builder $candidates
+     * @return list<int>
+     */
+    private function smartMatches(string $query, array|\Illuminate\Database\Eloquent\Builder $candidates, bool $suggestions): array
+    {
+        if ($candidates === []) {
+            return [];
+        }
+        $search = app(StorefrontProductSearch::class);
+        $base = fn () => Product::query()->whereIn('id', $candidates);
+
+        if (! $suggestions) {
+            return $search->applyForResults($base(), $query)->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        }
+
+        // Same cascade as the site search suggestions (SearchController).
+        $ids = $search->applyForSuggestions($base(), $query)->pluck('id');
+        if ($ids->isEmpty() && $search->isLongQuery($query)) {
+            $ids = $search->applyBestMatch($base(), $query)->pluck('id');
+        }
+        if ($ids->isEmpty()) {
+            $ids = $search->apply($base(), $query)->pluck('id');
+        }
+        if ($ids->isEmpty() && ! $search->isLongQuery($query)) {
+            $ids = $search->applyBestMatch($base(), $query)->pluck('id');
+        }
+
+        return $ids->map(fn ($id): int => (int) $id)->all();
+    }
+
     private function applyProductFilters($builder, string $query, int $categoryId, array $categoryFilterIds, int $brandId): void
     {
         if ($query !== '') {
-            $builder->where(function ($nested) use ($query): void {
-                $nested->where('name', 'like', "%{$query}%")
-                    ->orWhere('sku', 'like', "%{$query}%")
-                    ->orWhereHas('category', fn ($category) => $category->where('name', 'like', "%{$query}%"))
-                    ->orWhereHas('brand', fn ($brand) => $brand->where('name', 'like', "%{$query}%"));
-            });
+            app(StorefrontProductSearch::class)->applyForResults($builder, $query);
         }
 
         if ($categoryId > 0) {
