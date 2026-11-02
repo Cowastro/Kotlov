@@ -715,6 +715,12 @@ jobs:
             grep -E '^audit\.web_sources\.error=[a-z0-9-]+$' "$detail_log" || true
             echo "safe_web_sources_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:remove-code-images" ]]; then
+            echo "safe_code_images_begin"
+            grep -aE '^metric\.code_images\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -aE '^audit\.code_images\.card=[0-9]+:[a-z0-9-]+:[0-9]+$' "$detail_log" || true
+            echo "safe_code_images_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:hide-cards-awaiting-photos" ]]; then
             echo "safe_awaiting_photos_metrics_begin"
             grep -E '^metric\.awaiting_photos\.[a-z_]+=[0-9]+$' "$detail_log" || true

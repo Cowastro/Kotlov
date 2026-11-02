@@ -2669,7 +2669,7 @@ class ProductSourceEnricher
                     continue;
                 }
 
-                if (! $this->isLargeEnoughImage($body, $imageInfo)) {
+                if (! $this->isLargeEnoughImage($body, $imageInfo) || self::looksLikeCodeImage($body)) {
                     continue;
                 }
 
@@ -2729,6 +2729,47 @@ class ProductSourceEnricher
         return $info;
     }
 
+    /**
+     * A QR code or a barcode, not a photo: nearly every point is pure black or white, both are well
+     * represented, and a row flips between them many times (a photo of a dark item on white has a
+     * few flips a row, a QR code over a dozen).
+     */
+    public static function looksLikeCodeImage(string $body): bool
+    {
+        $image = @imagecreatefromstring($body);
+        if (! $image) {
+            return false;
+        }
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $grid = 80;
+        $extreme = 0;
+        $dark = 0;
+        $flips = 0;
+        for ($row = 0; $row < $grid; $row++) {
+            $previous = null;
+            for ($col = 0; $col < $grid; $col++) {
+                $color = imagecolorsforindex($image, imagecolorat($image, (int) (($col + 0.5) * $width / $grid), (int) (($row + 0.5) * $height / $grid)));
+                if ($color['alpha'] > 100) {
+                    $color = ['red' => 255, 'green' => 255, 'blue' => 255];
+                }
+                $light = 0.299 * $color['red'] + 0.587 * $color['green'] + 0.114 * $color['blue'];
+                $saturation = max($color['red'], $color['green'], $color['blue']) - min($color['red'], $color['green'], $color['blue']);
+                if ($saturation < 40 && ($light < 70 || $light > 200)) {
+                    $extreme++;
+                    $dark += (int) ($light < 70);
+                }
+                $isDark = $light < 128;
+                $flips += (int) ($previous !== null && $previous !== $isDark);
+                $previous = $isDark;
+            }
+        }
+        imagedestroy($image);
+        $points = $grid * $grid;
+
+        return $extreme / $points >= 0.95 && $dark / $points >= 0.15 && $dark / $points <= 0.85 && $flips / $grid >= 10;
+    }
+
     private function isLargeEnoughImage(string $body, ?array $info = null): bool
     {
         $info ??= $this->imageInfo($body);
@@ -2756,7 +2797,7 @@ class ProductSourceEnricher
             return false;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|rass?roch|halva|karta-pokupok|/a1\.png|/mts\.png|cropped-logo)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|qr-?code|rass?roch|halva|karta-pokupok|/a1\.png|/mts\.png|cropped-logo)~i', $path)) {
             return false;
         }
 
@@ -2776,7 +2817,7 @@ class ProductSourceEnricher
             $score += 80;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|rass?roch|halva|karta-pokupok|/a1\.png|/mts\.png|cropped-logo)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|qr-?code|rass?roch|halva|karta-pokupok|/a1\.png|/mts\.png|cropped-logo)~i', $path)) {
             $score -= 500;
         }
 
