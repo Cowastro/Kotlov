@@ -39,6 +39,7 @@ class ChistyBeregPhotosCommand extends Command
         [$supplierCode, $skuPrefixes, $ownSite] = match ($this->option('supplier')) {
             SyncKaminproffCommand::SUPPLIER_CODE => [SyncKaminproffCommand::SUPPLIER_CODE, ['FIREWAY-'], 'kaminproff.by'],
             SyncAkvateploservisCommand::SUPPLIER_CODE => [SyncAkvateploservisCommand::SUPPLIER_CODE, ['GALMET-', 'APAMET-'], 'galmet.by'],
+            SyncTeplotopCommand::SUPPLIER_CODE => [SyncTeplotopCommand::SUPPLIER_CODE, ['TEPLOTOP-'], 'ttop.by'],
             default => [SyncChistyBeregCommand::SUPPLIER_CODE, ['BEREG-'], 'bereg.by'],
         };
         $offers = SupplierProduct::query()
