@@ -5,12 +5,15 @@ namespace App\Services\Orders;
 use App\Mail\OrderAvailabilityConfirmedMail;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\CommercialDocuments\B2bSelfServiceInvoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 
 class OrderAvailabilityConfirmation
 {
+    public function __construct(private readonly B2bSelfServiceInvoice $b2bInvoices) {}
+
     /** @return array{order: Order, notified: bool} */
     public function confirmAndNotify(Order $order, ?User $manager = null): array
     {
@@ -42,6 +45,15 @@ class OrderAvailabilityConfirmation
             return $locked->fresh(['items', 'user']);
         });
 
+        if ($order->canGenerateB2bInvoice()) {
+            $client = $order->user?->activeB2bClient(['counterparty']);
+            $actor = $manager ?: $order->user;
+            if ($client && $actor) {
+                $this->b2bInvoices->generate($client, $actor, $order);
+                $order = $order->fresh(['items', 'user', 'commercialDocument.items']);
+            }
+        }
+
         return [
             'order' => $order,
             'notified' => $this->notifyCustomerIfNeeded($order),
@@ -54,7 +66,12 @@ class OrderAvailabilityConfirmation
             return false;
         }
 
-        $recipient = mb_strtolower(trim((string) ($order->user?->email ?: $order->customer_email)));
+        $recipient = mb_strtolower(trim((string) (
+            $order->commercialDocument?->client_email
+            ?: $order->company_email
+            ?: $order->user?->email
+            ?: $order->customer_email
+        )));
         if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
             return false;
         }

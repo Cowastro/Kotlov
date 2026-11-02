@@ -131,6 +131,7 @@ class Order extends Model
         'own_transport' => 'Нашим транспортом в города по графику',
         'transport' => 'Транспортная компания по Беларуси',
         'kit' => 'ТК КИТ — Россия, Казахстан, Армения, Киргизия',
+        'b2b_delivery' => 'Доставка по согласованию',
     ];
 
     protected static function booted(): void

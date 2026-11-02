@@ -14,6 +14,7 @@ use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\B2bSupplyOptionResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -115,6 +116,11 @@ class B2bExternalSupplyOptionTest extends TestCase
     public function test_checkout_persists_the_exact_external_offer_and_internal_supply_snapshot(): void
     {
         Mail::fake();
+        Http::fake(['grp.nalog.gov.by/*' => Http::response(['row' => [
+            'vunp' => '190000001',
+            'vnaimp' => 'ООО Внешний склад',
+            'vpadres' => 'г. Минск, ул. Складская, 1',
+        ]])]);
 
         [$supplier, $product, $offer] = $this->externalFixture();
         $user = $this->approvedPartner([$supplier->id]);
@@ -134,7 +140,11 @@ class B2bExternalSupplyOptionTest extends TestCase
                 'customer_name' => 'ООО Внешний склад',
                 'customer_phone' => '+375291112233',
                 'delivery_type' => 'pickup',
-                'payment_type' => 'cash',
+                'payment_type' => 'invoice',
+                'company_name' => 'ООО Внешний склад',
+                'company_unp' => '190000001',
+                'company_address' => 'г. Минск, ул. Складская, 1',
+                'company_email' => 'buh@example.test',
             ])
             ->assertRedirect();
 

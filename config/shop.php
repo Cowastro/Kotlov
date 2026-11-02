@@ -158,6 +158,12 @@ return [
             'price' => 60,
             'free_from' => 1000,
         ],
+        'b2b_delivery' => [
+            'name' => 'Доставка по согласованию',
+            'checkout_name' => 'Доставка — стоимость и срок подтвердит менеджер',
+            'price' => null,
+            'free_from' => null,
+        ],
     ],
 
     // ─────────────────────────────────────────────────────────────────
@@ -257,7 +263,9 @@ return [
 
     // Партнёрская цена не совмещается с розничной рассрочкой. Оплата по счёту
     // доступна B2B-клиенту независимо от временного ограничения эквайринга.
-    'b2b_checkout_payment_methods' => ['invoice_deferred', 'invoice', 'cash'],
+    'b2b_checkout_payment_methods' => ['invoice_deferred', 'invoice'],
+
+    'b2b_checkout_delivery_methods' => ['b2b_delivery', 'pickup'],
 
     // Типы доставки доступные в форме checkout
     // Delivery first; pickup from the warehouse last, never preselected.

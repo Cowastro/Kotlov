@@ -32,6 +32,7 @@ class B2bClient extends Model
     protected $fillable = [
         'user_id', 'counterparty_id', 'status', 'partner_type', 'b2b_price_level_id', 'service_mode', 'company_name', 'unp',
         'contact_name', 'contact_email', 'contact_phone',
+        'default_delivery_city', 'default_delivery_address',
         'responsible_user_id', 'reviewed_by', 'reviewed_at',
         'payment_terms', 'delivery_terms', 'minimum_order_amount',
         'payment_deferment_days', 'credit_limit', 'commercial_terms_valid_until',

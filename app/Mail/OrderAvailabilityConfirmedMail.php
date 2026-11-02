@@ -6,6 +6,7 @@ use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -37,5 +38,21 @@ class OrderAvailabilityConfirmedMail extends Mailable
     public function content(): Content
     {
         return new Content(view: 'emails.order-availability-confirmed');
+    }
+
+    /** @return array<int, Attachment> */
+    public function attachments(): array
+    {
+        $document = $this->order->commercialDocument;
+        if (! $document || $document->type !== 'invoice') {
+            return [];
+        }
+
+        return [
+            Attachment::fromData(
+                fn (): string => app(\App\Services\CommercialDocuments\CommercialDocumentPdf::class)->render($document),
+                'Счет-'.$document->number.'.pdf',
+            )->withMime('application/pdf'),
+        ];
     }
 }

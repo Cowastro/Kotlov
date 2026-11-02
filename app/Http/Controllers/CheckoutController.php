@@ -64,6 +64,10 @@ class CheckoutController extends Controller
         }
         $checkoutPaymentMethods = $b2bCheckout['payment_methods'];
         $invoiceProfile = $b2bCheckout['invoice_profile'];
+        $isB2bCheckout = (bool) $b2bCheckout['is_b2b'];
+        $checkoutDeliveryMethods = $isB2bCheckout
+            ? config('shop.b2b_checkout_delivery_methods', ['b2b_delivery', 'pickup'])
+            : config('shop.checkout_delivery_methods', []);
         $requestedPayment = (string) $request->query('payment_type', '');
         $selectedPayment = in_array($requestedPayment, $checkoutPaymentMethods, true)
             ? $requestedPayment
@@ -86,6 +90,7 @@ class CheckoutController extends Controller
         $lastOrder = $user ? Order::query()->where('user_id', $user->id)->latest('id')
             ->first(['customer_name', 'customer_phone', 'delivery_type', 'delivery_city', 'delivery_address']) : null;
         $deliveryCities = self::deliveryCities();
+        $minimalLayout = $isB2bCheckout;
 
         return view('pages.checkout', compact(
             'cart',
@@ -100,6 +105,9 @@ class CheckoutController extends Controller
             'b2bCheckout',
             'checkoutPaymentMethods',
             'invoiceProfile',
+            'isB2bCheckout',
+            'checkoutDeliveryMethods',
+            'minimalLayout',
         ));
     }
 
@@ -228,6 +236,9 @@ class CheckoutController extends Controller
             return redirect()->route('cart')->with('error', $b2bCheckout['message']);
         }
         $checkoutPaymentMethods = $b2bCheckout['payment_methods'];
+        $allowedDeliveryMethods = $b2bCheckout['is_b2b']
+            ? config('shop.b2b_checkout_delivery_methods', ['b2b_delivery', 'pickup'])
+            : array_keys(config('shop.delivery_methods', []));
 
         // Защита от двойного сабмита — один токен = один заказ
         $token = $request->input('order_token');
@@ -240,7 +251,7 @@ class CheckoutController extends Controller
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_phone' => ['required', 'string', 'max:30', 'regex:/^[\d\s\+\(\)\-]{7,}$/'],
             'customer_email' => ['nullable', 'email', 'max:255'],
-            'delivery_type' => ['required', 'in:'.implode(',', array_keys(config('shop.delivery_methods', [])))],
+            'delivery_type' => ['required', 'in:'.implode(',', $allowedDeliveryMethods)],
             // The region is no longer asked: it follows from the city (self::regionOf).
             'delivery_region' => ['nullable', 'string', 'max:255'],
             'delivery_city' => ['required_unless:delivery_type,pickup', 'nullable', 'string', 'max:255'],
@@ -435,8 +446,12 @@ class CheckoutController extends Controller
             'cart_delivery_city',
         ]);
 
-        return redirect()
-            ->route('checkout.success', $order->number)
+        if ($b2bCheckout['is_b2b']) {
+            return to_route('b2b.cabinet', ['section' => 'orders'])
+                ->with('success', 'Заказ '.$order->number.' отправлен менеджеру на проверку наличия и условий поставки.');
+        }
+
+        return redirect()->route('checkout.success', $order->number)
             ->with('order_number', $order->number)
             ->with('analytics_event', 'order_success');
     }

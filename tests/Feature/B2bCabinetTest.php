@@ -41,6 +41,8 @@ class B2bCabinetTest extends TestCase
             'contact_name' => 'Иван Петров',
             'contact_phone' => '+375291112233',
             'contact_email' => 'office@example.by',
+            'default_delivery_city' => 'Минск',
+            'default_delivery_address' => 'ул. Складская, 7',
             'legal_address' => 'г. Минск, ул. Тестовая, 1',
             'postal_address' => '220000, г. Минск, а/я 1',
             'bank_name' => 'Тестовый банк',
@@ -53,6 +55,8 @@ class B2bCabinetTest extends TestCase
 
         $client->refresh();
         $this->assertSame('ООО «Новый партнёр»', $client->company_name);
+        $this->assertSame('Минск', $client->default_delivery_city);
+        $this->assertSame('ул. Складская, 7', $client->default_delivery_address);
         $this->assertNotNull($client->counterparty_id);
         $this->assertDatabaseHas('crm_counterparties', [
             'id' => $client->counterparty_id,
