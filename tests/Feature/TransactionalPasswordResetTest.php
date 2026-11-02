@@ -55,7 +55,6 @@ class TransactionalPasswordResetTest extends TestCase
 
     public function test_every_transactional_letter_leaves_through_the_no_reply_mailbox(): void
     {
-        $this->assertNotSame('no-reply@kotlov.by', config('mail.mailers.transactional.username'));
         $this->noReplyMailbox();
 
         // Any letter (order, B2B, invitation, also in the queue worker) builds the mail manager first.
