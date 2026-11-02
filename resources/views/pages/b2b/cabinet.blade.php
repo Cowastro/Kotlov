@@ -58,6 +58,9 @@
                     @continue($permission && !$can($permission))
                     <a href="{{ $sectionUrl($key) }}" class="{{ $section === $key ? 'active' : '' }}"><i class="icon {{ $icon }}"></i><span>{{ $label }}</span>@if($key === 'carts' && $savedCarts->count())<b>{{ $savedCarts->count() }}</b>@elseif($key === 'specifications' && $specifications->total())<b>{{ $specifications->total() }}</b>@endif</a>
                 @endforeach
+                @if(auth()->user()?->installerProfile)
+                    <a href="{{ route('account.installer-profile') }}" class="b2b-cabinet-nav__retail"><i class="icon icon-User"></i><span>Профиль монтажника</span></a>
+                @endif
             </aside>
 
             <section class="b2b-cabinet-content">

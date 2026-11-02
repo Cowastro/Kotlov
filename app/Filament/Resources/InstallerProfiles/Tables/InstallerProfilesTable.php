@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\InstallerProfiles\Tables;
 
+use App\Models\InstallerProfile;
+use App\Services\InstallerB2bConversion;
 use App\Support\InstallerMedia;
 use App\Support\AdminPhoneLinks;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteBulkAction;
@@ -14,7 +17,10 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
+use Filament\Notifications\Notification;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\HtmlString;
 
 class InstallerProfilesTable
@@ -22,6 +28,7 @@ class InstallerProfilesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('user.b2bClient'))
             ->columns([
                 ImageColumn::make('photo')
                     ->label('Фото')
@@ -29,6 +36,21 @@ class InstallerProfilesTable
                     ->circular()
                     ->defaultImageUrl(fn () => null)
                     ->toggleable(),
+                TextColumn::make('b2b_state')
+                    ->label('B2B')
+                    ->badge()
+                    ->state(fn (InstallerProfile $record): string => app(InstallerB2bConversion::class)->state($record))
+                    ->formatStateUsing(fn (string $state, InstallerProfile $record): string => match ($state) {
+                        'invited' => 'Приглашён '.$record->b2b_invited_at?->format('d.m'),
+                        'active' => 'Есть кабинет',
+                        'no_email' => 'Нет e-mail',
+                        default => 'Не подключён',
+                    })
+                    ->color(fn (string $state): string => match ($state) {
+                        'invited', 'active' => 'success',
+                        'no_email' => 'danger',
+                        default => 'gray',
+                    }),
                 TextColumn::make('company_name')
                     ->label('Компания')
                     ->searchable()
@@ -150,11 +172,57 @@ class InstallerProfilesTable
                     ->icon('heroicon-o-computer-desktop')
                     ->url(fn ($record) => route('admin.installer-cabinet-preview', $record))
                     ->openUrlInNewTab(),
+                Action::make('connectB2b')
+                    ->label(fn (InstallerProfile $record): string => app(InstallerB2bConversion::class)->state($record) === 'none'
+                        ? 'Подключить к B2B' : 'Отправить приглашение снова')
+                    ->icon('heroicon-o-building-office-2')
+                    ->color('success')
+                    ->visible(fn (InstallerProfile $record): bool => app(InstallerB2bConversion::class)->state($record) !== 'no_email')
+                    ->requiresConfirmation()
+                    ->modalHeading('Подключить монтажника к B2B-кабинету')
+                    ->modalDescription(fn (InstallerProfile $record): string => 'Будет создан активный B2B-клиент «Монтажная организация» на тот же аккаунт, страница монтажника останется. '
+                        .'На '.app(InstallerB2bConversion::class)->email($record).' уйдёт письмо со ссылкой «Задать пароль и войти» (14 дней).')
+                    ->action(function (InstallerProfile $record): void {
+                        try {
+                            app(InstallerB2bConversion::class)->convert($record, auth()->user());
+                            Notification::make()->success()->title('Подключён к B2B, приглашение отправлено')->send();
+                        } catch (ValidationException $exception) {
+                            Notification::make()->danger()->title('Не подключён')->body(collect($exception->errors())->flatten()->implode(' '))->send();
+                        } catch (\Throwable $exception) {
+                            Notification::make()->danger()->title('Письмо не отправлено')->body($exception->getMessage())->persistent()->send();
+                        }
+                    }),
                 ViewAction::make(),
                 EditAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('connectB2b')
+                        ->label('Подключить к B2B и отправить приглашения')
+                        ->icon('heroicon-o-building-office-2')
+                        ->requiresConfirmation()
+                        ->modalDescription('Каждому выбранному монтажнику с e-mail будет открыт B2B-кабинет и отправлено письмо. Уже подключённым письмо уйдёт повторно, монтажники без e-mail будут пропущены.')
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records): void {
+                            $done = 0;
+                            $problems = [];
+                            foreach ($records as $record) {
+                                try {
+                                    app(InstallerB2bConversion::class)->convert($record, auth()->user());
+                                    $done++;
+                                } catch (\Throwable $exception) {
+                                    $problems[] = $record->display_name.': '.($exception instanceof ValidationException
+                                        ? collect($exception->errors())->flatten()->implode(' ')
+                                        : $exception->getMessage());
+                                }
+                            }
+                            Notification::make()->{$problems ? 'warning' : 'success'}()
+                                ->title('Подключено и приглашено: '.$done)
+                                ->body($problems ? implode("
+", $problems) : null)
+                                ->persistent((bool) $problems)
+                                ->send();
+                        }),
                     DeleteBulkAction::make(),
                 ]),
             ])
