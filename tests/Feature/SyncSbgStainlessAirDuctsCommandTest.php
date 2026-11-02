@@ -22,7 +22,10 @@ class SyncSbgStainlessAirDuctsCommandTest extends TestCase
             'slug' => 'gibkie-vozduhovody',
             'is_active' => true,
         ]);
-        $source = IntegrationSource::query()->create(['code' => 'onec', 'name' => '1С']);
+        $source = IntegrationSource::query()->updateOrCreate(
+            ['code' => 'onec'],
+            ['name' => '1С', 'supplier_id' => null],
+        );
 
         $existing = [];
         foreach ([100 => 16.80, 110 => 17.68] as $diameter => $price) {

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -47,8 +48,16 @@ class FinishMasterFlashCardsCommandTest extends TestCase
 
     private function makeCards(): void
     {
+        $category = Category::query()->create([
+            'name' => 'Мастер-флеш',
+            'slug' => 'master-flash-test',
+            'parent_id' => 0,
+            'is_active' => true,
+        ]);
+
         foreach (range(30290, 30303) as $number) {
             Product::query()->create([
+                'category_id' => $category->id,
                 'name' => 'Черновая карточка',
                 'slug' => 'master-flash-'.$number,
                 'sku' => 'KOTLOV-'.str_pad((string) $number, 6, '0', STR_PAD_LEFT),
