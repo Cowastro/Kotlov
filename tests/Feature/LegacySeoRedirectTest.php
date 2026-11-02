@@ -165,6 +165,11 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_inactive_known_city_redirects_to_primary_domain(): void
     {
+        Category::query()->firstOrCreate(['slug' => 'gazovye'], [
+            'parent_id' => 0,
+            'name' => 'Газовые котлы',
+            'is_active' => true,
+        ]);
         City::query()->create([
             'slug' => 'gomel',
             'name' => 'Гомель',
@@ -191,6 +196,11 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_city_without_enabled_storefront_redirects_to_primary_domain(): void
     {
+        Category::query()->firstOrCreate(['slug' => 'radiatory'], [
+            'parent_id' => 0,
+            'name' => 'Радиаторы',
+            'is_active' => true,
+        ]);
         City::query()->create([
             'slug' => 'grodno',
             'name' => 'Гродно',
@@ -215,6 +225,11 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_inactive_city_alias_redirects_directly_to_primary_domain(): void
     {
+        Category::query()->firstOrCreate(['slug' => 'gazovye'], [
+            'parent_id' => 0,
+            'name' => 'Газовые котлы',
+            'is_active' => true,
+        ]);
         City::query()->create([
             'slug' => 'rechica',
             'name' => 'Речица',
@@ -235,6 +250,157 @@ class LegacySeoRedirectTest extends TestCase
             'https://kotlov.by/gazovye',
             $response->headers->get('Location'),
         );
+    }
+
+    public function test_inactive_city_static_page_redirects_to_primary_domain(): void
+    {
+        City::query()->create([
+            'slug' => 'grodno',
+            'name' => 'Гродно',
+            'name_in' => 'в Гродно',
+            'name_title' => 'Гродно',
+            'is_active' => true,
+            'storefront_enabled' => false,
+        ]);
+
+        $request = Request::create('https://grodno.kotlov.by/contacts', 'GET');
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame(
+            'https://kotlov.by/contacts',
+            $response->headers->get('Location'),
+        );
+    }
+
+    public function test_inactive_city_product_redirects_to_primary_canonical_path(): void
+    {
+        $category = Category::query()->create([
+            'parent_id' => 0,
+            'name' => 'Газовые котлы',
+            'slug' => 'gazovye',
+            'is_active' => true,
+        ]);
+        Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Тестовый котёл',
+            'slug' => 'testovyj-kotel',
+            'sku' => 'SEO-CITY-1',
+            'price' => 100,
+            'is_active' => true,
+            'is_archived' => false,
+        ]);
+        City::query()->create([
+            'slug' => 'grodno',
+            'name' => 'Гродно',
+            'name_in' => 'в Гродно',
+            'name_title' => 'Гродно',
+            'is_active' => true,
+            'storefront_enabled' => false,
+        ]);
+
+        $request = Request::create(
+            'https://grodno.kotlov.by/incorrect-section/testovyj-kotel?ref=old',
+            'GET',
+        );
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame(
+            'https://kotlov.by/gazovye/testovyj-kotel?ref=old',
+            $response->headers->get('Location'),
+        );
+    }
+
+    public function test_inactive_city_unknown_url_returns_gone(): void
+    {
+        City::query()->create([
+            'slug' => 'grodno',
+            'name' => 'Гродно',
+            'name_in' => 'в Гродно',
+            'name_title' => 'Гродно',
+            'is_active' => true,
+            'storefront_enabled' => false,
+        ]);
+
+        $request = Request::create(
+            'https://grodno.kotlov.by/musornyj-url-kotorogo-net',
+            'GET',
+        );
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(410, $response->getStatusCode());
+        $this->assertSame('noindex, nofollow', $response->headers->get('X-Robots-Tag'));
+        $this->assertNull($response->headers->get('Location'));
+    }
+
+    public function test_unknown_city_unknown_product_url_returns_gone(): void
+    {
+        $request = Request::create(
+            'https://nesushhestvuyushhij-gorod.kotlov.by/fake-category/fake-product',
+            'GET',
+        );
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(410, $response->getStatusCode());
+        $this->assertSame('noindex, nofollow', $response->headers->get('X-Robots-Tag'));
+        $this->assertNull($response->headers->get('Location'));
+    }
+
+    public function test_inactive_city_gone_response_is_applied_in_full_http_pipeline(): void
+    {
+        City::query()->create([
+            'slug' => 'grodno',
+            'name' => 'Гродно',
+            'name_in' => 'в Гродно',
+            'name_title' => 'Гродно',
+            'is_active' => true,
+            'storefront_enabled' => false,
+        ]);
+
+        $this->get('https://grodno.kotlov.by/ne-sushhestvuet/voobsche')
+            ->assertStatus(410)
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
+            ->assertHeaderMissing('Location');
+    }
+
+    public function test_inactive_city_legacy_redirect_is_absolute_and_single_hop(): void
+    {
+        City::query()->create([
+            'slug' => 'grodno',
+            'name' => 'Гродно',
+            'name_in' => 'в Гродно',
+            'name_title' => 'Гродно',
+            'is_active' => true,
+            'storefront_enabled' => false,
+        ]);
+
+        $this->get('https://grodno.kotlov.by/kotly/tverdotoplivnye/kotly-na-pelletah')
+            ->assertStatus(301)
+            ->assertRedirect('https://kotlov.by/kotly-na-pelletah');
+    }
+
+    public function test_primary_domain_unknown_url_is_not_converted_to_gone_by_city_logic(): void
+    {
+        $request = Request::create('https://kotlov.by/ne-sushhestvuet', 'GET');
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(204, $response->getStatusCode());
     }
 
     public function test_active_city_alias_redirects_to_its_enabled_storefront(): void

@@ -3,15 +3,19 @@
 namespace App\Http\Middleware;
 
 use App\Models\Brand;
+use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\City;
+use App\Models\InstallerProfile;
 use App\Models\Product;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class HandleRedirects
 {
@@ -57,10 +61,6 @@ class HandleRedirects
             return $cityRedirect;
         }
 
-        if ($unknownCityRedirect = $this->redirectUnknownCityToBaseDomain($request)) {
-            return $unknownCityRedirect;
-        }
-
         if ($cityCategoryRedirect = $this->redirectPrimaryCategoryToBaseDomain($request, $path)) {
             return $cityCategoryRedirect;
         }
@@ -92,7 +92,7 @@ class HandleRedirects
                 $query = $request->getQueryString();
                 $target = $redirect->to_url . ($query ? '?' . $query : '');
                 if (! $this->redirectTargetLoopsToProductPath($path, (string) $redirect->to_url)) {
-                    return redirect($target, $redirect->status_code ?? 301);
+                    return $this->redirectToPath($request, $target, $redirect->status_code ?? 301);
                 }
             }
         }
@@ -103,7 +103,7 @@ class HandleRedirects
             $target = $basePath . ($query ? '?' . $query : '');
 
             if ($target !== $path) {
-                return redirect($target, 301);
+                return $this->redirectToPath($request, $target);
             }
         }
 
@@ -111,7 +111,7 @@ class HandleRedirects
             $target = rtrim($matches[1], '/') ?: '/';
             $query = $request->getQueryString();
 
-            return redirect($target . ($query ? '?' . $query : ''), 301);
+            return $this->redirectToPath($request, $target . ($query ? '?' . $query : ''));
         }
 
         // Resolve a legacy product by its slug before applying broad section
@@ -193,7 +193,7 @@ class HandleRedirects
                 $newPath = preg_replace($pattern, $replacement, $path);
                 $query   = $request->getQueryString();
                 $target  = $newPath . ($query ? '?' . $query : '');
-                return redirect($target, 301);
+                return $this->redirectToPath($request, $target);
             }
         }
         // ─────────────────────────────────────────────────────────────────────
@@ -204,6 +204,13 @@ class HandleRedirects
 
         if ($legacyBrandCategoryRedirect = $this->redirectLegacyBrandCategoryPath($request, $path)) {
             return $legacyBrandCategoryRedirect;
+        }
+
+        // Run this after every known legacy redirect. An obsolete city URL
+        // that still has a verified replacement must keep that replacement;
+        // only unresolved city-host crawl noise should become 410 Gone.
+        if ($inactiveCityResponse = $this->redirectInactiveCityToBaseDomain($request)) {
+            return $inactiveCityResponse;
         }
 
         return $next($request);
@@ -257,7 +264,7 @@ class HandleRedirects
 
         $query = $request->getQueryString();
 
-        return redirect($targetPath . ($query ? '?' . $query : ''), 301);
+        return $this->redirectToPath($request, $targetPath . ($query ? '?' . $query : ''));
     }
 
     private function redirectTargetLoopsToProductPath(string $path, string $targetPath): bool
@@ -329,15 +336,16 @@ class HandleRedirects
             return null;
         }
 
-        $targetHost = City::findBySlug($canonical)
-            ? $canonical.'.'.$baseDomain
-            : $baseDomain;
-        $target = 'https://'.$targetHost.$request->getRequestUri();
+        if (! City::findBySlug($canonical)) {
+            return $this->redirectInactiveCityToBaseDomain($request);
+        }
+
+        $target = 'https://'.$canonical.'.'.$baseDomain.$request->getRequestUri();
 
         return redirect()->away($target, 301);
     }
 
-    private function redirectUnknownCityToBaseDomain(Request $request): ?Response
+    private function redirectInactiveCityToBaseDomain(Request $request): ?Response
     {
         $host = $request->getHost();
         $baseDomain = config('app.base_domain', 'kotlov.by');
@@ -356,9 +364,139 @@ class HandleRedirects
             return null;
         }
 
-        $target = 'https://'.$baseDomain.$request->getRequestUri();
+        $targetPath = $this->primaryDomainTargetPath($request);
+        if ($targetPath === null) {
+            return response('Gone', 410, [
+                'Cache-Control' => 'public, max-age=3600',
+                'X-Robots-Tag' => 'noindex, nofollow',
+            ]);
+        }
+
+        $query = $request->getQueryString();
+        $target = 'https://'.$baseDomain.$targetPath.($query ? '?'.$query : '');
 
         return redirect()->away($target, 301);
+    }
+
+    /**
+     * Resolve an inactive city URL to a page that is known to exist on the
+     * primary domain. Merely matching the final catch-all catalogue routes is
+     * not enough: their model-backed parameters must also resolve.
+     */
+    private function primaryDomainTargetPath(Request $request): ?string
+    {
+        $baseDomain = config('app.base_domain', 'kotlov.by');
+        $primaryRequest = Request::create(
+            'https://'.$baseDomain.$request->getRequestUri(),
+            $request->getMethod(),
+        );
+
+        try {
+            $route = Route::getRoutes()->match($primaryRequest);
+        } catch (HttpExceptionInterface) {
+            return null;
+        }
+
+        $path = '/'.ltrim($primaryRequest->getPathInfo(), '/');
+        $path = rtrim($path, '/') ?: '/';
+        $uses = $route->getAction('uses');
+        $parameters = $route->parameters();
+
+        if ($uses === \App\Http\Controllers\CatalogController::class.'@show') {
+            $slug = (string) ($parameters['category'] ?? '');
+            $category = Category::query()
+                ->where('slug', $slug)
+                ->where('is_active', true)
+                ->first(['slug']);
+
+            if ($category) {
+                return '/'.$category->slug;
+            }
+
+            $product = Product::query()
+                ->where('slug', $slug)
+                ->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->orWhere('is_archived', true))
+                ->with('category:id,slug')
+                ->first(['id', 'category_id', 'slug']);
+
+            return $product?->category
+                ? '/'.$product->category->slug.'/'.$product->slug
+                : null;
+        }
+
+        if ($uses === \App\Http\Controllers\ProductController::class.'@show') {
+            $slug = (string) ($parameters['product'] ?? '');
+
+            $category = Category::query()->where('slug', $slug)->first(['id', 'parent_id', 'slug', 'is_active']);
+            if ($category) {
+                if ($category->is_active) {
+                    return '/'.$category->slug;
+                }
+
+                $parentSlug = $category->parent?->slug;
+
+                return $parentSlug ? '/'.$parentSlug : '/';
+            }
+
+            $product = Product::query()
+                ->where('slug', $slug)
+                ->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->orWhere('is_archived', true))
+                ->with('category:id,slug')
+                ->first(['id', 'category_id', 'slug']);
+
+            return $product?->category
+                ? '/'.$product->category->slug.'/'.$product->slug
+                : null;
+        }
+
+        if ($uses === \App\Http\Controllers\BrandController::class.'@show') {
+            $slug = strtolower((string) ($parameters['slug'] ?? ''));
+
+            return Brand::query()->whereRaw('LOWER(slug) = ?', [$slug])->exists()
+                ? '/brands/'.$slug
+                : null;
+        }
+
+        if ($uses === \App\Http\Controllers\BlogController::class.'@show') {
+            $slug = (string) ($parameters['slug'] ?? '');
+
+            return BlogPost::published()->where('slug', $slug)->exists()
+                ? '/blog/'.$slug
+                : null;
+        }
+
+        if ($uses === \App\Http\Controllers\InstallerController::class.'@show') {
+            $slug = (string) ($parameters['slug'] ?? '');
+
+            return InstallerProfile::query()
+                ->where('slug', $slug)
+                ->where('is_published', true)
+                ->where('status', 'active')
+                ->exists()
+                    ? '/installers/'.$slug
+                    : null;
+        }
+
+        // Parameterized public landing pages are constrained by the router.
+        if ($route->getName() === 'heat-pumps.landing') {
+            return $path;
+        }
+
+        // These two catch-all routes are explicit legacy redirects, not
+        // arbitrary content routes.
+        if (str_starts_with($route->uri(), 'pechi-dlya-bani/')
+            || str_starts_with($route->uri(), 'otoplenie/')) {
+            return $path;
+        }
+
+        // A fixed GET route is a verifiable primary-domain target. Other
+        // parameterized application routes (tokens, order IDs, admin data)
+        // are intentionally not treated as SEO redirect destinations.
+        return $parameters === [] ? $path : null;
     }
 
     private function redirectPrimaryCategoryToBaseDomain(Request $request, string $path): ?Response
@@ -463,7 +601,7 @@ class HandleRedirects
 
         $query = $request->getQueryString();
 
-        return redirect('/' . $categorySlug . ($query ? '?' . $query : ''), 301);
+        return $this->redirectToPath($request, '/'.$categorySlug.($query ? '?'.$query : ''));
     }
 
     /**
@@ -521,7 +659,7 @@ class HandleRedirects
 
             $query = $request->getQueryString();
 
-            return redirect($targetPath . ($query ? '?' . $query : ''), 301);
+            return $this->redirectToPath($request, $targetPath . ($query ? '?' . $query : ''));
         }
 
         return null;
@@ -581,7 +719,40 @@ class HandleRedirects
 
         $query = $request->getQueryString();
 
-        return redirect($targetPath . ($query ? '?' . $query : ''), 301);
+        return $this->redirectToPath($request, $targetPath . ($query ? '?' . $query : ''));
+    }
+
+    private function redirectToPath(Request $request, string $target, int $status = 301): Response
+    {
+        if (preg_match('#^https?://#i', $target)) {
+            return redirect()->away($target, $status);
+        }
+
+        if ($this->isInactiveCityHost($request)) {
+            $baseDomain = config('app.base_domain', 'kotlov.by');
+
+            return redirect()->away(
+                'https://'.$baseDomain.'/'.ltrim($target, '/'),
+                $status,
+            );
+        }
+
+        return redirect($target, $status);
+    }
+
+    private function isInactiveCityHost(Request $request): bool
+    {
+        $host = $request->getHost();
+        $baseDomain = config('app.base_domain', 'kotlov.by');
+
+        if (! str_ends_with($host, '.'.$baseDomain)) {
+            return false;
+        }
+
+        $subdomain = str_replace('.'.$baseDomain, '', $host);
+
+        return ! in_array($subdomain, ['www', 'new', 'admin'], true)
+            && ! City::findBySlug($subdomain);
     }
 
     private function canPreviewInactive(Request $request): bool
