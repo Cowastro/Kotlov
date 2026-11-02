@@ -379,7 +379,14 @@ class StorefrontProductSearch
      */
     private function applyIndexedCandidateFilter(Builder $query, string $search, bool $includeInternal): void
     {
-        if ($includeInternal || ! in_array($query->getModel()->getConnection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+        $connection = $query->getModel()->getConnection();
+
+        // InnoDB FULLTEXT does not expose rows written by the current
+        // uncommitted transaction. Falling back to LIKE here keeps a product
+        // searchable immediately after it is created or updated.
+        if ($includeInternal
+            || $connection->transactionLevel() > 0
+            || ! in_array($connection->getDriverName(), ['mysql', 'mariadb'], true)) {
             return;
         }
 
