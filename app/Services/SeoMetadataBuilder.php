@@ -163,9 +163,16 @@ class SeoMetadataBuilder
             );
         }
 
+        if ($slug === 'teplovyie-nasosyi') {
+            return $this->title(
+                null,
+                'Тепловые насосы для отопления дома — цены ' . $cityIn . ' | KOTLOV'
+            );
+        }
+
         $stoveCommercialNames = [
             'pechki' => 'Печи для дома',
-            'pechi-kaminy' => 'Печи-камины',
+            'pechi-kaminy' => 'Печи-камины для дома и дачи',
             'pechi' => 'Дровяные печи',
             'peci-drovianye-otopitelnye' => 'Дровяные печи',
         ];

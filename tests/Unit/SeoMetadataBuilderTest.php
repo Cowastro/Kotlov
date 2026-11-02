@@ -26,8 +26,9 @@ class SeoMetadataBuilderTest extends TestCase
             'elektricheskie' => 'Электрические котлы: цены, купить в Минске | KOTLOV',
             'electric' => 'Электрические водонагреватели — купить в Минске | KOTLOV',
             'pechki' => 'Печи для дома: цены, купить в Минске | KOTLOV',
-            'pechi-kaminy' => 'Печи-камины: цены, купить в Минске | KOTLOV',
+            'pechi-kaminy' => 'Печи-камины для дома и дачи: цены, купить в Минске | KOTLOV',
             'peci-drovianye-otopitelnye' => 'Дровяные печи: цены, купить в Минске | KOTLOV',
+            'teplovyie-nasosyi' => 'Тепловые насосы для отопления дома — цены в Минске | KOTLOV',
         ];
 
         foreach ($cases as $slug => $expected) {
