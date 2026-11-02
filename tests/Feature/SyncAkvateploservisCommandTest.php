@@ -62,6 +62,12 @@ class SyncAkvateploservisCommandTest extends TestCase
         $this->assertSame($neptunL->id, $offer('06-084871')->raw['suggested_product_id']);
         $this->assertSame('out_of_stock', $offer('06-084970')->stock_status);
         $this->assertNull($offer('06-084970')->price_byn);
+
+        // The daily sync keeps the photo search mark and a sbg.by pair made by hand.
+        $marked = $offer('26-408000N');
+        $marked->forceFill(['raw' => array_merge((array) $marked->raw, ['photo_searched_at' => '2026-11-01 10:00:00', 'deal_by_id' => 701])])->save();
+        $this->artisan('supplier:sync-akvateploservis', ['--file' => $file, '--apply' => true])->assertSuccessful();
+        $this->assertSame(['2026-11-01 10:00:00', 701], [$offer('26-408000N')->raw['photo_searched_at'], $offer('26-408000N')->raw['deal_by_id']]);
     }
 
     public function test_a_card_without_side_is_offered_to_the_first_row_and_a_discontinued_twin_never_links(): void

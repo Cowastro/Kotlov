@@ -190,9 +190,10 @@ class SyncPrometallCommand extends Command
                     // A manual link made in the admin keeps its mark.
                     'match_status' => $product ? 'matched' : ($row['suggested_product_id'] ? 'suggested' : 'unmatched'),
                     'match_confidence' => $product ? ($link->match_confidence === 'manual_admin' ? 'manual_admin' : $row['match_reason']) : null,
-                    'raw' => ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'ean' => $row['ean'], 'section' => $row['section'],
+                    // The photo search mark and a sbg.by pair made by hand survive a new price list.
+                    'raw' => array_merge(\Illuminate\Support\Arr::only((array) $link->raw, ['photo_searched_at', 'deal_by_id']), ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'ean' => $row['ean'], 'section' => $row['section'],
                         'description' => $row['description'], 'retail' => $row['rrc'], 'brand' => 'ProMetall',
-                        'model' => trim('Арт. '.$row['article'].' · '.$row['section'], ' ·')],
+                        'model' => trim('Арт. '.$row['article'].' · '.$row['section'], ' ·')]),
                     'last_synced_at' => now(),
                 ])->save();
                 $stats['offers']++;

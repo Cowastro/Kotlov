@@ -262,9 +262,10 @@ class SyncTeplotopCommand extends Command
                     // A manual link made in the admin keeps its mark.
                     'match_status' => $product ? 'matched' : ($row['suggested_product_id'] ? 'suggested' : 'unmatched'),
                     'match_confidence' => $product ? ($link->match_confidence === 'manual_admin' ? 'manual_admin' : $row['match_reason']) : null,
-                    'raw' => ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'sheet' => $row['sheet'], 'article' => $row['article'],
+                    // The photo search mark and a sbg.by pair made by hand survive a new price list.
+                    'raw' => array_merge(\Illuminate\Support\Arr::only((array) $link->raw, ['photo_searched_at', 'deal_by_id']), ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'sheet' => $row['sheet'], 'article' => $row['article'],
                         'specs' => $row['specs'], 'retail' => $row['rrc'], 'brand' => $row['brand'], 'sale' => ! empty($row['sale']), 'no_auto_link' => $row['blocked'],
-                        'model' => trim(($row['article'] !== '' ? 'Арт. '.$row['article'].' · ' : '').$row['sheet'], ' ·')],
+                        'model' => trim(($row['article'] !== '' ? 'Арт. '.$row['article'].' · ' : '').$row['sheet'], ' ·')]),
                     'last_synced_at' => now(),
                 ])->save();
                 $stats['offers']++;
