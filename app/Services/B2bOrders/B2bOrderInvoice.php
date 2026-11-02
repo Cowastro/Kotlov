@@ -25,55 +25,7 @@ class B2bOrderInvoice
             if (! $locked->stockIsSettled()) {
                 throw ValidationException::withMessages(['invoice' => 'Сначала подтвердите наличие каждой позиции B2B-заказа.']);
             }
-            if ($locked->commercialDocument) return $locked->commercialDocument;
-
-            $client = $locked->client;
-            $counterparty = $client->counterparty;
-            $document = CommercialDocument::query()->create([
-                'type' => 'invoice',
-                'status' => 'sent',
-                'created_by' => $manager->id,
-                'manager_id' => $manager->id,
-                'crm_counterparty_id' => $client->counterparty_id,
-                'client_name' => $locked->contact_name,
-                'client_company' => $client->company_name,
-                'client_legal_name' => $counterparty?->legal_name ?: $locked->company_name,
-                'client_email' => $locked->company_email ?: $locked->contact_email,
-                'client_phone' => $locked->contact_phone,
-                'client_unp' => $locked->company_unp ?: $client->unp,
-                'client_address' => $counterparty?->legal_address ?: $locked->company_address,
-                'issued_at' => today(),
-                'valid_until' => today()->addDays(5),
-                'currency' => 'BYN',
-                'discount_total' => $locked->discount,
-                'delivery_price' => $locked->delivery_price,
-                'delivery_to_client' => $locked->delivery_type !== 'pickup',
-                'vat_rate' => 20,
-                'payment_terms' => $locked->payment_type === 'invoice_deferred'
-                    ? 'Оплата с отсрочкой '.(int) data_get($locked->commercial_terms_snapshot, 'payment_deferment_days', 0).' календарных дней.'
-                    : '100% предоплата по счёту.',
-                'delivery_terms' => collect([$locked->delivery_city, $locked->delivery_address])->filter()->implode(', ') ?: 'Самовывоз или согласованная B2B-доставка.',
-                'notes' => 'Счёт по B2B-заказу '.$locked->number.'.',
-                'sent_at' => now(),
-            ]);
-
-            foreach ($locked->items->reject->isExcluded()->values() as $position => $item) {
-                $document->items()->create([
-                    'product_id' => $item->product_id,
-                    'name' => $item->product_name,
-                    'sku' => $item->product_sku,
-                    'unit' => $item->product?->unit ?: 'шт.',
-                    'quantity' => $item->confirmed_quantity ?: $item->quantity,
-                    'unit_price' => $item->price,
-                    'discount_percent' => 0,
-                    'vat_rate' => 20,
-                    'sort_order' => $position,
-                ]);
-            }
-            $document->recalculate();
-            if (abs((float) $document->total - (float) $locked->total) > 0.02) {
-                throw ValidationException::withMessages(['invoice' => 'Сумма счёта не совпадает с подтверждённым B2B-заказом.']);
-            }
+            $document = $this->reusableInvoice($locked) ?? $this->createInvoice($locked, $manager);
 
             $locked->forceFill(['commercial_document_id' => $document->id])->save();
             $workflow = app(B2bOrderWorkflow::class);
@@ -86,6 +38,87 @@ class B2bOrderInvoice
         });
 
         $this->notifyPartner($order->fresh(['commercialDocument.items', 'client.user']), $document);
+
+        return $document;
+    }
+
+    /**
+     * An order moved from the old module may already point at a document. An
+     * invoice for the same confirmed total is kept (a draft becomes sent, so it
+     * shows in the cabinet); anything else is cancelled and replaced.
+     */
+    private function reusableInvoice(B2bOrder $order): ?CommercialDocument
+    {
+        $existing = $order->commercialDocument;
+        if (! $existing) {
+            return null;
+        }
+        if ($existing->type === 'invoice'
+            && ! in_array($existing->status, ['cancelled', 'rejected'], true)
+            && abs((float) $existing->total - (float) $order->total) <= 0.02) {
+            if ($existing->status === 'draft') {
+                $existing->forceFill(['status' => 'sent', 'sent_at' => $existing->sent_at ?? now()])->save();
+            }
+
+            return $existing;
+        }
+        if (! in_array($existing->status, ['paid', 'cancelled'], true)) {
+            $existing->forceFill(['status' => 'cancelled'])->save();
+        }
+
+        return null;
+    }
+
+    private function createInvoice(B2bOrder $locked, User $manager): CommercialDocument
+    {
+        $client = $locked->client;
+        $counterparty = $client->counterparty;
+        $document = CommercialDocument::query()->create([
+            'type' => 'invoice',
+            'status' => 'sent',
+            'created_by' => $manager->id,
+            'manager_id' => $manager->id,
+            'crm_counterparty_id' => $client->counterparty_id,
+            'client_name' => $locked->contact_name,
+            'client_company' => $client->company_name,
+            'client_legal_name' => $counterparty?->legal_name ?: $locked->company_name,
+            'client_email' => $locked->company_email ?: $locked->contact_email,
+            'client_phone' => $locked->contact_phone,
+            'client_unp' => $locked->company_unp ?: $client->unp,
+            'client_address' => $counterparty?->legal_address ?: $locked->company_address,
+            'issued_at' => today(),
+            'valid_until' => today()->addDays(5),
+            'currency' => 'BYN',
+            'discount_total' => $locked->discount,
+            'delivery_price' => $locked->delivery_price,
+            'delivery_to_client' => $locked->delivery_type !== 'pickup',
+            'vat_rate' => 20,
+            'payment_terms' => $locked->payment_type === 'invoice_deferred'
+                ? 'Оплата с отсрочкой '.(int) data_get($locked->commercial_terms_snapshot, 'payment_deferment_days', 0).' календарных дней.'
+                : '100% предоплата по счёту.',
+            'delivery_terms' => collect([$locked->delivery_city, $locked->delivery_address])->filter()->implode(', ') ?: 'Самовывоз или согласованная B2B-доставка.',
+            'notes' => 'Счёт по B2B-заказу '.$locked->number.'.',
+            'sent_at' => now(),
+        ]);
+
+        foreach ($locked->items->reject->isExcluded()->values() as $position => $item) {
+            $document->items()->create([
+                'product_id' => $item->product_id,
+                'name' => $item->product_name,
+                'sku' => $item->product_sku,
+                'unit' => $item->product?->unit ?: 'шт.',
+                'quantity' => $item->confirmed_quantity ?: $item->quantity,
+                'unit_price' => $item->price,
+                'discount_percent' => 0,
+                'vat_rate' => 20,
+                'sort_order' => $position,
+            ]);
+        }
+        $document->recalculate();
+        if (abs((float) $document->total - (float) $locked->total) > 0.02) {
+            throw ValidationException::withMessages(['invoice' => 'Сумма счёта ('.number_format((float) $document->total, 2, ',', ' ')
+                .') не совпадает с подтверждённым B2B-заказом ('.number_format((float) $locked->total, 2, ',', ' ').').']);
+        }
 
         return $document;
     }

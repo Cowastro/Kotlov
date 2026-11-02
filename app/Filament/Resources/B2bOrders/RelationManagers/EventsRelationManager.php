@@ -28,6 +28,7 @@ class EventsRelationManager extends RelationManager
                         'manager_assigned' => 'Назначен менеджер',
                         'legacy_migrated' => 'Перенесено из старого модуля',
                         'stock_checked' => 'Проверены остатки',
+                        'invoice_failed' => 'Счёт не сформирован',
                         'client_email_queued' => 'Письмо в очереди',
                         'client_email_sent' => 'Письмо отправлено',
                         'client_email_skipped' => 'Письмо не отправлено',
@@ -37,7 +38,7 @@ class EventsRelationManager extends RelationManager
                     ->color(fn (string $state): string => match ($state) {
                         'client_email_sent' => 'success',
                         'client_email_queued' => 'info',
-                        'client_email_skipped', 'client_email_failed' => 'danger',
+                        'client_email_skipped', 'client_email_failed', 'invoice_failed' => 'danger',
                         default => 'gray',
                     }),
                 TextColumn::make('from_status')->label('Было')
