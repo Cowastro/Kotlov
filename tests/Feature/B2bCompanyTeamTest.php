@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\B2bClient;
 use App\Models\B2bClientMember;
-use App\Models\Order;
+use App\Models\B2bOrder;
 use App\Models\User;
 use App\Notifications\B2bCompanyInvitationNotification;
 use App\Services\B2bCheckoutTerms;
@@ -30,7 +30,7 @@ class B2bCompanyTeamTest extends TestCase
             'b2b_approved' => false,
         ]);
         $order = $this->order($owner, 'B2B-COMPANY-ORDER');
-        $order->update(['status' => 'confirmed', 'availability_confirmed_at' => now()]);
+        $order->update(['status' => 'proposal_ready', 'availability_confirmed_at' => now()]);
         Notification::fake();
 
         $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => time()])->post(route('b2b.cabinet.team.store'), [
@@ -76,11 +76,6 @@ class B2bCompanyTeamTest extends TestCase
             ->withSession(['auth.password_confirmed_at' => time()])
             ->put(route('b2b.cabinet.profile'), [])
             ->assertForbidden();
-        $this->actingAs($buyer->fresh())
-            ->get(route('account.orders.show', $order))
-            ->assertOk()
-            ->assertSeeText('B2B-COMPANY-ORDER');
-
         $buyerOrder = $this->order($buyer, 'B2B-FORMER-EMPLOYEE');
         $this->assertSame(2, $client->fresh()->orders()->count());
         DB::table('sessions')->insert([
@@ -322,15 +317,19 @@ class B2bCompanyTeamTest extends TestCase
         return [$owner->fresh(), $client->fresh()];
     }
 
-    private function order(User $user, string $number, string $payment = 'invoice', float $total = 100): Order
+    private function order(User $user, string $number, string $payment = 'invoice', float $total = 100): B2bOrder
     {
-        return Order::query()->create([
-            'user_id' => $user->id,
+        $client = $user->activeB2bClient();
+
+        return B2bOrder::query()->create([
+            'b2b_client_id' => $client->id,
+            'created_by' => $user->id,
             'number' => $number,
             'status' => 'new',
-            'customer_name' => $user->name,
-            'customer_phone' => '+375290000000',
-            'customer_email' => $user->email,
+            'contact_name' => $user->name,
+            'contact_phone' => '+375290000000',
+            'contact_email' => $user->email,
+            'company_name' => $client->company_name,
             'delivery_type' => 'pickup',
             'payment_type' => $payment,
             'payment_status' => 'pending',

@@ -805,6 +805,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/b2b/cabinet/orders/{order}/invoice', [B2bCabinetController::class, 'generateInvoice'])
         ->middleware('throttle:10,1')
         ->name('b2b.cabinet.orders.invoice');
+    Route::post('/b2b/cabinet/b2b-orders/{b2bOrder}/confirm', [B2bCabinetController::class, 'confirmOrder'])
+        ->middleware('throttle:10,1')
+        ->name('b2b.cabinet.orders.confirm');
     Route::get('/b2b/catalog', B2bMarketplaceController::class)->name('b2b.catalog');
     Route::get('/b2b/catalog/suggest', [B2bMarketplaceController::class, 'suggest'])
         ->middleware('throttle:120,1')

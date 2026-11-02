@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Mail\OrderAvailabilityConfirmedMail;
 use App\Models\B2bClient;
+use App\Models\B2bOrder;
 use App\Models\B2bPriceLevel;
 use App\Models\Category;
 use App\Models\CrmCounterparty;
@@ -257,10 +258,11 @@ class B2bCommercialProfileTest extends TestCase
             'company_email' => 'buh@partner.by',
         ])->assertRedirect();
 
-        $order = Order::query()->latest('id')->with('commercialDocument')->firstOrFail();
+        $order = B2bOrder::query()->latest('id')->with('commercialDocument')->firstOrFail();
         $this->assertSame('invoice_deferred', $order->payment_type);
         $this->assertSame(200.0, (float) $order->total);
-        $this->assertStringContainsString('14 календарных дней', $order->commercialDocument->payment_terms);
+        $this->assertNull($order->commercialDocument);
+        $this->assertStringContainsString('14 календарных дней', $order->commercial_terms_snapshot['payment_terms']);
 
         $credit = app(B2bCheckoutTerms::class)->creditSummary($client->fresh());
         $this->assertSame(200.0, $credit['exposure']);
@@ -274,12 +276,14 @@ class B2bCommercialProfileTest extends TestCase
             'payment_deferment_days' => 14,
             'credit_limit' => 1000,
         ]);
-        Order::query()->create([
-            'user_id' => $user->id,
+        B2bOrder::query()->create([
+            'b2b_client_id' => $client->id,
+            'created_by' => $user->id,
             'number' => 'B2B-CREDIT-USED',
             'status' => 'new',
-            'customer_name' => $user->name,
-            'customer_phone' => '+375290000000',
+            'contact_name' => $user->name,
+            'contact_phone' => '+375290000000',
+            'company_name' => $client->company_name,
             'delivery_type' => 'pickup',
             'payment_type' => 'invoice_deferred',
             'payment_status' => 'pending',
@@ -306,7 +310,8 @@ class B2bCommercialProfileTest extends TestCase
             'payment_type' => 'invoice_deferred',
         ])->assertSessionHasErrors('payment_type');
 
-        $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseCount('b2b_orders', 1);
+        $this->assertDatabaseCount('orders', 0);
     }
 
     public function test_minimum_b2b_order_is_enforced_before_checkout_and_on_submission(): void

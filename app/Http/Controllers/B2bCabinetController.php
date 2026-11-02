@@ -6,6 +6,7 @@ use App\Models\B2bClient;
 use App\Models\B2bClientAuditLog;
 use App\Models\B2bClientInvitation;
 use App\Models\B2bClientMember;
+use App\Models\B2bOrder;
 use App\Models\B2bSavedCart;
 use App\Models\B2bSpecification;
 use App\Models\B2bSpecificationAttachment;
@@ -22,6 +23,7 @@ use App\Notifications\B2bCompanyInvitationNotification;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bCheckoutTerms;
 use App\Services\B2bCompanyAccess;
+use App\Services\B2bOrders\B2bOrderWorkflow;
 use App\Services\B2bSpecificationParser;
 use App\Services\B2bTeamService;
 use App\Services\CommercialDocuments\B2bSelfServiceInvoice;
@@ -99,7 +101,13 @@ class B2bCabinetController extends Controller
         }
         $counterparty = $client->counterparty;
         $creditSummary = $checkoutTerms->creditSummary($client);
-        $ordersQuery = Order::query()->whereIn('user_id', $companyUserIds)->with(['items', 'commercialDocument'])->latest();
+        $ordersQuery = B2bOrder::query()
+            ->where('b2b_client_id', $client->id)
+            ->with([
+                'items', 'commercialDocument', 'manager:id,name',
+                'comments' => fn ($query) => $query->where('visible_to_client', true)->with('author:id,name')->oldest(),
+            ])
+            ->latest();
         $documentsQuery = $this->documentsFor($request);
 
         $orders = (clone $ordersQuery)->paginate(12, ['*'], 'orders_page')->withQueryString();
@@ -132,11 +140,11 @@ class B2bCabinetController extends Controller
             [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
         }
 
-        $reconciliationOrders = Order::query()->whereIn('user_id', $companyUserIds)
+        $reconciliationOrders = B2bOrder::query()->where('b2b_client_id', $client->id)
             ->whereBetween('created_at', [$dateFrom->startOfDay(), $dateTo->endOfDay()])
             ->oldest('created_at')
             ->get();
-        $openingOrders = Order::query()->whereIn('user_id', $companyUserIds)->where('created_at', '<', $dateFrom->startOfDay())->get();
+        $openingOrders = B2bOrder::query()->where('b2b_client_id', $client->id)->where('created_at', '<', $dateFrom->startOfDay())->get();
         $openingBalance = $this->balance($openingOrders);
         $periodCharges = (float) $reconciliationOrders->where('status', '!=', 'cancelled')->sum('total');
         $periodPayments = (float) $reconciliationOrders->where('payment_status', 'paid')->sum('total');
@@ -160,7 +168,7 @@ class B2bCabinetController extends Controller
             ->latest()
             ->limit(20)
             ->get();
-        $companyOrderTotal = (float) Order::query()->whereIn('user_id', $companyUserIds)->sum('total');
+        $companyOrderTotal = (float) B2bOrder::query()->where('b2b_client_id', $client->id)->sum('total');
 
         return view('pages.b2b.cabinet', compact(
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
@@ -669,6 +677,19 @@ class B2bCabinetController extends Controller
 
         return to_route('b2b.cabinet', ['section' => 'documents'])
             ->with('success', 'Счёт '.$document->number.' сформирован из подтверждённого заказа. Состав и цены зафиксированы.');
+    }
+
+    public function confirmOrder(Request $request, B2bOrder $b2bOrder, B2bOrderWorkflow $workflow)
+    {
+        $client = $request->user()->activeB2bClient();
+        abort_unless($client
+            && $this->access->allows($request->user(), 'orders.create', $client)
+            && (int) $b2bOrder->b2b_client_id === (int) $client->id, 404);
+
+        $workflow->clientConfirm($b2bOrder, $request->user());
+
+        return to_route('b2b.cabinet', ['section' => 'orders'])
+            ->with('success', 'Условия заказа '.$b2bOrder->number.' подтверждены. B2B-менеджер подготовит счёт; при наличии лимита заказ можно будет отгрузить с отсрочкой.');
     }
 
     private function documentsFor(Request $request): Builder

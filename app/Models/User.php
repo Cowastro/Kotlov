@@ -29,6 +29,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
 
         'role',
         'is_crm_user',
+        'can_manage_b2b_orders',
         'client_type',
 
         'phone',
@@ -56,6 +57,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
         'password' => 'hashed',
         'is_active' => 'boolean',
         'is_crm_user' => 'boolean',
+        'can_manage_b2b_orders' => 'boolean',
         'b2b_approved' => 'boolean',
         'client_type' => ClientType::class,
     ];
@@ -160,6 +162,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
         return in_array($this->role, ['manager', 'sales_manager'], true);
     }
 
+    public function canManageB2bOrders(): bool
+    {
+        return $this->isAdmin() || ($this->isManager() && $this->can_manage_b2b_orders);
+    }
+
     public function crmSignatureName(): string
     {
         $profileName = trim(implode(' ', array_filter([
@@ -183,6 +190,16 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
     public function managedOrders(): HasMany
     {
         return $this->hasMany(Order::class, 'manager_id');
+    }
+
+    public function b2bOrders(): HasMany
+    {
+        return $this->hasMany(B2bOrder::class, 'created_by');
+    }
+
+    public function managedB2bOrders(): HasMany
+    {
+        return $this->hasMany(B2bOrder::class, 'assigned_manager_id');
     }
 
     public function assignedMailThreads(): HasMany

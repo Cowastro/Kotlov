@@ -441,6 +441,11 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function legacyB2bOrder(): HasOne
+    {
+        return $this->hasOne(B2bOrder::class, 'legacy_order_id');
+    }
+
     public function statusHistory(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class);

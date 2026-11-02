@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\B2bClient;
+use App\Models\B2bOrder;
 use App\Models\B2bSavedCart;
 use App\Models\CommercialDocument;
 use App\Models\CrmCounterparty;
@@ -114,10 +115,21 @@ class B2bCabinetTest extends TestCase
 
     public function test_cabinet_only_lists_orders_owned_by_authenticated_partner(): void
     {
-        [$partner] = $this->partner();
-        [$other] = $this->partner('orders@example.by', 'ООО «Заказы»');
-        $this->order($partner, 'B2B-OWN-1');
-        $this->order($other, 'B2B-FOREIGN-1');
+        [$partner, $partnerClient] = $this->partner();
+        [$other, $otherClient] = $this->partner('orders@example.by', 'ООО «Заказы»');
+        foreach ([[$partner, $partnerClient, 'B2B-OWN-1'], [$other, $otherClient, 'B2B-FOREIGN-1']] as [$user, $client, $number]) {
+            B2bOrder::query()->create([
+                'b2b_client_id' => $client->id,
+                'created_by' => $user->id,
+                'number' => $number,
+                'status' => 'new',
+                'contact_name' => $user->name,
+                'contact_phone' => '+375290000000',
+                'company_name' => $client->company_name,
+                'subtotal' => 100,
+                'total' => 100,
+            ]);
+        }
 
         $this->actingAs($partner)
             ->get(route('b2b.cabinet', ['section' => 'orders']))

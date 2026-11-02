@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Facades\Auth;
 
 class B2bClient extends Model
@@ -112,16 +111,9 @@ class B2bClient extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
-    public function orders(): HasManyThrough
+    public function orders(): HasMany
     {
-        return $this->hasManyThrough(
-            Order::class,
-            B2bClientMember::class,
-            'b2b_client_id',
-            'user_id',
-            'id',
-            'user_id',
-        );
+        return $this->hasMany(B2bOrder::class);
     }
 
     public function specifications(): HasMany
@@ -147,17 +139,7 @@ class B2bClient extends Model
     public function scopeWithB2bOrderMetrics(Builder $query): Builder
     {
         return $query
-            ->withCount([
-                'orders as b2b_orders_count' => fn (Builder $orders): Builder => $orders->whereHas(
-                    'items',
-                    fn (Builder $items): Builder => $items->where('pricing_type', 'b2b'),
-                ),
-            ])
-            ->withSum([
-                'orders as b2b_orders_total' => fn (Builder $orders): Builder => $orders->whereHas(
-                    'items',
-                    fn (Builder $items): Builder => $items->where('pricing_type', 'b2b'),
-                ),
-            ], 'total');
+            ->withCount('orders as b2b_orders_count')
+            ->withSum('orders as b2b_orders_total', 'total');
     }
 }

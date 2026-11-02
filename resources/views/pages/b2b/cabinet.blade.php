@@ -9,7 +9,7 @@
     $cart = collect(session('cart', []));
     $cartCount = $cart->sum('quantity');
     $sectionUrl = fn (string $name) => route('b2b.cabinet', ['section' => $name]);
-    $statusLabels = \App\Models\Order::STATUSES;
+    $statusLabels = \App\Models\B2bOrder::STATUSES;
     $documentStatuses = \App\Models\CommercialDocument::STATUSES;
     $contractStatuses = \App\Models\CommercialContract::STATUSES;
     $can = fn (string $permission) => $permissions->contains($permission);
@@ -58,7 +58,6 @@
                     @continue($permission && !$can($permission))
                     <a href="{{ $sectionUrl($key) }}" class="{{ $section === $key ? 'active' : '' }}"><i class="icon {{ $icon }}"></i><span>{{ $label }}</span>@if($key === 'carts' && $savedCarts->count())<b>{{ $savedCarts->count() }}</b>@elseif($key === 'specifications' && $specifications->total())<b>{{ $specifications->total() }}</b>@endif</a>
                 @endforeach
-                <a href="{{ route('account') }}" class="b2b-cabinet-nav__retail"><i class="icon icon-ArrowLeft"></i><span>Обычный личный кабинет</span></a>
             </aside>
 
             <section class="b2b-cabinet-content">
@@ -114,7 +113,7 @@
                         @endif
                     </div>
                     <div class="b2b-cabinet-grid">
-                        @if($can('orders.view'))<article class="b2b-cabinet-card"><div class="b2b-cabinet-card__head"><h3>Последние заказы</h3><a href="{{ $sectionUrl('orders') }}">Все заказы</a></div>@forelse($orders->take(4) as $order)<a class="b2b-cabinet-row" href="{{ $order->customerDetailsAreAvailable() ? route('account.orders.show', $order) : $sectionUrl('orders') }}"><span><strong>{{ $order->number }}</strong><small>{{ $order->created_at?->format('d.m.Y') }}</small></span><span>{{ $statusLabels[$order->status] ?? $order->status }}</span><b>{{ number_format((float) $order->total, 2, ',', ' ') }} BYN</b></a>@empty<p class="b2b-cabinet-empty">Заказов пока нет.@if($can('catalog.view')) Начните с B2B-каталога.@endif</p>@endforelse</article>@endif
+                        @if($can('orders.view'))<article class="b2b-cabinet-card"><div class="b2b-cabinet-card__head"><h3>Последние B2B-заказы</h3><a href="{{ $sectionUrl('orders') }}">Все заказы</a></div>@forelse($orders->take(4) as $order)<a class="b2b-cabinet-row" href="{{ $sectionUrl('orders') }}#b2b-order-{{ $order->id }}"><span><strong>{{ $order->number }}</strong><small>{{ $order->created_at?->format('d.m.Y') }}</small></span><span>{{ $statusLabels[$order->status] ?? $order->status }}</span><b>{{ number_format((float) $order->total, 2, ',', ' ') }} BYN</b></a>@empty<p class="b2b-cabinet-empty">Заказов пока нет.@if($can('catalog.view')) Начните с B2B-каталога.@endif</p>@endforelse</article>@endif
                         <article class="b2b-cabinet-card"><div class="b2b-cabinet-card__head"><h3>Данные компании</h3>@if($can('profile.manage'))<a href="{{ $sectionUrl('profile') }}">Изменить</a>@endif</div><dl class="b2b-cabinet-details"><div><dt>Компания</dt><dd>{{ $client->company_name }}</dd></div><div><dt>УНП</dt><dd>{{ $client->unp ?: 'Не указан' }}</dd></div><div><dt>Контакт</dt><dd>{{ $client->contact_name ?: $user->name }}</dd></div><div><dt>Условия оплаты</dt><dd>{{ $client->payment_terms ?: 'По согласованию с менеджером' }}</dd></div></dl></article>
                     </div>
                 @elseif ($section === 'profile')
@@ -277,25 +276,23 @@
                     <div class="b2b-cabinet-heading"><div><span>Покупки</span><h2>История заказов</h2></div><p>Статусы, суммы и состав заказов</p></div>
                     <div class="b2b-cabinet-list">
                         @forelse($orders as $order)
-                            <article>
+                            <article id="b2b-order-{{ $order->id }}">
                                 <div>
                                     <span>{{ $order->created_at?->format('d.m.Y H:i') }}</span>
                                     <h3>{{ $order->number }}</h3>
                                     <p>{{ $order->items->count() }} позиций · {{ $statusLabels[$order->status] ?? $order->status }} · {{ $order->paymentStatusLabel() }}</p>
+                                    @foreach($order->comments as $comment)<p><small>{{ $comment->created_at?->format('d.m.Y H:i') }} · {{ $comment->author?->name ?: 'KOTLOV' }}</small><br>{{ $comment->body }}</p>@endforeach
                                 </div>
                                 <div class="b2b-cabinet-order-total">
                                     <strong>{{ number_format((float)$order->total, 2, ',', ' ') }} BYN</strong>
-                                    @if($order->customerDetailsAreAvailable())<a href="{{ route('account.orders.show', $order) }}">Открыть заказ →</a>@else<small>Менеджер проверяет наличие</small>@endif
+                                    <small>{{ $order->manager ? 'Менеджер: '.$order->manager->name : 'Ожидает назначения B2B-менеджера' }}</small>
+                                    @if($order->status === 'awaiting_client' && $can('orders.create'))
+                                        <form method="POST" action="{{ route('b2b.cabinet.orders.confirm', $order) }}" class="b2b-invoice-form">@csrf<button type="submit">Подтвердить условия</button></form>
+                                    @endif
                                     @if($order->commercialDocument?->type === 'invoice' && $order->commercialDocument?->status !== 'draft' && $can('documents.download'))
                                         <a target="_blank" href="{{ route('b2b.cabinet.documents.pdf', $order->commercialDocument) }}">Открыть счёт PDF →</a>
-                                    @elseif($order->isB2bInvoiceOrder() && $can('documents.generate'))
-                                        @if(!$order->canGenerateB2bInvoice())
-                                            <small class="b2b-invoice-note">Счёт станет доступен после подтверждения всех позиций.</small>
-                                        @elseif(!$invoiceProfileReady)
-                                            <a href="{{ $sectionUrl('profile') }}">Заполнить реквизиты для счёта →</a>
-                                        @else
-                                            <form method="POST" action="{{ route('b2b.cabinet.orders.invoice', $order) }}" class="b2b-invoice-form">@csrf<button type="submit">Сформировать счёт</button></form>
-                                        @endif
+                                    @elseif($order->status === 'invoice_issued')
+                                        <small class="b2b-invoice-note">Счёт готовится к публикации в кабинете.</small>
                                     @endif
                                 </div>
                             </article>
