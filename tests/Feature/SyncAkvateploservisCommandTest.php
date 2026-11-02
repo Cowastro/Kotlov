@@ -11,6 +11,7 @@ use App\Models\SupplierProduct;
 use App\Services\Marketplaces\DealByClient;
 use App\Services\Suppliers\AkvateploservisPriceList;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Mockery\MockInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -20,6 +21,13 @@ use Tests\TestCase;
 class SyncAkvateploservisCommandTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // The price list is in euro: the NBRB rate of the day turns it into BYN.
+        Http::fake(['api.nbrb.by/*' => Http::response(['Cur_OfficialRate' => 3.3])]);
+    }
 
     public function test_rows_link_by_article_and_model_and_share_merged_prices(): void
     {
@@ -42,13 +50,15 @@ class SyncAkvateploservisCommandTest extends TestCase
         $supplier = Supplier::query()->where('code', 'akvateploservis')->sole();
         $offer = fn (string $code) => SupplierProduct::query()->where('supplier_id', $supplier->id)->where('supplier_article', $code)->sole();
         $this->assertSame($tower->id, $offer('26-408000N')->product_id);
-        $this->assertSame(1336.0, (float) $tower->fresh()->price);
+        $this->assertSame(4408.8, (float) $tower->fresh()->price);
+        $this->assertSame('EUR', $offer('26-408000N')->currency);
+        $this->assertSame(1109.0, (float) $offer('26-408000N')->price);
         $this->assertSame($neptunR->id, $offer('06-104870')->product_id);
         $this->assertTrue((bool) $offer('06-104870')->in_stock);
         // The L row of the pair has its price in the merged cells of the R row.
-        $this->assertSame(499.0, (float) $offer('06-104871')->price_byn);
+        $this->assertSame(1646.7, (float) $offer('06-104871')->price_byn);
         $this->assertSame($apamet->id, $offer('apamet-apamet-stil-150-skay-ws-cvet-seryi')->product_id);
-        $this->assertSame(511.0, (float) $apamet->fresh()->price);
+        $this->assertSame(1686.3, (float) $apamet->fresh()->price);
         $this->assertSame($neptunL->id, $offer('06-084871')->raw['suggested_product_id']);
         $this->assertSame('out_of_stock', $offer('06-084970')->stock_status);
         $this->assertNull($offer('06-084970')->price_byn);

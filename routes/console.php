@@ -189,6 +189,14 @@ Schedule::command('supplier:chisty-bereg-photos --supplier=akvateploservis --lim
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/galmet-photos.log'));
 
+// The Galmet price list is in euro: after the morning NBRB rate the card prices follow it (the last uploaded file).
+Schedule::command('supplier:sync-akvateploservis --apply')
+    ->dailyAt('07:05')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/galmet-sync.log'));
+
 // sbg.by (deal.by) keeps the Galmet and Apamet prices of kotlov.by (Акватеплосервис): by article or model.
 Schedule::command('deal:sync-brand-prices --supplier=akvateploservis --apply')
     ->dailyAt('07:50')

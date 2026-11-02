@@ -10,8 +10,8 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 /**
  * «GALMET прайс-лист» of ООО «Акватеплосервис» (galmet.by), the importer of Galmet (Poland) and Apamet
  * (Turkey) in Belarus. One sheet of sections («TOWER», «NEPTUN KOMBI»…): a goods row has the Galmet article
- * (26-308070N; an Apamet row has none), the name, опт and РРЦ in BYN and the stock («склад», «под заказ»,
- * «ожидается поставка»…). A pair of rows (R/L, two colours) shares the price, stock and specs in merged
+ * (26-308070N; an Apamet row has none), the name, опт and РРЦ in EUR and the stock («склад», «под заказ»,
+ * «ожидается поставка»…). The prices are in euro (the PDF says so; teplodvor.by sells at about РРЦ × the NBRB rate). A pair of rows (R/L, two colours) shares the price, stock and specs in merged
  * cells; the specs are the text row under the goods («Объем 153л, теплообменник…»). The file stays on the
  * server only.
  */

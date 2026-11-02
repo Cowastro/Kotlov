@@ -18,8 +18,9 @@ use Illuminate\Support\Str;
  * by its earlier link, by the Galmet article (in the card SKU or title, or another supplier's article), or by
  * the same model (AkvateploservisPriceList::modelKey) among the Galmet and Apamet cards; a card whose model
  * words all stand in one row only is offered for confirmation. «склад» is in stock, other rows are ordered,
- * discontinued rows are not offered. The РРЦ becomes the card price where Акватеплосервис is the card's only
- * supplier.
+ * discontinued rows are not offered. Prices are in euro: опт and РРЦ become BYN at the NBRB rate the supplier
+ * keeps (currency:fetch-nbrb-rates updates it every morning, this sync follows). The РРЦ in BYN becomes the card
+ * price where Акватеплосервис is the card's only supplier.
  *
  *   php artisan supplier:sync-akvateploservis            # dry run on the last uploaded file
  *   php artisan supplier:sync-akvateploservis --apply
@@ -206,7 +207,10 @@ class SyncAkvateploservisCommand extends Command
             'last_run_at' => now(),
             'last_status' => 'running',
         ]);
-        $stats = ['offers' => 0, 'in_stock' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'gone_from_file' => 0, 'errors' => 0];
+        $rate = $this->euroRate($supplier);
+        $byn = fn (float $euro): float => round($euro * $rate, 2);
+        $stats = ['offers' => 0, 'in_stock' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'gone_from_file' => 0, 'errors' => 0,
+            'eur_rate_x10000' => (int) round($rate * 10000)];
         $touched = [];
         $seen = [];
         foreach ($rows as $row) {
@@ -226,9 +230,9 @@ class SyncAkvateploservisCommand extends Command
                     'supplier_name' => Str::limit($row['brand'].' '.$row['name'], 250, ''),
                     'source_url' => 'http://galmet.by/',
                     'price' => $priced ? ($row['wholesale'] ?: null) : null,
-                    'price_byn' => $priced ? ($row['wholesale'] ?: null) : null,
-                    'currency' => 'BYN',
-                    'currency_rate' => 1,
+                    'price_byn' => $priced && $row['wholesale'] > 0 ? $byn($row['wholesale']) : null,
+                    'currency' => 'EUR',
+                    'currency_rate' => $rate,
                     'in_stock' => $status === 'in_stock',
                     'stock_quantity' => null,
                     'stock_status' => $status === 'discontinued' ? 'out_of_stock' : $status,
@@ -240,7 +244,7 @@ class SyncAkvateploservisCommand extends Command
                     'match_status' => $product ? 'matched' : ($row['suggested_product_id'] ? 'suggested' : 'unmatched'),
                     'match_confidence' => $product ? ($link->match_confidence === 'manual_admin' ? 'manual_admin' : $row['match_reason']) : null,
                     'raw' => ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'section' => $row['section'], 'article' => $row['article'],
-                        'specs' => $row['specs'], 'retail' => $row['rrc'], 'row' => $row['row'], 'brand' => $row['brand'],
+                        'specs' => $row['specs'], 'retail_eur' => $row['rrc'], 'retail' => $priced ? $byn($row['rrc']) : 0, 'row' => $row['row'], 'brand' => $row['brand'],
                         'model' => trim(($row['article'] !== '' ? 'Арт. '.$row['article'].' · ' : '').$row['section'], ' ·')],
                     'last_synced_at' => now(),
                 ])->save();
@@ -254,8 +258,8 @@ class SyncAkvateploservisCommand extends Command
                     // No price in the list: the card keeps its price.
                 } elseif ($otherSupplier) {
                     $stats['retail_kept_other_supplier']++;
-                } elseif (abs((float) $product->price - $row['rrc']) > 0.005 || $product->requires_price_confirmation) {
-                    $product->forceFill(['price' => $row['rrc'], 'requires_price_confirmation' => false])->save();
+                } elseif (abs((float) $product->price - $byn($row['rrc'])) > 0.005 || $product->requires_price_confirmation) {
+                    $product->forceFill(['price' => $byn($row['rrc']), 'requires_price_confirmation' => false])->save();
                     $stats['retail_updated']++;
                 }
                 if ($product->brand_id) {
@@ -284,12 +288,27 @@ class SyncAkvateploservisCommand extends Command
         return $stats;
     }
 
+    /** BYN per euro: the NBRB rate the supplier keeps; fetched from NBRB when it has none yet. */
+    private function euroRate(Supplier $supplier): float
+    {
+        if ($supplier->currency !== 'EUR' || (float) $supplier->currency_rate <= 1) {
+            $rate = (float) (\Illuminate\Support\Facades\Http::timeout(20)->retry(2, 1000, throw: false)
+                ->get('https://api.nbrb.by/exrates/rates/EUR?parammode=2')->json('Cur_OfficialRate') ?? 0);
+            if ($rate <= 1) {
+                throw new \RuntimeException('Нет курса евро НБРБ для прайса Galmet.');
+            }
+            $supplier->forceFill(['currency' => 'EUR', 'currency_rate' => $rate])->save();
+        }
+
+        return (float) $supplier->currency_rate;
+    }
+
     private function supplier(): Supplier
     {
         return Supplier::query()->firstOrCreate(['code' => self::SUPPLIER_CODE], [
             'name' => self::SUPPLIER_NAME,
-            'currency' => 'BYN',
-            'currency_rate' => 1,
+            'currency' => 'EUR',
+            'currency_rate' => 0,
             'is_active' => true,
             'notes' => 'Импортёр Galmet (Польша) и Apamet (Турция) в Беларуси, galmet.by. Прайс (опт, РРЦ и остатки) — кнопка «Загрузить прайс» на этой странице.',
         ]);
