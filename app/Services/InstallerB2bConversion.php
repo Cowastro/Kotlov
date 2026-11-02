@@ -24,15 +24,17 @@ class InstallerB2bConversion
 
     public function __construct(private readonly B2bClientWorkflow $b2bClients) {}
 
-    /** active | invited | no_email | none */
+    /** invited (access letter sent) | active (B2B client, letter not sent) | no_email | none */
     public function state(InstallerProfile $profile): string
     {
-        $client = $profile->user?->b2bClient;
-        if ($client?->status === 'approved') {
-            return $profile->b2b_invited_at ? 'invited' : 'active';
+        if ($profile->b2b_invited_at) {
+            return 'invited';
+        }
+        if (! $this->email($profile)) {
+            return 'no_email';
         }
 
-        return $this->email($profile) ? 'none' : 'no_email';
+        return $profile->user?->b2bClient?->status === 'approved' ? 'active' : 'none';
     }
 
     public function email(InstallerProfile $profile): ?string

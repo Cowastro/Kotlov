@@ -41,13 +41,14 @@ class InstallerProfilesTable
                     ->badge()
                     ->state(fn (InstallerProfile $record): string => app(InstallerB2bConversion::class)->state($record))
                     ->formatStateUsing(fn (string $state, InstallerProfile $record): string => match ($state) {
-                        'invited' => 'Приглашён '.$record->b2b_invited_at?->format('d.m'),
-                        'active' => 'Есть кабинет',
+                        'invited' => 'Доступ отправлен '.$record->b2b_invited_at?->format('d.m'),
+                        'active' => 'B2B · доступ не отправлен',
                         'no_email' => 'Нет e-mail',
                         default => 'Не подключён',
                     })
                     ->color(fn (string $state): string => match ($state) {
-                        'invited', 'active' => 'success',
+                        'invited' => 'success',
+                        'active' => 'warning',
                         'no_email' => 'danger',
                         default => 'gray',
                     }),
@@ -173,8 +174,11 @@ class InstallerProfilesTable
                     ->url(fn ($record) => route('admin.installer-cabinet-preview', $record))
                     ->openUrlInNewTab(),
                 Action::make('connectB2b')
-                    ->label(fn (InstallerProfile $record): string => app(InstallerB2bConversion::class)->state($record) === 'none'
-                        ? 'Подключить к B2B' : 'Отправить приглашение снова')
+                    ->label(fn (InstallerProfile $record): string => match (app(InstallerB2bConversion::class)->state($record)) {
+                        'none' => 'Подключить к B2B',
+                        'invited' => 'Отправить доступ снова',
+                        default => 'Отправить доступ',
+                    })
                     ->icon('heroicon-o-building-office-2')
                     ->color('success')
                     ->visible(fn (InstallerProfile $record): bool => app(InstallerB2bConversion::class)->state($record) !== 'no_email')

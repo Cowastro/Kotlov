@@ -55,7 +55,7 @@ class InstallerB2bConversionTest extends TestCase
             ->assertRedirect(route('b2b.cabinet'));
         $this->assertAuthenticatedAs($installer->fresh());
         $this->assertNotNull($installer->fresh()->email_verified_at);
-        $this->get(route('b2b.cabinet'))->assertOk()->assertSee('Профиль монтажника');
+        $this->get(route('b2b.cabinet'))->assertOk()->assertSee('Моя страница монтажника');
 
         // The same link does not work twice.
         auth()->logout();

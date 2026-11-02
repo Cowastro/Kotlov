@@ -9,6 +9,7 @@ use App\Http\Controllers\InstallerAccountController;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +38,24 @@ class InstallerAccountTest extends TestCase
         try {
             Schema::dropIfExists('installer_works');
             Schema::dropIfExists('installer_profiles');
+            Schema::dropIfExists('b2b_client_members');
+            Schema::dropIfExists('b2b_clients');
             Schema::dropIfExists('users');
+
+            // The installer cabinet now checks whether the user is a B2B partner.
+            Schema::create('b2b_clients', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id');
+                $table->string('status')->default('pending');
+                $table->timestamps();
+            });
+            Schema::create('b2b_client_members', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('b2b_client_id');
+                $table->foreignId('user_id');
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
 
             Schema::create('users', function (Blueprint $table) {
                 $table->id();
@@ -141,7 +159,7 @@ class InstallerAccountTest extends TestCase
     public function test_user_without_installer_profile_cannot_open_installer_cabinet(): void
     {
         $this->withoutExceptionHandling();
-        $this->expectException(ModelNotFoundException::class);
+        $this->expectException(NotFoundHttpException::class);
 
         $this->actingAs(User::factory()->create())
             ->get(route('account.installer-profile'));

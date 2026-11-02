@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\B2bClient;
+use App\Models\InstallerProfile;
 use App\Models\B2bClientAuditLog;
 use App\Models\B2bClientInvitation;
 use App\Models\B2bClientMember;
@@ -44,10 +45,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class B2bCabinetController extends Controller
 {
-    private const SECTIONS = ['overview', 'profile', 'team', 'specifications', 'carts', 'orders', 'documents', 'contracts', 'reconciliation', 'security'];
+    private const SECTIONS = ['overview', 'profile', 'team', 'specifications', 'carts', 'orders', 'documents', 'contracts', 'reconciliation', 'page', 'security'];
 
     private const SECTION_PERMISSIONS = [
         'profile' => 'profile.manage',
+        'page' => 'profile.manage',
         'team' => 'team.manage',
         'specifications' => 'specifications.manage',
         'carts' => 'orders.create',
@@ -170,7 +172,12 @@ class B2bCabinetController extends Controller
             ->get();
         $companyOrderTotal = (float) B2bOrder::query()->where('b2b_client_id', $client->id)->sum('total');
 
+        $installerPage = $section === 'page' ? InstallerAccountController::pageFor($user) : null;
+        $installerPage?->load(['works' => fn ($query) => $query->latest('completed_at')->latest('id')]);
+        $installerEditor = InstallerAccountController::editorOptions();
+
         return view('pages.b2b.cabinet', compact(
+            'installerPage', 'installerEditor',
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
             'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers', 'creditSummary',
             'profileCompletion', 'profileMissing',
@@ -179,6 +186,39 @@ class B2bCabinetController extends Controller
             'members', 'pendingInvitations', 'auditLogs', 'financialAuditLogs', 'companyOrderTotal',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));
+    }
+
+    /** A partner without a page gets an installer page filled from the company card, sent to moderation. */
+    public function createPage(Request $request)
+    {
+        $user = $request->user();
+        $client = $user->activeB2bClient(['user']);
+        abort_unless($client && $this->access->allows($user, 'profile.manage', $client), 403);
+        if (! InstallerAccountController::pageFor($user)) {
+            $base = Str::slug($client->company_name) ?: 'montazhnik-'.$client->id;
+            $slug = $base;
+            for ($suffix = 2; InstallerProfile::query()->where('slug', $slug)->exists(); $suffix++) {
+                $slug = $base.'-'.$suffix;
+            }
+            InstallerProfile::query()->create([
+                'user_id' => $client->user_id,
+                'company_name' => $client->company_name,
+                'unp' => $client->unp,
+                'contact_name' => $client->contact_name,
+                'phone' => $client->contact_phone,
+                'email' => $client->contact_email,
+                'city' => $client->default_delivery_city,
+                'slug' => $slug,
+                'short_description' => 'Монтаж инженерных систем',
+                'status' => 'pending',
+                'is_published' => false,
+                'is_verified' => false,
+            ]);
+            $client->forceFill(['partner_type' => 'installer'])->save();
+        }
+
+        return to_route('b2b.cabinet', ['section' => 'page'])
+            ->with('success', 'Страница создана. Заполните её — после проверки KOTLOV она появится в каталоге монтажников.');
     }
 
     public function updateProfile(Request $request)

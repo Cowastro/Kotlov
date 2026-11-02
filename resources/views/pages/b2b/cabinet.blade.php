@@ -53,14 +53,12 @@
                     'documents' => ['icon-FileText', 'КП и счета', 'documents.view'],
                     'contracts' => ['icon-Note', 'Договоры', 'documents.view'],
                     'reconciliation' => ['icon-ChartBar', 'Сверка взаиморасчётов', 'finance.view'],
+                    'page' => ['icon-User', $client->partner_type === 'installer' ? 'Моя страница монтажника' : 'Моя страница на KOTLOV', 'profile.manage'],
                     'security' => ['icon-ShieldCheck', 'Безопасность', null],
                 ] as $key => [$icon, $label, $permission])
                     @continue($permission && !$can($permission))
                     <a href="{{ $sectionUrl($key) }}" class="{{ $section === $key ? 'active' : '' }}"><i class="icon {{ $icon }}"></i><span>{{ $label }}</span>@if($key === 'carts' && $savedCarts->count())<b>{{ $savedCarts->count() }}</b>@elseif($key === 'specifications' && $specifications->total())<b>{{ $specifications->total() }}</b>@endif</a>
                 @endforeach
-                @if(auth()->user()?->installerProfile)
-                    <a href="{{ route('account.installer-profile') }}" class="b2b-cabinet-nav__retail"><i class="icon icon-User"></i><span>Профиль монтажника</span></a>
-                @endif
             </aside>
 
             <section class="b2b-cabinet-content">
@@ -342,6 +340,25 @@
                     <div class="b2b-cabinet-heading"><div><span>Финансы</span><h2>Сверка взаиморасчётов</h2></div><p>Предварительная сверка по заказам в KOTLOV</p></div>
                     <form class="b2b-reconciliation-filter" method="GET"><input type="hidden" name="section" value="reconciliation"><label><span>Начало периода</span><input type="date" name="date_from" value="{{ $dateFrom->toDateString() }}"></label><label><span>Конец периода</span><input type="date" name="date_to" value="{{ $dateTo->toDateString() }}"></label><button type="submit">Сформировать</button><button type="button" onclick="window.print()">Печать / PDF</button></form>
                     <article class="b2b-reconciliation-sheet"><header><img src="{{ asset('img/logo.svg') }}" alt="KOTLOV"><div><strong>Сверка взаиморасчётов</strong><span>за {{ $dateFrom->format('d.m.Y') }} — {{ $dateTo->format('d.m.Y') }}</span></div></header><p>Организация: <strong>{{ $counterparty?->legal_name ?: $client->company_name }}</strong>@if($client->unp), УНП {{ $client->unp }}@endif</p><table><thead><tr><th>Дата</th><th>Документ</th><th>Начислено, BYN</th><th>Оплачено, BYN</th></tr></thead><tbody><tr class="muted"><td colspan="2">Сальдо на начало периода</td><td>{{ $openingBalance > 0 ? number_format($openingBalance, 2, ',', ' ') : '—' }}</td><td>{{ $openingBalance < 0 ? number_format(abs($openingBalance), 2, ',', ' ') : '—' }}</td></tr>@foreach($reconciliationOrders as $order)<tr><td>{{ $order->created_at?->format('d.m.Y') }}</td><td>{{ $order->number }} · {{ $statusLabels[$order->status] ?? $order->status }}</td><td>{{ $order->status !== 'cancelled' ? number_format((float)$order->total, 2, ',', ' ') : '—' }}</td><td>{{ $order->payment_status === 'paid' ? number_format((float)$order->total, 2, ',', ' ') : '—' }}</td></tr>@endforeach</tbody><tfoot><tr><th colspan="2">Обороты за период</th><th>{{ number_format($periodCharges, 2, ',', ' ') }}</th><th>{{ number_format($periodPayments, 2, ',', ' ') }}</th></tr><tr><th colspan="2">Сальдо на конец периода</th><th colspan="2">{{ number_format($closingBalance, 2, ',', ' ') }} BYN</th></tr></tfoot></table><small>Сверка сформирована по заказам сайта. Для официального акта с данными бухгалтерского учёта обратитесь к менеджеру.</small></article>
+                @elseif ($section === 'page')
+                    <div class="b2b-cabinet-heading"><div><span>Публичная страница</span><h2>{{ $client->partner_type === 'installer' ? 'Моя страница монтажника' : 'Моя страница на KOTLOV' }}</h2></div><p>Контакты, описание и работы, которые видят клиенты в каталоге</p></div>
+                    @if($installerPage)
+                        @php($profile = $installerPage)
+                        @php([$specializations, $workTypes, $regions] = [$installerEditor['specializations'], $installerEditor['workTypes'], $installerEditor['regions']])
+                        @include('partials.installer-editor.styles')
+                        <div class="installer-cabinet b2b-installer-page">
+                            @if($installerPage->status !== 'active' || !$installerPage->is_published)
+                                <div class="b2b-cabinet-alert is-success">Страница на проверке KOTLOV — после проверки она появится в каталоге монтажников.</div>
+                            @elseif($installerPage->slug)
+                                <p><a href="{{ route('installers.show', $installerPage->slug) }}" target="_blank">Открыть страницу в каталоге →</a></p>
+                            @endif
+                            @include('partials.installer-editor.editor')
+                        </div>
+                    @else
+                        <div class="b2b-cabinet-zero"><i class="icon icon-User"></i><h3>Страницы пока нет</h3><p>Создайте страницу монтажника — клиенты найдут вас в каталоге и смогут оставить заявку. Данные возьмём из карточки компании.</p>
+                            <form method="POST" action="{{ route('b2b.cabinet.page.create') }}">@csrf<button type="submit" class="b2b-cabinet-primary">Создать страницу монтажника</button></form>
+                        </div>
+                    @endif
                 @elseif ($section === 'security')
                     <div class="b2b-cabinet-heading"><div><span>Аккаунт</span><h2>Безопасность</h2></div><p>Изменение пароля для входа в кабинет</p></div>
                     <article class="b2b-security-access"><div><span>Ваша роль</span><h3>{{ \App\Models\B2bClientMember::ROLES[$role] ?? $role }}</h3><p>{{ $passwordRecentlyConfirmed ? 'Личность недавно подтверждена — защищённые действия доступны.' : 'Для изменения реквизитов и управления сотрудниками потребуется повторно ввести пароль.' }}</p></div><ul>@foreach($permissionLabels as $label)<li>{{ $label }}</li>@endforeach</ul></article>
