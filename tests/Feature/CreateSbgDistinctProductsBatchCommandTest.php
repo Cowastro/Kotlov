@@ -11394,7 +11394,10 @@ XML;
             'is_active' => true,
             'update_stock' => true,
         ]);
-        $category = Category::query()->where('slug', 'prochie-dymohod')->sole();
+        $category = Category::query()->firstOrCreate(
+            ['slug' => 'prochie-dymohod'],
+            ['name' => 'Прочие элементы дымохода', 'parent_id' => 0, 'is_active' => true],
+        );
         $templateBrand = Brand::query()->create([
             'name' => 'Теплов и Сухов',
             'slug' => 'teplov-i-suhov-stabilizer-template',

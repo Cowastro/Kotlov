@@ -7,9 +7,20 @@ use Illuminate\Support\Facades\Schema;
 
 class City extends Model
 {
-    protected $fillable = ['slug', 'name', 'name_in', 'name_title', 'region', 'is_active'];
+    protected $fillable = [
+        'slug',
+        'name',
+        'name_in',
+        'name_title',
+        'region',
+        'is_active',
+        'storefront_enabled',
+    ];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts = [
+        'is_active' => 'boolean',
+        'storefront_enabled' => 'boolean',
+    ];
 
     private const KNOWN_CITY_SLUGS = [
         'baran', 'baranovichi', 'beloozersk', 'belyinichi', 'bereza', 'berezino',
@@ -35,14 +46,30 @@ class City extends Model
 
     public static function findBySlug(string $slug): ?self
     {
-        $city = Schema::hasTable((new static)->getTable())
-            ? static::where('slug', $slug)->where('is_active', true)->first()
-            : null;
+        if (Schema::hasTable((new static)->getTable())) {
+            $city = static::where('slug', $slug)->first();
 
-        if ($city) {
-            return $city;
+            // A persisted city is the source of truth. Falling back to the
+            // legacy slug list for an explicitly disabled row made it
+            // impossible to take a city storefront out of service safely.
+            if ($city) {
+                if (! $city->is_active) {
+                    return null;
+                }
+
+                if (Schema::hasColumn($city->getTable(), 'storefront_enabled')
+                    && ! $city->storefront_enabled) {
+                    return null;
+                }
+
+                return $city;
+            }
+
+            return null;
         }
 
+        // Keep the legacy list only as a bootstrap fallback for installations
+        // where the cities table has not been created yet.
         if (! in_array($slug, self::KNOWN_CITY_SLUGS, true)) {
             return null;
         }

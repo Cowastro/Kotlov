@@ -75,13 +75,19 @@ class IntegrationProduct extends Model
 
     public function formattedStockQuantity(): string
     {
-        $quantity = (float) $this->stock_quantity;
+        // Reading a decimal cast asks Eloquent for a database grammar. Use the
+        // stored value directly so formatting also works for an unsaved offer.
+        $attributes = $this->getAttributes();
+        $quantity = (float) ($attributes['stock_quantity'] ?? 0);
 
         $formatted = abs($quantity - round($quantity)) < 0.0005
             ? number_format($quantity, 0, '.', ' ')
             : rtrim(rtrim(number_format($quantity, 3, '.', ' '), '0'), '.');
 
-        $unit = Str::lower(trim((string) $this->product?->unit));
+        $product = $this->relationLoaded('product')
+            ? $this->getRelation('product')
+            : (filled($attributes['product_id'] ?? null) ? $this->product : null);
+        $unit = Str::lower(trim((string) $product?->unit));
         $suffix = Str::contains($unit, ['пог', 'метр']) ? ' м' : ' шт.';
 
         return $formatted.$suffix;

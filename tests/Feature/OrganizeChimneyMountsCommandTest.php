@@ -13,9 +13,10 @@ class OrganizeChimneyMountsCommandTest extends TestCase
 
     public function test_it_creates_subcategories_moves_products_and_preserves_old_urls(): void
     {
-        $root = Category::query()->create(['name' => 'Крепления и монтаж', 'slug' => 'krepleniya-dymohod', 'parent_id' => 0, 'is_active' => true]);
-        Category::query()->create(['name' => 'Теплосъёмники', 'slug' => 'teplosyomniki', 'parent_id' => 0, 'is_active' => true]);
-        Category::query()->create(['name' => 'Переходы', 'slug' => 'perehody-adaptery-dymohod', 'parent_id' => 0, 'is_active' => true]);
+        $root = Category::query()->updateOrCreate(['slug' => 'krepleniya-dymohod'], ['name' => 'Крепления и монтаж', 'parent_id' => 0, 'is_active' => true]);
+        Product::query()->where('category_id', $root->id)->delete();
+        Category::query()->updateOrCreate(['slug' => 'teplosyomniki'], ['name' => 'Теплосъёмники', 'parent_id' => 0, 'is_active' => true]);
+        Category::query()->updateOrCreate(['slug' => 'perehody-adaptery-dymohod'], ['name' => 'Переходы', 'parent_id' => 0, 'is_active' => true]);
         $fixtures = [
             'Площадка монтажная термо Ø150/250' => 'montazhnye-ploshchadki-dymohoda',
             'Хомут растяжки Ø200' => 'homuty-i-rastyazhki-dymohoda',
@@ -52,9 +53,10 @@ class OrganizeChimneyMountsCommandTest extends TestCase
 
     public function test_preview_does_not_move_products(): void
     {
-        $root = Category::query()->create(['name' => 'Крепления', 'slug' => 'krepleniya-dymohod', 'parent_id' => 0, 'is_active' => true]);
-        Category::query()->create(['name' => 'Теплосъёмники', 'slug' => 'teplosyomniki', 'parent_id' => 0, 'is_active' => true]);
-        Category::query()->create(['name' => 'Переходы', 'slug' => 'perehody-adaptery-dymohod', 'parent_id' => 0, 'is_active' => true]);
+        $root = Category::query()->updateOrCreate(['slug' => 'krepleniya-dymohod'], ['name' => 'Крепления', 'parent_id' => 0, 'is_active' => true]);
+        Product::query()->where('category_id', $root->id)->delete();
+        Category::query()->updateOrCreate(['slug' => 'teplosyomniki'], ['name' => 'Теплосъёмники', 'parent_id' => 0, 'is_active' => true]);
+        Category::query()->updateOrCreate(['slug' => 'perehody-adaptery-dymohod'], ['name' => 'Переходы', 'parent_id' => 0, 'is_active' => true]);
         $product = Product::query()->create(['category_id' => $root->id, 'name' => 'Хомут трубный Ø150', 'slug' => 'preview-clamp', 'price' => 10]);
 
         $this->artisan('catalog:organize-chimney-mounts')->assertSuccessful();
