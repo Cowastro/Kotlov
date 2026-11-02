@@ -527,6 +527,11 @@ class LegacySeoRedirectTest extends TestCase
 
     public function test_gas_meter_category_on_city_host_redirects_to_primary_domain(): void
     {
+        Category::query()->firstOrCreate(['slug' => 'schetchiki-gaza'], [
+            'parent_id' => 0,
+            'name' => 'Счётчики газа',
+            'is_active' => true,
+        ]);
         City::query()->firstOrCreate(['slug' => 'svetlogorsk'], [
             'name' => 'Светлогорск',
             'name_in' => 'в Светлогорске',
