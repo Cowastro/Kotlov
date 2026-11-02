@@ -19,14 +19,6 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class HandleRedirects
 {
-    /**
-     * Categories promoted as one national landing page. City-host copies split
-     * ranking signals and can be selected by Google as the canonical instead.
-     */
-    private const PRIMARY_DOMAIN_CATEGORY_PATHS = [
-        '/schetchiki-gaza',
-    ];
-
     private const CITY_ALIASES = [
         'rechitsa' => 'rechica',
         'volojin' => 'volozhin',
@@ -61,8 +53,8 @@ class HandleRedirects
             return $cityRedirect;
         }
 
-        if ($cityCategoryRedirect = $this->redirectPrimaryCategoryToBaseDomain($request, $path)) {
-            return $cityCategoryRedirect;
+        if ($cityOwnedPageRedirect = $this->redirectCityOwnedPageToBaseDomain($request, $path)) {
+            return $cityOwnedPageRedirect;
         }
 
         // Исключаем служебные пути
@@ -340,6 +332,13 @@ class HandleRedirects
             return $this->redirectInactiveCityToBaseDomain($request);
         }
 
+        if ($this->isPrimaryCatalogTarget($request->getRequestUri())) {
+            return redirect()->away(
+                'https://'.$baseDomain.$request->getRequestUri(),
+                301,
+            );
+        }
+
         $target = 'https://'.$canonical.'.'.$baseDomain.$request->getRequestUri();
 
         return redirect()->away($target, 301);
@@ -499,12 +498,8 @@ class HandleRedirects
         return $parameters === [] ? $path : null;
     }
 
-    private function redirectPrimaryCategoryToBaseDomain(Request $request, string $path): ?Response
+    private function redirectCityOwnedPageToBaseDomain(Request $request, string $path): ?Response
     {
-        if (! in_array($path, self::PRIMARY_DOMAIN_CATEGORY_PATHS, true)) {
-            return null;
-        }
-
         $host = $request->getHost();
         $baseDomain = config('app.base_domain', 'kotlov.by');
 
@@ -517,8 +512,34 @@ class HandleRedirects
             return null;
         }
 
+        $targetPath = null;
+        $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+
+        if (in_array($path, ['/catalog', '/brands', '/robots.txt', '/sitemap.xml'], true)) {
+            $targetPath = $path;
+        } elseif (count($segments) === 2 && $segments[0] === 'brands') {
+            $brandSlug = strtolower(rawurldecode($segments[1]));
+            if (Brand::query()->whereRaw('LOWER(slug) = ?', [$brandSlug])->exists()) {
+                $targetPath = '/brands/'.$brandSlug;
+            }
+        } elseif (count($segments) <= 3 && $segments !== []) {
+            $categorySlug = rawurldecode((string) end($segments));
+            $category = Category::query()
+                ->where('slug', $categorySlug)
+                ->where('is_active', true)
+                ->first(['slug']);
+
+            if ($category) {
+                $targetPath = '/'.$category->slug;
+            }
+        }
+
+        if ($targetPath === null) {
+            return null;
+        }
+
         $query = $request->getQueryString();
-        $target = 'https://'.$baseDomain.$path.($query ? '?'.$query : '');
+        $target = 'https://'.$baseDomain.$targetPath.($query ? '?'.$query : '');
 
         return redirect()->away($target, 301);
     }
@@ -728,7 +749,8 @@ class HandleRedirects
             return redirect()->away($target, $status);
         }
 
-        if ($this->isInactiveCityHost($request)) {
+        if ($this->isCityHost($request)
+            && ($this->isInactiveCityHost($request) || $this->isPrimaryCatalogTarget($target))) {
             $baseDomain = config('app.base_domain', 'kotlov.by');
 
             return redirect()->away(
@@ -738,6 +760,58 @@ class HandleRedirects
         }
 
         return redirect($target, $status);
+    }
+
+    private function isCityHost(Request $request): bool
+    {
+        $host = $request->getHost();
+        $baseDomain = config('app.base_domain', 'kotlov.by');
+
+        if (! str_ends_with($host, '.'.$baseDomain)) {
+            return false;
+        }
+
+        $subdomain = str_replace('.'.$baseDomain, '', $host);
+
+        return $subdomain !== '' && ! in_array($subdomain, ['www', 'new', 'admin'], true);
+    }
+
+    private function isPrimaryCatalogTarget(string $target): bool
+    {
+        $path = '/'.trim((string) (parse_url($target, PHP_URL_PATH) ?: '/'), '/');
+        $path = $path === '//' ? '/' : $path;
+
+        if (in_array($path, ['/catalog', '/brands'], true)) {
+            return true;
+        }
+
+        $segments = array_values(array_filter(explode('/', trim($path, '/'))));
+        if (count($segments) === 2 && $segments[0] === 'brands') {
+            return Brand::query()
+                ->whereRaw('LOWER(slug) = ?', [strtolower(rawurldecode($segments[1]))])
+                ->exists();
+        }
+
+        if ($segments === [] || count($segments) > 3) {
+            return false;
+        }
+
+        $lastSlug = rawurldecode((string) end($segments));
+        if (Category::query()
+            ->where('slug', $lastSlug)
+            ->where('is_active', true)
+            ->exists()) {
+            return true;
+        }
+
+        return count($segments) >= 2
+            && Product::query()
+                ->where('slug', $lastSlug)
+                ->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->orWhere('is_archived', true))
+                ->whereHas('category')
+                ->exists();
     }
 
     private function isInactiveCityHost(Request $request): bool

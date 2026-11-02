@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Product;
@@ -37,7 +38,7 @@ class LegacySeoRedirectTest extends TestCase
         $response = $this->get('https://krugloe.kotlov.by/nasosy/poverhnostnyie/tsentrobejnye');
 
         $response->assertStatus(301);
-        $response->assertRedirect('https://krugloe.kotlov.by/tsentrobejnye');
+        $response->assertRedirect('https://kotlov.by/tsentrobejnye');
     }
 
     public function test_old_nested_pellet_boiler_category_redirects_to_current_category(): void
@@ -57,7 +58,7 @@ class LegacySeoRedirectTest extends TestCase
             $response = $this->get('https://vitebsk.kotlov.by' . $path);
 
             $response->assertStatus(301);
-            $response->assertRedirect('https://vitebsk.kotlov.by/kotly-na-pelletah');
+            $response->assertRedirect('https://kotlov.by/kotly-na-pelletah');
         }
     }
 
@@ -74,7 +75,7 @@ class LegacySeoRedirectTest extends TestCase
         $response = $this->get('https://skidel.kotlov.by/nasosy/pogrujnye/removed-product');
 
         $response->assertStatus(301);
-        $response->assertRedirect('https://skidel.kotlov.by/pogrujnye');
+        $response->assertRedirect('https://kotlov.by/pogrujnye');
     }
 
     public function test_canonical_product_path_is_not_collapsed_to_its_category(): void
@@ -137,7 +138,7 @@ class LegacySeoRedirectTest extends TestCase
         );
     }
 
-    public function test_city_category_page_remains_regional(): void
+    public function test_active_city_category_redirects_to_primary_catalog(): void
     {
         Category::query()->firstOrCreate(['slug' => 'gazovye'], [
             'parent_id' => 0,
@@ -159,8 +160,47 @@ class LegacySeoRedirectTest extends TestCase
             fn () => response('', 204),
         );
 
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame(
+            'https://kotlov.by/gazovye',
+            $response->headers->get('Location'),
+        );
+    }
+
+    public function test_active_city_root_can_remain_a_local_presence_page(): void
+    {
+        $this->enableCityStorefront('gomel');
+
+        $request = Request::create('https://gomel.kotlov.by/', 'GET');
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
         $this->assertSame(204, $response->getStatusCode());
         $this->assertNull($response->headers->get('Location'));
+    }
+
+    public function test_active_city_brand_page_redirects_to_primary_catalog(): void
+    {
+        $this->enableCityStorefront('gomel');
+        Brand::query()->create([
+            'name' => 'Тестовый бренд',
+            'slug' => 'test-brand',
+            'is_active' => true,
+        ]);
+
+        $request = Request::create('https://gomel.kotlov.by/brands/test-brand', 'GET');
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame(
+            'https://kotlov.by/brands/test-brand',
+            $response->headers->get('Location'),
+        );
     }
 
     public function test_inactive_known_city_redirects_to_primary_domain(): void
@@ -403,9 +443,15 @@ class LegacySeoRedirectTest extends TestCase
         $this->assertSame(204, $response->getStatusCode());
     }
 
-    public function test_active_city_alias_redirects_to_its_enabled_storefront(): void
+    public function test_active_city_alias_catalog_url_redirects_to_primary_domain(): void
     {
         $this->enableCityStorefront('rechica');
+        Category::query()->create([
+            'parent_id' => 0,
+            'name' => 'Газовые котлы',
+            'slug' => 'gazovye',
+            'is_active' => true,
+        ]);
 
         $request = Request::create('http://rechitsa.kotlov.by/gazovye', 'GET');
         $response = app(HandleRedirects::class)->handle(
@@ -415,7 +461,24 @@ class LegacySeoRedirectTest extends TestCase
 
         $this->assertSame(301, $response->getStatusCode());
         $this->assertSame(
-            'https://rechica.kotlov.by/gazovye',
+            'https://kotlov.by/gazovye',
+            $response->headers->get('Location'),
+        );
+    }
+
+    public function test_active_city_alias_root_redirects_to_its_enabled_local_presence(): void
+    {
+        $this->enableCityStorefront('rechica');
+
+        $request = Request::create('http://rechitsa.kotlov.by/', 'GET');
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame(
+            'https://rechica.kotlov.by/',
             $response->headers->get('Location'),
         );
     }
@@ -518,7 +581,7 @@ class LegacySeoRedirectTest extends TestCase
         $response = $this->get('https://gomel.kotlov.by/teplovyie-nasosyi/teplovoy-nasos-vozduh-voda-b3sd');
 
         $response->assertStatus(301);
-        $response->assertRedirect('https://gomel.kotlov.by/teplovyie-nasosyi/kotlov-ge-flm30-r32-10-kvt');
+        $response->assertRedirect('https://kotlov.by/teplovyie-nasosyi/kotlov-ge-flm30-r32-10-kvt');
     }
 
     public function test_exact_redirect_replaces_an_archived_duplicate_product_url(): void
@@ -555,11 +618,17 @@ class LegacySeoRedirectTest extends TestCase
     public function test_old_parts_prefix_is_removed_instead_of_rewritten_to_wrong_section(): void
     {
         $this->enableCityStorefront('chechersk');
+        Category::query()->create([
+            'parent_id' => 0,
+            'name' => 'Коллекторы отопления',
+            'slug' => 'grebenki',
+            'is_active' => true,
+        ]);
 
         $response = $this->get('https://chechersk.kotlov.by/otoplenie-parts/grebenki');
 
         $response->assertStatus(301);
-        $response->assertRedirect('https://chechersk.kotlov.by/grebenki');
+        $response->assertRedirect('https://kotlov.by/grebenki');
     }
 
     public function test_legacy_discounts_category_redirects_to_promotions_page(): void

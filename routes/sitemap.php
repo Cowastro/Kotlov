@@ -5,9 +5,15 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\InstallerProfile;
 use App\Models\Product;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
-Route::get('/sitemap.xml', function () {
+Route::get('/sitemap.xml', function (Request $request) {
+    $baseDomain = config('app.base_domain', 'kotlov.by');
+    if ($request->getHost() !== $baseDomain) {
+        return redirect()->away('https://'.$baseDomain.'/sitemap.xml', 301);
+    }
+
     $xml = Cache::remember('sitemap.xml.v4', 86400, function () {
         $baseUrl = 'https://kotlov.by';
         $urls = [];
