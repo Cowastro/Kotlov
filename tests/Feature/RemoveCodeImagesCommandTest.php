@@ -18,6 +18,7 @@ class RemoveCodeImagesCommandTest extends TestCase
     {
         $this->assertTrue(ProductSourceEnricher::looksLikeCodeImage($this->qrCode()));
         $this->assertFalse(ProductSourceEnricher::looksLikeCodeImage($this->photo()));
+        $this->assertFalse(ProductSourceEnricher::looksLikeCodeImage($this->grate()));
     }
 
     public function test_a_qr_code_is_taken_off_and_a_card_left_without_photos_is_hidden_again(): void
@@ -66,6 +67,14 @@ class RemoveCodeImagesCommandTest extends TestCase
                 }
             }
         }
+        // The three finder squares: a 7-module ring, a light ring, a 3-module core.
+        foreach ([[1, 1], [29, 1], [1, 29]] as [$mx, $my]) {
+            $square = fn (int $from, int $size, int $color) => imagefilledrectangle($image, ($mx + $from) * 20, ($my + $from) * 20, ($mx + $from + $size) * 20 - 1, ($my + $from + $size) * 20 - 1, $color);
+            $square(-1, 9, $white);
+            $square(0, 7, $black);
+            $square(1, 5, $white);
+            $square(2, 3, $black);
+        }
 
         return $this->png($image);
     }
@@ -78,6 +87,23 @@ class RemoveCodeImagesCommandTest extends TestCase
         for ($y = 100; $y < 500; $y++) {
             $shade = 60 + (int) (($y - 100) / 400 * 120);
             imagefilledrectangle($image, 150, $y, 450, $y, imagecolorallocate($image, $shade, $shade, $shade + 10));
+        }
+
+        return $this->png($image);
+    }
+
+    /** A black grate with many slots on white: the colours of a code without its finders. */
+    private function grate(): string
+    {
+        $image = imagecreatetruecolor(600, 600);
+        imagefill($image, 0, 0, imagecolorallocate($image, 255, 255, 255));
+        $black = imagecolorallocate($image, 20, 20, 20);
+        imagefilledellipse($image, 300, 300, 560, 560, $black);
+        $white = imagecolorallocate($image, 255, 255, 255);
+        for ($y = 80; $y < 520; $y += 30) {
+            for ($x = 80; $x < 520; $x += 50) {
+                imagefilledrectangle($image, $x, $y, $x + 30, $y + 12, $white);
+            }
         }
 
         return $this->png($image);

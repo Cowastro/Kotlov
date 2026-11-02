@@ -2730,9 +2730,10 @@ class ProductSourceEnricher
     }
 
     /**
-     * A QR code or a barcode, not a photo: nearly every point is pure black or white, both are well
-     * represented, and a row flips between them many times (a photo of a dark item on white has a
-     * few flips a row, a QR code over a dozen).
+     * A QR code, not a photo: nearly every point is pure black or white, and at least two corners hold
+     * the finder square of a QR code — a line through its centre runs dark, light, dark, light, dark
+     * in the proportions 1:1:3:1:1 both across and down. A black grate on white has the colours but not
+     * the finders.
      */
     public static function looksLikeCodeImage(string $body): bool
     {
@@ -2742,12 +2743,10 @@ class ProductSourceEnricher
         }
         $width = imagesx($image);
         $height = imagesy($image);
-        $grid = 80;
+        $grid = 240;
+        $dark = [];
         $extreme = 0;
-        $dark = 0;
-        $flips = 0;
         for ($row = 0; $row < $grid; $row++) {
-            $previous = null;
             for ($col = 0; $col < $grid; $col++) {
                 $color = imagecolorsforindex($image, imagecolorat($image, (int) (($col + 0.5) * $width / $grid), (int) (($row + 0.5) * $height / $grid)));
                 if ($color['alpha'] > 100) {
@@ -2755,19 +2754,73 @@ class ProductSourceEnricher
                 }
                 $light = 0.299 * $color['red'] + 0.587 * $color['green'] + 0.114 * $color['blue'];
                 $saturation = max($color['red'], $color['green'], $color['blue']) - min($color['red'], $color['green'], $color['blue']);
-                if ($saturation < 40 && ($light < 70 || $light > 200)) {
-                    $extreme++;
-                    $dark += (int) ($light < 70);
-                }
-                $isDark = $light < 128;
-                $flips += (int) ($previous !== null && $previous !== $isDark);
-                $previous = $isDark;
+                $extreme += (int) ($saturation < 40 && ($light < 70 || $light > 200));
+                $dark[$row][$col] = $light < 128;
             }
         }
         imagedestroy($image);
-        $points = $grid * $grid;
+        if ($extreme / ($grid * $grid) < 0.9) {
+            return false;
+        }
+        $near = (int) ($grid * 0.45);
+        $far = $grid - $near;
+        $corners = 0;
+        foreach ([[0, $near, 0, $near], [$far, $grid, 0, $near], [0, $near, $far, $grid]] as [$x0, $x1, $y0, $y1]) {
+            $corners += (int) self::hasQrFinder($dark, $x0, $x1, $y0, $y1);
+        }
 
-        return $extreme / $points >= 0.95 && $dark / $points >= 0.15 && $dark / $points <= 0.85 && $flips / $grid >= 10;
+        return $corners >= 2;
+    }
+
+    /** A finder square within the box: the 1:1:3:1:1 runs across a row and down through its centre. */
+    private static function hasQrFinder(array $dark, int $x0, int $x1, int $y0, int $y1): bool
+    {
+        for ($y = $y0; $y < $y1; $y++) {
+            $line = array_slice($dark[$y], $x0, $x1 - $x0);
+            foreach (self::finderCentres($line) as $x) {
+                $column = array_map(fn (array $row): bool => $row[$x0 + $x], array_slice($dark, $y0, $y1 - $y0));
+                foreach (self::finderCentres($column) as $centre) {
+                    if (abs($centre - ($y - $y0)) <= 3) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /** @return list<int> centres of the dark-light-dark-light-dark runs of 1:1:3:1:1 along the line */
+    private static function finderCentres(array $line): array
+    {
+        $runs = [];
+        foreach ($line as $i => $isDark) {
+            if ($runs !== [] && end($runs)[0] === $isDark) {
+                $runs[array_key_last($runs)][2]++;
+            } else {
+                $runs[] = [$isDark, $i, 1];
+            }
+        }
+        $centres = [];
+        for ($i = 0; $i + 4 < count($runs); $i++) {
+            if (! $runs[$i][0]) {
+                continue;
+            }
+            $lengths = array_column(array_slice($runs, $i, 5), 2);
+            $unit = array_sum($lengths) / 7;
+            if ($unit < 2) {
+                continue;
+            }
+            $fits = true;
+            foreach ([0, 1, 3, 4] as $k) {
+                $fits = $fits && $lengths[$k] >= 0.5 * $unit && $lengths[$k] <= 1.5 * $unit;
+            }
+            if ($fits && $lengths[2] >= 2.2 * $unit && $lengths[2] <= 3.8 * $unit) {
+                $centres[] = $runs[$i + 2][1] + intdiv($lengths[2], 2);
+            }
+        }
+
+        return $centres;
     }
 
     private function isLargeEnoughImage(string $body, ?array $info = null): bool
