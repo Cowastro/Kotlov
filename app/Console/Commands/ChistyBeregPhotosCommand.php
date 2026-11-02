@@ -94,6 +94,7 @@ class ChistyBeregPhotosCommand extends Command
                 // Every search failed (no AI balance): not «no photo», the card is tried again next run.
                 if ($failed === count($queries)) {
                     $stats['errors']++;
+                    $this->line('audit.chisty_bereg_photos.error_kind='.self::errorKind($sources->lastError));
                     $this->warn($offer->supplier_article.': '.$sources->lastError);
 
                     continue;
@@ -145,6 +146,24 @@ class ChistyBeregPhotosCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /** A safe word for the log in place of the provider's message. */
+    public static function errorKind(string $error): string
+    {
+        $error = mb_strtolower($error);
+
+        return match (true) {
+            str_contains($error, 'daily limit') => 'daily_limit',
+            (bool) preg_match('/balance|insufficient|quota|credit|402|billing|payment/u', $error) => 'balance',
+            (bool) preg_match('/401|403|unauthori|invalid api key|api-ключ/u', $error) => 'auth',
+            (bool) preg_match('/429|rate limit|too many/u', $error) => 'rate_limit',
+            (bool) preg_match('/timed? ?out|timeout|curl error 28/u', $error) => 'timeout',
+            str_contains($error, 'уже выполняется') => 'busy',
+            str_contains($error, 'структурированн') => 'bad_report',
+            (bool) preg_match('/5\d\d|server error|overloaded/u', $error) => 'server_error',
+            default => 'other',
+        };
     }
 
     /**

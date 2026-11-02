@@ -462,6 +462,7 @@ jobs:
             echo "safe_chisty_bereg_photos_begin"
             grep -aE '^metric\.chisty_bereg_photos\.[a-z_]+=[0-9]+$' "$detail_log" || true
             grep -aE '^audit\.chisty_bereg_photos\.card=[0-9]+:[a-z0-9-]+:[a-z0-9-]+$' "$detail_log" || true
+            grep -aE '^audit\.chisty_bereg_photos\.error_kind=[a-z_]+$' "$detail_log" | sort | uniq -c | sed -E 's/^ *([0-9]+) (.*)$/\2:\1/' || true
             echo "safe_chisty_bereg_photos_end"
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-chisty-bereg" ]]; then
