@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Schema;
 
 class MigrateLegacyB2bOrdersCommand extends Command
 {
-    protected $signature = 'b2b:orders:migrate-legacy {--apply : Выполнить перенос; без флага только показать план}';
+    protected $signature = 'b2b:orders:migrate-legacy
+        {--apply : Выполнить перенос; без флага только показать план}
+        {--order=* : Номер розничного заказа B2B-партнёра, который нужно перенести в B2B (можно несколько)}';
     protected $description = 'Идемпотентно переносит старые B2B-заказы из общей таблицы orders в отдельный B2B-модуль';
 
     public function handle(): int
@@ -28,13 +30,25 @@ class MigrateLegacyB2bOrdersCommand extends Command
         $skipped = 0;
         $migrated = 0;
 
-        Order::query()->with('items')->orderBy('id')->chunkById(100, function ($orders) use ($apply, &$eligible, &$skipped, &$migrated): void {
+        $forced = collect((array) $this->option('order'))->map(fn ($number): string => trim((string) $number))->filter()->values();
+
+        Order::query()->with(['items', 'user'])
+            ->when($forced->isNotEmpty(), fn ($query) => $query->whereIn('number', $forced))
+            ->orderBy('id')->chunkById(100, function ($orders) use ($apply, $forced, &$eligible, &$skipped, &$migrated): void {
             foreach ($orders as $order) {
                 $clientId = (int) data_get($order->b2b_commercial_terms_snapshot, 'b2b_client_id', 0);
                 $isB2b = $clientId > 0
                     && $order->items->isNotEmpty()
                     && $order->items->every(fn ($item): bool => $item->pricing_type === 'b2b')
                     && B2bClient::query()->whereKey($clientId)->exists();
+                // A retail order placed by a B2B partner from the storefront, named explicitly.
+                if (! $isB2b && $forced->contains($order->number) && $order->items->isNotEmpty()) {
+                    $clientId = (int) ($order->user?->activeB2bClient()?->id ?? 0);
+                    $isB2b = $clientId > 0;
+                    if (! $isB2b) {
+                        $this->warn($order->number.': покупатель не B2B-партнёр — пропущен.');
+                    }
+                }
 
                 if (! $isB2b) {
                     $skipped++;
@@ -50,14 +64,15 @@ class MigrateLegacyB2bOrdersCommand extends Command
                     $b2bOrder = B2bOrder::create([
                         'b2b_client_id' => $clientId,
                         'created_by' => $order->user_id,
-                        'assigned_manager_id' => $order->manager_id,
+                        'assigned_manager_id' => $order->manager_id ?: B2bClient::query()->whereKey($clientId)->value('responsible_user_id'),
                         'accepted_by' => $order->availability_confirmed_by,
                         'commercial_document_id' => $order->commercial_document_id,
                         'legacy_order_id' => $order->id,
                         'number' => str_starts_with($order->number, 'B2B-') ? $order->number : 'B2B-'.$order->number,
                         'status' => $this->mapStatus($order->status),
                         'payment_status' => $order->payment_status,
-                        'payment_type' => $order->payment_type,
+                        // A storefront order paid in cash becomes an invoice order, as every B2B order.
+                        'payment_type' => in_array($order->payment_type, ['invoice', 'invoice_deferred'], true) ? $order->payment_type : 'invoice',
                         'delivery_type' => $order->delivery_type,
                         'delivery_region' => $order->delivery_region,
                         'delivery_city' => $order->delivery_city,
@@ -66,7 +81,9 @@ class MigrateLegacyB2bOrdersCommand extends Command
                         'contact_name' => $order->customer_name,
                         'contact_phone' => $order->customer_phone,
                         'contact_email' => $order->customer_email,
-                        'company_name' => $order->company_name ?: data_get($order->b2b_commercial_terms_snapshot, 'company_name', 'B2B-клиент'),
+                        'company_name' => $order->company_name
+                            ?: data_get($order->b2b_commercial_terms_snapshot, 'company_name')
+                            ?: (B2bClient::query()->whereKey($clientId)->value('company_name') ?: 'B2B-клиент'),
                         'company_unp' => $order->company_unp,
                         'company_address' => $order->company_address,
                         'company_email' => $order->company_email,
