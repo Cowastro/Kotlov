@@ -9,14 +9,16 @@
 
             <div class="d-flex align-items-center gap-2">
                 <span class="icon icon-MapPin"></span>
-                <a href="#citySelector" data-bs-toggle="offcanvas" class="text-white d-flex align-items-center gap-1">
-
-
-                    <span>{{ $cityName ?? $geo ?? 'Минск' }}</span>
-
-                    <i class="icon icon-CaretDown"></i>
-
-                </a>
+                @if($citySelectorEnabled ?? false)
+                    <a href="#citySelector" data-bs-toggle="offcanvas" class="text-white d-flex align-items-center gap-1">
+                        <span>г. {{ $cityName ?? $geo ?? 'Минск' }}</span>
+                        <i class="icon icon-CaretDown"></i>
+                    </a>
+                @else
+                    <span class="text-white d-flex align-items-center" data-city-selector="static">
+                        г. {{ $cityName ?? $geo ?? 'Минск' }}
+                    </span>
+                @endif
 
                 <a href="#search" data-bs-toggle="modal"
                     class="topbar-search-trigger d-xl-none text-white"
