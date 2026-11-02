@@ -10,6 +10,7 @@ use App\Models\WishlistItem;
 use App\Services\SupplierSyncJournalRecorder;
 use App\Services\B2bCatalogOfferResolver;
 use App\Support\AdminRoleAccess;
+use App\Support\TransactionalMailbox;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Support\Facades\Cache;
@@ -24,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(B2bCatalogOfferResolver::class);
+        $this->app->afterResolving('mail.manager', fn ($manager) => TransactionalMailbox::configure($manager));
     }
 
     public function boot(SupplierSyncJournalRecorder $syncJournal): void

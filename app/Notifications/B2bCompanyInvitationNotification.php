@@ -2,8 +2,8 @@
 
 namespace App\Notifications;
 
+use App\Support\TransactionalMailbox;
 use App\Models\B2bClientInvitation;
-use App\Models\CrmMailbox;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -25,7 +25,7 @@ class B2bCompanyInvitationNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $this->configureTransactionalMailbox();
+        TransactionalMailbox::configure();
         $company = $this->invitation->client->company_name;
 
         return (new MailMessage)
@@ -47,27 +47,4 @@ class B2bCompanyInvitationNotification extends Notification
             });
     }
 
-    private function configureTransactionalMailbox(): void
-    {
-        $mailbox = CrmMailbox::query()->where('email', 'no-reply@kotlov.by')->first();
-        if (! $mailbox || blank($mailbox->password)) {
-            return;
-        }
-
-        config()->set('mail.mailers.transactional', [
-            'transport' => 'smtp',
-            'scheme' => $mailbox->smtp_encryption === 'ssl' ? 'smtps' : null,
-            'host' => $mailbox->smtp_host,
-            'port' => $mailbox->smtp_port,
-            'username' => $mailbox->username,
-            'password' => $mailbox->password,
-            'timeout' => null,
-            'local_domain' => parse_url((string) config('app.url'), PHP_URL_HOST),
-        ]);
-        config()->set('mail.transactional_from', [
-            'address' => $mailbox->email,
-            'name' => $mailbox->name,
-        ]);
-        app('mail.manager')->purge('transactional');
-    }
 }
