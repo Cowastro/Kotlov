@@ -291,8 +291,21 @@
                                 <div class="b2b-cabinet-order-total">
                                     <strong>{{ number_format((float)$order->total, 2, ',', ' ') }} BYN</strong>
                                     <small>{{ $order->manager ? 'Менеджер: '.$order->manager->name : 'Ожидает назначения B2B-менеджера' }}</small>
+                                    <small>{{ match($order->status) {
+                                        'new', 'assigned', 'checking', 'awaiting_supplier', 'proposal_ready' => 'Менеджер проверяет наличие и резервирует товар',
+                                        'awaiting_client' => 'Товар в резерве — подтвердите заказ, счёт сформируется сразу',
+                                        'client_confirmed' => 'Готовим счёт',
+                                        'invoice_issued', 'awaiting_payment' => 'Ожидаем оплату по счёту',
+                                        'credit_approved' => 'Отгрузка с отсрочкой платежа',
+                                        'paid' => 'Оплачен — передаём на склад',
+                                        'assembling' => 'Собираем заказ',
+                                        'ready_to_ship' => 'Готов к отгрузке',
+                                        'shipped' => 'Отгружен',
+                                        'completed' => 'Закрыт',
+                                        default => '',
+                                    } }}</small>
                                     @if($order->status === 'awaiting_client' && $can('orders.create'))
-                                        <form method="POST" action="{{ route('b2b.cabinet.orders.confirm', $order) }}" class="b2b-invoice-form">@csrf<button type="submit">Подтвердить условия</button></form>
+                                        <form method="POST" action="{{ route('b2b.cabinet.orders.confirm', $order) }}" class="b2b-invoice-form">@csrf<button type="submit">Подтвердить и получить счёт</button></form>
                                     @endif
                                     @if($order->commercialDocument?->type === 'invoice' && $order->commercialDocument?->status !== 'draft' && $can('documents.download'))
                                         <a target="_blank" href="{{ route('b2b.cabinet.documents.pdf', $order->commercialDocument) }}">Открыть счёт PDF →</a>

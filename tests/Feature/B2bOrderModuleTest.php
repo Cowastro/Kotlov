@@ -191,7 +191,7 @@ class B2bOrderModuleTest extends TestCase
         $this->assertSame('invoice', $invoice->type);
         $this->assertSame('sent', $invoice->status);
         $this->assertSame(200.0, (float) $invoice->total);
-        $this->assertSame('invoice_issued', $order->fresh()->status);
+        $this->assertSame('awaiting_payment', $order->fresh()->status);
         $this->assertDatabaseHas('b2b_order_events', [
             'b2b_order_id' => $order->id,
             'event' => 'client_confirmed',

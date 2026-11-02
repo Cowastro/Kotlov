@@ -174,7 +174,7 @@ class B2bOrderStockTest extends TestCase
             ->assertSee('Партнёрский склад')
             ->assertSee('Подтверждено');
 
-        $this->get('/admin/b2b-orders')->assertOk()->assertSee('1 из 1')->assertSee('Условия готовы');
+        $this->get('/admin/b2b-orders')->assertOk()->assertSee('1 из 1')->assertSee('Отправить клиенту');
     }
 
     /** @return array{Supplier, Product, SupplierProduct} */

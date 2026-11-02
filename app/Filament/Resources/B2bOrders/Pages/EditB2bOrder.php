@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\B2bOrders\Pages;
 
+use App\Filament\Resources\B2bOrders\B2bOrderActions;
 use App\Filament\Resources\B2bOrders\B2bOrderResource;
 use App\Models\B2bOrderEvent;
 use Filament\Resources\Pages\EditRecord;
@@ -11,6 +12,11 @@ class EditB2bOrder extends EditRecord
     protected static string $resource = B2bOrderResource::class;
 
     private ?int $previousManagerId = null;
+
+    protected function getHeaderActions(): array
+    {
+        return [...B2bOrderActions::steps(), B2bOrderActions::changeStage(), B2bOrderActions::cancel()];
+    }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {

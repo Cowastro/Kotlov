@@ -6,6 +6,7 @@ use App\Models\B2bOrder;
 use App\Models\B2bOrderEvent;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class B2bOrderWorkflow
@@ -45,6 +46,73 @@ class B2bOrderWorkflow
 
             return $order->refresh();
         });
+    }
+
+    /**
+     * Every line is decided: the order goes to the client for approval with
+     * the stock already reserved. The client gets a letter with the lines.
+     */
+    public function sendToClient(B2bOrder $order, User $manager, ?string $message = null): B2bOrder
+    {
+        abort_unless($manager->canManageB2bOrders(), 403);
+
+        $order = DB::transaction(function () use ($order, $manager, $message): B2bOrder {
+            $locked = B2bOrder::query()->lockForUpdate()->with('items')->findOrFail($order->id);
+            if (! in_array($locked->status, ['checking', 'awaiting_supplier', 'proposal_ready'], true)) {
+                throw ValidationException::withMessages(['status' => 'Отправить клиенту можно только после проверки наличия.']);
+            }
+            if (! $locked->assigned_manager_id) {
+                $locked->forceFill(['assigned_manager_id' => $manager->id])->save();
+            }
+            if ($locked->status !== 'proposal_ready') {
+                $locked = $this->transition($locked, 'proposal_ready', $manager, 'Наличие всех позиций подтверждено.');
+            }
+            if (trim((string) $message) !== '') {
+                $locked->comments()->create(['author_id' => $manager->id, 'visible_to_client' => true, 'body' => trim($message)]);
+            }
+
+            return $this->transition($locked, 'awaiting_client', $manager, 'Условия отправлены клиенту на подтверждение.');
+        });
+
+        app(B2bOrderNotifier::class)->client($order->load('items'), 'proposal', $message);
+
+        return $order;
+    }
+
+    public function markPaid(B2bOrder $order, User $actor, ?string $comment = null): B2bOrder
+    {
+        return $this->transition($order, 'paid', $actor, $comment ?: 'Оплата получена.');
+    }
+
+    /** Warehouse steps: assembling → ready_to_ship → shipped → completed. */
+    public function advanceFulfilment(B2bOrder $order, User $actor): B2bOrder
+    {
+        $next = match ($order->status) {
+            'paid', 'credit_approved' => ['assembling', 'Передан на склад в комплектацию.'],
+            'assembling' => ['ready_to_ship', 'Заказ собран и готов к отгрузке.'],
+            'ready_to_ship' => ['shipped', 'Заказ отгружен.'],
+            'shipped' => ['completed', 'Заказ закрыт.'],
+            default => throw ValidationException::withMessages(['status' => 'Для этого этапа нет складского действия.']),
+        };
+        $order = $this->transition($order, $next[0], $actor, $next[1]);
+        if ($order->status === 'shipped') {
+            app(B2bOrderNotifier::class)->client($order, 'shipped');
+        }
+
+        return $order;
+    }
+
+    public function cancel(B2bOrder $order, User $actor, string $reason): B2bOrder
+    {
+        $order = DB::transaction(function () use ($order, $actor, $reason): B2bOrder {
+            $order = $this->transition($order, 'cancelled', $actor, $reason);
+            $order->comments()->create(['author_id' => $actor->id, 'visible_to_client' => true, 'body' => 'Заказ отменён: '.trim($reason)]);
+
+            return $order;
+        });
+        app(B2bOrderNotifier::class)->client($order, 'cancelled', $reason);
+
+        return $order;
     }
 
     /** @return array<string, string> */
@@ -100,7 +168,34 @@ class B2bOrderWorkflow
         });
     }
 
+    /**
+     * The client agrees: the invoice is issued at once on behalf of the order's
+     * manager, so the PDF is in the cabinet right after the click. If issuing
+     * fails, the order stays confirmed and the manager issues it by hand.
+     */
     public function clientConfirm(B2bOrder $order, User $actor): B2bOrder
+    {
+        $order = $this->recordClientConfirmation($order, $actor);
+        $issuer = User::query()->find($order->assigned_manager_id ?: $order->accepted_by);
+        if (! $issuer?->is_active || ! $issuer->canManageB2bOrders()) {
+            app(B2bOrderNotifier::class)->manager($order, 'Клиент подтвердил заказ', 'Выставите счёт вручную: у заказа нет активного B2B-менеджера.');
+
+            return $order;
+        }
+
+        try {
+            $document = app(B2bOrderInvoice::class)->issue($order, $issuer);
+            app(B2bOrderNotifier::class)->manager($order->refresh(), 'Клиент подтвердил заказ',
+                'Счёт '.$document->number.' выставлен автоматически и отправлен клиенту. Ждём оплату.');
+        } catch (\Throwable $exception) {
+            Log::error('B2B automatic invoice failed.', ['b2b_order_id' => $order->id, 'exception' => $exception->getMessage()]);
+            app(B2bOrderNotifier::class)->manager($order, 'Клиент подтвердил заказ', 'Счёт не сформировался автоматически — выставите его вручную.');
+        }
+
+        return $order->refresh();
+    }
+
+    private function recordClientConfirmation(B2bOrder $order, User $actor): B2bOrder
     {
         return DB::transaction(function () use ($order, $actor): B2bOrder {
             $locked = B2bOrder::query()->lockForUpdate()->findOrFail($order->id);
