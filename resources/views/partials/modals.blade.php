@@ -1,6 +1,8 @@
 ﻿<!-- Mobile Menu -->
 @php
     $navCategories = $navCategories ?? collect();
+    // B2B partners keep shopping in the B2B catalog.
+    $miniCartCatalogUrl = auth()->user()?->activeB2bClient() ? route('b2b.catalog') : '/catalog';
 @endphp
 <div class="offcanvas offcanvas-start canvas-mb" id="mobileMenu">
     <div class="canvas-header">
@@ -639,7 +641,7 @@
                                     <p class="cl-text-2">Добавьте товары из каталога отопительного оборудования</p>
                                 </div>
                                 <div class="shop-empty_bot">
-                                    <a href="/catalog" class="tf-btn animate-btn">В каталог</a>
+                                    <a href="{{ $miniCartCatalogUrl }}" class="tf-btn animate-btn">В каталог</a>
                                     <a href="/" class="tf-btn btn-stroke">На главную</a>
                                 </div>
                             </div>
@@ -687,7 +689,7 @@
                                 Оформить заказ
                             </a>
                         </div>
-                        <a href="/catalog" class="d-flex justify-content-center fw-semibold text-center link">Продолжить покупки</a>
+                        <a href="{{ $miniCartCatalogUrl }}" class="d-flex justify-content-center fw-semibold text-center link">Продолжить покупки</a>
                     </div>
                 </div>
             </div>

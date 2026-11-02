@@ -376,7 +376,7 @@ class B2bCatalogPricingTest extends TestCase
             ->get('/account?b2b-preview=1')
             ->assertOk()
             ->assertSeeText('Предпросмотр кабинета одобренного B2B-партнёра')
-            ->assertSeeText('Группы товаров с партнёрскими ценами')
+            ->assertSeeText('Больше всего в наличии')
             ->assertSeeText('Дымоходы');
     }
 
@@ -389,9 +389,9 @@ class B2bCatalogPricingTest extends TestCase
             ->assertOk()
             ->assertSeeText('Партнёрские цены активны')
             ->assertSeeText('Поставщик: ООО «СанБизнесГруп»')
-            ->assertSeeText('Группы товаров с партнёрскими ценами')
+            ->assertSeeText('Больше всего в наличии')
             ->assertSeeText('Дымоходы')
-            ->assertSeeText('1 позиций в наличии');
+            ->assertSeeText('Все 1 товаров в 1 группах — в оптовом каталоге →');
     }
 
     public function test_imported_price_snapshot_does_not_change_when_source_rule_changes(): void

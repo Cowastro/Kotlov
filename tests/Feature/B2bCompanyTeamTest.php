@@ -246,7 +246,7 @@ class B2bCompanyTeamTest extends TestCase
             ->get(route('account'))
             ->assertOk()
             ->assertSeeText('ООО «Команда»')
-            ->assertDontSeeText('Открыть оптовый каталог');
+            ->assertDontSeeText('Оптовый каталог');
         $this->actingAs($accountant)->get(route('b2b.catalog'))->assertForbidden();
 
         $checkout = app(B2bCheckoutTerms::class)->evaluate($accountant, [

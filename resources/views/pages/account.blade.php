@@ -407,36 +407,34 @@
                                             Тип: {{ $b2bClient?->serviceModeLabel() ?: $user->client_type_label }} · Компания: {{ $b2bClient?->company_name ?: $user->company_name ?: 'не указана' }}
                                         </p>
 
-                                        @if (! $isB2bPreview)
-                                            <a href="{{ route('b2b.cabinet') }}" class="tf-btn mb-12">
-                                                <i class="icon icon-User"></i>
-                                                Открыть кабинет партнёра
-                                            </a>
-                                        @endif
-                                        @if($b2bCanCatalog || $isB2bPreview)<a href="{{ route('b2b.catalog', $isB2bPreview ? ['b2b-preview' => 1] : []) }}" class="tf-btn btn-primary mb-24">
-                                            <i class="icon icon-SquaresFour"></i> Открыть оптовый каталог
-                                        </a>@endif
-
-                                        <div class="d-flex align-items-end justify-content-between gap-12 mb-12">
-                                            <div>
-                                                <p class="text-caption-01 cl-text-3 mb-2">Доступный ассортимент</p>
-                                                <h5 class="mb-0">Группы товаров с партнёрскими ценами</h5>
-                                            </div>
-                                            <span class="b2b-groups-count">{{ $b2bCatalogGroups->sum('count') }} товаров</span>
+                                        <div class="b2b-access-actions mb-24">
+                                            @if (! $isB2bPreview)
+                                                <a href="{{ route('b2b.cabinet') }}" class="tf-btn">
+                                                    <i class="icon icon-User"></i> Кабинет партнёра
+                                                </a>
+                                            @endif
+                                            @if($b2bCanCatalog || $isB2bPreview)
+                                                <a href="{{ route('b2b.catalog', $isB2bPreview ? ['b2b-preview' => 1] : []) }}" class="tf-btn btn-primary">
+                                                    <i class="icon icon-SquaresFour"></i> Оптовый каталог
+                                                </a>
+                                            @endif
                                         </div>
 
                                         @if ($b2bCatalogGroups->isNotEmpty())
-                                            <div class="b2b-catalog-groups">
-                                                @foreach ($b2bCatalogGroups as $group)
-                                                    <a href="{{ route('b2b.catalog', array_filter(['category' => $group['id'], 'b2b-preview' => $isB2bPreview ? 1 : null])) }}" class="b2b-catalog-group">
-                                                        <span>
-                                                            <strong>{{ $group['name'] }}</strong>
-                                                            <small>{{ $group['count'] }} позиций в наличии</small>
-                                                        </span>
-                                                        <i class="icon icon-CaretRight"></i>
+                                            @php($topGroups = $b2bCatalogGroups->sortByDesc('count')->take(8))
+                                            <p class="text-caption-01 cl-text-3 mb-10">Больше всего в наличии</p>
+                                            <div class="b2b-group-chips mb-16">
+                                                @foreach ($topGroups as $group)
+                                                    <a href="{{ route('b2b.catalog', array_filter(['category' => $group['id'], 'b2b-preview' => $isB2bPreview ? 1 : null])) }}">
+                                                        {{ $group['name'] }} <b>{{ $group['count'] }}</b>
                                                     </a>
                                                 @endforeach
                                             </div>
+                                            @if($b2bCanCatalog || $isB2bPreview)
+                                                <a href="{{ route('b2b.catalog', $isB2bPreview ? ['b2b-preview' => 1] : []) }}" class="b2b-all-goods-link">
+                                                    Все {{ $b2bCatalogGroups->sum('count') }} товаров в {{ $b2bCatalogGroups->count() }} группах — в оптовом каталоге →
+                                                </a>
+                                            @endif
                                         @else
                                             <div class="alert alert-warning mb-0">
                                                 Сейчас нет сопоставленных товаров с положительным остатком.
@@ -568,6 +566,16 @@
     white-space: nowrap; padding: 6px 10px; border-radius: 999px;
     background: #f4f4f4; color: #555; font-size: 12px; font-weight: 600;
 }
+.b2b-access-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.b2b-access-actions .tf-btn { margin: 0; }
+.b2b-group-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.b2b-group-chips a {
+    display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px;
+    border: 1px solid #e6e6e6; border-radius: 999px; color: #111; font-size: 13px; transition: .2s;
+}
+.b2b-group-chips a:hover { border-color: #111; }
+.b2b-group-chips b { padding: 1px 7px; border-radius: 999px; background: #f2f2f2; color: #555; font-size: 11px; }
+.b2b-all-goods-link { color: #d94045; font-weight: 600; font-size: 14px; }
 .b2b-catalog-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .b2b-catalog-group {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;

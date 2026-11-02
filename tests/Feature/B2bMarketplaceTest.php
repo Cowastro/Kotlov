@@ -191,7 +191,9 @@ class B2bMarketplaceTest extends TestCase
             ->assertDontSee('В пределах МКАД-2 — бесплатно', false)
             ->assertDontSee('id="cart-threshold-text"', false)
             ->assertSeeText('Примечание к заказу')
-            ->assertSeeText('Как пройдёт заказ');
+            ->assertSeeText('Как пройдёт заказ')
+            ->assertSee('href="'.route('b2b.catalog').'" class="tf-btn-line-3', false)
+            ->assertDontSee('href="/catalog" class="tf-btn-line-3', false);
 
         $this->actingAs($user)->postJson(route('cart.note'), ['note' => 'Приёмка с 9 до 17, склад №2'])->assertOk();
         $this->actingAs($user)->get(route('checkout'))
@@ -226,6 +228,15 @@ class B2bMarketplaceTest extends TestCase
             ->assertOk()
             ->assertSeeText('Труба L1000')
             ->assertDontSeeText('Колено 90°');
+    }
+
+    public function test_catalog_styles_stay_inside_the_style_tag(): void
+    {
+        $html = trim(view('pages.b2b.styles')->render());
+
+        $this->assertStringStartsWith('<style>', $html);
+        $this->assertStringEndsWith('</style>', $html);
+        $this->assertSame(1, substr_count($html, '</style>'));
     }
 
     public function test_products_without_a_granted_offer_are_reference_only(): void
