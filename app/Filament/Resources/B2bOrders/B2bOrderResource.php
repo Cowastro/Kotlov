@@ -69,13 +69,15 @@ class B2bOrderResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['client', 'creator', 'manager'])->withCount('items'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['client', 'creator', 'manager', 'items'])->withCount('items'))
             ->columns([
                 TextColumn::make('number')->label('№ B2B')->searchable()->sortable()->weight('bold')
                     ->description(fn (B2bOrder $record): string => $record->created_at?->format('d.m.Y H:i') ?? ''),
                 TextColumn::make('client.company_name')->label('Компания')->searchable()
                     ->description(fn (B2bOrder $record): string => collect([$record->company_unp ? 'УНП '.$record->company_unp : null, $record->contact_name, $record->contact_phone])->filter()->implode(' · ')),
-                TextColumn::make('items_count')->label('Позиций')->numeric(),
+                TextColumn::make('stock')->label('Наличие')->badge()
+                    ->state(fn (B2bOrder $record): string => $record->items->filter->isConfirmed()->count().' из '.$record->items->count())
+                    ->color(fn (B2bOrder $record): string => $record->stockIsSettled() ? 'success' : 'warning'),
                 TextColumn::make('total')->label('Сумма')->money('BYN')->sortable(),
                 TextColumn::make('status')->label('Этап')->badge()
                     ->formatStateUsing(fn (string $state): string => B2bOrder::STATUSES[$state] ?? $state)
@@ -86,6 +88,8 @@ class B2bOrderResource extends Resource
                 TextColumn::make('payment_status')->label('Оплата')->badge()
                     ->formatStateUsing(fn (string $state): string => B2bOrder::PAYMENT_STATUSES[$state] ?? $state),
                 TextColumn::make('manager.name')->label('B2B-менеджер')->placeholder('Не назначен'),
+                TextColumn::make('next_action')->label('Следующее действие')->wrap()
+                    ->state(fn (B2bOrder $record): string => static::nextAction($record)),
             ])
             ->filters([
                 SelectFilter::make('status')->label('Этап')->options(B2bOrder::STATUSES),
@@ -123,6 +127,25 @@ class B2bOrderResource extends Resource
             ])
             ->recordUrl(fn (B2bOrder $record): string => static::getUrl('edit', ['record' => $record]))
             ->defaultSort('created_at', 'desc');
+    }
+
+    public static function nextAction(B2bOrder $order): string
+    {
+        $open = $order->items->reject(fn ($item): bool => $item->isConfirmed() || $item->isExcluded())->count();
+
+        return match (true) {
+            in_array($order->status, ['new', 'assigned'], true) => 'Принять в работу',
+            in_array($order->status, ['checking', 'awaiting_supplier'], true) && $open > 0 => 'Решить '.$open.' поз. без остатка',
+            in_array($order->status, ['checking', 'awaiting_supplier'], true) => 'Условия готовы — отправить клиенту',
+            $order->status === 'proposal_ready' => 'Отправить клиенту',
+            $order->status === 'awaiting_client' => 'Ждём подтверждения клиента',
+            $order->status === 'client_confirmed' => 'Выставить счёт',
+            in_array($order->status, ['invoice_issued', 'awaiting_payment'], true) => 'Ждём оплату',
+            in_array($order->status, ['paid', 'credit_approved'], true) => 'Передать на склад',
+            $order->status === 'assembling' => 'Собрать заказ',
+            $order->status === 'ready_to_ship' => 'Отгрузить',
+            default => '—',
+        };
     }
 
     public static function getEloquentQuery(): Builder

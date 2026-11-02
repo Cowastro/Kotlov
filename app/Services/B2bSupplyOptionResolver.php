@@ -9,6 +9,7 @@ use App\Models\ProductWarehouseStock;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Models\User;
+use App\Services\B2bOrders\B2bStockLocator;
 use App\Services\Pricing\B2bPartnerPricingEngine;
 use Illuminate\Support\Collection;
 
@@ -20,6 +21,7 @@ class B2bSupplyOptionResolver
     public function __construct(
         private readonly B2bCatalogOfferResolver $integrationOffers,
         private readonly B2bPartnerPricingEngine $partnerPricing,
+        private readonly B2bStockLocator $stockLocator,
     ) {}
 
     /** @return Collection<int, array<string, mixed>> */
@@ -41,7 +43,7 @@ class B2bSupplyOptionResolver
 
         $supplierIds = $this->allowedSupplierIds($user);
         if ($supplierIds === []) {
-            return $this->optionsCache[$cacheKey] = $this->sortOptions($integration);
+            return $this->optionsCache[$cacheKey] = $this->sortOptions($this->withoutReserved($integration));
         }
 
         $external = SupplierProduct::query()
@@ -56,7 +58,32 @@ class B2bSupplyOptionResolver
             ->map(fn (SupplierProduct $offer): ?array => $this->supplierOption($offer, $priceLevel))
             ->filter();
 
-        return $this->optionsCache[$cacheKey] = $this->sortOptions($integration->concat($external));
+        return $this->optionsCache[$cacheKey] = $this->sortOptions($this->withoutReserved($integration->concat($external)));
+    }
+
+    /**
+     * Units already reserved for other B2B orders are not offered again.
+     *
+     * @param Collection<int, array<string, mixed>> $options
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function withoutReserved(Collection $options): Collection
+    {
+        $reserved = $this->stockLocator->reservedByKey($options->pluck('stock_key')->filter()->all());
+        if ($reserved === []) {
+            return $options;
+        }
+
+        return $options->map(function (array $option) use ($reserved): array {
+            $quantity = $reserved[$option['stock_key'] ?? ''] ?? 0.0;
+            if ($quantity <= 0 || ($option['stock'] ?? null) === null) {
+                return $option;
+            }
+            $option['stock'] = max(0.0, round((float) $option['stock'] - $quantity, 3));
+            $option['stock_label'] = $option['warehouse_name'].': '.$this->formatStock($option['stock']);
+
+            return $option;
+        });
     }
 
     /** @return Collection<int, array<string, mixed>> */
@@ -131,6 +158,9 @@ class B2bSupplyOptionResolver
             'integration_product_id' => (int) $offer->id,
             'supplier_product_id' => null,
             'warehouse_stock_id' => $warehouseStock?->id,
+            'stock_key' => $offer->hasFreshPositiveStock() || ! $warehouseStock
+                ? 'integration:'.$offer->id
+                : 'warehouse:'.$warehouseStock->id,
             'source_key' => 'integration:'.$source?->id,
             'source_label' => $source?->partnerName() ?: 'Наш склад',
             'warehouse_name' => $warehouse !== '' ? $warehouse : 'Основной склад',
@@ -170,6 +200,7 @@ class B2bSupplyOptionResolver
             'integration_product_id' => null,
             'supplier_product_id' => (int) $offer->id,
             'warehouse_stock_id' => null,
+            'stock_key' => 'supplier:'.$offer->id,
             'source_key' => 'supplier:'.$supplier?->id,
             'source_label' => $supplier?->name ?: 'Партнёрский склад',
             'warehouse_name' => $warehouse,
@@ -192,7 +223,7 @@ class B2bSupplyOptionResolver
     {
         return collect($option)->only([
             'key', 'kind', 'product_id', 'product', 'integration_product_id', 'supplier_product_id',
-            'warehouse_stock_id', 'source_key', 'source_label', 'warehouse_name', 'delivery_days',
+            'warehouse_stock_id', 'stock_key', 'source_key', 'source_label', 'warehouse_name', 'delivery_days',
             'delivery_label', 'stock', 'stock_label', 'procurement', 'is_own_stock', 'priority',
             'base_price', 'price', 'price_level_id', 'price_level_code', 'price_level_name',
             'discount_percent',

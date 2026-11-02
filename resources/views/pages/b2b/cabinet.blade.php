@@ -281,6 +281,11 @@
                                     <span>{{ $order->created_at?->format('d.m.Y H:i') }}</span>
                                     <h3>{{ $order->number }}</h3>
                                     <p>{{ $order->items->count() }} позиций · {{ $statusLabels[$order->status] ?? $order->status }} · {{ $order->paymentStatusLabel() }}</p>
+                                    @if($order->items->isNotEmpty())
+                                        <details><summary>Состав · подтверждено {{ $order->items->filter->isConfirmed()->count() }} из {{ $order->items->count() }}</summary>
+                                            @foreach($order->items as $line)<p><small>{{ $line->product_name }} — {{ $line->quantity }} шт. · {{ match($line->availability_status) { 'available' => 'в наличии, зарезервировано', 'partial' => 'подтверждено '.$line->confirmed_quantity.' шт.', 'unavailable' => 'нет в наличии', 'replacement' => 'предложена замена', default => 'уточняется' } }}@if($line->isConfirmed() && $line->delivery_days !== null) · срок {{ $line->delivery_days }} дн.@endif</small></p>@endforeach
+                                        </details>
+                                    @endif
                                     @foreach($order->comments as $comment)<p><small>{{ $comment->created_at?->format('d.m.Y H:i') }} · {{ $comment->author?->name ?: 'KOTLOV' }}</small><br>{{ $comment->body }}</p>@endforeach
                                 </div>
                                 <div class="b2b-cabinet-order-total">

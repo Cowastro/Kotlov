@@ -28,7 +28,8 @@ class B2bOrderNotifier
         try {
             Notification::make()
                 ->title('Новый B2B-заказ '.$order->number)
-                ->body($order->company_name.' · '.number_format((float) $order->total, 2, ',', ' ').' BYN')
+                ->body($order->company_name.' · '.number_format((float) $order->total, 2, ',', ' ').' BYN'
+                    .' · в наличии '.$order->items->filter->isConfirmed()->count().' из '.$order->items->count())
                 ->icon('heroicon-o-building-office-2')
                 ->iconColor('warning')
                 ->actions([

@@ -10,6 +10,7 @@ use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\B2bCheckoutTerms;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class B2bOrderPlacement
 {
@@ -116,7 +117,17 @@ class B2bOrderPlacement
             return $order->load('items');
         });
 
-        app(B2bOrderNotifier::class)->created($order);
+        try {
+            app(B2bOrderStockCheck::class)->check($order);
+        } catch (\Throwable $exception) {
+            // The order is already placed; the manager re-runs the check from the queue.
+            Log::error('B2B order stock check failed after placement.', [
+                'b2b_order_id' => $order->id,
+                'exception' => $exception->getMessage(),
+            ]);
+        }
+
+        app(B2bOrderNotifier::class)->created($order->refresh()->load('items'));
 
         return $order;
     }
