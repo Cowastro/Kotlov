@@ -194,6 +194,8 @@ class B2bCabinetController extends Controller
             'contact_name' => ['required', 'string', 'max:255'],
             'contact_phone' => ['required', 'string', 'max:40'],
             'contact_email' => ['required', 'email', 'max:255'],
+            'default_delivery_city' => ['nullable', 'string', 'max:255'],
+            'default_delivery_address' => ['nullable', 'string', 'max:1000'],
             'legal_address' => ['nullable', 'string', 'max:1000'],
             'postal_address' => ['nullable', 'string', 'max:1000'],
             'bank_name' => ['nullable', 'string', 'max:255'],
@@ -239,6 +241,8 @@ class B2bCabinetController extends Controller
                 'contact_name' => $data['contact_name'],
                 'contact_email' => $data['contact_email'],
                 'contact_phone' => $data['contact_phone'],
+                'default_delivery_city' => $data['default_delivery_city'] ?? null,
+                'default_delivery_address' => $data['default_delivery_address'] ?? null,
             ])->save();
             $user->update(['name' => $data['contact_name'], 'phone' => $data['contact_phone']]);
         });

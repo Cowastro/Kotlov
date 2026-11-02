@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\OrderAvailabilityConfirmedMail;
 use App\Models\B2bClient;
 use App\Models\B2bPriceLevel;
 use App\Models\Category;
@@ -16,6 +17,7 @@ use App\Models\User;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bCheckoutTerms;
 use App\Services\B2bClientWorkflow;
+use App\Services\Orders\OrderAvailabilityConfirmation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -117,6 +119,8 @@ class B2bCommercialProfileTest extends TestCase
             'counterparty_id' => $counterparty->id,
             'contact_email' => 'buh@partner.by',
             'payment_terms' => 'Предоплата по счёту',
+            'default_delivery_city' => 'Минск',
+            'default_delivery_address' => 'ул. Складская, 7',
         ]);
 
         $this->actingAs($user)->postJson(route('cart.add'), [
@@ -133,7 +137,78 @@ class B2bCommercialProfileTest extends TestCase
             ->assertSee('value="Общество с ограниченной ответственностью «Партнёр»"', false)
             ->assertSee('value="buh@partner.by"', false)
             ->assertSee('value="220000, г. Минск, ул. Деловая, 1"', false)
-            ->assertSeeText('Партнёрская цена действует для самостоятельного онлайн-заказа');
+            ->assertSee('value="Минск"', false)
+            ->assertSee('value="ул. Складская, 7"', false)
+            ->assertSeeText('B2B · заявка на поставку')
+            ->assertSeeText('Отправить заказ на согласование')
+            ->assertSeeText('В кабинете и на e-mail')
+            ->assertSee('value="b2b_delivery"', false)
+            ->assertDontSee('value="cash"', false)
+            ->assertDontSeeText('розничной рассрочкой');
+    }
+
+    public function test_manager_confirmation_issues_b2b_invoice_and_emails_it_to_company(): void
+    {
+        Mail::fake();
+        [$user, $client] = $this->fixture();
+        $manager = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $counterparty = CrmCounterparty::query()->create([
+            'type' => 'organization',
+            'classification' => 'b2b_partner',
+            'business_unit' => 'wholesale',
+            'status' => 'active',
+            'name' => 'ООО «Партнёр»',
+            'legal_name' => 'Общество с ограниченной ответственностью «Партнёр»',
+            'unp' => '190000001',
+            'legal_address' => '220000, г. Минск, ул. Деловая, 1',
+            'source' => 'manual',
+        ]);
+        $client->update([
+            'counterparty_id' => $counterparty->id,
+            'contact_email' => 'buh@partner.by',
+            'contact_phone' => '+375291112233',
+        ]);
+        $order = Order::query()->create([
+            'user_id' => $user->id,
+            'number' => 'B2B-CONFIRM-INVOICE',
+            'status' => 'checking',
+            'customer_name' => $user->name,
+            'customer_phone' => '+375291112233',
+            'customer_email' => $user->email,
+            'delivery_type' => 'b2b_delivery',
+            'delivery_city' => 'Минск',
+            'delivery_address' => 'ул. Складская, 7',
+            'payment_type' => 'invoice',
+            'payment_status' => 'pending',
+            'company_name' => 'ООО «Партнёр»',
+            'company_unp' => '190000001',
+            'company_address' => '220000, г. Минск, ул. Деловая, 1',
+            'company_email' => 'buh@partner.by',
+            'subtotal' => 240,
+            'total' => 240,
+        ]);
+        OrderItem::query()->create([
+            'order_id' => $order->id,
+            'product_name' => 'Товар B2B',
+            'price' => 240,
+            'quantity' => 1,
+            'total' => 240,
+            'pricing_type' => 'b2b',
+            'fulfillment_route' => 'own_stock',
+            'fulfillment_availability_status' => 'available',
+            'fulfillment_confirmed_at' => now(),
+        ]);
+
+        $result = app(OrderAvailabilityConfirmation::class)->confirmAndNotify($order, $manager);
+
+        $confirmed = $result['order']->fresh(['commercialDocument.items']);
+        $this->assertSame('confirmed', $confirmed->status);
+        $this->assertSame('sent', $confirmed->commercialDocument?->status);
+        $this->assertSame('invoice', $confirmed->commercialDocument?->type);
+        $this->assertSame(240.0, (float) $confirmed->commercialDocument?->total);
+        Mail::assertQueued(OrderAvailabilityConfirmedMail::class, function (OrderAvailabilityConfirmedMail $mail): bool {
+            return $mail->hasTo('buh@partner.by') && count($mail->attachments()) === 1;
+        });
     }
 
     public function test_deferred_invoice_uses_and_updates_the_company_credit_limit(): void

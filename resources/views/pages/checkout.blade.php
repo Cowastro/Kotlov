@@ -9,13 +9,36 @@
 .payment-info-list--disc { list-style-type: disc; }
 .tf-field input.is-invalid,
 .tf-field select.is-invalid { border-color: #dc3545 !important; }
+.b2b-checkout-head { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:24px 0 18px; border-bottom:1px solid #e5e7eb; }
+.b2b-checkout-head strong { font-size:22px; letter-spacing:-.02em; }
+.b2b-checkout-head nav { display:flex; gap:10px; }
+.b2b-checkout-head a { padding:10px 16px; border:1px solid #d8dde4; border-radius:10px; font-weight:600; }
+.b2b-checkout-intro { margin-bottom:20px; padding:24px; border-radius:16px; color:#fff; background:#162231; }
+.b2b-checkout-intro span { color:#ff6268; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+.b2b-checkout-intro h1 { margin:5px 0 8px; color:#fff; font-size:30px; }
+.b2b-checkout-intro p { margin:0; color:#cbd5df; }
+.b2b-checkout-flow { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:18px; }
+.b2b-checkout-flow div { padding:10px 12px; border-radius:9px; background:rgba(255,255,255,.08); font-size:13px; }
+.b2b-checkout-flow b { display:block; margin-bottom:2px; color:#fff; }
+.b2b-checkout-settings { display:inline-block; margin-top:8px; color:#d94045; font-weight:600; }
+@media (max-width: 767px) { .b2b-checkout-head { padding-inline:15px; } .b2b-checkout-head nav a:first-child { display:none; } .b2b-checkout-flow { grid-template-columns:1fr; } }
 </style>
 @endpush
 
 @section('content')
 <main id="wrapper">
 
+    @if($isB2bCheckout ?? false)
+        <div class="container">
+            <header class="b2b-checkout-head">
+                <strong>KOTLOV.BY <small style="font-size:12px;color:#d94045;">B2B</small></strong>
+                <nav><a href="{{ route('b2b.catalog') }}">Каталог</a><a href="{{ route('b2b.cabinet', ['section' => 'orders']) }}">Мои заказы</a></nav>
+            </header>
+        </div>
+    @endif
+
     {{-- Заголовок --}}
+    @unless($isB2bCheckout ?? false)
     <section class="section-page-title text-center flat-spacing-2 pb-0">
         <div class="container">
             <div class="main-page-title">
@@ -30,9 +53,23 @@
             </div>
         </div>
     </section>
+    @endunless
 
     <section class="section-checkout flat-spacing-2">
         <div class="container">
+
+            @if($isB2bCheckout ?? false)
+                <div class="b2b-checkout-intro">
+                    <span>B2B · заявка на поставку</span>
+                    <h1>Проверим заказ и подготовим счёт</h1>
+                    <p>Цены товаров зафиксированы. Наличие, срок и стоимость доставки подтвердит менеджер.</p>
+                    <div class="b2b-checkout-flow">
+                        <div><b>1. Отправьте заявку</b>Без оплаты на этом шаге</div>
+                        <div><b>2. Менеджер проверит</b>Наличие и срок поставки</div>
+                        <div><b>3. Получите счёт</b>В кабинете и на e-mail</div>
+                    </div>
+                </div>
+            @endif
 
             @if ($errors->any())
                 <div class="alert alert-danger mb-20">
@@ -101,12 +138,12 @@
 
                             {{-- 2. Доставка (из config/shop.php) --}}
                             @php
-                                $checkoutDelivery = collect(config('shop.checkout_delivery_methods', []))
+                                $checkoutDelivery = collect($checkoutDeliveryMethods ?? config('shop.checkout_delivery_methods', []))
                                     ->mapWithKeys(fn($key) => [$key => config("shop.delivery_methods.$key")])
                                     ->filter();
                             @endphp
                             <div class="box-ip-checkout estimate-shipping">
-                                <div class="h5 title">Куда доставить</div>
+                                <div class="h5 title">{{ ($isB2bCheckout ?? false) ? 'Получение заказа' : 'Куда доставить' }}</div>
                                 <div class="form-content">
 
                                     {{-- Сначала куда: город и адрес (область — по городу на сервере), затем способы, подходящие этому городу --}}
@@ -118,7 +155,7 @@
                                                 </label>
                                                 <input type="text" name="delivery_city" id="delivery-city" list="delivery-city-list" autocomplete="address-level2"
                                                     class="{{ $errors->has('delivery_city') ? 'is-invalid' : '' }}"
-                                                    value="{{ old('delivery_city', session('cart_delivery_city') ?: $lastOrder?->delivery_city) }}"
+                                                    value="{{ old('delivery_city', ($isB2bCheckout ?? false) ? ($invoiceProfile['delivery_city'] ?? '') : (session('cart_delivery_city') ?: $lastOrder?->delivery_city)) }}"
                                                     placeholder="Минск" required>
                                                 <datalist id="delivery-city-list">
                                                     @foreach ($deliveryCities as $deliveryCity)
@@ -133,7 +170,7 @@
                                                 </label>
                                                 <input type="text" name="delivery_address" id="delivery-address" autocomplete="street-address"
                                                     class="{{ $errors->has('delivery_address') ? 'is-invalid' : '' }}"
-                                                    value="{{ old('delivery_address', $lastOrder?->delivery_address) }}"
+                                                    value="{{ old('delivery_address', ($isB2bCheckout ?? false) ? ($invoiceProfile['delivery_address'] ?? '') : $lastOrder?->delivery_address) }}"
                                                     placeholder="ул. Ленина, 1, кв. 5" required>
                                                 @error('delivery_address') <div class="text-danger text-caption-01 mt-4">{{ $message }}</div> @enderror
                                             </fieldset>
@@ -143,7 +180,7 @@
                                     <fieldset class="tf-field">
                                         <label class="tf-lable fw-medium">
                                             Способ доставки <span class="text-primary">*</span>
-                                            <span class="text-caption-01 cl-text-2 fw-normal d-block" id="delivery-type-hint">Доступные способы для указанного города</span>
+                                            <span class="text-caption-01 cl-text-2 fw-normal d-block" id="delivery-type-hint">{{ ($isB2bCheckout ?? false) ? 'Стоимость и срок доставки менеджер согласует отдельно' : 'Доступные способы для указанного города' }}</span>
                                         </label>
                                         <div class="tf-select">
                                             <select name="delivery_type" id="delivery-type" required>
@@ -152,7 +189,7 @@
                                                         $methodPrice = \App\Http\Controllers\CheckoutController::calcDelivery($key, (float) $subtotal);
                                                     @endphp
                                                     <option value="{{ $key }}"
-                                                        {{ old('delivery_type', $lastOrder?->delivery_type ?: 'courier') === $key ? 'selected' : '' }}>
+                                                        {{ old('delivery_type', ($isB2bCheckout ?? false) ? 'b2b_delivery' : ($lastOrder?->delivery_type ?: 'courier')) === $key ? 'selected' : '' }}>
                                                         {{ $method['checkout_name'] ?? $method['name'] }}
                                                         @if ($key === 'pickup')
                                                         @elseif ($methodPrice === 0.0)
@@ -168,7 +205,11 @@
                                         </div>
                                     </fieldset>
 
-                                    @include('partials.own-transport-schedule', ['collapsible' => true])
+                                    @if($isB2bCheckout ?? false)
+                                        <a class="b2b-checkout-settings" href="{{ route('b2b.cabinet', ['section' => 'profile']) }}">Изменить основной адрес в настройках компании →</a>
+                                    @else
+                                        @include('partials.own-transport-schedule', ['collapsible' => true])
+                                    @endif
 
                                 </div>
                             </div>
@@ -190,7 +231,7 @@
                                     <div class="alert alert-info mb-16">
                                         <strong>{{ $b2bCheckout['client']->priceLevel?->name ?: 'B2B-условия' }}</strong>
                                         · {{ $b2bCheckout['client']->payment_terms ?: 'Оплата по счёту после подтверждения заказа' }}.
-                                        Партнёрская цена действует для самостоятельного онлайн-заказа и не совмещается с розничной рассрочкой.
+                                        Заказ отправляется менеджеру на согласование. Оплата станет доступна после подтверждения наличия и формирования счёта.
                                         @if($b2bCheckout['credit']['enabled'])
                                             <span class="d-block mt-4">Отсрочка {{ $b2bCheckout['credit']['deferment_days'] }} дней: доступно {{ number_format((float)$b2bCheckout['credit']['available'], 2, ',', ' ') }} BYN из {{ number_format((float)$b2bCheckout['credit']['limit'], 2, ',', ' ') }} BYN.</span>
                                         @elseif($b2bCheckout['credit']['deferment_days'] > 0 && $b2bCheckout['credit']['issue'])
@@ -242,6 +283,9 @@
                             <div class="box-ip-checkout" id="invoice-fields" style="display:none;">
                                 <div class="h5 title">Реквизиты организации</div>
                                 <div class="form-content">
+                                    @if($isB2bCheckout ?? false)
+                                        <div class="text-caption-01 cl-text-2 mb-12">Данные загружены из карточки вашей компании. Изменения в этом заказе не затронут профиль.</div>
+                                    @endif
                                     <fieldset class="tf-field">
                                         <label class="tf-lable fw-medium">
                                             УНП <span class="text-primary">*</span>
@@ -322,10 +366,17 @@
                                 </div>
                             </details>
 
-                            <x-order-confirmation-notice class="mt-20" />
+                            @if($isB2bCheckout ?? false)
+                                <div class="p-16 mt-20" style="border:1px solid #e6d7c7;border-left:3px solid #d94045;border-radius:12px;background:#fffdf9;">
+                                    <strong>Что произойдёт после отправки</strong>
+                                    <p class="mb-0 mt-4 cl-text-2">Менеджер проверит все позиции. После подтверждения счёт появится в разделе «Документы» B2B-кабинета и будет отправлен на e-mail для счёта. При действующем кредитном лимите можно выбрать отсрочку платежа.</p>
+                                </div>
+                            @else
+                                <x-order-confirmation-notice class="mt-20" />
+                            @endif
 
                             <button type="submit" class="tf-btn animate-btn w-100 mt-20">
-                                Оформить заказ
+                                {{ ($isB2bCheckout ?? false) ? 'Отправить заказ на согласование' : 'Оформить заказ' }}
                             </button>
 
                         </form>
@@ -360,7 +411,7 @@
                                             </div>
                                             @if (($item['pricing_type'] ?? null) === 'b2b')
                                                 <div class="text-caption-01 cl-text-2">
-                                                    Партнёрская цена
+                                                    {{ ($isB2bCheckout ?? false) ? 'B2B-цена' : 'Партнёрская цена' }}
                                                 </div>
                                             @endif
                                             @if ($item['requires_availability_confirmation'] ?? false)
@@ -394,7 +445,7 @@
 
                             {{-- Итоги --}}
                             @php
-                                $selectedDelivery = old('delivery_type', 'courier');
+                                $selectedDelivery = old('delivery_type', ($isB2bCheckout ?? false) ? 'b2b_delivery' : 'courier');
                                 $deliveryCost     = \App\Http\Controllers\CheckoutController::calcDelivery($selectedDelivery, $subtotal);
                                 $effectiveDiscount = ($onlineOrderDiscountExcludedByPayment ? 0 : $coupon['coupon_discount']) + $coupon['bundle_discount'];
                                 $total            = $subtotal - $effectiveDiscount + ($deliveryCost ?? 0);
@@ -418,7 +469,7 @@
                                     </li>
                                 @endif
                                 <li class="total-item lh-24 fw-medium">
-                                    <span>Доставка:</span>
+                                    <span>{{ ($isB2bCheckout ?? false) ? 'Доставка после согласования:' : 'Доставка:' }}</span>
                                     <span id="checkout-delivery-cost">
                                         @if ($deliveryCost === null)
                                             <span class="cl-text-2">уточняется</span>
@@ -432,7 +483,7 @@
                             </ul>
 
                             <div class="last-total h5 fw-medium">
-                                <span>Итого:</span>
+                                <span>{{ ($isB2bCheckout ?? false) ? 'Предварительно:' : 'Итого:' }}</span>
                                 <span class="text-primary" id="checkout-total">
                                     {{ number_format($total, 2, '.', ' ') }} BYN
                                 </span>
@@ -453,7 +504,8 @@
 <script>
 (function () {
     // ── Конфиг доставки из PHP (price: null = уточняется, 0 = бесплатно) ──
-    var deliveryMethods = @json(collect(config('shop.checkout_delivery_methods', []))->mapWithKeys(fn($k) => [$k => config("shop.delivery_methods.$k")])->filter());
+    var deliveryMethods = @json(collect($checkoutDeliveryMethods ?? config('shop.checkout_delivery_methods', []))->mapWithKeys(fn($k) => [$k => config("shop.delivery_methods.$k")])->filter());
+    var isB2bCheckout = @json((bool) ($isB2bCheckout ?? false));
     var subtotal = {{ (float) $subtotal }};
     var couponDiscount = {{ (float) $coupon['coupon_discount'] }};
     var bundleDiscount = {{ (float) $coupon['bundle_discount'] }};
@@ -504,6 +556,7 @@
         return null;
     }
     function applyCity() {
+        if (isB2bCheckout) return;
         var allowed = allowedFor(cityInput.value);
         Array.prototype.forEach.call(deliverySelect.options, function (option) {
             var ok = !allowed || allowed.indexOf(option.value) !== -1;

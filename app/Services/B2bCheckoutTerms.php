@@ -165,7 +165,7 @@ class B2bCheckoutTerms
         ];
     }
 
-    /** @return array{company_name:string,company_unp:string,company_address:string,company_email:string} */
+    /** @return array{company_name:string,company_unp:string,company_address:string,company_email:string,delivery_city:string,delivery_address:string} */
     private function invoiceProfile(?User $user, ?B2bClient $client): array
     {
         $counterparty = $client?->counterparty;
@@ -175,6 +175,8 @@ class B2bCheckoutTerms
             'company_unp' => (string) ($counterparty?->unp ?: $client?->unp ?: ''),
             'company_address' => (string) ($counterparty?->legal_address ?: ''),
             'company_email' => (string) ($client?->contact_email ?: $user?->email ?: ''),
+            'delivery_city' => (string) ($client?->default_delivery_city ?: ''),
+            'delivery_address' => (string) ($client?->default_delivery_address ?: $counterparty?->actual_address ?: $counterparty?->postal_address ?: ''),
         ];
     }
 

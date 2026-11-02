@@ -143,6 +143,8 @@
                                 <label><span>Имя и фамилия *</span><input name="contact_name" value="{{ old('contact_name', $client->contact_name ?: $user->name) }}" autocomplete="name" required></label>
                                 <label><span>Телефон *</span><input type="tel" name="contact_phone" value="{{ old('contact_phone', $client->contact_phone ?: $user->phone) }}" autocomplete="tel" required></label>
                                 <label class="wide"><span>Email *</span><input type="email" name="contact_email" value="{{ old('contact_email', $client->contact_email ?: $user->email) }}" autocomplete="email" required></label>
+                                <label><span>Город доставки по умолчанию</span><input name="default_delivery_city" value="{{ old('default_delivery_city', $client->default_delivery_city) }}" placeholder="Минск" autocomplete="address-level2"><small>Подставим при создании нового B2B-заказа.</small></label>
+                                <label><span>Основной адрес доставки</span><input name="default_delivery_address" value="{{ old('default_delivery_address', $client->default_delivery_address) }}" placeholder="ул. Селицкого, 39Б" autocomplete="street-address"><small>Адрес можно изменить отдельно в каждом заказе.</small></label>
                             </div>
                         </section>
                         <section class="b2b-form-section">
