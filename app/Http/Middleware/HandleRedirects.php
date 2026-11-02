@@ -329,7 +329,10 @@ class HandleRedirects
             return null;
         }
 
-        $target = $request->getScheme() . '://' . $canonical . '.' . $baseDomain . $request->getRequestUri();
+        $targetHost = City::findBySlug($canonical)
+            ? $canonical.'.'.$baseDomain
+            : $baseDomain;
+        $target = 'https://'.$targetHost.$request->getRequestUri();
 
         return redirect()->away($target, 301);
     }
@@ -353,7 +356,7 @@ class HandleRedirects
             return null;
         }
 
-        $target = $request->getScheme() . '://' . $baseDomain . $request->getRequestUri();
+        $target = 'https://'.$baseDomain.$request->getRequestUri();
 
         return redirect()->away($target, 301);
     }

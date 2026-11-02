@@ -213,6 +213,47 @@ class LegacySeoRedirectTest extends TestCase
         );
     }
 
+    public function test_inactive_city_alias_redirects_directly_to_primary_domain(): void
+    {
+        City::query()->create([
+            'slug' => 'rechica',
+            'name' => 'Речица',
+            'name_in' => 'в Речице',
+            'name_title' => 'Речице',
+            'is_active' => true,
+            'storefront_enabled' => false,
+        ]);
+
+        $request = Request::create('http://rechitsa.kotlov.by/gazovye', 'GET');
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame(
+            'https://kotlov.by/gazovye',
+            $response->headers->get('Location'),
+        );
+    }
+
+    public function test_active_city_alias_redirects_to_its_enabled_storefront(): void
+    {
+        $this->enableCityStorefront('rechica');
+
+        $request = Request::create('http://rechitsa.kotlov.by/gazovye', 'GET');
+        $response = app(HandleRedirects::class)->handle(
+            $request,
+            fn () => response('', 204),
+        );
+
+        $this->assertSame(301, $response->getStatusCode());
+        $this->assertSame(
+            'https://rechica.kotlov.by/gazovye',
+            $response->headers->get('Location'),
+        );
+    }
+
     public function test_city_navigation_only_exposes_active_storefronts(): void
     {
         City::query()->create([
