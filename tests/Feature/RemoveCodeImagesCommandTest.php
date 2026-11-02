@@ -21,6 +21,13 @@ class RemoveCodeImagesCommandTest extends TestCase
         $this->assertFalse(ProductSourceEnricher::looksLikeCodeImage($this->grate()));
     }
 
+    public function test_a_scanned_certificate_is_told_from_a_photo(): void
+    {
+        $this->assertTrue(ProductSourceEnricher::looksLikeDocumentImage($this->certificate()));
+        $this->assertFalse(ProductSourceEnricher::looksLikeDocumentImage($this->photo()));
+        $this->assertFalse(ProductSourceEnricher::looksLikeDocumentImage($this->grate()));
+    }
+
     public function test_a_qr_code_is_taken_off_and_a_card_left_without_photos_is_hidden_again(): void
     {
         $dir = public_path('img/products/source-enrichment');
@@ -87,6 +94,22 @@ class RemoveCodeImagesCommandTest extends TestCase
         for ($y = 100; $y < 500; $y++) {
             $shade = 60 + (int) (($y - 100) / 400 * 120);
             imagefilledrectangle($image, 150, $y, 450, $y, imagecolorallocate($image, $shade, $shade, $shade + 10));
+        }
+
+        return $this->png($image);
+    }
+
+    /** An upright page of small words in rows: a scanned certificate. */
+    private function certificate(): string
+    {
+        mt_srand(3);
+        $image = imagecreatetruecolor(500, 708);
+        imagefill($image, 0, 0, imagecolorallocate($image, 255, 255, 255));
+        $ink = imagecolorallocate($image, 40, 40, 60);
+        for ($y = 60; $y < 660; $y += 9) {
+            for ($x = 40; $x < 460; $x += mt_rand(5, 8)) {
+                imagefilledrectangle($image, $x, $y, $x + mt_rand(1, 3), $y + 5, $ink);
+            }
         }
 
         return $this->png($image);

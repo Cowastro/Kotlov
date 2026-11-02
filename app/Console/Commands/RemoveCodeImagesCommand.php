@@ -8,7 +8,7 @@ use App\Services\ProductSourceEnricher;
 use Illuminate\Console\Command;
 
 /**
- * Photos found on the internet that are a QR code or a barcode of a shop page, not the item: they are taken off
+ * Photos found on the internet that are a QR code or a scanned certificate, not the item: they are taken off
  * the cards. A card left without a photo is hidden again until one is found, and its price list offers go back
  * to the photo search queue (which now skips such pictures).
  *
@@ -21,7 +21,7 @@ class RemoveCodeImagesCommand extends Command
         {--since=2026-10-01 : Only pictures saved since then}
         {--apply : Take the pictures off}';
 
-    protected $description = 'Take QR codes and barcodes saved as photos off the cards';
+    protected $description = 'Take QR codes and certificate scans saved as photos off the cards';
 
     public function handle(): int
     {
@@ -37,8 +37,9 @@ class RemoveCodeImagesCommand extends Command
                             return false;
                         }
                         $stats['checked']++;
+                        $body = (string) file_get_contents($file);
 
-                        return ProductSourceEnricher::looksLikeCodeImage((string) file_get_contents($file));
+                        return ProductSourceEnricher::looksLikeCodeImage($body) || ProductSourceEnricher::looksLikeDocumentImage($body);
                     }));
                     if ($codes === []) {
                         continue;

@@ -2669,7 +2669,7 @@ class ProductSourceEnricher
                     continue;
                 }
 
-                if (! $this->isLargeEnoughImage($body, $imageInfo) || self::looksLikeCodeImage($body)) {
+                if (! $this->isLargeEnoughImage($body, $imageInfo) || self::looksLikeCodeImage($body) || self::looksLikeDocumentImage($body)) {
                     continue;
                 }
 
@@ -2779,6 +2779,46 @@ class ProductSourceEnricher
         return $corners >= 2;
     }
 
+    /**
+     * A scanned certificate or declaration, not a photo: an upright A4 page, mostly white, whose rows of
+     * text flip between dark and light a dozen times and more (a photo of a coiled cable, about nine).
+     */
+    public static function looksLikeDocumentImage(string $body): bool
+    {
+        $image = @imagecreatefromstring($body);
+        if (! $image) {
+            return false;
+        }
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $ratio = $height / max(1, $width);
+        if ($ratio < 1.25 || $ratio > 1.6) {
+            imagedestroy($image);
+
+            return false;
+        }
+        $grid = 120;
+        $white = 0;
+        $flips = 0;
+        for ($row = 0; $row < $grid; $row++) {
+            $previous = null;
+            for ($col = 0; $col < $grid; $col++) {
+                $color = imagecolorsforindex($image, imagecolorat($image, (int) (($col + 0.5) * $width / $grid), (int) (($row + 0.5) * $height / $grid)));
+                if ($color['alpha'] > 100) {
+                    $color = ['red' => 255, 'green' => 255, 'blue' => 255];
+                }
+                $light = 0.299 * $color['red'] + 0.587 * $color['green'] + 0.114 * $color['blue'];
+                $white += (int) ($light > 215);
+                $isDark = $light < 160;
+                $flips += (int) ($previous !== null && $previous !== $isDark);
+                $previous = $isDark;
+            }
+        }
+        imagedestroy($image);
+
+        return $white / ($grid * $grid) >= 0.55 && $flips / $grid >= 12;
+    }
+
     /** A finder square within the box: the 1:1:3:1:1 runs across a row and down through its centre. */
     private static function hasQrFinder(array $dark, int $x0, int $x1, int $y0, int $y1): bool
     {
@@ -2857,7 +2897,7 @@ class ProductSourceEnricher
             return false;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|qr-?code|rass?roch|halva|karta-pokupok|/a1\.png|/mts\.png|cropped-logo)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|qr-?code|sertifikat|certific|svidetelstv|deklarac|rass?roch|halva|karta-pokupok|/a1\.png|/mts\.png|cropped-logo)~i', $path)) {
             return false;
         }
 
@@ -2877,7 +2917,7 @@ class ProductSourceEnricher
             $score += 80;
         }
 
-        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|qr-?code|rass?roch|halva|karta-pokupok|/a1\.png|/mts\.png|cropped-logo)~i', $path)) {
+        if (preg_match('~(?:logo|icon|sprite|placeholder|noimage|nophoto|payment|social|banner|watermark|telegram|viber|whatsapp|star|rating|loader|loading|close|cart|wishlist|compare|flag|flags|avatar|qr-?code|sertifikat|certific|svidetelstv|deklarac|rass?roch|halva|karta-pokupok|/a1\.png|/mts\.png|cropped-logo)~i', $path)) {
             $score -= 500;
         }
 
