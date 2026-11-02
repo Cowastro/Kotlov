@@ -32,7 +32,12 @@
             </div>
 
             <div class="d-flex align-items-center gap-3">
-                @php($headerPhone = $cityContact['phone_links'][0] ?? ['href' => ($pCall1 ?? '+375293777092'), 'display' => ($phone1 ?? '+375 (29) 377-70-92')])
+                @php
+                    $headerPhone = $cityContact['phone_links'][0] ?? [
+                        'href' => $pCall1 ?? '+375293777092',
+                        'display' => $phone1 ?? '+375 (29) 377-70-92',
+                    ];
+                @endphp
                 <a href="tel:{{ $headerPhone['href'] }}" class="text-white">
                     {{ $headerPhone['display'] }}
                 </a>
