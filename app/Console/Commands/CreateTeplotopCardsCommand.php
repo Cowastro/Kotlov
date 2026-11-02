@@ -56,8 +56,9 @@ class CreateTeplotopCardsCommand extends Command
             ->values();
         // A card of the same model exists (two of them left the row unlinked): never a third one.
         $existing = [];
-        foreach (DB::table('products')->where('brand_id', $lemax)->where('is_archived', false)->pluck('name') as $name) {
-            $existing[TeplotopPriceList::modelKey((string) $name)] = true;
+        // Within one category: the gas water heater «Classic-20» is not the boiler «Classic 20».
+        foreach (DB::table('products')->where('brand_id', $lemax)->where('is_archived', false)->get(['name', 'category_id']) as $card) {
+            $existing[$card->category_id.'|'.TeplotopPriceList::modelKey((string) $card->name)] = true;
         }
         $stats = ['offers' => $offers->count(), 'planned' => 0, 'card_exists' => 0, 'on_site' => 0, 'no_category' => 0, 'created' => 0, 'with_photo' => 0, 'errors' => 0];
         $plan = [];
@@ -66,13 +67,13 @@ class CreateTeplotopCardsCommand extends Command
             $raw = (array) $offer->raw;
             $name = trim((string) preg_replace('/^'.preg_quote((string) ($raw['brand'] ?? ''), '/').'\s+/u', '', (string) $offer->supplier_name));
             $code = Str::slug((string) $offer->supplier_article);
-            if (($raw['brand'] ?? '') === 'LEMAX' && isset($existing[TeplotopPriceList::modelKey($name)])) {
+            $slug = collect(self::targetCategories((string) ($raw['sheet'] ?? ''), $name))->first(fn (string $slug) => isset($categories[$slug]));
+            if ($slug !== null && ($raw['brand'] ?? '') === 'LEMAX' && isset($existing[$categories[$slug].'|'.TeplotopPriceList::modelKey($name)])) {
                 $stats['card_exists']++;
                 $this->line(sprintf('audit.teplotop_create.card_exists=%s', $code));
 
                 continue;
             }
-            $slug = collect(self::targetCategories((string) ($raw['sheet'] ?? ''), $name))->first(fn (string $slug) => isset($categories[$slug]));
             if ($slug === null) {
                 $stats['no_category']++;
                 $this->line(sprintf('audit.teplotop_create.no_category=%s', $code));
