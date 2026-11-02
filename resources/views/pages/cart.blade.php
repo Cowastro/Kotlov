@@ -196,6 +196,7 @@
                                     </div>
                                 </div>
 
+                                @unless ($b2bClient)
                                 @if ($coupon['code'] === config('shop.online_order_discount.code', 'ONLINE3') && \App\Services\CartCouponService::onlineDiscountIsPublic())
                                     <div class="online-order-cart-note mb-20">
                                         <strong>Онлайн-скидка применена автоматически</strong>
@@ -218,8 +219,33 @@
                                     </div>
                                 @endif
 
+                                @endunless
+
                                 <div class="br-line mb-16"></div>
 
+                                @if ($b2bClient)
+                                    <div class="d-flex justify-content-between align-items-start gap-12 mb-16">
+                                        <p class="fw-medium lh-24 mb-0">Доставка:</p>
+                                        <span class="text-caption-01 text-end">
+                                            {{ $b2bClient->default_delivery_address ? trim($b2bClient->default_delivery_city.', '.$b2bClient->default_delivery_address, ', ') : 'B2B-доставка или самовывоз со склада' }}<br>
+                                            <span class="cl-text-3">стоимость и срок согласует менеджер</span>
+                                        </span>
+                                    </div>
+                                    <fieldset class="tf-field d-grid mb-16">
+                                        <label class="tf-lable fw-medium" for="cart-b2b-note">Примечание к заказу</label>
+                                        <textarea id="cart-b2b-note" rows="3" maxlength="1000"
+                                            placeholder="Адрес и время приёмки, объект, контакт на месте, разгрузка, номер вашей заявки…">{{ session('cart_note') }}</textarea>
+                                        <span class="text-caption-01 cl-text-3 mt-4" id="cart-b2b-note-state">Попадёт в заказ и увидит менеджер.</span>
+                                    </fieldset>
+                                    <div class="b2b-cart-process mb-20">
+                                        <strong>Как пройдёт заказ</strong>
+                                        <ol>
+                                            <li>Сразу проверяем наличие и резервируем товар на складе.</li>
+                                            <li>Менеджер подтверждает позиции — вы согласуете заказ в кабинете.</li>
+                                            <li>Счёт сразу появляется в B2B-кабинете и приходит на почту.</li>
+                                        </ol>
+                                    </div>
+                                @else
                                 @php
                                     $threshold = (float) config('shop.free_delivery_threshold', 400);
                                 @endphp
@@ -236,6 +262,7 @@
                                 </div>
 
                                 <x-order-confirmation-notice class="mb-20" />
+                                @endif
 
                                 {{-- Согласие с условиями --}}
                                 <div class="checkbox-wrap mb-16">
@@ -392,6 +419,35 @@
             }
         });
     }
+
+    // B2B note: saved as the cart note, prefilled in the checkout form.
+    var b2bNote = document.getElementById('cart-b2b-note');
+    if (b2bNote) {
+        var noteState = document.getElementById('cart-b2b-note-state');
+        var noteTimer = null;
+        b2bNote.addEventListener('input', function () {
+            clearTimeout(noteTimer);
+            noteTimer = setTimeout(function () {
+                fetch('{{ route("cart.note") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf },
+                    body: JSON.stringify({ note: b2bNote.value }),
+                }).then(function (response) {
+                    if (noteState && response.ok) noteState.textContent = 'Сохранено — попадёт в заказ.';
+                });
+            }, 600);
+        });
+    }
 })();
 </script>
+@endpush
+
+@push('styles')
+<style>
+.b2b-cart-process { padding: 14px 16px; border: 1px solid #d8eee6; border-left: 3px solid #15946e; border-radius: 12px; background: #f4fbf8; font-size: 13px; }
+.b2b-cart-process strong { display: block; margin-bottom: 6px; color: #142338; }
+.b2b-cart-process ol { margin: 0; padding-left: 18px; color: #4a5a6c; }
+.b2b-cart-process li + li { margin-top: 3px; }
+#cart-b2b-note { width: 100%; padding: 10px 12px; border: 1px solid #e4e4e4; border-radius: 10px; resize: vertical; }
+</style>
 @endpush

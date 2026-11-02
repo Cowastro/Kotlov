@@ -342,9 +342,9 @@
                             @endif
 
                             {{-- 4. Необязательное — свёрнуто: e-mail и комментарий (cart_note из session) --}}
-                            @php $checkoutExtrasOpen = $errors->has('customer_email') || filled(old('comment', session('cart_note'))); @endphp
+                            @php $checkoutExtrasOpen = ($isB2bCheckout ?? false) || $errors->has('customer_email') || filled(old('comment', session('cart_note'))); @endphp
                             <details class="box-ip-checkout checkout-extras" @if ($checkoutExtrasOpen) open @endif>
-                                <summary class="fw-medium cl-text-2" style="cursor:pointer;font-size:15px;">+ Дополнительно: e-mail и комментарий</summary>
+                                <summary class="fw-medium cl-text-2" style="cursor:pointer;font-size:15px;">{{ ($isB2bCheckout ?? false) ? 'Примечание к заказу' : '+ Дополнительно: e-mail и комментарий' }}</summary>
                                 <div class="form-content mt-12">
                                     <fieldset class="tf-field">
                                         <label class="tf-lable fw-medium" for="customer-email">Email</label>
@@ -359,9 +359,9 @@
                                         @endif
                                     </fieldset>
                                     <fieldset class="tf-field d-grid">
-                                        <label class="tf-lable fw-medium" for="order-comment">Комментарий</label>
-                                        <textarea name="comment" id="order-comment" rows="3"
-                                            placeholder="Удобное время доставки, этаж, подъезд...">{{ old('comment', session('cart_note')) }}</textarea>
+                                        <label class="tf-lable fw-medium" for="order-comment">{{ ($isB2bCheckout ?? false) ? 'Примечание для менеджера' : 'Комментарий' }}</label>
+                                        <textarea name="comment" id="order-comment" rows="{{ ($isB2bCheckout ?? false) ? 4 : 3 }}"
+                                            placeholder="{{ ($isB2bCheckout ?? false) ? 'Адрес и время приёмки, объект, контакт на месте, нужна ли разгрузка, номер вашей заявки…' : 'Удобное время доставки, этаж, подъезд...' }}">{{ old('comment', session('cart_note')) }}</textarea>
                                     </fieldset>
                                 </div>
                             </details>
@@ -369,7 +369,7 @@
                             @if($isB2bCheckout ?? false)
                                 <div class="p-16 mt-20" style="border:1px solid #e6d7c7;border-left:3px solid #d94045;border-radius:12px;background:#fffdf9;">
                                     <strong>Что произойдёт после отправки</strong>
-                                    <p class="mb-0 mt-4 cl-text-2">Менеджер проверит все позиции. После подтверждения счёт появится в разделе «Документы» B2B-кабинета и будет отправлен на e-mail для счёта. При действующем кредитном лимите можно выбрать отсрочку платежа.</p>
+                                    <p class="mb-0 mt-4 cl-text-2">Наличие проверяется сразу, товар резервируется на складе. Менеджер подтвердит позиции и пришлёт заказ вам на согласование — после вашего подтверждения счёт сразу появится в B2B-кабинете и придёт на e-mail для счёта. При действующем кредитном лимите можно выбрать отсрочку платежа.</p>
                                 </div>
                             @else
                                 <x-order-confirmation-notice class="mt-20" />

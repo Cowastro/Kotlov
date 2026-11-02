@@ -6,7 +6,10 @@
 
 @section('content')
 @php
-    $cartCount = collect(session('cart', []))->sum('quantity');
+    $cartItems = collect(session('cart', []));
+    $cartCount = $cartItems->sum('quantity');
+    $cartQuantities = $cartItems->mapWithKeys(fn ($line) => [(int) ($line['id'] ?? 0) => (int) ($line['quantity'] ?? 0)]);
+    $cartSubtotal = $cartItems->sum(fn ($line) => (float) ($line['price'] ?? 0) * (int) ($line['quantity'] ?? 0));
     $preview = request()->boolean('b2b-preview');
     $resetUrl = route('b2b.catalog', array_filter(['mode' => $mode, 'b2b-preview' => $preview ? 1 : null]));
     $mobileCategoryTiles = $categoryTree
@@ -166,7 +169,7 @@
                                 $priceRequest = $priceRequests->get($product->id);
                                 $priceRequestIsOpen = $priceRequest && in_array($priceRequest->status, \App\Models\ContactRequest::OPEN_STATUSES, true);
                             @endphp
-                            <article class="b2b-product-row">
+                            <article class="b2b-product-row{{ ($cartQuantities[$product->id] ?? 0) > 0 ? ' is-in-cart' : '' }}" data-row-product="{{ $product->id }}">
                                 <div class="b2b-product-main">
                                     <a href="{{ $productUrl }}" class="b2b-product-image" target="_blank" rel="noopener"><img src="{{ $product->image_url }}" alt="" loading="lazy" onerror="this.src='{{ asset('img/products/product-placeholder.jpg') }}'"></a>
                                     <div class="b2b-product-copy">
@@ -202,7 +205,7 @@
                                             <span class="b2b-preview-action">Тестовый просмотр</span>
                                         @else
                                             <input id="b2b-qty-{{ $product->id }}" type="number" value="1" min="1" max="999" inputmode="numeric" aria-label="Количество">
-                                            <button type="button" class="b2b-add-button b2b-add-to-cart" data-product-id="{{ $product->id }}" data-qty-input="#b2b-qty-{{ $product->id }}" data-option-input="#b2b-option-{{ $product->id }}"><i class="icon icon-Handbag"></i><span>Добавить</span></button>
+                                            <button type="button" class="b2b-add-button b2b-add-to-cart{{ ($cartQuantities[$product->id] ?? 0) > 0 ? ' is-in-cart' : '' }}" data-in-cart="{{ $cartQuantities[$product->id] ?? 0 }}" data-product-name="{{ $product->name }}" data-product-id="{{ $product->id }}" data-qty-input="#b2b-qty-{{ $product->id }}" data-option-input="#b2b-option-{{ $product->id }}">@if (($cartQuantities[$product->id] ?? 0) > 0)<span>✓ В заказе · {{ $cartQuantities[$product->id] }} шт.</span>@else<i class="icon icon-Handbag"></i><span>Добавить</span>@endif</button>
                                         @endif
                                     </div>
                                 @else
@@ -226,6 +229,24 @@
             </section>
         </div>
     </main>
+    @unless ($staffPreview)
+        <div class="b2b-order-bar" data-order-bar @if ($cartItems->isEmpty())hidden @endif>
+            <div class="b2b-order-bar__summary">
+                <span>В заказе</span>
+                <strong data-bar-positions>{{ $cartItems->count() }} поз.</strong>
+                <span data-bar-qty>{{ $cartCount }} шт.</span>
+                <b data-bar-total>{{ number_format($cartSubtotal, 2, ',', ' ') }} BYN</b>
+            </div>
+            <div class="b2b-order-bar__last" data-bar-last hidden>
+                <span data-bar-last-text></span>
+                <button type="button" data-bar-undo>Отменить</button>
+            </div>
+            <div class="b2b-order-bar__actions">
+                <a href="{{ route('cart') }}">Корзина</a>
+                <a href="{{ route('checkout') }}" class="is-primary">Оформить заказ →</a>
+            </div>
+        </div>
+    @endunless
     <div class="b2b-toast" role="status" aria-live="polite" hidden></div>
 </div>
 

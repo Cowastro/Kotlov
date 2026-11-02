@@ -142,6 +142,64 @@ class B2bMarketplaceTest extends TestCase
             ->assertUnprocessable();
     }
 
+    public function test_added_goods_stay_marked_and_the_order_bar_sums_the_order(): void
+    {
+        $category = Category::query()->create(['name' => 'Трубы', 'slug' => 'b2b-cart-feedback', 'is_active' => true]);
+        $pipe = $this->product($category, 'Труба для заказа', 'CART-FB-1');
+        $other = $this->product($category, 'Колено без заказа', 'CART-FB-2');
+        $source = $this->source('cart-feedback-source', $category);
+        $this->offer($source, $pipe, 31.67, 38);
+        $this->offer($source, $other, 20, 5);
+        $user = $this->approvedUser([$source->id]);
+
+        $this->actingAs($user)->get(route('b2b.catalog'))
+            ->assertOk()->assertSee('data-order-bar hidden', false)->assertDontSee('b2b-product-row is-in-cart', false);
+
+        $this->actingAs($user)->postJson(route('cart.add'), ['product_id' => $pipe->id, 'quantity' => 2, 'pricing_mode' => 'b2b'])
+            ->assertOk()->assertJson(['count' => 2, 'positions' => 1, 'item_quantity' => 2]);
+        $this->actingAs($user)->postJson(route('cart.add'), ['product_id' => $pipe->id, 'quantity' => 3, 'pricing_mode' => 'b2b'])
+            ->assertOk()->assertJson(['count' => 5, 'positions' => 1, 'item_quantity' => 5]);
+
+        $this->actingAs($user)->get(route('b2b.catalog'))
+            ->assertOk()
+            ->assertSee('b2b-product-row is-in-cart', false)
+            ->assertDontSee('data-order-bar hidden', false)
+            ->assertSeeText('✓ В заказе · 5 шт.')
+            ->assertSee('data-row-product="'.$pipe->id.'"', false)
+            ->assertSeeText('1 поз.')
+            ->assertSeeText('Оформить заказ →');
+
+        // Undo goes back to the previous quantity, or removes the line.
+        $this->actingAs($user)->postJson(route('cart.update'), ['product_id' => $pipe->id, 'quantity' => 2])
+            ->assertOk()->assertJson(['count' => 2, 'positions' => 1, 'item_quantity' => 2]);
+        $this->actingAs($user)->postJson(route('cart.remove'), ['product_id' => $pipe->id])
+            ->assertOk()->assertJson(['count' => 0, 'positions' => 0]);
+    }
+
+    public function test_b2b_cart_shows_partner_terms_instead_of_retail_ones(): void
+    {
+        $category = Category::query()->create(['name' => 'Трубы', 'slug' => 'b2b-cart-terms', 'is_active' => true]);
+        $pipe = $this->product($category, 'Труба партнёра', 'CART-TERMS-1');
+        $source = $this->source('cart-terms-source', $category);
+        $this->offer($source, $pipe, 31.67, 38);
+        $user = $this->approvedUser([$source->id]);
+        $this->actingAs($user)->postJson(route('cart.add'), ['product_id' => $pipe->id, 'quantity' => 1, 'pricing_mode' => 'b2b'])->assertOk();
+
+        $this->actingAs($user)->get(route('cart'))
+            ->assertOk()
+            ->assertDontSee('placeholder="Промокод"', false)
+            ->assertDontSee('В пределах МКАД-2 — бесплатно', false)
+            ->assertDontSee('id="cart-threshold-text"', false)
+            ->assertSeeText('Примечание к заказу')
+            ->assertSeeText('Как пройдёт заказ');
+
+        $this->actingAs($user)->postJson(route('cart.note'), ['note' => 'Приёмка с 9 до 17, склад №2'])->assertOk();
+        $this->actingAs($user)->get(route('checkout'))
+            ->assertOk()
+            ->assertSeeText('Примечание для менеджера')
+            ->assertSee('Приёмка с 9 до 17, склад №2', false);
+    }
+
     public function test_quick_search_finds_goods_like_the_site_smart_search(): void
     {
         $category = Category::query()->create(['name' => 'Трубы одностенные', 'slug' => 'b2b-smart-search', 'is_active' => true]);
