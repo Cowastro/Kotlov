@@ -686,10 +686,12 @@ class B2bCabinetController extends Controller
             && $this->access->allows($request->user(), 'orders.create', $client)
             && (int) $b2bOrder->b2b_client_id === (int) $client->id, 404);
 
-        $workflow->clientConfirm($b2bOrder, $request->user());
+        $order = $workflow->clientConfirm($b2bOrder, $request->user())->load('commercialDocument');
 
         return to_route('b2b.cabinet', ['section' => 'orders'])
-            ->with('success', 'Условия заказа '.$b2bOrder->number.' подтверждены. B2B-менеджер подготовит счёт; при наличии лимита заказ можно будет отгрузить с отсрочкой.');
+            ->with('success', $order->commercialDocument
+                ? 'Заказ '.$order->number.' подтверждён. Счёт '.$order->commercialDocument->number.' сформирован — он в карточке заказа и в разделе «КП и счета», копия отправлена на почту.'
+                : 'Заказ '.$order->number.' подтверждён. Менеджер выставит счёт в ближайшее время.');
     }
 
     private function documentsFor(Request $request): Builder
@@ -707,15 +709,21 @@ class B2bCabinetController extends Controller
 
         return $query
             ->where('status', '!=', 'draft')
-            ->where(function (Builder $owned) use ($companyEmails, $counterpartyId): void {
+            ->where(function (Builder $owned) use ($companyEmails, $counterpartyId, $client): void {
+                // Invoices of the company's own B2B orders, whatever e-mail they were issued to.
+                $owned->whereIn('id', B2bOrder::query()
+                    ->where('b2b_client_id', (int) ($client?->id ?? 0))
+                    ->whereNotNull('commercial_document_id')
+                    ->select('commercial_document_id'));
                 if ($counterpartyId > 0) {
-                    $owned->where('crm_counterparty_id', $counterpartyId)
+                    $owned->orWhere('crm_counterparty_id', $counterpartyId)
                         ->orWhere(function (Builder $email) use ($companyEmails): void {
                             $email->whereNull('crm_counterparty_id')->whereIn('client_email', $companyEmails);
                         });
-                } else {
-                    $owned->whereIn('client_email', $companyEmails);
+
+                    return;
                 }
+                $owned->orWhereIn('client_email', $companyEmails);
             });
     }
 

@@ -76,7 +76,11 @@ class B2bOrderInvoice
             }
 
             $locked->forceFill(['commercial_document_id' => $document->id])->save();
-            app(B2bOrderWorkflow::class)->transition($locked, 'invoice_issued', $manager, 'Счёт '.$document->number.' выставлен партнёру.');
+            $workflow = app(B2bOrderWorkflow::class);
+            $locked = $workflow->transition($locked, 'invoice_issued', $manager, 'Счёт '.$document->number.' выставлен партнёру.');
+            $locked->payment_type === 'invoice_deferred'
+                ? $workflow->transition($locked, 'credit_approved', $manager, 'Отсрочка по кредитному лимиту: заказ можно комплектовать.')
+                : $workflow->transition($locked, 'awaiting_payment', $manager, 'Ожидаем оплату по счёту '.$document->number.'.');
 
             return $document->fresh('items');
         });

@@ -96,33 +96,7 @@ class B2bOrderResource extends Resource
                 SelectFilter::make('assigned_manager_id')->label('B2B-менеджер')->relationship('manager', 'name')->searchable()->preload(),
             ])
             ->recordActions([
-                Action::make('accept')->label('Принять')->icon(Heroicon::OutlinedHandRaised)->color('success')
-                    ->visible(fn (B2bOrder $record): bool => in_array($record->status, ['new', 'assigned'], true))
-                    ->requiresConfirmation()
-                    ->action(function (B2bOrder $record): void {
-                        app(B2bOrderWorkflow::class)->accept($record, auth()->user());
-                        Notification::make()->success()->title('B2B-заказ принят в работу')->send();
-                    }),
-                Action::make('nextStatus')->label('Сменить этап')->icon(Heroicon::OutlinedArrowRightCircle)
-                    ->schema([
-                        Select::make('status')->label('Новый этап')
-                            ->options(fn (B2bOrder $record): array => app(B2bOrderWorkflow::class)->allowedTransitions($record))
-                            ->required(),
-                        Textarea::make('comment')->label('Комментарий в хронологию')->rows(3),
-                    ])
-                    ->visible(fn (B2bOrder $record): bool => ! in_array($record->status, ['new', 'completed', 'cancelled'], true))
-                    ->action(function (B2bOrder $record, array $data): void {
-                        app(B2bOrderWorkflow::class)->transition($record, $data['status'], auth()->user(), $data['comment'] ?? null);
-                        Notification::make()->success()->title('Этап B2B-заказа обновлён')->send();
-                    }),
-                Action::make('issueInvoice')->label('Выставить счёт')->icon(Heroicon::OutlinedDocumentCurrencyDollar)->color('success')
-                    ->visible(fn (B2bOrder $record): bool => $record->status === 'client_confirmed' && ! $record->commercial_document_id)
-                    ->requiresConfirmation()
-                    ->modalDescription('Состав и цены будут зафиксированы. Счёт появится в B2B-кабинете партнёра.')
-                    ->action(function (B2bOrder $record): void {
-                        $document = app(B2bOrderInvoice::class)->issue($record, auth()->user());
-                        Notification::make()->success()->title('Счёт '.$document->number.' выставлен')->send();
-                    }),
+                ...B2bOrderActions::steps(),
                 EditAction::make()->label('Карточка'),
             ])
             ->recordUrl(fn (B2bOrder $record): string => static::getUrl('edit', ['record' => $record]))
@@ -136,11 +110,10 @@ class B2bOrderResource extends Resource
         return match (true) {
             in_array($order->status, ['new', 'assigned'], true) => 'Принять в работу',
             in_array($order->status, ['checking', 'awaiting_supplier'], true) && $open > 0 => 'Решить '.$open.' поз. без остатка',
-            in_array($order->status, ['checking', 'awaiting_supplier'], true) => 'Условия готовы — отправить клиенту',
-            $order->status === 'proposal_ready' => 'Отправить клиенту',
+            in_array($order->status, ['checking', 'awaiting_supplier', 'proposal_ready'], true) => 'Отправить клиенту',
             $order->status === 'awaiting_client' => 'Ждём подтверждения клиента',
-            $order->status === 'client_confirmed' => 'Выставить счёт',
-            in_array($order->status, ['invoice_issued', 'awaiting_payment'], true) => 'Ждём оплату',
+            $order->status === 'client_confirmed' => 'Счёт не сформировался — выставить вручную',
+            in_array($order->status, ['invoice_issued', 'awaiting_payment'], true) => 'Ждём оплату по счёту',
             in_array($order->status, ['paid', 'credit_approved'], true) => 'Передать на склад',
             $order->status === 'assembling' => 'Собрать заказ',
             $order->status === 'ready_to_ship' => 'Отгрузить',
