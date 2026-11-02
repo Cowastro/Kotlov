@@ -771,6 +771,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/b2b/cabinet/confirm-password', [B2bCabinetController::class, 'confirmSensitiveActions'])
         ->middleware('throttle:6,1')
         ->name('b2b.cabinet.confirm-password');
+    Route::post('/b2b/cabinet/page', [B2bCabinetController::class, 'createPage'])
+        ->middleware('throttle:6,1')
+        ->name('b2b.cabinet.page.create');
     Route::put('/b2b/cabinet/profile', [B2bCabinetController::class, 'updateProfile'])
         ->middleware('b2b.password.recent:profile')
         ->name('b2b.cabinet.profile');

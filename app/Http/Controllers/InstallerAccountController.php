@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\InstallerProfile;
 use App\Models\InstallerWork;
+use App\Models\User;
+use App\Services\B2bCompanyAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -51,8 +53,13 @@ class InstallerAccountController extends Controller
         'Могилёвская область',
     ];
 
-    public function edit(Request $request): View
+    public function edit(Request $request): View|RedirectResponse
     {
+        // One place for B2B partners: the page is managed from the B2B cabinet.
+        if ($request->user()->activeB2bClient()) {
+            return to_route('b2b.cabinet', ['section' => 'page']);
+        }
+
         $profile = $this->profile($request)
             ->load(['works' => fn ($query) => $query->latest('completed_at')->latest('id')]);
 
@@ -173,9 +180,37 @@ class InstallerAccountController extends Controller
         return back()->with('success', 'Работа удалена из портфолио.');
     }
 
+    /** @return array<string, mixed> */
+    public static function editorOptions(): array
+    {
+        return [
+            'specializations' => self::SPECIALIZATIONS,
+            'workTypes' => self::WORK_TYPES,
+            'regions' => self::REGIONS,
+        ];
+    }
+
+    /**
+     * The installer page of the signed-in user or, for a B2B team member who
+     * may manage the company profile, the page of the company owner.
+     */
+    public static function pageFor(User $user): ?InstallerProfile
+    {
+        if ($own = $user->installerProfile()->first()) {
+            return $own;
+        }
+
+        $client = $user->activeB2bClient(['user.installerProfile']);
+        if ($client && app(B2bCompanyAccess::class)->allows($user, 'profile.manage', $client)) {
+            return $client->user?->installerProfile;
+        }
+
+        return null;
+    }
+
     private function profile(Request $request): InstallerProfile
     {
-        return $request->user()->installerProfile()->firstOrFail();
+        return self::pageFor($request->user()) ?? abort(404);
     }
 
     private function ownedWork(InstallerProfile $profile, InstallerWork $work): InstallerWork

@@ -161,7 +161,8 @@ class AuthController extends Controller
                     ->with('status', 'Подтвердите email, чтобы войти в аккаунт.');
             }
 
-            return redirect()->intended('/account')
+            // B2B partners, installers included, work from the B2B cabinet.
+            return redirect()->intended(Auth::user()->activeB2bClient() ? route('b2b.cabinet') : '/account')
                 ->with('success', 'Добро пожаловать, '.Auth::user()->name.'!');
         }
 
