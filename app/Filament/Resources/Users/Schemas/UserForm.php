@@ -77,6 +77,11 @@ class UserForm
                             ->placeholder('Например: отдел продаж')
                             ->maxLength(255),
 
+                        Toggle::make('can_manage_b2b_orders')
+                            ->label('Доступ к B2B-заказам')
+                            ->helperText('Отдельная очередь партнёрских заказов. Обычные менеджеры её не видят.')
+                            ->default(false),
+
                         TextInput::make('phone')
                             ->label('Рабочий телефон')
                             ->tel()

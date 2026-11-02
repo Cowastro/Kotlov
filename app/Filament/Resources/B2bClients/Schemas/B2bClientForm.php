@@ -95,7 +95,9 @@ class B2bClientForm
                         ->relationship(
                             'responsibleUser',
                             'name',
-                            modifyQueryUsing: fn ($query) => $query->whereIn('role', ['admin', 'manager', 'sales_manager']),
+                            modifyQueryUsing: fn ($query) => $query
+                                ->where('is_active', true)
+                                ->where(fn ($access) => $access->where('role', 'admin')->orWhere('can_manage_b2b_orders', true)),
                         )
                         ->searchable()
                         ->preload(),

@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\B2bClient;
-use App\Models\Order;
+use App\Models\B2bOrder;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
@@ -73,8 +73,8 @@ class B2bCheckoutTerms
         $days = max(0, (int) $client->payment_deferment_days);
         $limit = $client->credit_limit !== null ? max(0, (float) $client->credit_limit) : null;
         $exposure = $days > 0 && $limit !== null
-            ? round((float) Order::query()
-                ->whereIn('user_id', $this->access->allUserIds($client))
+            ? round((float) B2bOrder::query()
+                ->where('b2b_client_id', $client->id)
                 ->where('payment_type', 'invoice_deferred')
                 ->whereNotIn('payment_status', ['paid', 'refunded'])
                 ->where('status', '!=', 'cancelled')

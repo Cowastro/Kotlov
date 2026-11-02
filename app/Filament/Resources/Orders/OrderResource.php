@@ -46,7 +46,9 @@ class OrderResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereDoesntHave('dealByInbox');
+        return parent::getEloquentQuery()
+            ->whereDoesntHave('dealByInbox')
+            ->whereDoesntHave('legacyB2bOrder');
     }
     public static function getRelations(): array { return []; }
     public static function getPages(): array

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Events\NewOrderCreated;
+use App\Models\B2bOrder;
 use App\Models\Coupon;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\B2bCheckoutTerms;
+use App\Services\B2bOrders\B2bOrderPlacement;
 use App\Services\B2bSupplyOptionResolver;
 use App\Services\CartAvailabilityGuard;
 use App\Services\CartCouponService;
@@ -87,8 +89,13 @@ class CheckoutController extends Controller
         $onlineOrderDiscountExcludedByPayment = $onlineOrderDiscountCoupon
             && ! $couponService->onlineOrderDiscountAppliesToPayment($selectedPayment);
         // A returning customer finds the contacts and address of the last order already filled in.
-        $lastOrder = $user ? Order::query()->where('user_id', $user->id)->latest('id')
-            ->first(['customer_name', 'customer_phone', 'delivery_type', 'delivery_city', 'delivery_address']) : null;
+        $lastOrder = $user
+            ? ($isB2bCheckout
+                ? B2bOrder::query()->where('b2b_client_id', $b2bCheckout['client']?->id)->latest('id')
+                    ->first(['contact_name as customer_name', 'contact_phone as customer_phone', 'delivery_type', 'delivery_city', 'delivery_address'])
+                : Order::query()->where('user_id', $user->id)->latest('id')
+                    ->first(['customer_name', 'customer_phone', 'delivery_type', 'delivery_city', 'delivery_address']))
+            : null;
         $deliveryCities = self::deliveryCities();
         $minimalLayout = $isB2bCheckout;
 
@@ -122,6 +129,7 @@ class CheckoutController extends Controller
         CartCouponService $couponService,
         BelarusTaxpayerRegistry $taxpayerRegistry,
         CheckoutInvoiceService $checkoutInvoices,
+        B2bOrderPlacement $b2bOrderPlacement,
     ) {
         $cart = session(self::CART_KEY, []);
 
@@ -316,6 +324,42 @@ class CheckoutController extends Controller
         }
         $deliveryPrice = self::calcDelivery($request->delivery_type, $subtotal) ?? 0;
 
+        // B2B is an independent business process. It never creates a retail Order,
+        // never enters the retail CRM queue and never dispatches NewOrderCreated.
+        if ($b2bCheckout['is_b2b']) {
+            $finalQuote = $couponService->quoteForCart($coupon['code'], $cart);
+            $order = $b2bOrderPlacement->place($request->user(), $cart, [
+                'customer_name' => $request->customer_name,
+                'customer_phone' => $request->customer_phone,
+                'customer_email' => $request->customer_email,
+                'delivery_type' => $request->delivery_type,
+                'delivery_region' => $request->delivery_type === 'pickup' ? null
+                    : ($request->delivery_region ?: self::regionOf((string) $request->delivery_city)),
+                'delivery_city' => $request->delivery_city,
+                'delivery_address' => $request->delivery_address,
+                'delivery_price' => $deliveryPrice,
+                'payment_type' => $request->payment_type,
+                'company_name' => $invoiceCompany['legal_name'] ?? $request->company_name,
+                'company_unp' => $invoiceCompany['unp'] ?? $request->company_unp,
+                'company_address' => $invoiceCompany['address'] ?? $request->company_address,
+                'company_email' => $invoiceCompany['email'] ?? $request->company_email,
+                'subtotal' => $subtotal,
+                'discount' => $finalQuote['discount'],
+                'comment' => $request->filled('comment') ? $request->comment : null,
+            ], $b2bCheckout);
+
+            session()->forget([
+                self::CART_KEY,
+                'cart_note',
+                'cart_coupon',
+                'cart_delivery_region',
+                'cart_delivery_city',
+            ]);
+
+            return to_route('b2b.cabinet', ['section' => 'orders'])
+                ->with('success', 'B2B-заказ '.$order->number.' зарегистрирован отдельно и отправлен вашему B2B-менеджеру.');
+        }
+
         $order = DB::transaction(function () use ($request, $cart, $subtotal, $deliveryPrice, $coupon, $invoiceCompany, $checkoutInvoices, $couponService, $b2bCheckout, $b2bTerms, $isInvoicePayment) {
 
             $lockedCoupon = null;
@@ -445,11 +489,6 @@ class CheckoutController extends Controller
             'cart_delivery_region',
             'cart_delivery_city',
         ]);
-
-        if ($b2bCheckout['is_b2b']) {
-            return to_route('b2b.cabinet', ['section' => 'orders'])
-                ->with('success', 'Заказ '.$order->number.' отправлен менеджеру на проверку наличия и условий поставки.');
-        }
 
         return redirect()->route('checkout.success', $order->number)
             ->with('order_number', $order->number)

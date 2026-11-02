@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Attribute;
 use App\Models\Banner;
+use App\Models\B2bOrder;
 use App\Models\BlogCategory;
 use App\Models\BlogPost;
 use App\Models\Brand;
@@ -57,6 +58,7 @@ final class AdminRoleAccess
     private const MANAGER_ABILITIES = [
         CommercialDocument::class => ['viewAny', 'view', 'create', 'update', 'delete'],
         Order::class => ['viewAny', 'view', 'update'],
+        B2bOrder::class => ['viewAny', 'view', 'update'],
         ContactRequest::class => ['viewAny', 'view', 'update'],
         CrmCounterparty::class => ['viewAny', 'view', 'create', 'update'],
         CrmContact::class => ['viewAny', 'view', 'create', 'update'],
@@ -106,6 +108,7 @@ final class AdminRoleAccess
         MarketPriceSource::class,
         MarketResearchReport::class,
         Order::class,
+        B2bOrder::class,
         Page::class,
         Product::class,
         PublicAiSelectionRun::class,
@@ -135,6 +138,11 @@ final class AdminRoleAccess
 
         if (! is_string($modelClass) || ! in_array($modelClass, self::ADMIN_PANEL_MODELS, true)) {
             return null;
+        }
+
+        if ($modelClass === B2bOrder::class) {
+            return $user->canManageB2bOrders()
+                && in_array($ability, self::MANAGER_ABILITIES[B2bOrder::class], true);
         }
 
         return in_array($ability, self::MANAGER_ABILITIES[$modelClass] ?? [], true);
