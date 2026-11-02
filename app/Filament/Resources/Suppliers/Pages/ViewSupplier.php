@@ -6,12 +6,14 @@ use App\Console\Commands\SyncAkvateploservisCommand;
 use App\Console\Commands\SyncChistyBeregCommand;
 use App\Console\Commands\SyncCooperDoorsCommand;
 use App\Console\Commands\SyncKaminproffCommand;
+use App\Console\Commands\SyncTeplotopCommand;
 use App\Console\Commands\SyncPrometallCommand;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Services\Suppliers\AkvateploservisPriceList;
 use App\Services\Suppliers\ChistyBeregPriceList;
 use App\Services\Suppliers\CooperWholesalePriceList;
 use App\Services\Suppliers\KaminproffPriceList;
+use App\Services\Suppliers\TeplotopPriceList;
 use App\Services\Suppliers\PrometallPriceList;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -99,6 +101,51 @@ class ViewSupplier extends ViewRecord
                         ->title('Прайс загружен: '.$rows.' позиций')
                         ->body(sprintf('Привязано к карточкам: %d. Предложено на подтверждение: %d. Без карточки: %d. Цен на сайте обновлено: %d.',
                             $linked, (int) ($metrics['suggested'] ?? 0), (int) ($metrics['unlinked'] ?? 0), (int) ($metrics['retail_updated'] ?? 0)))
+                        ->persistent()
+                        ->send();
+                }),
+            Action::make('teplotop_price')
+                ->label('Загрузить прайс')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('primary')
+                ->visible(fn (): bool => $this->getRecord()->code === SyncTeplotopCommand::SUPPLIER_CODE)
+                ->modalDescription('Два файла ТеплоТоп-Бел: «ОПТ_Прайс» и «РРЦ_Прайс» (xlsx). Опт и РРЦ обновятся сразу, строки привяжутся к карточкам LEMAX, KRATS, EKF и арматуры.')
+                ->schema([
+                    FileUpload::make('opt')
+                        ->label('ОПТ прайс (xlsx)')
+                        ->required()
+                        ->rules(['extensions:xls,xlsx'])
+                        ->maxSize(30720)
+                        ->disk('local')
+                        ->directory('supplier-price-uploads'),
+                    FileUpload::make('rrc')
+                        ->label('РРЦ прайс (xlsx)')
+                        ->required()
+                        ->rules(['extensions:xls,xlsx'])
+                        ->maxSize(30720)
+                        ->disk('local')
+                        ->directory('supplier-price-uploads'),
+                ])
+                ->action(function (array $data): void {
+                    $stored = fn (string $field): string => (string) (is_array($data[$field]) ? reset($data[$field]) : $data[$field]);
+                    [$optPath, $rrcPath] = [Storage::disk('local')->path($stored('opt')), Storage::disk('local')->path($stored('rrc'))];
+                    $rows = is_file($optPath) ? count(TeplotopPriceList::parse($optPath, $rrcPath)) : 0;
+                    if ($rows === 0) {
+                        Storage::disk('local')->delete([$stored('opt'), $stored('rrc')]);
+                        Notification::make()->danger()->title('В файлах нет строк прайса ТеплоТоп (модель, опт, РРЦ)')->send();
+
+                        return;
+                    }
+                    TeplotopPriceList::store($optPath, $rrcPath);
+                    Storage::disk('local')->delete([$stored('opt'), $stored('rrc')]);
+                    Artisan::call('supplier:sync-teplotop', ['--apply' => true]);
+                    preg_match_all('/^metric\.teplotop\.([a-z_]+)=(\d+)$/m', Artisan::output(), $m);
+                    $metrics = array_combine($m[1], $m[2]);
+                    $linked = (int) ($metrics['linked_before'] ?? 0) + (int) ($metrics['article'] ?? 0) + (int) ($metrics['model'] ?? 0) + (int) ($metrics['manual'] ?? 0);
+                    Notification::make()->success()
+                        ->title('Прайс загружен: '.$rows.' позиций')
+                        ->body(sprintf('Привязано к карточкам: %d. Предложено на подтверждение: %d. Без карточки: %d (из них радиаторов %d). Цен на сайте обновлено: %d.',
+                            $linked, (int) ($metrics['suggested'] ?? 0), (int) ($metrics['unlinked'] ?? 0), (int) ($metrics['radiators'] ?? 0), (int) ($metrics['retail_updated'] ?? 0)))
                         ->persistent()
                         ->send();
                 }),
