@@ -38,7 +38,7 @@ class CityContactSelectionTest extends TestCase
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
             ->assertPlainCookie('selected_city', 'gomel');
 
-        $response = $this->withCookie('selected_city', 'gomel')
+        $response = $this->withUnencryptedCookie('selected_city', 'gomel')
             ->get('https://kotlov.by/contacts');
 
         $response->assertOk();
@@ -67,7 +67,7 @@ class CityContactSelectionTest extends TestCase
     {
         $this->city('grodno', 'Гродно', false);
 
-        $response = $this->withCookie('selected_city', 'grodno')
+        $response = $this->withUnencryptedCookie('selected_city', 'grodno')
             ->get('https://kotlov.by/contacts');
 
         $response->assertOk();
