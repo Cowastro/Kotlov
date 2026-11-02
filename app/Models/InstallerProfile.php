@@ -77,6 +77,7 @@ class InstallerProfile extends Model
         'is_published' => 'boolean',
         'nationwide' => 'boolean',
         'priority_until' => 'datetime',
+        'b2b_invited_at' => 'datetime',
 
         // Числовые
         'experience_years' => 'integer',

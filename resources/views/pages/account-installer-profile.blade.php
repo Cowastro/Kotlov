@@ -132,6 +132,9 @@
                     @if($previewMode)
                     <a href="{{ \App\Filament\Resources\InstallerProfiles\InstallerProfileResource::getUrl('edit', ['record' => $profile]) }}" class="tf-btn btn-outline" style="border-color:rgba(255,255,255,.35);color:#fff;">Редактировать в админке</a>
                     @else
+                    @if(auth()->user()?->activeB2bClient())
+                    <a href="{{ route('b2b.cabinet') }}" class="tf-btn btn-white">B2B-кабинет</a>
+                    @endif
                     <a href="{{ route('account') }}" class="tf-btn btn-outline" style="border-color:rgba(255,255,255,.35);color:#fff;">Обычный кабинет</a>
                     @endif
                 </div>

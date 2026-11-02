@@ -741,6 +741,12 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
+Route::get('/b2b/activate/{user}', [\App\Http\Controllers\B2bActivationController::class, 'show'])
+    ->middleware(['signed', 'throttle:20,1'])
+    ->name('b2b.activate');
+Route::post('/b2b/activate/{user}', [\App\Http\Controllers\B2bActivationController::class, 'activate'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('b2b.activate.store');
 Route::get('/b2b/invitation/{token}', [B2bInvitationController::class, 'show'])
     ->middleware('throttle:30,1')
     ->name('b2b.invitation.show');
