@@ -6,13 +6,23 @@ use App\Models\City;
 use App\Models\CityContactProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class CityContactResolver
 {
-    /** @return array{city: City|null, city_name: string, contact: array<string, mixed>} */
+    /** @return array{city: City|null, city_name: string, contact: array<string, mixed>, auto_detected: bool} */
     public function resolve(Request $request): array
     {
-        $city = $this->selectedCity($request->cookie('selected_city'));
+        $selectedSlug = $request->cookie('selected_city');
+        $city = $selectedSlug ? $this->selectableCity($selectedSlug) : null;
+        $autoDetected = false;
+
+        if (! $city && ! $selectedSlug) {
+            $city = $this->detectedCity($request);
+            $autoDetected = $city !== null;
+        }
+
+        $city ??= $this->selectableCity('minsk');
         $contact = $this->defaultContact();
 
         if ($city?->exists && Schema::hasTable('city_contact_profiles')) {
@@ -44,6 +54,7 @@ class CityContactResolver
             'city' => $city,
             'city_name' => $city?->name ?? 'Минск',
             'contact' => $contact,
+            'auto_detected' => $autoDetected,
         ];
     }
 
@@ -55,19 +66,23 @@ class CityContactResolver
 
         $query = City::query()->where('slug', $slug)->where('is_active', true);
 
-        if ($slug !== 'minsk' && Schema::hasColumn('cities', 'storefront_enabled')) {
-            $query->where('storefront_enabled', true);
-        }
-
         $city = $query->first();
 
         return $city ?? ($slug === 'minsk' ? $this->defaultMinsk() : null);
     }
 
-    private function selectedCity(?string $slug): ?City
+    private function detectedCity(Request $request): ?City
     {
-        return $this->selectableCity($slug ?: 'minsk')
-            ?? $this->selectableCity('minsk');
+        $country = strtoupper(trim((string) $request->header('CF-IPCountry')));
+        $cityName = trim(rawurldecode((string) $request->header('CF-IPCity')));
+
+        if ($country !== 'BY' || $cityName === '') {
+            return null;
+        }
+
+        $slug = Str::slug($cityName);
+
+        return $slug !== '' ? $this->selectableCity($slug) : null;
     }
 
     private function defaultMinsk(): City

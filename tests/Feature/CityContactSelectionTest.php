@@ -49,9 +49,37 @@ class CityContactSelectionTest extends TestCase
         $response->assertSee('Беларусь, г. Гомель, ул. Тестовая, 1');
     }
 
-    public function test_disabled_city_cannot_be_selected(): void
+    public function test_active_city_without_a_dedicated_storefront_can_be_selected(): void
     {
-        $this->city('grodno', 'Гродно', false);
+        $this->city('vitebsk', 'Витебск', false);
+
+        $this->get('https://kotlov.by/city/select/vitebsk?return=%2F')
+            ->assertRedirect('/')
+            ->assertPlainCookie('selected_city', 'vitebsk');
+
+        $this->withUnencryptedCookie('selected_city', 'vitebsk')
+            ->get('https://kotlov.by/')
+            ->assertOk()
+            ->assertSee('г. Витебск');
+    }
+
+    public function test_cloudflare_location_header_detects_vitebsk_and_remembers_it(): void
+    {
+        $this->city('vitebsk', 'Витебск', false);
+
+        $this->withHeaders([
+            'CF-IPCountry' => 'BY',
+            'CF-IPCity' => 'Vitebsk',
+        ])->get('https://kotlov.by/')
+            ->assertOk()
+            ->assertSee('г. Витебск')
+            ->assertPlainCookie('selected_city', 'vitebsk');
+    }
+
+    public function test_inactive_city_cannot_be_selected(): void
+    {
+        $city = $this->city('grodno', 'Гродно', false);
+        $city->update(['is_active' => false]);
 
         $this->get('https://kotlov.by/city/select/grodno')->assertNotFound();
     }
@@ -65,7 +93,8 @@ class CityContactSelectionTest extends TestCase
 
     public function test_unknown_or_disabled_cookie_falls_back_to_minsk_contacts(): void
     {
-        $this->city('grodno', 'Гродно', false);
+        $city = $this->city('grodno', 'Гродно', false);
+        $city->update(['is_active' => false]);
 
         $response = $this->withUnencryptedCookie('selected_city', 'grodno')
             ->get('https://kotlov.by/contacts');

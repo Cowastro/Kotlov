@@ -12,9 +12,10 @@ class CitySelectorVisibilityTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_single_city_is_shown_as_static_header_label_without_selector(): void
+    public function test_single_active_city_is_shown_as_static_header_label_without_selector(): void
     {
-        City::query()->update(['storefront_enabled' => false]);
+        City::query()->update(['is_active' => false, 'storefront_enabled' => false]);
+        City::query()->where('slug', 'minsk')->update(['is_active' => true]);
 
         $state = $this->citySelectorState();
 
@@ -41,23 +42,24 @@ class CitySelectorVisibilityTest extends TestCase
         $this->assertStringNotContainsString('id="citySelector"', $selector);
     }
 
-    public function test_selector_appears_only_for_enabled_storefront_cities_and_non_empty_regions(): void
+    public function test_selector_uses_active_cities_even_without_dedicated_storefronts(): void
     {
-        City::query()->update(['storefront_enabled' => false]);
+        City::query()->update(['is_active' => false, 'storefront_enabled' => false]);
+        City::query()->where('slug', 'minsk')->update(['is_active' => true]);
         City::query()->updateOrCreate(['slug' => 'gomel'], [
             'name' => 'Гомель',
             'name_in' => 'в Гомеле',
             'name_title' => 'Гомеле',
             'region' => 'Гомельская',
             'is_active' => true,
-            'storefront_enabled' => true,
+            'storefront_enabled' => false,
         ]);
         City::query()->updateOrCreate(['slug' => 'grodno'], [
             'name' => 'Гродно',
             'name_in' => 'в Гродно',
             'name_title' => 'Гродно',
             'region' => 'Гродненская',
-            'is_active' => true,
+            'is_active' => false,
             'storefront_enabled' => false,
         ]);
 
