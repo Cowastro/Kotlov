@@ -30,8 +30,10 @@ class CartController extends Controller
         $coupon = $this->couponQuote($subtotal);
         // A B2B partner sees B2B terms: no promo code, no retail delivery zones.
         $b2bClient = auth()->user()?->activeB2bClient();
+        // The partner stays in the B2B interface: no retail header, menu or footer.
+        $minimalLayout = $b2bClient !== null;
 
-        return view('pages.cart', compact('items', 'subtotal', 'coupon', 'b2bClient'));
+        return view('pages.cart', compact('items', 'subtotal', 'coupon', 'b2bClient', 'minimalLayout'));
     }
 
     // ─────────────────────────────────────────

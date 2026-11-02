@@ -9,10 +9,6 @@
 .payment-info-list--disc { list-style-type: disc; }
 .tf-field input.is-invalid,
 .tf-field select.is-invalid { border-color: #dc3545 !important; }
-.b2b-checkout-head { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:24px 0 18px; border-bottom:1px solid #e5e7eb; }
-.b2b-checkout-head strong { font-size:22px; letter-spacing:-.02em; }
-.b2b-checkout-head nav { display:flex; gap:10px; }
-.b2b-checkout-head a { padding:10px 16px; border:1px solid #d8dde4; border-radius:10px; font-weight:600; }
 .b2b-checkout-intro { margin-bottom:20px; padding:24px; border-radius:16px; color:#fff; background:#162231; }
 .b2b-checkout-intro span { color:#ff6268; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
 .b2b-checkout-intro h1 { margin:5px 0 8px; color:#fff; font-size:30px; }
@@ -21,7 +17,7 @@
 .b2b-checkout-flow div { padding:10px 12px; border-radius:9px; background:rgba(255,255,255,.08); font-size:13px; }
 .b2b-checkout-flow b { display:block; margin-bottom:2px; color:#fff; }
 .b2b-checkout-settings { display:inline-block; margin-top:8px; color:#d94045; font-weight:600; }
-@media (max-width: 767px) { .b2b-checkout-head { padding-inline:15px; } .b2b-checkout-head nav a:first-child { display:none; } .b2b-checkout-flow { grid-template-columns:1fr; } }
+@media (max-width: 767px) { .b2b-checkout-flow { grid-template-columns:1fr; } }
 </style>
 @endpush
 
@@ -29,12 +25,7 @@
 <main id="wrapper">
 
     @if($isB2bCheckout ?? false)
-        <div class="container">
-            <header class="b2b-checkout-head">
-                <strong>KOTLOV.BY <small style="font-size:12px;color:#d94045;">B2B</small></strong>
-                <nav><a href="{{ route('b2b.catalog') }}">Каталог</a><a href="{{ route('b2b.cabinet', ['section' => 'orders']) }}">Мои заказы</a></nav>
-            </header>
-        </div>
+        @include('partials.b2b-page-head')
     @endif
 
     {{-- Заголовок --}}
