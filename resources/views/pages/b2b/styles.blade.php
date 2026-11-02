@@ -231,3 +231,31 @@ body.b2b-body { margin:0; color:var(--b2b-ink); background:var(--b2b-bg); font-f
     .b2b-search__clear{right:74px}
 }
 </style>
+
+/* Added-to-order feedback: the row and button remember the order, the bar sums it up. */
+.b2b-product-row.is-in-cart { box-shadow: inset 3px 0 0 #15946e; background: #f6fcf9; }
+.b2b-add-button.is-in-cart { background: #fff; color: #0f7a5a; border: 1px solid #15946e; }
+.b2b-add-button.is-in-cart:hover { background: #ecf8f3; }
+.b2b-order-bar { position: fixed; z-index: 90; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(980px, calc(100% - 32px)); display: flex; align-items: center; gap: 18px; padding: 12px 14px 12px 20px; border-radius: 14px; color: #fff; background: #16202a; box-shadow: 0 16px 40px rgba(10, 20, 30, .28); font-size: 13px; }
+.b2b-order-bar[hidden] { display: none; }
+.b2b-order-bar.is-bumped { animation: b2b-bar-bump .45s ease; }
+@keyframes b2b-bar-bump { 0% { transform: translateX(-50%) scale(1); } 35% { transform: translateX(-50%) scale(1.02); } 100% { transform: translateX(-50%) scale(1); } }
+.b2b-order-bar__summary { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+.b2b-order-bar__summary span { color: #9fb0c2; }
+.b2b-order-bar__summary b { margin-left: 6px; font-size: 16px; }
+.b2b-order-bar__last { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: #c9f1e2; }
+.b2b-order-bar__last[hidden] { display: none; }
+.b2b-order-bar__last span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.b2b-order-bar__last button { flex: none; border: 0; background: none; color: #fff; text-decoration: underline; padding: 0; font-weight: 650; }
+.b2b-order-bar__last button[hidden] { display: none; }
+.b2b-order-bar__actions { display: flex; gap: 8px; margin-left: auto; }
+.b2b-order-bar__actions a { padding: 9px 14px; border-radius: 9px; color: #fff; border: 1px solid #3a4a5a; font-weight: 700; white-space: nowrap; }
+.b2b-order-bar__actions a.is-primary { background: #e0393f; border-color: #e0393f; }
+.b2b-portal main { padding-bottom: 90px; }
+.b2b-toast { bottom: 96px; }
+@media (max-width: 760px) {
+    .b2b-order-bar { flex-wrap: wrap; gap: 8px 12px; bottom: 10px; padding: 10px 12px; }
+    .b2b-order-bar__last { order: 3; flex-basis: 100%; }
+    .b2b-order-bar__actions { width: 100%; }
+    .b2b-order-bar__actions a { flex: 1; text-align: center; }
+}

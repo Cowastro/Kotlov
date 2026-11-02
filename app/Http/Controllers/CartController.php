@@ -28,8 +28,10 @@ class CartController extends Controller
         $items = $this->getAvailableItems($availabilityGuard);
         $subtotal = $this->calcSubtotal($items);
         $coupon = $this->couponQuote($subtotal);
+        // A B2B partner sees B2B terms: no promo code, no retail delivery zones.
+        $b2bClient = auth()->user()?->activeB2bClient();
 
-        return view('pages.cart', compact('items', 'subtotal', 'coupon'));
+        return view('pages.cart', compact('items', 'subtotal', 'coupon', 'b2bClient'));
     }
 
     // ─────────────────────────────────────────
@@ -185,6 +187,9 @@ class CartController extends Controller
             return response()->json([
                 'message' => 'added',
                 'count' => $this->totalQty($cart),
+                'positions' => count($cart),
+                'item_quantity' => (int) $cart[$id]['quantity'],
+                'item_name' => (string) $cart[$id]['name'],
                 'subtotal' => $subtotal,
                 'discount' => $coupon['discount'],
                 'coupon_discount' => $coupon['coupon_discount'],
@@ -272,6 +277,8 @@ class CartController extends Controller
                 'item_total' => isset($cart[$id])
                     ? round($cart[$id]['price'] * $cart[$id]['quantity'], 2)
                     : 0,
+                'positions' => count($cart),
+                'item_quantity' => (int) ($cart[$id]['quantity'] ?? 0),
             ]);
         }
 
@@ -301,6 +308,8 @@ class CartController extends Controller
             return response()->json([
                 'message' => 'removed',
                 'count' => $this->totalQty($cart),
+                'positions' => count($cart),
+                'item_quantity' => 0,
                 'subtotal' => $subtotal,
                 'discount' => $coupon['discount'],
                 'coupon_discount' => $coupon['coupon_discount'],

@@ -611,6 +611,8 @@
                 <h5 class="title">Корзина</h5>
                 <span class="icon-X2 icon-close-popup" data-bs-dismiss="offcanvas"></span>
             </div>
+            {{-- Retail free-delivery progress; B2B delivery terms are agreed by the manager. --}}
+            @unless (auth()->user()?->activeB2bClient())
             <div class="cart-threshold">
                 <p class="text" id="cart-threshold-text">
                     Добавьте ещё на
@@ -623,6 +625,7 @@
                     <div class="value" id="cart-threshold-bar" style="width: 0%" data-progress="0"></div>
                 </div>
             </div>
+            @endunless
         </div>
         <div class="wrap">
             <div class="tf-mini-cart-wrap list-file-delete wrap-empty_text">
@@ -646,7 +649,8 @@
                 <div class="tf-mini-cart-bottom box-empty_clear">
                     <div class="tf-mini-cart-bottom-wrap">
                         <div class="tf-mini-cart-total">
-                            {{-- Промокод: всегда на виду, одной строкой --}}
+                            {{-- Промокод: всегда на виду, одной строкой (не для B2B-партнёров) --}}
+                            @unless (auth()->user()?->activeB2bClient())
                             <form class="mini-cart-ajax-form promo-inline mb-12" data-url="{{ route('cart.coupon') }}">
                                 @csrf
                                 <input type="text" name="coupon" id="mini-cart-coupon" value="{{ session('cart_coupon') }}"
@@ -654,6 +658,7 @@
                                 <button type="submit" class="tf-btn btn-stroke">Применить</button>
                                 <p class="mini-cart-form-msg text-caption-01 cl-text-2 mt-4 mb-0" style="display:none;"></p>
                             </form>
+                            @endunless
                             <p class="online-order-mini-note mb-10" id="mini-cart-online-note" style="display:none;">Онлайн-скидка −3% применяется автоматически</p>
                             <p class="d-flex justify-content-between mb-8" id="mini-cart-discount-row" style="display:none!important;">
                                 <span>Скидка</span>

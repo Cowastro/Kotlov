@@ -158,32 +158,99 @@
         if (source) source.textContent = option.dataset.source;
     });
 
+    // Added-to-order feedback: the button and row remember the order, the bar sums it up.
+    var orderBar = document.querySelector('[data-order-bar]');
+    var lastAdded = null;
+    var lastTimer = null;
+
+    function money(value) {
+        return Number(value || 0).toLocaleString('ru-RU', { minimumFractionDigits:2, maximumFractionDigits:2 }) + ' BYN';
+    }
+
+    function renderLine(productId, quantity) {
+        var button = document.querySelector('.b2b-add-to-cart[data-product-id="' + productId + '"]');
+        var row = document.querySelector('[data-row-product="' + productId + '"]');
+        if (row) row.classList.toggle('is-in-cart', quantity > 0);
+        if (!button) return;
+        button.dataset.inCart = quantity;
+        button.classList.toggle('is-in-cart', quantity > 0);
+        button.innerHTML = quantity > 0
+            ? '<span>✓ В заказе · ' + quantity + ' шт.</span>'
+            : '<i class="icon icon-Handbag"></i><span>Добавить</span>';
+    }
+
+    function renderBar(data) {
+        document.querySelectorAll('.cart-count').forEach(function (node) { node.textContent = data.count; });
+        if (!orderBar) return;
+        orderBar.hidden = !data.count;
+        orderBar.querySelector('[data-bar-positions]').textContent = data.positions + ' поз.';
+        orderBar.querySelector('[data-bar-qty]').textContent = data.count + ' шт.';
+        orderBar.querySelector('[data-bar-total]').textContent = money(data.subtotal);
+        orderBar.classList.remove('is-bumped');
+        void orderBar.offsetWidth;
+        orderBar.classList.add('is-bumped');
+    }
+
+    function showLast(text, undo) {
+        if (!orderBar) { showToast(text); return; }
+        lastAdded = undo;
+        var box = orderBar.querySelector('[data-bar-last]');
+        box.querySelector('[data-bar-last-text]').textContent = text;
+        box.querySelector('[data-bar-undo]').hidden = !undo;
+        box.hidden = false;
+        clearTimeout(lastTimer);
+        lastTimer = setTimeout(function () { box.hidden = true; lastAdded = null; }, 8000);
+    }
+
+    function cartRequest(url, payload) {
+        return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN':csrf },
+            body: JSON.stringify(payload),
+        }).then(function (response) {
+            return response.json().then(function (data) { if (!response.ok) throw new Error(data.message || 'Не удалось изменить корзину'); return data; });
+        });
+    }
+
     document.addEventListener('click', function (event) {
+        var undoButton = event.target.closest('[data-bar-undo]');
+        if (undoButton && lastAdded) {
+            var undo = lastAdded;
+            lastAdded = null;
+            undoButton.hidden = true;
+            (undo.previous > 0
+                ? cartRequest('{{ route('cart.update') }}', { product_id:undo.productId, quantity:undo.previous })
+                : cartRequest('{{ route('cart.remove') }}', { product_id:undo.productId })
+            ).then(function (data) {
+                renderLine(undo.productId, undo.previous);
+                renderBar(data);
+                showLast('Отменено: ' + undo.name, null);
+            }).catch(function (error) { showToast(error.message); });
+            return;
+        }
+
         var button = event.target.closest('.b2b-add-to-cart');
         if (!button || button.disabled) return;
         var quantityInput = document.querySelector(button.dataset.qtyInput);
         var optionInput = document.querySelector(button.dataset.optionInput);
         var qty = Math.max(1, parseInt(quantityInput.value, 10) || 1);
+        var productId = Number(button.dataset.productId);
+        var previous = Number(button.dataset.inCart || 0);
+        var name = button.dataset.productName || '';
         var original = button.innerHTML;
         button.disabled = true;
         button.innerHTML = '<span>Добавляем…</span>';
-        fetch('{{ route('cart.add') }}', {
-            method: 'POST',
-            headers: { 'Content-Type':'application/json', 'Accept':'application/json', 'X-CSRF-TOKEN':csrf },
-            body: JSON.stringify({ product_id:Number(button.dataset.productId), quantity:qty, pricing_mode:'b2b', supply_option:optionInput ? optionInput.value : null }),
-        }).then(function (response) {
-            return response.json().then(function (data) { if (!response.ok) throw new Error(data.message || 'Не удалось добавить товар'); return data; });
-        }).then(function (data) {
-            document.querySelectorAll('.cart-count').forEach(function (node) { node.textContent = data.count; });
-            button.classList.add('is-added');
-            button.innerHTML = '<span>Добавлено ✓</span>';
-            showToast('Товар добавлен в корзину');
-            setTimeout(function () { button.classList.remove('is-added'); button.innerHTML = original; button.disabled = false; }, 1300);
-        }).catch(function (error) {
-            button.innerHTML = original;
-            button.disabled = false;
-            showToast(error.message);
-        });
+        cartRequest('{{ route('cart.add') }}', { product_id:productId, quantity:qty, pricing_mode:'b2b', supply_option:optionInput ? optionInput.value : null })
+            .then(function (data) {
+                button.disabled = false;
+                renderLine(productId, data.item_quantity);
+                renderBar(data);
+                showLast('+ ' + (name || data.item_name) + ' × ' + qty, { productId:productId, previous:previous, name:name || data.item_name });
+            }).catch(function (error) {
+                button.innerHTML = original;
+                button.disabled = false;
+                showToast(error.message);
+            });
     });
 
     document.addEventListener('submit', function (event) {
