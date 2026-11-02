@@ -3,11 +3,16 @@
 namespace App\Http\Middleware;
 
 use App\Models\City;
+use App\Services\CityContactResolver;
 use Closure;
 use Illuminate\Http\Request;
 
 class CitySubdomain
 {
+    public function __construct(private CityContactResolver $contactResolver)
+    {
+    }
+
     public function handle(Request $request, Closure $next)
     {
         $host = $request->getHost();
@@ -44,6 +49,11 @@ class CitySubdomain
                 view()->share('cityName',  'Минск');
             }
         }
+
+        $selected = $this->contactResolver->resolve($request);
+        view()->share('selectedCity', $selected['city']);
+        view()->share('selectedCityName', $selected['city_name']);
+        view()->share('cityContact', $selected['contact']);
 
         return $next($request);
     }

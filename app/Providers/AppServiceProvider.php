@@ -105,14 +105,33 @@ class AppServiceProvider extends ServiceProvider
         View::share('navCategoryUrls', $this->getNavCategoryUrls($navCategories));
         View::share('navBrands', $this->getNavBrands());
 
-        // Города по областям для попапа выбора города
-        $cities = $this->getCitiesByRegion();
+        // Показываем выбор города только когда посетителю действительно есть
+        // из чего выбирать. Пустые области не должны выглядеть доступными.
+        $citySelector = $this->getCitySelectorState();
+        $cities = $citySelector['regions'];
+        View::share('citySelectorRegions', $cities);
+        View::share('citySelectorEnabled', $citySelector['enabled']);
         View::share('obl1', $cities['Минская']);
-        View::share('obl2', $cities['Гомельская']);
-        View::share('obl3', $cities['Брестская']);
-        View::share('obl4', $cities['Гродненская']);
-        View::share('obl5', $cities['Могилёвская']);
-        View::share('obl6', $cities['Витебская']);
+        View::share('obl2', $cities['Гомельская'] ?? []);
+        View::share('obl3', $cities['Брестская'] ?? []);
+        View::share('obl4', $cities['Гродненская'] ?? []);
+        View::share('obl5', $cities['Могилёвская'] ?? []);
+        View::share('obl6', $cities['Витебская'] ?? []);
+    }
+
+    /** @return array{regions: array<string, array<int, array<string, string>>>, enabled: bool} */
+    private function getCitySelectorState(): array
+    {
+        $regions = array_filter(
+            $this->getCitiesByRegion(),
+            fn (array $cities): bool => $cities !== [],
+        );
+        $cityCount = array_sum(array_map('count', $regions));
+
+        return [
+            'regions' => $regions,
+            'enabled' => $cityCount > 1,
+        ];
     }
 
 
@@ -261,9 +280,12 @@ private function getCitiesByRegion(): array
             continue;
         }
 
-        $link = $city['slug'] ? "https://{$city['slug']}.kotlov.by" : 'https://kotlov.by';
+        $selectorSlug = $city['slug'] ?: 'minsk';
+        $returnTo = rawurlencode(request()->getRequestUri());
+        $link = "/city/select/{$selectorSlug}?return={$returnTo}";
         $grouped[$city['region']][] = [
             'name'   => $city['name'],
+            'slug'   => $selectorSlug,
             'link'   => $link,
             'active' => '',
         ];

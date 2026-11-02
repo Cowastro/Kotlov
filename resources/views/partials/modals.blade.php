@@ -118,12 +118,13 @@
         </div>
         <div class="need-help-wrap">
             <p class="nd-title h6 fw-medium mb-16">Нужна помощь?</p>
-            <p class="lh-26 cl-text-2 mb-4">Минск, ул. Селицкого, 39Б, каб. 23</p>
-            <a href="https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б" target="_blank"
+            <p class="lh-26 cl-text-2 mb-4">{{ $cityContact['address'] ?? 'Минск, ул. Селицкого, 39Б, каб. 23' }}</p>
+            <a href="{{ $cityContact['map_url'] ?? 'https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б' }}" target="_blank"
                 class="text-decoration-underline text-primary lh-26 mb-16">Открыть на карте</a>
-            <a href="mailto:info@kotlov.by" class="cl-text-2 link mb-8">info@kotlov.by</a>
-            <a href="tel:+375293777092" class="cl-text-2 link mb-4">+375 (29) 377-70-92</a>
-            <a href="tel:+375333777093" class="cl-text-2 link">+375 (33) 377-70-93</a>
+            <a href="mailto:{{ $cityContact['email'] ?? 'info@kotlov.by' }}" class="cl-text-2 link mb-8">{{ $cityContact['email'] ?? 'info@kotlov.by' }}</a>
+            @foreach(($cityContact['phone_links'] ?? [['display' => '+375 (29) 377-70-92', 'href' => '+375293777092'], ['display' => '+375 (33) 377-70-93', 'href' => '+375333777093']]) as $phone)
+            <a href="tel:{{ $phone['href'] }}" class="cl-text-2 link {{ $loop->last ? '' : 'mb-4' }}">{{ $phone['display'] }}</a>
+            @endforeach
             <p class="lh-26 cl-text-2 mt-8 mb-0">Заказы онлайн — 24/7<br>Консультант — ежедневно до 20:00</p>
         </div>
     </div>
@@ -800,73 +801,4 @@ document.querySelectorAll('.mb-cat-toggle').forEach(function(btn) {
 });
 </script>
 
-<!-- City Selector Offcanvas -->
-<!-- City Selector -->
-<div class="offcanvas offcanvas-bottom city-selector-offcanvas" id="citySelector" tabindex="-1" style="height:auto;max-height:80vh;">
-    <div class="canvas-header" style="border-bottom:1px solid var(--line,#e8e8e8);">
-        <h6 class="fw-semibold mb-0">Выберите ваш город</h6>
-        <span class="icon-close-popup" data-bs-dismiss="offcanvas" style="cursor:pointer;">
-            <i class="icon icon-X2"></i>
-        </span>
-    </div>
-    <div class="canvas-body" style="overflow-y:auto;">
-        <div class="container-full py-24">
-
-            {{-- Табы областей --}}
-            <div class="d-flex flex-wrap gap-8 mb-20">
-                @foreach([
-                    1 => 'Минская',
-                    2 => 'Гомельская',
-                    3 => 'Брестская',
-                    4 => 'Гродненская',
-                    5 => 'Могилёвская',
-                    6 => 'Витебская',
-                ] as $i => $region)
-                <button class="city-region-tab tf-btn btn-fill animate-btn {{ $i === 1 ? '' : 'btn-line' }}"
-                    data-region="{{ $i }}" style="font-size:13px;padding:6px 16px;">
-                    {{ $region }}
-                </button>
-                @endforeach
-            </div>
-
-            {{-- Города --}}
-            @foreach([1 => $obl1??[], 2 => $obl2??[], 3 => $obl3??[], 4 => $obl4??[], 5 => $obl5??[], 6 => $obl6??[]] as $i => $cities)
-            <div class="city-region-panel {{ $i === 1 ? '' : 'd-none' }}" data-panel="{{ $i }}">
-                <div class="d-flex flex-wrap gap-8">
-                    @foreach($cities as $city)
-                    <a href="{{ $city['link'] }}"
-                       class="city-link {{ $city['active'] }}"
-                       style="padding:6px 14px;border:1px solid var(--line,#e0e0e0);border-radius:20px;font-size:14px;color:var(--text,#222);text-decoration:none;transition:all .2s;white-space:nowrap;">
-                        {{ $city['name'] }}
-                    </a>
-                    @endforeach
-                </div>
-            </div>
-            @endforeach
-
-        </div>
-    </div>
-</div>
-<style>
-.city-link:hover,.city-link.active{background:#222;color:#fff!important;border-color:#222!important;}
-.city-region-tab.btn-fill{background:#222;color:#fff;border-color:#222;}
-.city-region-tab.btn-line{background:#fff;color:#222;border:1px solid #e0e0e0;}
-.city-region-tab.btn-line:hover{background:#f5f5f5;}
-</style>
-<script>
-document.addEventListener('DOMContentLoaded',function(){
-    document.querySelectorAll('.city-region-tab').forEach(function(btn){
-        btn.addEventListener('click',function(){
-            var r=this.dataset.region;
-            document.querySelectorAll('.city-region-tab').forEach(function(b){
-                b.classList.remove('btn-fill');b.classList.add('btn-line');
-            });
-            this.classList.remove('btn-line');this.classList.add('btn-fill');
-            document.querySelectorAll('.city-region-panel').forEach(function(p){
-                p.classList.add('d-none');
-            });
-            document.querySelector('[data-panel="'+r+'"]').classList.remove('d-none');
-        });
-    });
-});
-</script>
+@include('partials.city-selector')

@@ -506,9 +506,9 @@ class LegacySeoRedirectTest extends TestCase
         $cities = $method->invoke(new AppServiceProvider(app()));
         $links = collect($cities)->flatten(1)->pluck('link');
 
-        $this->assertTrue($links->contains('https://kotlov.by'));
-        $this->assertTrue($links->contains('https://gomel.kotlov.by'));
-        $this->assertFalse($links->contains('https://grodno.kotlov.by'));
+        $this->assertTrue($links->contains('/city/select/minsk?return=%2F'));
+        $this->assertTrue($links->contains('/city/select/gomel?return=%2F'));
+        $this->assertFalse($links->contains('/city/select/grodno?return=%2F'));
     }
 
     public function test_city_seeder_keeps_an_explicitly_enabled_storefront(): void

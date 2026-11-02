@@ -1,6 +1,20 @@
 @extends('layouts.amerce')
 
 @section('content')
+@php
+    $contact = $cityContact ?? [
+        'company_name' => config('legal.seller.short_name', 'KOTLOV.BY'),
+        'phone_links' => [
+            ['display' => '+375 (29) 377-70-92', 'href' => '+375293777092'],
+            ['display' => '+375 (33) 377-70-93', 'href' => '+375333777093'],
+        ],
+        'email' => 'info@kotlov.by',
+        'address' => 'Беларусь, г. Минск, ул. Селицкого, 39Б, каб. 23',
+        'map_url' => 'https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б',
+        'map_embed_url' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2350.8!2d27.5615!3d53.9065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46dbcfd35b1e6ad3%3A0xb97b72b3def99842!2z0YPQuy4g0KHQtdC70LjRhtC60L7Qs9C-LCAzOdCkLCDQnNC40L3RgdC6!5e0!3m2!1sru!2sby!4v1700000000000',
+    ];
+    $whatsappPhone = ltrim($contact['phone_links'][count($contact['phone_links']) - 1]['href'] ?? '+375333777093', '+');
+@endphp
 <main id="wrapper">
 
     {{-- Заголовок --}}
@@ -26,7 +40,7 @@
         <div class="container">
             <div class="wg-map">
                 <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2350.8!2d27.5615!3d53.9065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46dbcfd35b1e6ad3%3A0xb97b72b3def99842!2z0YPQuy4g0KHQtdC70LjRhtC60L7Qs9C-LCAzOdCkLCDQnNC40L3RgdC6!5e0!3m2!1sru!2sby!4v1700000000000"
+                    src="{{ $contact['map_embed_url'] }}"
                     allowfullscreen="" loading="lazy"
                     referrerpolicy="no-referrer-when-downgrade">
                 </iframe>
@@ -49,6 +63,7 @@
                     <div class="col-left">
                         <div class="heading d-grid gap-8">
                             <h4>Наши контакты</h4>
+                            <p class="cl-text-2">{{ $contact['company_name'] }} · г. {{ $selectedCityName ?? 'Минск' }}</p>
                             <p class="cl-text-2">
                                 Есть вопрос? Свяжитесь с нами любым удобным способом.
                             </p>
@@ -56,31 +71,28 @@
                         <div class="grid-info tf-grid-layout sm-col-2">
                             <div class="d-grid gap-8">
                                 <h6>Телефон:</h6>
-                                <p>
-                                    <a href="tel:+375293777092" class="cl-text-2 link">
-                                        +375 (29) 377-70-92
+                                @foreach($contact['phone_links'] as $phone)
+                                    <p>
+                                    <a href="tel:{{ $phone['href'] }}" class="cl-text-2 link">
+                                        {{ $phone['display'] }}
                                     </a>
-                                </p>
-                                <p>
-                                    <a href="tel:+375333777093" class="cl-text-2 link">
-                                        +375 (33) 377-70-93
-                                    </a>
-                                </p>
+                                    </p>
+                                @endforeach
                             </div>
                             <div class="d-grid gap-8">
                                 <h6>Email:</h6>
                                 <p>
-                                    <a href="mailto:info@kotlov.by" class="cl-text-2 link">
-                                        info@kotlov.by
+                                    <a href="mailto:{{ $contact['email'] }}" class="cl-text-2 link">
+                                        {{ $contact['email'] }}
                                     </a>
                                 </p>
                             </div>
                             <div class="wd-full d-grid gap-8">
                                 <h6>Адрес:</h6>
                                 <p>
-                                    <a href="https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б"
+                                    <a href="{{ $contact['map_url'] }}"
                                         target="_blank" class="cl-text-2 link">
-                                        Беларусь, г. Минск, ул. Селицкого, 39Б, каб. 23
+                                        {{ $contact['address'] }}
                                     </a>
                                 </p>
                             </div>
@@ -122,7 +134,7 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <a href="https://wa.me/375333777093" target="_blank">
+                                        <a href="https://wa.me/{{ $whatsappPhone }}" target="_blank">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                                                 <path d="M12.002 0C5.374 0 .006 5.368.006 11.996c0 2.1.546 4.15 1.588 5.953L0 24l6.242-1.566a11.99 11.99 0 0 0 5.76 1.466h.005C18.63 23.9 24 18.53 24 11.902 24 5.368 18.63 0 12.002 0zm0 21.9a9.95 9.95 0 0 1-5.075-1.385l-.363-.216-3.766.945.984-3.658-.237-.376A9.896 9.896 0 0 1 2.1 11.996C2.1 6.518 6.522 2.1 12.002 2.1c5.476 0 9.898 4.418 9.898 9.896 0 5.48-4.422 9.904-9.898 9.904zm5.442-7.414c-.298-.149-1.766-.87-2.04-.97-.273-.098-.472-.148-.67.15-.2.298-.77.969-.944 1.168-.174.2-.347.224-.645.075-.298-.15-1.26-.464-2.4-1.48-.888-.79-1.487-1.766-1.66-2.064-.175-.298-.019-.46.13-.608.133-.133.298-.347.448-.522.149-.174.198-.298.298-.497.099-.198.05-.373-.025-.522-.075-.149-.67-1.617-.918-2.214-.242-.581-.487-.502-.67-.511l-.571-.01c-.198 0-.52.075-.793.373-.273.298-1.04 1.018-1.04 2.484 0 1.467 1.065 2.884 1.213 3.083.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.413-.074-.124-.272-.198-.57-.347z"/>
                                             </svg>

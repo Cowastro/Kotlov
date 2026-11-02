@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Schema;
 
 class City extends Model
@@ -21,6 +22,11 @@ class City extends Model
         'is_active' => 'boolean',
         'storefront_enabled' => 'boolean',
     ];
+
+    public function contactProfile(): HasOne
+    {
+        return $this->hasOne(CityContactProfile::class);
+    }
 
     private const KNOWN_CITY_SLUGS = [
         'baran', 'baranovichi', 'beloozersk', 'belyinichi', 'bereza', 'berezino',

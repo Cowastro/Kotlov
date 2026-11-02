@@ -1,4 +1,16 @@
 {{-- Footer KOTLOV.BY --}}
+@php
+    $footerContact = $cityContact ?? [
+        'company_name' => config('legal.seller.short_name', 'KOTLOV.BY'),
+        'phone_links' => [
+            ['display' => '+375 (29) 377-70-92', 'href' => '+375293777092'],
+            ['display' => '+375 (33) 377-70-93', 'href' => '+375333777093'],
+        ],
+        'email' => 'info@kotlov.by',
+        'address' => 'Беларусь, г. Минск, ул. Селицкого, 39Б, каб. 23',
+        'map_url' => 'https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б',
+    ];
+@endphp
 <footer class="tf-footer footer-s5 bg-dark">
 
     {{-- Преимущества --}}
@@ -62,18 +74,17 @@
                         <p class="footer-heading footer-heading-mobile text-white">НАШ МАГАЗИН</p>
                         <div class="tf-collapse-content">
                             <p class="cl-text-3 mb-4">Консультации и заказы:</p>
-                            <a href="tel:+375293777092" class="text-white link h4 fw-medium mb-12">
-                                +375 (29) 377-70-92
+                            @foreach($footerContact['phone_links'] as $phone)
+                            <a href="tel:{{ $phone['href'] }}" class="text-white link h4 fw-medium mb-12">
+                                {{ $phone['display'] }}
                             </a>
-                            <a href="tel:+375333777093" class="text-white link h4 fw-medium mb-12">
-                                +375 (33) 377-70-93
-                            </a>
-                            <a href="https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б"
+                            @endforeach
+                            <a href="{{ $footerContact['map_url'] }}"
                                 target="_blank" class="cl-text-3 link mb-4">
-                                Беларусь, Минск, ул. Селицкого, 39Б, каб. 23
+                                {{ $footerContact['address'] }}
                             </a>
-                            <a href="mailto:info@kotlov.by" class="cl-text-3 link">
-                                info@kotlov.by
+                            <a href="mailto:{{ $footerContact['email'] }}" class="cl-text-3 link">
+                                {{ $footerContact['email'] }}
                             </a>
                         </div>
                     </div>
