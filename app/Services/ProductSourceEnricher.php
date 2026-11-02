@@ -2781,7 +2781,8 @@ class ProductSourceEnricher
 
     /**
      * A scanned certificate or declaration, not a photo: an upright A4 page, mostly white, whose rows of
-     * text flip between dark and light a dozen times and more (a photo of a coiled cable, about nine).
+     * text flip between dark and light a dozen times and more (a photo of a coiled cable, about nine) in
+     * nine of its ten bands from top to bottom (a gauge dial or a drawing leaves some of them quiet).
      */
     public static function looksLikeDocumentImage(string $body): bool
     {
@@ -2800,6 +2801,7 @@ class ProductSourceEnricher
         $grid = 120;
         $white = 0;
         $flips = 0;
+        $bands = array_fill(0, 10, 0);
         for ($row = 0; $row < $grid; $row++) {
             $previous = null;
             for ($col = 0; $col < $grid; $col++) {
@@ -2810,13 +2812,18 @@ class ProductSourceEnricher
                 $light = 0.299 * $color['red'] + 0.587 * $color['green'] + 0.114 * $color['blue'];
                 $white += (int) ($light > 215);
                 $isDark = $light < 160;
-                $flips += (int) ($previous !== null && $previous !== $isDark);
+                $flip = (int) ($previous !== null && $previous !== $isDark);
+                $flips += $flip;
+                $bands[intdiv($row * 10, $grid)] += $flip;
                 $previous = $isDark;
             }
         }
         imagedestroy($image);
+        // Lines of text run down the whole page; a gauge dial or a drawing leaves bands of the page quiet.
+        $perRow = array_map(fn (int $band): float => $band / ($grid / 10), $bands);
+        $busyBands = count(array_filter($perRow, fn (float $band): bool => $band >= 5));
 
-        return $white / ($grid * $grid) >= 0.55 && $flips / $grid >= 12;
+        return $white / ($grid * $grid) >= 0.55 && $flips / $grid >= 12 && $busyBands >= 9 && min($perRow) >= 2;
     }
 
     /** A finder square within the box: the 1:1:3:1:1 runs across a row and down through its centre. */
