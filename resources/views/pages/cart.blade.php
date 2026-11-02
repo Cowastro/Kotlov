@@ -148,7 +148,7 @@
                         </div>
 
                         <div class="d-flex justify-content-between align-items-center mt-16">
-                            <a href="/catalog" class="tf-btn-line-3 type-primary">
+                            <a href="{{ $b2bClient ? route('b2b.catalog') : '/catalog' }}" class="tf-btn-line-3 type-primary">
                                 <span class="text-caption-01 fw-semibold">← Продолжить покупки</span>
                             </a>
                             <form action="{{ route('cart.clear') }}" method="POST">
@@ -297,7 +297,7 @@
                     <p class="text-body-1 cl-text-2 mb-32">
                         Добавьте товары из каталога отопительного оборудования
                     </p>
-                    <a href="/catalog" class="tf-btn animate-btn">Перейти в каталог</a>
+                    <a href="{{ $b2bClient ? route('b2b.catalog') : '/catalog' }}" class="tf-btn animate-btn">Перейти в каталог</a>
                 </div>
             @endif
 

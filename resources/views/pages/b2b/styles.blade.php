@@ -230,7 +230,6 @@ body.b2b-body { margin:0; color:var(--b2b-ink); background:var(--b2b-bg); font-f
     .b2b-search>button{font-size:11px}
     .b2b-search__clear{right:74px}
 }
-</style>
 
 /* Added-to-order feedback: the row and button remember the order, the bar sums it up. */
 .b2b-product-row.is-in-cart { box-shadow: inset 3px 0 0 #15946e; background: #f6fcf9; }
@@ -259,3 +258,4 @@ body.b2b-body { margin:0; color:var(--b2b-ink); background:var(--b2b-bg); font-f
     .b2b-order-bar__actions { width: 100%; }
     .b2b-order-bar__actions a { flex: 1; text-align: center; }
 }
+</style>
