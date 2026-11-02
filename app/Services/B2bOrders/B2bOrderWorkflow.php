@@ -40,7 +40,10 @@ class B2bOrderWorkflow
                 'accepted_at' => now(),
             ])->save();
 
-            return $this->transition($order, 'checking', $manager, 'Менеджер принял заказ в работу.');
+            $order = $this->transition($order, 'checking', $manager, 'Менеджер принял заказ в работу.');
+            app(B2bOrderStockCheck::class)->check($order, $manager);
+
+            return $order->refresh();
         });
     }
 
@@ -67,10 +70,9 @@ class B2bOrderWorkflow
             if ($status === 'cancelled' && trim((string) $comment) === '') {
                 throw ValidationException::withMessages(['comment' => 'Укажите причину отмены B2B-заказа.']);
             }
-            if ($status === 'proposal_ready' && ($locked->items->isEmpty()
-                || $locked->items->contains(fn ($item): bool => ! in_array($item->availability_status, ['available', 'partial'], true)))) {
+            if ($status === 'proposal_ready' && ! $locked->stockIsSettled()) {
                 throw ValidationException::withMessages([
-                    'status' => 'Сначала подтвердите наличие каждой позиции заказа.',
+                    'status' => 'Сначала подтвердите наличие каждой позиции заказа или уберите её с указанием причины.',
                 ]);
             }
 
@@ -83,6 +85,8 @@ class B2bOrderWorkflow
             if ($status === 'credit_approved') $changes['payment_status'] = 'credit';
 
             $locked->forceFill($changes)->save();
+            if ($status === 'cancelled') app(B2bOrderStockCheck::class)->releaseOrder($locked);
+            if ($status === 'shipped') app(B2bOrderStockCheck::class)->shipOrder($locked);
             B2bOrderEvent::create([
                 'b2b_order_id' => $locked->id,
                 'actor_id' => $actor->id,

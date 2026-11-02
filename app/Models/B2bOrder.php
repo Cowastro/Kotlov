@@ -71,6 +71,15 @@ class B2bOrder extends Model
     public function items(): HasMany { return $this->hasMany(B2bOrderItem::class); }
     public function events(): HasMany { return $this->hasMany(B2bOrderEvent::class)->latest(); }
     public function comments(): HasMany { return $this->hasMany(B2bOrderComment::class)->latest(); }
+    public function reservations(): HasMany { return $this->hasMany(B2bOrderReservation::class); }
+
+    /** Every line is confirmed or removed with a reason, and something is left to sell. */
+    public function stockIsSettled(): bool
+    {
+        return $this->items->isNotEmpty()
+            && $this->items->every(fn (B2bOrderItem $item): bool => $item->isConfirmed() || $item->isExcluded())
+            && $this->items->contains(fn (B2bOrderItem $item): bool => $item->isConfirmed());
+    }
 
     public static function generateNumber(): string
     {

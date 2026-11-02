@@ -22,7 +22,7 @@ class B2bOrderInvoice
             if ($locked->status !== 'client_confirmed') {
                 throw ValidationException::withMessages(['invoice' => 'Счёт можно выставить после подтверждения условий партнёром.']);
             }
-            if ($locked->items->isEmpty() || $locked->items->contains(fn ($item): bool => ! in_array($item->availability_status, ['available', 'partial'], true))) {
+            if (! $locked->stockIsSettled()) {
                 throw ValidationException::withMessages(['invoice' => 'Сначала подтвердите наличие каждой позиции B2B-заказа.']);
             }
             if ($locked->commercialDocument) return $locked->commercialDocument;
@@ -57,7 +57,7 @@ class B2bOrderInvoice
                 'sent_at' => now(),
             ]);
 
-            foreach ($locked->items as $position => $item) {
+            foreach ($locked->items->reject->isExcluded()->values() as $position => $item) {
                 $document->items()->create([
                     'product_id' => $item->product_id,
                     'name' => $item->product_name,
