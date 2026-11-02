@@ -200,6 +200,34 @@ class B2bMarketplaceTest extends TestCase
             ->assertSee('Приёмка с 9 до 17, склад №2', false);
     }
 
+    public function test_quick_search_finds_goods_like_the_site_smart_search(): void
+    {
+        $category = Category::query()->create(['name' => 'Трубы одностенные', 'slug' => 'b2b-smart-search', 'is_active' => true]);
+        $pipe = $this->product($category, 'Теплов и Сухов Труба L1000 ТМ-Р 430-0.5 D100', 'KOTLOV-007968');
+        $other = $this->product($category, 'Теплов и Сухов Колено 90° ТМ-Р 430-0.5 D100', 'KOTLOV-007999');
+        $source = $this->source('smart-search-source', $category);
+        $this->offer($source, $pipe, 31.67, 38);
+        $this->offer($source, $other, 20, 5);
+        $user = $this->approvedUser([$source->id]);
+
+        // Words in another order: the old whole-phrase LIKE found nothing.
+        $this->actingAs($user)->getJson(route('b2b.catalog.suggest', ['q' => 'труба D100 L1000']))
+            ->assertOk()
+            ->assertJsonCount(1, 'items')
+            ->assertJsonPath('items.0.sku', 'KOTLOV-007968');
+
+        // Wrong keyboard layout («ntgkjd» = «теплов»).
+        $this->actingAs($user)->getJson(route('b2b.catalog.suggest', ['q' => 'ntgkjd l1000']))
+            ->assertOk()
+            ->assertJsonPath('items.0.sku', 'KOTLOV-007968');
+
+        // The main listing uses the same search.
+        $this->actingAs($user)->get(route('b2b.catalog', ['q' => 'труба D100 L1000']))
+            ->assertOk()
+            ->assertSeeText('Труба L1000')
+            ->assertDontSeeText('Колено 90°');
+    }
+
     public function test_products_without_a_granted_offer_are_reference_only(): void
     {
         $category = Category::query()->create([
