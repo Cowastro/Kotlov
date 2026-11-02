@@ -39,7 +39,7 @@ final class B2bOrderActions
                     app(B2bOrderWorkflow::class)->sendToClient($record, auth()->user(), $data['message'] ?? null), 'Отправлено клиенту')),
 
             Action::make('issueInvoice')->label('Выставить счёт')->icon(Heroicon::OutlinedDocumentCurrencyDollar)->color('success')
-                ->visible(fn (B2bOrder $record): bool => $record->status === 'client_confirmed' && ! $record->commercial_document_id)
+                ->visible(fn (B2bOrder $record): bool => $record->status === 'client_confirmed')
                 ->requiresConfirmation()
                 ->modalDescription('Счёт появится в B2B-кабинете и уйдёт клиенту на почту.')
                 ->action(function (B2bOrder $record, $livewire): void {

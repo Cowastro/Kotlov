@@ -188,8 +188,16 @@ class B2bOrderWorkflow
             app(B2bOrderNotifier::class)->manager($order->refresh(), 'Клиент подтвердил заказ',
                 'Счёт '.$document->number.' выставлен автоматически и отправлен клиенту. Ждём оплату.');
         } catch (\Throwable $exception) {
-            Log::error('B2B automatic invoice failed.', ['b2b_order_id' => $order->id, 'exception' => $exception->getMessage()]);
-            app(B2bOrderNotifier::class)->manager($order, 'Клиент подтвердил заказ', 'Счёт не сформировался автоматически — выставите его вручную.');
+            $reason = $exception instanceof ValidationException
+                ? collect($exception->errors())->flatten()->implode(' ')
+                : $exception->getMessage();
+            Log::error('B2B automatic invoice failed.', ['b2b_order_id' => $order->id, 'exception' => $reason]);
+            B2bOrderEvent::create([
+                'b2b_order_id' => $order->id,
+                'event' => 'invoice_failed',
+                'comment' => 'Счёт не сформировался автоматически: '.mb_substr($reason, 0, 500),
+            ]);
+            app(B2bOrderNotifier::class)->manager($order, 'Клиент подтвердил заказ', 'Счёт не сформировался автоматически: '.mb_substr($reason, 0, 200));
         }
 
         return $order->refresh();

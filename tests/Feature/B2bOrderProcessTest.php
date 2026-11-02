@@ -162,6 +162,53 @@ class B2bOrderProcessTest extends TestCase
         Mail::assertNothingQueued();
     }
 
+    public function test_order_moved_with_an_old_invoice_still_gets_its_invoice_and_moves_on(): void
+    {
+        Mail::fake();
+        [$order, $partner, $manager] = $this->scenario('invoice');
+        $this->actingAs($manager);
+        Livewire::test(EditB2bOrder::class, ['record' => $order->getRouteKey()])
+            ->callAction('accept')->callAction('sendToClient', data: ['message' => null]);
+
+        // The old module had already prepared a draft invoice for the same total.
+        $legacy = \App\Models\CommercialDocument::query()->create([
+            'type' => 'invoice', 'status' => 'draft', 'client_email' => 'other@process.test',
+            'currency' => 'BYN', 'vat_rate' => 20,
+        ]);
+        $legacy->items()->create(['name' => 'Труба процесса', 'unit' => 'шт.', 'quantity' => 2, 'unit_price' => 150, 'discount_percent' => 0, 'vat_rate' => 20, 'sort_order' => 0]);
+        $legacy->recalculate();
+        $order->forceFill(['commercial_document_id' => $legacy->id])->save();
+
+        $this->actingAs($partner)->post(route('b2b.cabinet.orders.confirm', $order))
+            ->assertSessionHas('success', fn (string $message): bool => str_contains($message, $legacy->number));
+
+        $this->assertSame('awaiting_payment', $order->fresh()->status);
+        $this->assertSame($legacy->id, $order->fresh()->commercial_document_id);
+        $this->assertSame('sent', $legacy->fresh()->status);
+        $this->actingAs($partner)->get(route('b2b.cabinet', ['section' => 'documents']))
+            ->assertOk()->assertSee($legacy->number);
+        $this->assertDatabaseHas('b2b_order_events', ['b2b_order_id' => $order->id, 'to_status' => 'invoice_issued']);
+    }
+
+    public function test_old_document_with_another_total_is_replaced_by_a_new_invoice(): void
+    {
+        Mail::fake();
+        [$order, $partner, $manager] = $this->scenario('invoice');
+        $this->actingAs($manager);
+        Livewire::test(EditB2bOrder::class, ['record' => $order->getRouteKey()])
+            ->callAction('accept')->callAction('sendToClient', data: ['message' => null]);
+        $old = \App\Models\CommercialDocument::query()->create(['type' => 'quote', 'status' => 'sent', 'currency' => 'BYN', 'vat_rate' => 20]);
+        $order->forceFill(['commercial_document_id' => $old->id])->save();
+
+        $this->actingAs($partner)->post(route('b2b.cabinet.orders.confirm', $order));
+
+        $order->refresh();
+        $this->assertSame('awaiting_payment', $order->status);
+        $this->assertNotSame($old->id, $order->commercial_document_id);
+        $this->assertSame('cancelled', $old->fresh()->status);
+        $this->assertSame(300.0, (float) $order->commercialDocument->total);
+    }
+
     /** @return array{B2bOrder, User, User} */
     private function scenario(string $paymentType, int $stock = 10): array
     {
