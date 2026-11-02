@@ -271,7 +271,8 @@ class TeplotopPriceList
         $name = trim((string) preg_replace('/\s+/u', ' ', $name));
 
         return [
-            'code' => $article !== '' ? 'art-'.Str::slug($article) : Str::limit(Str::slug($brand.' '.$name), 110, ''),
+            // A gas water heater «Classic-20» is not the boiler «Classic 20»: its own code.
+            'code' => $article !== '' ? 'art-'.Str::slug($article) : Str::limit(Str::slug($brand.(preg_match('/водоногрев|водонагрев/iu', $sheet) ? ' kolonka' : '').' '.$name), 110, ''),
             'sheet' => $sheet,
             'brand' => $brand,
             'name' => $name,

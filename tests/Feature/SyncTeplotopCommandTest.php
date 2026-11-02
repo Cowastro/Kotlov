@@ -32,6 +32,7 @@ class SyncTeplotopCommandTest extends TestCase
         $radiator = $rows['Радиатор стальной боковое подключение LEMAX Compact 22х500х1000'];
         $this->assertSame([300.0, 390.0, 'lemax-rad-c-22-500-1000'], [$radiator['wholesale'], $radiator['rrc'], $radiator['code']]);
         $this->assertArrayNotHasKey('РАСПРОДАЖА!!!', $rows->all());
+        $this->assertSame('lemax-kolonka-classic-20', $rows['Classic-20']['code']);
     }
 
     public function test_rows_link_by_model_and_article_and_set_the_retail_price(): void
@@ -89,6 +90,12 @@ class SyncTeplotopCommandTest extends TestCase
                 [null, null, null, null, null, null, null, 1763, 2150, null, 1943.4, 2370],
                 [null, null, null, null, null, null, null, 'PRIME V 24', null, null, 'PRIME V 32'],
                 ['Тип камеры сгорания', null, null, null, null, null, null, 'Закрытая', null, null, 'Закрытая'],
+            ]);
+            $heaters = $book->createSheet()->setTitle('Газ. водоногреватели 02.11.26');
+            $heaters->fromArray([
+                ['Модель / Стоимость ', null, null, null, null, null, ' МОЦ с НДС, BYN', 'РРЦ с НДС, BYN', null, ' МОЦ с НДС, BYN', 'РРЦ с НДС, BYN'],
+                [null, null, null, null, null, null, 610, 730, null, 725, 875],
+                [null, null, null, null, null, null, 'Classic-20', null, null, 'Classic-24'],
             ]);
             $krats = $book->createSheet()->setTitle('Дымоходы  KRATS');
             $krats->fromArray($kind === 'opt'
