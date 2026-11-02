@@ -30,6 +30,7 @@ class SyncTeplotopCommand extends Command
         {--opt= : The opt xlsx instead of the last uploaded one}
         {--rrc= : The RRC xlsx instead of the last uploaded one}
         {--link=* : Link by hand: product id or slug:row code (lemaks-classic-20:lemax-classic-20)}
+        {--unlink=* : A row code that must not link to any card (a wrong automatic link), kept with --apply}
         {--apply : Write offers, links and prices}';
 
     protected $description = 'Sync the price lists of ТеплоТоп-Бел (LEMAX, KRATS, EKF, fittings)';
@@ -115,6 +116,15 @@ class SyncTeplotopCommand extends Command
         $links = $supplier
             ? SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->pluck('product_id', 'supplier_article')
             : collect();
+        // Rows a manager unlinked stay without a card until linked by hand.
+        $blocked = array_flip(array_map(fn ($code) => Str::slug((string) $code), (array) $this->option('unlink')));
+        if ($supplier) {
+            foreach (SupplierProduct::query()->where('supplier_id', $supplier->id)->get(['supplier_article', 'raw']) as $offer) {
+                if (! empty($offer->raw['no_auto_link'])) {
+                    $blocked[Str::slug((string) $offer->supplier_article)] = true;
+                }
+            }
+        }
         $brandOf = [];
         foreach (DB::table('brands')->get(['id', 'name']) as $brand) {
             $slug = Str::slug((string) $brand->name, '');
@@ -154,6 +164,12 @@ class SyncTeplotopCommand extends Command
         $claimed = [];
         foreach ($rows as &$row) {
             $row['key'] = TeplotopPriceList::modelKey($row['name']);
+            $row['blocked'] = isset($blocked[Str::slug($row['code'])]) && ! isset($manual[$row['code']]);
+            if ($row['blocked']) {
+                [$row['product_id'], $row['match_reason'], $row['suggested_product_id']] = [null, null, null];
+
+                continue;
+            }
             $productId = (int) ($manual[$row['code']] ?? $links[$row['code']] ?? 0);
             $reason = isset($manual[$row['code']]) ? 'manual' : ($productId ? 'linked_before' : null);
             // «KTL-01-075K/KTL-01-075KS»: each article of the row counts.
@@ -178,7 +194,7 @@ class SyncTeplotopCommand extends Command
         // is exact; «АОГВ 23,2 Premier» is offered): the row it fits closest, only one row per card.
         $offered = [];
         foreach ($rows as $index => $row) {
-            if ($row['product_id'] || ! isset($cardKeys[$row['brand']])) {
+            if ($row['product_id'] || $row['blocked'] || ! isset($cardKeys[$row['brand']])) {
                 continue;
             }
             $words = explode(' ', $row['key']);
@@ -247,7 +263,7 @@ class SyncTeplotopCommand extends Command
                     'match_status' => $product ? 'matched' : ($row['suggested_product_id'] ? 'suggested' : 'unmatched'),
                     'match_confidence' => $product ? ($link->match_confidence === 'manual_admin' ? 'manual_admin' : $row['match_reason']) : null,
                     'raw' => ['suggested_product_id' => $product ? null : $row['suggested_product_id'], 'sheet' => $row['sheet'], 'article' => $row['article'],
-                        'specs' => $row['specs'], 'retail' => $row['rrc'], 'brand' => $row['brand'], 'sale' => ! empty($row['sale']),
+                        'specs' => $row['specs'], 'retail' => $row['rrc'], 'brand' => $row['brand'], 'sale' => ! empty($row['sale']), 'no_auto_link' => $row['blocked'],
                         'model' => trim(($row['article'] !== '' ? 'Арт. '.$row['article'].' · ' : '').$row['sheet'], ' ·')],
                     'last_synced_at' => now(),
                 ])->save();

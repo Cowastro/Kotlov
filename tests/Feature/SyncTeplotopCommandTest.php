@@ -61,6 +61,11 @@ class SyncTeplotopCommandTest extends TestCase
         $suggested = SupplierProduct::query()->where('supplier_id', $supplier->id)->where('supplier_name', 'like', '%ФОРВАРД - 16%')->sole();
         $this->assertSame($forward->id, $suggested->raw['suggested_product_id']);
         $this->assertTrue($suggested->raw['sale']);
+
+        // A wrong link is undone and stays undone on the next upload.
+        $this->artisan('supplier:sync-teplotop', ['--opt' => $opt, '--rrc' => $rrc, '--apply' => true, '--unlink' => ['art-y80-1']])->assertSuccessful();
+        $this->artisan('supplier:sync-teplotop', ['--opt' => $opt, '--rrc' => $rrc, '--apply' => true])->assertSuccessful();
+        $this->assertNull(SupplierProduct::query()->where('supplier_id', $supplier->id)->where('supplier_article', 'art-y80-1')->sole()->product_id);
     }
 
     /** @return array{0:string,1:string} */
