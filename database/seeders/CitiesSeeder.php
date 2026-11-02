@@ -131,7 +131,14 @@ class CitiesSeeder extends Seeder
         ];
 
         foreach ($cities as $city) {
-            City::updateOrCreate(['slug' => $city['slug']], $city);
+            $model = City::query()->firstOrNew(['slug' => $city['slug']]);
+            $model->fill($city);
+
+            if (! $model->exists) {
+                $model->storefront_enabled = false;
+            }
+
+            $model->save();
         }
     }
 }

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\City;
 use App\Models\Product;
 use App\Models\WishlistItem;
 use App\Services\SupplierSyncJournalRecorder;
@@ -242,7 +243,24 @@ private function getCitiesByRegion(): array
     $grouped = ['Минская' => [], 'Гомельская' => [], 'Брестская' => [],
                 'Гродненская' => [], 'Могилёвская' => [], 'Витебская' => []];
 
+    $activeCitySlugs = null;
+    if (Schema::hasTable('cities')) {
+        $activeCities = City::query()->where('is_active', true);
+
+        if (Schema::hasColumn('cities', 'storefront_enabled')) {
+            $activeCities->where('storefront_enabled', true);
+        }
+
+        $activeCitySlugs = $activeCities->pluck('slug')->all();
+    }
+
     foreach ($all as $city) {
+        if ($city['slug'] !== ''
+            && $activeCitySlugs !== null
+            && ! in_array($city['slug'], $activeCitySlugs, true)) {
+            continue;
+        }
+
         $link = $city['slug'] ? "https://{$city['slug']}.kotlov.by" : 'https://kotlov.by';
         $grouped[$city['region']][] = [
             'name'   => $city['name'],
