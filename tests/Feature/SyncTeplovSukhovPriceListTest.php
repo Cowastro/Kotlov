@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -106,6 +108,33 @@ class SyncTeplovSukhovPriceListTest extends TestCase
         $card->forceFill(['price' => 1])->save();
         $this->artisan('supplier:sync-teplov-sukhov-retail', ['--file' => $this->priceList(), '--apply' => true])->assertSuccessful();
         $this->assertSame(72.93, (float) $card->fresh()->price);
+    }
+
+    public function test_a_missing_card_is_made_hidden_in_the_category_of_its_kind_and_takes_the_1c_row(): void
+    {
+        $pipes = Category::query()->create(['name' => 'Трубы моно', 'slug' => 'truby-mono-tis-test', 'parent_id' => 0, 'is_active' => true]);
+        $other = Category::query()->create(['name' => 'Прочее', 'slug' => 'prochee-tis-test', 'parent_id' => 0, 'is_active' => true]);
+        $brand = Brand::query()->firstOrCreate(['name' => 'Теплов и Сухов'], ['slug' => 'teplov-i-sukhov-test', 'is_active' => true]);
+        $supplier = Supplier::query()->firstOrCreate(['code' => 'teplov'], ['name' => 'Теплов и Сухов']);
+        Product::query()->create(['name' => 'Теплов и Сухов Труба L500 ТМ-Р 430-0.5 D120', 'slug' => 'tis-truba-120', 'category_id' => $pipes->id,
+            'brand_id' => $brand->id, 'price' => 40, 'is_active' => true]);
+        $ferrum = Product::query()->create(['name' => 'Труба Ferrum 1 м', 'slug' => 'ferrum-truba', 'category_id' => $other->id, 'price' => 50, 'is_active' => true]);
+        $source = IntegrationSource::query()->firstOrCreate(['code' => 'onec'], ['name' => '1С', 'driver' => 'commerceml', 'is_active' => true]);
+        $row = IntegrationProduct::query()->create(['integration_source_id' => $source->id, 'external_id' => 'x1', 'name' => 'Труба L1000 ТМ-Р 430-0.8 D115 TS.FRT.TRB.0115.32850',
+            'product_id' => $ferrum->id, 'match_status' => 'matched', 'stock_quantity' => 2]);
+
+        $this->artisan('supplier:sync-teplov-sukhov-retail', ['--file' => $this->priceList(), '--create-missing' => true, '--only' => ['TS.FRT.TRB.0115.32850'], '--apply' => true])
+            ->expectsOutputToContain('metric.teplov_sukhov.created=1')
+            ->expectsOutputToContain('metric.teplov_sukhov.onec_linked=1')
+            ->assertSuccessful();
+
+        $card = Product::query()->where('name', 'Теплов и Сухов Труба L1000 ТМ-Р 430-0.8 D115')->sole();
+        $this->assertSame([false, Product::CREATED_VIA_AWAITING_PHOTOS, 72.93], [(bool) $card->is_active, $card->created_via, (float) $card->price]);
+        // The category of the ТиС mono pipes (the seeded series included), not a fallback.
+        $monoPipes = Product::query()->where('brand_id', $brand->id)->where('name', 'like', '%Труба%ТМ-Р%')->where('id', '!=', $card->id)->pluck('category_id')->countBy()->sortDesc()->keys()->first();
+        $this->assertSame((int) $monoPipes, (int) $card->category_id);
+        $this->assertSame($card->id, (int) $row->fresh()->product_id);
+        $this->assertSame($card->id, SupplierProduct::query()->where('supplier_id', $supplier->id)->where('supplier_article', 'TS.FRT.TRB.0115.32850')->value('product_id'));
     }
 
     private function priceList(): string

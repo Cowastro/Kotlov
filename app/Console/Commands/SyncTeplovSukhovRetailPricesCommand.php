@@ -87,7 +87,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                     'availability_status' => Product::AVAILABILITY_IN_STOCK,
                 ]);
         }
-        $stats = ['rows' => count($data['rows']), 'matched' => 0, 'changed' => 0, 'up' => 0, 'down' => 0, 'unchanged' => 0, 'created' => 0, 'would_create' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0, 'price_list_conflict' => 0];
+        $stats = ['rows' => count($data['rows']), 'matched' => 0, 'changed' => 0, 'up' => 0, 'down' => 0, 'unchanged' => 0, 'created' => 0, 'would_create' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0, 'price_list_conflict' => 0, 'onec_linked' => 0];
         $details = [];
         $nearCards = [];
         $claimedProducts = SupplierProduct::query()
@@ -235,16 +235,25 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 // card only from the exact source row and retains the source
                 // article exclusively in supplier_products.
                 if ($createMissing && ($sheet === '' || (string) ($row['sheet'] ?? '') === $sheet) && ($onlyFilter === [] || in_array($article, $onlyFilter, true))) {
+                    // The card goes where the cards of the same element are, and takes the row of our 1C base
+                    // with this article (from another card it was wrongly linked to, if so).
+                    $categoryId = $this->similarCategoryId($products, $name);
+                    $oneC = $this->oneCRowFor($row, $name);
+                    $this->line(sprintf('audit.teplov_sukhov.create=%s:%d:%d:%d', $article, $categoryId, (int) $oneC?->id, (int) $oneC?->product_id));
                     if (! $apply) {
                         $stats['would_create']++;
                         $details[] = [$article, Str::limit($name, 48), 'will create exact missing card'];
                         continue;
                     }
 
-                    $product = $this->createMissingProduct($row, $brand, $retail);
+                    $product = $this->createMissingProduct($row, $brand, $retail, $categoryId);
                     $products->push($product);
                     $matches = collect([$product]);
                     $stats['created']++;
+                    if ($oneC) {
+                        $stats['onec_linked'] += (int) $this->linkOneC($oneC, $product);
+                    }
+                    $this->line(sprintf('audit.teplov_sukhov.created=%s:%d:%s', $article, $product->id, $product->slug));
                 }
 
                 if ($matches->count() === 0) {
@@ -680,13 +689,55 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         return is_numeric($value) && (float) $value > 0 ? round((float) $value, 2) : null;
     }
 
-    private function createMissingProduct(array $row, Brand $brand, float $retail): Product
+    /** The most common category of our ТиС cards of the same element (type, моно/термо, black), else by type. */
+    private function similarCategoryId($products, string $name): int
+    {
+        $words = $this->words($name);
+        $type = collect($this->productTypes($words))->reject(fn ($t) => in_array($t, ['моно', 'термо'], true))->first();
+        $flags = fn (array $w) => [in_array('термо', $w, true), in_array('black', $w, true)];
+        $category = $type === null ? null : $products
+            ->filter(function (Product $product) use ($type, $words, $flags): bool {
+                $other = $this->words((string) $product->name);
+
+                return in_array($type, $this->productTypes($other), true) && $flags($other) === $flags($words);
+            })
+            ->countBy(fn (Product $product) => (int) Product::query()->whereKey($product->id)->value('category_id'))
+            ->sortDesc()->keys()->first();
+
+        return (int) ($category ?: $this->categoryIdForSourceName($name));
+    }
+
+    /** The one row of our 1C base with the article of the row (a black row for a black item only). */
+    private function oneCRowFor(array $row, string $name): ?IntegrationProduct
+    {
+        $black = in_array('black', $this->words($name), true);
+        $rows = collect($this->oneCRows($row, $name))
+            ->filter(fn (array $found) => $found[1] === 'article' && (preg_match('/black|черн/iu', (string) $found[0]->name) === 1) === $black)
+            ->map(fn (array $found) => $found[0]);
+
+        return $rows->count() === 1 ? $rows->first() : null;
+    }
+
+    private function linkOneC(IntegrationProduct $item, Product $product): bool
+    {
+        if ((int) $item->product_id === (int) $product->id) {
+            return false;
+        }
+        // A 1C row linked to a card that is not this item (a Ferrum platform, another length) is freed first.
+        if ($item->product_id) {
+            $item->forceFill(['product_id' => null, 'match_status' => 'unmatched', 'match_method' => null, 'matched_at' => null])->save();
+        }
+
+        return app(\App\Services\Integrations\IntegrationProductMatchDecision::class)->linkSelectedProduct($item, $product->id) !== null;
+    }
+
+    private function createMissingProduct(array $row, Brand $brand, float $retail, ?int $categoryId = null): Product
     {
         $sourceName = trim(html_entity_decode((string) $row['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         $name = 'Теплов и Сухов ' . $sourceName;
         $sku = $this->nextKotlovSku();
         $slug = $this->uniqueSlug(Str::slug($name));
-        $categoryId = $this->categoryIdForSourceName($sourceName);
+        $categoryId ??= $this->categoryIdForSourceName($sourceName);
         $diameters = $this->measurements($sourceName);
         $diameterText = implode(', ', array_map(
             fn (string $measurement) => str_replace('diam', 'D', $measurement),
@@ -717,7 +768,9 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             'content' => $this->seoContent($sourceName),
             'images' => [],
             'specs' => array_values($specs),
-            'is_active' => true,
+            // Hidden until a photo is found (catalog:hide-cards-awaiting-photos --publish shows it then).
+            'is_active' => false,
+            'created_via' => Product::CREATED_VIA_AWAITING_PHOTOS,
             'is_archived' => false,
             'in_stock' => true,
             'availability_status' => Product::AVAILABILITY_IN_STOCK,
