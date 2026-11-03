@@ -17,10 +17,11 @@ use Illuminate\Support\Facades\DB;
  *   php artisan catalog:merge-duplicate-cards 8564,8696 8569,8697            # dry run
  *   php artisan catalog:merge-duplicate-cards 8564,8696 8569,8697 --apply
  *   php artisan catalog:merge-duplicate-cards 23238,22617 --keep=23238 --apply   # this card stays
+ *   php artisan catalog:merge-duplicate-cards 9011,22578 --checked --apply       # names worded differently, pair checked by hand
  */
 class MergeDuplicateCardsCommand extends Command
 {
-    protected $signature = 'catalog:merge-duplicate-cards {pairs* : id,id (or slug,slug) per duplicate pair} {--keep=* : Card ids or slugs that stay whatever their fullness} {--apply : Merge and archive the duplicates}';
+    protected $signature = 'catalog:merge-duplicate-cards {pairs* : id,id (or slug,slug) per duplicate pair} {--keep=* : Card ids or slugs that stay whatever their fullness} {--checked : The pairs were checked by hand: merge though the names carry other numbers («D120 (У3)» and «120»)} {--apply : Merge and archive the duplicates}';
 
     protected $description = 'Merge pairs of duplicate product cards (keep the fuller card, redirect the other)';
 
@@ -34,7 +35,7 @@ class MergeDuplicateCardsCommand extends Command
                 // A slug works as well as an id (the workflow log may mask digits of an id).
                 $ids = array_map(fn (string $value): int => $this->cardId($value), explode(',', (string) $pair));
                 $cards = Product::query()->with('category')->whereIn('id', $ids)->where('is_archived', false)->get();
-                if (count($ids) !== 2 || $cards->count() !== 2 || $this->digits($cards[0]->name) !== $this->digits($cards[1]->name)) {
+                if (count($ids) !== 2 || $cards->count() !== 2 || (! $this->option('checked') && $this->digits($cards[0]->name) !== $this->digits($cards[1]->name))) {
                     $stats['skipped']++;
                     $this->line('audit.merge_cards.pair='.implode(':', $ids).':skipped');
 
