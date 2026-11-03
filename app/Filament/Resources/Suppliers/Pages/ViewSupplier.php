@@ -7,6 +7,7 @@ use App\Console\Commands\SyncChistyBeregCommand;
 use App\Console\Commands\SyncCooperDoorsCommand;
 use App\Console\Commands\SyncKaminproffCommand;
 use App\Console\Commands\SyncTeplotopCommand;
+use App\Console\Commands\SyncVistarCommand;
 use App\Console\Commands\SyncPrometallCommand;
 use App\Filament\Resources\Suppliers\SupplierResource;
 use App\Services\Suppliers\AkvateploservisPriceList;
@@ -15,6 +16,7 @@ use App\Services\Suppliers\CooperWholesalePriceList;
 use App\Services\Suppliers\KaminproffPriceList;
 use App\Services\Suppliers\TeplotopPriceList;
 use App\Services\Suppliers\TeplovSukhovPriceList;
+use App\Services\Suppliers\VistarPriceList;
 use App\Services\Suppliers\PrometallPriceList;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -201,6 +203,44 @@ class ViewSupplier extends ViewRecord
                         ->body(sprintf('Цен обновлено: %d (вверх %d, вниз %d). Без изменения: %d. Пропущено: %d.',
                             $metrics['changed'] ?? 0, $metrics['up'] ?? 0, $metrics['down'] ?? 0, $metrics['unchanged'] ?? 0,
                             ($metrics['unmatched'] ?? 0) + ($metrics['ambiguous'] ?? 0) + ($metrics['conflict'] ?? 0) + ($metrics['price_list_conflict'] ?? 0)))
+                        ->persistent()
+                        ->send();
+                }),
+            Action::make('vistar_price')
+                ->label('Загрузить прайс')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('primary')
+                ->visible(fn (): bool => $this->getRecord()->code === SyncVistarCommand::SUPPLIER_CODE)
+                ->modalDescription('Прайс VISTAR (xlsx, все листы: BAXI, Viessmann, Viena, Reflex). Опт, розница и наличие обновятся сразу, строки привяжутся к карточкам по артикулу и модели.')
+                ->schema([
+                    FileUpload::make('file')
+                        ->label('Файл xlsx')
+                        ->required()
+                        ->rules(['extensions:xls,xlsx'])
+                        ->maxSize(30720)
+                        ->disk('local')
+                        ->directory('supplier-price-uploads'),
+                ])
+                ->action(function (array $data): void {
+                    $stored = (string) (is_array($data['file']) ? reset($data['file']) : $data['file']);
+                    $path = Storage::disk('local')->path($stored);
+                    $rows = is_file($path) ? count(VistarPriceList::parse($path)) : 0;
+                    if ($rows === 0) {
+                        Storage::disk('local')->delete($stored);
+                        Notification::make()->danger()->title('В файле нет строк прайса VISTAR (артикул, наименование, опт)')->send();
+
+                        return;
+                    }
+                    VistarPriceList::store($path);
+                    Storage::disk('local')->delete($stored);
+                    Artisan::call('supplier:sync-vistar', ['--apply' => true]);
+                    preg_match_all('/^metric\.vistar\.([a-z_]+)=(\d+)$/m', Artisan::output(), $m);
+                    $metrics = array_combine($m[1], $m[2]);
+                    $linked = (int) ($metrics['linked_before'] ?? 0) + (int) ($metrics['article'] ?? 0) + (int) ($metrics['model'] ?? 0) + (int) ($metrics['manual'] ?? 0);
+                    Notification::make()->success()
+                        ->title('Прайс загружен: '.$rows.' позиций')
+                        ->body(sprintf('Привязано к карточкам: %d. Предложено на подтверждение: %d. Без карточки: %d. Цен на сайте обновлено: %d.',
+                            $linked, (int) ($metrics['suggested'] ?? 0), (int) ($metrics['unlinked'] ?? 0), (int) ($metrics['retail_updated'] ?? 0)))
                         ->persistent()
                         ->send();
                 }),
