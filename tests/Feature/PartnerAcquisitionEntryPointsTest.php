@@ -33,4 +33,17 @@ class PartnerAcquisitionEntryPointsTest extends TestCase
     {
         return dirname(__DIR__, 2).'/'.$path;
     }
+
+    public function test_company_button_points_to_the_company_connection_section(): void
+    {
+        $home = file_get_contents($this->projectPath('resources/views/pages/home-new.blade.php'));
+        $partners = file_get_contents($this->projectPath('resources/views/pages/partners.blade.php'));
+
+        $this->assertMatchesRegularExpression(
+            '~href="\{\{ route\(\x27partners\x27\) \}\}#company-connect"[^>]*>\s*Подключить компанию~u',
+            $home,
+        );
+        $this->assertMatchesRegularExpression('~<section[^>]* id="company-connect"[^>]*>~', $partners);
+        $this->assertSame(1, substr_count($partners, 'id="company-connect"'));
+    }
 }

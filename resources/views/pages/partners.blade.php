@@ -195,6 +195,14 @@
     </section>
     {{-- /Кому подходит --}}
 
+    <section class="flat-spacing" id="company-connect" aria-labelledby="company-connect-title">
+        <div class="container">
+            <h2 id="company-connect-title">Подключить компанию</h2>
+            <p class="mt-12 mb-20">Чтобы закупать оборудование для объектов, откройте вкладку «Регистрация» и выберите «Юридическое лицо». После проверки заявки менеджер согласует условия работы в B2B-кабинете. Если аккаунт уже есть, подайте заявку на B2B-доступ в личном кабинете.</p>
+            <a href="{{ url('/account') }}" class="tf-btn animate-btn">Перейти к регистрации или войти</a>
+        </div>
+    </section>
+
     {{-- FAQ --}}
     <section class="flat-spacing">
         <div class="container">
