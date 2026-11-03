@@ -15,8 +15,10 @@ class B2bUnifiedCabinetTest extends TestCase
     public function test_installer_logs_in_to_b2b_cabinet_and_edits_own_page_there(): void
     {
         [$installer, $client] = $this->partner('installer', 'secret-pass-1');
-        $profile = InstallerProfile::query()->create([
-            'user_id' => $installer->id, 'company_name' => 'НС Трейд', 'contact_name' => 'Павел',
+        // The page already exists: it is created when an installer partner is approved.
+        $profile = InstallerProfile::query()->where('user_id', $installer->id)->sole();
+        $profile->update([
+            'company_name' => 'НС Трейд', 'contact_name' => 'Павел',
             'phone' => '+375296769990', 'slug' => 'ns-trade', 'status' => 'active', 'is_published' => true,
         ]);
 
@@ -66,10 +68,8 @@ class B2bUnifiedCabinetTest extends TestCase
     public function test_only_company_profile_managers_edit_the_page(): void
     {
         [$owner, $client] = $this->partner('installer');
-        $profile = InstallerProfile::query()->create([
-            'user_id' => $owner->id, 'company_name' => 'ООО «Тепло»', 'contact_name' => 'Анна',
-            'phone' => '+375291111111', 'slug' => 'teplo', 'status' => 'active', 'is_published' => true,
-        ]);
+        $profile = InstallerProfile::query()->where('user_id', $owner->id)->sole();
+        $profile->update(['contact_name' => 'Анна', 'status' => 'active', 'is_published' => true]);
         $viewer = User::factory()->create(['client_type' => 'wholesale', 'b2b_approved' => true, 'is_active' => true]);
         $client->members()->create(['user_id' => $viewer->id, 'role' => 'viewer', 'is_active' => true, 'joined_at' => now()]);
 
@@ -81,6 +81,43 @@ class B2bUnifiedCabinetTest extends TestCase
     }
 
     /** @return array{User, B2bClient} */
+    public function test_approved_installer_gets_a_page_to_fill_and_sees_it_on_the_desk(): void
+    {
+        $user = User::factory()->create(['client_type' => 'installer', 'is_active' => true]);
+        $client = B2bClient::query()->create([
+            'user_id' => $user->id, 'status' => 'pending', 'partner_type' => 'installer',
+            'company_name' => 'ООО «Монтаж Плюс»', 'unp' => '191234567', 'contact_name' => 'Олег',
+            'contact_email' => $user->email, 'contact_phone' => '+375292222222',
+        ]);
+        $this->assertSame(0, InstallerProfile::query()->count(), 'No page while the application is pending.');
+
+        app(\App\Services\B2bClientWorkflow::class)->approve($client);
+        $profile = InstallerProfile::query()->sole();
+        $this->assertSame($user->id, $profile->user_id);
+        $this->assertSame('ООО «Монтаж Плюс»', $profile->company_name);
+        $this->assertSame('191234567', $profile->unp);
+        $this->assertSame('pending', $profile->status);
+        $this->assertFalse((bool) $profile->is_published);
+
+        $this->actingAs($user)->get(route('b2b.cabinet'))
+            ->assertOk()->assertSee('Страница монтажника')->assertSee('Заполнить страницу');
+        $this->actingAs($user)->get(route('b2b.cabinet', ['section' => 'page']))
+            ->assertOk()->assertSee('Данные профиля')->assertDontSee('Создать страницу монтажника');
+
+        // Saving the client again never creates a second page.
+        $client->fresh()->update(['contact_name' => 'Олег Петров']);
+        $this->assertSame(1, InstallerProfile::query()->count());
+    }
+
+    public function test_wholesale_client_switched_to_installer_by_manager_gets_a_page(): void
+    {
+        [$owner, $client] = $this->partner('wholesale');
+        $this->assertSame(0, InstallerProfile::query()->count());
+
+        $client->update(['partner_type' => 'installer']);
+        $this->assertSame($owner->id, InstallerProfile::query()->sole()->user_id);
+    }
+
     private function partner(string $type, string $password = 'password-123'): array
     {
         $user = User::factory()->create([

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\B2bClient;
 use App\Models\InstallerProfile;
+use App\Services\InstallerPageProvisioner;
 use App\Models\B2bClientAuditLog;
 use App\Models\B2bClientInvitation;
 use App\Models\B2bClientMember;
@@ -172,7 +173,9 @@ class B2bCabinetController extends Controller
             ->get();
         $companyOrderTotal = (float) B2bOrder::query()->where('b2b_client_id', $client->id)->sum('total');
 
-        $installerPage = $section === 'page' ? InstallerAccountController::pageFor($user) : null;
+        $installerPage = $section === 'page' || ($section === 'overview' && $client->partner_type === 'installer')
+            ? InstallerAccountController::pageFor($user)
+            : null;
         $installerPage?->load(['works' => fn ($query) => $query->latest('completed_at')->latest('id')]);
         $installerEditor = InstallerAccountController::editorOptions();
 
@@ -195,25 +198,7 @@ class B2bCabinetController extends Controller
         $client = $user->activeB2bClient(['user']);
         abort_unless($client && $this->access->allows($user, 'profile.manage', $client), 403);
         if (! InstallerAccountController::pageFor($user)) {
-            $base = Str::slug($client->company_name) ?: 'montazhnik-'.$client->id;
-            $slug = $base;
-            for ($suffix = 2; InstallerProfile::query()->where('slug', $slug)->exists(); $suffix++) {
-                $slug = $base.'-'.$suffix;
-            }
-            InstallerProfile::query()->create([
-                'user_id' => $client->user_id,
-                'company_name' => $client->company_name,
-                'unp' => $client->unp,
-                'contact_name' => $client->contact_name,
-                'phone' => $client->contact_phone,
-                'email' => $client->contact_email,
-                'city' => $client->default_delivery_city,
-                'slug' => $slug,
-                'short_description' => 'Монтаж инженерных систем',
-                'status' => 'pending',
-                'is_published' => false,
-                'is_verified' => false,
-            ]);
+            app(InstallerPageProvisioner::class)->ensureFor($client);
             $client->forceFill(['partner_type' => 'installer'])->save();
         }
 
