@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Actions\AssignOrderToPartnerAction;
 use App\Filament\Resources\Orders\Actions\CreateCommercialDocumentFromOrderAction;
 use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
 use App\Models\Order;
@@ -86,6 +87,7 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            AssignOrderToPartnerAction::make(),
             ActionGroup::make([
                 CreateCommercialDocumentFromOrderAction::make(),
                 Action::make('printProcurement')

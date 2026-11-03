@@ -64,6 +64,7 @@ class Order extends Model
         'assigned_to', 'telegram_message_id', 'manager_id', 'onec_exported_at',
         'onec_external_id', 'onec_order_guid', 'onec_order_number', 'onec_status', 'onec_status_received_at',
         'archived_at', 'archived_by', 'archive_reason',
+        'partner_branch_id', 'partner_status', 'partner_assigned_at', 'partner_responded_at', 'partner_note',
     ];
 
     protected $casts = [
@@ -81,9 +82,17 @@ class Order extends Model
         'procurement_sent_at' => 'datetime',
         'availability_confirmed_at' => 'datetime',
         'customer_notified_at' => 'datetime',
+        'partner_assigned_at' => 'datetime',
+        'partner_responded_at' => 'datetime',
     ];
 
     // Статусы для отображения
+    public const PARTNER_STATUSES = [
+        'offered' => 'Передан партнёру',
+        'accepted' => 'Принят партнёром',
+        'declined' => 'Партнёр отказался',
+    ];
+
     public const STATUSES = [
         'new' => 'Получен',
         'checking' => 'Проверка наличия',
@@ -434,6 +443,11 @@ class Order extends Model
     public function archivedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'archived_by');
+    }
+
+    public function partnerBranch(): BelongsTo
+    {
+        return $this->belongsTo(PartnerBranch::class);
     }
 
     public function items(): HasMany

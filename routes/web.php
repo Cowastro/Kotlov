@@ -796,6 +796,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('b2b.cabinet.company-lookup');
     Route::post('/b2b/cabinet/carts', [B2bCabinetController::class, 'saveCart'])->name('b2b.cabinet.carts.store');
     Route::post('/b2b/cabinet/carts/{savedCart}/restore', [B2bCabinetController::class, 'restoreCart'])->name('b2b.cabinet.carts.restore');
+    Route::post('/b2b/cabinet/client-orders/{order}/accept', [B2bCabinetController::class, 'acceptClientOrder'])->name('b2b.cabinet.client-orders.accept');
+    Route::post('/b2b/cabinet/client-orders/{order}/decline', [B2bCabinetController::class, 'declineClientOrder'])->name('b2b.cabinet.client-orders.decline');
     Route::delete('/b2b/cabinet/carts/{savedCart}', [B2bCabinetController::class, 'deleteCart'])->name('b2b.cabinet.carts.destroy');
     Route::post('/b2b/cabinet/specifications', [B2bCabinetController::class, 'storeSpecification'])
         ->middleware('throttle:10,1')
