@@ -92,6 +92,7 @@ class OrdersTable
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->withSum('items', 'quantity')
                 ->with([
+                    'partnerBranch:id,name,city_id',
                     'items:id,order_id,product_id,integration_product_id,warehouse_stock_id,product_name,product_sku,price,quantity,total,supply_status,supply_route_label,supply_supplier_id,supply_integration_source_id,supply_channel,supply_supplier_name,supply_supplier_contact,supply_source_label,supply_warehouse_name,supply_delivery_days,supply_purchase_price,supply_price_tax_mode,supply_vat_rate,supply_stock_quantity,supply_is_available,supply_candidate_count,supply_captured_at,fulfillment_route,fulfillment_supplier_id,fulfillment_supplier_name,fulfillment_supplier_contact,fulfillment_purchase_price,fulfillment_availability_status,fulfillment_confirmed_at',
                     'items.fulfillmentSupplier:id,crm_counterparty_id,name,contact,marketplace_commission_rate',
                     'items.fulfillmentSupplier.crmCounterparty.contactPoints',
@@ -169,6 +170,12 @@ class OrdersTable
                     ->searchable()
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('partnerBranch.name')
+                    ->label('Партнёр')
+                    ->placeholder('Центр KOTLOV')
+                    ->description(fn ($record): ?string => \App\Models\Order::PARTNER_STATUSES[$record->partner_status] ?? null)
+                    ->toggleable(),
 
                 TextColumn::make('delivery_address')
                     ->label('Адрес')

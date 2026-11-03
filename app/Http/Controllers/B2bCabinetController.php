@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\B2bClient;
 use App\Models\InstallerProfile;
 use App\Services\InstallerPageProvisioner;
+use App\Services\Orders\OrderPartnerAssignment;
 use App\Models\B2bClientAuditLog;
 use App\Models\B2bClientInvitation;
 use App\Models\B2bClientMember;
@@ -46,7 +47,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class B2bCabinetController extends Controller
 {
-    private const SECTIONS = ['overview', 'profile', 'team', 'specifications', 'carts', 'orders', 'documents', 'contracts', 'reconciliation', 'page', 'security'];
+    private const SECTIONS = ['overview', 'profile', 'team', 'specifications', 'carts', 'leads', 'orders', 'documents', 'contracts', 'reconciliation', 'page', 'security'];
 
     private const SECTION_PERMISSIONS = [
         'profile' => 'profile.manage',
@@ -54,6 +55,7 @@ class B2bCabinetController extends Controller
         'team' => 'team.manage',
         'specifications' => 'specifications.manage',
         'carts' => 'orders.create',
+        'leads' => 'orders.view',
         'orders' => 'orders.view',
         'documents' => 'documents.view',
         'contracts' => 'documents.view',
@@ -178,6 +180,13 @@ class B2bCabinetController extends Controller
             : null;
         $installerPage?->load(['works' => fn ($query) => $query->latest('completed_at')->latest('id')]);
         $installerEditor = InstallerAccountController::editorOptions();
+        // Site orders the centre handed to this partner's sales points.
+        $clientOrdersQuery = Order::query()->whereIn('partner_branch_id', $client->branches()->select('id'))
+            ->whereNotNull('partner_status');
+        $offeredClientOrders = (clone $clientOrdersQuery)->where('partner_status', 'offered')->count();
+        $clientOrders = $section === 'leads'
+            ? $clientOrdersQuery->with(['items', 'partnerBranch.city'])->latest('partner_assigned_at')->limit(50)->get()
+            : collect();
         $partnerBranches = $section === 'overview'
             ? $client->branches()->with('city')
                 ->withCount(['contactViews as contact_views_30d_count' => fn ($views) => $views->where('created_at', '>=', now()->subDays(30))])
@@ -185,7 +194,7 @@ class B2bCabinetController extends Controller
             : collect();
 
         return view('pages.b2b.cabinet', compact(
-            'installerPage', 'installerEditor', 'partnerBranches',
+            'installerPage', 'installerEditor', 'partnerBranches', 'clientOrders', 'offeredClientOrders',
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
             'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers', 'creditSummary',
             'profileCompletion', 'profileMissing',
@@ -194,6 +203,33 @@ class B2bCabinetController extends Controller
             'members', 'pendingInvitations', 'auditLogs', 'financialAuditLogs', 'companyOrderTotal',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
         ));
+    }
+
+    public function acceptClientOrder(Request $request, Order $order, OrderPartnerAssignment $assignment)
+    {
+        $user = $request->user();
+        $this->authorizeClientOrder($user, $order, 'orders.create');
+        $cart = $assignment->accept($order, $user);
+
+        return to_route('b2b.cabinet', ['section' => 'leads'])
+            ->with('success', 'Заказ '.$order->number.' принят. Корзина для закупки «'.$cart->name.'» сохранена — оформите её, когда будете готовы.');
+    }
+
+    public function declineClientOrder(Request $request, Order $order, OrderPartnerAssignment $assignment)
+    {
+        $user = $request->user();
+        $this->authorizeClientOrder($user, $order, 'orders.create');
+        $data = $request->validate(['reason' => ['required', 'string', 'max:500']], ['reason.required' => 'Укажите причину отказа.']);
+        $assignment->decline($order, $user, $data['reason']);
+
+        return to_route('b2b.cabinet', ['section' => 'leads'])->with('success', 'Заказ '.$order->number.' возвращён в KOTLOV.');
+    }
+
+    private function authorizeClientOrder($user, Order $order, string $permission): void
+    {
+        $client = $user->activeB2bClient();
+        abort_unless($client && $this->access->allows($user, $permission, $client), 403);
+        abort_unless($order->partner_branch_id && $client->branches()->whereKey($order->partner_branch_id)->exists(), 404);
     }
 
     /** A partner without a page gets an installer page filled from the company card, sent to moderation. */
