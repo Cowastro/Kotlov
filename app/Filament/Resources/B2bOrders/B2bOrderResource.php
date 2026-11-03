@@ -145,6 +145,7 @@ class B2bOrderResource extends Resource
             $order->status === 'client_confirmed' => 'Счёт не сформировался — выставить вручную',
             in_array($order->status, ['invoice_issued', 'awaiting_payment'], true) => 'Ждём оплату по счёту',
             in_array($order->status, ['paid', 'credit_approved'], true) => 'Передать на склад',
+            $order->status === 'completed' && B2bOrderWorkflow::awaitsCreditPayment($order) => 'Ждём оплату по отсрочке',
             $order->status === 'assembling' => 'Собрать заказ',
             $order->status === 'ready_to_ship' => 'Отгрузить',
             default => '—',

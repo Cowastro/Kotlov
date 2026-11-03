@@ -83,6 +83,7 @@ class B2bOrderProcessTest extends TestCase
     {
         Mail::fake();
         [$order, $partner, $manager] = $this->scenario('invoice_deferred');
+        $order->client->update(['payment_deferment_days' => 14, 'credit_limit' => 1000]);
         $this->actingAs($manager);
         Livewire::test(EditB2bOrder::class, ['record' => $order->getRouteKey()])
             ->callAction('accept')->callAction('sendToClient', data: ['message' => null]);
@@ -93,6 +94,25 @@ class B2bOrderProcessTest extends TestCase
         $this->assertSame('credit_approved', $order->status);
         $this->assertSame('credit', $order->payment_status);
         $this->assertNotNull($order->commercial_document_id);
+
+        // Shipped on credit; later the money arrives and the order counts as paid.
+        $this->actingAs($manager);
+        $page = Livewire::test(EditB2bOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionVisible('markCreditPaid')->assertActionHidden('markPaid');
+        foreach (['assembling', 'ready_to_ship', 'shipped'] as $expected) {
+            $page->callAction('fulfil')->assertHasNoActionErrors();
+        }
+        $this->assertSame(300.0, app(\App\Services\B2bCheckoutTerms::class)->creditSummary($order->client->fresh())['exposure']);
+
+        $page->callAction('markCreditPaid', data: ['comment' => 'П/п 512'])->assertHasNoActionErrors();
+        $order->refresh();
+        $this->assertSame('shipped', $order->status);
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertSame(0.0, app(\App\Services\B2bCheckoutTerms::class)->creditSummary($order->client->fresh())['exposure']);
+        $this->assertDatabaseHas('b2b_order_events', ['b2b_order_id' => $order->id, 'event' => 'payment_received',
+            'comment' => 'Оплата по отсрочке получена: П/п 512']);
+        Mail::assertQueued(B2bOrderStageMail::class, fn (B2bOrderStageMail $mail): bool => $mail->stage === 'credit_paid');
+        Livewire::test(EditB2bOrder::class, ['record' => $order->getRouteKey()])->assertActionHidden('markCreditPaid');
     }
 
     public function test_send_to_client_is_blocked_until_lines_are_decided_and_cancel_releases_stock(): void
