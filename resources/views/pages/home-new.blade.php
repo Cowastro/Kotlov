@@ -12,6 +12,9 @@
     @media(max-width:991px){.shaman-launch{height:500px}.shaman-launch__layout{padding:36px}.shaman-launch__copy{max-width:57%}.shaman-launch h2{font-size:49px}.shaman-launch p{font-size:15px}.shaman-launch:before{background:linear-gradient(90deg,rgba(7,6,5,.96) 0%,rgba(7,6,5,.82) 42%,rgba(7,6,5,.24) 72%),linear-gradient(0deg,rgba(7,4,3,.38),transparent 58%)}}
     @media(max-width:767px){.shaman-launch{height:550px}.shaman-launch__scene img{object-position:center 54%}.shaman-launch:before{background:linear-gradient(180deg,rgba(7,6,5,.95) 0%,rgba(7,6,5,.85) 38%,rgba(7,6,5,.42) 65%,rgba(7,6,5,.08) 100%),linear-gradient(90deg,rgba(7,6,5,.5),transparent 78%)}.shaman-launch__layout{align-items:flex-start;padding:28px 22px 18px}.shaman-launch__copy{max-width:100%}.shaman-launch h2{max-width:92%;font-size:39px}.shaman-launch p{max-width:88%;margin-bottom:14px;font-size:14px}.shaman-launch__facts{margin-bottom:16px}.shaman-launch__actions{gap:4px}.shaman-launch__more{padding:10px 8px}.shaman-launch__eyebrow{margin-bottom:12px}}
     @media(max-width:575px){.shaman-launch{height:485px}.shaman-launch__layout{padding:20px 16px 12px}.shaman-launch h2{margin-bottom:11px;font-size:32px}.shaman-launch p{max-width:96%;margin-bottom:11px;font-size:12px;line-height:1.4}.shaman-launch__facts{gap:6px;margin-bottom:12px}.shaman-launch__facts span{padding:6px 8px;font-size:10px}.shaman-launch__actions{flex-wrap:nowrap}.shaman-launch__actions .tf-btn{padding:9px 13px;font-size:11px;white-space:nowrap}.shaman-launch__more{padding:9px 6px;font-size:11px;white-space:nowrap}.shaman-launch__eyebrow{margin-bottom:10px;padding:6px 10px;font-size:10px}}
+    .partner-pathways{position:relative;overflow:hidden;border-radius:24px;background:#101317;color:#fff;isolation:isolate}.partner-pathways__image{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;opacity:.3}.partner-pathways:after{position:absolute;inset:0;z-index:-1;background:linear-gradient(105deg,rgba(10,13,17,.98) 0%,rgba(10,13,17,.9) 58%,rgba(10,13,17,.56) 100%);content:""}.partner-pathways__content{padding:clamp(32px,5vw,64px)}.partner-pathways__eyebrow{margin-bottom:10px;color:#d8dde5;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.partner-pathways__intro{max-width:760px;color:rgba(255,255,255,.78)}.partner-pathways__benefits{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:28px 0}.partner-pathways__benefit{padding:18px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.06);backdrop-filter:blur(8px)}.partner-pathways__benefit strong{display:block;margin-bottom:5px;color:#fff;font-size:15px}.partner-pathways__benefit span{color:rgba(255,255,255,.7);font-size:13px;line-height:1.45}.partner-pathways__actions{gap:10px}.partner-pathways__actions .tf-btn{justify-content:center}.partner-pathways__secondary{border-color:rgba(255,255,255,.45)!important;background:transparent!important;color:#fff!important}
+    @media(max-width:991px){.partner-pathways__benefits{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:575px){.partner-pathways{border-radius:18px}.partner-pathways__content{padding:28px 20px}.partner-pathways__benefits{grid-template-columns:1fr;margin:22px 0}.partner-pathways__benefit{padding:15px}.partner-pathways__actions .tf-btn{width:100%}}
 </style>
 @endpush
 
@@ -572,34 +575,49 @@
 @include('partials.ecokamin-promo-duo')
 @endif
 
-{{-- Используем готовый класс banner-countdown-v01 style-4 из шаблона --}}
-{{-- Секция "Стань партнёром" -- вместо Lookbook --}}
-{{-- Секция "Стань партнёром" -- вместо Lookbook --}}
-<div class="container flat-spacing">
-    <div class="banner-countdown-v01 style-4">
-        <div class="banner-img">
-            <img class="img-cover" width="1410" height="260" loading="lazy" decoding="async"
-                src="{{ $bannerPartners ? asset('storage/' . $bannerPartners->image) : asset('img/banners/banner-partners.jpg') }}"
-                alt="{{ $bannerPartners?->title ?: 'Стать партнёром KOTLOV.BY' }}">
-        </div>
-        <div class="content">
-            <div class="col-left">
-                <p class="text-caption-01 text-white mb-8 fw-semibold cl-text-3">
-                    ДЛЯ МОНТАЖНИКОВ И ПОСТАВЩИКОВ
-                </p>
-                <h2 class="text-white mb-8">Присоединяйтесь к KOTLOV</h2>
-                <p class="text-white text-body-1">
-                    Получайте заявки от клиентов. Размещайте товары. Развивайте бизнес.
-                </p>
+<section class="container flat-spacing" aria-labelledby="partner-pathways-title">
+    <div class="partner-pathways">
+        <img class="partner-pathways__image" width="1410" height="520" loading="lazy" decoding="async"
+            src="{{ $bannerPartners ? asset('storage/' . $bannerPartners->image) : asset('img/banners/banner-partners.jpg') }}"
+            alt="">
+        <div class="partner-pathways__content">
+            <p class="partner-pathways__eyebrow">Профессиональная работа с KOTLOV</p>
+            <h2 id="partner-pathways-title" class="text-white mb-12">Для монтажников и компаний</h2>
+            <p class="partner-pathways__intro text-body-1">
+                Подбирайте и комплектуйте отопление и водоснабжение через единый B2B-кабинет —
+                с проверенными складами, инженерной поддержкой и понятными условиями по каждому заказу.
+            </p>
+
+            <div class="partner-pathways__benefits">
+                <div class="partner-pathways__benefit">
+                    <strong>Профессиональные цены</strong>
+                    <span>Уровень цен и коммерческие условия закрепляются за компанией.</span>
+                </div>
+                <div class="partner-pathways__benefit">
+                    <strong>Комплектация объектов</strong>
+                    <span>Подбор оборудования и проверка совместимости инженерных решений.</span>
+                </div>
+                <div class="partner-pathways__benefit">
+                    <strong>Проверенные склады</strong>
+                    <span>Предложения поставщиков и доступные остатки собраны в одном каталоге.</span>
+                </div>
+                <div class="partner-pathways__benefit">
+                    <strong>Новые заявки</strong>
+                    <span>Монтажные партнёры могут представить профиль и получать обращения клиентов.</span>
+                </div>
             </div>
-            <div class="col-right">
-                <a href="/partners" class="tf-btn btn-white animate-btn animate-dark">
-                    Стать партнёром
+
+            <div class="partner-pathways__actions d-flex flex-column flex-sm-row">
+                <a href="{{ route('become-installer') }}#apply" class="tf-btn btn-white animate-btn animate-dark">
+                    Стать партнёром-монтажником
+                </a>
+                <a href="{{ route('partners') }}#company-connect" class="tf-btn btn-stroke partner-pathways__secondary">
+                    Подключить компанию
                 </a>
             </div>
         </div>
     </div>
-</div>
+</section>
             <!-- /Lookbook -->
      
 

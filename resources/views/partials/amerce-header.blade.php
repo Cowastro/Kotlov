@@ -43,7 +43,7 @@
                 </a>
 
                 <a href="/partners" class="text-white">
-                    Партнёрам
+                    Партнёрам / B2B
                 </a>
             </div>
 
