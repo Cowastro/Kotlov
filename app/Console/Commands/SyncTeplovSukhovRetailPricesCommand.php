@@ -78,6 +78,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         }
         $stats = ['rows' => count($data['rows']), 'matched' => 0, 'changed' => 0, 'up' => 0, 'down' => 0, 'unchanged' => 0, 'created' => 0, 'would_create' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0, 'price_list_conflict' => 0];
         $details = [];
+        $nearCards = [];
         $claimedProducts = SupplierProduct::query()
             ->where('supplier_id', $supplier->id)
             ->whereNotNull('product_id')
@@ -212,6 +213,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 }
                 $stats['unmatched']++;
                 $details[] = [$article, Str::limit($name, 48), 'not matched'];
+                $nearCards[$article] = $this->nearCards($products, $name);
                 continue;
                 }
             }
@@ -357,7 +359,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 preg_match_all('/\d{3,}/', $kind === 'ambiguous' ? $result : '', $ids);
                 $linked = $kind === 'linked_elsewhere' ? substr($result, strlen('product already linked to: ')) : '';
                 $cards = Product::query()->whereIn('id', $ids[0])->pluck('slug', 'id')->map(fn ($slug, $id) => $id.'~'.$slug)->implode(',');
-                $this->line(sprintf('audit.teplov_sukhov.skip=%s:%s:%s', $kind, $article, $linked !== '' ? $linked : $cards));
+                $this->line(sprintf('audit.teplov_sukhov.skip=%s:%s:%s', $kind, $article, $linked !== '' ? $linked : ($cards !== '' ? $cards : ($nearCards[$article] ?? ''))));
             }
         }
         $this->line('metric.teplov_sukhov.availability_updated='.$availabilityUpdated);
@@ -375,6 +377,15 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /** Up to three cards with every number of the row (diameters, steel, thickness, length) but another wording. */
+    private function nearCards($products, string $name): string
+    {
+        $numbers = $this->numbers($name);
+
+        return $products->filter(fn (Product $product) => $numbers !== [] && array_diff($numbers, $this->numbers((string) $product->name)) === [])
+            ->take(3)->map(fn (Product $product) => $product->id.'~'.Product::query()->whereKey($product->id)->value('slug'))->implode(',');
     }
 
     /** The --file, else the xlsx uploaded on the supplier page, else the prepared json of 17.09.2026. */
