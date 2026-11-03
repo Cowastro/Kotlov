@@ -439,6 +439,8 @@ Route::get('/', function () {
 
 // ===== Статичные страницы — ДО динамических! =====
 Route::view('/about', 'pages.about');
+Route::post('/where-to-buy/{branch}/phone', \App\Http\Controllers\PartnerBranchContactController::class)
+    ->middleware('throttle:30,1')->name('partner-branches.phone');
 Route::get('/city/select/{slug}', CitySelectionController::class)
     ->where('slug', '[a-z0-9-]+')
     ->name('city.select');

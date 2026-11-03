@@ -647,6 +647,8 @@
                                 @endif
                             </div>
 
+                            @include('partials.product-where-to-buy')
+
                             {{-- Инженерный сервис --}}
                             <div class="tf-product-engineering">
                                 <div class="tf-product-engineering__icon" aria-hidden="true">
