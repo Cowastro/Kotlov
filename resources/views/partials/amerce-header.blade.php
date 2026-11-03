@@ -3,47 +3,41 @@
     $navCategories = $navCategories ?? collect();
     $navBrands = $navBrands ?? collect();
 @endphp
-<div class="tf-topbar bg-dark">
+<div class="tf-topbar bg-dark site-topbar">
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center text-white">
+        <div class="site-topbar__inner text-white">
 
-            <div class="d-flex align-items-center gap-2">
-                <span class="icon icon-MapPin"></span>
+            <div class="site-topbar__city">
+                <span class="icon icon-MapPin site-topbar__pin" aria-hidden="true"></span>
                 @if($citySelectorEnabled ?? false)
-                    <a href="#citySelector" data-bs-toggle="offcanvas" class="text-white d-flex align-items-center gap-1">
-                        <span>г. {{ $selectedCityName ?? $cityName ?? $geo ?? 'Минск' }}</span>
+                    <a href="#citySelector" data-bs-toggle="offcanvas" class="site-topbar__city-link text-white">
+                        <span class="site-topbar__city-name">г. {{ $selectedCityName ?? $cityName ?? $geo ?? 'Минск' }}</span>
                         <i class="icon icon-CaretDown"></i>
                     </a>
                 @else
-                    <span class="text-white d-flex align-items-center" data-city-selector="static">
+                    <span class="site-topbar__city-link text-white" data-city-selector="static">
                         г. {{ $selectedCityName ?? $cityName ?? $geo ?? 'Минск' }}
                     </span>
                 @endif
-
-                <a href="#search" data-bs-toggle="modal"
-                    class="topbar-search-trigger d-xl-none text-white"
-                    aria-label="Открыть умный поиск" title="Поиск">
-                    <i class="icon icon-MagnifyingGlass" aria-hidden="true"></i>
-                </a>
             </div>
 
-            <div class="d-none d-md-block">
+            <div class="site-topbar__service d-none d-md-block">
                 Заказы онлайн 24/7 · Консультант ежедневно до 20:00
             </div>
 
-            <div class="d-flex align-items-center gap-3">
+            <div class="site-topbar__actions">
                 @php
                     $headerPhone = $cityContact['phone_links'][0] ?? [
                         'href' => $pCall1 ?? '+375293777092',
                         'display' => $phone1 ?? '+375 (29) 377-70-92',
                     ];
                 @endphp
-                <a href="tel:{{ $headerPhone['href'] }}" class="text-white">
+                <a href="tel:{{ $headerPhone['href'] }}" class="site-topbar__phone text-white">
                     {{ $headerPhone['display'] }}
                 </a>
 
-                <a href="/partners" class="text-white">
-                    Партнёрам / B2B
+                <a href="/partners" class="site-topbar__b2b text-white">
+                    <span class="site-topbar__b2b-label">Партнёрам / </span>B2B
                 </a>
             </div>
 
@@ -59,9 +53,14 @@
     <div class="header-inner_wrap">
         <div class="container">
             <div class="header-inner">
-                <div class="box-open-menu-mobile d-xl-none">
+                <div class="box-open-menu-mobile mobile-header-tools d-xl-none">
                     <a href="#mobileMenu" data-bs-toggle="offcanvas" class="btn-open-menu">
                         <i class="icon icon-List"></i>
+                    </a>
+                    <a href="#search" data-bs-toggle="modal"
+                        class="mobile-header-search"
+                        aria-label="Открыть умный поиск" title="Поиск">
+                        <i class="icon icon-MagnifyingGlass" aria-hidden="true"></i>
                     </a>
                 </div>
 
