@@ -15,6 +15,7 @@ class EnrichTeplovSukhovOfficialImagesCommand extends Command
         {--limit=25 : Maximum number of exact matches to process}
         {--offset=0 : Skip exact matches before processing}
         {--show-unmatched : List cards without an exact official catalog match}
+        {--ids=* : Only these cards}
         {--apply : Download and save images; omitted means preview only}';
 
     protected $description = 'Add missing Teplov i Sukhov images only from exact official catalog matches.';
@@ -60,6 +61,7 @@ class EnrichTeplovSukhovOfficialImagesCommand extends Command
             ->where('brand_id', $brand->id)
             ->where('is_archived', false)
             ->whereRaw('JSON_LENGTH(images) = 0')
+            ->when($this->option('ids'), fn ($query, $ids) => $query->whereIn('id', array_map('intval', (array) $ids)))
             ->orderBy('id')
             ->get();
 
@@ -135,6 +137,12 @@ class EnrichTeplovSukhovOfficialImagesCommand extends Command
 
         $this->newLine();
         $this->table(['Сохранено', 'Ошибки'], [[$stats['saved'], $stats['failed']]]);
+        foreach (['cards' => $products->count(), 'exact' => count($exact), 'ambiguous' => $ambiguous, 'saved' => $stats['saved'], 'failed' => $stats['failed']] as $key => $value) {
+            $this->line("metric.tis_official_images.{$key}={$value}");
+        }
+        foreach ($exact as [$product]) {
+            $this->line('audit.tis_official_images.exact='.$product->id);
+        }
 
         return self::SUCCESS;
     }
