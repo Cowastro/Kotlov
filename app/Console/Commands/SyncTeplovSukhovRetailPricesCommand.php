@@ -344,6 +344,22 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         foreach ($stats as $key => $value) {
             $this->line("metric.teplov_sukhov.{$key}={$value}");
         }
+        // The skipped rows by article: the cards in question are product ids.
+        foreach ($details as [$article, , $result]) {
+            $kind = match (true) {
+                $result === 'not matched' => 'unmatched',
+                str_starts_with($result, 'ambiguous: ') => 'ambiguous',
+                str_starts_with($result, 'product already linked to: ') => 'linked_elsewhere',
+                $result === 'supplier link conflict' => 'link_conflict',
+                default => null,
+            };
+            if ($kind !== null) {
+                preg_match_all('/\d{3,}/', $kind === 'ambiguous' ? $result : '', $ids);
+                $linked = $kind === 'linked_elsewhere' ? substr($result, strlen('product already linked to: ')) : '';
+                $cards = Product::query()->whereIn('id', $ids[0])->pluck('slug', 'id')->map(fn ($slug, $id) => $id.'~'.$slug)->implode(',');
+                $this->line(sprintf('audit.teplov_sukhov.skip=%s:%s:%s', $kind, $article, $linked !== '' ? $linked : $cards));
+            }
+        }
         $this->line('metric.teplov_sukhov.availability_updated='.$availabilityUpdated);
 
         if ($this->option('report')) {
