@@ -3,6 +3,10 @@
 @section('content')
 <main id="wrapper">
 
+    @if ($b2bClient)
+        @include('partials.b2b-page-head')
+        <div class="container"><h1 class="b2b-cart-title">Корзина заказа <span>{{ $b2bClient->company_name }}</span></h1></div>
+    @else
     <section class="section-page-title text-center flat-spacing-2 pb-0">
         <div class="container">
             <div class="main-page-title">
@@ -15,6 +19,7 @@
             </div>
         </div>
     </section>
+    @endif
 
     {{--
         ВАЖНО: убраны классы each-list-prd и each-prd — они триггерят Amerce main.js,
@@ -444,6 +449,8 @@
 
 @push('styles')
 <style>
+.b2b-cart-title { margin: 22px 0 0; font-size: 28px; letter-spacing: -.02em; }
+.b2b-cart-title span { display: block; margin-top: 4px; color: #78889b; font-size: 14px; font-weight: 500; letter-spacing: 0; }
 .b2b-cart-process { padding: 14px 16px; border: 1px solid #d8eee6; border-left: 3px solid #15946e; border-radius: 12px; background: #f4fbf8; font-size: 13px; }
 .b2b-cart-process strong { display: block; margin-bottom: 6px; color: #142338; }
 .b2b-cart-process ol { margin: 0; padding-left: 18px; color: #4a5a6c; }

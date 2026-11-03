@@ -192,6 +192,9 @@ class B2bMarketplaceTest extends TestCase
             ->assertDontSee('id="cart-threshold-text"', false)
             ->assertSeeText('Примечание к заказу')
             ->assertSeeText('Как пройдёт заказ')
+            ->assertSee('class="b2b-page-head"', false)
+            ->assertSeeText('Корзина заказа')
+            ->assertDontSeeText('Умный поиск')
             ->assertSee('href="'.route('b2b.catalog').'" class="tf-btn-line-3', false)
             ->assertDontSee('href="/catalog" class="tf-btn-line-3', false);
 
