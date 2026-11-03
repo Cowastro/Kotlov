@@ -26,6 +26,10 @@ class PartnersBusinessPageTest extends TestCase
 
         $this->get('/partners')->assertOk()->assertSee('id="company-connect"', false)
             ->assertSee('<title>Для бизнеса — отопление и водоснабжение | KOTLOV.BY</title>', false)
+            ->assertSeeText('KOTLOV снабжает. Вы продаёте и обслуживаете в своём городе')
+            ->assertSeeText('Партнёрская закупочная цена')
+            ->assertDontSeeText('Вы — розница')
+            ->assertDontSeeText('Цены ниже розницы')
             ->assertSee('action="'.route('register').'"', false)
             ->assertSeeText('Тестовый уровень')->assertSeeText('15 000')
             ->assertSeeText('Оптовые условия')->assertDontSeeText('Приоритет для монтажников')
