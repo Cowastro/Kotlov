@@ -400,21 +400,24 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         return self::SUCCESS;
     }
 
-    /** Cards of any brand, archived too: the type of the row, its steel, thickness and diameters (the length aside). */
+    /** Cards of any brand, archived too: the type and the diameters of the row. */
     private function possibleCards(string $name)
     {
         static $all = null;
         $all ??= Product::query()->get(['id', 'name', 'slug', 'brand_id', 'is_archived', 'is_active', 'price']);
         $types = array_values(array_diff($this->productTypes($this->words($name)), ['моно', 'термо']));
-        $numbers = array_values(array_diff($this->numbers($name), array_map(fn ($m) => substr($m, 6), array_filter($this->measurements($name), fn ($m) => str_starts_with($m, 'length')))));
-        if ($numbers === []) {
+        // Only the diameters: an old card may not name the steel or thickness. A black card is another item.
+        $diameters = array_values(array_filter($this->measurements($name), fn ($m) => str_starts_with($m, 'diam')));
+        $black = in_array('black', $this->words($name), true);
+        if ($diameters === []) {
             return collect();
         }
 
-        return $all->filter(function (Product $product) use ($types, $numbers): bool {
+        return $all->filter(function (Product $product) use ($types, $diameters, $black): bool {
             $words = $this->words((string) $product->name);
 
-            return array_diff($types, $this->productTypes($words)) === [] && array_diff($numbers, $this->numbers((string) $product->name)) === []
+            return array_diff($types, $this->productTypes($words)) === [] && array_diff($diameters, $this->measurements((string) $product->name)) === []
+                && in_array('black', $words, true) === $black
                 && preg_match('/дымоход|труб|отвод|тройник|зонт|дефлектор|шибер|площадк|креплен|кронштейн|экран|лист|проход|переход|адаптер|бак|титан|конвектор|упш|термовент|вент|запарник/u', mb_strtolower((string) $product->name)) === 1;
         })->sortBy('id')->take(8)->values();
     }
