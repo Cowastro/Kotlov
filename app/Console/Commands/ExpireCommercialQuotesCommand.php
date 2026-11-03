@@ -10,7 +10,7 @@ class ExpireCommercialQuotesCommand extends Command
 {
     protected $signature = 'commercial-documents:expire-quotes';
 
-    protected $description = 'Close sent commercial quotes whose validity period has expired';
+    protected $description = 'Put expired commercial quotes under manager control without closing them as rejected';
 
     public function handle(CommercialDocumentWorkflow $workflow): int
     {
@@ -26,7 +26,7 @@ class ExpireCommercialQuotesCommand extends Command
                 $expired++;
             });
 
-        $this->info("Просроченных КП закрыто: {$expired}");
+        $this->info("Просроченных КП поставлено на контроль: {$expired}");
 
         return self::SUCCESS;
     }

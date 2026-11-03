@@ -52,7 +52,7 @@ class CommercialDocumentWorkflow
                 ->lockForUpdate()
                 ->findOrFail($document->getKey());
 
-            if ($document->type !== 'quote' || ! in_array($document->status, ['sent', 'accepted', 'needs_revision'], true)) {
+            if ($document->type !== 'quote' || ! in_array($document->status, ['sent', 'accepted', 'needs_revision', 'expired'], true)) {
                 throw new RuntimeException('Результат контакта уже зафиксирован другим менеджером или КП закрыто. Обновите карточку.');
             }
 
@@ -246,7 +246,7 @@ class CommercialDocumentWorkflow
 
     public function reject(CommercialDocument $document, string $reason, ?string $note = null): void
     {
-        if (! array_key_exists($reason, CommercialDocument::OUTCOME_REASONS)) {
+        if (! array_key_exists($reason, CommercialDocument::REJECTION_REASONS)) {
             throw new RuntimeException('Выберите допустимую причину отказа.');
         }
 
@@ -264,14 +264,14 @@ class CommercialDocumentWorkflow
                 'sales_stage' => 'lost',
                 'status' => 'closed',
                 'next_follow_up_at' => null,
-                'follow_up_note' => 'Отказ: '.CommercialDocument::OUTCOME_REASONS[$reason].($note ? '. '.$note : ''),
+                'follow_up_note' => 'Отказ: '.CommercialDocument::REJECTION_REASONS[$reason].($note ? '. '.$note : ''),
             ])->save();
         });
     }
 
     public function requestRevision(CommercialDocument $document, string $note): void
     {
-        if ($document->type !== 'quote' || ! in_array($document->status, ['sent', 'accepted', 'needs_revision'], true)) {
+        if ($document->type !== 'quote' || ! in_array($document->status, ['sent', 'accepted', 'needs_revision', 'expired'], true)) {
             throw new RuntimeException('Корректировку можно запросить только для отправленного или согласованного КП.');
         }
 
@@ -304,20 +304,164 @@ class CommercialDocumentWorkflow
     public function expire(CommercialDocument $document): void
     {
         DB::transaction(function () use ($document): void {
+            $remindAt = now();
+            $note = 'Срок действия КП истёк. Свяжитесь с клиентом и при необходимости продлите срок.';
+
             $document->forceFill([
                 'status' => 'expired',
-                'follow_up_stage' => 'lost',
-                'next_follow_up_at' => null,
-                'outcome_reason' => 'no_response',
-                'outcome_note' => 'Срок действия предложения истёк.',
-                'closed_at' => now(),
+                'follow_up_stage' => 'contact_planned',
+                'next_follow_up_at' => $remindAt,
+                'follow_up_note' => $note,
+                'outcome_reason' => null,
+                'outcome_note' => null,
+                'closed_at' => null,
+                'last_control_notified_at' => null,
             ])->save();
 
             $document->mailThread?->forceFill([
-                'sales_stage' => 'lost',
-                'status' => 'closed',
-                'next_follow_up_at' => null,
-                'follow_up_note' => 'Срок действия коммерческого предложения истёк.',
+                'sales_stage' => 'contact_planned',
+                'status' => 'waiting_manager',
+                'next_follow_up_at' => $remindAt,
+                'follow_up_note' => $note,
+            ])->save();
+        });
+    }
+
+    public function extendValidity(
+        CommercialDocument $document,
+        User $user,
+        mixed $validUntil,
+        mixed $nextFollowUpAt,
+        string $note,
+    ): void {
+        $validUntil = Carbon::parse($validUntil)->startOfDay();
+        $nextContact = Carbon::parse($nextFollowUpAt);
+        $note = trim($note);
+
+        if (! $validUntil->isAfter(today())) {
+            throw new RuntimeException('Новый срок действия КП должен быть позже сегодняшней даты.');
+        }
+        if (! $nextContact->isFuture()) {
+            throw new RuntimeException('Напоминание должно быть назначено на будущее время.');
+        }
+        if ($nextContact->gt($validUntil->copy()->endOfDay())) {
+            throw new RuntimeException('Напоминание должно быть назначено не позже нового срока действия КП.');
+        }
+        if ($note === '') {
+            throw new RuntimeException('Укажите причину продления или договорённость с клиентом.');
+        }
+
+        DB::transaction(function () use ($document, $user, $validUntil, $nextContact, $note): void {
+            $document = CommercialDocument::query()->lockForUpdate()->findOrFail($document->getKey());
+            if ($document->type !== 'quote'
+                || ! in_array($document->status, ['sent', 'expired', 'rejected', 'needs_revision'], true)
+                || $document->newerRevision()) {
+                throw new RuntimeException('Это КП нельзя продлить. Обновите карточку и проверьте текущую редакцию.');
+            }
+
+            $history = $document->contact_history ?? [];
+            $history[] = [
+                'contacted_at' => now()->toIso8601String(),
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'stage' => 'contact_planned',
+                'result' => 'validity_extended',
+                'note' => $note,
+                'valid_until' => $validUntil->toDateString(),
+                'next_follow_up_at' => $nextContact->toIso8601String(),
+            ];
+
+            $document->forceFill([
+                'status' => 'sent',
+                'valid_until' => $validUntil,
+                'follow_up_stage' => 'contact_planned',
+                'last_contact_result' => 'validity_extended',
+                'last_contacted_at' => now(),
+                'next_follow_up_at' => $nextContact,
+                'follow_up_note' => $note,
+                'contact_history' => array_slice($history, -100),
+                'outcome_reason' => null,
+                'outcome_note' => null,
+                'closed_at' => null,
+                'accepted_at' => null,
+                'last_control_notified_at' => null,
+            ])->save();
+
+            $document->mailThread?->forceFill([
+                'assigned_user_id' => $document->mailThread->assigned_user_id ?: $user->id,
+                'sales_stage' => 'contact_planned',
+                'status' => 'waiting_customer',
+                'next_follow_up_at' => $nextContact,
+                'follow_up_note' => $note,
+            ])->save();
+        });
+    }
+
+    public function returnToWork(
+        CommercialDocument $document,
+        User $user,
+        string $result,
+        mixed $nextFollowUpAt,
+        string $note,
+    ): void {
+        if (! in_array($result, ['no_answer', 'callback_later', 'decision_pending', 'negotiation'], true)) {
+            throw new RuntimeException('Выберите незакрывающий результат контакта.');
+        }
+
+        $nextContact = Carbon::parse($nextFollowUpAt);
+        $note = trim($note);
+        if (! $nextContact->isFuture()) {
+            throw new RuntimeException('Укажите будущую дату следующего контакта.');
+        }
+        if ($note === '') {
+            throw new RuntimeException('Укажите причину исправления состояния.');
+        }
+
+        DB::transaction(function () use ($document, $user, $result, $nextContact, $note): void {
+            $document = CommercialDocument::query()->lockForUpdate()->findOrFail($document->getKey());
+            if ($document->type !== 'quote'
+                || ! in_array($document->status, ['expired', 'rejected'], true)
+                || $document->newerRevision()) {
+                throw new RuntimeException('Состояние КП уже изменилось. Обновите карточку.');
+            }
+
+            $stage = match ($result) {
+                'decision_pending' => 'decision_pending',
+                'negotiation' => 'negotiation',
+                default => 'contact_planned',
+            };
+            $history = $document->contact_history ?? [];
+            $history[] = [
+                'contacted_at' => now()->toIso8601String(),
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'stage' => $stage,
+                'result' => 'returned_to_work',
+                'contact_result' => $result,
+                'note' => $note,
+                'next_follow_up_at' => $nextContact->toIso8601String(),
+            ];
+
+            $document->forceFill([
+                'status' => 'sent',
+                'follow_up_stage' => $stage,
+                'last_contact_result' => $result,
+                'last_contacted_at' => now(),
+                'next_follow_up_at' => $nextContact,
+                'follow_up_note' => $note,
+                'contact_history' => array_slice($history, -100),
+                'outcome_reason' => null,
+                'outcome_note' => null,
+                'closed_at' => null,
+                'last_control_notified_at' => null,
+            ])->save();
+
+            $document->mailThread?->forceFill([
+                'assigned_user_id' => $document->mailThread->assigned_user_id ?: $user->id,
+                'sales_stage' => $stage,
+                'status' => 'waiting_customer',
+                'next_follow_up_at' => $nextContact,
+                'follow_up_note' => $note,
             ])->save();
         });
     }

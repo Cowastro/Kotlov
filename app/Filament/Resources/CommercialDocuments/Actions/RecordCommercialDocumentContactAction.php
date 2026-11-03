@@ -21,7 +21,7 @@ final class RecordCommercialDocumentContactAction
             ->icon('heroicon-o-phone-arrow-up-right')
             ->color(fn (CommercialDocument $record): string => $record->next_follow_up_at?->isPast() ? 'danger' : 'info')
             ->visible(fn (CommercialDocument $record): bool => $record->type === 'quote'
-                && in_array($record->status, ['sent', 'accepted', 'needs_revision'], true)
+                && in_array($record->status, ['sent', 'accepted', 'needs_revision', 'expired'], true)
                 && ! $record->newerRevision())
             ->fillForm(fn (CommercialDocument $record): array => [
                 'stage' => $record->follow_up_stage ?: match ($record->status) {
@@ -79,7 +79,7 @@ final class RecordCommercialDocumentContactAction
                     ], true)),
                 Select::make('loss_reason')
                     ->label('Причина отказа')
-                    ->options(CommercialDocument::OUTCOME_REASONS)
+                    ->options(CommercialDocument::REJECTION_REASONS)
                     ->required(fn (Get $get): bool => $get('result') === 'rejected')
                     ->visible(fn (Get $get): bool => $get('result') === 'rejected'),
             ])

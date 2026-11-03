@@ -7,10 +7,10 @@ use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\CommercialDocument;
-use App\Services\CommercialContracts\ClientContractTemplateGenerator;
-use App\Services\CommercialContracts\CommercialContractGenerator;
 use App\Models\IntegrationSource;
 use App\Models\Supplier;
+use App\Services\CommercialContracts\ClientContractTemplateGenerator;
+use App\Services\CommercialContracts\CommercialContractGenerator;
 use App\Services\CommercialDocuments\CommercialDocumentPortal;
 use App\Services\CommercialDocuments\CommercialDocumentReadiness;
 use App\Services\CommercialDocuments\CommercialDocumentWorkflow;
@@ -20,6 +20,7 @@ use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -53,6 +54,106 @@ class ViewCommercialDocument extends ViewRecord
     {
         return [
             RecordCommercialDocumentContactAction::make(),
+            Action::make('extend_validity')
+                ->label('Продлить КП')
+                ->icon('heroicon-o-calendar-days')
+                ->color('info')
+                ->visible(fn (): bool => $this->record->type === 'quote'
+                    && in_array($this->record->status, ['sent', 'expired', 'rejected', 'needs_revision'], true)
+                    && ! $this->record->newerRevision())
+                ->fillForm(fn (): array => [
+                    'valid_until' => ($this->record->valid_until?->isFuture()
+                        ? $this->record->valid_until
+                        : today())->copy()->addDays(10),
+                    'next_follow_up_at' => now()->addWeekday()->setTime(10, 0),
+                    'note' => 'Продлили срок действия КП, запланирован следующий контакт.',
+                ])
+                ->schema([
+                    DatePicker::make('valid_until')
+                        ->label('Новый срок действия КП')
+                        ->minDate(today()->addDay())
+                        ->native(false)
+                        ->required(),
+                    DateTimePicker::make('next_follow_up_at')
+                        ->label('Напомнить менеджеру')
+                        ->seconds(false)
+                        ->native(false)
+                        ->timezone('Europe/Minsk')
+                        ->required(),
+                    Textarea::make('note')
+                        ->label('Причина продления / договорённость')
+                        ->rows(3)
+                        ->required(),
+                ])
+                ->modalHeading('Продлить коммерческое предложение')
+                ->modalDescription('КП вернётся в работу. Новый срок и напоминание сохранятся в истории.')
+                ->modalSubmitActionLabel('Продлить и поставить на контроль')
+                ->action(function (array $data): void {
+                    app(CommercialDocumentWorkflow::class)->extendValidity(
+                        $this->record,
+                        auth()->user(),
+                        $data['valid_until'],
+                        $data['next_follow_up_at'],
+                        $data['note'],
+                    );
+                    $this->record->refresh();
+                    Notification::make()
+                        ->success()
+                        ->title('Срок КП продлён')
+                        ->body('Напоминание менеджеру создано, КП возвращено в работу.')
+                        ->send();
+                }),
+            Action::make('return_to_work')
+                ->label('Исправить состояние')
+                ->icon('heroicon-o-arrow-path')
+                ->color('warning')
+                ->visible(fn (): bool => $this->record->type === 'quote'
+                    && in_array($this->record->status, ['expired', 'rejected'], true)
+                    && ! $this->record->newerRevision())
+                ->fillForm(fn (): array => [
+                    'result' => $this->record->outcome_reason === 'no_response' ? 'no_answer' : 'callback_later',
+                    'next_follow_up_at' => now()->addWeekday()->setTime(10, 0),
+                    'note' => 'КП ошибочно было закрыто. Вернуть в работу и связаться с клиентом.',
+                ])
+                ->schema([
+                    Select::make('result')
+                        ->label('Фактическое состояние')
+                        ->options([
+                            'no_answer' => 'Не дозвонились',
+                            'callback_later' => 'Нужно перезвонить',
+                            'decision_pending' => 'Клиент думает',
+                            'negotiation' => 'Идут переговоры',
+                        ])
+                        ->required(),
+                    DateTimePicker::make('next_follow_up_at')
+                        ->label('Следующий контакт')
+                        ->seconds(false)
+                        ->native(false)
+                        ->timezone('Europe/Minsk')
+                        ->required(),
+                    Textarea::make('note')
+                        ->label('Комментарий к исправлению')
+                        ->rows(3)
+                        ->required(),
+                ])
+                ->modalHeading('Вернуть КП в работу')
+                ->modalDescription('Отказ будет снят. Исправление, автор и дата сохранятся в истории.')
+                ->modalSubmitActionLabel('Вернуть в работу')
+                ->action(function (array $data): void {
+                    app(CommercialDocumentWorkflow::class)->returnToWork(
+                        $this->record,
+                        auth()->user(),
+                        $data['result'],
+                        $data['next_follow_up_at'],
+                        $data['note'],
+                    );
+                    $this->record->refresh();
+                    Notification::make()
+                        ->success()
+                        ->title('КП возвращено в работу')
+                        ->body('Отказ снят, следующий контакт назначен.')
+                        ->send();
+                }),
             Action::make('open_mail_thread')
                 ->label('Открыть переписку')
                 ->icon('heroicon-o-envelope-open')
@@ -559,7 +660,7 @@ class ViewCommercialDocument extends ViewRecord
                 ->color('danger')
                 ->visible(fn (): bool => $this->record->type === 'quote' && in_array($this->record->status, ['sent', 'accepted'], true))
                 ->schema([
-                    Select::make('reason')->label('Причина')->options(CommercialDocument::OUTCOME_REASONS)->required(),
+                    Select::make('reason')->label('Причина')->options(CommercialDocument::REJECTION_REASONS)->required(),
                     Textarea::make('note')->label('Комментарий менеджера')->rows(3),
                 ])
                 ->action(function (array $data): void {
@@ -598,7 +699,11 @@ class ViewCommercialDocument extends ViewRecord
                 ->action(function (): void {
                     app(CommercialDocumentWorkflow::class)->expire($this->record);
                     $this->record->refresh();
-                    Notification::make()->success()->title('КП закрыто как просроченное')->send();
+                    Notification::make()
+                        ->warning()
+                        ->title('Срок КП истёк')
+                        ->body('КП не закрыто как отказ: менеджеру создано напоминание.')
+                        ->send();
                 }),
             Action::make('new_revision')
                 ->label('Новая редакция')
