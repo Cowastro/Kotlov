@@ -63,6 +63,7 @@
 
             <section class="b2b-cabinet-content">
                 @if ($section === 'overview')
+                    @include('partials.b2b.partner-level')
                     <div class="b2b-cabinet-heading"><div><span>Обзор</span><h2>Рабочий стол</h2></div><p>Актуальная информация по вашей компании</p></div>
                     <article class="b2b-profile-progress {{ $profileCompletion === 100 ? 'is-complete' : '' }}">
                         <div class="b2b-profile-progress__copy">
