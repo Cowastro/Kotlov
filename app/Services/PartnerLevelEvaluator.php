@@ -19,7 +19,7 @@ class PartnerLevelEvaluator
             $orders = $client->orders()
                 ->where('payment_status', 'paid')
                 ->where('status', '!=', 'cancelled')
-                ->whereBetween('created_at', [$now->subMonthsNoOverflow((int) $rule['months']), $now]);
+                ->whereBetween('paid_at', [$now->subMonthsNoOverflow((int) $rule['months']), $now]);
 
             $revenue = $rule['metric'] === 'revenue';
             $scale = $revenue ? 100 : 1;

@@ -31,14 +31,14 @@ class PartnerLevelEvaluatorTest extends TestCase
         ]);
 
         foreach ([
-            ['eligible', 'paid', 'completed', now(), 99.99],
-            ['unpaid', 'pending', 'completed', now(), 200],
-            ['cancelled', 'paid', 'cancelled', now(), 200],
-            ['old', 'paid', 'completed', now()->subMonths(2), 200],
-        ] as [$number, $payment, $status, $date, $total]) {
+            ['eligible', 'paid', 'completed', now()->subMonths(2), now(), 99.99],
+            ['unpaid', 'pending', 'completed', now(), null, 200],
+            ['cancelled', 'paid', 'cancelled', now(), now(), 200],
+            ['old', 'paid', 'completed', now()->subMonths(2), now()->subMonths(2), 200],
+        ] as [$number, $payment, $status, $createdAt, $paidAt, $total]) {
             DB::table('b2b_orders')->insert([
                 'b2b_client_id' => $client->id, 'number' => $number, 'payment_status' => $payment,
-                'status' => $status, 'created_at' => $date, 'total' => $total,
+                'status' => $status, 'created_at' => $createdAt, 'paid_at' => $paidAt, 'total' => $total,
                 'contact_name' => 'Тест', 'contact_phone' => '+375291234567', 'company_name' => 'Тест',
             ]);
         }
