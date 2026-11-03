@@ -150,13 +150,13 @@ class ViewSupplier extends ViewRecord
                         ->persistent()
                         ->send();
                 }),
-            // Our own Теплов и Сухов price list: the upload only shows what would change, the prices change on «Применить».
+            // Our own Теплов и Сухов price list (on the ТиС and the СанБизнесГруп page): the upload only shows what would change, the prices change on «Применить».
             Action::make('teplov_sukhov_price')
-                ->label('Загрузить прайс')
+                ->label('Загрузить прайс ТиС')
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('primary')
-                ->visible(fn (): bool => $this->getRecord()->code === 'teplov')
-                ->modalDescription('Наш прайс «ТиС_ОПТ_<дата>_SBG» (xlsx, все листы). Цены пока не меняются: покажем, сколько изменится, применить — кнопкой «Применить прайс».')
+                ->visible(fn (): bool => in_array($this->getRecord()->code, ['teplov', 'sanbusinessgroup'], true))
+                ->modalDescription('Наш прайс «ТиС_ОПТ_<дата>_SBG» (xlsx, все листы). Цены пока не меняются: покажем, сколько изменится, применить — кнопкой «Применить прайс ТиС».')
                 ->schema([
                     FileUpload::make('file')
                         ->label('Файл xlsx')
@@ -181,17 +181,17 @@ class ViewSupplier extends ViewRecord
                     $metrics = $this->teplovSukhovSync(false);
                     Notification::make()->success()
                         ->title('Прайс загружен: '.$rows.' позиций')
-                        ->body(sprintf('Сопоставлено с карточками: %d. Цен изменится: %d (вверх %d, вниз %d). Не найдено: %d, неоднозначно: %d, конфликтов: %d. Чтобы изменить цены, нажмите «Применить прайс».',
+                        ->body(sprintf('Сопоставлено с карточками: %d. Цен изменится: %d (вверх %d, вниз %d). Не найдено: %d, неоднозначно: %d, конфликтов: %d. Чтобы изменить цены, нажмите «Применить прайс ТиС».',
                             $metrics['matched'] ?? 0, $metrics['changed'] ?? 0, $metrics['up'] ?? 0, $metrics['down'] ?? 0,
                             $metrics['unmatched'] ?? 0, $metrics['ambiguous'] ?? 0, ($metrics['conflict'] ?? 0) + ($metrics['price_list_conflict'] ?? 0)))
                         ->persistent()
                         ->send();
                 }),
             Action::make('teplov_sukhov_apply')
-                ->label('Применить прайс')
+                ->label('Применить прайс ТиС')
                 ->icon('heroicon-o-check')
                 ->color('warning')
-                ->visible(fn (): bool => $this->getRecord()->code === 'teplov' && TeplovSukhovPriceList::storedPath() !== '')
+                ->visible(fn (): bool => in_array($this->getRecord()->code, ['teplov', 'sanbusinessgroup'], true) && TeplovSukhovPriceList::storedPath() !== '')
                 ->requiresConfirmation()
                 ->modalDescription('Розничные цены карточек Теплов и Сухов станут ценами загруженного прайса, опт сохранится у предложений поставщика.')
                 ->action(function (): void {
