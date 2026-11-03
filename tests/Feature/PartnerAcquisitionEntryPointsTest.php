@@ -23,7 +23,8 @@ class PartnerAcquisitionEntryPointsTest extends TestCase
         $header = file_get_contents($this->projectPath('resources/views/partials/amerce-header.blade.php'));
         $footer = file_get_contents($this->projectPath('resources/views/partials/footer.blade.php'));
 
-        $this->assertStringContainsString('Партнёрам / B2B', $header);
+        $this->assertStringContainsString('Партнёрам / ', $header);
+        $this->assertStringContainsString('site-topbar__b2b', $header);
         $this->assertStringContainsString('Для бизнеса / B2B', $footer);
         $this->assertStringContainsString('href="/partners"', $header);
         $this->assertStringContainsString('href="/partners"', $footer);
