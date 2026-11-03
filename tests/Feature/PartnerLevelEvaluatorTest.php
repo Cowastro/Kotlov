@@ -16,6 +16,7 @@ class PartnerLevelEvaluatorTest extends TestCase
 
     public function test_only_paid_non_cancelled_orders_in_period_count_and_level_does_not_drop(): void
     {
+        PartnerProgramLevel::query()->delete(); // the test builds its own levels, not the seeded ones
         $user = User::factory()->create();
         $client = B2bClient::create([
             'user_id' => $user->id, 'status' => 'approved',
