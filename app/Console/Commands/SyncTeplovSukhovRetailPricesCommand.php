@@ -18,6 +18,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                             {--file= : Price list xlsx (or a prepared json); default: the one uploaded on the supplier page}
                             {--apply : Apply verified retail prices and save supplier article links}
                             {--link=* : ARTICLE=card-slug: a row whose card the matcher cannot tell (another wording)}
+                            {--onec=* : ARTICLE=1C row id: the row of our 1C base of the item, when its name differs («ШМ-Р М2» for «ШМ(М)-Р»)}
                             {--find-cards : For the rows without a card, list the cards of any brand (archived too) that may be the item}
                             {--report : Save the complete matching report to storage/app/imports}
                             {--create-missing : Create separate cards only for exact, verified missing rows}
@@ -238,7 +239,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                     // The card goes where the cards of the same element are, and takes the row of our 1C base
                     // with this article (from another card it was wrongly linked to, if so).
                     $categoryId = $this->similarCategoryId($products, $name);
-                    $oneC = $this->oneCRowFor($row, $name);
+                    $oneC = $this->explicitOneC($article) ?? $this->oneCRowFor($row, $name);
                     $this->line(sprintf('audit.teplov_sukhov.create=%s:%d:%d:%d', $article, $categoryId, (int) $oneC?->id, (int) $oneC?->product_id));
                     if (! $apply) {
                         $stats['would_create']++;
@@ -364,6 +365,11 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             if ($changed) {
                 $product->price = $retail;
                 $product->save();
+            }
+
+            // A 1C row named for the card by hand joins it (an existing card too).
+            if (($oneCRow = $this->explicitOneC($article)) && (int) $oneCRow->product_id !== (int) $product->id) {
+                $stats['onec_linked'] += (int) $this->linkOneC($oneCRow, $product);
             }
 
             SupplierProduct::query()->updateOrCreate(
@@ -705,6 +711,14 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             ->sortDesc()->keys()->first();
 
         return (int) ($category ?: $this->categoryIdForSourceName($name));
+    }
+
+    private function explicitOneC(string $article): ?IntegrationProduct
+    {
+        $pairs = collect((array) $this->option('onec'))
+            ->mapWithKeys(fn (string $pair) => str_contains($pair, '=') ? [trim(strstr($pair, '=', true)) => (int) substr(strstr($pair, '='), 1)] : []);
+
+        return isset($pairs[$article]) ? IntegrationProduct::query()->find($pairs[$article]) : null;
     }
 
     /** The one row of our 1C base with the article of the row (a black row for a black item only). */
