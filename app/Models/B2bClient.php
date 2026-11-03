@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use App\Services\InstallerPageProvisioner;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -78,6 +79,10 @@ class B2bClient extends Model
                 'company_inn' => $client->unp,
                 'b2b_comment' => $client->application_comment,
             ]);
+
+            if (InstallerPageProvisioner::shouldHavePage($client)) {
+                app(InstallerPageProvisioner::class)->ensureFor($client);
+            }
         });
     }
 
