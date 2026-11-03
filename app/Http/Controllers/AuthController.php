@@ -78,8 +78,10 @@ class AuthController extends Controller
             ? ($registryData['short_name'] ?? $registryData['legal_name'] ?? $data['company_name'])
             : null;
 
+        $attribution = $request->attributes->get('partner_attribution', []);
         $user = DB::transaction(function () use (
             $data,
+            $attribution,
             $isLegal,
             $companyName,
             $registryData,
@@ -102,7 +104,7 @@ class AuthController extends Controller
                 return $user;
             }
 
-            $client = $b2bWorkflow->registerApplication($user->fresh());
+            $client = $b2bWorkflow->registerApplication($user->fresh(), $attribution);
             if ($registryData) {
                 $result = $counterpartyFromLookup->upsert([
                     ...$registryData,

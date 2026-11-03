@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\DB;
 
 class B2bClientWorkflow
 {
-    public function registerApplication(User $user): B2bClient
+    public function registerApplication(User $user, array $attribution = []): B2bClient
     {
-        return DB::transaction(function () use ($user): B2bClient {
+        return DB::transaction(function () use ($user, $attribution): B2bClient {
             $client = B2bClient::query()->firstOrNew(['user_id' => $user->id]);
             $client->fill([
                 'status' => 'pending',
@@ -25,7 +25,9 @@ class B2bClientWorkflow
                 'reviewed_at' => null,
                 'reviewed_by' => null,
                 'application_comment' => $user->b2b_comment,
-            ])->save();
+            ]);
+            $client->rememberAttribution($attribution);
+            $client->save();
 
             return $client->fresh();
         });

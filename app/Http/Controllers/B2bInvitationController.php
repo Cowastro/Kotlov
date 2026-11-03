@@ -85,6 +85,15 @@ class B2bInvitationController extends Controller
         if (! $created) {
             $teams->accept($invitation, $user);
         }
+        $attribution = $request->attributes->get('partner_attribution', []);
+        if ($attribution !== []) {
+            $client = \App\Models\B2bClient::query()->whereKey($invitation->b2b_client_id);
+            foreach (\App\Http\Middleware\CapturePartnerAttribution::FIELDS as $field) {
+                $client->whereNull($field);
+            }
+            $client->update($attribution);
+        }
+
         Auth::login($user);
         $request->session()->regenerate();
 
