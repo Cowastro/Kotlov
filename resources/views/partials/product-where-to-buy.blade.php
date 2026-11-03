@@ -26,8 +26,13 @@
             .wtb__kicker { display:block; margin-bottom:4px; color:var(--primary,#e04747); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
             .wtb__head h2 { margin:0; font-size:20px; line-height:1.25; }
             .wtb__count { color:var(--text-2,#6b7280); font-size:14px; font-weight:500; }
-            .wtb__city { flex:0 0 auto; display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border:1px solid var(--line,#e8e8e8); border-radius:999px; color:var(--text,#111)!important; font-size:13px; font-weight:600; }
+            .wtb__city { flex:0 0 auto; display:inline-flex; align-items:center; gap:7px; padding:7px 11px; border:1px solid var(--line,#e8e8e8); border-radius:999px; background:var(--white,#fff); color:var(--text,#111)!important; font-size:13px; text-decoration:none!important; cursor:pointer; transition:border-color .2s ease,background .2s ease,box-shadow .2s ease; }
             .wtb__city svg { width:15px; height:15px; color:var(--primary,#e04747); }
+            .wtb__city-name { font-weight:700; }
+            .wtb__city-action { padding-left:7px; border-left:1px solid var(--line,#e8e8e8); color:var(--primary,#e04747); font-size:12px; font-weight:700; }
+            .wtb__city-chevron { width:7px!important; height:12px!important; color:var(--text-2,#6b7280)!important; }
+            .wtb__city:hover { border-color:var(--primary,#e04747); background:#fff7f7; box-shadow:0 3px 12px rgba(224,71,71,.1); }
+            .wtb__city:focus-visible { outline:2px solid var(--primary,#e04747); outline-offset:2px; }
             .wtb__list { display:grid; margin:0; padding:0; border-top:1px solid var(--line,#e8e8e8); list-style:none; }
             .wtb__item { display:grid; grid-template-columns:38px minmax(210px,.9fr) minmax(240px,1.25fr) auto; align-items:center; gap:12px 16px; min-height:70px; padding:11px 20px; background:var(--white,#fff); transition:.2s ease; }
             .wtb__item + .wtb__item { border-top:1px solid var(--line,#e8e8e8); }
@@ -48,8 +53,14 @@
             .wtb__phone:disabled { opacity:.6; cursor:default; }
             .wtb__phones { display:grid; gap:2px; text-align:right; }
             .wtb__phones a { color:var(--text,#111)!important; font-size:15px; font-weight:700; white-space:nowrap; }
-            .wtb__note { display:flex; align-items:center; gap:7px; margin:0; padding:10px 20px 12px; border-top:1px solid var(--line,#e8e8e8); color:var(--text-2,#6b7280); font-size:12px; }
-            .wtb__note svg { width:15px; height:15px; color:#0b8a5c; }
+            .wtb__footer { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px 20px 12px; border-top:1px solid var(--line,#e8e8e8); }
+            .wtb__note { display:flex; align-items:center; gap:7px; margin:0; color:var(--text-2,#6b7280); font-size:12px; }
+            .wtb__note svg { flex:0 0 15px; width:15px; height:15px; color:#0b8a5c; }
+            .wtb__partner-cta { display:flex; align-items:center; gap:9px; color:var(--text-2,#6b7280); font-size:12px; white-space:nowrap; }
+            .wtb__partner-link { display:inline-flex; align-items:center; gap:5px; color:var(--primary,#e04747)!important; font-size:12px; font-weight:700; text-decoration:none!important; }
+            .wtb__partner-link::after { content:"→"; font-size:15px; line-height:1; transition:transform .2s ease; }
+            .wtb__partner-link:hover::after { transform:translateX(3px); }
+            .wtb__partner-link:focus-visible { outline:2px solid var(--primary,#e04747); outline-offset:3px; border-radius:2px; }
             @media (max-width:991px) {
                 .wtb__item { grid-template-columns:38px minmax(170px,.9fr) minmax(180px,1fr) auto; }
             }
@@ -57,7 +68,8 @@
                 .wtb { margin-top:20px; border-radius:12px; }
                 .wtb__head { align-items:flex-start; padding:15px 16px 13px; }
                 .wtb__head h2 { font-size:18px; }
-                .wtb__city { padding:6px 10px; }
+                .wtb__city { padding:6px 9px; }
+                .wtb__city-action { font-size:11px; }
                 .wtb__item { grid-template-columns:32px minmax(0,1fr) auto; gap:5px 10px; min-height:0; padding:10px 14px; }
                 .wtb__avatar { width:32px; height:32px; border-radius:9px; }
                 .wtb__avatar svg { width:17px; height:17px; }
@@ -68,7 +80,8 @@
                 .wtb__phone-label { font-size:0; }
                 .wtb__phone-label::after { content:"Телефон"; font-size:12px; }
                 .wtb__phones { text-align:right; }
-                .wtb__note { padding:9px 16px 11px; }
+                .wtb__footer { align-items:flex-start; flex-direction:column; gap:8px; padding:9px 16px 11px; }
+                .wtb__partner-cta { flex-wrap:wrap; gap:4px 8px; white-space:normal; }
             }
         </style>
     @endpush
@@ -82,7 +95,13 @@
             </h2>
         </div>
         @if($citySelectorEnabled ?? false)
-            <a href="#citySelector" data-bs-toggle="offcanvas" class="wtb__city">{!! $wtbIcon('pin') !!}{{ $wtbCityName }}</a>
+            <a href="#citySelector" data-bs-toggle="offcanvas" class="wtb__city"
+               aria-label="Изменить город. Сейчас выбран: {{ $wtbCityName }}" title="Изменить город">
+                {!! $wtbIcon('pin') !!}
+                <span class="wtb__city-name">{{ $wtbCityName }}</span>
+                <span class="wtb__city-action">Изменить</span>
+                <svg class="wtb__city-chevron" viewBox="0 0 8 12" aria-hidden="true"><path d="m2 1 4 5-4 5"/></svg>
+            </a>
         @endif
     </div>
     @if($wtbBranches->isNotEmpty())
@@ -108,7 +127,6 @@
                 </li>
             @endforeach
         </ul>
-        <p class="wtb__note">{!! $wtbIcon('shield') !!}Официальные партнёры KOTLOV: цена и гарантия — как на сайте.</p>
     @else
         <ul class="wtb__list">
             <li class="wtb__item">
@@ -127,5 +145,14 @@
             </li>
         </ul>
     @endif
+    <div class="wtb__footer">
+        @if($wtbBranches->isNotEmpty())
+            <p class="wtb__note">{!! $wtbIcon('shield') !!}Официальные партнёры KOTLOV: цена и гарантия — как на сайте.</p>
+        @endif
+        <div class="wtb__partner-cta">
+            <span>Хотите, чтобы ваш магазин появился здесь?</span>
+            <a href="{{ route('partners') }}" class="wtb__partner-link">Стать партнёром</a>
+        </div>
+    </div>
 </section>
 @include('partials.partner-branch-phone-script')
