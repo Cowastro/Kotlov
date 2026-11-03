@@ -37,6 +37,7 @@ class PartnerBranchesTest extends TestCase
         $this->branch($sbg, $minsk, 'Скрытая точка', ['is_active' => false]);
         $this->branch($this->partner('ООО «На проверке»', 'pending'), $minsk, 'Точка без доступа');
         $this->branch($this->partner('ООО «Гомель Тепло»'), $gomel, 'ООО «Гомель Тепло»');
+        view()->share('citySelectorEnabled', true);
 
         $this->withUnencryptedCookie('selected_city', 'minsk')->get($this->url($product))
             ->assertOk()
