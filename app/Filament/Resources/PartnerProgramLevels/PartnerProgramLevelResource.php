@@ -38,6 +38,8 @@ class PartnerProgramLevelResource extends Resource
                 ->minValue(1)->maxValue(4)->unique(ignoreRecord: true)->disabledOn('edit'),
             TextInput::make('name')->label('Название')->required()->maxLength(255),
             Toggle::make('is_active')->label('Активен')->default(true),
+            Select::make('b2b_price_level_id')->label('Уровень цен')->relationship('priceLevel', 'name'),
+            Toggle::make('auto_apply_price_level')->label('Применять уровень цен автоматически')->default(false),
             Section::make('Выгоды')->description('Заполните условия доступных выгод. Пустые поля скрыты в кабинете.')
                 ->schema(array_map(
                     fn (string $key, string $label) => Textarea::make('benefits.'.$key)->label($label)->maxLength(1000),
