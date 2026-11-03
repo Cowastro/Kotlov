@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         __DIR__.'/../app/Console/Commands',
     ])
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(append: [\App\Http\Middleware\CapturePartnerAttribution::class]);
         // The preference contains only a validated public city slug. Keeping
         // it plain lets global middleware read it before the web stack runs.
         $middleware->encryptCookies(except: ['selected_city']);

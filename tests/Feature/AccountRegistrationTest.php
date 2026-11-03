@@ -45,6 +45,8 @@ class AccountRegistrationTest extends TestCase
             fn (User $user): bool => $user->email === 'office@teplo.by' && $user->hasVerifiedEmail(),
         )->andReturnTrue();
 
+        $landing = $this->get('/partners?utm_source=partner-campaign')->assertOk();
+        $this->withCookie('partner_attribution', $landing->getCookie('partner_attribution')->getValue());
         $response = $this->post(route('register'), [
             '_form' => 'register',
             'account_type' => 'legal',
@@ -72,6 +74,7 @@ class AccountRegistrationTest extends TestCase
             'company_name' => 'ООО «Теплосервис»',
             'unp' => '190123456',
             'contact_email' => 'office@teplo.by',
+            'utm_source' => 'partner-campaign',
         ]);
         $this->assertDatabaseHas('crm_counterparties', [
             'unp' => '190123456',

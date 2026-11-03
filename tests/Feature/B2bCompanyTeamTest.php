@@ -109,13 +109,14 @@ class B2bCompanyTeamTest extends TestCase
         [$owner, $client] = $this->company();
         [$invitation, $token] = app(B2bTeamService::class)->invite($client, $owner, 'new-buyer@example.by', 'buyer');
 
-        $this->get(route('b2b.invitation.show', ['token' => $token]))
+        $landing = $this->get(route('b2b.invitation.show', ['token' => $token, 'ref' => 'company-team']))
             ->assertOk()
             ->assertSeeText('ООО «Команда»')
             ->assertSeeText('new-buyer@example.by')
             ->assertSeeText('Создать рабочий аккаунт');
 
-        $this->post(route('b2b.invitation.accept', ['token' => $token]), [
+        $this->withCookie('partner_attribution', $landing->getCookie('partner_attribution')->getValue())
+            ->post(route('b2b.invitation.accept', ['token' => $token]), [
             'name' => 'Новый Закупщик',
             'phone' => '+375291112233',
             'password' => 'Strong-pass-123',
@@ -133,6 +134,7 @@ class B2bCompanyTeamTest extends TestCase
             'is_active' => true,
         ]);
         $this->assertNotNull($invitation->fresh()->accepted_at);
+        $this->assertSame('company-team', $client->fresh()->ref);
 
         $this->post(route('b2b.invitation.accept', ['token' => $token]))
             ->assertSessionHasErrors('invitation');

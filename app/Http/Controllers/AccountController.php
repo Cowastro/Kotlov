@@ -128,7 +128,7 @@ class AccountController extends Controller
             'b2b_comment' => $request->b2b_comment,
         ]);
 
-        $workflow->registerApplication($user->fresh());
+        $workflow->registerApplication($user->fresh(), $request->attributes->get('partner_attribution', []));
         $notifier->notify($user->fresh());
 
         return back()

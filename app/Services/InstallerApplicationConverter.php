@@ -38,7 +38,9 @@ class InstallerApplicationConverter
             }
 
             $user = $this->resolveUser($application);
-            $b2bClient = $this->b2bClients->registerApplication($user);
+            $b2bClient = $this->b2bClients->registerApplication(
+                $user, array_filter($application->only(\App\Http\Middleware\CapturePartnerAttribution::FIELDS)),
+            );
             $this->b2bClients->approve($b2bClient);
             $profile = $user->installerProfile;
 

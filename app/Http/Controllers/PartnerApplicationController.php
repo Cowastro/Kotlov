@@ -30,7 +30,8 @@ class PartnerApplicationController extends Controller
 
         $data['source'] = $data['_source'] ?? 'partners';
         unset($data['_source']);
-        $application = InstallerApplication::create($data);
+        $application = new InstallerApplication($data);
+        $application->forceFill($request->attributes->get('partner_attribution', []))->save();
         $this->telegramNotifier->send($application);
 
         $anchor = match ($request->input('_source')) {

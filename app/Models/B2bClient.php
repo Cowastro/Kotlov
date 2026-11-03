@@ -91,6 +91,14 @@ class B2bClient extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function rememberAttribution(array $attributes): void
+    {
+        $fields = \App\Http\Middleware\CapturePartnerAttribution::FIELDS;
+        if (collect($this->only($fields))->filter()->isEmpty()) {
+            $this->forceFill(array_intersect_key($attributes, array_flip($fields)));
+        }
+    }
+
     public function counterparty(): BelongsTo
     {
         return $this->belongsTo(CrmCounterparty::class, 'counterparty_id');
