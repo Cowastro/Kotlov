@@ -14,6 +14,7 @@ use App\Services\Suppliers\ChistyBeregPriceList;
 use App\Services\Suppliers\CooperWholesalePriceList;
 use App\Services\Suppliers\KaminproffPriceList;
 use App\Services\Suppliers\TeplotopPriceList;
+use App\Services\Suppliers\TeplovSukhovPriceList;
 use App\Services\Suppliers\PrometallPriceList;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -149,6 +150,60 @@ class ViewSupplier extends ViewRecord
                         ->persistent()
                         ->send();
                 }),
+            // Our own Теплов и Сухов price list: the upload only shows what would change, the prices change on «Применить».
+            Action::make('teplov_sukhov_price')
+                ->label('Загрузить прайс')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('primary')
+                ->visible(fn (): bool => $this->getRecord()->code === 'teplov')
+                ->modalDescription('Наш прайс «ТиС_ОПТ_<дата>_SBG» (xlsx, все листы). Цены пока не меняются: покажем, сколько изменится, применить — кнопкой «Применить прайс».')
+                ->schema([
+                    FileUpload::make('file')
+                        ->label('Файл xlsx')
+                        ->required()
+                        ->rules(['extensions:xls,xlsx'])
+                        ->maxSize(30720)
+                        ->disk('local')
+                        ->directory('supplier-price-uploads'),
+                ])
+                ->action(function (array $data): void {
+                    $stored = (string) (is_array($data['file']) ? reset($data['file']) : $data['file']);
+                    $path = Storage::disk('local')->path($stored);
+                    $rows = is_file($path) ? count(TeplovSukhovPriceList::parse($path)['rows']) : 0;
+                    if ($rows === 0) {
+                        Storage::disk('local')->delete($stored);
+                        Notification::make()->danger()->title('В файле нет строк прайса (артикул, розница, опт)')->send();
+
+                        return;
+                    }
+                    TeplovSukhovPriceList::store($path);
+                    Storage::disk('local')->delete($stored);
+                    $metrics = $this->teplovSukhovSync(false);
+                    Notification::make()->success()
+                        ->title('Прайс загружен: '.$rows.' позиций')
+                        ->body(sprintf('Сопоставлено с карточками: %d. Цен изменится: %d (вверх %d, вниз %d). Не найдено: %d, неоднозначно: %d, конфликтов: %d. Чтобы изменить цены, нажмите «Применить прайс».',
+                            $metrics['matched'] ?? 0, $metrics['changed'] ?? 0, $metrics['up'] ?? 0, $metrics['down'] ?? 0,
+                            $metrics['unmatched'] ?? 0, $metrics['ambiguous'] ?? 0, ($metrics['conflict'] ?? 0) + ($metrics['price_list_conflict'] ?? 0)))
+                        ->persistent()
+                        ->send();
+                }),
+            Action::make('teplov_sukhov_apply')
+                ->label('Применить прайс')
+                ->icon('heroicon-o-check')
+                ->color('warning')
+                ->visible(fn (): bool => $this->getRecord()->code === 'teplov' && TeplovSukhovPriceList::storedPath() !== '')
+                ->requiresConfirmation()
+                ->modalDescription('Розничные цены карточек Теплов и Сухов станут ценами загруженного прайса, опт сохранится у предложений поставщика.')
+                ->action(function (): void {
+                    $metrics = $this->teplovSukhovSync(true);
+                    Notification::make()->success()
+                        ->title('Прайс применён')
+                        ->body(sprintf('Цен обновлено: %d (вверх %d, вниз %d). Без изменения: %d. Пропущено: %d.',
+                            $metrics['changed'] ?? 0, $metrics['up'] ?? 0, $metrics['down'] ?? 0, $metrics['unchanged'] ?? 0,
+                            ($metrics['unmatched'] ?? 0) + ($metrics['ambiguous'] ?? 0) + ($metrics['conflict'] ?? 0) + ($metrics['price_list_conflict'] ?? 0)))
+                        ->persistent()
+                        ->send();
+                }),
             Action::make('akvateploservis_price')
                 ->label('Загрузить прайс')
                 ->icon('heroicon-o-arrow-up-tray')
@@ -269,5 +324,14 @@ class ViewSupplier extends ViewRecord
                 }),
             EditAction::make(),
         ];
+    }
+
+    /** @return array<string,int> the metric.teplov_sukhov.* lines of the sync */
+    private function teplovSukhovSync(bool $apply): array
+    {
+        Artisan::call('supplier:sync-teplov-sukhov-retail', $apply ? ['--apply' => true] : []);
+        preg_match_all('/^metric\.teplov_sukhov\.([a-z_]+)=(\d+)$/m', Artisan::output(), $m);
+
+        return array_map('intval', array_combine($m[1], $m[2]));
     }
 }

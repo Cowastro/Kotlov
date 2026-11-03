@@ -6,27 +6,31 @@ use App\Models\Brand;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
+use App\Services\Suppliers\TeplovSukhovPriceList;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
 class SyncTeplovSukhovRetailPricesCommand extends Command
 {
     protected $signature = 'supplier:sync-teplov-sukhov-retail
+                            {--file= : Price list xlsx (or a prepared json); default: the one uploaded on the supplier page}
                             {--apply : Apply verified retail prices and save supplier article links}
                             {--report : Save the complete matching report to storage/app/imports}
                             {--create-missing : Create separate cards only for exact, verified missing rows}
                             {--sheet= : Restrict creation to one workbook sheet}
                             {--only=* : Restrict --create-missing to these supplier article(s) (comma-separated or repeatable)}';
 
-    protected $description = 'Sync only retail prices from the approved Teplov i Sukhov price list. Ambiguous rows are never changed.';
+    protected $description = 'Sync retail prices (and keep the wholesale one) from our Teplov i Sukhov price list. Ambiguous rows are never changed.';
 
+    /** The prepared price list used before the xlsx was uploaded on the supplier page. */
     private const PRICE_FILE = 'imports/sbg-teplov-sukhov-2026-09-17.json';
 
     public function handle(): int
     {
-        $data = json_decode((string) file_get_contents(storage_path('app/' . self::PRICE_FILE)), true);
+        $data = $this->priceList();
 
-        if (! is_array($data) || ! is_array($data['rows'] ?? null)) {
+        if (! is_array($data) || ! is_array($data['rows'] ?? null) || $data['rows'] === []) {
+            $this->line('metric.teplov_sukhov.rows=0');
             $this->error('Не удалось прочитать подготовленный прайс Теплов и Сухов.');
             return self::FAILURE;
         }
@@ -72,7 +76,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                     'availability_status' => Product::AVAILABILITY_IN_STOCK,
                 ]);
         }
-        $stats = ['matched' => 0, 'changed' => 0, 'unchanged' => 0, 'created' => 0, 'would_create' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0, 'price_list_conflict' => 0];
+        $stats = ['rows' => count($data['rows']), 'matched' => 0, 'changed' => 0, 'up' => 0, 'down' => 0, 'unchanged' => 0, 'created' => 0, 'would_create' => 0, 'ambiguous' => 0, 'unmatched' => 0, 'conflict' => 0, 'price_list_conflict' => 0];
         $details = [];
         $claimedProducts = SupplierProduct::query()
             ->where('supplier_id', $supplier->id)
@@ -154,6 +158,23 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                                 [$legacyArticle]
                             ));
                         }
+                    }
+                }
+            }
+
+            // The other way round: an article that was reused in an earlier price list (and linked as -01/-02) is
+            // single again. Its link moves back to the plain article when its card is the item of this row.
+            if (! $existing) {
+                foreach (SupplierProduct::query()->where('supplier_id', $supplier->id)->where('supplier_article', 'like', $article.'-0_')->whereNotNull('product_id')->get() as $suffixed) {
+                    $suffixedProduct = $products->firstWhere('id', $suffixed->product_id);
+                    if ($suffixedProduct && $this->findMatches(collect([$suffixedProduct]), $name)->count() === 1) {
+                        if ($apply) {
+                            $suffixed->supplier_article = $article;
+                            $suffixed->save();
+                        }
+                        $claimedProducts[(int) $suffixed->product_id] = [$article];
+                        $existing = $suffixed;
+                        break;
                     }
                 }
             }
@@ -267,6 +288,10 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
             $changed = abs((float) $product->price - $retail) >= 0.005;
             $stats[$changed ? 'changed' : 'unchanged']++;
             $details[] = [$article, Str::limit($name, 48), sprintf('#%d %s: %.2f → %.2f%s', $product->id, Str::limit($product->name, 36), (float) $product->price, $retail, $changed ? '' : ' (same)')];
+            if ($changed) {
+                $stats[$retail > (float) $product->price ? 'up' : 'down']++;
+                $this->line(sprintf('audit.teplov_sukhov.price=%d:%.2f:%.2f', $product->id, (float) $product->price, $retail));
+            }
 
             if (! $apply) {
                 continue;
@@ -290,7 +315,9 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                     'match_confidence' => 'verified_name_dimensions',
                     'raw' => [
                         'price_date' => $data['price_date'] ?? null,
-                        'wholesale' => $row['wholesale'] ?? null,
+                        'source_file' => $data['source_file'] ?? null,
+                        'sheet' => $row['sheet'] ?? null,
+                        'wholesale' => is_numeric($row['wholesale'] ?? null) ? round((float) $row['wholesale'], 2) : null,
                         'original_supplier_article' => $row['original_sku'] ?? $article,
                     ],
                     'last_synced_at' => now(),
@@ -314,6 +341,11 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         ]);
         $this->table(['Артикул поставщика', 'Прайс', 'Результат'], array_slice($details, 0, 500));
 
+        foreach ($stats as $key => $value) {
+            $this->line("metric.teplov_sukhov.{$key}={$value}");
+        }
+        $this->line('metric.teplov_sukhov.availability_updated='.$availabilityUpdated);
+
         if ($this->option('report')) {
             $path = storage_path('app/imports/teplov-sukhov-matching-report.json');
             file_put_contents($path, json_encode([
@@ -327,6 +359,20 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /** The --file, else the xlsx uploaded on the supplier page, else the prepared json of 17.09.2026. */
+    private function priceList(): ?array
+    {
+        $path = (string) ($this->option('file') ?: TeplovSukhovPriceList::storedPath() ?: storage_path('app/' . self::PRICE_FILE));
+        if (! is_file($path)) {
+            return null;
+        }
+        if (str_ends_with(mb_strtolower($path), '.json')) {
+            return json_decode((string) file_get_contents($path), true);
+        }
+
+        return TeplovSukhovPriceList::parse($path);
     }
 
     private function findMatches($products, string $supplierName)
