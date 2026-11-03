@@ -17,6 +17,7 @@ class PartnerLevelEvaluatorTest extends TestCase
 
     public function test_auto_price_application_only_raises_the_price_level_rank(): void
     {
+        PartnerProgramLevel::query()->delete();
         Mail::fake();
         $prices = \App\Models\B2bPriceLevel::query()->orderBy('rank')->get();
         [$low, $target, $high] = $prices->take(3)->all();
@@ -38,6 +39,7 @@ class PartnerLevelEvaluatorTest extends TestCase
 
     public function test_only_paid_non_cancelled_orders_in_period_count_and_level_does_not_drop(): void
     {
+        PartnerProgramLevel::query()->delete(); // the test builds its own levels, not the seeded ones
         Mail::fake();
         $user = User::factory()->create();
         $manager = User::factory()->create();
@@ -52,6 +54,10 @@ class PartnerLevelEvaluatorTest extends TestCase
         $next = PartnerProgramLevel::create([
             'name' => 'Следующий', 'rank' => 2, 'benefits' => ['volume_bonus' => 'Условия'],
             'rules' => [['metric' => 'revenue', 'months' => 1, 'target' => 100]],
+        ]);
+        $final = PartnerProgramLevel::create([
+            'name' => 'Итоговый', 'rank' => 3, 'benefits' => ['volume_bonus' => 'Условия итогового уровня'],
+            'rules' => [['metric' => 'orders', 'months' => 1, 'target' => 1]],
         ]);
 
         foreach ([
@@ -70,6 +76,10 @@ class PartnerLevelEvaluatorTest extends TestCase
         $evaluator = app(PartnerLevelEvaluator::class);
         $evaluator->evaluate($client);
         $this->assertEquals($base->id, $client->refresh()->partner_program_level_id);
+        $this->assertDatabaseCount('partner_level_transitions', 1);
+        $this->assertNull(DB::table('partner_level_transitions')->value('old_level'));
+        $this->assertSame(0, $manager->notifications()->count());
+        Mail::assertNothingQueued();
         $this->assertEquals(0.01, $evaluator->progress($client)['rules']->first()['remaining']);
         $this->view('partials.b2b.partner-level', ['client' => $client, 'can' => fn () => true])
             ->assertSeeText('Ваш уровень — Базовый')->assertSeeText('Осталось 0,01')
@@ -81,17 +91,26 @@ class PartnerLevelEvaluatorTest extends TestCase
 
         DB::table('b2b_orders')->where('number', 'eligible')->update(['total' => 100]);
         $evaluator->evaluate($client);
-        $this->assertEquals($next->id, $client->refresh()->partner_program_level_id);
-        $transition = DB::table('partner_level_transitions')->latest('id')->first();
+        $this->assertEquals($final->id, $client->refresh()->partner_program_level_id);
+        [, $transition, $lastTransition] = DB::table('partner_level_transitions')->orderBy('id')->get()->all();
         $this->assertEquals($base->id, json_decode($transition->old_level, true)['id']);
         $this->assertEquals($next->id, json_decode($transition->new_level, true)['id']);
         $this->assertEquals(100, json_decode($transition->metrics, true)[0]['actual']);
-        $this->assertSame(2, $manager->notifications()->count());
-        Mail::assertQueued(\App\Mail\PartnerLevelReachedMail::class, fn ($mail) => $mail->levelName === $next->name);
+        $this->assertEquals($next->id, json_decode($lastTransition->old_level, true)['id']);
+        $this->assertEquals($final->id, json_decode($lastTransition->new_level, true)['id']);
+        $this->assertSame(1, $manager->notifications()->count());
+        $this->assertStringContainsString($final->name, $manager->notifications()->first()->data['title']);
+        Mail::assertQueuedCount(1);
+        Mail::assertQueued(\App\Mail\PartnerLevelReachedMail::class, function ($mail) use ($final): bool {
+            $mail->assertSeeInHtml('Открыть кабинет');
+            $mail->assertSeeInHtml('Условия итогового уровня');
+
+            return $mail->levelName === $final->name;
+        });
 
         DB::table('b2b_orders')->where('number', 'eligible')->update(['status' => 'cancelled']);
         $evaluator->evaluate($client);
-        $this->assertEquals($next->id, $client->refresh()->partner_program_level_id);
-        $this->assertDatabaseCount('partner_level_transitions', 2);
+        $this->assertEquals($final->id, $client->refresh()->partner_program_level_id);
+        $this->assertDatabaseCount('partner_level_transitions', 3);
     }
 }

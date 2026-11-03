@@ -49,10 +49,11 @@ class PartnerLevelEvaluator
                 return;
             }
 
+            $reached = null;
             while (true) {
                 ['current' => $current, 'next' => $next, 'rules' => $rules] = $this->progress($client);
                 if (! $next || ($current && $rules->isEmpty()) || $rules->contains(fn ($rule) => $rule['remaining'] > 0)) {
-                    return;
+                    break;
                 }
 
                 $client->partner_program_level_id = $next->id;
@@ -71,17 +72,25 @@ class PartnerLevelEvaluator
                     'created_at' => now(),
                 ]);
 
-                if ($manager = $client->responsibleUser) {
-                    Notification::make()
-                        ->title("Компания {$client->company_name} достигла уровня {$next->name} — проверьте уровень цен")
-                        ->sendToDatabase($manager);
+                if ($current) {
+                    $reached = $next;
                 }
+            }
 
-                $email = $client->contact_email ?: $client->user?->email;
-                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    DB::afterCommit(fn () => Mail::mailer('transactional')->to($email)
-                        ->queue(new PartnerLevelReachedMail($next->name)));
-                }
+            if (! $reached) {
+                return;
+            }
+
+            if ($manager = $client->responsibleUser) {
+                Notification::make()
+                    ->title("Компания {$client->company_name} достигла уровня {$reached->name} — проверьте уровень цен")
+                    ->sendToDatabase($manager);
+            }
+
+            $email = $client->contact_email ?: $client->user?->email;
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $mail = new PartnerLevelReachedMail($reached->name, $reached->benefitsFor($client->partner_type));
+                DB::afterCommit(fn () => Mail::mailer('transactional')->to($email)->queue($mail));
             }
         }, 3);
     }
