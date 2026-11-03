@@ -25,13 +25,17 @@ class PartnersBusinessPageTest extends TestCase
         ]);
 
         $this->get('/partners')->assertOk()->assertSee('id="company-connect"', false)
+            ->assertSee('<title>Для бизнеса — отопление и водоснабжение | KOTLOV.BY</title>', false)
             ->assertSee('action="'.route('register').'"', false)
             ->assertSeeText('Тестовый уровень')->assertSeeText('15 000')
             ->assertSeeText('Оптовые условия')->assertDontSeeText('Приоритет для монтажников')
             ->assertDontSeeText('Заявки по региону');
 
         $this->get('/partners?type=installer')->assertOk()
-            ->assertSeeText('Приоритет для монтажников')->assertSeeText('Заявки по региону');
+            ->assertSeeText('Приоритет для монтажников')->assertSeeText('Заявки по региону')
+            ->assertSee('aria-current="true" >Монтажник', false)
+            ->assertSee('data-bs-target="#partner-faq-1"', false)
+            ->assertDontSee('<details', false);
 
         $level->update(['is_active' => false]);
         $this->get('/partners')->assertOk()->assertDontSee('id="partner-levels"', false);
