@@ -54,6 +54,14 @@ final class B2bOrderActions
                 ->action(fn (B2bOrder $record, array $data, $livewire) => self::done($livewire,
                     app(B2bOrderWorkflow::class)->markPaid($record, auth()->user(), $data['comment'] ?? null), 'Заказ оплачен')),
 
+            Action::make('markCreditPaid')->label('Оплата по отсрочке получена')->icon(Heroicon::OutlinedBanknotes)->color('success')
+                ->visible(fn (B2bOrder $record): bool => B2bOrderWorkflow::awaitsCreditPayment($record))
+                ->requiresConfirmation()
+                ->modalDescription('Заказ станет оплаченным, кредитный лимит компании освободится. Этап заказа не меняется.')
+                ->schema([Textarea::make('comment')->label('Комментарий (номер платёжки и т. п.)')->rows(2)])
+                ->action(fn (B2bOrder $record, array $data, $livewire) => self::done($livewire,
+                    app(B2bOrderWorkflow::class)->markCreditPaid($record, auth()->user(), $data['comment'] ?? null), 'Оплата отмечена')),
+
             Action::make('fulfil')->icon(Heroicon::OutlinedTruck)->color('success')
                 ->label(fn (B2bOrder $record): string => match ($record->status) {
                     'assembling' => 'Собран — готов к отгрузке',
