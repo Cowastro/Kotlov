@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Schema;
 
@@ -22,6 +23,11 @@ class City extends Model
         'is_active' => 'boolean',
         'storefront_enabled' => 'boolean',
     ];
+
+    public function partnerBranches(): HasMany
+    {
+        return $this->hasMany(PartnerBranch::class);
+    }
 
     public function contactProfile(): HasOne
     {

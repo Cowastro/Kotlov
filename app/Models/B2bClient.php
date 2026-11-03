@@ -124,6 +124,11 @@ class B2bClient extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    public function branches(): HasMany
+    {
+        return $this->hasMany(PartnerBranch::class);
+    }
+
     public function orders(): HasMany
     {
         return $this->hasMany(B2bOrder::class);
