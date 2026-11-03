@@ -88,6 +88,21 @@ class SyncTeplovSukhovPriceListTest extends TestCase
         $this->assertSame([10.24, 9.0], [(float) $adapter->fresh()->price, (float) $reducer->fresh()->price]);
     }
 
+    public function test_a_row_is_linked_by_hand_to_a_card_of_another_wording(): void
+    {
+        $category = Category::query()->create(['name' => 'Дымоходы', 'slug' => 'dymohody-tis-test', 'parent_id' => 0, 'is_active' => true]);
+        $brand = Brand::query()->firstOrCreate(['name' => 'Теплов и Сухов'], ['slug' => 'teplov-i-sukhov-test', 'is_active' => true]);
+        $supplier = Supplier::query()->firstOrCreate(['code' => 'teplov'], ['name' => 'Теплов и Сухов']);
+        $card = Product::query()->create(['name' => 'Дымоход моно 1 м ТиС ф115', 'slug' => 'dymokhod-tis-115', 'category_id' => $category->id,
+            'brand_id' => $brand->id, 'price' => 50, 'is_active' => true]);
+
+        $this->artisan('supplier:sync-teplov-sukhov-retail', ['--file' => $this->priceList(), '--apply' => true, '--link' => ['TS.FRT.TRB.0115.32850=dymokhod-tis-115']])
+            ->assertSuccessful();
+
+        $this->assertSame(72.93, (float) $card->fresh()->price);
+        $this->assertSame($card->id, SupplierProduct::query()->where('supplier_id', $supplier->id)->where('supplier_article', 'TS.FRT.TRB.0115.32850')->value('product_id'));
+    }
+
     private function priceList(): string
     {
         $book = new Spreadsheet;

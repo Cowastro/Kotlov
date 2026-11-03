@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\Brand;
+use App\Models\IntegrationProduct;
+use App\Models\IntegrationSource;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -15,6 +17,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
     protected $signature = 'supplier:sync-teplov-sukhov-retail
                             {--file= : Price list xlsx (or a prepared json); default: the one uploaded on the supplier page}
                             {--apply : Apply verified retail prices and save supplier article links}
+                            {--link=* : ARTICLE=card-slug: a row whose card the matcher cannot tell (another wording)}
                             {--find-cards : For the rows without a card, list the cards of any brand (archived too) that may be the item}
                             {--report : Save the complete matching report to storage/app/imports}
                             {--create-missing : Create separate cards only for exact, verified missing rows}
@@ -25,6 +28,13 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
 
     /** The prepared price list used before the xlsx was uploaded on the supplier page. */
     private const PRICE_FILE = 'imports/sbg-teplov-sukhov-2026-09-17.json';
+
+    /** @var array<string,string>|null */
+    private ?array $links = null;
+
+    private $oneCItems = null;
+
+    private $allCards = null;
 
     public function handle(): int
     {
@@ -202,6 +212,15 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 }
             }
 
+            // A link given by hand: the card of the row by its slug, whatever its wording.
+            if ($slug = $this->manualLinks()[$article] ?? null) {
+                $manual = Product::query()->where('slug', $slug)->first();
+                if ($manual) {
+                    $products->contains('id', $manual->id) || $products->push($manual);
+                    $matches = collect([$manual]);
+                }
+            }
+
             if ($matches->count() === 0) {
                 // Missing rows are never "fuzzily" attached to a nearby
                 // diameter or thickness.  This opt-in branch creates a new
@@ -233,6 +252,11 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                     foreach ($this->possibleCards($name) as $card) {
                         $this->line(sprintf('audit.teplov_sukhov.candidate=%s:%d~%s~%d~%d~%d~%.2f', $article, $card->id, $card->slug,
                             (int) $card->brand_id, (int) $card->is_archived, (int) $card->is_active, (float) $card->price));
+                    }
+                    foreach ($this->oneCRows($row, $name) as [$item, $how]) {
+                        $card = $item->product_id ? Product::query()->find($item->product_id) : null;
+                        $this->line(sprintf('audit.teplov_sukhov.onec=%s:%d~%s~%d~%s~%d', $article, $item->id, $how, (int) $card?->id,
+                            $card?->slug ?? Str::slug(Str::limit((string) $item->name, 80, '')), (int) ((float) $item->stock_quantity > 0)));
                     }
                 }
                 continue;
@@ -400,12 +424,45 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         return self::SUCCESS;
     }
 
+    /** @return array<string,string> article => card slug of --link */
+    private function manualLinks(): array
+    {
+        return $this->links ??= collect((array) $this->option('link'))
+            ->mapWithKeys(fn (string $pair) => str_contains($pair, '=') ? [trim(strstr($pair, '=', true)) => trim(substr(strstr($pair, '='), 1))] : [])
+            ->all();
+    }
+
+    /**
+     * The rows of our 1C base that may be the item: the same ТиС article, or the same parameters
+     * (type, steel, thickness, diameters, length, angle).
+     *
+     * @return list<array{0:IntegrationProduct,1:string}>
+     */
+    private function oneCRows(array $row, string $name): array
+    {
+        $items = $this->oneCItems ??= IntegrationProduct::query()->where('integration_source_id', IntegrationSource::query()->where('code', 'onec')->value('id'))
+            ->get(['id', 'name', 'external_sku', 'external_code', 'product_id', 'stock_quantity']);
+        $article = trim((string) ($row['original_sku'] ?? $row['sku'] ?? ''));
+        $key = Photos21vekCommand::key($name);
+
+        return $items->map(function (IntegrationProduct $item) use ($article, $key): ?array {
+            $text = $item->name.' '.$item->external_sku.' '.$item->external_code;
+            if ($article !== '' && str_contains($text, $article)) {
+                return [$item, 'article'];
+            }
+
+            return $key !== '' && Photos21vekCommand::key((string) $item->name) === $key ? [$item, 'params'] : null;
+        })->filter()->take(5)->values()->all();
+    }
+
     /** Cards of any brand, archived too: the type and the diameters of the row. */
     private function possibleCards(string $name)
     {
-        static $all = null;
-        $all ??= Product::query()->get(['id', 'name', 'slug', 'brand_id', 'is_archived', 'is_active', 'price']);
+        $all = $this->allCards ??= Product::query()->get(['id', 'name', 'slug', 'brand_id', 'is_archived', 'is_active', 'price']);
         $types = array_values(array_diff($this->productTypes($this->words($name)), ['моно', 'термо']));
+        if (preg_match('/термовент|упш/iu', $name)) {
+            return $all->filter(fn (Product $product) => preg_match('/термовент|упш/iu', (string) $product->name) === 1)->take(12)->values();
+        }
         // Only the diameters: an old card may not name the steel or thickness. A black card is another item.
         $diameters = array_values(array_filter($this->measurements($name), fn ($m) => str_starts_with($m, 'diam')));
         $black = in_array('black', $this->words($name), true);
