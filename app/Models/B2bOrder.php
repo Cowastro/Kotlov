@@ -45,7 +45,7 @@ class B2bOrder extends Model
         'company_address', 'company_email', 'subtotal', 'discount', 'total',
         'commercial_terms_snapshot', 'client_comment', 'manager_note',
         'accepted_at', 'availability_confirmed_at', 'client_confirmed_at',
-        'invoice_notified_at', 'completed_at', 'cancelled_at',
+        'invoice_notified_at', 'paid_at', 'completed_at', 'cancelled_at',
     ];
 
     protected $casts = [
@@ -58,9 +58,20 @@ class B2bOrder extends Model
         'availability_confirmed_at' => 'datetime',
         'client_confirmed_at' => 'datetime',
         'invoice_notified_at' => 'datetime',
+        'paid_at' => 'datetime',
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        // Every path that marks the order paid stamps the date once: partner levels count by it.
+        static::saving(function (B2bOrder $order): void {
+            if ($order->payment_status === 'paid' && $order->paid_at === null) {
+                $order->paid_at = now();
+            }
+        });
+    }
 
     public function client(): BelongsTo { return $this->belongsTo(B2bClient::class, 'b2b_client_id'); }
     public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
