@@ -8,6 +8,7 @@ use App\Filament\Resources\B2bOrders\RelationManagers\ItemsRelationManager;
 use App\Filament\Resources\B2bOrders\RelationManagers\CommentsRelationManager;
 use App\Filament\Resources\B2bOrders\RelationManagers\EventsRelationManager;
 use App\Models\B2bOrder;
+use App\Models\Order;
 use App\Models\User;
 use App\Services\B2bOrders\B2bOrderWorkflow;
 use App\Services\B2bOrders\B2bOrderInvoice;
@@ -16,6 +17,7 @@ use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -62,6 +64,34 @@ class B2bOrderResource extends Resource
                         ->orderBy('name')->pluck('name', 'id')->all())
                     ->searchable()->preload(),
                 Select::make('status')->label('Статус')->options(B2bOrder::STATUSES)->disabled()->dehydrated(false),
+            ]),
+            Section::make('Примечание клиента')->schema([
+                TextEntry::make('client_comment')->hiddenLabel()->placeholder('Клиент ничего не написал')
+                    ->extraAttributes(['style' => 'white-space:pre-line']),
+            ]),
+            Section::make('Доставка и оплата')->columns(3)->schema([
+                TextEntry::make('delivery_type')->label('Способ доставки')->placeholder('—')
+                    ->formatStateUsing(fn (?string $state): string => Order::DELIVERY_TYPES[$state] ?? (string) $state),
+                TextEntry::make('delivery_place')->label('Куда')->placeholder('—')
+                    ->state(fn (B2bOrder $record): string => collect([$record->delivery_region, $record->delivery_city, $record->delivery_address])->filter()->unique()->implode(', ')),
+                TextEntry::make('delivery_price')->label('Стоимость доставки')->money('BYN')->placeholder('—'),
+                TextEntry::make('payment_type')->label('Оплата')->placeholder('—')
+                    ->formatStateUsing(fn (?string $state): string => Order::PAYMENT_TYPES[$state] ?? (string) $state),
+                TextEntry::make('subtotal')->label('Товары')->money('BYN'),
+                TextEntry::make('total')->label('Итого')->money('BYN')->weight('bold'),
+            ]),
+            Section::make('Контакт и компания')->columns(3)->schema([
+                TextEntry::make('contact_name')->label('Контактное лицо')->placeholder('—'),
+                TextEntry::make('contact_phone')->label('Телефон')->placeholder('—')
+                    ->url(fn (B2bOrder $record): ?string => $record->contact_phone ? 'tel:'.preg_replace('/[^\d+]/', '', $record->contact_phone) : null),
+                TextEntry::make('contact_email')->label('E-mail')->placeholder('—')
+                    ->url(fn (B2bOrder $record): ?string => $record->contact_email ? 'mailto:'.$record->contact_email : null),
+                TextEntry::make('company_name')->label('Компания')->placeholder('—'),
+                TextEntry::make('company_unp')->label('УНП')->placeholder('—'),
+                TextEntry::make('company_address')->label('Юр. адрес')->placeholder('—'),
+            ]),
+            Section::make('Заметка менеджера')->description('Видна только сотрудникам.')->schema([
+                Textarea::make('manager_note')->hiddenLabel()->rows(3)->maxLength(2000),
             ]),
         ]);
     }
