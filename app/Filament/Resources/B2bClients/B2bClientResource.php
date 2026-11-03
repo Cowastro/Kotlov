@@ -5,6 +5,7 @@ namespace App\Filament\Resources\B2bClients;
 use App\Filament\Resources\B2bClients\Pages\CreateB2bClient;
 use App\Filament\Resources\B2bClients\Pages\EditB2bClient;
 use App\Filament\Resources\B2bClients\Pages\ListB2bClients;
+use App\Filament\Resources\B2bClients\RelationManagers\PartnerBranchesRelationManager;
 use App\Filament\Resources\B2bClients\Schemas\B2bClientForm;
 use App\Models\B2bClient;
 use App\Services\B2bClientWorkflow;
@@ -145,6 +146,11 @@ class B2bClientResource extends Resource
             ])
             ->recordUrl(fn (B2bClient $record): string => static::getUrl('edit', ['record' => $record]))
             ->defaultSort('updated_at', 'desc');
+    }
+
+    public static function getRelations(): array
+    {
+        return [PartnerBranchesRelationManager::class];
     }
 
     public static function getPages(): array

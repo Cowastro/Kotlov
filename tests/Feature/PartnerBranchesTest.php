@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\B2bClients\Pages\EditB2bClient;
+use App\Filament\Resources\B2bClients\RelationManagers\PartnerBranchesRelationManager;
 use App\Filament\Resources\PartnerBranches\Pages\ListPartnerBranches;
+use App\Models\B2bClient;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\PartnerBranch;
@@ -23,46 +26,50 @@ class PartnerBranchesTest extends TestCase
         config(['app.base_domain' => 'kotlov.by']);
     }
 
-    public function test_product_card_lists_the_branches_of_the_selected_city_without_phones(): void
+    public function test_product_card_lists_approved_partners_points_of_the_selected_city_without_phones(): void
     {
         $minsk = $this->city('minsk', 'Минск');
         $gomel = $this->city('gomel', 'Гомель');
         $product = $this->product();
-        PartnerBranch::query()->create(['city_id' => $minsk->id, 'name' => 'ООО «СБГ Бай»', 'address' => 'г. Минск, ул. Селицкого, 39Б', 'phones' => ['+375 (29) 111-11-11'], 'sort_order' => 2]);
-        PartnerBranch::query()->create(['city_id' => $minsk->id, 'name' => 'ООО «Тепло Минск»', 'phones' => ['+375 (29) 222-22-22'], 'sort_order' => 1]);
-        PartnerBranch::query()->create(['city_id' => $minsk->id, 'name' => 'Скрытый филиал', 'phones' => ['+375 (29) 333-33-33'], 'is_active' => false]);
-        PartnerBranch::query()->create(['city_id' => $gomel->id, 'name' => 'ООО «Гомель Тепло»', 'phones' => ['+375 (29) 444-44-44']]);
+        $sbg = $this->partner('ООО «СБГ Бай»');
+        $this->branch($sbg, $minsk, 'ООО «СБГ Бай»', ['address' => 'г. Минск, ул. Селицкого, 39Б', 'phones' => ['+375 (29) 111-11-11'], 'sort_order' => 2]);
+        $this->branch($this->partner('ООО «Тепло Минск»'), $minsk, 'ООО «Тепло Минск»', ['sort_order' => 1]);
+        $this->branch($sbg, $minsk, 'Скрытая точка', ['is_active' => false]);
+        $this->branch($this->partner('ООО «На проверке»', 'pending'), $minsk, 'Точка без доступа');
+        $this->branch($this->partner('ООО «Гомель Тепло»'), $gomel, 'ООО «Гомель Тепло»');
 
-        $this->withUnencryptedCookie('selected_city', 'minsk')->get('https://kotlov.by/'.$product->category->slug.'/'.$product->slug)
+        $this->withUnencryptedCookie('selected_city', 'minsk')->get($this->url($product))
             ->assertOk()
             ->assertSee('Где купить в Минске')
             ->assertSeeInOrder(['ООО «Тепло Минск»', 'ООО «СБГ Бай»'])
             ->assertSee('г. Минск, ул. Селицкого, 39Б')
             ->assertSee('Показать телефон')
             ->assertDontSee('+375 (29) 111-11-11')
-            ->assertDontSee('Скрытый филиал')
+            ->assertDontSee('Скрытая точка')
+            ->assertDontSee('Точка без доступа')
             ->assertDontSee('ООО «Гомель Тепло»');
 
-        $this->withUnencryptedCookie('selected_city', 'gomel')->get('https://kotlov.by/'.$product->category->slug.'/'.$product->slug)
-            ->assertOk()->assertSee('Где купить в Гомель')->assertSee('ООО «Гомель Тепло»')->assertDontSee('ООО «СБГ Бай»');
+        $this->withUnencryptedCookie('selected_city', 'gomel')->get($this->url($product))
+            ->assertOk()->assertSee('ООО «Гомель Тепло»')->assertDontSee('ООО «СБГ Бай»');
     }
 
-    public function test_city_without_branches_shows_the_central_contact(): void
+    public function test_city_without_points_shows_the_central_contact(): void
     {
         $this->city('minsk', 'Минск');
         $this->city('brest', 'Брест');
         $product = $this->product();
 
-        $this->withUnencryptedCookie('selected_city', 'brest')->get('https://kotlov.by/'.$product->category->slug.'/'.$product->slug)
-            ->assertOk()->assertSee('Где купить в Брест')->assertSee('Заказ онлайн с доставкой в Брест');
+        $this->withUnencryptedCookie('selected_city', 'brest')->get($this->url($product))
+            ->assertOk()->assertSee('Заказ онлайн с доставкой в Брест');
     }
 
-    public function test_phone_reveal_is_logged_and_hidden_branches_stay_hidden(): void
+    public function test_phone_reveal_is_logged_and_points_without_access_stay_hidden(): void
     {
         $minsk = $this->city('minsk', 'Минск');
         $product = $this->product();
-        $branch = PartnerBranch::query()->create(['city_id' => $minsk->id, 'name' => 'ООО «СБГ Бай»', 'phones' => ['+375 (29) 111-11-11', '+375 (33) 555-55-55']]);
-        $hidden = PartnerBranch::query()->create(['city_id' => $minsk->id, 'name' => 'Скрытый', 'phones' => ['+375 (29) 333-33-33'], 'is_active' => false]);
+        $partner = $this->partner('ООО «СБГ Бай»');
+        $branch = $this->branch($partner, $minsk, 'ООО «СБГ Бай»', ['phones' => ['+375 (29) 111-11-11', '+375 (33) 555-55-55']]);
+        $hidden = $this->branch($partner, $minsk, 'Скрытая', ['is_active' => false]);
 
         $this->postJson(route('partner-branches.phone', $branch), ['product_id' => $product->id])
             ->assertOk()
@@ -72,22 +79,96 @@ class PartnerBranchesTest extends TestCase
         $this->assertDatabaseHas('partner_branch_contact_views', ['partner_branch_id' => $branch->id, 'product_id' => $product->id, 'page' => 'product']);
 
         $this->postJson(route('partner-branches.phone', $hidden))->assertNotFound();
+        $partner->update(['status' => 'paused']);
+        $this->postJson(route('partner-branches.phone', $branch))->assertNotFound();
         $this->assertSame(1, PartnerBranchContactView::query()->count());
     }
 
-    public function test_admin_sees_branches_with_phone_reveal_counts(): void
+    public function test_manager_assigns_a_point_from_the_partner_card_only_after_approval(): void
     {
         $minsk = $this->city('minsk', 'Минск');
-        $branch = PartnerBranch::query()->create(['city_id' => $minsk->id, 'name' => 'ООО «СБГ Бай»', 'phones' => ['+375 (29) 111-11-11']]);
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        $pending = $this->partner('ООО «На проверке»', 'pending');
+        Livewire::test(PartnerBranchesRelationManager::class, ['ownerRecord' => $pending, 'pageClass' => EditB2bClient::class])
+            ->assertSee('Сначала одобрите B2B-доступ')
+            ->assertTableActionHidden('create');
+
+        $partner = $this->partner('ООО «СБГ Бай»');
+        Livewire::test(PartnerBranchesRelationManager::class, ['ownerRecord' => $partner, 'pageClass' => EditB2bClient::class])
+            ->assertTableActionVisible('create')
+            ->callTableAction('create', data: [
+                'city_id' => $minsk->id, 'name' => 'ООО «СБГ Бай»', 'address' => 'г. Минск, ул. Селицкого, 39Б',
+                'phones' => ['+375 (29) 111-11-11'], 'sort_order' => 100, 'is_active' => true,
+            ])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertSame($partner->id, PartnerBranch::query()->sole()->b2b_client_id);
+    }
+
+    public function test_admin_list_shows_points_with_reveal_counts_and_partner_sees_them_in_cabinet(): void
+    {
+        $minsk = $this->city('minsk', 'Минск');
+        $partner = $this->partner('ООО «СБГ Бай»');
+        $branch = $this->branch($partner, $minsk, 'ООО «СБГ Бай» — Селицкого', ['phones' => ['+375 (29) 111-11-11']]);
         PartnerBranchContactView::query()->create(['partner_branch_id' => $branch->id, 'page' => 'product']);
         PartnerBranchContactView::query()->create(['partner_branch_id' => $branch->id, 'page' => 'product']);
 
         $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
         Livewire::test(ListPartnerBranches::class)
-            ->assertSee('ООО «СБГ Бай»')
-            ->assertSee('Минск')
-            ->assertSee('+375 (29) 111-11-11')
-            ->assertSee('2');
+            ->assertSee('ООО «СБГ Бай» — Селицкого')->assertSee('Минск')->assertSee('+375 (29) 111-11-11');
+
+        $this->actingAs($partner->user)->get(route('b2b.cabinet'))
+            ->assertOk()
+            ->assertSee('Мои точки продаж')
+            ->assertSee('ООО «СБГ Бай» — Селицкого')
+            ->assertSee('показов телефона за 30 дней');
+    }
+
+    public function test_one_partner_can_have_points_in_several_cities(): void
+    {
+        $minsk = $this->city('minsk', 'Минск');
+        $borisov = $this->city('borisov', 'Борисов');
+        $product = $this->product();
+        $sbg = $this->partner('ООО «СБГ бай»');
+        $this->branch($sbg, $minsk, 'ООО «СБГ бай»');
+        $this->branch($sbg, $borisov, 'Магазин «Печкiн»');
+
+        $this->withUnencryptedCookie('selected_city', 'borisov')->get($this->url($product))
+            ->assertOk()->assertSee('Магазин «Печкiн»')->assertDontSee('ООО «СБГ бай»</strong>', false);
+        $this->assertSame(2, $sbg->branches()->count());
+    }
+
+    public function test_sbg_bay_is_connected_with_points_in_minsk_and_borisov_once(): void
+    {
+        $this->city('minsk', 'Минск');
+        $this->city('borisov', 'Борисов');
+        $migration = require database_path('migrations/2026_11_03_250000_connect_sbg_bay_partner_branches.php');
+
+        $migration->up();
+        $migration->up();
+
+        $client = B2bClient::query()->where('unp', '193265863')->sole();
+        $this->assertSame('approved', $client->status);
+        $this->assertSame('ООО «СБГ бай»', $client->company_name);
+        $this->assertSame(['Минск', 'Борисов'], $client->branches()->with('city')->orderBy('id')->get()->pluck('city.name')->all());
+        $this->assertSame(['+375 (29) 144-63-14'], $client->branches()->whereHas('city', fn ($q) => $q->where('slug', 'borisov'))->sole()->phones);
+    }
+
+    private function partner(string $company, string $status = 'approved'): B2bClient
+    {
+        $user = User::factory()->create(['client_type' => 'wholesale', 'b2b_approved' => $status === 'approved', 'is_active' => true]);
+
+        return B2bClient::query()->create([
+            'user_id' => $user->id, 'status' => $status, 'partner_type' => 'wholesale',
+            'company_name' => $company, 'contact_name' => $user->name, 'contact_email' => $user->email,
+        ])->load('user');
+    }
+
+    private function branch(B2bClient $partner, City $city, string $name, array $extra = []): PartnerBranch
+    {
+        return PartnerBranch::query()->create(array_merge([
+            'b2b_client_id' => $partner->id, 'city_id' => $city->id, 'name' => $name, 'phones' => ['+375 (29) 000-00-00'],
+        ], $extra));
     }
 
     private function city(string $slug, string $name): City
@@ -106,5 +187,10 @@ class PartnerBranchesTest extends TestCase
             'category_id' => $category->id, 'name' => 'Котёл для теста', 'slug' => 'wtb-kotel',
             'sku' => 'WTB-1', 'price' => 1500, 'is_active' => true, 'is_archived' => false,
         ])->load('category');
+    }
+
+    private function url(Product $product): string
+    {
+        return 'https://kotlov.by/'.$product->category->slug.'/'.$product->slug;
     }
 }
