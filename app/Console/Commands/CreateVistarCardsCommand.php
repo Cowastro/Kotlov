@@ -119,6 +119,7 @@ class CreateVistarCardsCommand extends Command
                 $this->warn($offer->supplier_article.': '.$e->getMessage());
             }
         }
+        $stats['site_pages'] = $site->indexSize();
         foreach ($stats as $key => $value) {
             $this->line("metric.vistar_create.{$key}={$value}");
         }

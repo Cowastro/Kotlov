@@ -28,6 +28,14 @@ class FirewayTeplodvorCatalog
         return $this->byModel[static::matchKey($name)] ?? null;
     }
 
+    /** How many models the index holds (0 when the site gave nothing). */
+    public function indexSize(): int
+    {
+        $this->byModel ??= $this->index();
+
+        return count($this->byModel);
+    }
+
     /** The key a price row and a page title meet by. */
     protected static function matchKey(string $name): string
     {
