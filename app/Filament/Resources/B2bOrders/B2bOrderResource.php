@@ -77,6 +77,7 @@ class B2bOrderResource extends Resource
                 TextEntry::make('delivery_price')->label('Стоимость доставки')->money('BYN')->placeholder('—'),
                 TextEntry::make('payment_type')->label('Оплата')->placeholder('—')
                     ->formatStateUsing(fn (?string $state): string => Order::PAYMENT_TYPES[$state] ?? (string) $state),
+                TextEntry::make('paid_at')->label('Оплачен')->dateTime('d.m.Y H:i')->placeholder('Ещё не оплачен'),
                 TextEntry::make('subtotal')->label('Товары')->money('BYN'),
                 TextEntry::make('total')->label('Итого')->money('BYN')->weight('bold'),
             ]),
