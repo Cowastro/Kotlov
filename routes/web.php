@@ -448,10 +448,7 @@ Route::get('/akcii/kotlov-xo-ceramic-pro', [PromotionController::class, 'xoCeram
 Route::get('/akcii/kotlov-xo-evo-26', [PromotionController::class, 'xoEvo26'])->name('promotions.xo-evo-26');
 Route::get('/akcii/hotta-ceramik-20-30', [PromotionController::class, 'hottaCeramik'])->name('promotions.hotta-ceramik');
 Route::view('/dostavka', 'pages.dostavka');
-Route::get('/partners', fn (Request $request) => view('pages.partners', [
-    'levels' => \App\Models\PartnerProgramLevel::query()->where('is_active', true)->orderBy('rank')->get(),
-    'partnerType' => $request->query('type') === 'installer' ? 'installer' : 'wholesale',
-]))->name('partners');
+Route::get('/partners', [\App\Http\Controllers\PartnerLandingController::class, 'business'])->name('partners');
 Route::get('/rekvizity', fn () => view('pages.requisites', [
     'company' => config('legal.commercial_documents'),
 ]))->name('company.requisites');
@@ -528,7 +525,7 @@ Route::get('/dymohody/tis-ferrit-1-mm.csv', [TisFerrit1mmPriceListController::cl
 Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->middleware('public.form.protect:installer')->name('partners.apply-installer');
 Route::get('/suppliers', fn () => view('pages.suppliers'))->name('suppliers');
 Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->middleware('public.form.protect:supplier')->name('suppliers.apply');
-Route::get('/become-installer', fn () => view('pages.become-installer'))->name('become-installer');
+Route::get('/become-installer', [\App\Http\Controllers\PartnerLandingController::class, 'installer'])->name('become-installer');
 Route::get('/montazhnikam', fn () => redirect('/become-installer?ref=messenger#apply'))
     ->name('installers.outreach');
 Route::view('/demo-installer-profile', 'pages.demo-installer-profile')->name('demo-installer-profile');

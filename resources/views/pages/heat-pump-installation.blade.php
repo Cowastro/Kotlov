@@ -206,5 +206,6 @@
     </div></div></section>
 
     <section class="hp-faq"><div class="container"><div class="row g-40"><div class="col-lg-5"><div class="hp-faq__intro"><span class="hp-kicker">Коротко и по делу</span><h2 class="hp-title mt-16 mb-16">Вопросы о монтаже</h2><p class="hp-lead">Ответы на то, что чаще всего спрашивают до обследования объекта.</p></div></div><div class="col-lg-7"><div id="accordion-heat-pump-installation">@foreach ($faq as $question => $answer)<div class="accordion-item_v2"><div class="accordion-action {{ $loop->first ? '' : 'collapsed' }} lh-24 fw-medium" data-bs-target="#hp-install-faq-{{ $loop->index }}" data-bs-toggle="collapse" aria-expanded="{{ $loop->first ? 'true' : 'false' }}" role="button"><span>{{ $question }}</span><span class="icon ic-accordion-custom cl-2"></span></div><div id="hp-install-faq-{{ $loop->index }}" class="collapse {{ $loop->first ? 'show' : '' }}" data-bs-parent="#accordion-heat-pump-installation"><p class="faq-content cl-text-2">{{ $answer }}</p></div></div>@endforeach</div></div></div></div></section>
+    @include('partials.installation-partner-cta')
 </main>
 @endsection
