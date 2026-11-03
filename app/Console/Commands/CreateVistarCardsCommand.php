@@ -58,6 +58,8 @@ class CreateVistarCardsCommand extends Command
         $limit = (int) $this->option('limit');
         foreach ($offers as $offer) {
             $raw = (array) $offer->raw;
+            // The offer keeps «BAXI LUNA Century 1.16»: the name of the row is without the brand.
+            $raw['name'] ??= trim((string) preg_replace('/^'.preg_quote((string) ($raw['brand'] ?? ''), '/').'\s+/u', '', (string) $offer->supplier_name));
             $brandId = (int) ($brands[mb_strtolower(Str::slug((string) ($raw['brand'] ?? ''), ''))] ?? 0);
             $title = self::cardTitle($raw);
             $code = Str::slug((string) $offer->supplier_article);
