@@ -906,6 +906,12 @@ jobs:
             grep -E '^metric\.teplodvor\.[a-z_]+=[0-9-]+$' "$detail_log" || true
             echo "safe_teplodvor_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "crm-mail:refetch-attachments" ]]; then
+            echo "safe_mail_refetch_begin"
+            grep -E '^metric\.mail_refetch\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.mail_refetch\.part=[0-9]+:[0-9.]+:[0-9]+:[0-9]+:-?[0-9]+:[0-9]+$' "$detail_log" || true
+            echo "safe_mail_refetch_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "crm-mail:audit-threads" ]]; then
             echo "safe_crm_mail_audit_metrics_begin"
             grep -E '^(hidden_incoming|mixed_subject_threads|orphan_incoming_threads|recovered_reactions)=[0-9]+$' "$detail_log" || true

@@ -534,7 +534,7 @@ class ImapMailboxSynchronizer
         $body = $prefix === ''
             ? (string) imap_body($imap, $messageNumber, FT_PEEK)
             : (string) imap_fetchbody($imap, $messageNumber, $prefix, FT_PEEK);
-        $body = $this->decodePartBody($body, (int) ($part->encoding ?? ENC7BIT));
+        $body = self::decodePartBody($body, (int) ($part->encoding ?? ENC7BIT));
         $size = strlen($body);
         $name = $this->safeAttachmentName($filename, count($attachments) + 1);
         $mimeType = $this->partMimeType($part);
@@ -566,13 +566,72 @@ class ImapMailboxSynchronizer
         ];
     }
 
-    private function decodePartBody(string $body, int $encoding): string
+    public static function decodePartBody(string $body, int $encoding): string
     {
-        return match ($encoding) {
-            ENCBASE64 => (string) base64_decode($body, true),
-            ENCQUOTEDPRINTABLE => quoted_printable_decode($body),
-            default => $body,
-        };
+        if ($encoding === ENCBASE64) {
+            $strict = base64_decode($body, true);
+            // A stray character or padding in the middle (some exporters glue chunks together) fails the strict
+            // decode, which saved the attachment as 0 bytes: decode what is base64 in it.
+            if ($strict !== false) {
+                return $strict;
+            }
+            $segments = preg_split('~(?<==)(?=[A-Za-z0-9+/])~', (string) preg_replace('~[^A-Za-z0-9+/=]~', '', $body)) ?: [];
+
+            return implode('', array_map(fn (string $segment): string => (string) base64_decode($segment), $segments));
+        }
+
+        return $encoding === ENCQUOTEDPRINTABLE ? quoted_printable_decode($body) : $body;
+    }
+
+    /**
+     * The attachments of a saved message fetched again from the mailbox, for one that came out empty.
+     *
+     * @return list<array{part: string, encoding: int, raw: int, strict: int, size: int}>
+     */
+    public function refetchAttachments(CrmMailbox $mailbox, CrmMailMessage $message, bool $apply): array
+    {
+        $imap = @imap_open($mailbox->imapPath(), $mailbox->username, $mailbox->password, OP_READONLY, 1);
+        if ($imap === false) {
+            throw new RuntimeException('IMAP: '.(imap_last_error() ?: 'не удалось подключиться к ящику'));
+        }
+        try {
+            $messageNumber = imap_msgno($imap, (int) $message->imap_uid);
+            $structure = $messageNumber > 0 ? imap_fetchstructure($imap, $messageNumber) : false;
+            $report = [];
+            $this->walkAttachmentReport($imap, $messageNumber, $structure ?: null, '', $report);
+            if ($apply && $structure) {
+                $metadata = $message->metadata ?? [];
+                unset($metadata['attachments_scanned_at']);
+                $message->forceFill(['metadata' => $metadata]);
+                $this->hydrateAttachments($imap, $mailbox, $message, (int) $message->imap_uid);
+            }
+
+            return $report;
+        } finally {
+            imap_close($imap);
+        }
+    }
+
+    private function walkAttachmentReport($imap, int $messageNumber, ?object $part, string $prefix, array &$report): void
+    {
+        if ($part === null) {
+            return;
+        }
+        foreach ($part->parts ?? [] as $index => $child) {
+            $this->walkAttachmentReport($imap, $messageNumber, $child, $prefix === '' ? (string) ($index + 1) : $prefix.'.'.($index + 1), $report);
+        }
+        if (! empty($part->parts) || strtoupper((string) ($part->disposition ?? '')) !== 'ATTACHMENT' && blank($this->attachmentFilename($part))) {
+            return;
+        }
+        $raw = $prefix === '' ? (string) imap_body($imap, $messageNumber, FT_PEEK) : (string) imap_fetchbody($imap, $messageNumber, $prefix, FT_PEEK);
+        $encoding = (int) ($part->encoding ?? ENC7BIT);
+        $report[] = [
+            'part' => $prefix ?: '0',
+            'encoding' => $encoding,
+            'raw' => strlen($raw),
+            'strict' => $encoding === ENCBASE64 ? strlen((string) base64_decode($raw, true)) : -1,
+            'size' => strlen(self::decodePartBody($raw, $encoding)),
+        ];
     }
 
     private function attachmentFilename(object $part): ?string
