@@ -31,6 +31,7 @@
 @push('styles')
 <style>
     .bz-page { --bz-red:var(--primary); --bz-muted:var(--text-2); --bz-cream:var(--bg-2); --bz-line:var(--line); overflow:hidden; }
+    .bz-page *, .bz-page *::before, .bz-page *::after { box-sizing:border-box; }
     .bz-page .bz-kicker { display:inline-flex; align-items:center; gap:10px; color:var(--bz-red); font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
     .bz-page .bz-kicker::before { content:""; width:28px; height:2px; background:currentColor; }
     .bz-page .bz-title { font-size:clamp(32px,3.8vw,54px); line-height:1.05; letter-spacing:-.04em; }
@@ -145,7 +146,7 @@
 
     @media (max-width:1199px) { .bz-hero__visual { min-height:540px; } }
     @media (max-width:991px) {
-        .bz-hero__visual { margin-top:44px; min-height:520px; }
+        .bz-hero__visual { margin-top:40px; min-height:460px; }
         .bz-step::after { display:none; }
         .bz-installers__band { grid-template-columns:1fr; }
         .bz-roles__grid { grid-template-columns:1fr; }
@@ -155,23 +156,41 @@
         .bz-request__photo { min-height:420px; margin-bottom:24px; }
     }
     @media (max-width:767px) {
-        .bz-hero { padding:30px 0 60px; }
-        .bz-hero .breadcrumbs { margin-bottom:24px; }
-        .bz-hero h1 { font-size:40px; }
+        .bz-page .bz-kicker { gap:8px; font-size:11px; letter-spacing:.07em; }
+        .bz-page .bz-kicker::before { width:22px; }
+        .bz-page .bz-title { font-size:clamp(29px,8.6vw,36px); line-height:1.08; letter-spacing:-.035em; }
+        .bz-page .bz-lead { font-size:15px; line-height:1.55; }
+        .bz-page .bz-intro { margin-bottom:30px; }
+        .bz-hero { padding:24px 0 52px; }
+        .bz-hero .breadcrumbs { margin-bottom:28px; }
+        .bz-hero h1 { max-width:100%; font-size:clamp(34px,10.4vw,40px); line-height:1.01; letter-spacing:-.045em; }
+        .bz-hero__copy { margin-top:20px; }
         .bz-hero__facts { display:none; }
-        .bz-hero__actions { display:grid; }
+        .bz-hero__actions { display:grid; gap:10px; margin-top:24px; }
         .bz-hero__actions .tf-btn { width:100%; min-width:0; }
-        .bz-hero__visual { margin-top:28px; min-height:380px; }
+        .bz-hero__visual { margin-top:28px; min-height:320px; }
         .bz-hero__photo { inset:0; }
-        .bz-hero__label { left:14px; right:14px; bottom:14px; max-width:none; }
-        .bz-roles,.bz-cabinet,.bz-audience,.bz-earn,.bz-process,.bz-levels,.bz-faq,.bz-request { padding:70px 0; }
-        .bz-earn__item { padding:22px; }
+        .bz-hero__photo, .bz-installers__band, .bz-request__photo { border-radius:16px; }
+        .bz-hero__label { left:12px; right:12px; bottom:12px; max-width:none; padding:14px 16px; border-radius:14px; }
+        .bz-hero__label strong { margin-top:3px; font-size:15px; line-height:1.3; }
+        .bz-roles,.bz-cabinet,.bz-audience,.bz-earn,.bz-process,.bz-levels,.bz-faq,.bz-request { padding:56px 0; }
+        .bz-role { padding:24px 22px; border-radius:16px; }
+        .bz-role h3 { margin:8px 0 16px; font-size:24px; }
+        .bz-roles__grid { gap:14px; }
+        .bz-roles__arrow { gap:7px; font-size:10px; }
+        .bz-roles__arrow::after { height:20px; }
+        .bz-earn__item { padding:22px; border-radius:16px; }
         .bz-earn__num { margin-bottom:12px; font-size:34px; }
         .bz-installers { padding-bottom:70px; }
+        .bz-levels__head { gap:22px; margin-bottom:28px; }
         .bz-switch { display:flex; width:100%; }
-        .bz-switch a { flex:1; text-align:center; }
-        .bz-installers__photo { min-height:260px; }
-        .bz-request__photo { min-height:380px; }
+        .bz-switch a { flex:1; padding:10px 12px; text-align:center; }
+        .bz-installers__photo { min-height:230px; }
+        .bz-installers__body { padding:28px 20px 24px; }
+        .bz-installers__list { gap:10px; margin:22px 0 24px; }
+        .bz-installers__body .tf-btn { width:100%; min-width:0; padding-inline:14px; font-size:14px; text-align:center; }
+        .bz-request__photo { min-height:300px; margin-bottom:18px; }
+        .bz-request__note { left:12px; right:12px; bottom:12px; padding:16px; border-radius:14px; }
         .bz-request__form { padding:24px 18px; }
         .bz-request-form .tf-btn { justify-self:stretch; }
         .bz-feature { padding:16px; border-radius:16px; }
@@ -179,9 +198,22 @@
         .bz-feature__icon svg { width:20px; height:20px; }
         .bz-feature h3 { font-size:16px; line-height:1.25; }
         .bz-feature p { font-size:13px; line-height:1.5; }
-        .bz-card, .bz-step, .bz-level { padding:22px; }
+        .bz-card, .bz-step, .bz-level { padding:20px; border-radius:16px; }
         .bz-card__icon { width:46px; height:46px; margin-bottom:18px; }
         .bz-step__number { margin-bottom:14px; }
+        .bz-card h3, .bz-step h3, .bz-earn__item h3 { font-size:20px; }
+        .bz-card p, .bz-step p, .bz-earn__item p { line-height:1.55; }
+        .bz-faq__intro { margin-bottom:22px; }
+        .bz-faq .accordion-action { gap:12px; padding-block:16px; }
+        .bz-request-form { margin-top:20px; }
+        .bz-request-form :is(input, select, textarea) { min-width:0; }
+    }
+    @media (max-width:359px) {
+        .bz-hero h1 { font-size:32px; }
+        .bz-page .bz-title { font-size:28px; }
+        .bz-hero__visual { min-height:290px; }
+        .bz-installers__body, .bz-request__form { padding-inline:16px; }
+        .bz-installers__body .tf-btn { font-size:13px; }
     }
 </style>
 @endpush
