@@ -26,7 +26,12 @@ class PartnerLevelEvaluator
             $value = (int) round(($revenue ? $orders->sum('total') : $orders->count()) * $scale);
             $target = (int) round($rule['target'] * $scale);
 
-            return $rule + ['remaining' => max(0, $target - $value) / $scale];
+            return array_merge($rule, [
+                'remaining' => max(0, $target - $value) / $scale,
+                'percent' => $target <= 0 || $value >= $target
+                    ? 100
+                    : (int) floor(100 * max(0, $value) / $target),
+            ]);
         });
 
         return compact('current', 'next', 'rules');

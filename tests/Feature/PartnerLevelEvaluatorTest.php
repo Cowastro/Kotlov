@@ -49,6 +49,7 @@ class PartnerLevelEvaluatorTest extends TestCase
         $this->assertEquals(0.01, $evaluator->progress($client)['rules']->first()['remaining']);
         $this->view('partials.b2b.partner-level', ['client' => $client, 'can' => fn () => true])
             ->assertSeeText('Ваш уровень — Базовый')->assertSeeText('Осталось 0,01')
+            ->assertSee('aria-valuenow="99"', false)
             ->assertSeeText('Оптовые цены')->assertSeeText('Бонус за объём')->assertDontSeeText('Заявки по региону');
         $client->partner_type = 'installer';
         $this->view('partials.b2b.partner-level', ['client' => $client, 'can' => fn () => true])
