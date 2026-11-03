@@ -53,8 +53,14 @@
             .wtb__phone:disabled { opacity:.6; cursor:default; }
             .wtb__phones { display:grid; gap:2px; text-align:right; }
             .wtb__phones a { color:var(--text,#111)!important; font-size:15px; font-weight:700; white-space:nowrap; }
-            .wtb__note { display:flex; align-items:center; gap:7px; margin:0; padding:10px 20px 12px; border-top:1px solid var(--line,#e8e8e8); color:var(--text-2,#6b7280); font-size:12px; }
-            .wtb__note svg { width:15px; height:15px; color:#0b8a5c; }
+            .wtb__footer { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:10px 20px 12px; border-top:1px solid var(--line,#e8e8e8); }
+            .wtb__note { display:flex; align-items:center; gap:7px; margin:0; color:var(--text-2,#6b7280); font-size:12px; }
+            .wtb__note svg { flex:0 0 15px; width:15px; height:15px; color:#0b8a5c; }
+            .wtb__partner-cta { display:flex; align-items:center; gap:9px; color:var(--text-2,#6b7280); font-size:12px; white-space:nowrap; }
+            .wtb__partner-link { display:inline-flex; align-items:center; gap:5px; color:var(--primary,#e04747)!important; font-size:12px; font-weight:700; text-decoration:none!important; }
+            .wtb__partner-link::after { content:"→"; font-size:15px; line-height:1; transition:transform .2s ease; }
+            .wtb__partner-link:hover::after { transform:translateX(3px); }
+            .wtb__partner-link:focus-visible { outline:2px solid var(--primary,#e04747); outline-offset:3px; border-radius:2px; }
             @media (max-width:991px) {
                 .wtb__item { grid-template-columns:38px minmax(170px,.9fr) minmax(180px,1fr) auto; }
             }
@@ -74,7 +80,8 @@
                 .wtb__phone-label { font-size:0; }
                 .wtb__phone-label::after { content:"Телефон"; font-size:12px; }
                 .wtb__phones { text-align:right; }
-                .wtb__note { padding:9px 16px 11px; }
+                .wtb__footer { align-items:flex-start; flex-direction:column; gap:8px; padding:9px 16px 11px; }
+                .wtb__partner-cta { flex-wrap:wrap; gap:4px 8px; white-space:normal; }
             }
         </style>
     @endpush
@@ -120,7 +127,6 @@
                 </li>
             @endforeach
         </ul>
-        <p class="wtb__note">{!! $wtbIcon('shield') !!}Официальные партнёры KOTLOV: цена и гарантия — как на сайте.</p>
     @else
         <ul class="wtb__list">
             <li class="wtb__item">
@@ -139,5 +145,14 @@
             </li>
         </ul>
     @endif
+    <div class="wtb__footer">
+        @if($wtbBranches->isNotEmpty())
+            <p class="wtb__note">{!! $wtbIcon('shield') !!}Официальные партнёры KOTLOV: цена и гарантия — как на сайте.</p>
+        @endif
+        <div class="wtb__partner-cta">
+            <span>Хотите, чтобы ваш магазин появился здесь?</span>
+            <a href="{{ route('partners') }}" class="wtb__partner-link">Стать партнёром</a>
+        </div>
+    </div>
 </section>
 @include('partials.partner-branch-phone-script')
