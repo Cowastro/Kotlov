@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Mail\PartnerLevelReachedMail;
 use App\Models\B2bClient;
 use App\Models\PartnerProgramLevel;
+use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class PartnerLevelEvaluator
 {
@@ -27,6 +30,7 @@ class PartnerLevelEvaluator
             $target = (int) round($rule['target'] * $scale);
 
             return array_merge($rule, [
+                'actual' => $value / $scale,
                 'remaining' => max(0, $target - $value) / $scale,
                 'percent' => $target <= 0 || $value >= $target
                     ? 100
@@ -52,7 +56,32 @@ class PartnerLevelEvaluator
                 }
 
                 $client->partner_program_level_id = $next->id;
+                $price = $next->auto_apply_price_level ? $next->priceLevel : null;
+                if ($price?->is_active && (! $client->priceLevel || $price->rank > $client->priceLevel->rank)) {
+                    $client->b2b_price_level_id = $price->id;
+                    $client->unsetRelation('priceLevel');
+                }
                 $client->saveQuietly();
+
+                DB::table('partner_level_transitions')->insert([
+                    'b2b_client_id' => $client->id,
+                    'old_level' => $current ? json_encode($current->only(['id', 'name']), JSON_THROW_ON_ERROR) : null,
+                    'new_level' => json_encode($next->only(['id', 'name']), JSON_THROW_ON_ERROR),
+                    'metrics' => $rules->toJson(JSON_THROW_ON_ERROR),
+                    'created_at' => now(),
+                ]);
+
+                if ($manager = $client->responsibleUser) {
+                    Notification::make()
+                        ->title("Компания {$client->company_name} достигла уровня {$next->name} — проверьте уровень цен")
+                        ->sendToDatabase($manager);
+                }
+
+                $email = $client->contact_email ?: $client->user?->email;
+                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    DB::afterCommit(fn () => Mail::mailer('transactional')->to($email)
+                        ->queue(new PartnerLevelReachedMail($next->name)));
+                }
             }
         }, 3);
     }

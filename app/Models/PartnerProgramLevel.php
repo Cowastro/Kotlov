@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PartnerProgramLevel extends Model
 {
@@ -19,9 +20,14 @@ class PartnerProgramLevel extends Model
         'volume_bonus' => 'Бонус за объём',
     ];
 
-    protected $fillable = ['rank', 'name', 'is_active', 'benefits', 'rules'];
+    protected $fillable = ['rank', 'name', 'is_active', 'benefits', 'rules', 'b2b_price_level_id', 'auto_apply_price_level'];
 
-    protected $casts = ['rules' => 'array', 'benefits' => 'array', 'is_active' => 'boolean', 'rank' => 'integer'];
+    protected $casts = ['rules' => 'array', 'benefits' => 'array', 'is_active' => 'boolean', 'rank' => 'integer', 'auto_apply_price_level' => 'boolean'];
+
+    public function priceLevel(): BelongsTo
+    {
+        return $this->belongsTo(B2bPriceLevel::class, 'b2b_price_level_id');
+    }
 
     public function benefitsFor(string $partnerType): array
     {
