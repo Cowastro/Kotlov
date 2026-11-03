@@ -15,6 +15,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
     protected $signature = 'supplier:sync-teplov-sukhov-retail
                             {--file= : Price list xlsx (or a prepared json); default: the one uploaded on the supplier page}
                             {--apply : Apply verified retail prices and save supplier article links}
+                            {--find-cards : For the rows without a card, list the cards of any brand (archived too) that may be the item}
                             {--report : Save the complete matching report to storage/app/imports}
                             {--create-missing : Create separate cards only for exact, verified missing rows}
                             {--sheet= : Restrict creation to one workbook sheet}
@@ -228,6 +229,12 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 $stats['unmatched']++;
                 $details[] = [$article, Str::limit($name, 48), 'not matched'];
                 $nearCards[$article] = $this->nearCards($products, $name);
+                if ($this->option('find-cards')) {
+                    foreach ($this->possibleCards($name) as $card) {
+                        $this->line(sprintf('audit.teplov_sukhov.candidate=%s:%d~%s~%d~%d~%d~%.2f', $article, $card->id, $card->slug,
+                            (int) $card->brand_id, (int) $card->is_archived, (int) $card->is_active, (float) $card->price));
+                    }
+                }
                 continue;
                 }
             }
@@ -391,6 +398,25 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /** Cards of any brand, archived too: the type of the row, its steel, thickness and diameters (the length aside). */
+    private function possibleCards(string $name)
+    {
+        static $all = null;
+        $all ??= Product::query()->get(['id', 'name', 'slug', 'brand_id', 'is_archived', 'is_active', 'price']);
+        $types = array_values(array_diff($this->productTypes($this->words($name)), ['моно', 'термо']));
+        $numbers = array_values(array_diff($this->numbers($name), array_map(fn ($m) => substr($m, 6), array_filter($this->measurements($name), fn ($m) => str_starts_with($m, 'length')))));
+        if ($numbers === []) {
+            return collect();
+        }
+
+        return $all->filter(function (Product $product) use ($types, $numbers): bool {
+            $words = $this->words((string) $product->name);
+
+            return array_diff($types, $this->productTypes($words)) === [] && array_diff($numbers, $this->numbers((string) $product->name)) === []
+                && preg_match('/дымоход|труб|отвод|тройник|зонт|дефлектор|шибер|площадк|креплен|кронштейн|экран|лист|проход|переход|адаптер|бак|титан|конвектор|упш|термовент|вент|запарник/u', mb_strtolower((string) $product->name)) === 1;
+        })->sortBy('id')->take(8)->values();
     }
 
     /** Up to three cards with every number of the row (diameters, steel, thickness, length) but another wording. */
