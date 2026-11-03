@@ -14,12 +14,20 @@ class CityContactResolver
     public function resolve(Request $request): array
     {
         $selectedSlug = $request->cookie('selected_city');
-        $city = $selectedSlug ? $this->selectableCity($selectedSlug) : null;
+        $selectionSource = $request->cookie('selected_city_source');
+        // Cookies created before source tracking are treated as an explicit choice.
+        // This prevents a deployment from unexpectedly changing a visitor's city.
+        $manualSelection = $selectedSlug && $selectionSource !== 'auto';
+        $city = $manualSelection ? $this->selectableCity($selectedSlug) : null;
         $autoDetected = false;
 
-        if (! $city && ! $selectedSlug) {
+        if (! $manualSelection) {
             $city = $this->detectedCity($request);
             $autoDetected = $city !== null;
+
+            if (! $city && $selectedSlug) {
+                $city = $this->selectableCity($selectedSlug);
+            }
         }
 
         $city ??= $this->selectableCity('minsk');
@@ -73,16 +81,52 @@ class CityContactResolver
 
     private function detectedCity(Request $request): ?City
     {
-        $country = strtoupper(trim((string) $request->header('CF-IPCountry')));
-        $cityName = trim(rawurldecode((string) $request->header('CF-IPCity')));
+        $country = $this->firstHeader($request, [
+            'CF-IPCountry',
+            'CloudFront-Viewer-Country',
+            'X-Vercel-IP-Country',
+        ]);
+        $cityName = $this->firstHeader($request, [
+            'CF-IPCity',
+            'CloudFront-Viewer-City',
+            'X-Vercel-IP-City',
+            'X-Geo-City',
+        ]);
 
-        if ($country !== 'BY' || $cityName === '') {
+        if (strtoupper($country) !== 'BY' || $cityName === '') {
             return null;
         }
 
-        $slug = Str::slug($cityName);
+        $normalized = Str::slug(rawurldecode($cityName));
+        $aliases = [
+            'barysaw' => 'borisov',
+            'barysau' => 'borisov',
+            'homiel' => 'gomel',
+            'hrodna' => 'grodno',
+            'mahilyow' => 'mogilev',
+            'mahiliou' => 'mogilev',
+            'mahilou' => 'mogilev',
+            'viciebsk' => 'vitebsk',
+            'baranavichy' => 'baranovichi',
+            'babruysk' => 'bobruysk',
+        ];
+        $slug = $aliases[$normalized] ?? $normalized;
 
         return $slug !== '' ? $this->selectableCity($slug) : null;
+    }
+
+    /** @param array<int, string> $names */
+    private function firstHeader(Request $request, array $names): string
+    {
+        foreach ($names as $name) {
+            $value = trim((string) $request->header($name));
+
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
     }
 
     private function defaultMinsk(): City

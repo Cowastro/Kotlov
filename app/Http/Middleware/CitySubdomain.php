@@ -59,7 +59,18 @@ class CitySubdomain
             $response->headers->setCookie(cookie(
                 'selected_city',
                 $selected['city']->slug,
-                60 * 24 * 365,
+                60 * 24,
+                '/',
+                null,
+                $request->isSecure(),
+                true,
+                false,
+                'lax',
+            ));
+            $response->headers->setCookie(cookie(
+                'selected_city_source',
+                'auto',
+                60 * 24,
                 '/',
                 null,
                 $request->isSecure(),
