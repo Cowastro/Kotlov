@@ -21,6 +21,7 @@ class B2bOrderStageMail extends Mailable
         'accepted' => 'Заказ принят в работу',
         'proposal' => 'Наличие подтверждено, товар в резерве',
         'paid' => 'Оплата получена',
+        'credit_paid' => 'Оплата по заказу получена',
         'assembling' => 'Заказ комплектуется',
         'ready_to_ship' => 'Заказ готов к отгрузке',
         'shipped' => 'Заказ отгружен',
