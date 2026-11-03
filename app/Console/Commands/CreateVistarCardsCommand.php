@@ -87,7 +87,7 @@ class CreateVistarCardsCommand extends Command
             $stats['planned']++;
             $stats['on_site'] += (int) ($url !== null);
             $stats['onec'] += (int) ($oneC !== null);
-            $this->line(sprintf('audit.vistar_create.offer=%s:%d:%s:%d:%s', $code, $categoryId, $url ? 'teplodvor' : 'price', (int) $oneC?->id, Str::slug(Str::limit($title, 80, ''))));
+            $this->line(sprintf('audit.vistar_create.offer=%s:%s:%s:%d:%s', $code, DB::table('categories')->where('id', $categoryId)->value('slug') ?: $categoryId, $url ? 'teplodvor' : 'price', (int) $oneC?->id, Str::slug(Str::limit($title, 80, ''))));
             if (! $this->option('apply') || ($limit > 0 && $stats['created'] >= $limit)) {
                 continue;
             }
