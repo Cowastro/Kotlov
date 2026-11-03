@@ -53,7 +53,7 @@ class CreateVistarCardsCommand extends Command
         foreach (DB::table('products')->whereIn('brand_id', $brands->values())->get(['name', 'brand_id']) as $card) {
             $existing[$card->brand_id.'|'.VistarPriceList::modelKey((string) $card->name)] = true;
         }
-        $categories = $this->categoriesBySeries($supplier);
+        $categories = DB::table('categories')->pluck('id', 'slug');
         $stats = ['offers' => $offers->count(), 'planned' => 0, 'card_exists' => 0, 'no_retail' => 0, 'no_category' => 0, 'on_site' => 0, 'onec' => 0, 'created' => 0, 'with_photo' => 0, 'errors' => 0];
         $limit = (int) $this->option('limit');
         foreach ($offers as $offer) {
@@ -75,7 +75,7 @@ class CreateVistarCardsCommand extends Command
 
                 continue;
             }
-            $categoryId = $categories[($raw['sheet'] ?? '').'|'.($raw['section'] ?? '')] ?? $categories[($raw['sheet'] ?? '').'|'] ?? 0;
+            $categoryId = (int) ($categories[self::categorySlug($raw, $title)] ?? 0);
             if (! $categoryId) {
                 $stats['no_category']++;
                 $this->line("audit.vistar_create.no_category={$code}");
@@ -163,25 +163,36 @@ class CreateVistarCardsCommand extends Command
         return $brand !== '' && ! str_contains(mb_strtolower($name), mb_strtolower($brand)) ? trim($name.', '.$brand) : $name;
     }
 
-    /** sheet|section (and sheet|) => the category most VISTAR cards of it are in. */
-    private function categoriesBySeries(Supplier $supplier): array
+    /** The category of a row by the kind of item: boilers, water heaters, tanks, flue parts, controls. */
+    public static function categorySlug(array $raw, string $title): string
     {
-        $votes = [];
-        foreach (SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->with('product:id,category_id')->get() as $link) {
-            $category = (int) $link->product?->category_id;
-            if (! $category) {
-                continue;
-            }
-            foreach ([($link->raw['sheet'] ?? '').'|'.($link->raw['section'] ?? ''), ($link->raw['sheet'] ?? '').'|'] as $key) {
-                $votes[$key][$category] = ($votes[$key][$category] ?? 0) + 1;
+        $text = mb_strtolower($title.' '.($raw['name'] ?? ''));
+        $rules = [
+            'elektricheskie' => '/ampera/u',
+            'gazovye' => '/газовый котел|котёл vitodens|котел vitodens/u',
+            'kosvennye' => '/бойлер косвенного/u',
+            'gruppy-bystrogo-montazha-kotelnyx' => '/группа быстрого монтажа|насосная группа/u',
+            'gidravlicheskie-razdeliteli-i-kollektory' => '/коллектор/u',
+            'stabilizatory-napryazheniya' => '/стабилизатор/u',
+            'membrannye-baki' => '/мембранный бак|расширительн[а-я]* бак|крепеж[а-я]* для расширительн/u',
+            'predokhranitelnaya-i-reguliruyushchaya-armatura' => '/flowjet|клапан для расширительн/u',
+            'datchiki' => '/датчик/u',
+            'regulyatory' => '/термостат|контроллер|регулятор|zont|модуль|каскадн|панель управления|vitotrol|аксессуар для управления|vitocom/u',
+            'zapchasti-dlya-kotlov' => '/комплект перевода|нейтрализац|наполнитель|трехходов|трёхходов|дымовой колпак/u',
+            'homuty-i-rastyazhki-dymohoda' => '/хомут/u',
+            'rozety-i-dekorativnye-elementy-dymohoda' => '/накладка/u',
+            'kondensatootvody' => '/конденсатосборник|конденсатоотвод|ревизи/u',
+            'perehody-adaptery-dymohod' => '/адаптер|переход с/u',
+            'zaglushki-dymohod' => '/наконечник|оголовок/u',
+            'koaxial-dymoxod' => '/коакс|дымоход|труба|колено|удлинени|проход|тройник|отвод/u',
+        ];
+        foreach ($rules as $slug => $pattern) {
+            if (preg_match($pattern, $text) === 1) {
+                return $slug;
             }
         }
 
-        return array_map(function (array $counts): int {
-            arsort($counts);
-
-            return (int) array_key_first($counts);
-        }, $votes);
+        return '';
     }
 
     /** The one row of our 1C base with this article in its name or code. */

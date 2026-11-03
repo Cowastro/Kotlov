@@ -66,6 +66,17 @@ class SyncVistarCommandTest extends TestCase
         $this->assertSame('Коаксиальная труба дымохода 60/100 мм, BAXI', $title(['name' => 'Коаксиальная труба дымохода 60/100 мм', 'brand' => 'BAXI', 'section' => 'Дымоходы из алюминия для традиционных котлов', 'sheet' => 'Традиционные котлы BAXI']));
     }
 
+    public function test_a_row_goes_to_the_category_of_its_kind(): void
+    {
+        $slug = fn (string $title) => \App\Console\Commands\CreateVistarCardsCommand::categorySlug([], $title);
+        $this->assertSame(['gazovye', 'elektricheskie', 'kosvennye', 'membrannye-baki', 'koaxial-dymoxod', 'perehody-adaptery-dymohod', 'regulyatory', 'homuty-i-rastyazhki-dymohoda'], [
+            $slug('Конденсационный газовый котел BAXI LUNA Classic 24 (двухконтурный)'), $slug('Электрический котел BAXI Ampera 6 кВт (2-4-6)'),
+            $slug('Бойлер косвенного нагрева Viena WTD 100'), $slug('Мембранный бак Reflex DE 12 л, 4 бар'),
+            $slug('Коаксиальное колено дымохода 90° 60/100 мм, BAXI'), $slug('Адаптер для подключения раздельных труб 60/100 на 80/80, KRATS'),
+            $slug('Комнатный механический термостат двухпозиционный (SIEMENS), BAXI'), $slug('Крепежный хомут D=80, KRATS'),
+        ]);
+    }
+
     private function priceList(): string
     {
         $book = new Spreadsheet;
