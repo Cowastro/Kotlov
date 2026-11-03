@@ -4,11 +4,21 @@ namespace App\Services\Pricing;
 
 use App\Models\IntegrationProduct;
 use App\Models\Product;
+use App\Models\SupplierProduct;
 
+/**
+ * The B2B price that replaces the 1C sale price: the wholesale price of an uploaded price list (Теплов и Сухов,
+ * until 1C has the new prices; it includes VAT), else the retail price less a brand or category discount.
+ */
 class B2bBrandRetailPricing
 {
     public function priceFor(Product $product, ?IntegrationProduct $offer = null): ?float
     {
+        $wholesale = $this->priceListWholesale($product);
+        if ($wholesale !== null) {
+            return $wholesale;
+        }
+
         $discount = $this->discountPercent($product, $offer);
         $retailPrice = (float) ($product->price ?? 0);
 
@@ -33,6 +43,26 @@ class B2bBrandRetailPricing
         $discount = (float) ($discounts[$brandSlug] ?? $discounts[$brandName] ?? 0);
 
         return $discount > 0 && $discount < 100 ? $discount : null;
+    }
+
+    /** The wholesale price (with VAT) of the price list of a supplier set in shop.b2b_price_list_wholesale_suppliers. */
+    public function priceListWholesale(Product $product): ?float
+    {
+        $suppliers = (array) config('shop.b2b_price_list_wholesale_suppliers', []);
+        if ($suppliers === [] || ! $product->id) {
+            return null;
+        }
+
+        $price = SupplierProduct::query()
+            ->where('product_id', $product->id)
+            ->where('match_status', 'matched')
+            ->whereHas('supplier', fn ($query) => $query->whereIn('code', $suppliers))
+            ->get(['raw'])
+            ->map(fn (SupplierProduct $link): float => (float) data_get($link->raw, 'wholesale', 0))
+            ->filter(fn (float $value): bool => $value > 0)
+            ->min();
+
+        return $price !== null ? round($price, 2) : null;
     }
 
     private function supplierCategoryDiscount(Product $product, ?IntegrationProduct $offer): ?float

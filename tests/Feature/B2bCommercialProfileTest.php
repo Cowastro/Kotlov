@@ -75,6 +75,21 @@ class B2bCommercialProfileTest extends TestCase
         $this->assertSame('professional', $item['b2b_price_level_code']);
     }
 
+    public function test_the_wholesale_price_of_an_uploaded_price_list_replaces_the_1c_price(): void
+    {
+        [$user, , $offer] = $this->fixture();
+        $teplov = \App\Models\Supplier::query()->firstOrCreate(['code' => 'teplov'], ['name' => 'Теплов и Сухов']);
+        \App\Models\SupplierProduct::query()->create(['supplier_id' => $teplov->id, 'product_id' => $offer->product_id, 'supplier_article' => 'TS.BAK.PPS.0115.79803',
+            'supplier_name' => 'ППШ-М', 'match_status' => 'matched', 'raw' => ['wholesale' => 319.0]]);
+
+        $quote = app(B2bCatalogOfferResolver::class)->priceQuote($offer->fresh(['product', 'source']), $user->fresh());
+        $this->assertSame(319.0, $quote['base_price']);
+
+        // Once 1C has the prices, the supplier leaves the setting and the 1C price is back.
+        config(['shop.b2b_price_list_wholesale_suppliers' => []]);
+        $this->assertSame(100.0, app(B2bCatalogOfferResolver::class)->priceQuote($offer->fresh(['product', 'source']), $user->fresh())['base_price']);
+    }
+
     public function test_cabinet_shows_structured_commercial_conditions(): void
     {
         [$user, $client] = $this->fixture();
