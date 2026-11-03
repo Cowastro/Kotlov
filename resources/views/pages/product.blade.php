@@ -609,9 +609,12 @@
                                     <i class="icon icon-ArrowsLeftRight"></i>
                                     Сравнить
                                 </a>
-                                <a href="#ask" data-bs-toggle="modal" class="product-extra-icon link">
-                                    <i class="icon icon-Question"></i>
-                                    Задать вопрос
+                                <a href="#engineeringCalculation" data-bs-toggle="modal"
+                                    class="product-extra-icon link product-engineering-action"
+                                    data-product-engineering-action
+                                    data-analytics-event="product_engineering_calculation_click">
+                                    <i class="icon icon-Ruler"></i>
+                                    Подбор инженером
                                 </a>
                                 <a href="#share" data-bs-toggle="modal" class="product-extra-icon link">
                                     <i class="icon icon-ShareNetwork"></i>
@@ -647,35 +650,12 @@
                                 @endif
                             </div>
 
-                            @include('partials.product-where-to-buy')
-
-                            {{-- Инженерный сервис --}}
-                            <div class="tf-product-engineering">
-                                <div class="tf-product-engineering__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="none">
-                                        <path d="M4 4h16v16H4zM8 8h8M8 12h3M8 16h3M15 12v4M13 14h4"/>
-                                    </svg>
-                                </div>
-                                <div class="tf-product-engineering__content">
-                                    <p class="tf-product-engineering__label">Инженерный сервис KOTLOV</p>
-                                    <p class="h6 tf-product-engineering__title">Инженерный подбор под ключ</p>
-                                    <p class="tf-product-engineering__text">
-                                        Рассчитаем мощность, проверим совместимость, подберём комплектующие и организуем монтаж.
-                                    </p>
-                                    <a href="#engineeringCalculation" data-bs-toggle="modal"
-                                        class="tf-product-engineering__link"
-                                        data-analytics-event="product_engineering_calculation_click">
-                                        Оставить заявку на расчёт
-                                        <span aria-hidden="true">→</span>
-                                    </a>
-                                </div>
-                            </div>
-
                         </div>
                     </div>
                 </div>
 
             </div>
+            @include('partials.product-where-to-buy')
         </div>
     </section>
 

@@ -19,42 +19,56 @@
 @once
     @push('styles')
         <style>
-            .wtb { position:relative; margin-top:20px; padding:22px 22px 18px; border:1px solid var(--line,#e8e8e8); border-radius:16px; background:var(--white,#fff); overflow:hidden; }
+            .wtb { position:relative; margin-top:28px; border:1px solid var(--line,#e8e8e8); border-radius:16px; background:var(--white,#fff); overflow:hidden; }
             .wtb::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--primary,#e04747); }
             .wtb svg { fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
-            .wtb__head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:16px; }
+            .wtb__head { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 20px 14px; }
             .wtb__kicker { display:block; margin-bottom:4px; color:var(--primary,#e04747); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
             .wtb__head h2 { margin:0; font-size:20px; line-height:1.25; }
             .wtb__count { color:var(--text-2,#6b7280); font-size:14px; font-weight:500; }
             .wtb__city { flex:0 0 auto; display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border:1px solid var(--line,#e8e8e8); border-radius:999px; color:var(--text,#111)!important; font-size:13px; font-weight:600; }
             .wtb__city svg { width:15px; height:15px; color:var(--primary,#e04747); }
-            .wtb__list { display:grid; gap:10px; margin:0; padding:0; list-style:none; }
-            .wtb__item { display:grid; grid-template-columns:44px minmax(0,1fr) auto; align-items:center; gap:14px; padding:14px; border:1px solid transparent; border-radius:14px; background:var(--bg-2,#f6f5f2); transition:.2s ease; }
-            .wtb__item:hover { border-color:var(--line,#e8e8e8); background:var(--white,#fff); box-shadow:0 10px 26px rgba(27,32,36,.07); }
-            .wtb__avatar { display:grid; place-items:center; width:44px; height:44px; border-radius:12px; background:var(--white,#fff); color:var(--primary,#e04747); }
-            .wtb__avatar svg { width:22px; height:22px; }
-            .wtb__name { display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; margin-bottom:4px; }
+            .wtb__list { display:grid; margin:0; padding:0; border-top:1px solid var(--line,#e8e8e8); list-style:none; }
+            .wtb__item { display:grid; grid-template-columns:38px minmax(210px,.9fr) minmax(240px,1.25fr) auto; align-items:center; gap:12px 16px; min-height:70px; padding:11px 20px; background:var(--white,#fff); transition:.2s ease; }
+            .wtb__item + .wtb__item { border-top:1px solid var(--line,#e8e8e8); }
+            .wtb__item:hover { background:var(--bg-2,#f6f5f2); }
+            .wtb__avatar { display:grid; place-items:center; width:38px; height:38px; border-radius:10px; background:var(--bg-2,#f6f5f2); color:var(--primary,#e04747); }
+            .wtb__avatar svg { width:19px; height:19px; }
+            .wtb__name { display:flex; flex-wrap:wrap; align-items:center; gap:5px 8px; }
             .wtb__name strong { font-size:15px; line-height:1.3; }
             .wtb__badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; background:#e8f6ef; color:#0b8a5c; font-size:11px; font-weight:700; }
             .wtb__badge svg { width:12px; height:12px; stroke-width:2.2; }
-            .wtb__meta { display:flex; align-items:flex-start; gap:6px; margin-top:2px; color:var(--text-2,#6b7280); font-size:13px; line-height:1.4; }
+            .wtb__details { display:grid; gap:3px; min-width:0; }
+            .wtb__meta { display:flex; align-items:flex-start; gap:6px; color:var(--text-2,#6b7280); font-size:13px; line-height:1.35; }
             .wtb__meta svg { flex:0 0 14px; width:14px; height:14px; margin-top:2px; }
             .wtb__meta a { color:inherit!important; text-decoration:underline; text-underline-offset:2px; }
-            .wtb__phone { display:inline-flex; align-items:center; gap:7px; padding:10px 16px; border:0; border-radius:999px; background:#1d252c; color:#fff; font-size:13px; font-weight:600; white-space:nowrap; cursor:pointer; transition:.2s ease; }
+            .wtb__phone { display:inline-flex; align-items:center; gap:7px; min-height:40px; padding:9px 15px; border:0; border-radius:999px; background:#1d252c; color:#fff; font-size:13px; font-weight:600; white-space:nowrap; cursor:pointer; transition:.2s ease; }
             .wtb__phone svg { width:15px; height:15px; }
             .wtb__phone:hover { background:var(--primary,#e04747); }
             .wtb__phone:disabled { opacity:.6; cursor:default; }
             .wtb__phones { display:grid; gap:2px; text-align:right; }
             .wtb__phones a { color:var(--text,#111)!important; font-size:15px; font-weight:700; white-space:nowrap; }
-            .wtb__note { display:flex; align-items:center; gap:7px; margin:14px 0 0; color:var(--text-2,#6b7280); font-size:12px; }
+            .wtb__note { display:flex; align-items:center; gap:7px; margin:0; padding:10px 20px 12px; border-top:1px solid var(--line,#e8e8e8); color:var(--text-2,#6b7280); font-size:12px; }
             .wtb__note svg { width:15px; height:15px; color:#0b8a5c; }
-            @media (max-width:575px) {
-                .wtb { padding:18px 16px 14px; }
-                .wtb__head { flex-direction:column; }
-                .wtb__item { grid-template-columns:40px minmax(0,1fr); }
-                .wtb__item > [data-wtb-slot], .wtb__item > .wtb__phones { grid-column:1/-1; }
-                .wtb__phone { justify-content:center; width:100%; }
-                .wtb__phones { text-align:left; }
+            @media (max-width:991px) {
+                .wtb__item { grid-template-columns:38px minmax(170px,.9fr) minmax(180px,1fr) auto; }
+            }
+            @media (max-width:767px) {
+                .wtb { margin-top:20px; border-radius:12px; }
+                .wtb__head { align-items:flex-start; padding:15px 16px 13px; }
+                .wtb__head h2 { font-size:18px; }
+                .wtb__city { padding:6px 10px; }
+                .wtb__item { grid-template-columns:32px minmax(0,1fr) auto; gap:5px 10px; min-height:0; padding:10px 14px; }
+                .wtb__avatar { width:32px; height:32px; border-radius:9px; }
+                .wtb__avatar svg { width:17px; height:17px; }
+                .wtb__badge { display:none; }
+                .wtb__details { grid-column:2/4; }
+                .wtb__item > [data-wtb-slot], .wtb__item > .wtb__phones { justify-self:end; grid-column:3; grid-row:1; margin:0; }
+                .wtb__phone { justify-content:center; min-height:36px; padding:7px 12px; }
+                .wtb__phone-label { font-size:0; }
+                .wtb__phone-label::after { content:"Телефон"; font-size:12px; }
+                .wtb__phones { text-align:right; }
+                .wtb__note { padding:9px 16px 11px; }
             }
         </style>
     @endpush
@@ -76,8 +90,10 @@
             @foreach($wtbBranches as $branch)
                 <li class="wtb__item">
                     <span class="wtb__avatar">{!! $wtbIcon('store') !!}</span>
-                    <div>
+                    <div class="wtb__identity">
                         <div class="wtb__name"><strong>{{ $branch->name }}</strong><span class="wtb__badge">{!! $wtbIcon('shield') !!}Партнёр KOTLOV</span></div>
+                    </div>
+                    <div class="wtb__details">
                         @if($branch->address)
                             <div class="wtb__meta">{!! $wtbIcon('pin') !!}<span>@if($branch->map_url)<a href="{{ $branch->map_url }}" target="_blank" rel="noopener">{{ $branch->address }}</a>@else{{ $branch->address }}@endif</span></div>
                         @endif
@@ -86,7 +102,8 @@
                     <div data-wtb-slot>
                         <button type="button" class="wtb__phone"
                             data-wtb-phone="{{ route('partner-branches.phone', $branch) }}"
-                            data-product-id="{{ $product->id ?? '' }}">{!! $wtbIcon('phone') !!}Показать телефон</button>
+                            data-product-id="{{ $product->id ?? '' }}"
+                            aria-label="Показать телефон {{ $branch->name }}">{!! $wtbIcon('phone') !!}<span class="wtb__phone-label">Показать телефон</span></button>
                     </div>
                 </li>
             @endforeach
@@ -96,8 +113,10 @@
         <ul class="wtb__list">
             <li class="wtb__item">
                 <span class="wtb__avatar">{!! $wtbIcon('truck') !!}</span>
-                <div>
+                <div class="wtb__identity">
                     <div class="wtb__name"><strong>{{ $cityContact['company_name'] ?? 'KOTLOV.BY' }}</strong></div>
+                </div>
+                <div class="wtb__details">
                     <div class="wtb__meta"><span>Заказ онлайн с доставкой {{ $wtbCityIn }}</span></div>
                 </div>
                 <div class="wtb__phones">
