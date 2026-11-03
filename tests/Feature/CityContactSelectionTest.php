@@ -36,7 +36,8 @@ class CityContactSelectionTest extends TestCase
         $this->get('https://kotlov.by/city/select/gomel?return=%2Fcontacts')
             ->assertRedirect('/contacts')
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
-            ->assertPlainCookie('selected_city', 'gomel');
+            ->assertPlainCookie('selected_city', 'gomel')
+            ->assertPlainCookie('selected_city_source', 'manual');
 
         $response = $this->withUnencryptedCookie('selected_city', 'gomel')
             ->get('https://kotlov.by/contacts');
@@ -73,7 +74,48 @@ class CityContactSelectionTest extends TestCase
         ])->get('https://kotlov.by/')
             ->assertOk()
             ->assertSee('г. Витебск')
-            ->assertPlainCookie('selected_city', 'vitebsk');
+            ->assertPlainCookie('selected_city', 'vitebsk')
+            ->assertPlainCookie('selected_city_source', 'auto');
+    }
+
+    public function test_manual_city_selection_is_never_overwritten_by_ip_location(): void
+    {
+        $this->city('gomel', 'Гомель', false);
+        $this->city('vitebsk', 'Витебск', false);
+
+        $this->withUnencryptedCookie('selected_city', 'gomel')
+            ->withUnencryptedCookie('selected_city_source', 'manual')
+            ->withHeaders(['CF-IPCountry' => 'BY', 'CF-IPCity' => 'Vitebsk'])
+            ->get('https://kotlov.by/')
+            ->assertOk()
+            ->assertSee('г. Гомель')
+            ->assertCookieMissing('selected_city_source');
+    }
+
+    public function test_automatic_city_can_follow_a_changed_ip_location(): void
+    {
+        $this->city('gomel', 'Гомель', false);
+        $this->city('vitebsk', 'Витебск', false);
+
+        $this->withUnencryptedCookie('selected_city', 'gomel')
+            ->withUnencryptedCookie('selected_city_source', 'auto')
+            ->withHeaders(['CF-IPCountry' => 'BY', 'CF-IPCity' => 'Vitebsk'])
+            ->get('https://kotlov.by/')
+            ->assertOk()
+            ->assertSee('г. Витебск')
+            ->assertPlainCookie('selected_city', 'vitebsk')
+            ->assertPlainCookie('selected_city_source', 'auto');
+    }
+
+    public function test_belarusian_ip_city_alias_is_mapped_to_the_catalog_city(): void
+    {
+        $this->city('borisov', 'Борисов', false);
+
+        $this->withHeaders(['CF-IPCountry' => 'BY', 'CF-IPCity' => 'Barysaw'])
+            ->get('https://kotlov.by/')
+            ->assertOk()
+            ->assertSee('г. Борисов')
+            ->assertPlainCookie('selected_city', 'borisov');
     }
 
     public function test_inactive_city_cannot_be_selected(): void

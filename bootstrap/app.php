@@ -29,7 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [\App\Http\Middleware\CapturePartnerAttribution::class]);
         // The preference contains only a validated public city slug. Keeping
         // it plain lets global middleware read it before the web stack runs.
-        $middleware->encryptCookies(except: ['selected_city']);
+        $middleware->encryptCookies(except: ['selected_city', 'selected_city_source']);
 
         // Исключаем Telegram webhook из CSRF-проверки
         $middleware->validateCsrfTokens(except: [

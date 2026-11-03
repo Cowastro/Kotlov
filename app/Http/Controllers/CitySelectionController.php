@@ -28,6 +28,16 @@ class CitySelectionController extends Controller
             true,
             false,
             'lax',
+        ))->withCookie(cookie(
+            'selected_city_source',
+            'manual',
+            60 * 24 * 365,
+            '/',
+            null,
+            $request->isSecure(),
+            true,
+            false,
+            'lax',
         ))->header('X-Robots-Tag', 'noindex, nofollow');
     }
 }
