@@ -439,6 +439,10 @@ Route::get('/', function () {
 
 // ===== Статичные страницы — ДО динамических! =====
 Route::view('/about', 'pages.about');
+Route::get('/partner-anketa/{token}', [\App\Http\Controllers\PartnerOnboardingController::class, 'show'])
+    ->middleware('throttle:30,1')->name('partner-onboarding.show');
+Route::post('/partner-anketa/{token}', [\App\Http\Controllers\PartnerOnboardingController::class, 'submit'])
+    ->middleware('throttle:10,1')->name('partner-onboarding.submit');
 Route::post('/where-to-buy/{branch}/phone', \App\Http\Controllers\PartnerBranchContactController::class)
     ->middleware('throttle:30,1')->name('partner-branches.phone');
 Route::get('/city/select/{slug}', CitySelectionController::class)

@@ -14,6 +14,7 @@ use App\Models\CrmCounterparty;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\B2bCounterpartyConverter;
+use App\Services\PartnerOnboardingService;
 use App\Support\AdminPhoneLinks;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -350,6 +351,23 @@ class CrmCounterpartyResource extends Resource
                 ->tooltip('Действия'),
         ])->toolbarActions([
             BulkActionGroup::make([
+                BulkAction::make('invitePartners')
+                    ->label('Пригласить в партнёры KOTLOV')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalDescription('Каждому выбранному контрагенту с e-mail уйдёт письмо с личной ссылкой на анкету партнёра. Уже подключённые B2B-клиенты пропускаются.')
+                    ->action(function (Collection $records): void {
+                        $service = app(PartnerOnboardingService::class);
+                        $sent = $records->filter(fn (CrmCounterparty $record): bool => $service->inviteCounterparty($record, auth()->user()) !== null)->count();
+
+                        Notification::make()
+                            ->success()
+                            ->title('Приглашения отправлены')
+                            ->body("Отправлено: {$sent}. Без e-mail или уже подключены: ".($records->count() - $sent).'.')
+                            ->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
                 BulkAction::make('deleteSpam')
                     ->label('Удалить лиды как спам')
                     ->icon('heroicon-o-trash')
