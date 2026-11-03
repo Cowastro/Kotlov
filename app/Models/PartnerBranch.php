@@ -25,10 +25,17 @@ class PartnerBranch extends Model
     public function client(): BelongsTo { return $this->belongsTo(B2bClient::class, 'b2b_client_id'); }
     public function contactViews(): HasMany { return $this->hasMany(PartnerBranchContactView::class); }
 
+    public function isPublic(): bool
+    {
+        return $this->is_active && $this->client?->status === 'approved';
+    }
+
     public function scopeVisibleIn(Builder $query, ?City $city): Builder
     {
+        // Only points of an approved B2B partner are public: pausing the partner hides its points.
         return $query->where('is_active', true)
             ->where('city_id', $city?->id ?? 0)
+            ->whereHas('client', fn (Builder $client) => $client->where('status', 'approved'))
             ->orderBy('sort_order')->orderBy('name');
     }
 

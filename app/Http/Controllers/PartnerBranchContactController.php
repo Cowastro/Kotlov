@@ -12,7 +12,7 @@ class PartnerBranchContactController extends Controller
     /** The phone is revealed on demand so the centre knows which branch got the customer's interest. */
     public function __invoke(Request $request, PartnerBranch $branch): JsonResponse
     {
-        abort_unless($branch->is_active, 404);
+        abort_unless($branch->isPublic(), 404);
         $data = $request->validate(['product_id' => ['nullable', 'integer', 'exists:products,id']]);
 
         PartnerBranchContactView::query()->create([

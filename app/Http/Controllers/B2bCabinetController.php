@@ -178,9 +178,14 @@ class B2bCabinetController extends Controller
             : null;
         $installerPage?->load(['works' => fn ($query) => $query->latest('completed_at')->latest('id')]);
         $installerEditor = InstallerAccountController::editorOptions();
+        $partnerBranches = $section === 'overview'
+            ? $client->branches()->with('city')
+                ->withCount(['contactViews as contact_views_30d_count' => fn ($views) => $views->where('created_at', '>=', now()->subDays(30))])
+                ->orderBy('sort_order')->get()
+            : collect();
 
         return view('pages.b2b.cabinet', compact(
-            'installerPage', 'installerEditor',
+            'installerPage', 'installerEditor', 'partnerBranches',
             'user', 'client', 'counterparty', 'section', 'orders', 'documents', 'contracts', 'savedCarts', 'specifications',
             'allowedSources', 'allowedWarehouses', 'allowedPartnerSuppliers', 'creditSummary',
             'profileCompletion', 'profileMissing',

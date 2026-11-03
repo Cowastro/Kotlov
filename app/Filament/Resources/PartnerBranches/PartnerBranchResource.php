@@ -50,11 +50,19 @@ class PartnerBranchResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('city_id')->label('Город')->relationship('city', 'name')->searchable()->preload()->required(),
-            Select::make('b2b_client_id')->label('Партнёр (юрлицо)')
+            Select::make('b2b_client_id')->label('Партнёр — B2B-клиент')
                 ->relationship('client', 'company_name', fn (Builder $query) => $query->where('status', 'approved'))
-                ->searchable()->preload()
-                ->helperText('B2B-клиент, с которым заключено партнёрское соглашение.'),
+                ->searchable()->preload()->required()
+                ->helperText('Точку продаж получает только одобренный B2B-клиент с партнёрским соглашением.'),
+            ...static::branchFields(),
+        ])->columns(2);
+    }
+
+    /** Fields shared with the «Точки продаж» tab of a B2B client card. */
+    public static function branchFields(): array
+    {
+        return [
+            Select::make('city_id')->label('Город')->relationship('city', 'name')->searchable()->preload()->required(),
             TextInput::make('name')->label('Название на сайте')->placeholder('ООО «СБГ Бай»')->required()->maxLength(255),
             TextInput::make('address')->label('Адрес')->placeholder('г. Минск, ул. Селицкого, 39Б')->maxLength(255),
             TagsInput::make('phones')->label('Телефоны')->placeholder('+375 (29) 000-00-00')->required()
@@ -64,7 +72,7 @@ class PartnerBranchResource extends Resource
             TextInput::make('map_url')->label('Ссылка на карту')->url()->maxLength(1000),
             TextInput::make('sort_order')->label('Порядок в списке')->numeric()->minValue(0)->default(100)->required(),
             Toggle::make('is_active')->label('Показывать на сайте')->default(true),
-        ])->columns(2);
+        ];
     }
 
     public static function table(Table $table): Table
@@ -76,7 +84,8 @@ class PartnerBranchResource extends Resource
                 TextColumn::make('name')->label('Точка продаж')->searchable()->weight('bold')
                     ->description(fn (PartnerBranch $record): string => (string) $record->address),
                 TextColumn::make('city.name')->label('Город')->sortable(),
-                TextColumn::make('client.company_name')->label('Партнёр')->placeholder('Не привязан'),
+                TextColumn::make('client.company_name')->label('Партнёр')->placeholder('Не привязан — скрыта')
+                    ->description(fn (PartnerBranch $record): ?string => $record->client && $record->client->status !== 'approved' ? 'B2B-доступ не активен — точка скрыта' : null),
                 TextColumn::make('phones')->label('Телефоны')->formatStateUsing(fn ($state): string => implode(', ', (array) $state)),
                 TextColumn::make('contact_views_30d_count')->label('Показы телефона, 30 дн.')->numeric()->sortable(),
                 TextColumn::make('contact_views_count')->label('Всего')->numeric()->sortable(),
