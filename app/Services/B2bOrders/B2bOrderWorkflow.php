@@ -30,6 +30,16 @@ class B2bOrderWorkflow
         'cancelled' => [],
     ];
 
+    /** Stages the client hears about by e-mail; the invoice and cancellation letters are sent separately. */
+    public const CLIENT_LETTERS = [
+        'checking' => 'accepted',
+        'paid' => 'paid',
+        'assembling' => 'assembling',
+        'ready_to_ship' => 'ready_to_ship',
+        'shipped' => 'shipped',
+        'completed' => 'completed',
+    ];
+
     public function accept(B2bOrder $order, User $manager): B2bOrder
     {
         abort_unless($manager->canManageB2bOrders(), 403);
@@ -94,12 +104,7 @@ class B2bOrderWorkflow
             'shipped' => ['completed', 'Заказ закрыт.'],
             default => throw ValidationException::withMessages(['status' => 'Для этого этапа нет складского действия.']),
         };
-        $order = $this->transition($order, $next[0], $actor, $next[1]);
-        if ($order->status === 'shipped') {
-            app(B2bOrderNotifier::class)->client($order, 'shipped');
-        }
-
-        return $order;
+        return $this->transition($order, $next[0], $actor, $next[1]);
     }
 
     public function cancel(B2bOrder $order, User $actor, string $reason): B2bOrder
@@ -127,7 +132,7 @@ class B2bOrderWorkflow
     {
         abort_unless($actor->canManageB2bOrders(), 403);
 
-        return DB::transaction(function () use ($order, $status, $actor, $comment): B2bOrder {
+        $order = DB::transaction(function () use ($order, $status, $actor, $comment): B2bOrder {
             $locked = B2bOrder::query()->lockForUpdate()->with('items')->findOrFail($order->id);
             $from = $locked->status;
             if (! in_array($status, self::TRANSITIONS[$from] ?? [], true)) {
@@ -166,6 +171,11 @@ class B2bOrderWorkflow
 
             return $locked->refresh();
         });
+        if (isset(self::CLIENT_LETTERS[$status])) {
+            app(B2bOrderNotifier::class)->client($order, self::CLIENT_LETTERS[$status]);
+        }
+
+        return $order;
     }
 
     /**

@@ -131,6 +131,7 @@ class B2bOrderPlacement
         }
 
         app(B2bOrderNotifier::class)->created($order->refresh()->load('items'));
+        app(B2bOrderNotifier::class)->client($order, 'received');
 
         return $order;
     }
