@@ -94,6 +94,44 @@ class B2bOrderWorkflow
         return $this->transition($order, 'paid', $actor, $comment ?: 'Оплата получена.');
     }
 
+    /**
+     * Money for a deferred-payment order came in. The order already went to the
+     * warehouse on credit, so only the payment status changes: the credit limit
+     * is freed and the order counts as paid.
+     */
+    public function markCreditPaid(B2bOrder $order, User $actor, ?string $comment = null): B2bOrder
+    {
+        abort_unless($actor->canManageB2bOrders(), 403);
+
+        $order = DB::transaction(function () use ($order, $actor, $comment): B2bOrder {
+            $locked = B2bOrder::query()->lockForUpdate()->with('items')->findOrFail($order->id);
+            if (! self::awaitsCreditPayment($locked)) {
+                throw ValidationException::withMessages(['payment_status' => 'Заказ не ждёт оплаты по отсрочке.']);
+            }
+            $from = $locked->payment_status;
+            $locked->forceFill(['payment_status' => 'paid'])->save();
+            B2bOrderEvent::create([
+                'b2b_order_id' => $locked->id,
+                'actor_id' => $actor->id,
+                'event' => 'payment_received',
+                'comment' => trim((string) $comment) !== '' ? 'Оплата по отсрочке получена: '.trim($comment) : 'Оплата по отсрочке получена.',
+                'metadata' => ['from_payment_status' => $from],
+            ]);
+
+            return $locked->refresh();
+        });
+        app(B2bOrderNotifier::class)->client($order, 'credit_paid');
+
+        return $order;
+    }
+
+    public static function awaitsCreditPayment(B2bOrder $order): bool
+    {
+        return $order->payment_type === 'invoice_deferred'
+            && in_array($order->payment_status, ['credit', 'overdue'], true)
+            && in_array($order->status, ['credit_approved', 'assembling', 'ready_to_ship', 'shipped', 'completed'], true);
+    }
+
     /** Warehouse steps: assembling → ready_to_ship → shipped → completed. */
     public function advanceFulfilment(B2bOrder $order, User $actor): B2bOrder
     {

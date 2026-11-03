@@ -63,6 +63,7 @@
 
             <section class="b2b-cabinet-content">
                 @if ($section === 'overview')
+                    @include('partials.b2b.partner-level')
                     <div class="b2b-cabinet-heading"><div><span>Обзор</span><h2>Рабочий стол</h2></div><p>Актуальная информация по вашей компании</p></div>
                     <article class="b2b-profile-progress {{ $profileCompletion === 100 ? 'is-complete' : '' }}">
                         <div class="b2b-profile-progress__copy">
@@ -73,6 +74,17 @@
                         </div>
                         <div class="b2b-profile-progress__side"><div class="b2b-profile-progress__meter"><i style="width:{{ $profileCompletion }}%"></i></div>@if($can('profile.manage'))<a href="{{ $sectionUrl('profile') }}">{{ $profileCompletion === 100 ? 'Проверить данные' : 'Дозаполнить реквизиты' }} →</a>@endif</div>
                     </article>
+                    @if($client->partner_type === 'installer' && $installerPage && $can('profile.manage'))
+                        @php($pageLive = $installerPage->status === 'active' && $installerPage->is_published)
+                        <article class="b2b-profile-progress {{ $pageLive ? 'is-complete' : '' }}">
+                            <div class="b2b-profile-progress__copy">
+                                <span>Страница монтажника</span>
+                                <strong>{{ $pageLive ? 'В каталоге' : 'На проверке' }}</strong>
+                                <p>{{ $pageLive ? 'Клиенты видят вашу страницу в каталоге монтажников KOTLOV.' : 'Заполните описание, регионы и добавьте работы — после проверки страница появится в каталоге монтажников.' }}</p>
+                            </div>
+                            <div class="b2b-profile-progress__side"><a href="{{ $sectionUrl('page') }}">{{ $pageLive ? 'Открыть страницу' : 'Заполнить страницу' }} →</a></div>
+                        </article>
+                    @endif
                     <article class="b2b-commercial-profile">
                         <div class="b2b-commercial-profile__intro">
                             <span>Ваши условия</span>

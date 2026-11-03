@@ -135,6 +135,13 @@ class SyncTeplovSukhovPriceListTest extends TestCase
         $this->assertSame((int) $monoPipes, (int) $card->category_id);
         $this->assertSame($card->id, (int) $row->fresh()->product_id);
         $this->assertSame($card->id, SupplierProduct::query()->where('supplier_id', $supplier->id)->where('supplier_article', 'TS.FRT.TRB.0115.32850')->value('product_id'));
+
+        // A 1C row of another wording is named by hand and joins the card.
+        $named = IntegrationProduct::query()->create(['integration_source_id' => $source->id, 'external_id' => 'x2', 'name' => 'Труба моно 1м 0,8 ф115', 'stock_quantity' => 1, 'match_status' => 'unmatched']);
+        $this->artisan('supplier:sync-teplov-sukhov-retail', ['--file' => $this->priceList(), '--apply' => true, '--onec' => ['TS.FRT.TRB.0115.32850='.$named->id]])
+            ->expectsOutputToContain('metric.teplov_sukhov.onec_linked=1')
+            ->assertSuccessful();
+        $this->assertSame($card->id, (int) $named->fresh()->product_id);
     }
 
     private function priceList(): string
