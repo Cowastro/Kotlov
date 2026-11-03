@@ -33,6 +33,7 @@ class SyncVistarCommandTest extends TestCase
         $this->assertSame('Reflex', $rows['7302000']['brand']);
         $this->assertArrayNotHasKey('Стоимость предложения BYN:', $rows->all());
         $this->assertSame(VistarPriceList::modelKey('Газовый котел BAXI ECO-4s 24F'), VistarPriceList::modelKey('ECO-4s 24 F (дымоход в подарок)'));
+        $this->assertSame(VistarPriceList::modelKey('BAXI SLIM 1.620 iN'), VistarPriceList::modelKey('SLIM 1.620 iN (необходим стабилизатор тяги)'));
     }
 
     public function test_rows_link_by_article_and_model_and_set_the_retail_price(): void
@@ -53,6 +54,16 @@ class SyncVistarCommandTest extends TestCase
         $offer = fn (Product $p) => SupplierProduct::query()->where('supplier_id', $supplier->id)->where('product_id', $p->id)->sole();
         $this->assertSame([2270.0, 2720.0, 'preorder'], [(float) $offer($eco)->price_byn, (float) $eco->fresh()->price, $offer($eco)->stock_status]);
         $this->assertSame(['in_stock', 3860.0], [$offer($luna)->stock_status, (float) $luna->fresh()->price]);
+    }
+
+    public function test_card_titles_name_the_kind_of_item(): void
+    {
+        $title = fn (array $raw) => \App\Console\Commands\CreateVistarCardsCommand::cardTitle($raw);
+        $this->assertSame('Газовый котел BAXI ECO Four 24 F (двухконтурный)', $title(['name' => 'ECO Four 24 F ', 'brand' => 'BAXI', 'section' => 'Газовые котлы серии ECO Four', 'type' => 'Двухконтурный', 'sheet' => 'Традиционные котлы BAXI']));
+        $this->assertSame('Конденсационный газовый котел BAXI LUNA Classic 1.24 (одноконтурный)', $title(['name' => 'LUNA Classic 1.24', 'brand' => 'BAXI', 'section' => 'Газовые конденсационные котлы серии LUNA Classic', 'type' => 'Одноконтурный ', 'sheet' => 'Конденсационные котлы BAXI']));
+        $this->assertSame('Бойлер косвенного нагрева Viena WTD 100', $title(['name' => 'WTD 100 (Мощность при 80°С = 28кВт) 470x470x1220 Стальной корпус', 'brand' => 'Viena', 'section' => 'Бойлер', 'sheet' => 'Водонагреватели Viena']));
+        $this->assertSame('Мембранный бак Reflex DE 12 л, 4 бар', $title(['name' => '12 литров, 4 бара', 'brand' => 'Reflex', 'section' => 'Для систем питьевого, горячего водоснабжения', 'sheet' => 'Расширительные баки']));
+        $this->assertSame('Коаксиальная труба дымохода 60/100 мм, BAXI', $title(['name' => 'Коаксиальная труба дымохода 60/100 мм', 'brand' => 'BAXI', 'section' => 'Дымоходы из алюминия для традиционных котлов', 'sheet' => 'Традиционные котлы BAXI']));
     }
 
     private function priceList(): string

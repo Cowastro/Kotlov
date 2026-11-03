@@ -162,7 +162,7 @@ class VistarPriceList
     public static function modelKey(string $name): string
     {
         $name = mb_strtolower(str_replace(['ё', "\u{a0}"], ['е', ' '], $name));
-        $name = (string) preg_replace('/\((?:[^()]*(?:подарок|комплект|состоит|termex)[^()]*)\)/u', ' ', $name);
+        $name = (string) preg_replace('/\((?:[^()]*(?:подарок|комплект|состоит|termex|необходим|стабилизатор)[^()]*)\)/u', ' ', $name);
         $name = (string) preg_replace('/(\d),(\d)/u', '$1.$2', $name);
         $name = (string) preg_replace('/([a-zа-я])(\d)/u', '$1 $2', $name);
         $name = (string) preg_replace('/(\d)([a-zа-я])/u', '$1 $2', $name);
