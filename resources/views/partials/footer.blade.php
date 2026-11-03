@@ -71,22 +71,44 @@
 
                 <div class="col-left">
                     <div class="footer-col-block type-white footer-wrap-start">
-                        <p class="footer-heading footer-heading-mobile text-white">НАШ МАГАЗИН</p>
-                        <div class="tf-collapse-content">
-                            <p class="cl-text-3 mb-4">Консультации и заказы:</p>
-                            @foreach($footerContact['phone_links'] as $phone)
-                            <a href="tel:{{ $phone['href'] }}" class="text-white link h4 fw-medium mb-12">
-                                {{ $phone['display'] }}
-                            </a>
-                            @endforeach
-                            <a href="{{ $footerContact['map_url'] }}"
-                                target="_blank" class="cl-text-3 link mb-4">
-                                {{ $footerContact['address'] }}
-                            </a>
-                            <a href="mailto:{{ $footerContact['email'] }}" class="cl-text-3 link">
-                                {{ $footerContact['email'] }}
-                            </a>
-                        </div>
+                        @php
+                            $footerCity = $selectedCity ?? null;
+                            $footerBranches = $footerCity?->exists && \Illuminate\Support\Facades\Schema::hasTable('partner_branches')
+                                ? \App\Models\PartnerBranch::query()->visibleIn($footerCity)->limit(3)->get()
+                                : collect();
+                        @endphp
+                        @if($footerBranches->isNotEmpty())
+                            <style>.footer-branch{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.1)}.footer-branch__phone{padding:7px 14px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:transparent;color:#fff;font-size:13px;font-weight:600}.footer-branch__phone:hover{background:#fff;color:#111}.footer-branch__phones{display:grid;gap:2px}.footer-branch__phones a{color:#fff!important;font-size:18px;font-weight:600}</style>
+                            {{-- Retail in a city belongs to its partner points: the footer shows them, not a single store. --}}
+                            <p class="footer-heading footer-heading-mobile text-white">ГДЕ КУПИТЬ {{ mb_strtoupper($footerCity->name_in ?: 'в '.$footerCity->name) }}</p>
+                            <div class="tf-collapse-content">
+                                @foreach($footerBranches as $branch)
+                                    <div class="footer-branch">
+                                        <p class="text-white fw-medium mb-4">{{ $branch->name }}</p>
+                                        @if($branch->address)<p class="cl-text-3 mb-8">{{ $branch->address }}</p>@endif
+                                        <div data-wtb-slot>
+                                            <button type="button" class="footer-branch__phone" data-wtb-phone="{{ route('partner-branches.phone', $branch) }}" data-wtb-phones-class="footer-branch__phones">Показать телефон</button>
+                                        </div>
+                                    </div>
+                                @endforeach
+                                <p class="cl-text-3 mt-12 mb-4">Офис KOTLOV: <a href="mailto:{{ $footerContact['email'] }}" class="cl-text-3 link">{{ $footerContact['email'] }}</a></p>
+                            </div>
+                            @include('partials.partner-branch-phone-script')
+                        @else
+                            <p class="footer-heading footer-heading-mobile text-white">ЗАКАЗ ОНЛАЙН</p>
+                            <div class="tf-collapse-content">
+                                <p class="cl-text-3 mb-4">Консультации и заказы с доставкой {{ $footerCity?->name_in ?: 'по Беларуси' }}:</p>
+                                @foreach($footerContact['phone_links'] as $phone)
+                                <a href="tel:{{ $phone['href'] }}" class="text-white link h4 fw-medium mb-12">
+                                    {{ $phone['display'] }}
+                                </a>
+                                @endforeach
+                                <p class="cl-text-3 mb-4">Офис KOTLOV: {{ $footerContact['address'] }}</p>
+                                <a href="mailto:{{ $footerContact['email'] }}" class="cl-text-3 link">
+                                    {{ $footerContact['email'] }}
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </div>
 

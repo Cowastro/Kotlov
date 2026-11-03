@@ -154,6 +154,26 @@ class PartnerBranchesTest extends TestCase
         $this->assertSame(['+375 (29) 144-63-14'], $client->branches()->whereHas('city', fn ($q) => $q->where('slug', 'borisov'))->sole()->phones);
     }
 
+    public function test_footer_shows_the_points_of_the_selected_city_instead_of_one_store(): void
+    {
+        $minsk = $this->city('minsk', 'Минск');
+        $this->city('brest', 'Брест');
+        $this->branch($this->partner('ООО «СБГ бай»'), $minsk, 'ООО «СБГ бай»', ['address' => 'г. Минск, ул. Селицкого, 39Б', 'phones' => ['+375 (29) 111-11-11']]);
+
+        $this->withUnencryptedCookie('selected_city', 'minsk')->get('https://kotlov.by/contacts')
+            ->assertOk()
+            ->assertSee('ГДЕ КУПИТЬ В МИНСКЕ')
+            ->assertSee('ООО «СБГ бай»')
+            ->assertDontSee('НАШ МАГАЗИН')
+            ->assertDontSee('+375 (29) 111-11-11');
+
+        $this->withUnencryptedCookie('selected_city', 'brest')->get('https://kotlov.by/contacts')
+            ->assertOk()
+            ->assertSee('ЗАКАЗ ОНЛАЙН')
+            ->assertSee('Консультации и заказы с доставкой в Брест')
+            ->assertDontSee('ООО «СБГ бай»');
+    }
+
     private function partner(string $company, string $status = 'approved'): B2bClient
     {
         $user = User::factory()->create(['client_type' => 'wholesale', 'b2b_approved' => $status === 'approved', 'is_active' => true]);
