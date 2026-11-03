@@ -15,6 +15,14 @@
         'users' => '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a5.5 5.5 0 0 1 3.5 6"/>',
         'chart' => '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
         'layers' => '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
+        'store' => '<path d="M3 9 5 4h14l2 5M3 9h18v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v8h14v-8M10 21v-5h4v5"/>',
+        'pin' => '<path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+        'warehouse' => '<path d="M3 21V9l9-6 9 6v12M7 21v-8h10v8M7 17h10"/>',
+        'coin' => '<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-3 .8-3 2s1.3 1.7 3 2 3 .8 3 2-1.3 2-3 2c-1.4 0-2.5-.5-3-1.5M12 6v2M12 16v2"/>',
+        'phone' => '<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/>',
+        'globe' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>',
+        'calc' => '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 18h.01M12 18h4"/>',
+        'gear' => '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1"/>',
     ];
     $bzIcon = fn (string $name): string => '<svg viewBox="0 0 24 24" aria-hidden="true">'.$bzIcons[$name].'</svg>';
 @endphp
@@ -68,6 +76,12 @@
     .bz-step p { margin:0; color:var(--bz-muted); line-height:1.65; }
     .bz-step::after { content:""; position:absolute; top:38px; right:-14px; width:28px; height:2px; background:var(--bz-red); }
     .bz-process .col-lg-3:last-child .bz-step::after { display:none; }
+
+    .bz-earn { padding:105px 0; background:#fff; }
+    .bz-earn__item { height:100%; padding:30px; border-radius:20px; background:var(--bz-cream); }
+    .bz-earn__num { display:block; margin-bottom:22px; color:var(--bz-red); font-size:44px; font-weight:700; line-height:1; letter-spacing:-.04em; }
+    .bz-earn__item h3 { margin-bottom:10px; font-size:22px; line-height:1.2; }
+    .bz-earn__item p { margin:0; color:var(--bz-muted); line-height:1.65; }
 
     .bz-levels { padding:105px 0; background:#fff; }
     .bz-levels__head { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:40px; }
@@ -132,7 +146,9 @@
         .bz-hero__visual { margin-top:28px; min-height:380px; }
         .bz-hero__photo { inset:0; }
         .bz-hero__label { left:14px; right:14px; bottom:14px; max-width:none; }
-        .bz-cabinet,.bz-audience,.bz-process,.bz-levels,.bz-faq,.bz-request { padding:70px 0; }
+        .bz-cabinet,.bz-audience,.bz-earn,.bz-process,.bz-levels,.bz-faq,.bz-request { padding:70px 0; }
+        .bz-earn__item { padding:22px; }
+        .bz-earn__num { margin-bottom:12px; font-size:34px; }
         .bz-installers { padding-bottom:70px; }
         .bz-switch { display:flex; width:100%; }
         .bz-switch a { flex:1; text-align:center; }
@@ -163,49 +179,47 @@
             </div>
             <div class="row align-items-center">
                 <div class="col-lg-6">
-                    <span class="bz-kicker">KOTLOV для бизнеса</span>
-                    <h1 class="mt-16 mb-0">Оборудование для объектов — по оптовым условиям</h1>
-                    <p class="bz-lead bz-hero__copy mb-0">Инженерный маркетплейс отопления и водоснабжения: остатки проверенных складов, резерв под заказ, счета и документы — в одном B2B-кабинете вашей компании.</p>
+                    <span class="bz-kicker">Партнёрская сеть KOTLOV</span>
+                    <h1 class="mt-16 mb-0">Станьте партнёром KOTLOV в своём регионе</h1>
+                    <p class="bz-lead bz-hero__copy mb-0">Мы уходим в B2B и передаём розницу партнёрам: клиентов, трафик сайта kotlov.by и базу покупателей вашего региона. На сайте клиенты видят ваш телефон — и звонят вам.</p>
                     <div class="bz-hero__actions">
-                        <a class="tf-btn animate-btn" href="#company-connect">Подключить компанию</a>
-                        <a class="tf-btn btn-white btn-stroke" href="{{ route('become-installer') }}#apply">Стать партнёром-монтажником</a>
+                        <a class="tf-btn animate-btn" href="#company-connect">Стать партнёром</a>
+                        <a class="tf-btn btn-white btn-stroke" href="#regional">Стать представителем</a>
                     </div>
                     <div class="bz-hero__facts">
-                        <span class="bz-hero__fact">Оптовые цены</span>
-                        <span class="bz-hero__fact">Остатки складов</span>
-                        <span class="bz-hero__fact">Счета в кабинете</span>
-                        <span class="bz-hero__fact">Отсрочка по договору</span>
+                        <span class="bz-hero__fact">Клиенты и трафик сайта</span>
+                        <span class="bz-hero__fact">Ваш телефон на kotlov.by</span>
+                        <span class="bz-hero__fact">Цены ниже розницы</span>
+                        <span class="bz-hero__fact">Склады поставщиков</span>
                     </div>
                 </div>
                 <div class="col-lg-6">
                     <div class="bz-hero__visual">
                         <div class="bz-hero__photo"><img src="{{ asset('img/blog/works/heat-pumps-arrival-warehouse-cover.webp') }}" alt="Поставка тепловых насосов KOTLOV на склад"></div>
-                        <div class="bz-hero__label"><small class="cl-text-3">ПОСТАВКИ ДЛЯ ОБЪЕКТОВ</small><strong>Котлы, тепловые насосы, дымоходы и обвязка</strong></div>
+                        <div class="bz-hero__label"><small class="cl-text-3">СКЛАДЫ ПОСТАВЩИКОВ</small><strong>Котлы, тепловые насосы, печи, дымоходы — без закупки впрок</strong></div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="bz-cabinet">
+    <section class="bz-cabinet" id="benefits">
         <div class="container">
             <div class="bz-intro">
-                <span class="bz-kicker">B2B-кабинет</span>
-                <h2 class="bz-title mt-16 mb-16">Закупка для объекта без звонков и пересылки файлов</h2>
-                <p class="bz-lead mb-0">Всё, что обычно уходит на переписку с менеджером, собрано в кабинете компании.</p>
+                <span class="bz-kicker">Что вы получаете</span>
+                <h2 class="bz-title mt-16 mb-16">Готовые клиенты и склад — без вложений в рекламу и товар</h2>
+                <p class="bz-lead mb-0">KOTLOV не конкурирует с партнёрами в рознице. Мы приводим покупателей — вы продаёте и монтируете.</p>
             </div>
             <div class="row g-20">
                 @foreach([
-                    ['layers', 'Оптовый каталог', 'Цены вашего уровня и остатки складов по каждой позиции.'],
-                    ['lock', 'Резерв под заказ', 'Менеджер проверяет наличие и ставит товар в резерв до оплаты.'],
-                    ['doc', 'Счета и документы', 'Счёт появляется в кабинете сразу после подтверждения заказа.'],
-                    ['ruler', 'Спецификации', 'Загрузите спецификацию объекта — менеджер подберёт позиции под неё.'],
-                    ['cart', 'Сохранённые корзины', 'Типовые комплекты для повторяющихся объектов — в один клик.'],
-                    ['users', 'Команда компании', 'Доступ для снабженцев и бухгалтерии с разными правами.'],
-                    ['chart', 'Сверка расчётов', 'Обороты, оплаты и сальдо по заказам за любой период.'],
-                    ['check', 'Статус на каждом этапе', 'Письмо на почту при резерве, счёте, оплате, сборке и отгрузке.'],
+                    ['phone', 'Ваш телефон на сайте', 'Клиенты из вашего региона видят на kotlov.by ваш номер вместо нашего — звонки и заказы идут напрямую вам.'],
+                    ['globe', 'Трафик и база клиентов', 'Покупатели, заявки и обращения с сайта вашего региона передаются вам. Реклама и продвижение — на нашей стороне.'],
+                    ['coin', 'Цены ниже розницы', 'Закупочная цена партнёра ниже розничной цены сайта — разница остаётся вам. С ростом оборота цены становятся ещё ниже.'],
+                    ['warehouse', 'Доступ к складам', 'Остатки складов поставщиков по всей Беларуси. Продавайте то, чего нет на вашей полке, и заказывайте под клиента.'],
+                    ['calc', 'Калькуляторы подбора', 'Калькулятор дымоходов и подбор по параметрам: соберите комплект для клиента за минуты, без ошибок в позициях.'],
+                    ['gear', 'Инженерные решения', 'Подбор оборудования под объект, схемы котельных и консультации инженеров KOTLOV по сложным проектам.'],
                 ] as [$icon, $name, $text])
-                    <div class="col-6 col-xl-3">
+                    <div class="col-md-6 col-xl-4">
                         <article class="bz-feature">
                             <span class="bz-feature__icon">{!! $bzIcon($icon) !!}</span>
                             <h3>{{ $name }}</h3>
@@ -221,19 +235,42 @@
         <div class="container">
             <div class="bz-intro">
                 <span class="bz-kicker">Кому подходит</span>
-                <h2 class="bz-title mt-16 mb-0">Для тех, кто строит тепло</h2>
+                <h2 class="bz-title mt-16 mb-0">Для тех, кто продаёт и монтирует тепло</h2>
             </div>
             <div class="row g-20">
                 @foreach([
-                    ['tools', 'Монтажные организации', 'Комплектуйте объекты по оптовым ценам и получайте клиентов через свою страницу в каталоге монтажников.'],
-                    ['ruler', 'Проектировщики', 'Подбирайте оборудование под спецификацию и проверяйте совместимость позиций до закупки.'],
-                    ['box', 'Дилеры и оптовые покупатели', 'Закупайте со складов по согласованным условиям, с отсрочкой и кредитным лимитом по договору.'],
-                    ['building', 'Застройщики', 'Комплектуйте объекты по спецификациям и согласовывайте поставки по этапам строительства.'],
+                    ['store', 'Магазины отопления и стройматериалов', 'Тысячи позиций без закупки: витрина ваша, склад — у поставщиков. Покупатели с сайта приходят к вам.'],
+                    ['pin', 'Региональные представители', 'Станьте KOTLOV в своём городе: ваш телефон на сайте, все клиенты и заказы региона — ваши.'],
+                    ['tools', 'Монтажные организации', 'Оборудование по цене партнёра и заявки на монтаж через каталог монтажников kotlov.by.'],
                 ] as [$icon, $audience, $text])
-                    <div class="col-md-6 col-xl-3">
+                    <div class="col-md-4">
                         <article class="bz-card">
                             <span class="bz-card__icon">{!! $bzIcon($icon) !!}</span>
                             <h3>{{ $audience }}</h3>
+                            <p>{{ $text }}</p>
+                        </article>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    <section class="bz-earn">
+        <div class="container">
+            <div class="bz-intro">
+                <span class="bz-kicker">Как вы зарабатываете</span>
+                <h2 class="bz-title mt-16 mb-0">Три источника дохода с одного подключения</h2>
+            </div>
+            <div class="row g-20">
+                @foreach([
+                    ['Продажи клиентам с сайта', 'Покупатели вашего региона звонят на ваш номер и покупают у вас. Мы платим за рекламу — вы получаете заказы.'],
+                    ['Наценка на оборудование', 'Покупаете по цене партнёра, продаёте по своей. Без замороженных денег — заказ под конкретного клиента.'],
+                    ['Монтаж и сервис', 'Продали котёл — смонтируйте его. Комплект подберём вместе: оборудование, дымоход, обвязка.'],
+                ] as [$earnTitle, $text])
+                    <div class="col-md-4">
+                        <article class="bz-earn__item">
+                            <span class="bz-earn__num">{{ $loop->iteration }}</span>
+                            <h3>{{ $earnTitle }}</h3>
                             <p>{{ $text }}</p>
                         </article>
                     </div>
@@ -247,14 +284,14 @@
             <div class="bz-intro">
                 <span class="bz-kicker">Подключение</span>
                 <h2 class="bz-title mt-16 mb-16">От заявки до первого заказа</h2>
-                <p class="bz-lead mb-0">Четыре шага — и закупка для объектов идёт через кабинет.</p>
+                <p class="bz-lead mb-0">Подключение бесплатное. Первый заказ — сразу после одобрения.</p>
             </div>
             <div class="row g-20">
                 @foreach([
-                    ['Заявка', 'Регистрация компании по УНП — название и адрес подставятся автоматически.'],
-                    ['Проверка', 'Менеджер проверит реквизиты и назначит уровень цен.'],
-                    ['B2B-кабинет', 'Откроется оптовый каталог с ценами и остатками складов.'],
-                    ['Первый заказ', 'Резерв, счёт в кабинете, оплата и отгрузка — с письмом на каждом этапе.'],
+                    ['Заявка', 'Регистрация компании по УНП — название и адрес подставятся сами.'],
+                    ['Проверка', 'Менеджер проверит реквизиты, закрепит регион и уровень цен.'],
+                    ['Ваш номер на сайте', 'Клиенты вашего региона видят ваш телефон и вашу страницу.'],
+                    ['Продажи', 'Принимайте клиентов с сайта и заказывайте оборудование со складов.'],
                 ] as [$stepTitle, $text])
                     <div class="col-md-6 col-lg-3">
                         <article class="bz-step">
@@ -277,7 +314,7 @@
                         <h2 class="bz-title mt-16 mb-0">Больше оборот — лучше условия</h2>
                     </div>
                     <nav class="bz-switch" aria-label="Тип партнёра">
-                        @foreach(['wholesale' => 'Компания', 'installer' => 'Монтажник'] as $type => $label)
+                        @foreach(['wholesale' => 'Магазин', 'installer' => 'Монтажник'] as $type => $label)
                             <a href="{{ route('partners', ['type' => $type]) }}#partner-levels"
                                 @if($partnerType === $type) aria-current="true" @endif>{{ $label }}</a>
                         @endforeach
@@ -309,21 +346,22 @@
         </section>
     @endif
 
-    <section class="bz-installers">
+    <section class="bz-installers" id="regional">
         <div class="container">
             <div class="bz-installers__band">
                 <div class="bz-installers__photo"><img loading="lazy" src="{{ asset('img/blog/works/ecokamin-seminar-2026-training.jpg') }}" alt="Семинар для специалистов по печам и каминам"></div>
                 <div class="bz-installers__body">
-                    <span class="bz-kicker">Монтажникам</span>
-                    <h2 class="bz-title mt-16 mb-0">Закупка и клиенты — в одном кабинете</h2>
+                    <span class="bz-kicker">Региональным представителям</span>
+                    <h2 class="bz-title mt-16 mb-0">KOTLOV в вашем городе — это вы</h2>
                     <ul class="bz-installers__list">
-                        <li><span>{!! $bzIcon('check') !!}</span>Своя страница в каталоге монтажников с работами и контактами</li>
-                        <li><span>{!! $bzIcon('check') !!}</span>Заявки клиентов на монтаж в вашем регионе</li>
-                        <li><span>{!! $bzIcon('check') !!}</span>Оптовые цены на оборудование для своих объектов</li>
+                        <li><span>{!! $bzIcon('check') !!}</span>Ваш телефон для клиентов региона на kotlov.by</li>
+                        <li><span>{!! $bzIcon('check') !!}</span>Все заказы, заявки и база покупателей вашего региона</li>
+                        <li><span>{!! $bzIcon('check') !!}</span>Своя страница с контактами и работами</li>
+                        <li><span>{!! $bzIcon('check') !!}</span>Обучение по оборудованию и поддержка инженеров KOTLOV</li>
                     </ul>
                     <div class="d-flex flex-column flex-sm-row gap-2">
-                        <a class="tf-btn animate-btn" href="{{ route('become-installer') }}#apply">Стать партнёром-монтажником</a>
-                        <a class="tf-btn btn-white btn-stroke" href="{{ route('installers.index') }}">Каталог монтажников</a>
+                        <a class="tf-btn animate-btn" href="#company-connect">Стать представителем</a>
+                        <a class="tf-btn btn-white btn-stroke" href="{{ route('become-installer') }}#apply">Стать партнёром-монтажником</a>
                     </div>
                 </div>
             </div>
@@ -343,11 +381,11 @@
                 <div class="col-lg-7">
                     <div class="bz-faq-list" id="partners-faq">
                         @foreach([
-                            ['Когда появятся оптовые цены?', 'Сразу после проверки компании: менеджер назначит уровень цен, и они появятся в оптовом каталоге B2B-кабинета.'],
-                            ['Где управлять профилем монтажника?', 'В том же B2B-кабинете, где вы работаете с заказами: раздел «Моя страница монтажника» появляется автоматически.'],
-                            ['Как получать заявки на монтаж?', 'Заполните страницу монтажника — после проверки она появится в каталоге. Доступ к заявкам с сайта зависит от партнёрского уровня.'],
+                            ['Сколько стоит подключение?', 'Подключение бесплатное. Нет абонентской платы и обязательного минимального объёма — вы платите только за заказанное оборудование.'],
+                            ['Как клиенты с сайта попадут ко мне?', 'Для клиентов вашего региона на kotlov.by показывается ваш телефон. Заказы и заявки из региона менеджер передаёт вам.'],
+                            ['Нужно ли закупать товар на свой склад?', 'Нет. Вы видите остатки складов поставщиков и заказываете под конкретного клиента. Деньги не замораживаются в складе.'],
+                            ['Как формируется цена партнёра?', 'После одобрения назначается уровень цен. С ростом оплаченного оборота уровень повышается автоматически — цены становятся ниже.'],
                             ['Можно ли работать с отсрочкой платежа?', 'Да, по договору: отсрочку и кредитный лимит согласует менеджер. Заказы по лимиту уходят на склад сразу после подтверждения.'],
-                            ['Какие товары можно предложить для размещения?', 'Котлы, печи и камины, дымоходы, тепловые насосы, водонагреватели, насосы и автоматику. Укажите ассортимент в <a class="link" href="/suppliers">форме для поставщиков</a>.'],
                         ] as [$question, $answer])
                             <div class="accordion-item_v2">
                                 <button class="accordion-action {{ $loop->first ? '' : 'collapsed' }} lh-24 fw-medium" type="button"
@@ -385,8 +423,8 @@
                 </div>
                 <div class="col-lg-7">
                     <div class="bz-request__form">
-                        <span class="bz-kicker">Подключение компании</span>
-                        <h2 class="mt-14 mb-10">Заявка на B2B-доступ</h2>
+                        <span class="bz-kicker">Стать партнёром</span>
+                        <h2 class="mt-14 mb-10">Заявка на подключение</h2>
                         @if(session('success'))
                             <p class="bz-alert" role="status">{{ session('success') }}</p>
                         @endif
@@ -419,7 +457,7 @@
                                     <input id="partner-unp" name="company_inn" value="{{ old('company_inn', auth()->user()->company_inn) }}" maxlength="50">
                                     <label for="partner-type">Тип партнёра</label>
                                     <select id="partner-type" name="client_type">
-                                        @foreach(\App\Models\B2bClient::PARTNER_TYPES as $type => $label)
+                                        @foreach(['wholesale' => 'Магазин или региональный представитель', 'installer' => 'Монтажная организация'] as $type => $label)
                                             <option value="{{ $type }}" @selected(old('client_type', $partnerType) === $type)>{{ $label }}</option>
                                         @endforeach
                                     </select>
