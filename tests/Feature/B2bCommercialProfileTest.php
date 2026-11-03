@@ -263,6 +263,8 @@ class B2bCommercialProfileTest extends TestCase
         $this->assertSame(200.0, (float) $order->total);
         $this->assertNull($order->commercialDocument);
         $this->assertStringContainsString('14 календарных дней', $order->commercial_terms_snapshot['payment_terms']);
+        Mail::assertQueued(\App\Mail\B2bOrderStageMail::class, fn ($mail): bool => $mail->stage === 'received'
+            && $mail->hasTo('buh@partner.by'));
 
         $credit = app(B2bCheckoutTerms::class)->creditSummary($client->fresh());
         $this->assertSame(200.0, $credit['exposure']);

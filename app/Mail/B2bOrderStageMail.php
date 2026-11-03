@@ -17,8 +17,14 @@ class B2bOrderStageMail extends Mailable
     use Queueable, SerializesModels;
 
     public const SUBJECTS = [
+        'received' => 'Заказ получен',
+        'accepted' => 'Заказ принят в работу',
         'proposal' => 'Наличие подтверждено, товар в резерве',
+        'paid' => 'Оплата получена',
+        'assembling' => 'Заказ комплектуется',
+        'ready_to_ship' => 'Заказ готов к отгрузке',
         'shipped' => 'Заказ отгружен',
+        'completed' => 'Заказ завершён',
         'cancelled' => 'Заказ отменён',
     ];
 

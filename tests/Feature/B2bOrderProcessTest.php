@@ -71,7 +71,12 @@ class B2bOrderProcessTest extends TestCase
             $this->assertSame($expected, $order->fresh()->status);
         }
         $this->assertDatabaseHas('b2b_order_reservations', ['b2b_order_id' => $order->id, 'status' => 'shipped']);
-        Mail::assertQueued(B2bOrderStageMail::class, fn (B2bOrderStageMail $mail): bool => $mail->stage === 'shipped');
+        // The client hears about every stage, each letter exactly once.
+        foreach (['accepted', 'proposal', 'paid', 'assembling', 'ready_to_ship', 'shipped', 'completed'] as $stage) {
+            Mail::assertQueued(B2bOrderStageMail::class, fn (B2bOrderStageMail $mail): bool => $mail->stage === $stage
+                && $mail->hasTo('buh@process.test'));
+        }
+        Mail::assertQueuedCount(8);
     }
 
     public function test_deferred_payment_goes_to_warehouse_right_after_confirmation(): void
@@ -122,6 +127,10 @@ class B2bOrderProcessTest extends TestCase
         $this->assertStringContainsString('300,00 BYN', $proposal);
         $this->assertStringContainsString('Доставка в четверг.', $proposal);
         $this->assertStringContainsString('Заказ отгружен', (new B2bOrderStageMail($order->fresh(), 'shipped'))->render());
+        $this->assertStringContainsString('Оплата по заказу поступила', (new B2bOrderStageMail($order->fresh(), 'paid'))->render());
+        foreach (array_keys(B2bOrderStageMail::SUBJECTS) as $stage) {
+            $this->assertStringContainsString($order->number, (new B2bOrderStageMail($order->fresh(), $stage))->render());
+        }
         $this->assertStringContainsString('Резерв по заказу снят', (new B2bOrderStageMail($order->fresh(), 'cancelled', 'Отказ'))->render());
     }
 
