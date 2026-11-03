@@ -130,5 +130,6 @@
     </form></div></div></div></section>
 
     <section class="fp-faq"><div class="container"><div class="row g-40"><div class="col-lg-5"><div class="fp-faq__intro"><span class="fp-kicker">Коротко и по делу</span><h2 class="fp-title mt-16 mb-16">Вопросы о монтаже</h2><p class="fp-lead">Ответы на то, что чаще всего спрашивают до обследования объекта.</p><p class="mt-24 mb-0"><a href="/dymohody" class="fw-semibold text-decoration-underline link">Перейти к дымоходам →</a></p></div></div><div class="col-lg-7"><div id="accordion-fireplace-installation">@foreach ($faq as $question => $answer)<div class="accordion-item_v2"><div class="accordion-action {{ $loop->first ? '' : 'collapsed' }} lh-24 fw-medium" data-bs-target="#fp-install-faq-{{ $loop->index }}" data-bs-toggle="collapse" aria-expanded="{{ $loop->first ? 'true' : 'false' }}" role="button"><span>{{ $question }}</span><span class="icon ic-accordion-custom cl-2"></span></div><div id="fp-install-faq-{{ $loop->index }}" class="collapse {{ $loop->first ? 'show' : '' }}" data-bs-parent="#accordion-fireplace-installation"><p class="faq-content cl-text-2">{{ $answer }}</p></div></div>@endforeach</div></div></div></div></section>
+    @include('partials.installation-partner-cta')
 </main>
 @endsection
