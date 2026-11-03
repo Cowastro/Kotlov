@@ -10,6 +10,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -37,8 +38,12 @@ class PartnerProgramLevelResource extends Resource
                 ->minValue(1)->maxValue(4)->unique(ignoreRecord: true)->disabledOn('edit'),
             TextInput::make('name')->label('Название')->required()->maxLength(255),
             Toggle::make('is_active')->label('Активен')->default(true),
-            Textarea::make('benefits')->label('Выгоды для компании')->required(),
-            Textarea::make('installer_benefits')->label('Дополнительные выгоды для монтажников'),
+            Section::make('Выгоды')->description('Заполните условия доступных выгод. Пустые поля скрыты в кабинете.')
+                ->schema(array_map(
+                    fn (string $key, string $label) => Textarea::make('benefits.'.$key)->label($label)->maxLength(1000),
+                    array_keys(PartnerProgramLevel::BENEFITS),
+                    array_values(PartnerProgramLevel::BENEFITS),
+                ))->columnSpanFull(),
             Repeater::make('rules')->label('Условия перехода (выполнить все)')
                 ->defaultItems(0)->schema([
                     Select::make('metric')->label('Показатель')->options(PartnerProgramLevel::METRICS)->required()->live(),

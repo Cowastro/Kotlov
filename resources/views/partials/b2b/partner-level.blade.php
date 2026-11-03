@@ -5,17 +5,15 @@
             <h3>Партнёрская программа</h3>
             @if($program['current'])
                 <p>Ваш уровень — {{ $program['current']->name }}</p>
-                <p>{{ $program['current']->benefits }}</p>
-                @if($client->partner_type === 'installer')
-                    <p>{{ $program['current']->installer_benefits }}</p>
-                @endif
+                @foreach($program['current']->benefitsFor($client->partner_type) as $label => $terms)
+                    <p><strong>{{ $label }}</strong> — {{ $terms }}</p>
+                @endforeach
             @endif
             @if($program['next'])
                 <p>Следующий уровень — {{ $program['next']->name }}</p>
-                <p>{{ $program['next']->benefits }}</p>
-                @if($client->partner_type === 'installer')
-                    <p>{{ $program['next']->installer_benefits }}</p>
-                @endif
+                @foreach($program['next']->benefitsFor($client->partner_type) as $label => $terms)
+                    <p><strong>{{ $label }}</strong> — {{ $terms }}</p>
+                @endforeach
                 @foreach($program['rules'] as $rule)
                     <p>{{ \App\Models\PartnerProgramLevel::METRICS[$rule['metric']] }}. Период, мес. — {{ $rule['months'] }}. Осталось {{ number_format($rule['remaining'], $rule['metric'] === 'revenue' ? 2 : 0, ',', ' ') }}.</p>
                 @endforeach

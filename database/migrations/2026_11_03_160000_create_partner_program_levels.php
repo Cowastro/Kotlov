@@ -13,8 +13,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('rank')->unique();
             $table->string('name');
             $table->boolean('is_active')->default(true);
-            $table->text('benefits');
-            $table->text('installer_benefits')->nullable();
+            $table->json('benefits');
             $table->json('rules');
             $table->timestamps();
         });

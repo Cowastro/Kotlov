@@ -21,9 +21,12 @@ class PartnerLevelEvaluatorTest extends TestCase
             'user_id' => $user->id, 'status' => 'approved',
             'partner_type' => 'wholesale', 'company_name' => 'Тест',
         ]);
-        $base = PartnerProgramLevel::create(['name' => 'Базовый', 'rank' => 1, 'benefits' => 'Каталог', 'rules' => []]);
+        $base = PartnerProgramLevel::create([
+            'name' => 'Базовый', 'rank' => 1, 'rules' => [],
+            'benefits' => ['wholesale_prices' => 'Каталог', 'site_leads' => 'Заявки по региону'],
+        ]);
         $next = PartnerProgramLevel::create([
-            'name' => 'Следующий', 'rank' => 2, 'benefits' => 'Условия',
+            'name' => 'Следующий', 'rank' => 2, 'benefits' => ['volume_bonus' => 'Условия'],
             'rules' => [['metric' => 'revenue', 'months' => 1, 'target' => 100]],
         ]);
 
@@ -45,7 +48,11 @@ class PartnerLevelEvaluatorTest extends TestCase
         $this->assertEquals($base->id, $client->refresh()->partner_program_level_id);
         $this->assertEquals(0.01, $evaluator->progress($client)['rules']->first()['remaining']);
         $this->view('partials.b2b.partner-level', ['client' => $client, 'can' => fn () => true])
-            ->assertSeeText('Ваш уровень — Базовый')->assertSeeText('Осталось 0,01');
+            ->assertSeeText('Ваш уровень — Базовый')->assertSeeText('Осталось 0,01')
+            ->assertSeeText('Оптовые цены')->assertSeeText('Бонус за объём')->assertDontSeeText('Заявки по региону');
+        $client->partner_type = 'installer';
+        $this->view('partials.b2b.partner-level', ['client' => $client, 'can' => fn () => true])
+            ->assertSeeText('Заявки по региону');
 
         DB::table('b2b_orders')->where('number', 'eligible')->update(['total' => 100]);
         $evaluator->evaluate($client);
