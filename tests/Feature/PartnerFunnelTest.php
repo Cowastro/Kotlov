@@ -22,6 +22,7 @@ class PartnerFunnelTest extends TestCase
         Mail::fake();
         $this->withoutMiddleware(ProtectPublicForm::class);
         $cookie = CapturePartnerAttribution::COOKIE;
+        $this->get('/partners')->assertOk()->assertCookieMissing($cookie);
         $response = $this->get('/partners?utm_source=search&utm_medium=cpc&utm_campaign=autumn&ref=demo');
         $response->assertOk()->assertCookie($cookie);
         $value = $response->getCookie($cookie)->getValue();

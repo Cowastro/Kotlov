@@ -22,8 +22,8 @@ class CapturePartnerAttribution
         $request->attributes->set(self::COOKIE, $attributes);
         $response = $next($request);
 
-        $landing = $response->isSuccessful() || ($attributes !== [] && $response->isRedirection());
-        if ($existing === null && $request->isMethod('GET') && $landing && ! $request->is('admin', 'admin/*')) {
+        $landing = $response->isSuccessful() || $response->isRedirection();
+        if ($existing === null && $attributes !== [] && $request->isMethod('GET') && $landing && ! $request->is('admin', 'admin/*')) {
             $response->headers->setCookie(cookie(self::COOKIE, json_encode((object) $attributes, JSON_THROW_ON_ERROR), 30 * 24 * 60, '/', null, $request->isSecure(), true, false, 'lax'));
         }
 
