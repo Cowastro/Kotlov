@@ -471,3 +471,15 @@ Schedule::command('catalog:sync-boiler-range-filters --apply --sample=0')
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/boiler-range-filters.log'));
+
+Artisan::command('partners:evaluate-levels', function (): void {
+    if (! \App\Models\PartnerProgramLevel::query()->where('is_active', true)->exists()) {
+        return;
+    }
+
+    $evaluator = app(\App\Services\PartnerLevelEvaluator::class);
+    \App\Models\B2bClient::query()->where('status', 'approved')
+        ->eachById(fn ($client) => $evaluator->evaluate($client));
+})->purpose('Recalculate B2B partner levels');
+
+Schedule::command('partners:evaluate-levels')->hourly()->withoutOverlapping();
