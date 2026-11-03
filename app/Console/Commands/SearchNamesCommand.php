@@ -32,8 +32,8 @@ class SearchNamesCommand extends Command
                 $this->line(sprintf('audit.search_names.card=%d:%d~%s~b%d~arch%d~%.2f', $n + 1, $card->id, $card->slug, (int) $card->brand_id, (int) $card->is_archived, (float) $card->price));
             }
             foreach ($oneC->filter(fn (IntegrationProduct $item) => $has($item->name.' '.$item->external_sku))->take((int) $this->option('limit')) as $item) {
-                $this->line(sprintf('audit.search_names.onec=%d:%d~%s~p%d~stock%d~%.2f', $n + 1, $item->id, Str::slug(Str::limit((string) $item->name, 90, '')),
-                    (int) $item->product_id, (int) ((float) $item->stock_quantity > 0), (float) $item->price));
+                $this->line(sprintf('audit.search_names.onec=%d:%d~%s~p%d~stock%d~%.2f~%s', $n + 1, $item->id, Str::slug(Str::limit((string) $item->name, 90, '')),
+                    (int) $item->product_id, (int) ((float) $item->stock_quantity > 0), (float) $item->price, preg_replace('/[^A-Za-z0-9._-]/', '', (string) $item->external_sku) ?: '-'));
             }
         }
 
