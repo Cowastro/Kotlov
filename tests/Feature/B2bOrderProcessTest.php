@@ -210,6 +210,29 @@ class B2bOrderProcessTest extends TestCase
     }
 
     /** @return array{B2bOrder, User, User} */
+    public function test_order_card_shows_client_note_delivery_and_contacts(): void
+    {
+        [$order, , $manager] = $this->scenario('invoice');
+        $order->update([
+            'client_comment' => 'Приёмка с 9 до 17, нужна разгрузка',
+            'delivery_type' => 'b2b_delivery', 'delivery_city' => 'Брест', 'delivery_address' => 'ул. Складская, 5',
+        ]);
+        $this->actingAs($manager);
+
+        Livewire::test(EditB2bOrder::class, ['record' => $order->getRouteKey()])
+            ->assertSee('Приёмка с 9 до 17, нужна разгрузка')
+            ->assertSee('Доставка по согласованию')
+            ->assertSee('Брест, ул. Складская, 5')
+            ->assertSee('По счёту (для организаций)')
+            ->assertSee('+375291112233')
+            ->assertSee('190000077')
+            ->fillForm(['manager_note' => 'Позвонить перед отгрузкой'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame('Позвонить перед отгрузкой', $order->fresh()->manager_note);
+    }
+
     private function scenario(string $paymentType, int $stock = 10): array
     {
         $supplier = Supplier::query()->create([
