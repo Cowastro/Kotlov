@@ -191,7 +191,14 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 }
             }
 
-            if ($existing?->product_id) {
+            $manualLink = false;
+            if ($existing?->product_id && $existing->match_confidence === 'manual_link') {
+                // Linked by hand once: the card keeps the row whatever its wording.
+                $candidate = $products->firstWhere('id', $existing->product_id) ?? Product::query()->find($existing->product_id);
+                $candidate && ! $products->contains('id', $candidate->id) && $products->push($candidate);
+                $matches = $candidate ? collect([$candidate]) : collect();
+                $manualLink = $candidate !== null;
+            } elseif ($existing?->product_id) {
                 $candidate = $products->firstWhere('id', $existing->product_id);
                 $matches = $candidate ? $this->findMatches(collect([$candidate]), $name) : collect();
             } else {
@@ -218,6 +225,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 if ($manual) {
                     $products->contains('id', $manual->id) || $products->push($manual);
                     $matches = collect([$manual]);
+                    $manualLink = true;
                 }
             }
 
@@ -359,7 +367,7 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                     'price_byn' => $retail,
                     'currency' => 'BYN',
                     'match_status' => 'matched',
-                    'match_confidence' => 'verified_name_dimensions',
+                    'match_confidence' => $manualLink ? 'manual_link' : 'verified_name_dimensions',
                     'raw' => [
                         'price_date' => $data['price_date'] ?? null,
                         'source_file' => $data['source_file'] ?? null,

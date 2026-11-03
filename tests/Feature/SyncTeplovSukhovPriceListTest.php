@@ -101,6 +101,11 @@ class SyncTeplovSukhovPriceListTest extends TestCase
 
         $this->assertSame(72.93, (float) $card->fresh()->price);
         $this->assertSame($card->id, SupplierProduct::query()->where('supplier_id', $supplier->id)->where('supplier_article', 'TS.FRT.TRB.0115.32850')->value('product_id'));
+
+        // The next upload (no --link) keeps the link.
+        $card->forceFill(['price' => 1])->save();
+        $this->artisan('supplier:sync-teplov-sukhov-retail', ['--file' => $this->priceList(), '--apply' => true])->assertSuccessful();
+        $this->assertSame(72.93, (float) $card->fresh()->price);
     }
 
     private function priceList(): string
