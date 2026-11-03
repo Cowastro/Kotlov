@@ -185,6 +185,20 @@ class SyncTeplovSukhovRetailPricesCommand extends Command
                 $matches = $candidate ? $this->findMatches(collect([$candidate]), $name) : collect();
             } else {
                 $matches = $this->findMatches($products, $name);
+                // «Адаптер D80» also fits «Адаптер-переход D80/110»: of several cards the one with exactly the
+                // diameters of the row wins, if it is the only one.
+                if ($matches->count() > 1) {
+                    $diameters = function (string $value): array {
+                        $found = array_values(array_filter($this->measurements($value), fn (string $m) => str_starts_with($m, 'diam')));
+                        sort($found);
+
+                        return $found;
+                    };
+                    $exact = $matches->filter(fn (Product $product) => $diameters((string) $product->name) === $diameters($name))->values();
+                    if ($exact->count() === 1) {
+                        $matches = $exact;
+                    }
+                }
             }
 
             if ($matches->count() === 0) {

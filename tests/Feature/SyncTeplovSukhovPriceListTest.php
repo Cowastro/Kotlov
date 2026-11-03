@@ -73,6 +73,21 @@ class SyncTeplovSukhovPriceListTest extends TestCase
         $this->assertSame(72.93, (float) $pipe->fresh()->price);
     }
 
+    public function test_of_two_fitting_cards_the_one_with_exactly_the_diameters_of_the_row_wins(): void
+    {
+        $category = Category::query()->create(['name' => 'Дымоходы', 'slug' => 'dymohody-tis-test', 'parent_id' => 0, 'is_active' => true]);
+        $brand = Brand::query()->firstOrCreate(['name' => 'Теплов и Сухов'], ['slug' => 'teplov-i-sukhov-test', 'is_active' => true]);
+        Supplier::query()->firstOrCreate(['code' => 'teplov'], ['name' => 'Теплов и Сухов']);
+        $card = fn (string $name) => Product::query()->create(['name' => $name, 'slug' => Str::slug($name), 'category_id' => $category->id,
+            'brand_id' => $brand->id, 'price' => 9, 'is_active' => true]);
+        $adapter = $card('Теплов и Сухов Адаптер Моно М-М AISI 430 0,5 мм Ø80 (У)');
+        $reducer = $card('Теплов и Сухов Адаптер-переход Моно М-М с AISI 430 0,5 мм Ø80/110 (У)');
+
+        $this->artisan('supplier:sync-teplov-sukhov-retail', ['--file' => $this->priceList(), '--apply' => true])->assertSuccessful();
+
+        $this->assertSame([10.24, 9.0], [(float) $adapter->fresh()->price, (float) $reducer->fresh()->price]);
+    }
+
     private function priceList(): string
     {
         $book = new Spreadsheet;
@@ -82,6 +97,7 @@ class SyncTeplovSukhovPriceListTest extends TestCase
             [' Фото', 'Наименование', 'Артикул', 'Розница', 'Опт'],
             [null, 'Труба L1000 ТМ-Р 430-0.8 D115', 'TS.FRT.TRB.0115.32850', 72.9312, 51.0518],
             [null, 'Отвод 87* ОМ-Р 430-1,0 D115', 'TS.FRT.OTV.0115.1', '-', '-'],
+            [null, 'Адаптер Моно М-М 430-0.5 D80', 'TS.FRT.AKL.0080.62699', 10.24, 7.17],
             [null, 'Заглушка ревизии ЗРМ-Р 430-0.5 D120', 'TS.KMP.ZRV.0120.72047', 20.1, 14],
             [null, 'Заглушка ревизии ЗРТ-Р 430-0.5/430 D120/200', 'TS.KMP.ZRV.0120.72047', 40.2, 28],
         ]);
