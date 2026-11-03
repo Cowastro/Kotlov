@@ -37,6 +37,16 @@ class CommercialDocument extends Model
         'other' => 'Другая причина',
     ];
 
+    /** Причины, которые подтверждают именно отказ клиента. */
+    public const REJECTION_REASONS = [
+        'price' => 'Не устроила цена',
+        'delivery_time' => 'Не устроил срок поставки',
+        'competitor' => 'Выбран другой поставщик',
+        'budget' => 'Нет бюджета / закупка отложена',
+        'requirements_changed' => 'Изменилась потребность',
+        'other' => 'Другая причина',
+    ];
+
     public const FOLLOW_UP_STAGES = [
         'proposal_sent' => 'КП отправлено',
         'contact_planned' => 'Запланирован контакт',
@@ -55,6 +65,8 @@ class CommercialDocument extends Model
         'needs_revision' => 'Нужна корректировка КП',
         'accepted' => 'КП согласовано',
         'rejected' => 'Клиент отказался',
+        'validity_extended' => 'Срок КП продлён',
+        'returned_to_work' => 'КП возвращено в работу',
     ];
 
     protected $fillable = [
