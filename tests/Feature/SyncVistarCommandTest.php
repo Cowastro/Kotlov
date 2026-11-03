@@ -75,6 +75,11 @@ class SyncVistarCommandTest extends TestCase
             $slug('Коаксиальное колено дымохода 90° 60/100 мм, BAXI'), $slug('Адаптер для подключения раздельных труб 60/100 на 80/80, KRATS'),
             $slug('Комнатный механический термостат двухпозиционный (SIEMENS), BAXI'), $slug('Крепежный хомут D=80, KRATS'),
         ]);
+        $this->assertSame(['regulyatory', 'zapchasti-dlya-kotlov', 'koaxial-dymoxod'], [
+            $slug('Система удаленного управления котлом BAXI ZONT Connect (Комплект состоит из: блок питания, антенна, накладной датчик)'),
+            $slug('Дымовой колпак для котлов (Стабилизатор тяги) SLIM 1.620iN, BAXI'),
+            $slug('Коаксиальная труба для конденсационного котла с наконечником 80/125 мм, BAXI'),
+        ]);
     }
 
     private function priceList(): string

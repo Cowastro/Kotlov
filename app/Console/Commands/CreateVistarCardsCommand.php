@@ -160,31 +160,38 @@ class CreateVistarCardsCommand extends Command
             return "Мембранный бак Reflex {$series} {$m[1]} л, {$m[2]} бар";
         }
 
+        // The same «Коаксиальное колено 90° 60/100 мм» is an aluminium part and an aluminium-polypropylene one.
+        if (str_contains($section, 'полипропилен') && ! preg_match('/полипропилен|конденсац/u', mb_strtolower($name))) {
+            $name .= ' (алюминий/полипропилен)';
+        }
+
         return $brand !== '' && ! str_contains(mb_strtolower($name), mb_strtolower($brand)) ? trim($name.', '.$brand) : $name;
     }
 
     /** The category of a row by the kind of item: boilers, water heaters, tanks, flue parts, controls. */
     public static function categorySlug(array $raw, string $title): string
     {
-        $text = mb_strtolower($title.' '.($raw['name'] ?? ''));
+        $text = mb_strtolower($title);
         $rules = [
             'elektricheskie' => '/ampera/u',
             'gazovye' => '/газовый котел|котёл vitodens|котел vitodens/u',
             'kosvennye' => '/бойлер косвенного/u',
+            'zapchasti-dlya-kotlov' => '/комплект перевода|нейтрализац|наполнитель|трехходов|трёхходов|дымовой колпак/u',
+            'regulyatory' => '/термостат|контроллер|регулятор|zont|модуль управления|каскадн|панель управления|vitotrol|аксессуар для управления|vitocom|удаленного управления/u',
             'gruppy-bystrogo-montazha-kotelnyx' => '/группа быстрого монтажа|насосная группа/u',
-            'gidravlicheskie-razdeliteli-i-kollektory' => '/коллектор/u',
-            'stabilizatory-napryazheniya' => '/стабилизатор/u',
+            'gidravlicheskie-razdeliteli-i-kollektory' => '/коллектор|крепеж для распределителя/u',
+            'stabilizatory-napryazheniya' => '/инверторный стабилизатор/u',
             'membrannye-baki' => '/мембранный бак|расширительн[а-я]* бак|крепеж[а-я]* для расширительн/u',
             'predokhranitelnaya-i-reguliruyushchaya-armatura' => '/flowjet|клапан для расширительн/u',
             'datchiki' => '/датчик/u',
-            'regulyatory' => '/термостат|контроллер|регулятор|zont|модуль|каскадн|панель управления|vitotrol|аксессуар для управления|vitocom/u',
-            'zapchasti-dlya-kotlov' => '/комплект перевода|нейтрализац|наполнитель|трехходов|трёхходов|дымовой колпак/u',
             'homuty-i-rastyazhki-dymohoda' => '/хомут/u',
             'rozety-i-dekorativnye-elementy-dymohoda' => '/накладка/u',
-            'kondensatootvody' => '/конденсатосборник|конденсатоотвод|ревизи/u',
-            'perehody-adaptery-dymohod' => '/адаптер|переход с/u',
-            'zaglushki-dymohod' => '/наконечник|оголовок/u',
-            'koaxial-dymoxod' => '/коакс|дымоход|труба|колено|удлинени|проход|тройник|отвод/u',
+            'uplotneniya-vtulki-i-flantsy-dymohoda' => '/диафрагма/u',
+            'krepleniya-dymohod' => '/распорка/u',
+            'kondensatootvody' => '/конденсатосборник|конденсатоотвод|^ревизия/u',
+            'zaglushki-dymohod' => '/^(наконечник|вертикальный оголовок|оголовок)/u',
+            'perehody-adaptery-dymohod' => '/адаптер|переход|присоединительн/u',
+            'koaxial-dymoxod' => '/коакс|дымоход|труба|колено|удлин|проход|тройник|отвод/u',
         ];
         foreach ($rules as $slug => $pattern) {
             if (preg_match($pattern, $text) === 1) {
