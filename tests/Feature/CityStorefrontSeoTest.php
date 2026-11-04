@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\CityContactResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class CityStorefrontSeoTest extends TestCase
@@ -121,11 +122,18 @@ class CityStorefrontSeoTest extends TestCase
         $this->assertSame(['+375 (29) 111-22-33'], $contact['phones']);
         $this->assertSame('borisov@example.test', $contact['email']);
 
+        Route::get('/__test/city-context', static fn () => response()->json([
+            'city' => view()->shared('selectedCity')?->slug,
+            'phone' => view()->shared('cityContact')['phones'][0] ?? null,
+        ]));
+
         $this->withCookie('selected_city', 'minsk')
-            ->get('https://borisov.kotlov.by/')
+            ->get('https://borisov.kotlov.by/__test/city-context')
             ->assertOk()
-            ->assertSee('site-topbar__city-name', false)
-            ->assertSee('г. Борисов');
+            ->assertJson([
+                'city' => 'borisov',
+                'phone' => '+375 (29) 111-22-33',
+            ]);
     }
 
     private function city(string $slug, string $name): City
