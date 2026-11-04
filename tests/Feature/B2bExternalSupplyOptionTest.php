@@ -8,6 +8,7 @@ use App\Models\B2bOrderItem;
 use App\Models\B2bPriceLevel;
 use App\Models\B2bPricingRule;
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
@@ -50,6 +51,20 @@ class B2bExternalSupplyOptionTest extends TestCase
                 'supply_option' => 'supplier:'.$offer->id,
             ])
             ->assertUnprocessable();
+    }
+
+    public function test_all_partner_supplier_access_includes_a_new_partner_warehouse(): void
+    {
+        [$supplier, $product, $offer] = $this->externalFixture();
+        $user = $this->approvedPartner([]);
+        $user->b2bClient()->update(['allow_all_partner_suppliers' => true]);
+
+        $option = app(B2bSupplyOptionResolver::class)
+            ->optionForKey($product, $user->fresh(), 'supplier:'.$offer->id);
+
+        $this->assertNotNull($option);
+        $this->assertSame('supplier:'.$offer->id, $option['key']);
+        $this->assertSame($supplier->b2b_client_warehouse_label, $option['warehouse_name']);
     }
 
     public function test_price_level_discount_is_clamped_to_the_rules_minimum_margin(): void
@@ -216,7 +231,7 @@ class B2bExternalSupplyOptionTest extends TestCase
     public function test_retail_order_of_a_partner_is_moved_to_b2b_by_number(): void
     {
         $user = $this->approvedPartner([]);
-        $order = \App\Models\Order::query()->create([
+        $order = Order::query()->create([
             'user_id' => $user->id, 'number' => 'ORD-2026-0205', 'status' => 'new',
             'customer_name' => 'Алексей Максимов', 'customer_phone' => '+375293579650',
             'delivery_type' => 'pickup', 'payment_type' => 'cash', 'payment_status' => 'pending',

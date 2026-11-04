@@ -80,6 +80,16 @@ class B2bClientForm
                         ->searchable()
                         ->preload()
                         ->helperText('Уровень применяется только к готовой продажной B2B-цене.'),
+                    Select::make('partner_program_level_id')
+                        ->label('Рейтинг партнёра')
+                        ->relationship(
+                            'partnerProgramLevel',
+                            'name',
+                            modifyQueryUsing: fn ($query) => $query->where('is_active', true)->orderBy('rank'),
+                        )
+                        ->searchable()
+                        ->preload()
+                        ->helperText('Отдельный уровень партнёрской программы: Партнёр, Профессионал или Дилер.'),
                     Select::make('status')
                         ->label('Статус')
                         ->options(B2bClient::STATUSES)
@@ -137,6 +147,10 @@ class B2bClientForm
                         ->label('Комплектация по спецификации')
                         ->helperText('Показывать клиенту возможность передать готовую спецификацию.')
                         ->default(true),
+                    Toggle::make('allow_all_integration_sources')
+                        ->label('Все прайсы и источники')
+                        ->helperText('Автоматически открывает клиенту все текущие и будущие активные B2B-источники.')
+                        ->live(),
                     Select::make('allowed_integration_source_ids')
                         ->label('Доступные прайсы и поставщики')
                         ->options(fn (): array => IntegrationSource::query()
@@ -147,8 +161,13 @@ class B2bClientForm
                         ->multiple()
                         ->searchable()
                         ->preload()
+                        ->disabled(fn ($get): bool => (bool) $get('allow_all_integration_sources'))
                         ->helperText('Выбранные источники появятся в B2B-каталоге этого клиента. Пусто — не показывать ни один прайс.')
                         ->columnSpanFull(),
+                    Toggle::make('allow_all_integration_warehouses')
+                        ->label('Все склады источников')
+                        ->helperText('Автоматически подключает все текущие и будущие склады интеграций.')
+                        ->live(),
                     Select::make('allowed_integration_warehouse_ids')
                         ->label('Доступные склады')
                         ->options(fn (): array => IntegrationWarehouse::query()
@@ -163,8 +182,13 @@ class B2bClientForm
                         ->multiple()
                         ->searchable()
                         ->preload()
+                        ->disabled(fn ($get): bool => (bool) $get('allow_all_integration_warehouses'))
                         ->helperText('Доступ к складам настраивается независимо от уровня цены.')
                         ->columnSpanFull(),
+                    Toggle::make('allow_all_partner_suppliers')
+                        ->label('Все партнёрские склады')
+                        ->helperText('Автоматически подключает все текущие и будущие активные партнёрские склады.')
+                        ->live(),
                     Select::make('allowed_supplier_ids')
                         ->label('Внешние партнёрские склады')
                         ->options(fn (): array => Supplier::query()
@@ -176,6 +200,7 @@ class B2bClientForm
                         ->multiple()
                         ->searchable()
                         ->preload()
+                        ->disabled(fn ($get): bool => (bool) $get('allow_all_partner_suppliers'))
                         ->helperText('Выдаются отдельно от прайсов 1С. Пусто — внешние склады этому клиенту не показывать.')
                         ->columnSpanFull(),
                 ]),

@@ -27,11 +27,11 @@ class PartnerBranchResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMapPin;
 
-    protected static ?string $navigationLabel = 'Точки продаж';
+    protected static ?string $navigationLabel = 'Филиалы партнёров';
 
-    protected static ?string $modelLabel = 'точка продаж';
+    protected static ?string $modelLabel = 'филиал или точка продаж';
 
-    protected static ?string $pluralModelLabel = 'Точки продаж';
+    protected static ?string $pluralModelLabel = 'Филиалы и точки продаж';
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -58,12 +58,12 @@ class PartnerBranchResource extends Resource
         ])->columns(2);
     }
 
-    /** Fields shared with the «Точки продаж» tab of a B2B client card. */
+    /** Fields shared with the «Филиалы и точки продаж» tab of a B2B client card. */
     public static function branchFields(): array
     {
         return [
             Select::make('city_id')->label('Город')->relationship('city', 'name')->searchable()->preload()->required(),
-            TextInput::make('name')->label('Название на сайте')->placeholder('ООО «СБГ Бай»')->required()->maxLength(255),
+            TextInput::make('name')->label('Название филиала на сайте')->placeholder('Магазин «Печкiн» (ООО «СБГ бай»)')->required()->maxLength(255),
             TextInput::make('address')->label('Адрес')->placeholder('г. Минск, ул. Селицкого, 39Б')->maxLength(255),
             TagsInput::make('phones')->label('Телефоны')->placeholder('+375 (29) 000-00-00')->required()
                 ->helperText('Каждый номер — отдельно, Enter после ввода.'),

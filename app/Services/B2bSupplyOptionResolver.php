@@ -64,7 +64,7 @@ class B2bSupplyOptionResolver
     /**
      * Units already reserved for other B2B orders are not offered again.
      *
-     * @param Collection<int, array<string, mixed>> $options
+     * @param  Collection<int, array<string, mixed>>  $options
      * @return Collection<int, array<string, mixed>>
      */
     private function withoutReserved(Collection $options): Collection
@@ -257,6 +257,13 @@ class B2bSupplyOptionResolver
         }
 
         $client = $user->activeB2bClient();
+        if ($client?->allow_all_partner_suppliers) {
+            return Supplier::query()
+                ->where('is_active', true)
+                ->where('b2b_partner_enabled', true)
+                ->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        }
+
         $allowed = $client?->allowed_supplier_ids;
 
         return is_array($allowed)
