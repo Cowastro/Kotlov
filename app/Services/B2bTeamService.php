@@ -126,6 +126,20 @@ class B2bTeamService
         });
     }
 
+    public function restoreMember(B2bClientMember $member, User $actor): void
+    {
+        if ($member->role === 'owner') {
+            abort(404);
+        }
+
+        DB::transaction(function () use ($member, $actor): void {
+            $member->update(['is_active' => true]);
+            $this->audit($member->client, 'access_restored', $actor, $member->user, [
+                'role' => $member->role,
+            ]);
+        });
+    }
+
     public function revokeInvitation(B2bClientInvitation $invitation, User $actor): void
     {
         DB::transaction(function () use ($invitation, $actor): void {
