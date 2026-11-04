@@ -31,6 +31,24 @@ class B2bCabinetTest extends TestCase
             ->assertSeeText('Сверка взаиморасчётов');
     }
 
+    public function test_internal_manager_can_open_a_read_only_partner_cabinet_preview(): void
+    {
+        [, $client] = $this->partner();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        $this->actingAs($manager)
+            ->get(route('admin.b2b-clients.cabinet-preview', $client))
+            ->assertOk()
+            ->assertSeeText('Служебный просмотр кабинета')
+            ->assertSeeText('ООО «Партнёр»')
+            ->assertDontSeeText('Выйти');
+
+        $retail = User::factory()->create(['role' => 'client', 'is_active' => true]);
+        $this->actingAs($retail)
+            ->get(route('admin.b2b-clients.cabinet-preview', $client))
+            ->assertForbidden();
+    }
+
     public function test_partner_profile_updates_b2b_client_user_and_crm_counterparty(): void
     {
         [$partner, $client] = $this->partner();

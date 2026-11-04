@@ -8,10 +8,15 @@ use App\Filament\Resources\B2bClients\Pages\ListB2bClients;
 use App\Filament\Resources\B2bClients\RelationManagers\PartnerBranchesRelationManager;
 use App\Filament\Resources\B2bClients\Schemas\B2bClientForm;
 use App\Models\B2bClient;
+use App\Models\B2bClientMember;
+use App\Notifications\B2bCompanyInvitationNotification;
 use App\Services\B2bClientWorkflow;
+use App\Services\B2bTeamService;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -20,6 +25,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
 use Illuminate\Support\Facades\Password;
 
 class B2bClientResource extends Resource
@@ -105,6 +112,50 @@ class B2bClientResource extends Resource
                     ->relationship('responsibleUser', 'name')->searchable()->preload(),
             ])
             ->recordActions([
+                Action::make('cabinetPreview')
+                    ->label('Кабинет')
+                    ->icon('heroicon-o-eye')
+                    ->color('gray')
+                    ->visible(fn (B2bClient $record): bool => $record->status === 'approved' && filled($record->user_id))
+                    ->url(fn (B2bClient $record): string => route('admin.b2b-clients.cabinet-preview', $record))
+                    ->openUrlInNewTab(),
+                Action::make('inviteTeamMember')
+                    ->label('Пригласить сотрудника')
+                    ->icon('heroicon-o-user-plus')
+                    ->color('info')
+                    ->visible(fn (B2bClient $record): bool => $record->status === 'approved')
+                    ->modalHeading('Доступ сотрудника к B2B-кабинету')
+                    ->modalDescription('На указанный e-mail будет отправлена одноразовая ссылка. Она действует 7 дней.')
+                    ->modalSubmitActionLabel('Отправить приглашение')
+                    ->schema([
+                        TextInput::make('email')->label('E-mail сотрудника')->email()->required(),
+                        Select::make('role')->label('Роль')->options(collect(B2bClientMember::ROLES)->except('owner')->all())
+                            ->default('branch_operator')->required(),
+                    ])
+                    ->action(function (B2bClient $record, array $data): void {
+                        /** @var \App\Models\User $actor */
+                        $actor = auth()->user();
+                        $teams = app(B2bTeamService::class);
+                        [$invitation, $token] = $teams->invite($record, $actor, $data['email'], $data['role']);
+
+                        try {
+                            NotificationFacade::route('mail', $invitation->email)
+                                ->notify(new B2bCompanyInvitationNotification($invitation->load(['client', 'inviter']), $token));
+                        } catch (\Throwable $exception) {
+                            $teams->revokeInvitation($invitation, $actor);
+                            Log::error('Admin B2B company invitation email failed.', [
+                                'b2b_client_id' => $record->id,
+                                'invitation_id' => $invitation->id,
+                                'exception' => $exception->getMessage(),
+                            ]);
+
+                            Notification::make()->danger()->title('Не удалось отправить приглашение')->send();
+
+                            return;
+                        }
+
+                        Notification::make()->success()->title('Приглашение отправлено')->body($invitation->email)->send();
+                    }),
                 Action::make('approve')->label('Одобрить')->icon('heroicon-o-check-circle')->color('success')->requiresConfirmation()
                     ->visible(fn (B2bClient $record): bool => $record->status !== 'approved')
                     ->action(function (B2bClient $record): void {

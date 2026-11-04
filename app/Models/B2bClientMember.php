@@ -10,6 +10,7 @@ class B2bClientMember extends Model
     public const ROLES = [
         'owner' => 'Владелец кабинета',
         'buyer' => 'Закупщик',
+        'branch_operator' => 'Филиал: закупки и продажи',
         'accountant' => 'Бухгалтер',
         'viewer' => 'Наблюдатель',
     ];

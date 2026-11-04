@@ -6,30 +6,37 @@
 
 @section('content')
 @php
+    $adminPreview = $adminPreview ?? false;
     $cart = collect(session('cart', []));
     $cartCount = $cart->sum('quantity');
-    $sectionUrl = fn (string $name) => route('b2b.cabinet', ['section' => $name]);
+    $sectionUrl = fn (string $name) => $adminPreview
+        ? route('admin.b2b-clients.cabinet-preview', ['client' => $client, 'section' => $name])
+        : route('b2b.cabinet', ['section' => $name]);
+    $catalogUrl = $adminPreview ? route('b2b.catalog', ['b2b-preview' => 1]) : route('b2b.catalog');
     $statusLabels = \App\Models\B2bOrder::STATUSES;
     $documentStatuses = \App\Models\CommercialDocument::STATUSES;
     $contractStatuses = \App\Models\CommercialContract::STATUSES;
     $can = fn (string $permission) => $permissions->contains($permission);
 @endphp
 
-<div class="b2b-portal b2b-cabinet">
+<div class="b2b-portal b2b-cabinet {{ $adminPreview ? 'is-admin-preview' : '' }}">
     <header class="b2b-cabinet-topbar">
         <div class="b2b-cabinet-topbar__inner">
-            <a href="{{ $can('catalog.view') ? route('b2b.catalog') : $sectionUrl('overview') }}" class="b2b-cabinet-brand">
+            <a href="{{ $can('catalog.view') ? $catalogUrl : $sectionUrl('overview') }}" class="b2b-cabinet-brand">
                 <img src="{{ asset('img/logo.svg') }}" width="126" height="26" alt="KOTLOV"><span>B2B</span>
             </a>
             <nav aria-label="B2B-навигация">
-                @if($can('catalog.view'))<a href="{{ route('b2b.catalog') }}"><i class="icon icon-SquaresFour"></i> Каталог</a>@endif
-                @if($can('orders.create'))<a href="{{ route('cart') }}"><i class="icon icon-Handbag"></i> Корзина <b>{{ $cartCount }}</b></a>@endif
-                <form action="{{ route('logout') }}" method="POST">@csrf<button type="submit">Выйти</button></form>
+                @if($can('catalog.view'))<a href="{{ $catalogUrl }}"><i class="icon icon-SquaresFour"></i> Каталог</a>@endif
+                @unless($adminPreview)
+                    @if($can('orders.create'))<a href="{{ route('cart') }}"><i class="icon icon-Handbag"></i> Корзина <b>{{ $cartCount }}</b></a>@endif
+                    <form action="{{ route('logout') }}" method="POST">@csrf<button type="submit">Выйти</button></form>
+                @endunless
             </nav>
         </div>
     </header>
 
     <main class="b2b-cabinet-shell">
+        @if($adminPreview)<div class="b2b-cabinet-alert is-preview"><strong>Служебный просмотр кабинета</strong><span>Вы видите кабинет глазами партнёра. Изменения, заказы и скачивание документов отключены.</span></div>@endif
         @if (session('success'))<div class="b2b-cabinet-alert is-success">{{ session('success') }}</div>@endif
         @if ($errors->any())
             <div class="b2b-cabinet-alert is-error">@foreach ($errors->all() as $error)<div>{{ $error }}</div>@endforeach</div>
@@ -37,7 +44,7 @@
 
         <section class="b2b-cabinet-welcome">
             <div><span>Кабинет партнёра · {{ \App\Models\B2bClientMember::ROLES[$role] ?? $role }}</span><h1>{{ $client->company_name }}</h1><p>Заказы, документы и реквизиты компании в одном месте.</p></div>
-            @if($can('catalog.view'))<a href="{{ route('b2b.catalog') }}">Открыть B2B-каталог <span>→</span></a>@endif
+            @if($can('catalog.view'))<a href="{{ $catalogUrl }}">Открыть B2B-каталог <span>→</span></a>@endif
         </section>
 
         <div class="b2b-cabinet-layout">
@@ -208,7 +215,7 @@
                                     <b>{{ $member->roleLabel() }}</b>
                                 @elseif($member->is_active && $passwordRecentlyConfirmed)
                                     <div class="b2b-team-member__actions">
-                                        <form method="POST" action="{{ route('b2b.cabinet.team.update', $member) }}">@csrf @method('PATCH')<select name="role" aria-label="Роль {{ $member->user?->name }}"><option value="buyer" @selected($member->role === 'buyer')>Закупщик</option><option value="accountant" @selected($member->role === 'accountant')>Бухгалтер</option><option value="viewer" @selected($member->role === 'viewer')>Наблюдатель</option></select><button type="submit">Сохранить роль</button></form>
+                                        <form method="POST" action="{{ route('b2b.cabinet.team.update', $member) }}">@csrf @method('PATCH')<select name="role" aria-label="Роль {{ $member->user?->name }}"><option value="buyer" @selected($member->role === 'buyer')>Закупщик</option><option value="branch_operator" @selected($member->role === 'branch_operator')>Филиал: закупки и продажи</option><option value="accountant" @selected($member->role === 'accountant')>Бухгалтер</option><option value="viewer" @selected($member->role === 'viewer')>Наблюдатель</option></select><button type="submit">Сохранить роль</button></form>
                                         <form method="POST" action="{{ route('b2b.cabinet.team.destroy', $member) }}">@csrf @method('DELETE')<button type="submit" class="is-danger" onclick="return confirm('Отключить доступ и завершить активные сессии сотрудника?')">Отключить</button></form>
                                     </div>
                                 @elseif(!$member->is_active)
@@ -221,7 +228,7 @@
                     </div>
                     @if($passwordRecentlyConfirmed)<form method="POST" action="{{ route('b2b.cabinet.team.store') }}" class="b2b-cabinet-form b2b-team-add">@csrf
                         <h3>Пригласить сотрудника</h3><p>Мы отправим фирменное письмо с одноразовой ссылкой. Новый сотрудник зарегистрируется прямо по ней, существующий — войдёт в свой аккаунт.</p>
-                        <div class="b2b-cabinet-form__grid"><label><span>Email *</span><input type="email" name="email" value="{{ old('email') }}" required></label><label><span>Роль *</span><select name="role" required><option value="buyer">Закупщик</option><option value="accountant">Бухгалтер</option><option value="viewer">Наблюдатель</option></select></label></div>
+                        <div class="b2b-cabinet-form__grid"><label><span>Email *</span><input type="email" name="email" value="{{ old('email') }}" required></label><label><span>Роль *</span><select name="role" required><option value="buyer">Закупщик</option><option value="branch_operator">Филиал: закупки и продажи</option><option value="accountant">Бухгалтер</option><option value="viewer">Наблюдатель</option></select></label></div>
                         <button class="b2b-cabinet-primary" type="submit">Отправить приглашение</button>
                     </form>@endif
                     @if($pendingInvitations->isNotEmpty())
@@ -441,6 +448,7 @@ body.b2b-body{background:#f4f7fb}.b2b-cabinet *{box-sizing:border-box}.b2b-cabin
 @media(max-width:1050px){.b2b-cabinet-layout{grid-template-columns:1fr}.b2b-cabinet-nav{position:static;display:flex;overflow:auto;gap:4px}.b2b-cabinet-nav__company{display:none}.b2b-cabinet-nav>a{white-space:nowrap}.b2b-cabinet-nav>a.b2b-cabinet-nav__retail{margin:0;border:0;padding-top:11px}.b2b-cabinet-stats{grid-template-columns:1fr 1fr}}
 @media(max-width:700px){.b2b-cabinet-topbar__inner,.b2b-cabinet-shell{padding:14px}.b2b-cabinet-topbar nav a{font-size:0}.b2b-cabinet-topbar nav a i,.b2b-cabinet-topbar nav a b{font-size:16px}.b2b-cabinet-welcome{padding:22px;display:block}.b2b-cabinet-welcome>a{display:inline-block;margin-top:15px}.b2b-cabinet-content{padding:18px}.b2b-cabinet-heading{display:block}.b2b-cabinet-heading p{margin-top:5px}.b2b-commercial-profile,.b2b-commercial-profile__terms,.b2b-cabinet-stats,.b2b-cabinet-grid,.b2b-cabinet-form__grid{grid-template-columns:1fr}.b2b-cabinet-form label.wide{grid-column:auto}.b2b-save-current{grid-template-columns:1fr}.b2b-cabinet-list article{align-items:flex-start;display:block}.b2b-cabinet-actions,.b2b-cabinet-order-total{margin-top:12px;text-align:left}.b2b-reconciliation-filter{align-items:stretch;flex-direction:column}.b2b-reconciliation-filter label{width:100%}.b2b-reconciliation-sheet{padding:15px;overflow:auto}.b2b-reconciliation-sheet table{min-width:620px}}
 @media print{.b2b-cabinet-topbar,.b2b-cabinet-welcome,.b2b-cabinet-nav,.b2b-cabinet-heading,.b2b-reconciliation-filter,.footer{display:none!important}.b2b-cabinet-shell,.b2b-cabinet-content{padding:0;border:0}.b2b-cabinet-layout{display:block}.b2b-reconciliation-sheet{border:0}.b2b-cabinet-content>*:not(.b2b-reconciliation-sheet){display:none}}
+.b2b-cabinet-alert.is-preview{display:flex;align-items:center;gap:12px;background:#fff6d7;color:#71520b;border:1px solid #efd279}.b2b-cabinet-alert.is-preview strong,.b2b-cabinet-alert.is-preview span{display:block}.is-admin-preview .b2b-cabinet-content form,.is-admin-preview .b2b-cabinet-content button,.is-admin-preview .b2b-cabinet-content a:not([href*="cabinet-preview"]){pointer-events:none;opacity:.6}
 </style>
 @endpush
 
