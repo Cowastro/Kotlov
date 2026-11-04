@@ -13,7 +13,7 @@ class SyncDealByBrandPricesCommand extends Command
 {
     private const PAGE_SIZE = 100;
 
-    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall', 'kaminproff', 'akvateploservis'];
+    private const SUPPORTED_SUPPLIERS = ['bania', 'prometall', 'kaminproff', 'akvateploservis', 'teplov'];
 
     /** Galmet and Apamet goods of the shop by their name (Акватеплосервис). */
     private const GALMET_NAME = '/galmet|apamet|галмет|апамет/ui';
