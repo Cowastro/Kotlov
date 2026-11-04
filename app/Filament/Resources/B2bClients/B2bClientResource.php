@@ -5,6 +5,8 @@ namespace App\Filament\Resources\B2bClients;
 use App\Filament\Resources\B2bClients\Pages\CreateB2bClient;
 use App\Filament\Resources\B2bClients\Pages\EditB2bClient;
 use App\Filament\Resources\B2bClients\Pages\ListB2bClients;
+use App\Filament\Resources\B2bClients\RelationManagers\InvitationsRelationManager;
+use App\Filament\Resources\B2bClients\RelationManagers\MembersRelationManager;
 use App\Filament\Resources\B2bClients\RelationManagers\PartnerBranchesRelationManager;
 use App\Filament\Resources\B2bClients\Schemas\B2bClientForm;
 use App\Models\B2bClient;
@@ -74,7 +76,12 @@ class B2bClientResource extends Resource
     {
         return parent::getEloquentQuery()
             ->with(['user', 'counterparty', 'priceLevel', 'partnerProgramLevel', 'responsibleUser', 'reviewedBy'])
-            ->withCount('branches')
+            ->withCount([
+                'branches',
+                'members as active_members_count' => fn (Builder $query) => $query->where('is_active', true),
+                'invitations as pending_invitations_count' => fn (Builder $query) => $query
+                    ->whereNull('accepted_at')->whereNull('revoked_at')->where('expires_at', '>', now()),
+            ])
             ->withB2bOrderMetrics();
     }
 
@@ -116,11 +123,22 @@ class B2bClientResource extends Resource
                     ->relationship('responsibleUser', 'name')->searchable()->preload(),
             ])
             ->recordActions([
+                Action::make('manageAccess')
+                    ->label(fn (B2bClient $record): string => 'Доступы: '.(int) $record->active_members_count)
+                    ->icon('heroicon-o-users')
+                    ->color('info')
+                    ->url(fn (B2bClient $record): string => static::getUrl('edit', ['record' => $record]).'?relation=0'),
+                Action::make('pendingInvitations')
+                    ->label(fn (B2bClient $record): string => 'Ожидают: '.(int) $record->pending_invitations_count)
+                    ->icon('heroicon-o-envelope')
+                    ->color('warning')
+                    ->visible(fn (B2bClient $record): bool => (int) $record->pending_invitations_count > 0)
+                    ->url(fn (B2bClient $record): string => static::getUrl('edit', ['record' => $record]).'?relation=1'),
                 Action::make('manageBranches')
                     ->label(fn (B2bClient $record): string => 'Филиалы: '.(int) $record->branches_count)
                     ->icon('heroicon-o-map-pin')
                     ->color('gray')
-                    ->url(fn (B2bClient $record): string => static::getUrl('edit', ['record' => $record]).'?relation=0'),
+                    ->url(fn (B2bClient $record): string => static::getUrl('edit', ['record' => $record]).'?relation=2'),
                 Action::make('cabinetPreview')
                     ->label('Кабинет')
                     ->icon('heroicon-o-eye')
@@ -210,7 +228,11 @@ class B2bClientResource extends Resource
 
     public static function getRelations(): array
     {
-        return [PartnerBranchesRelationManager::class];
+        return [
+            MembersRelationManager::class,
+            InvitationsRelationManager::class,
+            PartnerBranchesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
