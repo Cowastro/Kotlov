@@ -253,7 +253,7 @@ Route::get('/', function () {
 
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
-    $data = Cache::remember('home:data:v7', 600, function () {
+    $data = Cache::remember('home:data:v8', 600, function () {
         $categories = Category::active()->get()->sortBy('sort_order');
         $categoriesByParent = $categories->groupBy('parent_id');
         $categoryBranchIds = function ($categoryId) use ($categoriesByParent) {
@@ -296,8 +296,9 @@ Route::get('/', function () {
             ->values();
 
         $popularCategories->concat($cityHomeCategories)->each(function (Category $category) use ($categoryBranchIds, $directCounts) {
-            $category->products_count = $categoryBranchIds($category->id)
-                ->sum(fn ($id) => (int) $directCounts->get($id, 0));
+            $branchIds = $categoryBranchIds($category->id);
+            $category->products_count = $branchIds->sum(fn ($id) => (int) $directCounts->get($id, 0));
+            $category->catalogThumb = $category->catalogImageUrl($branchIds->all());
         });
 
         $kotlyCatId = Category::where('slug', 'kotly')->value('id');

@@ -5,16 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 class CatalogIndexController extends Controller
 {
-    /** Stock pictures of sections whose slug names no file of its own. */
-    private const STOCK_IMAGES = [
-        'vodosnabzhenie' => 'img/popular/nasosy.jpg',
-        'klimat' => 'img/popular/air.jpg',
-    ];
-
     public function index(Request $request)
     {
         $categories = Category::query()
@@ -76,7 +69,7 @@ class CatalogIndexController extends Controller
                 ->map(fn (Category $child) => $descendantIds((int) $child->id))->all());
         };
         $rootCategories->each(function (Category $category) use ($descendantIds): void {
-            $category->catalogThumb = $this->thumb($category, $descendantIds((int) $category->id));
+            $category->catalogThumb = $category->catalogImageUrl($descendantIds((int) $category->id));
             $category->setRelation('catalogTop', $category->catalogChildren->sortByDesc('products_count')->take(6)->values());
         });
 
@@ -106,28 +99,5 @@ class CatalogIndexController extends Controller
             'rootCategories', 'popularCategories', 'title', 'description', 'keywords', 'ogImage',
             'canonical', 'currentCity', 'isCityStorefront', 'cityIn', 'cityTitle'
         ));
-    }
-
-    /** The section picture: its own, a stock one, else a photo of an orderable product of the section. */
-    private function thumb(Category $category, array $categoryIds): string
-    {
-        if (trim((string) $category->image) !== '') {
-            return $category->imageUrl();
-        }
-        $stock = Category::fallbackImagePath($category->slug)
-            ?? (is_file(public_path('img/popular/'.$category->slug.'.jpg')) ? 'img/popular/'.$category->slug.'.jpg' : null)
-            ?? self::STOCK_IMAGES[$category->slug] ?? null;
-        if ($stock !== null) {
-            return asset($stock);
-        }
-
-        return Cache::remember('catalog-index:thumb:'.$category->id, 86400, function () use ($categoryIds): string {
-            $product = Product::query()->orderable()->whereIn('category_id', $categoryIds)
-                ->whereNotNull('images')->where('images', '!=', '[]')
-                ->orderByDesc('is_featured')->orderBy('id')
-                ->first(['id', 'images']);
-
-            return $product?->imageUrl(0) ?? asset('img/popular/catalog.jpg');
-        });
     }
 }
