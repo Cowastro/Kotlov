@@ -6,11 +6,13 @@ use App\Models\Attribute;
 use App\Models\BlogPost;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\PartnerBranch;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Services\ChimneyDiameterQuickFilter;
 use App\Services\SeoMetadataBuilder;
 use App\Support\CategoryNavigationGroups;
+use App\Support\Promotions\EcokaminPromotion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -466,26 +468,38 @@ class CatalogController extends Controller
         // Подставляем город в мета-теги из БД или генерируем автоматически
         // name_in уже содержит предлог «в» (напр. «в Борисове»)
         // Поэтому «в %city%» → cityIn, а одиночный %city% → только название (без «в»)
-        $cityName = preg_replace('/^в\s+/u', '', $cityIn); // «Борисове» или «Беларуси»
-        $replaceCityIn = function (?string $text) use ($cityIn, $cityName): ?string {
-            if (! $text) {
-                return null;
-            }
-            $text = str_replace('в %city%', $cityIn, $text);   // «в %city%» → «в Борисове»
-            $text = str_replace('%city%', $cityName, $text);    // остаток «%city%» → «Борисове»
-
-            return $text;
-        };
+        $seo = app(SeoMetadataBuilder::class);
+        $replaceCityIn = fn (?string $text): ?string => $seo->replaceCity($text, $cityIn);
 
         $category->name = $replaceCityIn($category->name) ?? $category->name;
         $category->h1 = $replaceCityIn($category->h1) ?? $category->h1;
         $category->description = $replaceCityIn($category->description) ?? $category->description;
+        if ($category->content) {
+            $contentCityName = preg_replace('/^в\s+/ui', '', $cityIn) ?: $cityIn;
+            $category->content = str_replace(
+                ['в %city%', '%city%'],
+                [$cityIn, $contentCityName],
+                $category->content
+            );
+            if (mb_strtolower($cityIn) !== 'в минске') {
+                $category->content = preg_replace('/\bв\s+Минске\b/ui', $cityIn, $category->content) ?: $category->content;
+            }
+        }
+
+        $currentCity = view()->shared('currentCity');
+        $isCityStorefront = $currentCity?->exists && $currentCity->slug !== 'minsk';
+        if ($isCityStorefront) {
+            $cityCase = preg_replace('/^в\s+/ui', '', $cityIn) ?: $currentCity->name;
+            $heading = trim((string) ($category->h1 ?: $category->name));
+            if (mb_stripos($heading, $cityCase) === false) {
+                $category->h1 = $heading.' '.$cityIn;
+            }
+        }
 
         $name = $category->name;
         $nameLower = mb_strtolower($name);
 
         // Title: если старый > 70 символов — заменяем на короткий автошаблон
-        $seo = app(SeoMetadataBuilder::class);
         $title = $seo->categoryTitle(
             $category->slug,
             $name,
@@ -495,6 +509,12 @@ class CatalogController extends Controller
 
         // Description: если > 180 символов — заменяем на короткий автошаблон
         $rawDesc = $replaceCityIn($category->meta_description);
+        if ($isCityStorefront) {
+            $cityCase = preg_replace('/^в\s+/ui', '', $cityIn) ?: $currentCity->name;
+            if ($rawDesc && mb_stripos($rawDesc, $cityCase) === false) {
+                $rawDesc = null;
+            }
+        }
         $autoDescription = 'Купить '.$nameLower.' '.$cityIn
                 .'. Каталог '.$allProductsCount.' товаров.'
                 .' Доставка по Беларуси, гарантия, монтаж.';
@@ -851,7 +871,7 @@ class CatalogController extends Controller
 
         // Баннер акции ЭкоКамин в разделах каминов и топок.
         $ecokaminPromo = in_array($category->slug, ['kaminy', 'pechi-kaminy', 'topki', 'pechki'], true) || $category->parent?->slug === 'kaminy'
-            ? \App\Support\Promotions\EcokaminPromotion::showcase()
+            ? EcokaminPromotion::showcase()
             : null;
         // Свой вариант баннера: в топках — про топки Дельта, Альфа, Вега, Primo; в печах и печах-каминах — про камины.
         $ecokaminPromoVariant = match (true) {
@@ -867,6 +887,10 @@ class CatalogController extends Controller
         };
         $ecokaminPromoHits = $ecokaminPromo[$hitsKey] ?? collect();
         $ecokaminPromoMaxDiscount = $ecokaminPromo[$discountKey] ?? 0;
+
+        $cityStorefrontBranch = $isCityStorefront
+            ? PartnerBranch::query()->visibleIn($currentCity)->first()
+            : null;
 
         return view('pages.catalog', compact(
             'isChimneySection',
@@ -899,7 +923,7 @@ class CatalogController extends Controller
             'installerRecruitment',
             'catalogIntro',
             'catalogSpotlight',
-            'catalogNavigationGroups'
+            'catalogNavigationGroups', 'cityStorefrontBranch', 'isCityStorefront'
         ));
     }
 

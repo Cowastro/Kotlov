@@ -8,8 +8,10 @@ use App\Filament\Resources\PartnerBranches\Pages\ListPartnerBranches;
 use App\Models\PartnerBranch;
 use BackedEnum;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
@@ -70,6 +72,19 @@ class PartnerBranchResource extends Resource
             TextInput::make('working_hours')->label('Режим работы')->placeholder('Пн–Пт 9:00–18:00')->maxLength(255),
             TextInput::make('email')->label('E-mail')->email()->maxLength(255),
             TextInput::make('map_url')->label('Ссылка на карту')->url()->maxLength(1000),
+            TextInput::make('map_embed_url')->label('Ссылка для встраивания карты')->url()->maxLength(1000)
+                ->helperText('Необязательно. Используется для карты прямо на городской странице.'),
+            TextInput::make('storefront_title')->label('Заголовок локальной витрины')->maxLength(255)
+                ->placeholder('Магазин отопления KOTLOV в Борисове')->columnSpanFull(),
+            Textarea::make('storefront_intro')->label('Краткое описание магазина')->rows(3)->maxLength(1200)->columnSpanFull(),
+            Textarea::make('storefront_promo')->label('Рекламное предложение филиала')->rows(3)->maxLength(1500)
+                ->helperText('Акция, услуги, преимущества или условия получения товара в этом городе.')->columnSpanFull(),
+            FileUpload::make('hero_image')->label('Главная фотография магазина')->image()->disk('public')
+                ->directory('partner-branches')->visibility('public')->columnSpanFull(),
+            FileUpload::make('gallery')->label('Фотографии магазина')->image()->multiple()->reorderable()
+                ->maxFiles(12)->disk('public')->directory('partner-branches')->visibility('public')->columnSpanFull(),
+            TextInput::make('seo_title')->label('SEO title городской страницы')->maxLength(70)->columnSpanFull(),
+            Textarea::make('seo_description')->label('SEO description городской страницы')->rows(2)->maxLength(180)->columnSpanFull(),
             TextInput::make('sort_order')->label('Порядок в списке')->numeric()->minValue(0)->default(100)->required(),
             Toggle::make('is_active')->label('Показывать на сайте')->default(true),
         ];

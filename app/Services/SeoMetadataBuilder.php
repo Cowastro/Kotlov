@@ -7,6 +7,7 @@ use App\Models\Product;
 class SeoMetadataBuilder
 {
     public const TITLE_LIMIT = 70;
+
     public const DESCRIPTION_LIMIT = 180;
 
     public function replaceCity(?string $text, string $cityIn): ?string
@@ -18,6 +19,13 @@ class SeoMetadataBuilder
         $cityName = preg_replace('/^в\s+/u', '', $cityIn);
         $text = str_replace('в %city%', $cityIn, $text);
         $text = str_replace('%city%', $cityName, $text);
+
+        // Legacy sync jobs sometimes stored a ready-made Minsk phrase instead
+        // of the %city% placeholder. Local storefronts must still receive the
+        // city from their hostname, while the primary Minsk version is kept.
+        if (mb_strtolower($cityIn) !== 'в минске') {
+            $text = preg_replace('/\bв\s+Минске\b/ui', $cityIn, $text) ?: $text;
+        }
 
         return $this->normalize($text);
     }
@@ -31,7 +39,7 @@ class SeoMetadataBuilder
             return $name;
         }
 
-        return trim($brand . ' ' . $name);
+        return trim($brand.' '.$name);
     }
 
     public function productTitle(Product $product, string $cityIn): string
@@ -45,9 +53,9 @@ class SeoMetadataBuilder
 
         $name = $this->productName($product);
         $candidates = [
-            $name . ' — купить ' . $cityIn . ' | KOTLOV',
-            $name . ' — цена и доставка | KOTLOV',
-            $name . ' | KOTLOV',
+            $name.' — купить '.$cityIn.' | KOTLOV',
+            $name.' — цена и доставка | KOTLOV',
+            $name.' | KOTLOV',
         ];
 
         foreach ($candidates as $candidate) {
@@ -58,7 +66,7 @@ class SeoMetadataBuilder
 
         $suffix = ' | KOTLOV';
 
-        return $this->truncate($name, self::TITLE_LIMIT - mb_strlen($suffix)) . $suffix;
+        return $this->truncate($name, self::TITLE_LIMIT - mb_strlen($suffix)).$suffix;
     }
 
     public function productDescription(Product $product, string $cityIn, iterable $highlights = []): string
@@ -66,7 +74,7 @@ class SeoMetadataBuilder
         $stored = $this->replaceCity($product->meta_description, $cityIn);
 
         if ($stored && $product->price) {
-            $currentPrice = 'Цена ' . number_format((float) $product->price, 0, '.', ' ') . ' BYN';
+            $currentPrice = 'Цена '.number_format((float) $product->price, 0, '.', ' ').' BYN';
             $stored = preg_replace(
                 '/Цена\s+[\d\s.,]+\s*(?:руб\.?|BYN)/ui',
                 $currentPrice,
@@ -84,7 +92,7 @@ class SeoMetadataBuilder
             return $stored;
         }
 
-        $description = $this->productName($product) . ' ' . $cityIn;
+        $description = $this->productName($product).' '.$cityIn;
 
         $details = collect($highlights)
             ->map(fn ($highlight) => $this->normalizeProductHighlight((string) $highlight))
@@ -100,7 +108,7 @@ class SeoMetadataBuilder
         }
 
         if ($product->price) {
-            $description .= '. Цена ' . number_format((float) $product->price, 0, '.', ' ') . ' BYN';
+            $description .= '. Цена '.number_format((float) $product->price, 0, '.', ' ').' BYN';
         }
         $description .= '. Доставка по Беларуси, гарантия и помощь с подбором.';
 
@@ -118,7 +126,7 @@ class SeoMetadataBuilder
         $suffix = str_ends_with(mb_strtoupper($title), '| KOTLOV') ? ' | KOTLOV' : '';
         $base = $suffix ? preg_replace('/\s*\|\s*KOTLOV\s*$/ui', '', $title) : $title;
 
-        return $this->truncate((string) $base, self::TITLE_LIMIT - mb_strlen($suffix)) . $suffix;
+        return $this->truncate((string) $base, self::TITLE_LIMIT - mb_strlen($suffix)).$suffix;
     }
 
     public function categoryTitle(string $slug, string $name, string $cityIn, ?string $stored): string
@@ -131,42 +139,42 @@ class SeoMetadataBuilder
         if ($slug === 'gazovye') {
             return $this->title(
                 null,
-                'Газовые котлы: цены, купить ' . $cityIn . ' | KOTLOV'
+                'Газовые котлы: цены, купить '.$cityIn.' | KOTLOV'
             );
         }
 
         if ($slug === 'elektricheskie') {
             return $this->title(
                 null,
-                'Электрические котлы: цены, купить ' . $cityIn . ' | KOTLOV'
+                'Электрические котлы: цены, купить '.$cityIn.' | KOTLOV'
             );
         }
 
         if ($slug === 'teplonositeli') {
             return $this->title(
                 null,
-                'Теплоноситель для отопления: цены, купить ' . $cityIn . ' | KOTLOV'
+                'Теплоноситель для отопления: цены, купить '.$cityIn.' | KOTLOV'
             );
         }
 
         if ($slug === 'tverdotoplivnye') {
             return $this->title(
                 null,
-                'Твердотопливные котлы: цены, купить ' . $cityIn . ' | KOTLOV'
+                'Твердотопливные котлы: цены, купить '.$cityIn.' | KOTLOV'
             );
         }
 
         if ($slug === 'kotly-na-pelletah') {
             return $this->title(
                 null,
-                'Пеллетные котлы: цены, купить ' . $cityIn . ' | KOTLOV'
+                'Пеллетные котлы: цены, купить '.$cityIn.' | KOTLOV'
             );
         }
 
         if ($slug === 'teplovyie-nasosyi') {
             return $this->title(
                 null,
-                'Тепловые насосы для отопления дома — цены ' . $cityIn . ' | KOTLOV'
+                'Тепловые насосы для отопления дома — цены '.$cityIn.' | KOTLOV'
             );
         }
 
@@ -180,22 +188,29 @@ class SeoMetadataBuilder
         if (isset($stoveCommercialNames[$slug])) {
             return $this->title(
                 null,
-                $stoveCommercialNames[$slug] . ': цены, купить ' . $cityIn . ' | KOTLOV'
+                $stoveCommercialNames[$slug].': цены, купить '.$cityIn.' | KOTLOV'
             );
         }
 
         if (isset($commercialNames[$slug])) {
             return $this->title(
                 null,
-                $commercialNames[$slug] . ' — купить ' . $cityIn . ' | KOTLOV'
+                $commercialNames[$slug].' — купить '.$cityIn.' | KOTLOV'
             );
         }
 
         $preferred = $this->replaceCity($stored, $cityIn);
 
+        if (mb_strtolower($cityIn) !== 'в минске') {
+            $cityName = preg_replace('/^в\s+/ui', '', $cityIn) ?: $cityIn;
+            if ($preferred && mb_stripos($preferred, $cityName) === false) {
+                $preferred = null;
+            }
+        }
+
         return $this->title(
             $preferred && mb_strlen($preferred) <= self::TITLE_LIMIT ? $preferred : null,
-            $name . ' — купить ' . $cityIn . ' | KOTLOV'
+            $name.' — купить '.$cityIn.' | KOTLOV'
         );
     }
 
@@ -224,7 +239,7 @@ class SeoMetadataBuilder
             return false;
         }
 
-        preg_match_all('/' . preg_quote($brand, '/') . '/ui', $title, $matches);
+        preg_match_all('/'.preg_quote($brand, '/').'/ui', $title, $matches);
 
         // One mention in the product name and one site-brand mention are acceptable.
         return count($matches[0]) > $maximumOccurrences;
@@ -282,6 +297,6 @@ class SeoMetadataBuilder
 
         $short = preg_replace('/[\s—,.;:]+$/u', '', $short) ?? rtrim($short);
 
-        return $short . '…';
+        return $short.'…';
     }
 }

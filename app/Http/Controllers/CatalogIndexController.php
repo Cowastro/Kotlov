@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class CatalogIndexController extends Controller
@@ -14,7 +15,7 @@ class CatalogIndexController extends Controller
         'klimat' => 'img/popular/air.jpg',
     ];
 
-    public function index()
+    public function index(Request $request)
     {
         $categories = Category::query()
             ->where('is_active', true)
@@ -84,12 +85,27 @@ class CatalogIndexController extends Controller
             ->take(3)
             ->values();
 
-        $title       = 'Каталог товаров — котлы, печи, камины, дымоходы и отопление в Беларуси';
-        $description = 'Более 7 000 товаров для отопления: котлы, печи, камины, дымоходы, тепловые насосы, водонагреватели. Доставка по Беларуси. Маркетплейс KOTLOV.';
-        $keywords    = 'каталог котлов, купить печь, камины беларусь, дымоходы, отопление, тепловые насосы, водонагреватели';
-        $ogImage     = asset('img/popular/boiler_img.jpg');
+        $currentCity = view()->shared('currentCity');
+        $isCityStorefront = $currentCity?->exists && $currentCity->slug !== 'minsk';
+        $cityIn = $isCityStorefront ? $currentCity->name_in : 'в Беларуси';
+        $cityTitle = $isCityStorefront ? $currentCity->name_title : 'Беларуси';
 
-        return view('pages.catalog-index', compact('rootCategories', 'popularCategories', 'title', 'description', 'keywords', 'ogImage'));
+        $title = $isCityStorefront
+            ? 'Каталог отопительного оборудования в '.$cityTitle.' | KOTLOV'
+            : 'Каталог товаров — котлы, печи, камины, дымоходы и отопление в Беларуси';
+        $description = $isCityStorefront
+            ? 'Котлы, печи, камины, дымоходы, тепловые насосы и водонагреватели '.$cityIn.'. Заказ через местный филиал KOTLOV, помощь с подбором и комплектацией.'
+            : 'Более 7 000 товаров для отопления: котлы, печи, камины, дымоходы, тепловые насосы, водонагреватели. Доставка по Беларуси. Маркетплейс KOTLOV.';
+        $keywords = $isCityStorefront
+            ? 'каталог отопления '.$cityTitle.', котлы, печи, камины, дымоходы, тепловые насосы'
+            : 'каталог котлов, купить печь, камины беларусь, дымоходы, отопление, тепловые насосы, водонагреватели';
+        $ogImage = asset('img/popular/boiler_img.jpg');
+        $canonical = 'https://'.$request->getHost().'/catalog';
+
+        return view('pages.catalog-index', compact(
+            'rootCategories', 'popularCategories', 'title', 'description', 'keywords', 'ogImage',
+            'canonical', 'currentCity', 'isCityStorefront', 'cityIn', 'cityTitle'
+        ));
     }
 
     /** The section picture: its own, a stock one, else a photo of an orderable product of the section. */

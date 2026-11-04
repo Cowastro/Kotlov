@@ -3,7 +3,9 @@
 use App\Models\BlogPost;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\City;
 use App\Models\InstallerProfile;
+use App\Models\PartnerBranch;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -11,7 +13,71 @@ use Illuminate\Support\Facades\Cache;
 Route::get('/sitemap.xml', function (Request $request) {
     $baseDomain = config('app.base_domain', 'kotlov.by');
     if ($request->getHost() !== $baseDomain) {
-        return redirect()->away('https://'.$baseDomain.'/sitemap.xml', 301);
+        $host = $request->getHost();
+        $slug = str_ends_with($host, '.'.$baseDomain)
+            ? str_replace('.'.$baseDomain, '', $host)
+            : '';
+        $city = $slug !== '' ? City::findBySlug($slug) : null;
+
+        if (! $city || ! PartnerBranch::query()->visibleIn($city)->exists()) {
+            return redirect()->away('https://'.$baseDomain.'/sitemap.xml', 301);
+        }
+
+        $xml = Cache::remember('sitemap.city.'.$city->slug.'.v2', 3600, function () use ($host) {
+            $categories = Category::active()
+                ->whereNotNull('slug')
+                ->where('slug', '!=', 'aktsiiiskidki')
+                ->get(['id', 'parent_id', 'slug', 'sort_order', 'updated_at']);
+            $categoriesById = $categories->keyBy('id');
+            $publishedCategoryIds = [];
+
+            foreach (Product::orderable()->whereNotNull('category_id')->distinct()->pluck('category_id') as $categoryId) {
+                $current = $categoriesById->get((int) $categoryId);
+                while ($current) {
+                    $publishedCategoryIds[(int) $current->id] = true;
+                    $current = $current->parent_id ? $categoriesById->get((int) $current->parent_id) : null;
+                }
+            }
+
+            $urls = collect([
+                ['location' => 'https://'.$host.'/', 'last_modified' => null],
+                ['location' => 'https://'.$host.'/catalog', 'last_modified' => null],
+            ])
+                ->concat($categories
+                    ->filter(fn (Category $category): bool => isset($publishedCategoryIds[(int) $category->id]))
+                    ->sortBy(fn (Category $category): string => str_pad((string) $category->sort_order, 10, '0', STR_PAD_LEFT).'-'.str_pad((string) $category->id, 10, '0', STR_PAD_LEFT))
+                    ->map(fn (Category $category): array => [
+                        'location' => 'https://'.$host.'/'.$category->slug,
+                        'last_modified' => $category->updated_at?->toAtomString(),
+                    ]));
+
+            $doc = new DOMDocument('1.0', 'UTF-8');
+            $doc->formatOutput = true;
+            $namespace = 'http://www.sitemaps.org/schemas/sitemap/0.9';
+            $urlset = $doc->createElementNS($namespace, 'urlset');
+            $doc->appendChild($urlset);
+
+            foreach ($urls as $url) {
+                $urlNode = $doc->createElementNS($namespace, 'url');
+                $location = $doc->createElementNS($namespace, 'loc');
+                $location->appendChild($doc->createTextNode($url['location']));
+                $urlNode->appendChild($location);
+
+                if ($url['last_modified']) {
+                    $lastModified = $doc->createElementNS($namespace, 'lastmod');
+                    $lastModified->appendChild($doc->createTextNode($url['last_modified']));
+                    $urlNode->appendChild($lastModified);
+                }
+
+                $urlset->appendChild($urlNode);
+            }
+
+            return $doc->saveXML();
+        });
+
+        return response($xml, 200)
+            ->header('Content-Type', 'application/xml; charset=UTF-8')
+            ->header('Cache-Control', 'public, max-age=3600');
     }
 
     $xml = Cache::remember('sitemap.xml.v4', 86400, function () {
