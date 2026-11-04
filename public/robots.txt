@@ -13,6 +13,4 @@ Allow: /css/styles.css
 Allow: /js/general.js
 
 Sitemap: https://kotlov.by/sitemap.xml
-
-User-agent: Yandex
-Host: kotlov.by
+Sitemap: https://borisov.kotlov.by/sitemap.xml

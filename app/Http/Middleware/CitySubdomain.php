@@ -48,7 +48,15 @@ class CitySubdomain
             }
         }
 
-        $selected = $this->contactResolver->resolve($request);
+        $hostCity = view()->shared('currentCity');
+        $selected = $hostCity?->exists && $hostCity->slug !== 'minsk'
+            ? [
+                'city' => $hostCity,
+                'city_name' => $hostCity->name,
+                'contact' => $this->contactResolver->contactForCity($hostCity),
+                'auto_detected' => false,
+            ]
+            : $this->contactResolver->resolve($request);
         view()->share('selectedCity', $selected['city']);
         view()->share('selectedCityName', $selected['city_name']);
         view()->share('cityContact', $selected['contact']);
