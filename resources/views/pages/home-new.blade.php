@@ -38,7 +38,9 @@
         <!-- /Preload -->
 
         <main id="wrapper">
-            <h1 class="visually-hidden">Отопительное оборудование и монтаж в Беларуси — KOTLOV.BY</h1>
+            @unless(isset($primaryBranch))
+                <h1 class="visually-hidden">Отопительное оборудование и монтаж в Беларуси — KOTLOV.BY</h1>
+            @endunless
 
 
             <!-- Banner Slider -->
@@ -257,6 +259,10 @@
                 </div>
             </section>
             <!-- /Categories -->
+
+            @isset($primaryBranch)
+                @include('partials.home-city-branch')
+            @endisset
 
             @if($popularOrderProducts->isNotEmpty())
             <!-- Popular order products -->

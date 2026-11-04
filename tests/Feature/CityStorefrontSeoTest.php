@@ -43,6 +43,8 @@ class CityStorefrontSeoTest extends TestCase
             ->assertSee('<title>Котлы и печи в Борисове | KOTLOV</title>', false)
             ->assertSee('Магазин печей KOTLOV в Борисове')
             ->assertSee('Подбор печей и дымоходов в Борисове.')
+            ->assertSee('Популярные разделы')
+            ->assertSee('home-popular-categories', false)
             ->assertSee('Бесплатная проверка комплектации дымохода.')
             ->assertSee('https://maps.example/borisov')
             ->assertSee('/'.$category->slug)
