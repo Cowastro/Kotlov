@@ -253,11 +253,10 @@ Route::get('/', function () {
 
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
-    $data = Cache::remember('home:data:v6', 600, function () {
-        $categoryBranchIds = function ($categoryId) {
-            $categories = Category::where('is_active', true)
-                ->get(['id', 'parent_id'])
-                ->groupBy('parent_id');
+    $data = Cache::remember('home:data:v7', 600, function () {
+        $categories = Category::active()->get()->sortBy('sort_order');
+        $categoriesByParent = $categories->groupBy('parent_id');
+        $categoryBranchIds = function ($categoryId) use ($categoriesByParent) {
 
             $ids = collect([$categoryId]);
             $queue = [$categoryId];
@@ -265,7 +264,7 @@ Route::get('/', function () {
             while ($queue) {
                 $parentId = array_shift($queue);
 
-                foreach ($categories->get($parentId, collect()) as $child) {
+                foreach ($categoriesByParent->get($parentId, collect()) as $child) {
                     $ids->push($child->id);
                     $queue[] = $child->id;
                 }
@@ -275,6 +274,8 @@ Route::get('/', function () {
         };
 
         $sellableProducts = fn () => Product::query()->orderable();
+        $directCounts = $sellableProducts()->whereNotNull('category_id')
+            ->selectRaw('category_id, COUNT(*) as total')->groupBy('category_id')->pluck('total', 'category_id');
 
         $popularCategories = Category::query()
             ->where('is_active', true)
@@ -286,11 +287,18 @@ Route::get('/', function () {
             ->orderBy('sort_order')
             ->limit(10)
             ->get()
-            ->each(function ($category) use ($categoryBranchIds, $sellableProducts) {
-                $category->products_count = $sellableProducts()
-                    ->whereIn('category_id', $categoryBranchIds($category->id))
-                    ->count();
-            });
+            ->values();
+
+        $cityHomeCategories = $popularCategories
+            ->concat($categories)
+            ->filter(fn (Category $category) => (int) $category->parent_id === 0)
+            ->unique('id')
+            ->values();
+
+        $popularCategories->concat($cityHomeCategories)->each(function (Category $category) use ($categoryBranchIds, $directCounts) {
+            $category->products_count = $categoryBranchIds($category->id)
+                ->sum(fn ($id) => (int) $directCounts->get($id, 0));
+        });
 
         $kotlyCatId = Category::where('slug', 'kotly')->value('id');
         $kotlyIds = $kotlyCatId ? $categoryBranchIds($kotlyCatId) : collect();
@@ -442,7 +450,7 @@ Route::get('/', function () {
             ->get();
 
         return compact(
-            'popularCategories',
+            'popularCategories', 'cityHomeCategories',
             'popularOrderProducts',
             'productsKotly', 'productsNasosy',
             'productsKaminy', 'productsAkcii',
@@ -455,12 +463,7 @@ Route::get('/', function () {
     });
 
     if ($cityData !== []) {
-        $data['popularCategories'] = Cache::remember('home:city-category-roots:v1', 600, fn () => Category::query()
-            ->active()
-            ->where(fn ($query) => $query->whereNull('parent_id')->orWhere('parent_id', 0))
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get());
+        $data['popularCategories'] = $data['cityHomeCategories'];
     }
 
     return view('pages.home-new', array_merge($data, $cityData));

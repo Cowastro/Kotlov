@@ -11,9 +11,6 @@
     .city-home-slide__copy p { margin-bottom: 18px; }
     .city-home-slide__actions { display: flex; flex-wrap: wrap; gap: 8px; }
     .city-home-categories { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; }
-    .city-home-category { display: flex; align-items: center; gap: 10px; min-height: 66px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 14px; font-weight: 600; line-height: 1.25; }
-    .city-home-category .mobile-catalog-category__icon { flex: 0 0 28px; }
-    .city-home-category > span:last-child { min-width: 0; overflow-wrap: anywhere; }
     @media (max-width: 991px) { .city-home-categories { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; } }
     @media (max-width: 575px) { .city-home-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
     @media(min-width:1200px){.tf-slideshow .slideshow-wrap{height:auto;aspect-ratio:1770/680}}
@@ -235,7 +232,7 @@
                 <div class="container">
                     <div class="sect-heading type-2 text-center wow fadeInUp">
                         <h3 class="s-title">
-                            {{ isset($primaryBranch) ? 'Каталог в '.$city->name_title : 'Популярные разделы' }}
+                            Популярные разделы
                         </h3>
                         <p class="s-desc text-body-1 cl-text-2">
                             Основные категории отопительного оборудования, инженерных систем и решений для дома.
@@ -254,13 +251,7 @@
                     @endisset
 
                         @foreach ($popularCategories as $category)
-                        @isset($primaryBranch)
-                            <a href="/{{ $category->slug }}" class="city-home-category">
-                                @include('partials.catalog-category-icon')
-                                <span>{{ $category->name }}</span>
-                            </a>
-                        @else
-                        <div class="swiper-slide">
+                        <div @class(['swiper-slide' => !isset($primaryBranch)])>
                             <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
                                 <div class="cate-image img-style">
                                     @php
@@ -278,7 +269,6 @@
                                 </div>
                             </a>
                         </div>
-                        @endisset
                         @endforeach
 
                         @unless(isset($primaryBranch))
