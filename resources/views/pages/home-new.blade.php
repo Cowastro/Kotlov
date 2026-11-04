@@ -10,6 +10,9 @@
     .city-home-slide__copy h1 { color: inherit; font-size: clamp(30px, 5vw, 64px); line-height: 1.05; margin-block: 8px 14px; }
     .city-home-slide__copy p { margin-bottom: 18px; }
     .city-home-categories { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; }
+    .city-home-category { display: flex; align-items: center; gap: 10px; min-height: 66px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 14px; font-weight: 600; line-height: 1.25; }
+    .city-home-category .mobile-catalog-category__icon { flex: 0 0 28px; }
+    .city-home-category > span:last-child { min-width: 0; overflow-wrap: anywhere; }
     @media (max-width: 991px) { .city-home-categories { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; } }
     @media (max-width: 575px) { .city-home-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
     @media(min-width:1200px){.tf-slideshow .slideshow-wrap{height:auto;aspect-ratio:1770/680}}
@@ -248,6 +251,12 @@
                     @endisset
 
                         @foreach ($popularCategories as $category)
+                        @isset($primaryBranch)
+                            <a href="/{{ $category->slug }}" class="city-home-category">
+                                @include('partials.catalog-category-icon')
+                                <span>{{ $category->name }}</span>
+                            </a>
+                        @else
                         <div class="swiper-slide">
                             <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
                                 <div class="cate-image img-style">
@@ -266,6 +275,7 @@
                                 </div>
                             </a>
                         </div>
+                        @endisset
                         @endforeach
 
                         @unless(isset($primaryBranch))
