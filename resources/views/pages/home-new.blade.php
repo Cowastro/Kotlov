@@ -9,6 +9,10 @@
     .city-home-slide__copy { padding: clamp(24px, 5vw, 72px); max-width: 760px; }
     .city-home-slide__copy h1 { color: inherit; font-size: clamp(30px, 5vw, 64px); line-height: 1.05; margin-block: 8px 14px; }
     .city-home-slide__copy p { margin-bottom: 18px; }
+    .city-home-slide__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .city-home-slide__actions .city-home-slide__address { color: #fff; background: rgba(20, 13, 9, .6); border-color: #fff; }
+    .city-home-slide__actions .city-home-slide__address:hover,
+    .city-home-slide__actions .city-home-slide__address:focus-visible { color: #111; background: #fff; }
     .city-home-categories { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; }
     .city-home-category { display: flex; align-items: center; gap: 10px; min-height: 66px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 14px; font-weight: 600; line-height: 1.25; }
     .city-home-category .mobile-catalog-category__icon { flex: 0 0 28px; }
@@ -107,8 +111,10 @@
                                             <span>Филиал KOTLOV · {{ $city->name }}</span>
                                             <h1>{{ $primaryBranch->storefront_title ?: 'KOTLOV в '.$city->name_title }}</h1>
                                             <p>{{ $primaryBranch->storefront_intro ?: 'Котлы, печи, камины и дымоходы. Поможем подобрать оборудование и уточним наличие в филиале.' }}</p>
-                                            <a class="tf-btn btn-white" href="/catalog">Смотреть каталог</a>
-                                            <a class="tf-btn btn-white btn-stroke" href="#city-branch">Адрес магазина</a>
+                                            <div class="city-home-slide__actions">
+                                                <a class="tf-btn btn-white" href="/catalog">Смотреть каталог</a>
+                                                <a class="tf-btn btn-white btn-stroke city-home-slide__address" href="#city-branch">Адрес магазина</a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
