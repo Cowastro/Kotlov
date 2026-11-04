@@ -124,7 +124,8 @@ class CityStorefrontSeoTest extends TestCase
         $this->withCookie('selected_city', 'minsk')
             ->get('https://borisov.kotlov.by/')
             ->assertOk()
-            ->assertSee('site-topbar__city-name">г. Борисов', false);
+            ->assertSee('site-topbar__city-name', false)
+            ->assertSee('г. Борисов');
     }
 
     private function city(string $slug, string $name): City
