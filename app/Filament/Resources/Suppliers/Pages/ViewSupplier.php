@@ -195,14 +195,18 @@ class ViewSupplier extends ViewRecord
                 ->color('warning')
                 ->visible(fn (): bool => in_array($this->getRecord()->code, ['teplov', 'sanbusinessgroup'], true) && TeplovSukhovPriceList::storedPath() !== '')
                 ->requiresConfirmation()
-                ->modalDescription('Розничные цены карточек Теплов и Сухов станут ценами загруженного прайса, опт сохранится у предложений поставщика.')
+                ->modalDescription('Розничные цены карточек Теплов и Сухов станут ценами загруженного прайса (и на sbg.by), опт сохранится у предложений поставщика.')
                 ->action(function (): void {
                     $metrics = $this->teplovSukhovSync(true);
+                    // The same prices on sbg.by (deal.by): the shop items found by the ТиС article.
+                    Artisan::call('deal:sync-brand-prices', ['--supplier' => 'teplov', '--apply' => true]);
+                    preg_match('/^metric\.deal_brand_prices\.updated=(\d+)$/m', Artisan::output(), $deal);
                     Notification::make()->success()
                         ->title('Прайс применён')
-                        ->body(sprintf('Цен обновлено: %d (вверх %d, вниз %d). Без изменения: %d. Пропущено: %d.',
+                        ->body(sprintf('Цен обновлено: %d (вверх %d, вниз %d). Без изменения: %d. Пропущено: %d. На sbg.by (deal.by) обновлено цен: %d.',
                             $metrics['changed'] ?? 0, $metrics['up'] ?? 0, $metrics['down'] ?? 0, $metrics['unchanged'] ?? 0,
-                            ($metrics['unmatched'] ?? 0) + ($metrics['ambiguous'] ?? 0) + ($metrics['conflict'] ?? 0) + ($metrics['price_list_conflict'] ?? 0)))
+                            ($metrics['unmatched'] ?? 0) + ($metrics['ambiguous'] ?? 0) + ($metrics['conflict'] ?? 0) + ($metrics['price_list_conflict'] ?? 0),
+                            (int) ($deal[1] ?? 0)))
                         ->persistent()
                         ->send();
                 }),
