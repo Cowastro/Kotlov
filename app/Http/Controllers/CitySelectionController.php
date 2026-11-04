@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PartnerBranch;
 use App\Services\CityContactResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,12 +14,23 @@ class CitySelectionController extends Controller
         $city = $resolver->selectableCity($slug);
         abort_unless($city, 404);
 
+        $baseDomain = config('app.base_domain', 'kotlov.by');
+        if (str_ends_with($request->getHost(), '.'.$baseDomain)) {
+            return redirect()->away('https://'.$baseDomain.$request->getRequestUri())
+                ->header('X-Robots-Tag', 'noindex, nofollow');
+        }
+
         $returnTo = (string) $request->query('return', '/');
-        if (! str_starts_with($returnTo, '/') || str_starts_with($returnTo, '//')) {
+        if (! str_starts_with($returnTo, '/') || str_starts_with($returnTo, '//') || str_contains($returnTo, '\\')) {
             $returnTo = '/';
         }
 
-        return redirect($returnTo)->withCookie(cookie(
+        $redirect = $city->slug !== 'minsk' && $city->storefront_enabled
+            && PartnerBranch::query()->visibleIn($city)->exists()
+            ? redirect()->away('https://'.$city->slug.'.'.$baseDomain.'/')
+            : redirect($returnTo);
+
+        return $redirect->withCookie(cookie(
             'selected_city',
             $city->slug,
             60 * 24 * 365,
