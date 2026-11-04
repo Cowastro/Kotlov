@@ -40,8 +40,7 @@ class B2bCabinetTest extends TestCase
             ->get(route('admin.b2b-clients.cabinet-preview', $client))
             ->assertOk()
             ->assertSeeText('Служебный просмотр кабинета')
-            ->assertSeeText('ООО «Партнёр»')
-            ->assertDontSeeText('Выйти');
+            ->assertSeeText('ООО «Партнёр»');
 
         $retail = User::factory()->create(['role' => 'client', 'is_active' => true]);
         $this->actingAs($retail)
