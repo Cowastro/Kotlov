@@ -2,11 +2,17 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Brand;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\InstallerController;
+use App\Http\Controllers\ProductController;
 use App\Models\BlogPost;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\InstallerProfile;
+use App\Models\PartnerBranch;
 use App\Models\Product;
 use Closure;
 use Illuminate\Http\Request;
@@ -46,7 +52,7 @@ class HandleRedirects
     public function handle(Request $request, Closure $next): Response
     {
         // Проверяем ДО роутинга — не ждём 404
-        $path = '/' . ltrim($request->getPathInfo(), '/');
+        $path = '/'.ltrim($request->getPathInfo(), '/');
         $path = rtrim($path, '/') ?: '/';
 
         if ($cityRedirect = $this->redirectCityAlias($request)) {
@@ -82,7 +88,7 @@ class HandleRedirects
 
             if ($redirect) {
                 $query = $request->getQueryString();
-                $target = $redirect->to_url . ($query ? '?' . $query : '');
+                $target = $redirect->to_url.($query ? '?'.$query : '');
                 if (! $this->redirectTargetLoopsToProductPath($path, (string) $redirect->to_url)) {
                     return $this->redirectToPath($request, $target, $redirect->status_code ?? 301);
                 }
@@ -92,7 +98,7 @@ class HandleRedirects
         if (preg_match('#^(.*)/page:(\d+)$#', $path, $matches)) {
             $basePath = rtrim($matches[1], '/') ?: '/';
             $query = $request->getQueryString();
-            $target = $basePath . ($query ? '?' . $query : '');
+            $target = $basePath.($query ? '?'.$query : '');
 
             if ($target !== $path) {
                 return $this->redirectToPath($request, $target);
@@ -103,7 +109,7 @@ class HandleRedirects
             $target = rtrim($matches[1], '/') ?: '/';
             $query = $request->getQueryString();
 
-            return $this->redirectToPath($request, $target . ($query ? '?' . $query : ''));
+            return $this->redirectToPath($request, $target.($query ? '?'.$query : ''));
         }
 
         // Resolve a legacy product by its slug before applying broad section
@@ -127,64 +133,65 @@ class HandleRedirects
         $legacyPatterns = [
             // ── Тепловые насосы ───────────────────────────────────────────────
             // /teplovye-nasosy → /teplovyie-nasosyi (старое написание без iye)
-            '~^/teplovye-nasosy/(.+)$~'                                  => '/teplovyie-nasosyi/$1',
-            '~^/teplovye-nasosy$~'                                       => '/teplovyie-nasosyi',
-            '~^/akkumuliruyushhie-baki(/.*)?$~'                          => '/bufernye-emkosti$1',
+            '~^/teplovye-nasosy/(.+)$~' => '/teplovyie-nasosyi/$1',
+            '~^/teplovye-nasosy$~' => '/teplovyie-nasosyi',
+            '~^/akkumuliruyushhie-baki(/.*)?$~' => '/bufernye-emkosti$1',
 
             // ── /kotly ────────────────────────────────────────────────────────
             // /kotly/teplovyie-nasosyi → /teplovyie-nasosyi (старый URL тепловых насосов)
-            '~^/kotly/teplovyie-nasosyi/(.+)$~'                          => '/teplovyie-nasosyi/$1',
-            '~^/kotly/teplovyie-nasosyi$~'                               => '/teplovyie-nasosyi',
+            '~^/kotly/teplovyie-nasosyi/(.+)$~' => '/teplovyie-nasosyi/$1',
+            '~^/kotly/teplovyie-nasosyi$~' => '/teplovyie-nasosyi',
             // Старая вложенная страница пеллетных котлов больше не должна
             // оставаться пустым дублем актуальной плоской категории.
-            '~^/kotly/tverdotoplivnye/kotly-na-pelletah$~'               => '/kotly-na-pelletah',
-            '~^/tverdotoplivnye/kotly-na-pelletah$~'                     => '/kotly-na-pelletah',
+            '~^/kotly/tverdotoplivnye/kotly-na-pelletah$~' => '/kotly-na-pelletah',
+            '~^/tverdotoplivnye/kotly-na-pelletah$~' => '/kotly-na-pelletah',
             // /kotly/{cat}/{slug} → /{cat}/{slug}
-            '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)/(.+)$~'  => '/$1/$2',
-            '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)$~'        => '/$1',
+            '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)/(.+)$~' => '/$1/$2',
+            '~^/kotly/(gazovye|tverdotoplivnye|elektricheskie)$~' => '/$1',
 
             // ── /otoplenie ────────────────────────────────────────────────────
             // /otoplenie/{subcat}/{slug} → /{subcat}/{slug}  (3 сегмента — товар в подразделе)
-            '~^/otoplenie/([a-z0-9][a-z0-9\-_]+)/(.+)$~'               => '/$1/$2',
+            '~^/otoplenie/([a-z0-9][a-z0-9\-_]+)/(.+)$~' => '/$1/$2',
             // /otoplenie/{subcat} → /{subcat}  (2 сегмента — страница подраздела)
-            '~^/otoplenie/([a-z0-9][a-z0-9\-_]+)$~'                    => '/$1',
+            '~^/otoplenie/([a-z0-9][a-z0-9\-_]+)$~' => '/$1',
 
             // ── /kaminy ───────────────────────────────────────────────────────
             // /kaminy/{subcat}/{slug} → /{subcat}/{slug}  (topki/elektrokamini/oblicovki)
             '~^/kaminy/(topki|elektrokamini|oblicovki|bio-kaminy)/(.+)$~' => '/$1/$2',
             // /kaminy/{subcat} → /{subcat}  (страница подраздела)
-            '~^/kaminy/(topki|elektrokamini|oblicovki|bio-kaminy)$~'    => '/$1',
+            '~^/kaminy/(topki|elektrokamini|oblicovki|bio-kaminy)$~' => '/$1',
             // /kaminy/{product-slug} → /topki/{slug}  (товар напрямую в /kaminy)
-            '~^/kaminy/([a-z0-9][a-z0-9\-_\.]+)$~'                    => '/topki/$1',
+            '~^/kaminy/([a-z0-9][a-z0-9\-_\.]+)$~' => '/topki/$1',
 
             // ── /vodonagrevateli ──────────────────────────────────────────────
             // /vodonagrevateli/{subcat}/{slug} → /{subcat}/{slug}
-            '~^/vodonagrevateli/([a-z0-9][a-z0-9\-_]+)/(.+)$~'        => '/$1/$2',
+            '~^/vodonagrevateli/([a-z0-9][a-z0-9\-_]+)/(.+)$~' => '/$1/$2',
             // /vodonagrevateli/{subcat} → /{subcat}
-            '~^/vodonagrevateli/([a-z0-9][a-z0-9\-_]+)$~'             => '/$1',
+            '~^/vodonagrevateli/([a-z0-9][a-z0-9\-_]+)$~' => '/$1',
 
             // ── /dlya-bani ────────────────────────────────────────────────────
             // /dlya-bani/{slug} → /pechi-dlya-bani/{slug}
-            '~^/dlya-bani/(.+)$~'                                       => '/pechi-dlya-bani/$1',
+            '~^/dlya-bani/(.+)$~' => '/pechi-dlya-bani/$1',
 
             // ── Пеллетные горелки ─────────────────────────────────────────────
             // /otoplenie-parts/pelletnyie-gorelki/{slug} → /pelletnye-gorelki/{slug}
-            '~^/otoplenie-parts/pelletnyie-gorelki/(.+)$~'              => '/pelletnye-gorelki/$1',
-            '~^/otoplenie-parts/pelletnyie-gorelki$~'                   => '/pelletnye-gorelki',
+            '~^/otoplenie-parts/pelletnyie-gorelki/(.+)$~' => '/pelletnye-gorelki/$1',
+            '~^/otoplenie-parts/pelletnyie-gorelki$~' => '/pelletnye-gorelki',
             // /pelletnyie-gorelki → /pelletnye-gorelki (старый slug с опечаткой)
-            '~^/pelletnyie-gorelki/(.+)$~'                              => '/pelletnye-gorelki/$1',
-            '~^/pelletnyie-gorelki$~'                                   => '/pelletnye-gorelki',
+            '~^/pelletnyie-gorelki/(.+)$~' => '/pelletnye-gorelki/$1',
+            '~^/pelletnyie-gorelki$~' => '/pelletnye-gorelki',
 
             // ── /pechi-kaminy-parts, /otoplenie-parts ─────────────────────────
-            '~^/otoplenie-parts/(.+)$~'                                  => '/$1',
-            '~^/pechi-kaminy-parts/(.+)$~'                               => '/$1',
+            '~^/otoplenie-parts/(.+)$~' => '/$1',
+            '~^/pechi-kaminy-parts/(.+)$~' => '/$1',
         ];
 
         foreach ($legacyPatterns as $pattern => $replacement) {
             if (preg_match($pattern, $path)) {
                 $newPath = preg_replace($pattern, $replacement, $path);
-                $query   = $request->getQueryString();
-                $target  = $newPath . ($query ? '?' . $query : '');
+                $query = $request->getQueryString();
+                $target = $newPath.($query ? '?'.$query : '');
+
                 return $this->redirectToPath($request, $target);
             }
         }
@@ -256,13 +263,13 @@ class HandleRedirects
 
         $query = $request->getQueryString();
 
-        return $this->redirectToPath($request, $targetPath . ($query ? '?' . $query : ''));
+        return $this->redirectToPath($request, $targetPath.($query ? '?'.$query : ''));
     }
 
     private function redirectTargetLoopsToProductPath(string $path, string $targetPath): bool
     {
-        $path = '/' . trim($path, '/');
-        $targetPath = '/' . trim(parse_url($targetPath, PHP_URL_PATH) ?: $targetPath, '/');
+        $path = '/'.trim($path, '/');
+        $targetPath = '/'.trim(parse_url($targetPath, PHP_URL_PATH) ?: $targetPath, '/');
 
         if ($path === $targetPath) {
             return true;
@@ -283,14 +290,14 @@ class HandleRedirects
             return false;
         }
 
-        $canonicalPath = '/' . $product->category->slug . '/' . $product->slug;
+        $canonicalPath = '/'.$product->category->slug.'/'.$product->slug;
 
         return $path === $canonicalPath || $targetPath === $canonicalPath;
     }
 
     private function isCanonicalProductPath(Request $request, string $path): bool
     {
-        $path = '/' . trim($path, '/');
+        $path = '/'.trim($path, '/');
         $productSlug = basename($path);
 
         if ($productSlug === '') {
@@ -309,7 +316,7 @@ class HandleRedirects
             return false;
         }
 
-        return $path === '/' . $product->category->slug . '/' . $product->slug;
+        return $path === '/'.$product->category->slug.'/'.$product->slug;
     }
 
     private function redirectCityAlias(Request $request): ?Response
@@ -317,11 +324,11 @@ class HandleRedirects
         $host = $request->getHost();
         $baseDomain = config('app.base_domain', 'kotlov.by');
 
-        if (! str_ends_with($host, '.' . $baseDomain)) {
+        if (! str_ends_with($host, '.'.$baseDomain)) {
             return null;
         }
 
-        $subdomain = str_replace('.' . $baseDomain, '', $host);
+        $subdomain = str_replace('.'.$baseDomain, '', $host);
         $canonical = self::CITY_ALIASES[$subdomain] ?? null;
 
         if (! $canonical || $canonical === $subdomain) {
@@ -349,11 +356,11 @@ class HandleRedirects
         $host = $request->getHost();
         $baseDomain = config('app.base_domain', 'kotlov.by');
 
-        if (! str_ends_with($host, '.' . $baseDomain)) {
+        if (! str_ends_with($host, '.'.$baseDomain)) {
             return null;
         }
 
-        $subdomain = str_replace('.' . $baseDomain, '', $host);
+        $subdomain = str_replace('.'.$baseDomain, '', $host);
 
         if (in_array($subdomain, ['www', 'new', 'admin'], true)) {
             return null;
@@ -401,7 +408,7 @@ class HandleRedirects
         $uses = $route->getAction('uses');
         $parameters = $route->parameters();
 
-        if ($uses === \App\Http\Controllers\CatalogController::class.'@show') {
+        if ($uses === CatalogController::class.'@show') {
             $slug = (string) ($parameters['category'] ?? '');
             $category = Category::query()
                 ->where('slug', $slug)
@@ -425,7 +432,7 @@ class HandleRedirects
                 : null;
         }
 
-        if ($uses === \App\Http\Controllers\ProductController::class.'@show') {
+        if ($uses === ProductController::class.'@show') {
             $slug = (string) ($parameters['product'] ?? '');
 
             $category = Category::query()->where('slug', $slug)->first(['id', 'parent_id', 'slug', 'is_active']);
@@ -452,7 +459,7 @@ class HandleRedirects
                 : null;
         }
 
-        if ($uses === \App\Http\Controllers\BrandController::class.'@show') {
+        if ($uses === BrandController::class.'@show') {
             $slug = strtolower((string) ($parameters['slug'] ?? ''));
 
             return Brand::query()->whereRaw('LOWER(slug) = ?', [$slug])->exists()
@@ -460,7 +467,7 @@ class HandleRedirects
                 : null;
         }
 
-        if ($uses === \App\Http\Controllers\BlogController::class.'@show') {
+        if ($uses === BlogController::class.'@show') {
             $slug = (string) ($parameters['slug'] ?? '');
 
             return BlogPost::published()->where('slug', $slug)->exists()
@@ -468,7 +475,7 @@ class HandleRedirects
                 : null;
         }
 
-        if ($uses === \App\Http\Controllers\InstallerController::class.'@show') {
+        if ($uses === InstallerController::class.'@show') {
             $slug = (string) ($parameters['slug'] ?? '');
 
             return InstallerProfile::query()
@@ -512,6 +519,13 @@ class HandleRedirects
             return null;
         }
 
+        $city = City::findBySlug($subdomain);
+        $hasPublicBranch = $city && PartnerBranch::query()->visibleIn($city)->exists();
+
+        if ($hasPublicBranch && in_array($path, ['/catalog', '/robots.txt', '/sitemap.xml'], true)) {
+            return null;
+        }
+
         $targetPath = null;
         $segments = array_values(array_filter(explode('/', trim($path, '/'))));
 
@@ -530,6 +544,10 @@ class HandleRedirects
                 ->first(['slug']);
 
             if ($category) {
+                if ($hasPublicBranch) {
+                    return null;
+                }
+
                 $targetPath = '/'.$category->slug;
             }
         }
@@ -673,14 +691,14 @@ class HandleRedirects
                 continue;
             }
 
-            $targetPath = '/' . $candidateSlug;
+            $targetPath = '/'.$candidateSlug;
             if ($targetPath === $path) {
                 return null;
             }
 
             $query = $request->getQueryString();
 
-            return $this->redirectToPath($request, $targetPath . ($query ? '?' . $query : ''));
+            return $this->redirectToPath($request, $targetPath.($query ? '?'.$query : ''));
         }
 
         return null;
@@ -732,7 +750,7 @@ class HandleRedirects
             return null;
         }
 
-        $targetPath = '/' . $product->category->slug . '/' . $product->slug;
+        $targetPath = '/'.$product->category->slug.'/'.$product->slug;
 
         if ($targetPath === $path) {
             return null;
@@ -740,7 +758,7 @@ class HandleRedirects
 
         $query = $request->getQueryString();
 
-        return $this->redirectToPath($request, $targetPath . ($query ? '?' . $query : ''));
+        return $this->redirectToPath($request, $targetPath.($query ? '?'.$query : ''));
     }
 
     private function redirectToPath(Request $request, string $target, int $status = 301): Response

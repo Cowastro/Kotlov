@@ -47,7 +47,7 @@
         @endif
 
         <div class="mobile-catalog-list">
-            <h1 id="mobile-catalog-title" class="visually-hidden">Каталог товаров</h1>
+            <h1 id="mobile-catalog-title" class="visually-hidden">Каталог товаров{{ ($isCityStorefront ?? false) ? ' '.$cityIn : '' }}</h1>
             @foreach ($rootCategories as $category)
                 @php
                     $iconFile = config('navigation.icons.' . $category->slug);
@@ -114,10 +114,14 @@
                     <i class="icon icon-CaretRightThin cl-text-3"></i>
                     <p class="text-caption-01">Каталог</p>
                 </div>
-                <h1>Каталог товаров</h1>
+                <h1>Каталог товаров{{ ($isCityStorefront ?? false) ? ' '.$cityIn : '' }}</h1>
                 <p class="text-body-1 cl-text-2">
-                    Котлы, печи, камины, дымоходы, насосы и всё для отопления —<br class="d-none d-lg-block">
-                    более 7 000 товаров от ведущих производителей.
+                    @if($isCityStorefront ?? false)
+                        Котлы, печи, камины, дымоходы и насосы с получением через филиал KOTLOV {{ $cityIn }}.
+                    @else
+                        Котлы, печи, камины, дымоходы, насосы и всё для отопления —<br class="d-none d-lg-block">
+                        более 7 000 товаров от ведущих производителей.
+                    @endif
                 </p>
             </div>
         </div>

@@ -7,6 +7,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AccountOrderController;
 use App\Http\Controllers\AdminChimneyCalculationController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\B2bActivationController;
 use App\Http\Controllers\B2bCabinetController;
 use App\Http\Controllers\B2bInvitationController;
 use App\Http\Controllers\B2bMarketplaceController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ChimneyCalculationRequestController;
 use App\Http\Controllers\ChimneySelectorController;
 use App\Http\Controllers\CitySelectionController;
+use App\Http\Controllers\CityStorefrontController;
 use App\Http\Controllers\CommercialContractFileController;
 use App\Http\Controllers\CommercialDocumentPdfController;
 use App\Http\Controllers\CommercialDocumentPortalController;
@@ -40,6 +42,9 @@ use App\Http\Controllers\OneCExchangeController;
 use App\Http\Controllers\OrderPortalController;
 use App\Http\Controllers\OrderProcurementController;
 use App\Http\Controllers\PartnerApplicationController;
+use App\Http\Controllers\PartnerBranchContactController;
+use App\Http\Controllers\PartnerLandingController;
+use App\Http\Controllers\PartnerOnboardingController;
 use App\Http\Controllers\PhoneVerificationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductPurchasePriceSourceAttachmentController;
@@ -60,6 +65,7 @@ use App\Models\Banner;
 use App\Models\BlogPost;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\City;
 use App\Models\ContactRequest;
 use App\Models\EmailSubscriber;
 use App\Models\Product;
@@ -225,12 +231,26 @@ Route::get('/robots.txt', function (Request $request) {
             ->header('X-Robots-Tag', 'noindex, nofollow');
     }
 
+    $baseDomain = config('app.base_domain', 'kotlov.by');
+    if (str_ends_with($request->getHost(), '.'.$baseDomain)) {
+        $slug = str_replace('.'.$baseDomain, '', $request->getHost());
+        if (City::findBySlug($slug)) {
+            return response("User-agent: *\nAllow: /\nSitemap: https://{$request->getHost()}/sitemap.xml\n", 200)
+                ->header('Content-Type', 'text/plain; charset=UTF-8');
+        }
+    }
+
     return response(file_get_contents(public_path('robots.txt')), 200)
         ->header('Content-Type', 'text/plain; charset=UTF-8');
 });
 
 // ===== Главная =====
 Route::get('/', function () {
+    $currentCity = view()->shared('currentCity');
+    if ($currentCity?->exists && $currentCity->slug !== 'minsk') {
+        return app(CityStorefrontController::class)(request());
+    }
+
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
     $data = Cache::remember('home:data:v6', 600, function () {
@@ -439,11 +459,11 @@ Route::get('/', function () {
 
 // ===== Статичные страницы — ДО динамических! =====
 Route::view('/about', 'pages.about');
-Route::get('/partner-anketa/{token}', [\App\Http\Controllers\PartnerOnboardingController::class, 'show'])
+Route::get('/partner-anketa/{token}', [PartnerOnboardingController::class, 'show'])
     ->middleware('throttle:30,1')->name('partner-onboarding.show');
-Route::post('/partner-anketa/{token}', [\App\Http\Controllers\PartnerOnboardingController::class, 'submit'])
+Route::post('/partner-anketa/{token}', [PartnerOnboardingController::class, 'submit'])
     ->middleware('throttle:10,1')->name('partner-onboarding.submit');
-Route::post('/where-to-buy/{branch}/phone', \App\Http\Controllers\PartnerBranchContactController::class)
+Route::post('/where-to-buy/{branch}/phone', PartnerBranchContactController::class)
     ->middleware('throttle:30,1')->name('partner-branches.phone');
 Route::get('/city/select/{slug}', CitySelectionController::class)
     ->where('slug', '[a-z0-9-]+')
@@ -454,7 +474,7 @@ Route::get('/akcii/kotlov-xo-ceramic-pro', [PromotionController::class, 'xoCeram
 Route::get('/akcii/kotlov-xo-evo-26', [PromotionController::class, 'xoEvo26'])->name('promotions.xo-evo-26');
 Route::get('/akcii/hotta-ceramik-20-30', [PromotionController::class, 'hottaCeramik'])->name('promotions.hotta-ceramik');
 Route::view('/dostavka', 'pages.dostavka');
-Route::get('/partners', [\App\Http\Controllers\PartnerLandingController::class, 'business'])->name('partners');
+Route::get('/partners', [PartnerLandingController::class, 'business'])->name('partners');
 Route::get('/rekvizity', fn () => view('pages.requisites', [
     'company' => config('legal.commercial_documents'),
 ]))->name('company.requisites');
@@ -531,7 +551,7 @@ Route::get('/dymohody/tis-ferrit-1-mm.csv', [TisFerrit1mmPriceListController::cl
 Route::post('/partners/apply-installer', [PartnerApplicationController::class, 'storeInstaller'])->middleware('public.form.protect:installer')->name('partners.apply-installer');
 Route::get('/suppliers', fn () => view('pages.suppliers'))->name('suppliers');
 Route::post('/suppliers/apply', [PartnerApplicationController::class, 'storeSupplier'])->middleware('public.form.protect:supplier')->name('suppliers.apply');
-Route::get('/become-installer', [\App\Http\Controllers\PartnerLandingController::class, 'installer'])->name('become-installer');
+Route::get('/become-installer', [PartnerLandingController::class, 'installer'])->name('become-installer');
 Route::get('/montazhnikam', fn () => redirect('/become-installer?ref=messenger#apply'))
     ->name('installers.outreach');
 Route::view('/demo-installer-profile', 'pages.demo-installer-profile')->name('demo-installer-profile');
@@ -747,10 +767,10 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->name
 Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
-Route::get('/b2b/activate/{user}', [\App\Http\Controllers\B2bActivationController::class, 'show'])
+Route::get('/b2b/activate/{user}', [B2bActivationController::class, 'show'])
     ->middleware(['signed', 'throttle:20,1'])
     ->name('b2b.activate');
-Route::post('/b2b/activate/{user}', [\App\Http\Controllers\B2bActivationController::class, 'activate'])
+Route::post('/b2b/activate/{user}', [B2bActivationController::class, 'activate'])
     ->middleware(['signed', 'throttle:6,1'])
     ->name('b2b.activate.store');
 Route::get('/b2b/invitation/{token}', [B2bInvitationController::class, 'show'])

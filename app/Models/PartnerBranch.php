@@ -12,18 +12,32 @@ class PartnerBranch extends Model
 {
     protected $fillable = [
         'city_id', 'b2b_client_id', 'name', 'address', 'phones', 'email',
-        'working_hours', 'map_url', 'is_active', 'sort_order',
+        'working_hours', 'map_url', 'storefront_title', 'storefront_intro',
+        'storefront_promo', 'hero_image', 'gallery', 'map_embed_url',
+        'seo_title', 'seo_description', 'is_active', 'sort_order',
     ];
 
     protected $casts = [
         'phones' => 'array',
+        'gallery' => 'array',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];
 
-    public function city(): BelongsTo { return $this->belongsTo(City::class); }
-    public function client(): BelongsTo { return $this->belongsTo(B2bClient::class, 'b2b_client_id'); }
-    public function contactViews(): HasMany { return $this->hasMany(PartnerBranchContactView::class); }
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(B2bClient::class, 'b2b_client_id');
+    }
+
+    public function contactViews(): HasMany
+    {
+        return $this->hasMany(PartnerBranchContactView::class);
+    }
 
     public function isPublic(): bool
     {
@@ -45,5 +59,16 @@ class PartnerBranch extends Model
         return collect($this->phones ?? [])->filter()
             ->map(fn ($phone): array => ['display' => (string) $phone, 'href' => '+'.preg_replace('/\D+/', '', (string) $phone)])
             ->values()->all();
+    }
+
+    public function mapLink(): ?string
+    {
+        if (trim((string) $this->map_url) !== '') {
+            return $this->map_url;
+        }
+
+        return trim((string) $this->address) !== ''
+            ? 'https://yandex.by/maps/?text='.rawurlencode($this->address)
+            : null;
     }
 }

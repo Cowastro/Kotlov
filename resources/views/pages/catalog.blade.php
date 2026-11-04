@@ -63,6 +63,8 @@
         </div>
     </section>
 
+    @include('partials.catalog-city-storefront')
+
     @if ($category->slug === 'schetchiki-gaza')
         <section class="gas-meter-selector-cta" aria-labelledby="gas-meter-selector-cta-title">
             <div class="container">
