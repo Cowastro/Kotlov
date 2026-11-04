@@ -140,6 +140,27 @@ class B2bCompanyTeamTest extends TestCase
             ->assertSessionHasErrors('invitation');
     }
 
+    public function test_branch_employee_can_receive_a_separate_operator_role(): void
+    {
+        [$owner, $client] = $this->company();
+        Notification::fake();
+
+        $this->actingAs($owner)->withSession(['auth.password_confirmed_at' => time()])
+            ->post(route('b2b.cabinet.team.store'), [
+                'email' => 'borisov@example.by',
+                'role' => 'branch_operator',
+            ])->assertRedirect(route('b2b.cabinet', ['section' => 'team']));
+
+        $this->assertDatabaseHas('b2b_client_invitations', [
+            'b2b_client_id' => $client->id,
+            'email' => 'borisov@example.by',
+            'role' => 'branch_operator',
+        ]);
+        $this->assertSame('Филиал: закупки и продажи', B2bClientMember::ROLES['branch_operator']);
+        $this->assertContains('orders.create', B2bCompanyAccess::PERMISSIONS['branch_operator']);
+        $this->assertContains('orders.view', B2bCompanyAccess::PERMISSIONS['branch_operator']);
+    }
+
     public function test_owner_can_change_role_and_audit_log_preserves_the_change(): void
     {
         [$owner, $client] = $this->company();

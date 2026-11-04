@@ -33,6 +33,10 @@ class B2bCompanyAccess
             'catalog.view', 'orders.create', 'specifications.manage', 'orders.view',
             'documents.view', 'documents.generate', 'documents.download', 'contracts.download',
         ],
+        'branch_operator' => [
+            'catalog.view', 'orders.create', 'specifications.manage', 'orders.view',
+            'documents.view', 'documents.generate', 'documents.download', 'contracts.download',
+        ],
         'accountant' => [
             'orders.view', 'documents.view', 'documents.generate', 'documents.download', 'contracts.download', 'finance.view',
         ],

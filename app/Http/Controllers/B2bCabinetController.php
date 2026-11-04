@@ -64,6 +64,18 @@ class B2bCabinetController extends Controller
 
     public function __construct(private readonly B2bCompanyAccess $access) {}
 
+    public function preview(Request $request, B2bClient $client, B2bCheckoutTerms $checkoutTerms)
+    {
+        $staff = $request->user();
+        abort_unless($staff?->isManager(), 403);
+        abort_unless($client->status === 'approved' && $client->user?->is_active, 404);
+
+        $request->setUserResolver(fn (): User => $client->user);
+        $request->attributes->set('b2b_admin_preview', true);
+
+        return $this->show($request, $checkoutTerms);
+    }
+
     public function show(Request $request, B2bCheckoutTerms $checkoutTerms)
     {
         $user = $request->user();
@@ -192,6 +204,7 @@ class B2bCabinetController extends Controller
                 ->withCount(['contactViews as contact_views_30d_count' => fn ($views) => $views->where('created_at', '>=', now()->subDays(30))])
                 ->orderBy('sort_order')->get()
             : collect();
+        $adminPreview = (bool) $request->attributes->get('b2b_admin_preview', false);
 
         return view('pages.b2b.cabinet', compact(
             'installerPage', 'installerEditor', 'partnerBranches', 'clientOrders', 'offeredClientOrders',
@@ -202,6 +215,7 @@ class B2bCabinetController extends Controller
             'role', 'permissions', 'permissionLabels', 'rolePermissionLabels', 'passwordRecentlyConfirmed',
             'members', 'pendingInvitations', 'auditLogs', 'financialAuditLogs', 'companyOrderTotal',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
+            'adminPreview',
         ));
     }
 
@@ -808,7 +822,7 @@ class B2bCabinetController extends Controller
 
         $data = $request->validate([
             'email' => ['required', 'email', 'max:255'],
-            'role' => ['required', 'in:buyer,accountant,viewer'],
+            'role' => ['required', 'in:buyer,branch_operator,accountant,viewer'],
         ]);
         [$invitation, $token] = $teams->invite($client, $owner, $data['email'], $data['role']);
 
@@ -835,7 +849,7 @@ class B2bCabinetController extends Controller
         $client = $owner->activeB2bClient();
         abort_unless($client && $this->access->allows($owner, 'team.manage', $client), 403);
         abort_unless((int) $member->b2b_client_id === (int) $client->id && $member->role !== 'owner', 404);
-        $data = $request->validate(['role' => ['required', 'in:buyer,accountant,viewer']]);
+        $data = $request->validate(['role' => ['required', 'in:buyer,branch_operator,accountant,viewer']]);
         $teams->changeRole($member, $owner, $data['role']);
 
         return to_route('b2b.cabinet', ['section' => 'team'])->with('success', 'Роль сотрудника обновлена.');

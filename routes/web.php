@@ -760,6 +760,10 @@ Route::post('/b2b/invitation/{token}', [B2bInvitationController::class, 'accept'
     ->middleware('throttle:10,10')
     ->name('b2b.invitation.accept');
 
+Route::get('/admin/b2b-clients/{client}/cabinet-preview', [B2bCabinetController::class, 'preview'])
+    ->middleware(['auth', 'verified'])
+    ->name('admin.b2b-clients.cabinet-preview');
+
 Route::middleware('auth')->group(function () {
     Route::get('/email/verify', [EmailVerificationController::class, 'notice'])
         ->name('verification.notice');
