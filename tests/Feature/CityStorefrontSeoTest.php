@@ -147,6 +147,22 @@ class CityStorefrontSeoTest extends TestCase
         );
     }
 
+    public function test_city_selector_opens_the_connected_storefront_and_can_return_to_minsk(): void
+    {
+        $this->branch($this->city('borisov', 'Борисов'));
+
+        $this->get('https://kotlov.by/city/select/borisov?return=%2Fcatalog')
+            ->assertRedirect('https://borisov.kotlov.by/')
+            ->assertPlainCookie('selected_city', 'borisov');
+
+        $this->get('https://borisov.kotlov.by/city/select/minsk?return=%2Fcatalog')
+            ->assertRedirect('https://kotlov.by/city/select/minsk?return=%2Fcatalog');
+
+        $this->get('https://kotlov.by/city/select/minsk?return=%2Fcatalog')
+            ->assertRedirect('https://kotlov.by/catalog')
+            ->assertPlainCookie('selected_city', 'minsk');
+    }
+
     private function city(string $slug, string $name): City
     {
         return City::query()->create([
