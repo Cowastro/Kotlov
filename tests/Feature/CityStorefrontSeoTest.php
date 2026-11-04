@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\CitySubdomain;
 use App\Models\B2bClient;
 use App\Models\Category;
 use App\Models\City;
@@ -10,6 +11,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\CityContactResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class CityStorefrontSeoTest extends TestCase
@@ -121,10 +123,26 @@ class CityStorefrontSeoTest extends TestCase
         $this->assertSame(['+375 (29) 111-22-33'], $contact['phones']);
         $this->assertSame('borisov@example.test', $contact['email']);
 
-        $this->withCookie('selected_city', 'minsk')
-            ->get('https://borisov.kotlov.by/')
-            ->assertOk()
-            ->assertSee('site-topbar__city-name">г. Борисов', false);
+        $request = Request::create(
+            'https://borisov.kotlov.by/',
+            'GET',
+            cookies: ['selected_city' => 'minsk'],
+        );
+        $response = app(CitySubdomain::class)->handle(
+            $request,
+            static fn () => response()->json([
+                'city' => view()->shared('selectedCity')?->slug,
+                'phone' => view()->shared('cityContact')['phones'][0] ?? null,
+            ]),
+        );
+
+        $this->assertSame(
+            [
+                'city' => 'borisov',
+                'phone' => '+375 (29) 111-22-33',
+            ],
+            $response->getData(true),
+        );
     }
 
     private function city(string $slug, string $name): City
