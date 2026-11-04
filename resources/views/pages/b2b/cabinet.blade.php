@@ -118,7 +118,16 @@
                         <dl class="b2b-commercial-profile__terms">
                             <div><dt>Доступные прайсы</dt><dd>{{ $allowedSources->isNotEmpty() ? $allowedSources->join(', ') : 'Назначаются менеджером' }}</dd></div>
                             <div><dt>Доступные склады</dt><dd>{{ $allowedWarehouses->isNotEmpty() ? $allowedWarehouses->map(fn($warehouse) => $warehouse->name ?: $warehouse->external_id)->join(', ') : 'В рамках доступного прайса' }}</dd></div>
-                            <div><dt>Партнёрские склады</dt><dd>{{ $allowedPartnerSuppliers->isNotEmpty() ? $allowedPartnerSuppliers->map(fn($supplier) => $supplier->b2b_client_warehouse_label ?: $supplier->name)->join(', ') : 'Не подключены' }}</dd></div>
+                            <div>
+                                <dt>Партнёрские склады</dt>
+                                <dd>
+                                    @if($client->allow_all_partner_suppliers)
+                                        Все активные партнёрские склады, включая новые@if($allowedPartnerSuppliers->isNotEmpty()): {{ $allowedPartnerSuppliers->map(fn($supplier) => $supplier->b2b_client_warehouse_label ?: $supplier->name)->join(', ') }}@endif
+                                    @else
+                                        {{ $allowedPartnerSuppliers->isNotEmpty() ? $allowedPartnerSuppliers->map(fn($supplier) => $supplier->b2b_client_warehouse_label ?: $supplier->name)->join(', ') : 'Не подключены' }}
+                                    @endif
+                                </dd>
+                            </div>
                             <div><dt>Оплата</dt><dd>{{ $client->payment_terms ?: 'По согласованию с менеджером' }}</dd></div>
                             <div><dt>Доставка</dt><dd>{{ $client->delivery_terms ?: 'Рассчитывается при оформлении' }}</dd></div>
                             <div><dt>Минимальный заказ</dt><dd>{{ $client->minimum_order_amount !== null ? number_format((float) $client->minimum_order_amount, 2, ',', ' ').' BYN' : 'Без установленного минимума' }}</dd></div>
