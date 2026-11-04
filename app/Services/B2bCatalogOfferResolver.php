@@ -358,6 +358,10 @@ class B2bCatalogOfferResolver
             return true;
         }
 
+        if ($client->allow_all_integration_sources) {
+            return true;
+        }
+
         $allowed = $client->allowed_integration_source_ids;
 
         return is_array($allowed) && in_array((int) $offer->integration_source_id, array_map('intval', $allowed), true);

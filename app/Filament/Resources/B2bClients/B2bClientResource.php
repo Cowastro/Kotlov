@@ -9,6 +9,7 @@ use App\Filament\Resources\B2bClients\RelationManagers\PartnerBranchesRelationMa
 use App\Filament\Resources\B2bClients\Schemas\B2bClientForm;
 use App\Models\B2bClient;
 use App\Models\B2bClientMember;
+use App\Models\User;
 use App\Notifications\B2bCompanyInvitationNotification;
 use App\Services\B2bClientWorkflow;
 use App\Services\B2bTeamService;
@@ -72,7 +73,8 @@ class B2bClientResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['user', 'counterparty', 'priceLevel', 'responsibleUser', 'reviewedBy'])
+            ->with(['user', 'counterparty', 'priceLevel', 'partnerProgramLevel', 'responsibleUser', 'reviewedBy'])
+            ->withCount('branches')
             ->withB2bOrderMetrics();
     }
 
@@ -90,6 +92,8 @@ class B2bClientResource extends Resource
                 TextColumn::make('partner_type')->label('Тип')->badge()
                     ->formatStateUsing(fn (string $state): string => B2bClient::PARTNER_TYPES[$state] ?? $state),
                 TextColumn::make('priceLevel.name')->label('Уровень цены')->badge()->placeholder('Не назначен'),
+                TextColumn::make('partnerProgramLevel.name')->label('Рейтинг')->badge()->placeholder('Не назначен'),
+                TextColumn::make('branches_count')->label('Филиалы')->numeric()->sortable(),
                 TextColumn::make('status')->label('Статус')->badge()
                     ->formatStateUsing(fn (string $state): string => B2bClient::STATUSES[$state] ?? $state)
                     ->color(fn (string $state): string => match ($state) {
@@ -112,6 +116,11 @@ class B2bClientResource extends Resource
                     ->relationship('responsibleUser', 'name')->searchable()->preload(),
             ])
             ->recordActions([
+                Action::make('manageBranches')
+                    ->label(fn (B2bClient $record): string => 'Филиалы: '.(int) $record->branches_count)
+                    ->icon('heroicon-o-map-pin')
+                    ->color('gray')
+                    ->url(fn (B2bClient $record): string => static::getUrl('edit', ['record' => $record]).'?relation=0'),
                 Action::make('cabinetPreview')
                     ->label('Кабинет')
                     ->icon('heroicon-o-eye')
@@ -133,7 +142,7 @@ class B2bClientResource extends Resource
                             ->default('branch_operator')->required(),
                     ])
                     ->action(function (B2bClient $record, array $data): void {
-                        /** @var \App\Models\User $actor */
+                        /** @var User $actor */
                         $actor = auth()->user();
                         $teams = app(B2bTeamService::class);
                         [$invitation, $token] = $teams->invite($record, $actor, $data['email'], $data['role']);

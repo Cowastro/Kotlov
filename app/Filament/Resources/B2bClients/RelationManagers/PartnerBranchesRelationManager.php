@@ -16,12 +16,12 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
-/** Sales points are assigned from the partner's card; only an approved B2B client gets them. */
+/** One legal entity can operate branches and sales points in several cities. */
 class PartnerBranchesRelationManager extends RelationManager
 {
     protected static string $relationship = 'branches';
 
-    protected static ?string $title = 'Точки продаж';
+    protected static ?string $title = 'Филиалы и точки продаж';
 
     public static function getBadge(Model $ownerRecord, string $pageClass): ?string
     {
@@ -45,23 +45,25 @@ class PartnerBranchesRelationManager extends RelationManager
             ->modifyQueryUsing(fn (Builder $query) => $query->with('city')
                 ->withCount(['contactViews as contact_views_30d_count' => fn (Builder $views) => $views->where('created_at', '>=', now()->subDays(30))]))
             ->description($approved
-                ? 'Точки показываются в блоке «Где купить» на карточках товаров выбранного города.'
+                ? 'Одно юридическое лицо может управлять филиалами в разных городах. Активные филиалы показываются в блоке «Где купить» своего города.'
                 : 'Точки скрыты на сайте, пока B2B-доступ партнёра не одобрен.')
             ->columns([
                 TextColumn::make('name')->label('Точка продаж')->weight('bold')
                     ->description(fn (PartnerBranch $record): string => (string) $record->address),
                 TextColumn::make('city.name')->label('Город'),
                 TextColumn::make('phones')->label('Телефоны')->formatStateUsing(fn ($state): string => implode(', ', (array) $state)),
+                TextColumn::make('email')->label('E-mail')->placeholder('Не указан')->toggleable(),
+                TextColumn::make('working_hours')->label('Режим работы')->placeholder('Не указан')->toggleable(),
                 TextColumn::make('contact_views_30d_count')->label('Показы телефона, 30 дн.')->numeric(),
                 IconColumn::make('is_active')->label('На сайте')->boolean(),
             ])
             ->headerActions([
-                CreateAction::make()->label('Назначить точку продаж')->visible($approved),
+                CreateAction::make()->label('Добавить филиал или точку')->visible($approved),
             ])
             ->recordActions([EditAction::make(), DeleteAction::make()])
-            ->emptyStateHeading($approved ? 'Точек продаж пока нет' : 'Сначала одобрите B2B-доступ')
+            ->emptyStateHeading($approved ? 'Филиалов и точек пока нет' : 'Сначала одобрите B2B-доступ')
             ->emptyStateDescription($approved
-                ? 'Назначьте партнёру точку продаж в его городе — она появится в «Где купить».'
+                ? 'Добавьте город, адрес и контакты филиала — он появится в «Где купить» выбранного города.'
                 : 'Точку продаж получает только одобренный B2B-клиент.');
     }
 }

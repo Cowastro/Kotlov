@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\B2bOrderStageMail;
 use App\Mail\OrderAvailabilityConfirmedMail;
 use App\Models\B2bClient;
 use App\Models\B2bOrder;
@@ -10,10 +11,13 @@ use App\Models\Category;
 use App\Models\CrmCounterparty;
 use App\Models\IntegrationProduct;
 use App\Models\IntegrationSource;
+use App\Models\IntegrationWarehouse;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\PartnerProgramLevel;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\B2bCheckoutTerms;
@@ -78,8 +82,8 @@ class B2bCommercialProfileTest extends TestCase
     public function test_the_wholesale_price_of_an_uploaded_price_list_replaces_the_1c_price(): void
     {
         [$user, , $offer] = $this->fixture();
-        $teplov = \App\Models\Supplier::query()->firstOrCreate(['code' => 'teplov'], ['name' => 'Теплов и Сухов']);
-        \App\Models\SupplierProduct::query()->create(['supplier_id' => $teplov->id, 'product_id' => $offer->product_id, 'supplier_article' => 'TS.BAK.PPS.0115.79803',
+        $teplov = Supplier::query()->firstOrCreate(['code' => 'teplov'], ['name' => 'Теплов и Сухов']);
+        SupplierProduct::query()->create(['supplier_id' => $teplov->id, 'product_id' => $offer->product_id, 'supplier_article' => 'TS.BAK.PPS.0115.79803',
             'supplier_name' => 'ППШ-М', 'match_status' => 'matched', 'raw' => ['wholesale' => 319.0]]);
 
         $quote = app(B2bCatalogOfferResolver::class)->priceQuote($offer->fresh(['product', 'source']), $user->fresh());
@@ -278,7 +282,7 @@ class B2bCommercialProfileTest extends TestCase
         $this->assertSame(200.0, (float) $order->total);
         $this->assertNull($order->commercialDocument);
         $this->assertStringContainsString('14 календарных дней', $order->commercial_terms_snapshot['payment_terms']);
-        Mail::assertQueued(\App\Mail\B2bOrderStageMail::class, fn ($mail): bool => $mail->stage === 'received'
+        Mail::assertQueued(B2bOrderStageMail::class, fn ($mail): bool => $mail->stage === 'received'
             && $mail->hasTo('buh@partner.by'));
 
         $credit = app(B2bCheckoutTerms::class)->creditSummary($client->fresh());
@@ -391,6 +395,71 @@ class B2bCommercialProfileTest extends TestCase
             ->assertOk()
             ->assertSeeText('Партнёрские склады')
             ->assertSeeText('Склад партнёра · Гомель');
+    }
+
+    public function test_affiliate_access_includes_all_current_and_future_warehouses(): void
+    {
+        [$user, $client, $offer] = $this->fixture();
+        $dealer = B2bPriceLevel::query()->where('code', 'dealer')->firstOrFail();
+        $dealerProgram = PartnerProgramLevel::query()->where('rank', 3)->firstOrFail();
+        $warehouse = IntegrationWarehouse::query()->create([
+            'integration_source_id' => $offer->integration_source_id,
+            'external_id' => 'affiliate-main',
+            'name' => 'Все склады · Основной',
+            'last_seen_at' => now(),
+        ]);
+        $supplier = Supplier::query()->create([
+            'code' => 'affiliate-partner-warehouse',
+            'name' => 'Новый партнёрский поставщик',
+            'is_active' => true,
+            'b2b_partner_enabled' => true,
+            'b2b_client_warehouse_label' => 'Все склады · Партнёрский',
+        ]);
+
+        $client->update([
+            'b2b_price_level_id' => $dealer->id,
+            'partner_program_level_id' => $dealerProgram->id,
+            'allowed_integration_source_ids' => [],
+            'allowed_integration_warehouse_ids' => [],
+            'allowed_supplier_ids' => [],
+            'allow_all_integration_sources' => true,
+            'allow_all_integration_warehouses' => true,
+            'allow_all_partner_suppliers' => true,
+        ]);
+
+        $offers = app(B2bCatalogOfferResolver::class)->offersForUser($user->fresh());
+        $this->assertTrue($offers->contains('id', $offer->id));
+        $this->assertSame('dealer', app(B2bCatalogOfferResolver::class)
+            ->priceQuote($offer->fresh(['product', 'source']), $user->fresh())['price_level_code']);
+
+        $this->actingAs($user)
+            ->get(route('b2b.cabinet'))
+            ->assertOk()
+            ->assertSeeText($warehouse->name)
+            ->assertSeeText($supplier->b2b_client_warehouse_label)
+            ->assertSeeText('Опт-3 · Дилер');
+    }
+
+    public function test_sbg_bay_receives_the_highest_rating_and_all_warehouse_access(): void
+    {
+        $user = User::factory()->create();
+        $client = B2bClient::query()->create([
+            'user_id' => $user->id,
+            'status' => 'approved',
+            'partner_type' => 'wholesale',
+            'company_name' => 'ООО «СБГ бай»',
+            'unp' => '193265863',
+        ]);
+
+        $migration = require database_path('migrations/2026_11_04_151000_grant_sbg_bay_affiliate_access.php');
+        $migration->up();
+
+        $client->refresh();
+        $this->assertSame('dealer', $client->priceLevel->code);
+        $this->assertSame(3, $client->partnerProgramLevel->rank);
+        $this->assertTrue($client->allow_all_integration_sources);
+        $this->assertTrue($client->allow_all_integration_warehouses);
+        $this->assertTrue($client->allow_all_partner_suppliers);
     }
 
     public function test_order_item_keeps_price_level_snapshot(): void

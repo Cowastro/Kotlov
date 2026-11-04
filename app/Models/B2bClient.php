@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
+use App\Http\Middleware\CapturePartnerAttribution;
 use App\Services\InstallerPageProvisioner;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,13 +31,14 @@ class B2bClient extends Model
     ];
 
     protected $fillable = [
-        'user_id', 'counterparty_id', 'status', 'partner_type', 'b2b_price_level_id', 'service_mode', 'company_name', 'unp',
+        'user_id', 'counterparty_id', 'status', 'partner_type', 'partner_program_level_id', 'b2b_price_level_id', 'service_mode', 'company_name', 'unp',
         'contact_name', 'contact_email', 'contact_phone',
         'default_delivery_city', 'default_delivery_address',
         'responsible_user_id', 'reviewed_by', 'reviewed_at',
         'payment_terms', 'delivery_terms', 'minimum_order_amount',
         'payment_deferment_days', 'credit_limit', 'commercial_terms_valid_until',
         'allowed_integration_source_ids', 'allowed_integration_warehouse_ids', 'allowed_supplier_ids',
+        'allow_all_integration_sources', 'allow_all_integration_warehouses', 'allow_all_partner_suppliers',
         'specification_service_enabled',
         'application_comment', 'manager_notes',
     ];
@@ -50,6 +52,9 @@ class B2bClient extends Model
         'allowed_integration_source_ids' => 'array',
         'allowed_integration_warehouse_ids' => 'array',
         'allowed_supplier_ids' => 'array',
+        'allow_all_integration_sources' => 'boolean',
+        'allow_all_integration_warehouses' => 'boolean',
+        'allow_all_partner_suppliers' => 'boolean',
         'specification_service_enabled' => 'boolean',
     ];
 
@@ -93,7 +98,7 @@ class B2bClient extends Model
 
     public function rememberAttribution(array $attributes): void
     {
-        $fields = \App\Http\Middleware\CapturePartnerAttribution::FIELDS;
+        $fields = CapturePartnerAttribution::FIELDS;
         if (collect($this->only($fields))->filter()->isEmpty()) {
             $this->forceFill(array_intersect_key($attributes, array_flip($fields)));
         }
@@ -107,6 +112,11 @@ class B2bClient extends Model
     public function priceLevel(): BelongsTo
     {
         return $this->belongsTo(B2bPriceLevel::class, 'b2b_price_level_id');
+    }
+
+    public function partnerProgramLevel(): BelongsTo
+    {
+        return $this->belongsTo(PartnerProgramLevel::class, 'partner_program_level_id');
     }
 
     public function serviceModeLabel(): string

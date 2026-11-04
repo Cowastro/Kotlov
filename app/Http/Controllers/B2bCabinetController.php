@@ -3,9 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\B2bClient;
-use App\Models\InstallerProfile;
-use App\Services\InstallerPageProvisioner;
-use App\Services\Orders\OrderPartnerAssignment;
 use App\Models\B2bClientAuditLog;
 use App\Models\B2bClientInvitation;
 use App\Models\B2bClientMember;
@@ -31,6 +28,8 @@ use App\Services\B2bSpecificationParser;
 use App\Services\B2bTeamService;
 use App\Services\CommercialDocuments\B2bSelfServiceInvoice;
 use App\Services\CommercialDocuments\CommercialDocumentPdf;
+use App\Services\InstallerPageProvisioner;
+use App\Services\Orders\OrderPartnerAssignment;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -94,16 +93,20 @@ class B2bCabinetController extends Controller
             >= time() - max(60, (int) config('auth.password_timeout', 10800));
         $companyUserIds = $this->access->allUserIds($client);
         $allowedSources = IntegrationSource::query()
-            ->whereIn('id', array_map('intval', $client->allowed_integration_source_ids ?? []))
+            ->where('is_active', true)
+            ->when(! $client->allow_all_integration_sources, fn (Builder $query) => $query
+                ->whereIn('id', array_map('intval', $client->allowed_integration_source_ids ?? [])))
             ->orderBy('name')
             ->pluck('name');
         $allowedWarehouses = IntegrationWarehouse::query()
             ->with('source:id,name')
-            ->whereIn('id', array_map('intval', $client->allowed_integration_warehouse_ids ?? []))
+            ->when(! $client->allow_all_integration_warehouses, fn (Builder $query) => $query
+                ->whereIn('id', array_map('intval', $client->allowed_integration_warehouse_ids ?? [])))
             ->orderBy('name')
             ->get();
         $allowedPartnerSuppliers = Supplier::query()
-            ->whereIn('id', array_map('intval', $client->allowed_supplier_ids ?? []))
+            ->when(! $client->allow_all_partner_suppliers, fn (Builder $query) => $query
+                ->whereIn('id', array_map('intval', $client->allowed_supplier_ids ?? [])))
             ->where('is_active', true)
             ->where('b2b_partner_enabled', true)
             ->orderBy('name')
