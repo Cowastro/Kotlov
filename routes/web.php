@@ -454,6 +454,17 @@ Route::get('/', function () {
         );
     });
 
+    if ($cityData !== []) {
+        $featured = $data['popularCategories']->keyBy('id');
+        $data['popularCategories'] = Cache::remember('home:city-category-roots:v1', 600, fn () => Category::query()
+            ->active()
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get())
+            ->map(fn (Category $category) => $featured->get($category->id, $category));
+    }
+
     return view('pages.home-new', array_merge($data, $cityData));
 });
 

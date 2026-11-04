@@ -12,11 +12,10 @@
 @endpush
 
 @php($primaryMapLink = $primaryBranch->mapLink())
-    <section class="flat-spacing pt-0">
+    <section class="flat-spacing pt-0" id="city-branch">
         <div class="container">
             <div class="sect-heading type-2">
-                <h1 class="s-title">{{ $primaryBranch->storefront_title ?: 'Магазин KOTLOV в '.$city->name_title }}</h1>
-                <p class="s-desc text-body-1 cl-text-2">{{ $primaryBranch->storefront_intro ?: 'Подберём оборудование и уточним наличие и срок получения в филиале.' }}</p>
+                <h2 class="s-title">Магазин KOTLOV в {{ $city->name_title }}</h2>
                 <a class="tf-btn btn-white btn-stroke mt-3" href="/catalog">Весь каталог</a>
             </div>
             <div class="city-store__location-grid">
