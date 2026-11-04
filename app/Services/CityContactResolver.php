@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\City;
 use App\Models\CityContactProfile;
+use App\Models\PartnerBranch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -31,7 +32,42 @@ class CityContactResolver
         }
 
         $city ??= $this->selectableCity('minsk');
+        $contact = $this->contactForCity($city);
+
+        return [
+            'city' => $city,
+            'city_name' => $city?->name ?? 'Минск',
+            'contact' => $contact,
+            'auto_detected' => $autoDetected,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function contactForCity(?City $city): array
+    {
         $contact = $this->defaultContact();
+
+        if ($city?->exists
+            && $city->slug !== 'minsk'
+            && Schema::hasTable('partner_branches')
+            && Schema::hasTable('b2b_clients')) {
+            $branch = PartnerBranch::query()->visibleIn($city)->first();
+
+            if ($branch) {
+                foreach ([
+                    'company_name' => $branch->name,
+                    'phones' => $branch->phones,
+                    'email' => $branch->email,
+                    'address' => $branch->address,
+                    'map_url' => $branch->mapLink(),
+                    'map_embed_url' => $branch->map_embed_url,
+                ] as $key => $value) {
+                    if ($value !== null && $value !== '' && $value !== []) {
+                        $contact[$key] = $value;
+                    }
+                }
+            }
+        }
 
         if ($city?->exists && Schema::hasTable('city_contact_profiles')) {
             $profile = CityContactProfile::query()
@@ -58,12 +94,7 @@ class CityContactResolver
             ->values()
             ->all();
 
-        return [
-            'city' => $city,
-            'city_name' => $city?->name ?? 'Минск',
-            'contact' => $contact,
-            'auto_detected' => $autoDetected,
-        ];
+        return $contact;
     }
 
     public function selectableCity(string $slug): ?City

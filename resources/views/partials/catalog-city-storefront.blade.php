@@ -1,5 +1,5 @@
 @if(($isCityStorefront ?? false) && $cityStorefrontBranch)
-    <section class="city-catalog-branch" aria-label="Филиал KOTLOV в {{ $currentCity->name }}">
+    <section class="city-catalog-branch" aria-label="Филиал KOTLOV {{ $currentCity->name_in }}">
         <div class="container">
             <div class="city-catalog-branch__inner">
                 <div>

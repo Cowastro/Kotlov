@@ -8,6 +8,7 @@ use App\Models\City;
 use App\Models\PartnerBranch;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\CityContactResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -106,6 +107,24 @@ class CityStorefrontSeoTest extends TestCase
 
         $this->get('https://borisov.kotlov.by/'.$category->slug)
             ->assertRedirect('https://kotlov.by/'.$category->slug);
+    }
+
+    public function test_city_host_uses_its_branch_contact_even_with_another_city_cookie(): void
+    {
+        $borisov = $this->city('borisov', 'Борисов');
+        $this->branch($borisov, [
+            'phones' => ['+375 (29) 111-22-33'],
+            'email' => 'borisov@example.test',
+        ]);
+
+        $contact = app(CityContactResolver::class)->contactForCity($borisov);
+        $this->assertSame(['+375 (29) 111-22-33'], $contact['phones']);
+        $this->assertSame('borisov@example.test', $contact['email']);
+
+        $this->withCookie('selected_city', 'minsk')
+            ->get('https://borisov.kotlov.by/')
+            ->assertOk()
+            ->assertSee('site-topbar__city-name">г. Борисов', false);
     }
 
     private function city(string $slug, string $name): City
