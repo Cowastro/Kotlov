@@ -31,6 +31,7 @@ class CreateVistarCardsCommand extends Command
 {
     protected $signature = 'supplier:vistar-create
         {--only=* : Only these row codes (comma-separated or repeated)}
+        {--except=* : Not these row codes (comma-separated or repeated)}
         {--limit=0 : At most this many cards}
         {--apply : Create, link and fill the cards}';
 
@@ -44,10 +45,11 @@ class CreateVistarCardsCommand extends Command
 
             return self::FAILURE;
         }
+        $except = collect((array) $this->option('except'))->flatMap(fn ($v) => explode(',', (string) $v))->map(fn ($v) => trim($v))->filter()->all();
         $only = collect((array) $this->option('only'))->flatMap(fn ($v) => explode(',', (string) $v))->map(fn ($v) => trim($v))->filter()->all();
         $offers = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNull('product_id')->where('match_status', 'unmatched')
             ->where('stock_status', '!=', 'out_of_stock')->orderBy('id')->get()
-            ->filter(fn (SupplierProduct $offer) => $only === [] || in_array($offer->supplier_article, $only, true))->values();
+            ->filter(fn (SupplierProduct $offer) => ($only === [] || in_array($offer->supplier_article, $only, true)) && ! in_array($offer->supplier_article, $except, true))->values();
         $brands = DB::table('brands')->get(['id', 'name'])->mapWithKeys(fn ($b) => [mb_strtolower(Str::slug((string) $b->name, '')) => (int) $b->id]);
         $existing = [];
         foreach (DB::table('products')->whereIn('brand_id', $brands->values())->get(['name', 'brand_id']) as $card) {
