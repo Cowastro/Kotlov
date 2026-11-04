@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 
 class Category extends Model
 {
@@ -61,6 +62,39 @@ class Category extends Model
         }
 
         return asset(static::fallbackImagePath($this->slug) ?? 'img/popular/catalog.jpg');
+    }
+
+    public function catalogImageUrl(array $categoryIds): string
+    {
+        $placeholder = 'img/popular/catalog.jpg';
+        $image = $this->imageUrl();
+        $imagePath = parse_url($image, PHP_URL_PATH);
+
+        if (is_string($imagePath) && ! str_ends_with($imagePath, '/'.$placeholder)) {
+            return $image;
+        }
+
+        $stockPath = 'img/popular/'.$this->slug.'.jpg';
+        if (is_file(public_path($stockPath))) {
+            return asset($stockPath);
+        }
+
+        return Cache::remember('catalog:category-photo:v1:'.$this->id, 3600, function () use ($categoryIds, $placeholder): string {
+            $products = Product::query()->orderable()
+                ->whereIn('category_id', $categoryIds)
+                ->whereNotNull('images')->where('images', '!=', '[]')
+                ->orderByDesc('is_featured')->orderBy('id')
+                ->limit(20)->get(['id', 'images']);
+
+            foreach ($products as $product) {
+                $image = $product->imageUrl(0);
+                if ($image && ! str_contains($image, 'placeholder') && ! str_ends_with($image, '/'.$placeholder)) {
+                    return $image;
+                }
+            }
+
+            return asset($placeholder);
+        });
     }
 
     public static function fallbackImagePath(?string $slug): ?string

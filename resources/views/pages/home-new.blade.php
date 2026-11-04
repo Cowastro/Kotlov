@@ -258,11 +258,8 @@
                         <div @class(['swiper-slide' => !isset($primaryBranch)])>
                             <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
                                 <div class="cate-image img-style">
-                                    @php
-                                        $img = $category->image_url;
-                                    @endphp
                                     <img loading="lazy" width="240" height="180"
-                                        src="{{ $img }}"
+                                        src="{{ $category->catalogThumb }}"
                                         alt="{{ $category->name }}">
                                 </div>
                                 <div class="cate-content text-center">
