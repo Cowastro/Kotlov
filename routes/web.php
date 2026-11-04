@@ -247,9 +247,9 @@ Route::get('/robots.txt', function (Request $request) {
 // ===== Главная =====
 Route::get('/', function () {
     $currentCity = view()->shared('currentCity');
-    if ($currentCity?->exists && $currentCity->slug !== 'minsk') {
-        return app(CityStorefrontController::class)(request());
-    }
+    $cityData = $currentCity?->exists && $currentCity->slug !== 'minsk'
+        ? app(CityStorefrontController::class)(request())
+        : [];
 
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
@@ -454,7 +454,16 @@ Route::get('/', function () {
         );
     });
 
-    return view('pages.home-new', $data);
+    if ($cityData !== []) {
+        $data['popularCategories'] = Cache::remember('home:city-category-roots:v1', 600, fn () => Category::query()
+            ->active()
+            ->where(fn ($query) => $query->whereNull('parent_id')->orWhere('parent_id', 0))
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get());
+    }
+
+    return view('pages.home-new', array_merge($data, $cityData));
 });
 
 // ===== Статичные страницы — ДО динамических! =====

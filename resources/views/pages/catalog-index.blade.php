@@ -50,19 +50,11 @@
             <h1 id="mobile-catalog-title" class="visually-hidden">Каталог товаров{{ ($isCityStorefront ?? false) ? ' '.$cityIn : '' }}</h1>
             @foreach ($rootCategories as $category)
                 @php
-                    $iconFile = config('navigation.icons.' . $category->slug);
                     $children = $category->catalogChildren;
                 @endphp
                 <details class="mobile-catalog-category">
                     <summary>
-                        <span class="mobile-catalog-category__icon">
-                            @if ($iconFile)
-                                <img src="{{ route('catalog.icon', ['file' => pathinfo($iconFile, PATHINFO_FILENAME)]) }}"
-                                    alt="" width="28" height="28" loading="lazy">
-                            @else
-                                <i class="icon icon-SquaresFour" aria-hidden="true"></i>
-                            @endif
-                        </span>
+                        @include('partials.catalog-category-icon')
                         <span class="mobile-catalog-category__name">{{ $category->name }}</span>
                         <span class="mobile-catalog-category__caret"><i class="icon icon-CaretDown"></i></span>
                     </summary>

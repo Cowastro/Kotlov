@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
 use App\Models\City;
 use App\Models\PartnerBranch;
 use Illuminate\Http\Request;
@@ -10,16 +9,7 @@ use Illuminate\Support\Facades\Storage;
 
 class CityStorefrontController extends Controller
 {
-    private const LANDING_CATEGORIES = [
-        'kotly' => 'Котлы отопления',
-        'teplovyie-nasosyi' => 'Тепловые насосы',
-        'pechki' => 'Печи и камины',
-        'dymohody' => 'Дымоходы',
-        'vodonagrevateli' => 'Водонагреватели',
-        'bani-i-sauny' => 'Бани и сауны',
-    ];
-
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): array
     {
         /** @var City|null $city */
         $city = view()->shared('currentCity');
@@ -32,17 +22,6 @@ class CityStorefrontController extends Controller
         abort_if($branches->isEmpty(), 404);
 
         $primaryBranch = $branches->first();
-        $categories = Category::query()
-            ->active()
-            ->whereIn('slug', array_keys(self::LANDING_CATEGORIES))
-            ->get()
-            ->sortBy(fn (Category $category): int => array_search($category->slug, array_keys(self::LANDING_CATEGORIES), true))
-            ->values()
-            ->map(function (Category $category): Category {
-                $category->setAttribute('storefront_name', self::LANDING_CATEGORIES[$category->slug] ?? $category->name);
-
-                return $category;
-            });
 
         $title = $primaryBranch->seo_title
             ?: 'Магазин отопления KOTLOV в '.$city->name_title.' — адрес и каталог';
@@ -70,9 +49,9 @@ class CityStorefrontController extends Controller
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         );
 
-        return view('pages.city-storefront', compact(
-            'city', 'branches', 'primaryBranch', 'categories',
+        return compact(
+            'city', 'primaryBranch',
             'title', 'description', 'canonical', 'schemaJson'
-        ));
+        );
     }
 }

@@ -2,6 +2,19 @@
 
 @push('styles')
 <style>
+    .city-home-slide { position: relative; display: flex; align-items: end; min-height: clamp(390px, 38vw, 580px); isolation: isolate; background: #40362d; color: #fff; }
+    .city-home-slide > img, .city-home-slide::before { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .city-home-slide > img { z-index: -2; object-fit: cover; }
+    .city-home-slide::before { z-index: -1; content: ""; background: linear-gradient(15deg, rgba(20, 13, 9, .94), rgba(20, 13, 9, .53) 48%, transparent 78%); }
+    .city-home-slide__copy { padding: clamp(24px, 5vw, 72px); max-width: 760px; }
+    .city-home-slide__copy h1 { color: inherit; font-size: clamp(30px, 5vw, 64px); line-height: 1.05; margin-block: 8px 14px; }
+    .city-home-slide__copy p { margin-bottom: 18px; }
+    .city-home-categories { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; }
+    .city-home-category { display: flex; align-items: center; gap: 10px; min-height: 66px; padding: 10px; border: 1px solid #e6e6e6; border-radius: 14px; font-weight: 600; line-height: 1.25; }
+    .city-home-category .mobile-catalog-category__icon { flex: 0 0 28px; }
+    .city-home-category > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+    @media (max-width: 991px) { .city-home-categories { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; } }
+    @media (max-width: 575px) { .city-home-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
     @media(min-width:1200px){.tf-slideshow .slideshow-wrap{height:auto;aspect-ratio:1770/680}}
     .pellet-clearance-slide{position:relative;width:100%;max-width:100%;height:560px;background:#0d1116;color:#fff;isolation:isolate}.pellet-clearance-slide .sld_image{position:absolute;inset:0}.pellet-clearance-slide .sld_image:before{position:absolute;inset:0;z-index:1;background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(90deg,#000,transparent 78%);content:""}.pellet-clearance-slide .sld_image:after{position:absolute;inset:0;z-index:2;background:radial-gradient(circle at 78% 50%,rgba(239,75,75,.22),rgba(239,75,75,.07) 28%,transparent 52%),radial-gradient(circle at 66% 105%,rgba(255,118,91,.13),transparent 36%),linear-gradient(90deg,rgba(5,9,14,.34),rgba(8,11,16,.04) 46%,rgba(24,12,15,.14));content:""}.pellet-clearance-slide .sld_image img{width:100%;height:100%;object-fit:cover;filter:saturate(.9) contrast(1.06)}.pellet-clearance__layout{position:relative;z-index:3;display:grid;grid-template-columns:minmax(0,.76fr) minmax(620px,1.24fr);gap:clamp(24px,2.4vw,42px);align-items:center;width:100%;height:100%;padding:42px clamp(38px,3.5vw,62px);box-sizing:border-box}.pellet-clearance__layout>*{min-width:0}.pellet-clearance__copy{min-width:0;max-width:650px}.pellet-clearance__eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:15px;padding:7px 11px;border:1px solid rgba(255,116,109,.32);border-radius:999px;background:rgba(239,75,75,.11);box-shadow:0 8px 28px rgba(239,75,75,.08);color:#ff827c;font-size:11px;font-weight:700;letter-spacing:.065em}.pellet-clearance__eyebrow:before{width:18px;height:2px;background:currentColor;content:""}.pellet-clearance__copy h2{max-width:620px;margin:0 0 14px;color:#fff;font-size:clamp(42px,3.35vw,59px);line-height:1.01;letter-spacing:-.045em;text-shadow:0 12px 36px rgba(0,0,0,.24)}.pellet-clearance__copy p{max-width:590px;margin:0 0 20px;color:rgba(255,255,255,.72);font-size:16px;line-height:1.48}.pellet-clearance__facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}.pellet-clearance__facts span{padding:7px 11px;border:1px solid rgba(255,255,255,.15);border-radius:999px;background:rgba(255,255,255,.035);color:rgba(255,255,255,.78);font-size:12px;backdrop-filter:blur(8px)}.pellet-clearance__products{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:stretch;min-width:0;height:370px;padding:19px;border:1px solid rgba(255,255,255,.12);border-radius:30px;background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 32px 80px rgba(0,0,0,.26);box-sizing:border-box;backdrop-filter:blur(14px)}.pellet-clearance__products:before{position:absolute;z-index:-1;right:5%;bottom:1%;width:82%;height:72%;border-radius:50%;background:rgba(239,75,75,.24);filter:blur(82px);content:""}.pellet-clearance__products:after{position:absolute;top:-22px;right:28px;width:112px;height:112px;border:1px solid rgba(255,115,109,.18);border-radius:50%;box-shadow:0 0 0 22px rgba(255,115,109,.035),0 0 0 44px rgba(255,115,109,.018);content:""}.pellet-clearance__product{position:relative;z-index:1;display:flex;min-width:0;height:332px;padding:44px 10px 64px;overflow:hidden;border:1px solid rgba(255,255,255,.82);border-radius:20px;background:linear-gradient(155deg,#fff 0%,#f0f1f2 100%);box-shadow:0 18px 38px rgba(0,0,0,.25);box-sizing:border-box;transition:transform .25s ease,box-shadow .25s ease}.pellet-clearance__product:hover{transform:translateY(-5px);box-shadow:0 25px 50px rgba(0,0,0,.34)}.pellet-clearance__media{display:flex;align-items:center;justify-content:center;width:100%;height:100%;min-width:0;overflow:hidden;border-radius:11px;background:#fff}.pellet-clearance__media>img{width:100%;height:100%;object-fit:contain}.pellet-clearance__media--photo>img{object-fit:cover}.pellet-clearance__offer{position:absolute;top:13px;left:13px;z-index:2;padding:7px 10px;border-radius:999px;background:linear-gradient(135deg,#ff615b,#e94343);color:#fff;font-size:11px;font-weight:700;box-shadow:0 8px 20px rgba(239,75,75,.28)}.pellet-clearance__name{position:absolute;right:8px;bottom:10px;left:8px;color:#17191d;font-size:12px;line-height:1.16;text-align:center}.pellet-clearance__name strong{display:block;margin-bottom:4px;font-weight:700}.pellet-clearance__price{display:flex;align-items:center;justify-content:center;gap:5px;color:#e94343;font-size:12px;font-weight:800;white-space:nowrap}.pellet-clearance__price del{color:#969ba1;font-size:10px;font-weight:500}.pellet-clearance__hotta-visual{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(50px,.65fr);gap:6px;width:100%;height:100%}.pellet-clearance__hotta-render{width:100%;height:100%;object-fit:contain}.pellet-clearance__hotta-real{position:relative;display:grid;grid-template-rows:repeat(2,minmax(0,1fr));gap:5px;min-width:0;overflow:hidden;border-radius:9px}.pellet-clearance__hotta-real:after{position:absolute;right:3px;bottom:3px;padding:2px 4px;border-radius:4px;background:rgba(17,19,23,.78);color:#fff;font-size:7px;font-weight:700;letter-spacing:.04em;content:"ФОТО"}.pellet-clearance__hotta-real img{width:100%;height:100%;min-height:0;object-fit:cover}
     @media(max-width:1439px){.pellet-clearance-slide{height:510px}.pellet-clearance__layout{grid-template-columns:minmax(0,.84fr) minmax(510px,1.16fr);padding:34px 38px}.pellet-clearance__copy h2{font-size:47px}.pellet-clearance__copy p{font-size:14px}.pellet-clearance__products{height:318px;padding:14px;gap:10px}.pellet-clearance__product{height:290px;padding:40px 8px 58px}}
@@ -38,7 +51,9 @@
         <!-- /Preload -->
 
         <main id="wrapper">
-            <h1 class="visually-hidden">Отопительное оборудование и монтаж в Беларуси — KOTLOV.BY</h1>
+            @unless(isset($primaryBranch))
+                <h1 class="visually-hidden">Отопительное оборудование и монтаж в Беларуси — KOTLOV.BY</h1>
+            @endunless
 
 
             <!-- Banner Slider -->
@@ -84,6 +99,20 @@
                         data-tablet="1" data-mobile="1" data-auto="true" data-delay="3000" data-loop="true"
                         data-space-lg="30" data-space-md="20" data-space="15">
                         <div class="swiper-wrapper">
+                            @isset($primaryBranch)
+                                <div class="swiper-slide">
+                                    <div class="city-home-slide rounded-20 overflow-hidden">
+                                        <img src="{{ $primaryBranch->hero_image ? \Illuminate\Support\Facades\Storage::url($primaryBranch->hero_image) : asset('img/blog/works/heat-pumps-arrival-warehouse-cover.webp') }}" alt="" fetchpriority="high">
+                                        <div class="city-home-slide__copy">
+                                            <span>Филиал KOTLOV · {{ $city->name }}</span>
+                                            <h1>{{ $primaryBranch->storefront_title ?: 'KOTLOV в '.$city->name_title }}</h1>
+                                            <p>{{ $primaryBranch->storefront_intro ?: 'Котлы, печи, камины и дымоходы. Поможем подобрать оборудование и уточним наличие в филиале.' }}</p>
+                                            <a class="tf-btn btn-white" href="/catalog">Смотреть каталог</a>
+                                            <a class="tf-btn btn-white btn-stroke" href="#city-branch">Адрес магазина</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endisset
                             @if(($ecokaminPromoHits ?? collect())->count() >= 3 && now()->lt(\Carbon\CarbonImmutable::parse(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::ENDS_AT, 'Europe/Minsk')))
                             <div class="swiper-slide">
                                 @include('partials.ecokamin-promo-slide')
@@ -203,21 +232,31 @@
                 <div class="container">
                     <div class="sect-heading type-2 text-center wow fadeInUp">
                         <h3 class="s-title">
-                            Популярные разделы
+                            {{ isset($primaryBranch) ? 'Каталог в '.$city->name_title : 'Популярные разделы' }}
                         </h3>
                         <p class="s-desc text-body-1 cl-text-2">
                             Основные категории отопительного оборудования, инженерных систем и решений для дома.
                         </p>
                     </div>
 
+                    @isset($primaryBranch)
+                        <div class="city-home-categories">
+                    @else
                     <div dir="ltr" class="swiper tf-swiper swiper-cate"
                         data-preview="5" data-tablet="4" data-mobile-sm="3" data-mobile="2"
                         data-space-lg="40" data-space-md="20" data-space="10"
                         data-grid="2" data-pagination="2" data-pagination-sm="2"
                         data-pagination-md="3" data-pagination-lg="5">
                         <div class="swiper-wrapper">
+                    @endisset
 
                         @foreach ($popularCategories as $category)
+                        @isset($primaryBranch)
+                            <a href="/{{ $category->slug }}" class="city-home-category">
+                                @include('partials.catalog-category-icon')
+                                <span>{{ $category->name }}</span>
+                            </a>
+                        @else
                         <div class="swiper-slide">
                             <a href="/{{ $category->slug }}" class="category-v04 hover-img wow fadeInUp">
                                 <div class="cate-image img-style">
@@ -230,12 +269,16 @@
                                 </div>
                                 <div class="cate-content text-center">
                                     <div class="h5 cate_name link-underline-text">{{ $category->name }}</div>
-                                    <p class="cate_quantity text-caption-01 cl-text-2">{{ $category->products_count }} товаров</p>
+                                    @isset($category->products_count)
+                                        <p class="cate_quantity text-caption-01 cl-text-2">{{ $category->products_count }} товаров</p>
+                                    @endisset
                                 </div>
                             </a>
                         </div>
+                        @endisset
                         @endforeach
 
+                        @unless(isset($primaryBranch))
                         {{-- Карточка: Стать партнёром --}}
                         <div class="swiper-slide">
                             <a href="/partners" class="category-v04 hover-img wow fadeInUp">
@@ -253,10 +296,15 @@
 
                         </div>
                         <div class="sw-dot-default tf-sw-pagination"></div>
+                        @endunless
                     </div>
                 </div>
             </section>
             <!-- /Categories -->
+
+            @isset($primaryBranch)
+                @include('partials.home-city-branch')
+            @endisset
 
             @if($popularOrderProducts->isNotEmpty())
             <!-- Popular order products -->
