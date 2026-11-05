@@ -33,7 +33,7 @@ class PartnerBranchesTest extends TestCase
         $product = $this->product();
         $sbg = $this->partner('ООО «СБГ Бай»');
         $this->branch($sbg, $minsk, 'ООО «СБГ Бай»', ['address' => 'г. Минск, ул. Селицкого, 39Б', 'phones' => ['+375 (29) 111-11-11'], 'sort_order' => 2]);
-        $this->branch($this->partner('ООО «Тепло Минск»'), $minsk, 'ООО «Тепло Минск»', ['sort_order' => 1]);
+        $this->branch($this->partner('ООО «Тепло Минск»'), $minsk, 'ООО «Тепло Минск»', ['sort_order' => 1, 'telegram_username' => 'teplominsk', 'viber_phone' => '+375291234567']);
         $this->branch($sbg, $minsk, 'Скрытая точка', ['is_active' => false]);
         $this->branch($this->partner('ООО «На проверке»', 'pending'), $minsk, 'Точка без доступа');
         $this->branch($this->partner('ООО «Гомель Тепло»'), $gomel, 'ООО «Гомель Тепло»');
@@ -45,6 +45,9 @@ class PartnerBranchesTest extends TestCase
             ->assertSeeInOrder(['ООО «Тепло Минск»', 'ООО «СБГ Бай»'])
             ->assertSee('г. Минск, ул. Селицкого, 39Б')
             ->assertSee('Показать телефон')
+            ->assertSee('https://t.me/teplominsk', false)
+            ->assertSee('viber://chat?number=%2B375291234567', false)
+            ->assertSee('branch-social__icon', false)
             ->assertSee('Изменить город')
             ->assertSee('aria-label="Изменить город. Сейчас выбран: Минск"', false)
             ->assertSee('href="#citySelector"', false)

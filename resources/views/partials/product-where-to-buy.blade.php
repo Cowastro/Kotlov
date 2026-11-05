@@ -1,4 +1,5 @@
 {{-- "Где купить": partner branches of the selected city; phones are revealed on demand and logged. --}}
+@include('partials.branch-social-styles')
 @php
     $wtbCity = $selectedCity ?? null;
     $wtbBranches = $wtbCity?->exists && \Illuminate\Support\Facades\Schema::hasTable('partner_branches')
@@ -117,6 +118,7 @@
                             <div class="wtb__meta">{!! $wtbIcon('pin') !!}<span>@if($branch->map_url)<a href="{{ $branch->map_url }}" target="_blank" rel="noopener">{{ $branch->address }}</a>@else{{ $branch->address }}@endif</span></div>
                         @endif
                         @if($branch->working_hours)<div class="wtb__meta">{!! $wtbIcon('clock') !!}<span>{{ $branch->working_hours }}</span></div>@endif
+                        <div class="wtb__social">@include('partials.branch-social-contacts', ['contactBranch' => $branch])</div>
                     </div>
                     <div data-wtb-slot>
                         <button type="button" class="wtb__phone"

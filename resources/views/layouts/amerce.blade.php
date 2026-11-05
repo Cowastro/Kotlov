@@ -150,6 +150,7 @@
         @include('partials.footer')
         @include('partials.modals')
         @include('partials.ai-product-selector')
+        @include('partials.regional-quick-contact')
         @include('partials.online-order-reminder')
     @endunless
 
