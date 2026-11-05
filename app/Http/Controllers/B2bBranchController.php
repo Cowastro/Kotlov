@@ -33,6 +33,7 @@ class B2bBranchController extends Controller
             'telegram_username' => ['nullable', 'string', 'max:32', 'regex:/^[a-zA-Z0-9_]{5,32}$/'],
             'instagram_username' => ['nullable', 'string', 'max:30', 'regex:/^[a-zA-Z0-9_.]{1,30}$/'],
             'viber_phone' => ['nullable', 'string', 'max:50', 'regex:/^\+?[\d\s()\-]{7,50}$/'],
+            'whatsapp_phone' => ['nullable', 'string', 'max:50', 'regex:/^\+?[\d\s()\-]{7,50}$/'],
             'map_url' => ['nullable', 'url:http,https', 'max:1000'],
             'storefront_title' => ['nullable', 'string', 'max:255'],
             'storefront_intro' => ['nullable', 'string', 'max:1200'],

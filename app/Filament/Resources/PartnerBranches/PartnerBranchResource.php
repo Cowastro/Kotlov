@@ -90,6 +90,7 @@ class PartnerBranchResource extends Resource
             TextInput::make('email')->label('E-mail')->email()->maxLength(255),
             TextInput::make('telegram_username')->label('Telegram магазина')->prefix('@')->maxLength(32)->regex('/^[a-zA-Z0-9_]{5,32}$/')->placeholder('kotlovlida'),
             TextInput::make('viber_phone')->label('Viber магазина')->tel()->maxLength(50)->regex('/^\+?[\d\s()\-]{7,50}$/'),
+            TextInput::make('whatsapp_phone')->label('WhatsApp магазина')->tel()->maxLength(50)->regex('/^\+?[\d\s()\-]{7,50}$/'),
             TextInput::make('instagram_username')->label('Instagram магазина')->prefix('@')->maxLength(30)->regex('/^[a-zA-Z0-9_.]{1,30}$/')->placeholder('kotlovlida.by'),
             TextInput::make('map_url')->label('Ссылка на карту')->url()->maxLength(1000),
             TextInput::make('map_embed_url')->label('Ссылка для встраивания карты')->url()->maxLength(1000)

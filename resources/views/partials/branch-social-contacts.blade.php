@@ -1,4 +1,4 @@
-@if($contactBranch->telegram_username || $contactBranch->viber_phone || $contactBranch->instagram_username)
+@if($contactBranch->telegram_username || $contactBranch->viber_phone || $contactBranch->whatsapp_phone || $contactBranch->instagram_username)
     <div class="branch-social" aria-label="Мессенджеры и соцсети магазина">
         <p class="branch-social__title">Связаться с магазином</p>
         <div class="branch-social__links">
@@ -10,6 +10,9 @@
         @endif
         @if($contactBranch->instagram_username)
             <a class="branch-social__link is-instagram" href="https://www.instagram.com/{{ $contactBranch->instagram_username }}/" target="_blank" rel="noopener"><span class="branch-social__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></span><span><strong>Instagram</strong><small>{{ '@'.$contactBranch->instagram_username }}</small></span></a>
+        @endif
+        @if($contactBranch->whatsapp_phone)
+            <a class="branch-social__link is-whatsapp" href="https://wa.me/{{ preg_replace('/\D+/', '', $contactBranch->whatsapp_phone) }}" target="_blank" rel="noopener"><span class="branch-social__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-12 7l-5 2 1.5-5A8 8 0 1 1 20 12Z"/><path d="m8 7 2 3-1.5 1.5a10 10 0 0 0 4 4L14 14l3 2c-1 4-5 1-7-1S5 8 8 7Z"/></svg></span><span><strong>WhatsApp</strong><small>{{ $contactBranch->whatsapp_phone }}</small></span></a>
         @endif
         </div>
     </div>
