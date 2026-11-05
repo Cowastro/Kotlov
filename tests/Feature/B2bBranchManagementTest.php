@@ -90,9 +90,22 @@ class B2bBranchManagementTest extends TestCase
         return [$user, $client];
     }
 
+    public function test_store_requires_hours_and_preserves_multiple_phone_numbers(): void
+    {
+        [$user, $client] = $this->partner();
+        $data = $this->data();
+        unset($data['working_hours']);
+        $this->actingAs($user)->post(route('b2b.branches.store'), $data)->assertSessionHasErrors('working_hours');
+        $this->assertSame(0, $client->branches()->count());
+        $data['working_hours'] = 'Пн–Сб 9:00–18:00, Вс — выходной';
+        $data['phones'] = ['+375291234567', '+375331234567', ''];
+        $this->post(route('b2b.branches.store'), $data)->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame(['+375291234567', '+375331234567'], $client->branches()->sole()->pending_changes['phones']);
+    }
+
     private function data(): array
     {
         $city = City::firstOrCreate(['slug' => 'lida'], ['name' => 'Лида', 'name_in' => 'в Лиде', 'name_title' => 'Лиде', 'is_active' => true, 'storefront_enabled' => false]);
-        return ['city_id' => $city->id, 'name' => 'Лидский магазин', 'address' => 'ул. Новая, 1', 'phone' => '+375291234567'];
+        return ['city_id' => $city->id, 'name' => 'Лидский магазин', 'address' => 'ул. Новая, 1', 'phone' => '+375291234567', 'working_hours' => 'Пн–Пт 9:00–18:00'];
     }
 }

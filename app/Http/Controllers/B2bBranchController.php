@@ -17,13 +17,19 @@ class B2bBranchController extends Controller
         $client = $user->activeB2bClient();
         abort_unless($client && $client->partner_type !== 'installer' && app(B2bCompanyAccess::class)->allows($user, 'profile.manage', $client), 403);
         abort_if($branch && (int) $branch->b2b_client_id !== (int) $client->id, 403);
+        $phones = $request->input('phones', [$request->input('phone')]);
+        if (is_array($phones)) {
+            $phones = array_values(array_filter(array_map(fn ($phone) => is_string($phone) ? trim($phone) : $phone, $phones), fn ($phone) => $phone !== '' && $phone !== null));
+        }
+        $request->merge(['phones' => $phones]);
         $data = $request->validate([
             'city_id' => ['required', Rule::exists('cities', 'id')->where('is_active', true)],
             'name' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:50', 'regex:/^\+?[\d\s()\-]{7,50}$/'],
+            'phones' => ['required', 'array', 'min:1', 'max:6'],
+            'phones.*' => ['required', 'string', 'max:50', 'regex:/^\+?[\d\s()\-]{7,50}$/'],
             'email' => ['nullable', 'email', 'max:255'],
-            'working_hours' => ['nullable', 'string', 'max:255'],
+            'working_hours' => ['required', 'string', 'max:255'],
             'map_url' => ['nullable', 'url:http,https', 'max:1000'],
             'storefront_title' => ['nullable', 'string', 'max:255'],
             'storefront_intro' => ['nullable', 'string', 'max:1200'],
@@ -32,7 +38,6 @@ class B2bBranchController extends Controller
             'photos' => ['nullable', 'array', 'max:6'],
             'photos.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
-        $data['phones'] = [$data['phone']];
         if ($request->hasFile('hero')) {
             $data['hero_image'] = $request->file('hero')->store('partner-branches/submissions/'.$client->id, 'public');
         }

@@ -24,8 +24,8 @@ class CityStorefrontManager
             }
             if ($enabled) {
                 $branch ??= PartnerBranch::query()->visibleIn($city)->first();
-                if (! $city->is_active || ! $branch || ! filled($branch->address) || ! collect($branch->phones)->filter()->count()) {
-                    throw ValidationException::withMessages(['storefront_enabled' => 'Для публикации нужен активный город и филиал одобренного партнёра с адресом и телефоном.']);
+                if (! $city->is_active || ! $branch || ! filled($branch->address) || ! filled($branch->working_hours) || ! collect($branch->phones)->filter()->count()) {
+                    throw ValidationException::withMessages(['storefront_enabled' => 'Для публикации нужен активный город и филиал одобренного партнёра с адресом, телефоном и режимом работы.']);
                 }
             }
             $city->update([
