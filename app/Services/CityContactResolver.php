@@ -60,7 +60,7 @@ class CityContactResolver
                     'email' => $branch->email,
                     'address' => $branch->address,
                     'map_url' => $branch->mapLink(),
-                    'map_embed_url' => $branch->map_embed_url,
+                    'map_embed_url' => $branch->mapEmbedLink(),
                 ] as $key => $value) {
                     if ($value !== null && $value !== '' && $value !== []) {
                         $contact[$key] = $value;

@@ -74,4 +74,25 @@ class PartnerBranch extends Model
             ? 'https://yandex.by/maps/?text='.rawurlencode($this->address)
             : null;
     }
+
+    public function mapEmbedLink(): ?string
+    {
+        if (trim((string) $this->map_embed_url) !== '') {
+            return $this->map_embed_url;
+        }
+
+        $address = trim((string) $this->address);
+        if ($address === '') {
+            return null;
+        }
+
+        $cityName = trim((string) $this->city?->name);
+        if ($cityName !== '' && mb_stripos($address, $cityName) === false) {
+            $address = $cityName.', '.$address;
+        }
+
+        return 'https://www.google.com/maps?'.http_build_query([
+            'q' => $address.', Беларусь', 'hl' => 'ru', 'z' => 16, 'output' => 'embed',
+        ], '', '&', PHP_QUERY_RFC3986);
+    }
 }
