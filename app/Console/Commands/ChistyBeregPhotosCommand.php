@@ -143,6 +143,7 @@ class ChistyBeregPhotosCommand extends Command
             }
         }
         $stats['daily_used'] = \App\Services\Market\MarketWebResearchService::backgroundSearchesToday();
+        $stats['daily_limit'] = (int) config('services.ai.market_research_daily_background_limit');
         foreach ($stats as $key => $value) {
             $this->line("metric.chisty_bereg_photos.{$key}={$value}");
         }
