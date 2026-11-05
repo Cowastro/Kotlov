@@ -86,6 +86,10 @@ class PartnerBranch extends Model
             return null;
         }
 
+        // Locate the building, not an old business registered in the same unit.
+        // The complete address including the unit remains visible beside the map.
+        $address = preg_replace('/,\s*(?:пав(?:ильон)?\.?|офис|оф\.|каб\.|помещение|пом\.)\s*.+$/ui', '', $address);
+
         $cityName = trim((string) $this->city?->name);
         if ($cityName !== '' && mb_stripos($address, $cityName) === false) {
             $address = $cityName.', '.$address;
