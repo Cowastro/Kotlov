@@ -41,6 +41,7 @@ $(window).on("load", function () {
         var centered = $this.data("center") ?? false;
         var init = $this.data("init") || 0;
         var touch = $this.data("touch") ?? true;
+        var mobileAutoHeight = $this.data("mobile-auto-height") === true;
 
 
         var isNumberType = $this.hasClass("swiper-type-number");
@@ -62,6 +63,7 @@ $(window).on("load", function () {
 
         var swiperT = new Swiper($this[0], {
             direction: direction,
+            autoHeight: mobileAutoHeight,
             speed: speed,
             centeredSlides: centered,
             slidesPerView: mobile,
@@ -111,6 +113,7 @@ $(window).on("load", function () {
                     },
                 },
                 768: {
+                    autoHeight: false,
                     slidesPerView: tablet,
                     spaceBetween: spacingMd,
                     slidesPerGroup: perGroupMd,
