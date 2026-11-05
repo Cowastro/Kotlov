@@ -77,6 +77,6 @@ class CityStorefrontManagementTest extends TestCase
         $user = User::factory()->create();
         $client = B2bClient::create(['user_id' => $user->id, 'status' => 'approved', 'partner_type' => 'wholesale', 'company_name' => 'Партнёр']);
 
-        return PartnerBranch::create(array_merge(['city_id' => $city->id, 'b2b_client_id' => $client->id, 'name' => 'Магазин', 'address' => 'Адрес магазина', 'phones' => ['+375290000000'], 'is_active' => true, 'sort_order' => 100], $data));
+        return PartnerBranch::create(array_merge(['city_id' => $city->id, 'b2b_client_id' => $client->id, 'name' => 'Магазин', 'address' => 'Адрес магазина', 'phones' => ['+375290000000'], 'working_hours' => 'Пн–Пт 9:00–18:00', 'is_active' => true, 'sort_order' => 100], $data));
     }
 }

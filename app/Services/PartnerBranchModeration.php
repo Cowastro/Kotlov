@@ -42,6 +42,9 @@ class PartnerBranchModeration
                 throw ValidationException::withMessages(['branch' => 'Нет заявки на проверку или доступ партнёра не одобрен.']);
             }
             $data = array_intersect_key($branch->pending_changes, array_flip(self::FIELDS));
+            if (! filled($data['address'] ?? null) || ! filled($data['working_hours'] ?? null) || ! collect($data['phones'] ?? [])->filter()->count()) {
+                throw ValidationException::withMessages(['branch' => 'Заполните адрес, телефон и режим работы магазина.']);
+            }
             if (! \App\Models\City::whereKey($data['city_id'] ?? null)->where('is_active', true)->exists()) {
                 throw ValidationException::withMessages(['branch' => 'Город отключён.']);
             }

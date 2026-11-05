@@ -83,10 +83,10 @@ class PartnerBranchResource extends Resource
                     ? $city->storefrontUrl().' — '.($city->storefront_enabled ? 'публикация включена' : 'не опубликован')
                     : 'Выберите город. После сохранения откройте «Управлять сайтом города».'),
             TextInput::make('name')->label('Название филиала на сайте')->placeholder('Магазин «Печкiн» (ООО «СБГ бай»)')->required()->maxLength(255),
-            TextInput::make('address')->label('Адрес')->placeholder('г. Минск, ул. Селицкого, 39Б')->maxLength(255),
+            TextInput::make('address')->label('Адрес')->placeholder('г. Минск, ул. Селицкого, 39Б')->required()->maxLength(255),
             TagsInput::make('phones')->label('Телефоны')->placeholder('+375 (29) 000-00-00')->required()
                 ->helperText('Каждый номер — отдельно, Enter после ввода.'),
-            TextInput::make('working_hours')->label('Режим работы')->placeholder('Пн–Пт 9:00–18:00')->maxLength(255),
+            TextInput::make('working_hours')->label('Режим работы')->placeholder('Пн–Пт 9:00–18:00, Сб–Вс — выходной')->required()->maxLength(255),
             TextInput::make('email')->label('E-mail')->email()->maxLength(255),
             TextInput::make('map_url')->label('Ссылка на карту')->url()->maxLength(1000),
             TextInput::make('map_embed_url')->label('Ссылка для встраивания карты')->url()->maxLength(1000)
