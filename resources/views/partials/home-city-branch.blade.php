@@ -6,7 +6,7 @@
     .city-store__branch dd { margin: 0; overflow-wrap: anywhere; }
     .city-store__promo { margin-top: 16px; }
     .city-store__map iframe { width: 100%; min-height: 280px; border: 0; border-radius: 12px; }
-    .city-store__gallery-grid img { width: 100%; aspect-ratio: 3 / 4; border-radius: 12px; object-fit: contain; background: #f5f2ee; }
+    .city-store__gallery-grid img { width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; object-fit: cover; background: #f5f2ee; }
     @media (max-width: 767px) { .city-store__location-grid { grid-template-columns: 1fr; } }
 </style>
 @endpush
@@ -45,6 +45,10 @@
     @php($branchPhotos = collect([$primaryBranch->hero_image])->merge($primaryBranch->gallery ?? [])->filter()->unique())
     @if($branchPhotos->isNotEmpty())
         <section class="flat-spacing pt-0"><div class="container"><div class="sect-heading type-2"><h2>Фотографии магазина</h2></div><div class="city-store__gallery-grid tf-grid-layout tf-col-2 md-col-3 gap-20">
-            @foreach($branchPhotos as $image)<img src="{{ \Illuminate\Support\Facades\Storage::url($image) }}" alt="{{ $primaryBranch->name }} — фото {{ $loop->iteration }}" loading="lazy">@endforeach
+            @foreach($branchPhotos as $image)
+                <a href="{{ \Illuminate\Support\Facades\Storage::url($image) }}" target="_blank" rel="noopener" aria-label="Открыть фото {{ $loop->iteration }} магазина">
+                    <img src="{{ \Illuminate\Support\Facades\Storage::url($image) }}" alt="{{ $primaryBranch->name }} — фото {{ $loop->iteration }}" loading="lazy">
+                </a>
+            @endforeach
         </div></div></section>
     @endif
