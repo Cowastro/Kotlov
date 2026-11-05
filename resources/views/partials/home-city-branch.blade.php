@@ -1,3 +1,4 @@
+@include('partials.branch-social-styles')
 @push('styles')
 <style>
     .city-store__location-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }

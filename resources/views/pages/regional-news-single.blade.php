@@ -1,4 +1,5 @@
 @extends('layouts.amerce')
+@include('partials.branch-social-styles')
 @push('styles')
 <style>
 .local-article .breadcrumbs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
