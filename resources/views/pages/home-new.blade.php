@@ -17,6 +17,7 @@
     .city-home-slide--photo .city-home-slide__copy > span { display: inline-block; padding: 7px 12px; border: 1px solid rgba(255,166,115,.45); border-radius: 999px; color: #ffbf98; background: rgba(0,0,0,.14); }
     .city-home-slide--photo .city-home-slide__copy p { color: rgba(255,255,255,.82); }
     @media (max-width: 767px) {
+        .home-popular-categories { padding-top: 32px; }
         .city-home-slide--photo { display: grid; grid-template-columns: minmax(0, 1fr); }
         .city-home-slide--photo::before { display: none; }
         .city-home-slide--photo > img { position: relative; inset: auto; grid-row: 1; width: 100%; height: 270px; object-position: center; }
@@ -103,7 +104,7 @@
                 </div>
                 <div class="container-full">
                     <div dir="ltr" class="swiper tf-swiper sw-slide-show slider_effect_fade" data-preview="1"
-                        data-tablet="1" data-mobile="1" data-auto="true" data-delay="3000" data-loop="true"
+                        data-tablet="1" data-mobile="1" data-mobile-auto-height="true" data-auto="true" data-delay="3000" data-loop="true"
                         data-space-lg="30" data-space-md="20" data-space="15">
                         <div class="swiper-wrapper">
                             @isset($primaryBranch)

@@ -161,7 +161,7 @@
     <script src="{{ asset('assets/js/plugin/infinityslide.js') }}"></script>
     <script src="{{ asset('assets/js/plugin/wow.min.js') }}"></script>
     <script src="{{ asset('assets/js/zoom.js') }}"></script>
-    <script src="{{ asset('assets/js/carousel.js') }}"></script>
+    <script src="{{ asset('assets/js/carousel.js') }}?v={{ filemtime(public_path('assets/js/carousel.js')) }}"></script>
     <script src="{{ asset('assets/js/plugin/drift.min.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}?v={{ filemtime(public_path('assets/js/main.js')) }}"></script>
     <script src="{{ asset('assets/js/shop.js') }}?v={{ filemtime(public_path('assets/js/shop.js')) }}"></script>
