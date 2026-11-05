@@ -253,7 +253,7 @@ Route::get('/', function () {
 
     // Все данные блоков главной — тяжёлые (~50 запросов), кешируем на 10 минут.
     // Изменения товаров/баннеров в админке появятся на главной с задержкой до 10 мин.
-    $data = Cache::remember('home:data:v8', 600, function () {
+    $data = Cache::remember('home:data:v9', 600, function () {
         $categories = Category::active()->get()->sortBy('sort_order');
         $categoriesByParent = $categories->groupBy('parent_id');
         $categoryBranchIds = function ($categoryId) use ($categoriesByParent) {
@@ -289,13 +289,7 @@ Route::get('/', function () {
             ->get()
             ->values();
 
-        $cityHomeCategories = $popularCategories
-            ->concat($categories)
-            ->filter(fn (Category $category) => (int) $category->parent_id === 0)
-            ->unique('id')
-            ->values();
-
-        $popularCategories->concat($cityHomeCategories)->each(function (Category $category) use ($categoryBranchIds, $directCounts) {
+        $popularCategories->each(function (Category $category) use ($categoryBranchIds, $directCounts) {
             $branchIds = $categoryBranchIds($category->id);
             $category->products_count = $branchIds->sum(fn ($id) => (int) $directCounts->get($id, 0));
             $category->catalogThumb = $category->catalogImageUrl($branchIds->all());
@@ -451,7 +445,7 @@ Route::get('/', function () {
             ->get();
 
         return compact(
-            'popularCategories', 'cityHomeCategories',
+            'popularCategories',
             'popularOrderProducts',
             'productsKotly', 'productsNasosy',
             'productsKaminy', 'productsAkcii',
@@ -462,10 +456,6 @@ Route::get('/', function () {
             'ecokaminPromoHits', 'ecokaminPromoMaxDiscount', 'ecokaminPromoFrom'
         );
     });
-
-    if ($cityData !== []) {
-        $data['popularCategories'] = $data['cityHomeCategories'];
-    }
 
     return view('pages.home-new', array_merge($data, $cityData));
 });
