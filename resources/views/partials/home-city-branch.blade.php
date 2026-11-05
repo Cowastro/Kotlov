@@ -6,7 +6,7 @@
     .city-store__branch dd { margin: 0; overflow-wrap: anywhere; }
     .city-store__promo { margin-top: 16px; }
     .city-store__map iframe { width: 100%; min-height: 280px; border: 0; border-radius: 12px; }
-    .city-store__gallery-grid img { width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; object-fit: cover; }
+    .city-store__gallery-grid img { width: 100%; aspect-ratio: 3 / 4; border-radius: 12px; object-fit: contain; background: #f5f2ee; }
     @media (max-width: 767px) { .city-store__location-grid { grid-template-columns: 1fr; } }
 </style>
 @endpush
