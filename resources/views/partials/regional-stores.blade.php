@@ -43,5 +43,6 @@
             </div>
         </div>
         @if($regionalNetworkNews ?? false)<a class="regional-stores__news" href="{{ url('/blog/kotlov-v-regionah-borisov-lida') }}">Новости сети: KOTLOV становится ближе — Борисов и Лида →</a>@endif
+        <a class="regional-stores__news" href="{{ route('regional-news.all') }}">Все новости региональных магазинов →</a>
     </div>
 </section>

@@ -124,6 +124,7 @@
                                     <li><a href="/brands" class="cl-text-3 link">Бренды</a></li>
                                     <li><a href="/contacts" class="cl-text-3 link">Контакты</a></li>
                                     <li><a href="/regions" class="cl-text-3 link">Магазины в городах</a></li>
+                                    <li><a href="{{ isset($currentCity) && $currentCity->slug !== 'minsk' ? '/news' : '/regions/news' }}" class="cl-text-3 link">{{ isset($currentCity) && $currentCity->slug !== 'minsk' ? 'Новости магазина' : 'Новости регионов' }}</a></li>
                                     <li><a href="/blog" class="cl-text-3 link">Статьи</a></li>
                                     <li><a href="/baza-znaniy" class="cl-text-3 link">База знаний</a></li>
                                     <li><a href="/reviews" class="cl-text-3 link">Отзывы</a></li>

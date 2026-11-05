@@ -16,6 +16,7 @@ class BlogPostInfolist
                 TextEntry::make('category.name')
                     ->label('Категория')
                     ->placeholder('-'),
+                TextEntry::make('city.name')->label('Город новости')->placeholder('Общая статья KOTLOV'),
                 TextEntry::make('author.name')
                     ->label('Автор')
                     ->placeholder('-'),

@@ -328,6 +328,12 @@
 
             @isset($primaryBranch)
                 @include('partials.home-city-branch')
+                @if(($localNewsPosts ?? collect())->isNotEmpty())
+                <section class="container flat-spacing pt-0" aria-labelledby="local-news-title">
+                    <div class="regional-news__heading"><h2 id="local-news-title">Новости KOTLOV в {{ $city->name_title }}</h2><a class="tf-btn btn-white btn-stroke" href="/news">Все новости города</a></div>
+                    @include('partials.regional-news-cards', ['newsPosts' => $localNewsPosts])
+                </section>
+                @endif
             @endisset
 
             @if($popularOrderProducts->isNotEmpty())

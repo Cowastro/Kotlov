@@ -438,7 +438,7 @@ Route::get('/', function () {
             ->inActiveSaleCampaign(ApplyEcokaminOctoberSaleCommand::CAMPAIGN)
             ->count();
 
-        $homeBlogPosts = BlogPost::published()
+        $homeBlogPosts = BlogPost::published()->general()
             ->with('category:id,name,slug')
             ->orderByDesc('published_at')
             ->limit(6)
@@ -459,12 +459,18 @@ Route::get('/', function () {
 
     return view('pages.home-new', array_merge($data, $cityData, [
         'regionalStores' => app(\App\Services\RegionalStoreDirectory::class)->stores(),
+        'localNewsPosts' => $currentCity?->slug !== 'minsk' && $currentCity
+            ? BlogPost::published()->regional()->where('city_id', $currentCity->id)->with('city')->orderByDesc('published_at')->limit(3)->get()
+            : collect(),
         'regionalNetworkNews' => BlogPost::published()->where('slug', 'kotlov-v-regionah-borisov-lida')->exists(),
     ]));
 });
 
 // ===== Статичные страницы — ДО динамических! =====
 Route::view('/about', 'pages.about');
+Route::get('/regions/news', [\App\Http\Controllers\RegionalNewsController::class, 'all'])->name('regional-news.all');
+Route::get('/news', [\App\Http\Controllers\RegionalNewsController::class, 'index'])->name('regional-news.index');
+Route::get('/news/{slug}', [\App\Http\Controllers\RegionalNewsController::class, 'show'])->name('regional-news.show');
 Route::get('/regions', function () {
     return view('pages.regions', [
         'regionalStores' => app(\App\Services\RegionalStoreDirectory::class)->stores(),

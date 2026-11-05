@@ -13,7 +13,7 @@ class BlogController extends Controller
 
     public function index(Request $request)
     {
-        $query = BlogPost::published()
+        $query = BlogPost::published()->general()
             ->with(['category'])
             ->orderByDesc('published_at');
 
@@ -42,20 +42,20 @@ class BlogController extends Controller
         }
 
         $posts = $query->paginate(6)->withQueryString();
-        $totalCount = BlogPost::published()->count();
+        $totalCount = BlogPost::published()->general()->count();
 
         $categories = BlogCategory::where('is_active', true)
-            ->withCount(['posts' => fn ($q) => $q->published()])
-            ->having('posts_count', '>', 0)
+            ->whereHas('posts', fn ($q) => $q->published()->general())
+            ->withCount(['posts' => fn ($q) => $q->published()->general()])
             ->orderBy('sort_order')
             ->get();
 
-        $recentPosts = BlogPost::published()
+        $recentPosts = BlogPost::published()->general()
             ->orderByDesc('published_at')
             ->limit(4)
             ->get();
 
-        $tags = BlogPost::published()
+        $tags = BlogPost::published()->general()
             ->whereNotNull('tags')
             ->pluck('tags')
             ->flatten()
@@ -101,6 +101,11 @@ class BlogController extends Controller
             ->with(['category', 'author'])
             ->firstOrFail();
 
+        if ($post->city_id) {
+            abort_unless(BlogPost::published()->regional()->whereKey($post->id)->exists(), 404);
+            return redirect()->away($post->publicUrl(), 301);
+        }
+
         $post->increment('views_count');
 
         $isHeatPumpContent = preg_match('/\bтеплов\p{L}*\s+насос\p{L}*/u', mb_strtolower($post->title)) === 1
@@ -118,7 +123,7 @@ class BlogController extends Controller
                 fn ($tag) => preg_match('/(пеллетн\p{L}*\s+горел|ceramic\s+pro|kotlov\s+xo)/u', mb_strtolower((string) $tag)) === 1
             );
 
-        $related = BlogPost::published()
+        $related = BlogPost::published()->general()
             ->where('id', '!=', $post->id)
             ->when(
                 $isHeatPumpContent,
