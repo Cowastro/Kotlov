@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\CitySubdomain;
 use App\Models\B2bClient;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\PartnerBranch;
@@ -69,7 +70,9 @@ class CityStorefrontSeoTest extends TestCase
             ->assertDontSee('Печи купить в Минске', false);
 
         $this->get('https://borisov.kotlov.by/nasosy/test-product')
-            ->assertRedirect('https://kotlov.by/nasosy/test-product');
+            ->assertOk()
+            ->assertSee('<link rel="canonical" href="https://kotlov.by/nasosy/test-product">', false)
+            ->assertSee('г. Борисов');
     }
 
     public function test_city_sitemap_contains_landings_not_duplicate_products(): void
@@ -161,6 +164,35 @@ class CityStorefrontSeoTest extends TestCase
         $this->get('https://kotlov.by/city/select/minsk?return=%2Fcatalog')
             ->assertRedirect('https://kotlov.by/catalog')
             ->assertPlainCookie('selected_city', 'minsk');
+    }
+
+    public function test_lida_selection_and_catalog_navigation_stay_on_the_partner_host(): void
+    {
+        $this->branch($this->city('borisov', 'Борисов'));
+        $lida = $this->city('lida', 'Лида');
+        $lida->update(['name_in' => 'в Лиде', 'name_title' => 'Лиде']);
+        $this->branch($lida, ['name' => 'Магазин KOTLOV в Лиде', 'address' => 'г. Лида, ул. Калинина, 57']);
+        $this->categoryWithProduct('pechki', 'Печи');
+
+        foreach (['kotlov.by', 'borisov.kotlov.by', 'lida.kotlov.by'] as $host) {
+            $this->get('https://'.$host.'/city/select/lida?return=%2Fcatalog')
+                ->assertRedirect('https://lida.kotlov.by/');
+        }
+
+        $this->get('https://lida.kotlov.by/pechki/test-product')
+            ->assertOk()
+            ->assertSee('г. Лида')
+            ->assertSee('<link rel="canonical" href="https://kotlov.by/pechki/test-product">', false);
+
+        Brand::query()->create(['name' => 'Test Brand', 'slug' => 'test-brand', 'is_active' => true]);
+        $this->get('https://lida.kotlov.by/brands/test-brand')
+            ->assertOk()
+            ->assertSee('<link rel="canonical" href="https://kotlov.by/brands/test-brand">', false);
+
+        $this->get('https://lida.kotlov.by/robots.txt')
+            ->assertOk()
+            ->assertSee('Sitemap: https://lida.kotlov.by/sitemap.xml')
+            ->assertDontSee('Sitemap: https://borisov.kotlov.by/sitemap.xml');
     }
 
     private function city(string $slug, string $name): City

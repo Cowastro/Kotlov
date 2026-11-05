@@ -15,7 +15,9 @@ class CitySelectionController extends Controller
         abort_unless($city, 404);
 
         $baseDomain = config('app.base_domain', 'kotlov.by');
-        if (str_ends_with($request->getHost(), '.'.$baseDomain)) {
+        $hasStorefront = $city->slug !== 'minsk' && $city->storefront_enabled
+            && PartnerBranch::query()->visibleIn($city)->exists();
+        if (! $hasStorefront && str_ends_with($request->getHost(), '.'.$baseDomain)) {
             return redirect()->away('https://'.$baseDomain.$request->getRequestUri())
                 ->header('X-Robots-Tag', 'noindex, nofollow');
         }
@@ -25,9 +27,8 @@ class CitySelectionController extends Controller
             $returnTo = '/';
         }
 
-        $redirect = $city->slug !== 'minsk' && $city->storefront_enabled
-            && PartnerBranch::query()->visibleIn($city)->exists()
-            ? redirect()->away('https://'.$city->slug.'.'.$baseDomain.'/')
+        $redirect = $hasStorefront
+            ? redirect()->away($city->storefrontUrl().'/')
             : redirect($returnTo);
 
         return $redirect->withCookie(cookie(

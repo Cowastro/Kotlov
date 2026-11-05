@@ -235,12 +235,12 @@ Route::get('/robots.txt', function (Request $request) {
     if (str_ends_with($request->getHost(), '.'.$baseDomain)) {
         $slug = str_replace('.'.$baseDomain, '', $request->getHost());
         if (City::findBySlug($slug)) {
-            return response("User-agent: *\nAllow: /\nSitemap: https://{$request->getHost()}/sitemap.xml\n", 200)
+            return response("User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /b2b/\nDisallow: /account\nDisallow: /cart\nDisallow: /checkout\nDisallow: /city/select/\nDisallow: /*?\nSitemap: https://{$request->getHost()}/sitemap.xml\n", 200)
                 ->header('Content-Type', 'text/plain; charset=UTF-8');
         }
     }
 
-    return response(file_get_contents(public_path('robots.txt')), 200)
+    return response(file_get_contents(resource_path('seo/robots-main.txt')), 200)
         ->header('Content-Type', 'text/plain; charset=UTF-8');
 });
 

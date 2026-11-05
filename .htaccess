@@ -3,7 +3,7 @@ RewriteEngine On
 # Убираем trailing slash — всегда на HTTPS
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} ^/(.+)/$
-RewriteRule ^ https://kotlov.by/%1 [L,R=301]
+RewriteRule ^ https://%{HTTP_HOST}/%1 [L,R=301]
 
 # Редирект www → без www
 RewriteCond %{HTTP_HOST} ^www\.kotlov\.by$ [NC]
