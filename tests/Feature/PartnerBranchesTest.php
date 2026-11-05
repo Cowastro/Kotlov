@@ -77,6 +77,25 @@ class PartnerBranchesTest extends TestCase
             ->assertOk()->assertSee('Заказ онлайн с доставкой в Брест');
     }
 
+    public function test_minsk_direct_contact_uses_sbg_bay_messengers_only(): void
+    {
+        $city = $this->city('minsk', 'Минск');
+        $partner = $this->partner('ООО «СБГ бай»');
+        $partner->update(['unp' => '193265863']);
+        $branch = $this->branch($partner, $city, 'ООО «СБГ бай»', [
+            'telegram_username' => 'sbgopt_bot', 'viber_phone' => '+375296322311',
+            'whatsapp_phone' => '+375296322311', 'instagram_username' => 'pechkin_shop',
+        ]);
+        $this->branch($this->partner('Другой продавец'), $city, 'Другой продавец', ['sort_order' => 0, 'telegram_username' => 'another_store']);
+        $html = view('partials.regional-quick-contact', ['currentCity' => $city])->render();
+        foreach (['https://t.me/sbgopt_bot', 'viber://chat?number=%2B375296322311', 'https://wa.me/375296322311', 'https://www.instagram.com/pechkin_shop/'] as $link) {
+            $this->assertStringContainsString($link, $html);
+        }
+        $this->assertStringNotContainsString('another_store', $html);
+        $branch->update(['is_active' => false]);
+        $this->assertStringNotContainsString('regional-quick-contact', view('partials.regional-quick-contact', ['currentCity' => $city])->render());
+    }
+
     public function test_phone_reveal_is_logged_and_points_without_access_stay_hidden(): void
     {
         $minsk = $this->city('minsk', 'Минск');

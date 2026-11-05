@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class PartnerBranchModeration
 {
-    public const FIELDS = ['city_id', 'name', 'address', 'phones', 'email', 'working_hours', 'telegram_username', 'viber_phone', 'instagram_username', 'map_url', 'storefront_title', 'storefront_intro', 'storefront_promo', 'hero_image', 'gallery'];
+    public const FIELDS = ['city_id', 'name', 'address', 'phones', 'email', 'working_hours', 'telegram_username', 'viber_phone', 'whatsapp_phone', 'instagram_username', 'map_url', 'storefront_title', 'storefront_intro', 'storefront_promo', 'hero_image', 'gallery'];
 
     public function submit(B2bClient $client, User $actor, array $data, ?PartnerBranch $branch = null): PartnerBranch
     {

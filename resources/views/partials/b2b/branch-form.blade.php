@@ -11,6 +11,7 @@
             <label><span>Email</span><input name="email" value="{{ $draft['email'] ?? '' }}" type="email" maxlength="255"></label>
             <label><span>Telegram магазина (без @)</span><input name="telegram_username" value="{{ $draft['telegram_username'] ?? '' }}" maxlength="32" placeholder="kotlovlida"></label>
             <label><span>Viber магазина</span><input name="viber_phone" value="{{ $draft['viber_phone'] ?? '' }}" type="tel" maxlength="50" placeholder="+375 (29) 928-37-66"></label>
+            <label><span>WhatsApp магазина</span><input name="whatsapp_phone" value="{{ $draft['whatsapp_phone'] ?? '' }}" type="tel" maxlength="50" placeholder="+375 (29) 000-00-00"></label>
             <label><span>Instagram магазина (без @)</span><input name="instagram_username" value="{{ $draft['instagram_username'] ?? '' }}" maxlength="30" placeholder="kotlovlida.by"></label>
             <label><span>Режим работы магазина *</span><input name="working_hours" value="{{ $draft['working_hours'] ?? '' }}" required maxlength="255" placeholder="Пн–Пт 9:00–18:00, Сб 10:00–15:00, Вс — выходной"></label>
             <label><span>Ссылка на карту</span><input name="map_url" value="{{ $draft['map_url'] ?? '' }}" type="url" maxlength="1000"></label>
