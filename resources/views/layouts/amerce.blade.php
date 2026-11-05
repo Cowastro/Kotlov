@@ -97,6 +97,7 @@
 
     <link rel="shortcut icon" href="{{ asset('img/favicon.ico') }}">
 
+    @include('partials.branch-social-styles')
     @stack('styles')
     @include('partials.ios-input-zoom-fix')
     <link rel="stylesheet" href="{{ asset('assets/css/content-typography.css') }}?v={{ filemtime(public_path('assets/css/content-typography.css')) }}">
