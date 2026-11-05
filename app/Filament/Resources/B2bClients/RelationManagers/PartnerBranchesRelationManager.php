@@ -51,6 +51,7 @@ class PartnerBranchesRelationManager extends RelationManager
                 TextColumn::make('name')->label('Точка продаж')->weight('bold')
                     ->description(fn (PartnerBranch $record): string => (string) $record->address),
                 TextColumn::make('city.name')->label('Город'),
+                PartnerBranchResource::moderationColumn(),
                 TextColumn::make('city.storefront_enabled')->label('Сайт города')->badge()
                     ->formatStateUsing(fn ($state): string => $state ? 'Опубликован' : 'Не опубликован'),
                 TextColumn::make('phones')->label('Телефоны')->formatStateUsing(fn ($state): string => implode(', ', (array) $state)),
@@ -62,7 +63,7 @@ class PartnerBranchesRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()->label('Добавить филиал или точку')->visible($approved),
             ])
-            ->recordActions([EditAction::make(), PartnerBranchResource::citySiteAction(), DeleteAction::make()])
+            ->recordActions([EditAction::make(), ...PartnerBranchResource::reviewActions(), PartnerBranchResource::citySiteAction(), DeleteAction::make()])
             ->emptyStateHeading($approved ? 'Филиалов и точек пока нет' : 'Сначала одобрите B2B-доступ')
             ->emptyStateDescription($approved
                 ? 'Добавьте город, адрес и контакты филиала — он появится в «Где купить» выбранного города.'

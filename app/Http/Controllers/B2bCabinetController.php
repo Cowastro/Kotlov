@@ -190,7 +190,7 @@ class B2bCabinetController extends Controller
             ->get();
         $companyOrderTotal = (float) B2bOrder::query()->where('b2b_client_id', $client->id)->sum('total');
 
-        $installerPage = $section === 'page' || ($section === 'overview' && $client->partner_type === 'installer')
+        $installerPage = $client->partner_type === 'installer' && in_array($section, ['page', 'overview'], true)
             ? InstallerAccountController::pageFor($user)
             : null;
         $installerPage?->load(['works' => fn ($query) => $query->latest('completed_at')->latest('id')]);
@@ -202,12 +202,14 @@ class B2bCabinetController extends Controller
         $clientOrders = $section === 'leads'
             ? $clientOrdersQuery->with(['items', 'partnerBranch.city'])->latest('partner_assigned_at')->limit(50)->get()
             : collect();
-        $partnerBranches = $section === 'overview'
+        $partnerBranches = in_array($section, ['overview', 'page'], true)
             ? $client->branches()->with('city')
                 ->withCount(['contactViews as contact_views_30d_count' => fn ($views) => $views->where('created_at', '>=', now()->subDays(30))])
                 ->orderBy('sort_order')->get()
             : collect();
         $adminPreview = (bool) $request->attributes->get('b2b_admin_preview', false);
+        $branchCities = $section === 'page' && $client->partner_type !== 'installer'
+            ? \App\Models\City::where('is_active', true)->orderBy('name')->get() : collect();
 
         return view('pages.b2b.cabinet', compact(
             'installerPage', 'installerEditor', 'partnerBranches', 'clientOrders', 'offeredClientOrders',
@@ -218,7 +220,7 @@ class B2bCabinetController extends Controller
             'role', 'permissions', 'permissionLabels', 'rolePermissionLabels', 'passwordRecentlyConfirmed',
             'members', 'pendingInvitations', 'auditLogs', 'financialAuditLogs', 'companyOrderTotal',
             'dateFrom', 'dateTo', 'reconciliationOrders', 'openingBalance', 'periodCharges', 'periodPayments', 'closingBalance',
-            'adminPreview',
+            'adminPreview', 'branchCities',
         ));
     }
 
@@ -254,7 +256,7 @@ class B2bCabinetController extends Controller
     {
         $user = $request->user();
         $client = $user->activeB2bClient(['user']);
-        abort_unless($client && $this->access->allows($user, 'profile.manage', $client), 403);
+        abort_unless($client && $client->partner_type === 'installer' && $this->access->allows($user, 'profile.manage', $client), 403);
         if (! InstallerAccountController::pageFor($user)) {
             app(InstallerPageProvisioner::class)->ensureFor($client);
             $client->forceFill(['partner_type' => 'installer'])->save();
