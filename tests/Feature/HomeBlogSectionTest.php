@@ -31,7 +31,7 @@ class HomeBlogSectionTest extends TestCase
         $html = view('partials.home-blog-section', compact('posts'))->render();
 
         $this->assertSame(6, substr_count($html, 'class="swiper-slide"'));
-        $this->assertStringContainsString('Свежие статьи об отоплении', $html);
+        $this->assertStringContainsString('Новости и статьи KOTLOV', $html);
         $this->assertStringContainsString('href="'.route('blog').'"', $html);
 
         foreach ($posts as $post) {

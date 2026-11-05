@@ -457,11 +457,23 @@ Route::get('/', function () {
         );
     });
 
-    return view('pages.home-new', array_merge($data, $cityData));
+    return view('pages.home-new', array_merge($data, $cityData, [
+        'regionalStores' => app(\App\Services\RegionalStoreDirectory::class)->stores(),
+        'regionalNetworkNews' => BlogPost::published()->where('slug', 'kotlov-v-regionah-borisov-lida')->exists(),
+    ]));
 });
 
 // ===== Статичные страницы — ДО динамических! =====
 Route::view('/about', 'pages.about');
+Route::get('/regions', function () {
+    return view('pages.regions', [
+        'regionalStores' => app(\App\Services\RegionalStoreDirectory::class)->stores(),
+        'regionalNetworkNews' => BlogPost::published()->where('slug', 'kotlov-v-regionah-borisov-lida')->exists(),
+        'title' => 'Магазины KOTLOV в городах Беларуси — адреса и контакты',
+        'description' => 'Региональные магазины KOTLOV: адреса, график работы и местные каталоги отопительного оборудования. Выберите город или подключите свой магазин к партнёрской сети.',
+        'canonical' => 'https://'.config('app.base_domain', 'kotlov.by').'/regions',
+    ]);
+})->name('regions');
 Route::get('/partner-anketa/{token}', [PartnerOnboardingController::class, 'show'])
     ->middleware('throttle:30,1')->name('partner-onboarding.show');
 Route::post('/partner-anketa/{token}', [PartnerOnboardingController::class, 'submit'])

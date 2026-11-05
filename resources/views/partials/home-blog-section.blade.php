@@ -3,9 +3,9 @@
         <div class="container">
             <div class="sect-heading type-2 has-col-right">
                 <div class="wow fadeInUp">
-                    <h3 class="s-title">Свежие статьи об отоплении</h3>
+                    <h3 class="s-title">Новости и статьи KOTLOV</h3>
                     <p class="s-desc text-body-1 cl-text-2">
-                        Новые материалы, разборы оборудования и реальные объекты KOTLOV.
+                        Новости партнёрской сети, обзоры оборудования и реальные объекты KOTLOV.
                     </p>
                 </div>
                 <div class="col-right wow fadeInUp" data-wow-delay="0.1s">
