@@ -20,6 +20,10 @@ return new class extends Migration
                 ->where('address', 'like', '%222%')
                 ->lockForUpdate()->get();
 
+            if ($branches->isEmpty()) {
+                return;
+            }
+
             if ($branches->count() !== 1) {
                 throw new RuntimeException('Expected one Borisov branch at pavilion 222.');
             }
