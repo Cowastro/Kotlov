@@ -801,6 +801,12 @@ Route::middleware('auth')->group(function () {
 // ===== Личный кабинет =====
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/b2b/cabinet', [B2bCabinetController::class, 'show'])->name('b2b.cabinet');
+    Route::post('/b2b/cabinet/branches', [\App\Http\Controllers\B2bBranchController::class, 'store'])
+        ->middleware('throttle:10,1')->name('b2b.branches.store');
+    Route::post('/b2b/cabinet/branches/{branch}', [\App\Http\Controllers\B2bBranchController::class, 'store'])
+        ->middleware('throttle:10,1')->name('b2b.branches.update');
+    Route::get('/b2b/cabinet/branches/{branch}/preview', [\App\Http\Controllers\B2bBranchController::class, 'preview'])
+        ->name('b2b.branches.preview');
     Route::post('/b2b/cabinet/confirm-password', [B2bCabinetController::class, 'confirmSensitiveActions'])
         ->middleware('throttle:6,1')
         ->name('b2b.cabinet.confirm-password');

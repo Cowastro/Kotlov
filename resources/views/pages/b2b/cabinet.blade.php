@@ -61,7 +61,7 @@
                     'documents' => ['icon-FileText', 'КП и счета', 'documents.view'],
                     'contracts' => ['icon-Note', 'Договоры', 'documents.view'],
                     'reconciliation' => ['icon-ChartBar', 'Сверка взаиморасчётов', 'finance.view'],
-                    'page' => ['icon-User', $client->partner_type === 'installer' ? 'Моя страница монтажника' : 'Моя страница на KOTLOV', 'profile.manage'],
+                    'page' => ['icon-User', $client->partner_type === 'installer' ? 'Моя страница монтажника' : 'Мои магазины и филиалы', 'profile.manage'],
                     'security' => ['icon-ShieldCheck', 'Безопасность', null],
                 ] as $key => [$icon, $label, $permission])
                     @continue($permission && !$can($permission))
@@ -105,7 +105,7 @@
                                     </li>
                                 @endforeach
                             </ul>
-                            <small class="b2b-branch-list__note">Изменить адрес или телефон — через вашего B2B-менеджера.</small>
+                            <small class="b2b-branch-list__note"><a href="{{ $sectionUrl('page') }}">Управлять магазинами и филиалами →</a></small>
                         </article>
                     @endif
                     <article class="b2b-commercial-profile">
@@ -385,6 +385,9 @@
                     <form class="b2b-reconciliation-filter" method="GET"><input type="hidden" name="section" value="reconciliation"><label><span>Начало периода</span><input type="date" name="date_from" value="{{ $dateFrom->toDateString() }}"></label><label><span>Конец периода</span><input type="date" name="date_to" value="{{ $dateTo->toDateString() }}"></label><button type="submit">Сформировать</button><button type="button" onclick="window.print()">Печать / PDF</button></form>
                     <article class="b2b-reconciliation-sheet"><header><img src="{{ asset('img/logo.svg') }}" alt="KOTLOV"><div><strong>Сверка взаиморасчётов</strong><span>за {{ $dateFrom->format('d.m.Y') }} — {{ $dateTo->format('d.m.Y') }}</span></div></header><p>Организация: <strong>{{ $counterparty?->legal_name ?: $client->company_name }}</strong>@if($client->unp), УНП {{ $client->unp }}@endif</p><table><thead><tr><th>Дата</th><th>Документ</th><th>Начислено, BYN</th><th>Оплачено, BYN</th></tr></thead><tbody><tr class="muted"><td colspan="2">Сальдо на начало периода</td><td>{{ $openingBalance > 0 ? number_format($openingBalance, 2, ',', ' ') : '—' }}</td><td>{{ $openingBalance < 0 ? number_format(abs($openingBalance), 2, ',', ' ') : '—' }}</td></tr>@foreach($reconciliationOrders as $order)<tr><td>{{ $order->created_at?->format('d.m.Y') }}</td><td>{{ $order->number }} · {{ $statusLabels[$order->status] ?? $order->status }}</td><td>{{ $order->status !== 'cancelled' ? number_format((float)$order->total, 2, ',', ' ') : '—' }}</td><td>{{ $order->payment_status === 'paid' ? number_format((float)$order->total, 2, ',', ' ') : '—' }}</td></tr>@endforeach</tbody><tfoot><tr><th colspan="2">Обороты за период</th><th>{{ number_format($periodCharges, 2, ',', ' ') }}</th><th>{{ number_format($periodPayments, 2, ',', ' ') }}</th></tr><tr><th colspan="2">Сальдо на конец периода</th><th colspan="2">{{ number_format($closingBalance, 2, ',', ' ') }} BYN</th></tr></tfoot></table><small>Сверка сформирована по заказам сайта. Для официального акта с данными бухгалтерского учёта обратитесь к менеджеру.</small></article>
                 @elseif ($section === 'page')
+                    @if($client->partner_type !== 'installer')
+                        @include('partials.b2b.branch-management')
+                    @else
                     <div class="b2b-cabinet-heading"><div><span>Публичная страница</span><h2>{{ $client->partner_type === 'installer' ? 'Моя страница монтажника' : 'Моя страница на KOTLOV' }}</h2></div><p>Контакты, описание и работы, которые видят клиенты в каталоге</p></div>
                     @if($installerPage)
                         @php($profile = $installerPage)
@@ -402,6 +405,7 @@
                         <div class="b2b-cabinet-zero"><i class="icon icon-User"></i><h3>Страницы пока нет</h3><p>Создайте страницу монтажника — клиенты найдут вас в каталоге и смогут оставить заявку. Данные возьмём из карточки компании.</p>
                             <form method="POST" action="{{ route('b2b.cabinet.page.create') }}">@csrf<button type="submit" class="b2b-cabinet-primary">Создать страницу монтажника</button></form>
                         </div>
+                    @endif
                     @endif
                 @elseif ($section === 'leads')
                     <div class="b2b-cabinet-heading"><div><span>Децентрализация</span><h2>Заказы клиентов</h2></div><p>Заказы с kotlov.by, которые KOTLOV передал вашим точкам продаж</p></div>

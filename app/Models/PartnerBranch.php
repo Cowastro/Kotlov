@@ -18,6 +18,8 @@ class PartnerBranch extends Model
     ];
 
     protected $casts = [
+        'pending_changes' => 'array',
+        'changes_submitted_at' => 'datetime',
         'phones' => 'array',
         'gallery' => 'array',
         'is_active' => 'boolean',

@@ -25,6 +25,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Notifications\Notification;
+use App\Services\PartnerBranchModeration;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -47,6 +49,12 @@ class PartnerBranchResource extends Resource
     public static function getNavigationGroup(): ?string
     {
         return 'B2B';
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = PartnerBranch::whereNotNull('changes_submitted_at')->count();
+        return $count ? (string) $count : null;
     }
 
     public static function canViewAny(): bool
@@ -108,6 +116,7 @@ class PartnerBranchResource extends Resource
                 TextColumn::make('name')->label('Точка продаж')->searchable()->weight('bold')
                     ->description(fn (PartnerBranch $record): string => (string) $record->address),
                 TextColumn::make('city.name')->label('Город')->sortable(),
+                static::moderationColumn(),
                 TextColumn::make('city.storefront_enabled')->label('Сайт города')->badge()
                     ->formatStateUsing(fn ($state): string => $state ? 'Опубликован' : 'Не опубликован'),
                 TextColumn::make('client.company_name')->label('Партнёр')->placeholder('Не привязан — скрыта')
@@ -121,7 +130,36 @@ class PartnerBranchResource extends Resource
                 SelectFilter::make('city_id')->label('Город')->relationship('city', 'name')->searchable()->preload(),
             ])
             ->defaultSort('sort_order')
-            ->recordActions([EditAction::make(), static::citySiteAction()]);
+            ->recordActions([EditAction::make(), ...static::reviewActions(), static::citySiteAction()]);
+    }
+
+    public static function moderationColumn(): TextColumn
+    {
+        return TextColumn::make('moderation_status')->label('Изменения партнёра')->badge()
+            ->state(fn (PartnerBranch $record): string => $record->changes_submitted_at ? 'На проверке' : ($record->changes_rejection_reason ? 'На доработке' : 'Нет заявки'))
+            ->color(fn (PartnerBranch $record): string => $record->changes_submitted_at ? 'warning' : 'gray');
+    }
+
+    public static function reviewActions(): array
+    {
+        return [
+            Action::make('previewStore')->label('Предпросмотр магазина')->icon('heroicon-o-eye')
+                ->url(fn (PartnerBranch $record): string => route('b2b.branches.preview', $record))->openUrlInNewTab(),
+            Action::make('approveChanges')->label('Одобрить магазин')->color('success')->icon('heroicon-o-check-circle')
+                ->visible(fn (PartnerBranch $record): bool => (bool) $record->changes_submitted_at)
+                ->requiresConfirmation()->modalDescription('Сначала откройте предпросмотр. Данные из заявки заменят опубликованную версию магазина. Городской сайт включается отдельно.')
+                ->action(function (PartnerBranch $record): void {
+                    app(PartnerBranchModeration::class)->approve($record, auth()->user());
+                    Notification::make()->success()->title('Данные магазина опубликованы')->send();
+                }),
+            Action::make('returnChanges')->label('Вернуть на доработку')->color('warning')
+                ->visible(fn (PartnerBranch $record): bool => (bool) $record->changes_submitted_at)
+                ->schema([Textarea::make('reason')->label('Что нужно уточнить')->required()->maxLength(1000)])
+                ->action(function (PartnerBranch $record, array $data): void {
+                    $record->forceFill(['changes_submitted_at' => null, 'changes_rejection_reason' => $data['reason']])->save();
+                    Notification::make()->success()->title('Замечание сохранено в кабинете партнёра')->send();
+                }),
+        ];
     }
 
     public static function citySiteAction(): Action

@@ -12,6 +12,6 @@ class EditPartnerBranch extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [PartnerBranchResource::citySiteAction(), DeleteAction::make()];
+        return [...PartnerBranchResource::reviewActions(), PartnerBranchResource::citySiteAction(), DeleteAction::make()];
     }
 }
