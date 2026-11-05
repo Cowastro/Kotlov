@@ -46,6 +46,21 @@ class RegionalNewsTest extends TestCase
             ->assertDontSee('Материал general-article');
     }
 
+    public function test_direct_store_contact_pilot_is_lida_only_and_requires_a_public_store(): void
+    {
+        $branch = PartnerBranch::where('city_id', $this->lida->id)->firstOrFail();
+        $branch->update(['telegram_username' => 'kotlovlida', 'viber_phone' => '+375299283766', 'instagram_username' => 'kotlovlida.by']);
+        $this->get('https://lida.kotlov.by/')->assertOk()
+            ->assertSee('aria-label="Быстрая связь с магазином в Лиде"', false)
+            ->assertSee('https://t.me/kotlovlida', false)
+            ->assertSee('viber://chat?number=%2B375299283766', false)
+            ->assertSee('https://www.instagram.com/kotlovlida.by/', false);
+        $this->get('https://borisov.kotlov.by/')->assertOk()
+            ->assertDontSee('aria-label="Быстрая связь с магазином в Лиде"', false);
+        $branch->update(['is_active' => false]);
+        $this->assertStringNotContainsString('regional-quick-contact', view('partials.regional-quick-contact', ['currentCity' => $this->lida])->render());
+    }
+
     public function test_article_has_one_city_canonical_and_cannot_be_read_under_another_city(): void
     {
         $post = $this->article('local-story', $this->lida, ['updated_at' => now()->subDays(2)]);
