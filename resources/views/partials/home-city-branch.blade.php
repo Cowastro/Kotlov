@@ -29,6 +29,7 @@
                         @if($primaryBranch->email)<dt>E-mail</dt><dd><a href="mailto:{{ $primaryBranch->email }}">{{ $primaryBranch->email }}</a></dd>@endif
                         @if($primaryBranch->phones)<dt>Телефон</dt><dd>@foreach($primaryBranch->phoneLinks() as $phone)<a href="tel:{{ $phone['href'] }}">{{ $phone['display'] }}</a>@if(!$loop->last)<br>@endif @endforeach</dd>@endif
                     </dl>
+                    @include('partials.branch-social-contacts', ['contactBranch' => $primaryBranch])
                     @if($primaryBranch->storefront_promo)<div class="city-store__promo">{{ $primaryBranch->storefront_promo }}</div>@endif
                 </article>
                 <div class="city-store__map">

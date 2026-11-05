@@ -12,7 +12,7 @@ class PartnerBranch extends Model
 {
     protected $fillable = [
         'city_id', 'b2b_client_id', 'name', 'address', 'phones', 'email',
-        'working_hours', 'map_url', 'storefront_title', 'storefront_intro',
+        'working_hours', 'telegram_username', 'viber_phone', 'instagram_username', 'map_url', 'storefront_title', 'storefront_intro',
         'storefront_promo', 'hero_image', 'gallery', 'map_embed_url',
         'seo_title', 'seo_description', 'is_active', 'sort_order',
     ];

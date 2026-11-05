@@ -88,6 +88,9 @@ class PartnerBranchResource extends Resource
                 ->helperText('Каждый номер — отдельно, Enter после ввода.'),
             TextInput::make('working_hours')->label('Режим работы')->placeholder('Пн–Пт 9:00–18:00, Сб–Вс — выходной')->required()->maxLength(255),
             TextInput::make('email')->label('E-mail')->email()->maxLength(255),
+            TextInput::make('telegram_username')->label('Telegram магазина')->prefix('@')->maxLength(32)->regex('/^[a-zA-Z0-9_]{5,32}$/')->placeholder('kotlovlida'),
+            TextInput::make('viber_phone')->label('Viber магазина')->tel()->maxLength(50)->regex('/^\+?[\d\s()\-]{7,50}$/'),
+            TextInput::make('instagram_username')->label('Instagram магазина')->prefix('@')->maxLength(30)->regex('/^[a-zA-Z0-9_.]{1,30}$/')->placeholder('kotlovlida.by'),
             TextInput::make('map_url')->label('Ссылка на карту')->url()->maxLength(1000),
             TextInput::make('map_embed_url')->label('Ссылка для встраивания карты')->url()->maxLength(1000)
                 ->helperText('Необязательно: карта появится автоматически по адресу магазина. Заполните для собственной карты с точной меткой.'),
