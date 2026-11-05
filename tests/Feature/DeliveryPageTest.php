@@ -62,14 +62,15 @@ class DeliveryPageTest extends TestCase
             ->assertDontSeeText('Пн–Пт: 9:00–18:00');
     }
 
-    public function test_homepage_shows_only_cash_installment_working_hours_and_compliance_link(): void
+    public function test_homepage_explains_marketplace_orders_without_universal_payment_promises(): void
     {
         $this->get('/')
             ->assertOk()
-            ->assertSeeText('Оплата и режим работы')
-            ->assertSeeText('наличными при получении или рассрочка до 6 месяцев')
+            ->assertSeeText('Как заказать на KOTLOV')
+            ->assertSeeText('согласуйте с выбранным магазином до оплаты заказа')
             ->assertSeeText('Онлайн-заказы — круглосуточно, 24/7')
-            ->assertSeeText('Консультации — ежедневно до 20:00')
+            ->assertSeeText('Поддержка KOTLOV')
+            ->assertDontSeeText('Временно доступны два способа оплаты')
             ->assertDontSee('assets/images/payment/webpay-payment-systems.png', false)
             ->assertDontSee('assets/images/payment/erip-logo-color.svg', false)
             ->assertDontSee('https://www.webpay.by/', false)
