@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Actions\AssignOrderManagerAction;
 use App\Filament\Resources\Orders\Actions\AssignOrderToPartnerAction;
 use App\Filament\Resources\Orders\Actions\CreateCommercialDocumentFromOrderAction;
 use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
@@ -871,6 +872,7 @@ class ViewOrder extends ViewRecord
                         ->body('Заказ отменён и перемещён в архив.')
                         ->send();
                 }),
+            AssignOrderManagerAction::make(),
             EditAction::make('correctOrder')
                 ->label('Корректировать заказ')
                 ->icon('heroicon-o-pencil-square')

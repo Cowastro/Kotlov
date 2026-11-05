@@ -147,10 +147,17 @@ class Order extends Model
     {
         static::updating(function (Order $order) {
             $userId = Auth::id();
+            $claimedBy = trim((string) $order->getOriginal('assigned_to'));
 
-            // Автоназначение ответственного при изменении статуса из CRM
-            // Не перезаписываем если уже назначен
-            if ($order->isDirty('status') && $userId && ! $order->manager_id) {
+            // An order taken in Telegram by a manager whose CRM profile lacks the Telegram name keeps only
+            // assigned_to: it is still theirs, another manager's action (a correction, a stage) must not
+            // claim it. Only an explicit reassignment changes assigned_to.
+            if (! $order->getOriginal('manager_id') && $claimedBy !== '' && ! $order->isDirty('assigned_to')) {
+                if ($order->isDirty('manager_id')) {
+                    $order->manager_id = self::managerIdFor($claimedBy);
+                }
+            } elseif ($order->isDirty('status') && $userId && ! $order->manager_id) {
+                // Автоназначение ответственного при изменении статуса из CRM
                 $order->manager_id = $userId;
                 $order->assigned_to = '@'.(Auth::user()->telegram_username ?? Auth::user()->name);
             }
@@ -166,6 +173,19 @@ class Order extends Model
                 ]);
             }
         });
+    }
+
+    /** The CRM user behind an assigned_to of «@telegram_name» or a name, or null. */
+    public static function managerIdFor(?string $assignedTo): ?int
+    {
+        $name = mb_strtolower(ltrim(trim((string) $assignedTo), '@'));
+        if ($name === '') {
+            return null;
+        }
+
+        return User::query()->get(['id', 'name', 'telegram_username'])
+            ->first(fn (User $user): bool => mb_strtolower(ltrim((string) $user->telegram_username, '@')) === $name
+                || mb_strtolower(trim((string) $user->name)) === $name)?->id;
     }
 
     public function scopeOperationallyActive(Builder $query): Builder

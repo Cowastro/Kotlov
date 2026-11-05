@@ -770,6 +770,7 @@ class OrdersTable
                             ? app(OrderPortal::class)->url($link)
                             : null)
                         ->openUrlInNewTab(),
+                    \App\Filament\Resources\Orders\Actions\AssignOrderManagerAction::make(),
                     EditAction::make('correctOrder')
                         ->label('Корректировать заказ')
                         ->icon('heroicon-o-pencil-square')

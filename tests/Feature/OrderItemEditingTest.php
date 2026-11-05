@@ -329,6 +329,39 @@ class OrderItemEditingTest extends TestCase
         $this->assertStringContainsString('другая категория: Мембранные баки', $fallbackOptions[$tank->id]);
     }
 
+    public function test_correcting_an_order_keeps_the_confirmed_executor_of_unchanged_lines(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $category = Category::query()->create(['name' => 'Котлы', 'slug' => 'order-keep-boilers', 'parent_id' => 0, 'is_active' => true]);
+        $product = $this->product($category, 'Котел Куппер ОК 9', 'KEEP-1', 2826);
+        $supplier = Supplier::query()->firstOrCreate(['code' => 'bania'], ['name' => 'BANIA.by', 'is_active' => true]);
+        $order = Order::query()->create([
+            'number' => 'ORD-KEEP-EXEC', 'status' => 'checking', 'customer_name' => 'Клиент', 'customer_phone' => '+375291111113',
+            'delivery_type' => 'pickup', 'payment_type' => 'cash', 'payment_status' => 'pending', 'subtotal' => 2826, 'total' => 2826,
+        ]);
+        $item = $order->items()->create(['product_id' => $product->id, 'product_name' => $product->name, 'product_sku' => $product->sku, 'price' => 2826, 'quantity' => 1, 'total' => 2826]);
+        $confirmedAt = now()->subHour()->startOfSecond();
+        $item->forceFill([
+            'fulfillment_route' => 'supplier_purchase', 'fulfillment_supplier_id' => $supplier->id, 'fulfillment_supplier_name' => $supplier->name,
+            'fulfillment_purchase_price' => 1368.79, 'fulfillment_availability_status' => 'available',
+            'fulfillment_confirmed_by' => $manager->id, 'fulfillment_confirmed_at' => $confirmedAt,
+        ])->save();
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(EditOrder::class, ['record' => $order->getRouteKey()])
+            ->fillForm(['customer_name' => 'Светлана', 'discount' => 26])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $item->refresh();
+        $this->assertSame($supplier->id, $item->fulfillment_supplier_id);
+        $this->assertSame('supplier_purchase', $item->fulfillment_route);
+        $this->assertSame($manager->id, $item->fulfillment_confirmed_by);
+        $this->assertNotNull($item->fulfillment_confirmed_at);
+        $this->assertSame('1368.79', (string) $item->fulfillment_purchase_price);
+    }
+
     private function product(Category $category, string $name, string $sku, float $price): Product
     {
         return Product::query()->create([
