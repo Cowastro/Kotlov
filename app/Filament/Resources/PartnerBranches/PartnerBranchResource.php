@@ -6,8 +6,13 @@ use App\Filament\Resources\PartnerBranches\Pages\CreatePartnerBranch;
 use App\Filament\Resources\PartnerBranches\Pages\EditPartnerBranch;
 use App\Filament\Resources\PartnerBranches\Pages\ListPartnerBranches;
 use App\Models\PartnerBranch;
+use App\Models\City;
+use App\Filament\Resources\CityStorefronts\CityStorefrontResource;
 use BackedEnum;
 use Filament\Actions\EditAction;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Placeholder;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
@@ -64,7 +69,11 @@ class PartnerBranchResource extends Resource
     public static function branchFields(): array
     {
         return [
-            Select::make('city_id')->label('Город')->relationship('city', 'name')->searchable()->preload()->required(),
+            Select::make('city_id')->label('Город')->relationship('city', 'name')->searchable()->preload()->required()->live(),
+            Placeholder::make('city_site')->label('Городской сайт')
+                ->content(fn (Get $get): string => ($city = City::find($get('city_id')))
+                    ? $city->storefrontUrl().' — '.($city->storefront_enabled ? 'публикация включена' : 'не опубликован')
+                    : 'Выберите город. После сохранения откройте «Управлять сайтом города».'),
             TextInput::make('name')->label('Название филиала на сайте')->placeholder('Магазин «Печкiн» (ООО «СБГ бай»)')->required()->maxLength(255),
             TextInput::make('address')->label('Адрес')->placeholder('г. Минск, ул. Селицкого, 39Б')->maxLength(255),
             TagsInput::make('phones')->label('Телефоны')->placeholder('+375 (29) 000-00-00')->required()
@@ -99,6 +108,8 @@ class PartnerBranchResource extends Resource
                 TextColumn::make('name')->label('Точка продаж')->searchable()->weight('bold')
                     ->description(fn (PartnerBranch $record): string => (string) $record->address),
                 TextColumn::make('city.name')->label('Город')->sortable(),
+                TextColumn::make('city.storefront_enabled')->label('Сайт города')->badge()
+                    ->formatStateUsing(fn ($state): string => $state ? 'Опубликован' : 'Не опубликован'),
                 TextColumn::make('client.company_name')->label('Партнёр')->placeholder('Не привязан — скрыта')
                     ->description(fn (PartnerBranch $record): ?string => $record->client && $record->client->status !== 'approved' ? 'B2B-доступ не активен — точка скрыта' : null),
                 TextColumn::make('phones')->label('Телефоны')->formatStateUsing(fn ($state): string => implode(', ', (array) $state)),
@@ -110,7 +121,14 @@ class PartnerBranchResource extends Resource
                 SelectFilter::make('city_id')->label('Город')->relationship('city', 'name')->searchable()->preload(),
             ])
             ->defaultSort('sort_order')
-            ->recordActions([EditAction::make()]);
+            ->recordActions([EditAction::make(), static::citySiteAction()]);
+    }
+
+    public static function citySiteAction(): Action
+    {
+        return Action::make('citySite')->label('Управлять сайтом города')->icon('heroicon-o-globe-alt')
+            ->visible(fn (PartnerBranch $record): bool => $record->city_id && $record->city?->slug !== 'minsk')
+            ->url(fn (PartnerBranch $record): string => CityStorefrontResource::getUrl('edit', ['record' => $record->city_id]));
     }
 
     public static function getPages(): array

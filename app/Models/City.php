@@ -17,6 +17,7 @@ class City extends Model
         'region',
         'is_active',
         'storefront_enabled',
+        'primary_partner_branch_id',
     ];
 
     protected $casts = [
@@ -27,6 +28,13 @@ class City extends Model
     public function partnerBranches(): HasMany
     {
         return $this->hasMany(PartnerBranch::class);
+    }
+
+    public function storefrontUrl(): string
+    {
+        $domain = config('app.base_domain', 'kotlov.by');
+
+        return 'https://'.($this->slug === 'minsk' ? '' : $this->slug.'.').$domain;
     }
 
     public function contactProfile(): HasOne
