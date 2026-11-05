@@ -10,6 +10,15 @@
     .city-home-slide__copy h1 { color: inherit; font-size: clamp(30px, 5vw, 64px); line-height: 1.05; margin-block: 8px 14px; }
     .city-home-slide__copy p { margin-bottom: 18px; }
     .city-home-slide__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .city-home-slide--photo { display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; background: #f5f2ee; color: #111; }
+    .city-home-slide--photo::before { display: none; }
+    .city-home-slide--photo > img { position: relative; inset: auto; grid-column: 2; grid-row: 1; z-index: auto; max-height: 580px; object-fit: contain; background: #e6e2dc; }
+    .city-home-slide--photo .city-home-slide__copy { grid-column: 1; grid-row: 1; }
+    @media (max-width: 767px) {
+        .city-home-slide--photo { grid-template-columns: 1fr; }
+        .city-home-slide--photo > img { grid-column: 1; height: 290px; object-fit: cover; object-position: center 55%; }
+        .city-home-slide--photo .city-home-slide__copy { grid-row: 2; padding: 24px 22px 36px; }
+    }
     .city-home-categories { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px; }
     @media (max-width: 991px) { .city-home-categories { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; } }
     @media (max-width: 575px) { .city-home-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
@@ -99,8 +108,8 @@
                         <div class="swiper-wrapper">
                             @isset($primaryBranch)
                                 <div class="swiper-slide">
-                                    <div class="city-home-slide rounded-20 overflow-hidden">
-                                        <img src="{{ $primaryBranch->hero_image ? \Illuminate\Support\Facades\Storage::url($primaryBranch->hero_image) : asset('img/blog/works/heat-pumps-arrival-warehouse-cover.webp') }}" alt="" fetchpriority="high">
+                                    <div @class(['city-home-slide rounded-20 overflow-hidden', 'city-home-slide--photo' => (bool) $primaryBranch->hero_image])>
+                                        <img src="{{ $primaryBranch->hero_image ? \Illuminate\Support\Facades\Storage::url($primaryBranch->hero_image) : asset('img/blog/works/heat-pumps-arrival-warehouse-cover.webp') }}" alt="{{ $primaryBranch->hero_image ? 'Вход в магазин KOTLOV в '.$city->name_title : '' }}" fetchpriority="high">
                                         <div class="city-home-slide__copy">
                                             <span>Филиал KOTLOV · {{ $city->name }}</span>
                                             <h1>{{ $primaryBranch->storefront_title ?: 'KOTLOV в '.$city->name_title }}</h1>
