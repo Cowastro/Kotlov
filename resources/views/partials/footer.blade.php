@@ -123,6 +123,7 @@
                                     <li><a href="/about" class="cl-text-3 link">О нас</a></li>
                                     <li><a href="/brands" class="cl-text-3 link">Бренды</a></li>
                                     <li><a href="/contacts" class="cl-text-3 link">Контакты</a></li>
+                                    <li><a href="/regions" class="cl-text-3 link">Магазины в городах</a></li>
                                     <li><a href="/blog" class="cl-text-3 link">Статьи</a></li>
                                     <li><a href="/baza-znaniy" class="cl-text-3 link">База знаний</a></li>
                                     <li><a href="/reviews" class="cl-text-3 link">Отзывы</a></li>

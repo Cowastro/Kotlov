@@ -322,6 +322,10 @@
             </section>
             <!-- /Categories -->
 
+            @unless(isset($primaryBranch))
+                @include('partials.regional-stores')
+            @endunless
+
             @isset($primaryBranch)
                 @include('partials.home-city-branch')
             @endisset

@@ -108,7 +108,7 @@ Route::get('/sitemap.xml', function (Request $request) {
         };
 
         foreach ([
-            '/', '/about', '/dostavka', '/reviews', '/catalog',
+            '/', '/about', '/dostavka', '/reviews', '/catalog', '/regions',
             '/brands', '/akcii', '/akcii/kotlov-xo-ceramic-pro', '/akcii/kotlov-xo-evo-26', '/akcii/hotta-ceramik-20-30', '/contacts', '/installers', '/become-installer',
             '/montazh-teplovyh-nasosov', '/montazh-kaminov', '/partners', '/suppliers', '/baza-znaniy', '/baza-znaniy/belomo-kata-skat-oboznacheniya', '/faq', '/privacy', '/blog',
             '/teplovye-nasosy-r290', '/teplovye-nasosy-dlya-radiatorov',
