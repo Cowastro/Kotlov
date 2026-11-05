@@ -124,7 +124,7 @@
                             @isset($primaryBranch)
                                 <div class="swiper-slide">
                                     <div @class(['city-home-slide rounded-20 overflow-hidden', 'city-home-slide--photo' => (bool) $primaryBranch->hero_image])>
-                                        <img src="{{ $primaryBranch->hero_image ? \Illuminate\Support\Facades\Storage::url($primaryBranch->hero_image) : asset('img/blog/works/heat-pumps-arrival-warehouse-cover.webp') }}" alt="{{ $primaryBranch->hero_image ? 'Вход в магазин KOTLOV в '.$city->name_title : '' }}" fetchpriority="high">
+                                        <img src="{{ $primaryBranch->hero_image ? \Illuminate\Support\Facades\Storage::url($primaryBranch->hero_image) : asset('img/blog/works/heat-pumps-arrival-warehouse-cover.webp') }}" alt="{{ $primaryBranch->hero_image ? 'Магазин KOTLOV в '.$city->name_title : '' }}" fetchpriority="high">
                                         <div class="city-home-slide__copy">
                                             <span>Филиал KOTLOV · {{ $city->name }}</span>
                                             <h1>{{ $primaryBranch->storefront_title ?: 'KOTLOV в '.$city->name_title }}</h1>
