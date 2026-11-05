@@ -42,7 +42,7 @@ class BlogPostForm
 
                         TextInput::make('slug')
                             ->label('URL (slug)')
-                            ->helperText('Адрес статьи после /blog/. Например: teplovye-nasosy-ge-r290-vysokotemperaturnye')
+                            ->helperText('Общая статья: kotlov.by/blog/адрес. При выборе города: город.kotlov.by/news/адрес.')
                             ->required()
                             ->unique(ignoreRecord: true),
 
@@ -57,6 +57,16 @@ class BlogPostForm
                             ->relationship('author', 'name')
                             ->searchable()
                             ->preload(),
+
+                        Select::make('city_id')
+                            ->label('Город региональной новости')
+                            ->relationship('city', 'name', modifyQueryUsing: fn ($query) => $query
+                                ->where('is_active', true)->where('storefront_enabled', true)->where('slug', '!=', 'minsk')
+                                ->whereHas('partnerBranches', fn ($branch) => $branch->where('is_active', true)
+                                    ->whereHas('client', fn ($client) => $client->where('status', 'approved'))))
+                            ->searchable()->preload()
+                            ->helperText('Пусто — общая статья KOTLOV. Выбран город — оригинал публикуется на его сайте в /news/, в местной ленте и sitemap. Пишите о реальных событиях, ассортименте и объектах этого города.')
+                            ->columnSpanFull(),
 
                         RichEditor::make('excerpt')
                             ->label('Анонс')

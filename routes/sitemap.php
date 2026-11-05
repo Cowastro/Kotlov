@@ -23,7 +23,7 @@ Route::get('/sitemap.xml', function (Request $request) {
             return redirect()->away('https://'.$baseDomain.'/sitemap.xml', 301);
         }
 
-        $xml = Cache::remember('sitemap.city.'.$city->slug.'.v2', 3600, function () use ($host) {
+        $xml = Cache::remember('sitemap.city.'.$city->slug.'.v3', 3600, function () use ($host, $city) {
             $categories = Category::active()
                 ->whereNotNull('slug')
                 ->where('slug', '!=', 'aktsiiiskidki')
@@ -39,16 +39,21 @@ Route::get('/sitemap.xml', function (Request $request) {
                 }
             }
 
+            $cityNews = BlogPost::published()->regional()->where('city_id', $city->id)->get();
             $urls = collect([
                 ['location' => 'https://'.$host.'/', 'last_modified' => null],
                 ['location' => 'https://'.$host.'/catalog', 'last_modified' => null],
             ])
+                ->when($cityNews->isNotEmpty(), fn ($urls) => $urls->push(['location' => 'https://'.$host.'/news', 'last_modified' => null]))
                 ->concat($categories
                     ->filter(fn (Category $category): bool => isset($publishedCategoryIds[(int) $category->id]))
                     ->sortBy(fn (Category $category): string => str_pad((string) $category->sort_order, 10, '0', STR_PAD_LEFT).'-'.str_pad((string) $category->id, 10, '0', STR_PAD_LEFT))
                     ->map(fn (Category $category): array => [
                         'location' => 'https://'.$host.'/'.$category->slug,
                         'last_modified' => $category->updated_at?->toAtomString(),
+                    ]))
+                ->concat($cityNews->map(fn (BlogPost $post): array => [
+                        'location' => $post->publicUrl(), 'last_modified' => $post->updated_at?->toAtomString(),
                     ]));
 
             $doc = new DOMDocument('1.0', 'UTF-8');
@@ -108,7 +113,7 @@ Route::get('/sitemap.xml', function (Request $request) {
         };
 
         foreach ([
-            '/', '/about', '/dostavka', '/reviews', '/catalog', '/regions',
+            '/', '/about', '/dostavka', '/reviews', '/catalog', '/regions', '/regions/news',
             '/brands', '/akcii', '/akcii/kotlov-xo-ceramic-pro', '/akcii/kotlov-xo-evo-26', '/akcii/hotta-ceramik-20-30', '/contacts', '/installers', '/become-installer',
             '/montazh-teplovyh-nasosov', '/montazh-kaminov', '/partners', '/suppliers', '/baza-znaniy', '/baza-znaniy/belomo-kata-skat-oboznacheniya', '/faq', '/privacy', '/blog',
             '/teplovye-nasosy-r290', '/teplovye-nasosy-dlya-radiatorov',
@@ -147,7 +152,7 @@ Route::get('/sitemap.xml', function (Request $request) {
             ->orderBy('name')
             ->get(['slug', 'updated_at'])->each(fn ($b) => $addUrl('brands/'.strtolower($b->slug), $b->updated_at));
 
-        BlogPost::published()->whereNotNull('slug')->orderByDesc('published_at')
+        BlogPost::published()->general()->whereNotNull('slug')->orderByDesc('published_at')
             ->get(['slug', 'updated_at'])->each(fn ($p) => $addUrl('blog/'.$p->slug, $p->updated_at));
 
         InstallerProfile::query()->where('is_published', true)->whereNotNull('slug')

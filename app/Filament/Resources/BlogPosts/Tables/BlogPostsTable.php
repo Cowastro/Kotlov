@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Actions\Action;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -38,6 +39,8 @@ class BlogPostsTable
                     ->label('Автор')
                     ->sortable(),
 
+                TextColumn::make('city.name')->label('Регион')->badge()->placeholder('Общая статья')->sortable(),
+
                 IconColumn::make('is_published')
                     ->label('Опубликовано')
                     ->boolean(),
@@ -59,8 +62,12 @@ class BlogPostsTable
                 SelectFilter::make('category_id')
                     ->label('Категория')
                     ->relationship('category', 'name'),
+                SelectFilter::make('city_id')->label('Регион')->relationship('city', 'name'),
             ])
             ->recordActions([
+                Action::make('public_page')->label('На сайте')->icon('heroicon-o-arrow-top-right-on-square')
+                    ->url(fn (\App\Models\BlogPost $record) => $record->publicUrl())->openUrlInNewTab()
+                    ->visible(fn (\App\Models\BlogPost $record) => $record->is_published && $record->published_at?->isPast()),
                 ViewAction::make(),
                 EditAction::make(),
             ])

@@ -217,6 +217,9 @@ class HandleRedirects
 
     private function shouldSkip(string $path): bool
     {
+        if ($path === '/news' || str_starts_with($path, '/news/') || $path === '/regions/news') {
+            return true;
+        }
         // These are current storefront tools nested below the chimney category,
         // not legacy category/product paths. Let their explicit routes handle
         // them instead of collapsing them back to /dymohody.
@@ -507,6 +510,9 @@ class HandleRedirects
 
     private function redirectCityOwnedPageToBaseDomain(Request $request, string $path): ?Response
     {
+        if ($path === '/news' || str_starts_with($path, '/news/') || $path === '/regions/news') {
+            return null;
+        }
         $host = $request->getHost();
         $baseDomain = config('app.base_domain', 'kotlov.by');
 

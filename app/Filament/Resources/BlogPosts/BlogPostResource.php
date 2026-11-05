@@ -20,7 +20,7 @@ class BlogPostResource extends Resource
 {
     protected static ?string $model = BlogPost::class;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
-    protected static ?string $navigationLabel = 'Статьи';
+    protected static ?string $navigationLabel = 'Новости и статьи';
     protected static ?string $modelLabel = 'Статья';
     protected static ?string $pluralModelLabel = 'Статьи';
     protected static ?string $recordTitleAttribute = 'title';
