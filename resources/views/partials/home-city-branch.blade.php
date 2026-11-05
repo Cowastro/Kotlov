@@ -25,7 +25,7 @@
                     <h2>{{ $primaryBranch->name }}</h2>
                     <dl>
                         @if($primaryBranch->address)<dt>Адрес</dt><dd>{{ $primaryBranch->address }}</dd>@endif
-                        @if($primaryBranch->working_hours)<dt>Режим работы</dt><dd>{{ $primaryBranch->working_hours }}</dd>@endif
+                        <dt>Режим работы</dt><dd>{{ $primaryBranch->working_hours ?: 'Уточните график по телефону магазина' }}</dd>
                         @if($primaryBranch->email)<dt>E-mail</dt><dd><a href="mailto:{{ $primaryBranch->email }}">{{ $primaryBranch->email }}</a></dd>@endif
                         @if($primaryBranch->phones)<dt>Телефон</dt><dd>@foreach($primaryBranch->phoneLinks() as $phone)<a href="tel:{{ $phone['href'] }}">{{ $phone['display'] }}</a>@if(!$loop->last)<br>@endif @endforeach</dd>@endif
                     </dl>
