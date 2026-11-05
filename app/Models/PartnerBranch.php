@@ -47,7 +47,8 @@ class PartnerBranch extends Model
     public function scopeVisibleIn(Builder $query, ?City $city): Builder
     {
         // Only points of an approved B2B partner are public: pausing the partner hides its points.
-        return $query->where('is_active', true)
+        return $query->when($city?->primary_partner_branch_id, fn (Builder $query, $id) => $query->orderByRaw('CASE WHEN partner_branches.id = ? THEN 0 ELSE 1 END', [$id]))
+            ->where('is_active', true)
             ->where('city_id', $city?->id ?? 0)
             ->whereHas('client', fn (Builder $client) => $client->where('status', 'approved'))
             ->orderBy('sort_order')->orderBy('name');
