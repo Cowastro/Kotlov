@@ -75,7 +75,8 @@ class ChistyBeregPhotosCommand extends Command
             return self::FAILURE;
         }
 
-        foreach ($offers->take(max(1, (int) $this->option('limit'))) as $offer) {
+        // --limit=0 only counts the queue and today's AI searches: no search is made.
+        foreach ($offers->take(max(0, (int) $this->option('limit'))) as $offer) {
             $product = $offer->product;
             $raw = (array) $offer->raw;
             $brand = in_array(mb_strtolower(trim((string) ($raw['brand'] ?? ''))), ['', 'без бренда'], true) ? '' : trim((string) $raw['brand']);
