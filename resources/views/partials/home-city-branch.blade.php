@@ -5,7 +5,7 @@
     .city-store__branch dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; margin: 16px 0; }
     .city-store__branch dd { margin: 0; overflow-wrap: anywhere; }
     .city-store__promo { margin-top: 16px; }
-    .city-store__map iframe { width: 100%; min-height: 280px; border: 0; border-radius: 12px; }
+    .city-store__map iframe { display: block; width: 100%; height: 340px; margin-top: 16px; border: 0; border-radius: 12px; }
     .city-store__gallery-grid img { width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; object-fit: cover; background: #f5f2ee; }
     @media (max-width: 767px) { .city-store__location-grid { grid-template-columns: 1fr; } }
 </style>
@@ -31,10 +31,9 @@
                     @if($primaryBranch->storefront_promo)<div class="city-store__promo">{{ $primaryBranch->storefront_promo }}</div>@endif
                 </article>
                 <div class="city-store__map">
+                    <h2>Как нас найти</h2><p>{{ $primaryBranch->address }}</p>
                     @if($primaryBranch->map_embed_url)
-                        <iframe src="{{ $primaryBranch->map_embed_url }}" loading="lazy" title="{{ $primaryBranch->name }} на карте"></iframe>
-                    @else
-                        <h2>Как нас найти</h2><p>{{ $primaryBranch->address }}</p>
+                        <iframe src="{{ $primaryBranch->map_embed_url }}" loading="lazy" title="{{ $primaryBranch->name }} на карте" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
                     @endif
                     @if($primaryMapLink)<a class="tf-btn btn-white btn-stroke mt-3" href="{{ $primaryMapLink }}" target="_blank" rel="noopener">Построить маршрут</a>@endif
                 </div>
