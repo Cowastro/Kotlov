@@ -522,7 +522,8 @@ class HandleRedirects
         $city = City::findBySlug($subdomain);
         $hasPublicBranch = $city && PartnerBranch::query()->visibleIn($city)->exists();
 
-        if ($hasPublicBranch && in_array($path, ['/catalog', '/robots.txt', '/sitemap.xml'], true)) {
+        if ($hasPublicBranch && ($path === '/brands' || str_starts_with($path, '/brands/')
+            || in_array($path, ['/catalog', '/robots.txt', '/sitemap.xml'], true))) {
             return null;
         }
 
@@ -563,10 +564,8 @@ class HandleRedirects
     }
 
     /**
-     * Product data is identical on every city subdomain. Redirect canonical
-     * product paths to the primary domain so search engines do not crawl the
-     * whole catalogue once per city. Regional category and landing pages stay
-     * on their city hosts for local search.
+     * Unpublished city hosts keep the legacy redirect. Published partner shops
+     * serve shared cards locally; ProductController retains the main canonical.
      */
     private function redirectCityProductToBaseDomain(Request $request, string $path): ?Response
     {
@@ -579,6 +578,10 @@ class HandleRedirects
 
         $subdomain = str_replace('.'.$baseDomain, '', $host);
         if ($subdomain === '' || in_array($subdomain, ['www', 'new', 'admin'], true)) {
+            return null;
+        }
+
+        if ($this->hasPublishedCityStorefront($request)) {
             return null;
         }
 
@@ -768,7 +771,8 @@ class HandleRedirects
         }
 
         if ($this->isCityHost($request)
-            && ($this->isInactiveCityHost($request) || $this->isPrimaryCatalogTarget($target))) {
+            && ($this->isInactiveCityHost($request)
+                || (! $this->hasPublishedCityStorefront($request) && $this->isPrimaryCatalogTarget($target)))) {
             $baseDomain = config('app.base_domain', 'kotlov.by');
 
             return redirect()->away(
@@ -778,6 +782,19 @@ class HandleRedirects
         }
 
         return redirect($target, $status);
+    }
+
+    private function hasPublishedCityStorefront(Request $request): bool
+    {
+        if (! $this->isCityHost($request)) {
+            return false;
+        }
+
+        $baseDomain = config('app.base_domain', 'kotlov.by');
+        $slug = substr($request->getHost(), 0, -strlen('.'.$baseDomain));
+        $city = City::findBySlug($slug);
+
+        return $city && PartnerBranch::query()->visibleIn($city)->exists();
     }
 
     private function isCityHost(Request $request): bool

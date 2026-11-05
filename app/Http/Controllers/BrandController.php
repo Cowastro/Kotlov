@@ -30,7 +30,9 @@ class BrandController extends Controller
 
         $brands = $query->paginate(24)->withQueryString();
 
-        return view('pages.brands', compact('brands', 'letters', 'totalCount'));
+        $canonical = 'https://'.config('app.base_domain', 'kotlov.by').'/brands';
+
+        return view('pages.brands', compact('brands', 'letters', 'totalCount', 'canonical'));
     }
 
     public function show(string $slug)

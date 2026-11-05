@@ -14,3 +14,4 @@ Allow: /js/general.js
 
 Sitemap: https://kotlov.by/sitemap.xml
 Sitemap: https://borisov.kotlov.by/sitemap.xml
+Sitemap: https://lida.kotlov.by/sitemap.xml
