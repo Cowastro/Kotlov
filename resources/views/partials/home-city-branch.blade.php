@@ -12,6 +12,7 @@
 @endpush
 
 @php($primaryMapLink = $primaryBranch->mapLink())
+@php($primaryMapEmbed = $primaryBranch->mapEmbedLink())
     <section class="flat-spacing pt-0" id="city-branch">
         <div class="container">
             <div class="sect-heading type-2">
@@ -32,8 +33,8 @@
                 </article>
                 <div class="city-store__map">
                     <h2>Как нас найти</h2><p>{{ $primaryBranch->address }}</p>
-                    @if($primaryBranch->map_embed_url)
-                        <iframe src="{{ $primaryBranch->map_embed_url }}" loading="lazy" title="{{ $primaryBranch->name }} на карте" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+                    @if($primaryMapEmbed)
+                        <iframe src="{{ $primaryMapEmbed }}" loading="lazy" title="{{ $primaryBranch->name }} на карте" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
                     @endif
                     @if($primaryMapLink)<a class="tf-btn btn-white btn-stroke mt-3" href="{{ $primaryMapLink }}" target="_blank" rel="noopener">Построить маршрут</a>@endif
                 </div>

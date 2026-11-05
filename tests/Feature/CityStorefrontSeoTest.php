@@ -48,6 +48,7 @@ class CityStorefrontSeoTest extends TestCase
             ->assertSee('home-popular-categories', false)
             ->assertSee('Бесплатная проверка комплектации дымохода.')
             ->assertSee('https://maps.example/borisov')
+            ->assertSee('https://www.google.com/maps?q=', false)
             ->assertSee('/'.$category->slug)
             ->assertSee('"@type":"Store"', false)
             ->assertSee('"addressLocality":"Борисов"', false);
@@ -171,8 +172,12 @@ class CityStorefrontSeoTest extends TestCase
         $this->branch($this->city('borisov', 'Борисов'));
         $lida = $this->city('lida', 'Лида');
         $lida->update(['name_in' => 'в Лиде', 'name_title' => 'Лиде']);
-        $this->branch($lida, ['name' => 'Магазин KOTLOV в Лиде', 'address' => 'г. Лида, ул. Калинина, 57']);
+        $this->branch($lida, ['name' => 'Магазин KOTLOV в Лиде', 'address' => 'г. Лида, ул. Калинина, 57', 'map_embed_url' => 'https://www.google.com/maps?q=53.889934,25.316627&output=embed']);
         $this->categoryWithProduct('pechki', 'Печи');
+
+        $this->get('https://lida.kotlov.by/')
+            ->assertOk()
+            ->assertSee('https://www.google.com/maps?q=53.889934,25.316627&amp;output=embed', false);
 
         foreach (['kotlov.by', 'borisov.kotlov.by', 'lida.kotlov.by'] as $host) {
             $this->get('https://'.$host.'/city/select/lida?return=%2Fcatalog')

@@ -90,7 +90,7 @@ class PartnerBranchResource extends Resource
             TextInput::make('email')->label('E-mail')->email()->maxLength(255),
             TextInput::make('map_url')->label('Ссылка на карту')->url()->maxLength(1000),
             TextInput::make('map_embed_url')->label('Ссылка для встраивания карты')->url()->maxLength(1000)
-                ->helperText('Необязательно. Используется для карты прямо на городской странице.'),
+                ->helperText('Необязательно: карта появится автоматически по адресу магазина. Заполните для собственной карты с точной меткой.'),
             TextInput::make('storefront_title')->label('Заголовок локальной витрины')->maxLength(255)
                 ->placeholder('Магазин отопления KOTLOV в Борисове')->columnSpanFull(),
             Textarea::make('storefront_intro')->label('Краткое описание магазина')->rows(3)->maxLength(1200)->columnSpanFull(),
