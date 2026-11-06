@@ -55,6 +55,14 @@ class CreateStankCardsCommand extends Command
         $linked = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->pluck('supplier_article', 'product_id');
         $existing = [];
         $categoryOf = [];
+        // The photos of our own card of the same series: AT-200 looks like AT-300.
+        $seriesImages = [];
+        foreach (Product::query()->where('brand_id', $brandId)->where('is_archived', false)->get(['id', 'name', 'images']) as $card) {
+            $key = StankPriceList::key((string) $card->name);
+            if ($key !== null && ($paths = $card->imagePaths()) !== []) {
+                $seriesImages[StankPriceList::series($key)] ??= array_slice($paths, 0, 4);
+            }
+        }
         foreach ($cards as $card) {
             $key = isset($linked[$card->id]) && StankPriceList::row((string) $linked[$card->id]) ? (string) $linked[$card->id] : StankPriceList::key((string) $card->name);
             if ($key !== null) {
@@ -94,11 +102,12 @@ class CreateStankCardsCommand extends Command
             $title = self::cardTitle($row);
             $url = $site->find($title);
             $seriesUrl = $url ? null : $site->findSeries($key);
+            $ownImages = $url || $seriesUrl ? [] : ($seriesImages[StankPriceList::series($key)] ?? []);
             $stats['planned']++;
             $stats['on_site'] += (int) ($url !== null);
-            $stats['series_photos'] += (int) ($seriesUrl !== null);
+            $stats['series_photos'] += (int) ($seriesUrl !== null || $ownImages !== []);
             $this->line(sprintf('audit.stank_create.model=%s:%s:%s:%s', $key, DB::table('categories')->where('id', $categoryId)->value('slug') ?: $categoryId,
-                $url ? 'teplodvor' : ($seriesUrl ? 'series' : 'price'), Str::slug($title)));
+                $url ? 'teplodvor' : ($seriesUrl || $ownImages ? 'series' : 'price'), Str::slug($title)));
             if (! $this->option('apply') || ($limit > 0 && $stats['created'] >= $limit)) {
                 continue;
             }
@@ -118,6 +127,9 @@ class CreateStankCardsCommand extends Command
                     'update_content' => true, 'min_specs_for_ai' => 2, 'update_service' => false, 'update_documents' => false, 'update_video' => false,
                 ]);
                 $product->refresh();
+                if ($ownImages !== [] && $product->imagePaths() === []) {
+                    $product->forceFill(['images' => $ownImages])->save();
+                }
                 if ($product->imagePaths() !== []) {
                     $product->forceFill(['is_active' => true, 'created_via' => null])->save();
                     $stats['with_photo']++;
