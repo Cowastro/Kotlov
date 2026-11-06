@@ -168,6 +168,19 @@ class SyncStankCommand extends Command
             })->all()
         );
 
+        // Safe lines for the server log: every card, its key and prices.
+        $this->line('metric.stank.products='.$products->count());
+        $this->line('metric.stank.matched='.count($rows));
+        $this->line('metric.stank.unmatched='.count($unmatched));
+        foreach ($rows as $row) {
+            $this->line(sprintf('audit.stank.card=%d:%s:%s:%.2f:%s', $row['product']->id, $row['article'],
+                $row['price'] === null ? 'request' : number_format($row['price'], 2, '.', ''), (float) $row['product']->current_price,
+                \Illuminate\Support\Str::slug((string) DB::table('products')->where('id', $row['product']->id)->value('slug'))));
+        }
+        foreach ($unmatched as $item) {
+            $this->line(sprintf('audit.stank.unmatched=%d:%s', $item['id'], \Illuminate\Support\Str::slug((string) DB::table('products')->where('id', $item['id'])->value('slug'))));
+        }
+
         if ($unmatched !== []) {
             $this->error('Синхронизация остановлена: есть несопоставленные товары S-TANK.');
             $this->table(
