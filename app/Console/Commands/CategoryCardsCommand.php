@@ -14,12 +14,24 @@ use Illuminate\Support\Str;
  */
 class CategoryCardsCommand extends Command
 {
-    protected $signature = 'catalog:category-cards {categories?* : Category slugs} {--tree : Every category: id, parent, active, cards}';
+    protected $signature = 'catalog:category-cards {categories?* : Category slugs} {--tree : Every category: id, parent, active, cards}
+        {--sku-prefix= : Every card whose SKU starts so (e.g. ATMOS-): its category and slug}';
 
     protected $description = 'List the cards of categories with brand, price and suppliers';
 
     public function handle(): int
     {
+        if (filled($prefix = $this->option('sku-prefix'))) {
+            $cards = DB::table('products as p')->join('categories as c', 'c.id', '=', 'p.category_id')
+                ->where('p.sku', 'like', $prefix.'%')->where('p.is_archived', false)
+                ->orderBy('c.slug')->orderBy('p.id')->get(['p.id', 'p.slug', 'p.is_active', 'c.slug as category']);
+            $this->line('metric.category_cards.prefixed='.$cards->count());
+            foreach ($cards as $card) {
+                $this->line(sprintf('audit.category_cards.placed=%s:%d:%d:%s', Str::slug((string) $card->category), $card->id, (int) $card->is_active, $card->slug));
+            }
+
+            return self::SUCCESS;
+        }
         if ($this->option('tree')) {
             $counts = DB::table('products')->where('is_archived', false)->groupBy('category_id')->pluck(DB::raw('count(*)'), 'category_id');
             foreach (DB::table('categories')->orderBy('parent_id')->orderBy('id')->get(['id', 'parent_id', 'slug', 'is_active']) as $category) {
