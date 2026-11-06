@@ -218,8 +218,8 @@ Schedule::command('supplier:chisty-bereg-photos --supplier=stank --limit=30 --ap
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/stank-photos.log'));
 
-// Hidden Престиж Тепло cards made from the price list look for a photo the same way.
-Schedule::command('supplier:chisty-bereg-photos --supplier=prestizh_teplo --limit=30 --apply')
+// Hidden Престиж Тепло cards made from the price list look for a photo the same way, 60 a day (≈380 cards in a week).
+Schedule::command('supplier:chisty-bereg-photos --supplier=prestizh_teplo --limit=60 --apply')
     ->dailyAt('09:40')
     ->withoutOverlapping(60)
     ->runInBackground()
