@@ -48,6 +48,17 @@ class PublishAtmosCardsCommand extends Command
 
     /** Ordered rules: [section ids, pattern on subsection + name, category slugs (first existing), name prefix]. */
     private const RULES = [
+        // Boiler sections also list automation, sensors, valves, connection kits and flues: each to its own group.
+        [[1, 2, 3], '/термостат|модуль (?:управ|дистанц|zota)|плата удал|turboset|комплект автоматик/u', ['regulyatory', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[1, 2, 3], '/датчик температуры/u', ['datchiki', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[2, 3], '/клапан/u', ['smesitelnye-klapany-i-uzly', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[1, 2, 3], '/комплект.{0,8}подключ/u', ['komplekty-podklyucheniya', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[2, 3], '/дымоход mora|коаксиальн\S* комплект/u', ['koaxial-dymoxod', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[2, 3], '/труба ø|труба \d/u', ['dymohody-mono', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[4], '/насосн.. групп|групп. быстрого монтаж/u', ['gruppy-bystrogo-montazha-kotelnyx', 'smesitelnye-klapany-i-uzly', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[4], '/фитинг/u', ['kompressionnye-fitingi', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[4], '/перепускн/u', ['predokhranitelnaya-i-reguliruyushchaya-armatura', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[7], '/кронштейн/u', ['radiatornaya-armatura', 'komplektuyushhie-dlya-otopleniya'], ''],
         [[1], '/^пеллетн\S* горелк/u', ['pelletnye-gorelki'], 'Пеллетная горелка'],
         [[1], '/шнек|транспортер|бункер/u', ['komplektuyushhie-dlya-otopleniya'], ''],
         [[1], '/laddomat|смесит/u', ['smesitelnye-klapany-i-uzly', 'smesitelnaya-armatura', 'komplektuyushhie-dlya-otopleniya'], ''],
@@ -167,6 +178,10 @@ class PublishAtmosCardsCommand extends Command
     public function rule(array $row): array
     {
         $text = mb_strtolower($row['subsection'].' '.$row['name']);
+        // A placeholder row of the price list («новый товар в …») is not an item.
+        if (preg_match('/^новый товар/u', mb_strtolower(trim((string) $row['name'])))) {
+            return [[], ''];
+        }
         foreach (self::RULES as [$sections, $pattern, $slugs, $prefix]) {
             if (in_array($row['section'], $sections, true) && preg_match($pattern, $text) === 1) {
                 return [$slugs, $prefix];
