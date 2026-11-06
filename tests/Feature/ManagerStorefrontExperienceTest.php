@@ -252,6 +252,25 @@ class ManagerStorefrontExperienceTest extends TestCase
         $this->assertStringContainsString('Склад Минск: 7 шт.', $html);
     }
 
+    public function test_ecokamin_site_availability_is_not_called_the_minsk_warehouse(): void
+    {
+        [$product, $offer] = $this->makeProductWithSupplierOffer();
+        $brand = Brand::create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        $product->update(['brand_id' => $brand->id]);
+        $offer->supplier->update(['name' => 'ООО «СанБизнесГруп»']);
+        $offer->forceFill(['source_url' => 'https://ecokamin.ru/catalog/kaminnye_topki/delta-800/', 'stock_quantity' => null, 'in_stock' => true, 'warehouse_name' => null])->save();
+        ProductWarehouseStock::create([
+            'product_id' => $product->id, 'supplier_id' => $offer->supplier_id, 'warehouse_code' => 'ecokamin-moscow', 'warehouse_name' => 'Склад Москва',
+            'external_article' => 'TDN800PBV', 'source_product_name' => $product->name, 'total_quantity' => 2, 'available_quantity' => 2,
+            'delivery_days' => 7, 'as_of_date' => now()->toDateString(), 'last_synced_at' => now(),
+        ]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        $offers = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager);
+
+        $this->assertSame(['Склад Москва', 'Сайт производителя ecokamin.ru'], collect($offers->first()['locations'])->pluck('warehouse')->all());
+    }
+
     public function test_internal_supplier_markup_is_not_rendered_for_guests(): void
     {
         [$product] = $this->makeProductWithSupplierOffer();

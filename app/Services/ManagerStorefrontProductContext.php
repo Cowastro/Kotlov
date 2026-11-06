@@ -82,7 +82,10 @@ class ManagerStorefrontProductContext
                         ? $this->formatQuantity((float) $quantity, $product->unit)
                         : ($inStock ? 'В наличии' : ($offer->stock_text ?: 'Нет в наличии')),
                     'stock_quantity' => $quantity !== null ? (float) $quantity : null,
-                    'warehouse' => $this->warehouseLabel($offer->warehouse_name, $isEcokamin),
+                    // The ecokamin.ru catalogue only says the maker has it: not our Minsk warehouse.
+                    'warehouse' => $isEcokamin && str_contains(mb_strtolower((string) $offer->source_url), 'ecokamin.ru')
+                        ? 'Сайт производителя ecokamin.ru'
+                        : $this->warehouseLabel($offer->warehouse_name, $isEcokamin),
                     'delivery_days' => $offer->delivery_days,
                     'in_stock' => $inStock,
                     'is_fresh' => $offer->confirmsAvailability(),
