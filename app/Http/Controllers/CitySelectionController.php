@@ -27,9 +27,11 @@ class CitySelectionController extends Controller
             $returnTo = '/';
         }
 
+        $fromRegionalNews = preg_match('~^/news(?:/[^/]+)?/?$~', explode('?', $returnTo, 2)[0]) === 1;
+
         $redirect = $hasStorefront
-            ? redirect()->away($city->storefrontUrl().'/')
-            : redirect($returnTo);
+            ? redirect()->away($city->storefrontUrl().($fromRegionalNews ? '/news' : '/'))
+            : redirect($fromRegionalNews ? '/regions/news' : $returnTo);
 
         return $redirect->withCookie(cookie(
             'selected_city',

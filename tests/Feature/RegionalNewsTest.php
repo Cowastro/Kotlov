@@ -61,7 +61,7 @@ class RegionalNewsTest extends TestCase
         $this->assertStringNotContainsString('regional-quick-contact', view('partials.regional-quick-contact', ['currentCity' => $this->lida])->render());
     }
 
-    public function test_article_has_one_city_canonical_and_cannot_be_read_under_another_city(): void
+    public function test_article_has_one_city_canonical_and_redirects_from_other_hosts(): void
     {
         $post = $this->article('local-story', $this->lida, ['updated_at' => now()->subDays(2)]);
         $modifiedAt = $post->updated_at->toDateTimeString();
@@ -70,10 +70,28 @@ class RegionalNewsTest extends TestCase
             ->assertSee('"@type":"NewsArticle"', false)
             ->assertSee('"name":"Лида"', false);
         $this->assertSame($modifiedAt, $post->fresh()->updated_at->toDateTimeString());
-        $this->get('https://borisov.kotlov.by/news/local-story')->assertNotFound();
+        $this->get('https://borisov.kotlov.by/news/local-story')
+            ->assertStatus(301)->assertRedirect('https://lida.kotlov.by/news/local-story');
         $this->get('https://kotlov.by/blog/local-story')->assertRedirect('https://lida.kotlov.by/news/local-story');
-        $this->get('https://kotlov.by/news/local-story')->assertNotFound();
+        $this->get('https://kotlov.by/news/local-story')
+            ->assertStatus(301)->assertRedirect('https://lida.kotlov.by/news/local-story');
+        $this->get('https://kotlov.by/news/missing-story')->assertNotFound();
         $this->get('https://kotlov.by/blog')->assertOk()->assertDontSee('Материал local-story');
+    }
+
+    public function test_city_switch_from_a_local_article_opens_the_destination_news_feed(): void
+    {
+        $this->article('local-story', $this->lida);
+        $this->get('https://lida.kotlov.by/news/local-story')->assertOk();
+        $return = '?return=%2Fnews%2Flocal-story';
+
+        $this->get('https://lida.kotlov.by/city/select/borisov'.$return)
+            ->assertRedirect('https://borisov.kotlov.by/news');
+        $this->get('https://lida.kotlov.by/city/select/minsk'.$return)
+            ->assertRedirect('https://kotlov.by/city/select/minsk'.$return);
+        $this->get('https://kotlov.by/city/select/minsk'.$return)
+            ->assertRedirect('https://kotlov.by/regions/news')
+            ->assertPlainCookie('selected_city', 'minsk');
     }
 
     public function test_sitemap_and_cached_home_update_when_local_article_is_unpublished(): void
