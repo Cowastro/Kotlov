@@ -15,6 +15,7 @@
     <p class="cl-text-2"><time datetime="{{ $post->published_at->toAtomString() }}">{{ $post->published_at->format('d.m.Y') }}</time> · KOTLOV · {{ $newsCity->name }}</p>
     <img class="local-article__cover" src="{{ $post->cover_image_url }}" alt="{{ $post->title }}" width="1600" height="900">
     <div class="local-article__body">{!! $post->content !!}</div>
+    @include('partials.article-share')
     <div class="local-article__actions"><a class="tf-btn" href="{{ $newsCity->storefrontUrl() }}/#city-branch">Контакты магазина</a><a class="tf-btn btn-white btn-stroke" href="/catalog">Каталог в {{ $newsCity->name_title }}</a><a class="tf-btn btn-white btn-stroke" href="/news">Все новости города</a></div>
 </article></section></main>
 @endsection
