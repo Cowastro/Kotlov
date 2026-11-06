@@ -59,9 +59,13 @@ class RegionalNewsController extends Controller
     public function show(Request $request, string $slug)
     {
         $city = $this->city($request);
-        abort_unless($city, 404);
-        $post = BlogPost::published()->regional()->where('city_id', $city->id)
+        $post = BlogPost::published()->regional()
             ->where('slug', $slug)->with('city')->firstOrFail();
+
+        if ($post->city_id !== $city?->id) {
+            return redirect()->away($post->publicUrl(), 301);
+        }
+
         BlogPost::withoutTimestamps(fn () => $post->increment('views_count'));
         $canonical = $post->publicUrl();
         $schemaJson = json_encode([
