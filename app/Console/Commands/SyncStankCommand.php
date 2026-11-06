@@ -3,13 +3,15 @@
 namespace App\Console\Commands;
 
 use App\Models\Supplier;
+use App\Services\Suppliers\StankPriceList;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Сопоставляет все опубликованные товары S-TANK с фиксированными РРЦ в BYN.
  *
- * Прайс: «Прайс S-TANK октябрь бел.руб. 2026г РБ РРЦ.xlsx».
+ * Прайс: «Прайс S-TANK октябрь бел.руб. 2026г РБ РРЦ.xlsx» → database/data/stank_price_2026-10.json (StankPriceList).
+ * Модель карточки — по артикулу привязки S-TANK, иначе по названию.
  * Новые цены действуют с 07.10.2026.
  *
  * Использование:
@@ -28,69 +30,6 @@ class SyncStankCommand extends Command
     private const SUPPLIER_CODE = 'stank';
     private const SUPPLIER_NAME = 'S-TANK';
     private const EFFECTIVE_FROM = '2026-10-07';
-
-    /**
-     * Фиксированные РРЦ в белорусских рублях.
-     *
-     * null означает официальное значение «по запросу» и является валидным
-     * сопоставлением, а не отсутствующей ценой.
-     *
-     * SOLAR SS на сайте укомплектованы титановым анодом, поэтому для этой
-     * серии используется колонка РРЦ с титановым анодом.
-     */
-    private const BYN_PRICES = [
-        'BER-150' => 1828.80,
-        'BER-200' => 2048.40,
-        'BER-300' => 3182.40,
-        'BER-400' => 4582.80,
-        'BER-500' => 5180.40,
-        'BER-750' => 6775.20,
-        'BER-1000' => 8064.00,
-
-        'AT-200' => 1591.20,
-        'AT-300' => 1713.60,
-        'AT-500' => 1951.20,
-        'AT-750' => 2358.00,
-        'AT-1000' => 2718.00,
-        'AT-1200' => 3848.40,
-        'AT-1500' => 4096.80,
-        'AT-2000' => 6426.00,
-        'AT-3000' => 10130.40,
-        'AT-5000' => 14724.00,
-
-        'ET-200' => 1591.20,
-        'ET-300' => 1713.60,
-        'ET-500' => 1951.20,
-        'ET-750' => 2358.00,
-        'ET-1000' => 2718.00,
-        'ET-1200' => 3848.40,
-        'ET-1500' => 4096.80,
-        'ET-2000' => 6426.00,
-        'ET-3000' => 10130.40,
-        'ET-5000' => 14724.00,
-
-        'SOLARSS-150' => 3758.00,
-        'SOLARSS-200' => 4019.00,
-        'SOLARSS-300' => 5666.00,
-        'SOLARSS-500' => 7394.00,
-        'SOLARSS-750' => 8968.00,
-        'SOLARSS-1000' => 10598.00,
-        'SOLARSS-1200' => 12582.00,
-        'SOLARSS-1500' => 12971.00,
-        'SOLARSS-2000' => 16438.00,
-        'SOLARSS-3000' => null,
-
-        'HFWT-300' => 2152.80,
-        'HFWT-500' => 2919.60,
-        'HFWT-750' => 3510.00,
-        'HFWT-1000' => 4176.00,
-        'HFWT-1200' => 5504.40,
-        'HFWT-1500' => 6080.40,
-        'HFWT-2000' => 7927.20,
-        'HFWT-3000' => null,
-
-        'FRESH-200' => 1954.80,
-    ];
 
     public function handle(): int
     {
@@ -114,6 +53,8 @@ class SyncStankCommand extends Command
         $products = DB::table('products as p')
             ->join('brands as b', 'b.id', '=', 'p.brand_id')
             ->where('b.name', self::SUPPLIER_NAME)
+            // A merged duplicate is archived and redirects: it has no price of its own.
+            ->where('p.is_archived', false)
             ->select('p.id', 'p.name', 'p.price as current_price', 'p.sku')
             ->orderBy('p.id')
             ->get();
@@ -123,8 +64,14 @@ class SyncStankCommand extends Command
         $rows = [];
         $unmatched = [];
 
+        $linked = DB::table('supplier_products as sp')->join('suppliers as s', 's.id', '=', 'sp.supplier_id')
+            ->where('s.code', self::SUPPLIER_CODE)->whereNotNull('sp.product_id')->pluck('sp.supplier_article', 'sp.product_id');
+
         foreach ($products as $product) {
-            $article = $this->extractArticleKey($product->name);
+            $linkedArticle = $linked[$product->id] ?? null;
+            $article = $linkedArticle !== null && StankPriceList::row((string) $linkedArticle) !== null
+                ? (string) $linkedArticle
+                : StankPriceList::key((string) $product->name);
 
             if ($article !== null && $onlySeries !== [] && ! collect($onlySeries)->contains(
                 static fn (string $series): bool => str_starts_with($article, $series . '-')
@@ -132,7 +79,7 @@ class SyncStankCommand extends Command
                 continue;
             }
 
-            if ($article === null || ! array_key_exists($article, self::BYN_PRICES)) {
+            if ($article === null || StankPriceList::row($article) === null) {
                 $unmatched[] = [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -145,7 +92,7 @@ class SyncStankCommand extends Command
             $rows[] = [
                 'product' => $product,
                 'article' => $article,
-                'price' => self::BYN_PRICES[$article],
+                'price' => StankPriceList::price($article),
             ];
         }
 
@@ -283,34 +230,5 @@ class SyncStankCommand extends Command
         $this->info('Готово. Сопоставлено: ' . count($rows) . '; изменено цен: ' . $updated . '; несопоставлено: 0.');
 
         return self::SUCCESS;
-    }
-
-    private function extractArticleKey(string $name): ?string
-    {
-        if (preg_match('/Solar\s+SS(?!\s+DUO)[-\s]?(\d+)/i', $name, $matches)) {
-            return 'SOLARSS-' . $matches[1];
-        }
-
-        if (preg_match('/FRESH[-\s]+(\d+)/i', $name, $matches)) {
-            return 'FRESH-' . $matches[1];
-        }
-
-        if (preg_match('/HFWT[-\s]+(\d+)/i', $name, $matches)) {
-            return 'HFWT-' . $matches[1];
-        }
-
-        if (preg_match('/\bBER(?!2)[-\s]+(\d+)\b/i', $name, $matches)) {
-            return 'BER-' . $matches[1];
-        }
-
-        if (preg_match('/\bET[-\s]+(\d+)\b/i', $name, $matches)) {
-            return 'ET-' . $matches[1];
-        }
-
-        if (preg_match('/(?:Prestige\s+)?AT[-\s]+(\d+)/i', $name, $matches)) {
-            return 'AT-' . $matches[1];
-        }
-
-        return null;
     }
 }

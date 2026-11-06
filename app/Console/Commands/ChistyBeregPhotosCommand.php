@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
 class ChistyBeregPhotosCommand extends Command
 {
     protected $signature = 'supplier:chisty-bereg-photos {--limit=20}
-        {--supplier=chisty_bereg : chisty_bereg, kaminproff (Fireway), akvateploservis (Galmet, Apamet), teplotop (LEMAX) or vistar (BAXI): the cards made from its price list}
+        {--supplier=chisty_bereg : chisty_bereg, kaminproff (Fireway), akvateploservis (Galmet, Apamet), teplotop (LEMAX), vistar (BAXI) or stank (S-TANK): the cards made from its price list}
         {--reset-misses-since= : Put back to the queue the cards searched since then that got no photo (an AI outage)}
         {--apply : Save the photos}';
 
@@ -41,6 +41,7 @@ class ChistyBeregPhotosCommand extends Command
             SyncAkvateploservisCommand::SUPPLIER_CODE => [SyncAkvateploservisCommand::SUPPLIER_CODE, ['GALMET-', 'APAMET-'], 'galmet.by'],
             SyncTeplotopCommand::SUPPLIER_CODE => [SyncTeplotopCommand::SUPPLIER_CODE, ['TEPLOTOP-'], 'ttop.by'],
             SyncVistarCommand::SUPPLIER_CODE => [SyncVistarCommand::SUPPLIER_CODE, ['VISTAR-'], 'baxi.ru'],
+            'stank' => ['stank', ['STANK-'], 's-tank.ru'],
             default => [SyncChistyBeregCommand::SUPPLIER_CODE, ['BEREG-'], 'bereg.by'],
         };
         $offers = SupplierProduct::query()
