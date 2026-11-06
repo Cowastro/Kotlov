@@ -594,6 +594,12 @@ jobs:
             grep -aE '^audit\.vistar_create\.(offer=[a-z0-9-]+:[a-z0-9-]+:[a-z]+:[0-9]+:[a-z0-9-]*|created=[a-z0-9-]+:[0-9]+:[a-z0-9-]+|(no_retail|card_exists|no_category)=[a-z0-9-]+)$' "$detail_log" || true
             echo "safe_vistar_create_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:prestizh-teplo-create" ]]; then
+            echo "safe_prestizh_create_begin"
+            grep -aE '^metric\.prestizh_create\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -aE '^audit\.prestizh_create\.(offer=[a-z0-9-]+:[a-z0-9-]+:(teplodvor|price):[0-9]+:[a-z0-9-]+|created=[a-z0-9-]+:[0-9]+:[a-z0-9-]+|no_category=[a-z0-9-]+:[a-z0-9-]*)$' "$detail_log" || true
+            echo "safe_prestizh_create_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-prestizh-teplo" ]]; then
             echo "safe_prestizh_begin"
             grep -aE '^metric\.prestizh\.[a-z_]+=[0-9]+$' "$detail_log" || true

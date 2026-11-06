@@ -59,6 +59,22 @@ class SyncPrestizhTeploCommandTest extends TestCase
         $this->assertSame(5.36, (float) $pipe->fresh()->price);
     }
 
+    public function test_card_titles_and_categories_by_the_kind_of_item(): void
+    {
+        $c = \App\Console\Commands\CreatePrestizhTeploCardsCommand::class;
+        $case = fn (string $name, string $section, string $brand, string $sheet = '') => [$c::cardTitle(compact('name', 'section', 'brand', 'sheet')), $c::categorySlug($c::cardTitle(compact('name', 'section', 'brand', 'sheet')))];
+        $this->assertSame(['Газовый котел Vaillant atmoTEC pro VUW 240/5-3', 'gazovye'], $case('atmoTEC pro VUW 240/5-3', 'Настенные газовые котлы atmoTEC, turboTEC', 'Vaillant'));
+        $this->assertSame(['Газовый котел Protherm Пантера 25 KOO', 'gazovye'], $case('Пантера 25 KOO', 'Настенные газовые котлы серии Пантера', 'Protherm'));
+        $this->assertSame(['Бойлер косвенного нагрева Drazice OKC 100 NTR', 'kosvennye'], $case('OKC 100 NTR мощность теплообменника 24кВт', 'магниевый анод, предохранительный клапан в бойлерах до 200л', 'Drazice'));
+        $this->assertSame(['Бойлер косвенного нагрева Galmet FUSION SG(S) 100 FL', 'kosvennye'], $case('FUSION SG(S) 100 FL', 'FUSION • НАПОЛЬНЫЙ БОЙЛЕР ПОСЛОЙНОГО НАГРЕВА ДЛЯ РАБОТЫ С ДВУХКОНТУРНЫМИ ГАЗОВЫМИ КОТЛАМИ', 'Galmet'));
+        $this->assertSame(['Расширительный бак Reflex N 8', 'membrannye-baki'], $case('N 8', 'Мембранные расширительные баки для отопления', 'Reflex'));
+        $this->assertSame(['Насосная группа MKRE 1” без насоса, Meibes', 'gruppy-bystrogo-montazha-kotelnyx'], $case('1” без насоса', 'Насосная группа MKRE', 'Meibes'));
+        $this->assertSame(['Воздухоотводчик автоматический с отсечным клапаном 1/2", Afriso', 'predokhranitelnaya-i-reguliruyushchaya-armatura'], $case('Воздухоотводчик автоматический с отсечным клапаном 1/2"', '', 'Afriso'));
+        $this->assertSame(['ТЭН Galmet 2 кВт 5/4" 230В', 'elektricheskie-teny-dlya-otopleniya'], $case('2 кВт 5/4" 230В', 'ТЭНы • ДЛЯ ВОДОНАГРЕВАТЕЛЕЙ 100 - 500 л', 'Galmet'));
+        $this->assertSame('Protherm Horiz. Terminal 60/100 PP', $case('Horiz. Terminal 60/100 PP', 'Бойлеры косвенного нагрева', 'Protherm')[0]);
+        $this->assertSame('Apamet', $c::brandOf(['brand' => 'Galmet', 'section' => 'Apamet [Турция]']));
+    }
+
     private function priceList(): string
     {
         $book = new Spreadsheet;

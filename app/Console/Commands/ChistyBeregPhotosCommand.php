@@ -42,6 +42,7 @@ class ChistyBeregPhotosCommand extends Command
             SyncTeplotopCommand::SUPPLIER_CODE => [SyncTeplotopCommand::SUPPLIER_CODE, ['TEPLOTOP-'], 'ttop.by'],
             SyncVistarCommand::SUPPLIER_CODE => [SyncVistarCommand::SUPPLIER_CODE, ['VISTAR-'], 'baxi.ru'],
             'stank' => ['stank', ['STANK-'], 's-tank.ru'],
+            'prestizh_teplo' => ['prestizh_teplo', ['PRESTIZH-'], 'prestizh-teplo.by'],
             default => [SyncChistyBeregCommand::SUPPLIER_CODE, ['BEREG-'], 'bereg.by'],
         };
         $offers = SupplierProduct::query()

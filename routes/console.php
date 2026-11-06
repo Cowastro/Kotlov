@@ -218,6 +218,13 @@ Schedule::command('supplier:chisty-bereg-photos --supplier=stank --limit=30 --ap
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/stank-photos.log'));
 
+// Hidden Престиж Тепло cards made from the price list look for a photo the same way.
+Schedule::command('supplier:chisty-bereg-photos --supplier=prestizh_teplo --limit=30 --apply')
+    ->dailyAt('09:40')
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/prestizh-photos.log'));
+
 // Hidden Fireway cards made from the Камин-профессионал price list look for a photo the same way, each card once.
 Schedule::command('supplier:chisty-bereg-photos --supplier=kaminproff --limit=30 --apply')
     ->dailyAt('08:20')
