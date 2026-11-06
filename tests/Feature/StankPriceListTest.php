@@ -54,12 +54,15 @@ class StankPriceListTest extends TestCase
         foreach (self::OLD as $key => $price) {
             $this->assertSame($price, StankPriceList::price($key), $key);
         }
-        $this->assertSame(158, count(StankPriceList::rows()));
+        $this->assertSame(183, count(StankPriceList::rows()));
     }
 
     public function test_titles_name_the_kind_of_tank_and_meet_the_key(): void
     {
         foreach (StankPriceList::rows() as $key => $row) {
+            if ($row['kind'] === 'accessory') {
+                continue;
+            }
             $this->assertSame($key, StankPriceList::key(CreateStankCardsCommand::cardTitle($row)), $key);
         }
         $this->assertSame('Буферная ёмкость S-TANK FLAT 600', CreateStankCardsCommand::cardTitle(StankPriceList::row('FLAT-600')));
@@ -86,7 +89,14 @@ class StankPriceListTest extends TestCase
         $this->assertSame('FLAT-600', SupplierProduct::query()->where('product_id', $card->id)->value('supplier_article'));
         $this->assertSame(1, Product::query()->where('name', 'like', '%AT-500%')->count());
 
+        Category::query()->create(['name' => 'ТЭНы', 'slug' => 'elektricheskie-teny-dlya-otopleniya', 'parent_id' => 0, 'is_active' => true]);
+        $this->artisan('supplier:stank-create', ['--only' => ['ITEX-6-3X'], '--apply' => true])->assertSuccessful();
+        $ten = Product::query()->where('sku', 'STANK-ITEX-6-3X')->firstOrFail();
+        $this->assertSame('ТЭН S-TANK ITEX-6-3X 6 кВт с термостатом', $ten->name);
+        $this->assertSame(979.2, (float) $ten->price);
+
         $this->artisan('supplier:sync-stank')->assertSuccessful();
+        $this->assertSame(979.2, (float) $ten->fresh()->price);
         $this->assertSame(1951.2, (float) Product::query()->where('sku', 'AT500')->value('price'));
     }
 }

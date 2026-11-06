@@ -4745,6 +4745,606 @@
      "value": "615 кг"
     }
    ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-HNX",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Блок управления Hn-X",
+   "title": "Блок управления активным анодом S-TANK Hn-X для баков из нержавеющей стали",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 730.8,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Назначение",
+     "value": "для баков из нержавеющей стали"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-GN",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Блок управления Gn",
+   "title": "Блок управления активным анодом S-TANK Gn для эмалированных баков",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 658.8,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Назначение",
+     "value": "для эмалированных баков"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-TI400",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Титановый анод Тi400 (для блока РЕ)",
+   "title": "Титановый анод S-TANK Ti400 для блока PE",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 349.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Длина",
+     "value": "360 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-TI-100-200",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Титановый анод 100/200",
+   "title": "Активный титановый анод S-TANK 100/200",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 349.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "340×30×30 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-TI-100-400",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Титановый анод 100/400",
+   "title": "Активный титановый анод S-TANK 100/400",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 349.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "540×30×30 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-TI-100-600",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Титановый анод 100/600",
+   "title": "Активный титановый анод S-TANK 100/600",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 421.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "740×30×30 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-TI-100-800",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Титановый анод 100/800",
+   "title": "Активный титановый анод S-TANK 100/800",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 442.8,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "940×30×30 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-TI-150-400",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Титановый анод 150/400",
+   "title": "Активный титановый анод S-TANK 150/400",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 349.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "590×30×30 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-TI-200-200",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Титановый анод 200/200",
+   "title": "Активный титановый анод S-TANK 200/200",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 349.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "440×30×30 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-TI-200-400",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Титановый анод 200/400",
+   "title": "Активный титановый анод S-TANK 200/400",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 421.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "640×30×30 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-TI-300-400",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Титановый анод 300/400",
+   "title": "Активный титановый анод S-TANK 300/400",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 421.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "740×30×30 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-TI-600-200",
+   "series": "Активный титановый анод",
+   "volume": 0,
+   "label": "Титановый анод 600/200",
+   "title": "Активный титановый анод S-TANK 600/200",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 349.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "840×30×30 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-MG-NUT",
+   "series": "Магниевый анод",
+   "volume": 0,
+   "label": "Анод магниевый с гайкой 3/4\"",
+   "title": "Анод магниевый S-TANK с гайкой 3/4\"",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 68.4,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "450×22 мм"
+    },
+    {
+     "key": "Вес",
+     "value": "0,3 кг"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-MG-450",
+   "series": "Магниевый анод",
+   "volume": 0,
+   "label": "Анод магниевый без гайки",
+   "title": "Анод магниевый S-TANK 450×22 без гайки",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 43.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "450×22 мм"
+    },
+    {
+     "key": "Вес",
+     "value": "0,3 кг"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ANODE-MG-33-500",
+   "series": "Магниевый анод",
+   "volume": 0,
+   "label": "Анод магниевый 33х500 без гайки",
+   "title": "Анод магниевый S-TANK 33×500 без гайки",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 126.0,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Размер",
+     "value": "500×33 мм"
+    },
+    {
+     "key": "Вес",
+     "value": "0,55 кг"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ITEX-2-IX",
+   "series": "ТЭН с термостатом",
+   "volume": 0,
+   "label": "ТЭН ITEX-2-IX",
+   "title": "ТЭН S-TANK ITEX-2-IX 2 кВт с термостатом",
+   "category": "elektricheskie-teny-dlya-otopleniya",
+   "price": 234.0,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Мощность",
+     "value": "2 кВт"
+    },
+    {
+     "key": "Длина",
+     "value": "400 мм"
+    },
+    {
+     "key": "Вес",
+     "value": "0,9 кг"
+    },
+    {
+     "key": "Термостат",
+     "value": "встроенный, с аварийным термостатом"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ITEX-3-IX",
+   "series": "ТЭН с термостатом",
+   "volume": 0,
+   "label": "ТЭН ITEX-3-IX",
+   "title": "ТЭН S-TANK ITEX-3-IX 3 кВт с термостатом",
+   "category": "elektricheskie-teny-dlya-otopleniya",
+   "price": 352.8,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Мощность",
+     "value": "3 кВт"
+    },
+    {
+     "key": "Длина",
+     "value": "400 мм"
+    },
+    {
+     "key": "Вес",
+     "value": "0,9 кг"
+    },
+    {
+     "key": "Термостат",
+     "value": "встроенный, с аварийным термостатом"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ITEX-6-3X",
+   "series": "ТЭН с термостатом",
+   "volume": 0,
+   "label": "ТЭН ITEX-6-3X",
+   "title": "ТЭН S-TANK ITEX-6-3X 6 кВт с термостатом",
+   "category": "elektricheskie-teny-dlya-otopleniya",
+   "price": 979.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Мощность",
+     "value": "6 кВт"
+    },
+    {
+     "key": "Длина",
+     "value": "520 мм"
+    },
+    {
+     "key": "Вес",
+     "value": "2 кг"
+    },
+    {
+     "key": "Термостат",
+     "value": "встроенный, с аварийным термостатом"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ITEX-9-3X",
+   "series": "ТЭН с термостатом",
+   "volume": 0,
+   "label": "ТЭН ITEX-9-3X",
+   "title": "ТЭН S-TANK ITEX-9-3X 9 кВт с термостатом",
+   "category": "elektricheskie-teny-dlya-otopleniya",
+   "price": 1062.0,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Мощность",
+     "value": "9 кВт"
+    },
+    {
+     "key": "Длина",
+     "value": "700 мм"
+    },
+    {
+     "key": "Вес",
+     "value": "2 кг"
+    },
+    {
+     "key": "Термостат",
+     "value": "встроенный, с аварийным термостатом"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "ITEX-15-3X",
+   "series": "ТЭН с термостатом",
+   "volume": 0,
+   "label": "ТЭН ITEX-15-3X",
+   "title": "ТЭН S-TANK ITEX-15-3X 15 кВт с термостатом",
+   "category": "elektricheskie-teny-dlya-otopleniya",
+   "price": 1728.0,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Мощность",
+     "value": "15 кВт"
+    },
+    {
+     "key": "Длина",
+     "value": "820 мм"
+    },
+    {
+     "key": "Вес",
+     "value": "3 кг"
+    },
+    {
+     "key": "Термостат",
+     "value": "встроенный, с аварийным термостатом"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "TEN-CERAMIC-24",
+   "series": "ТЭН",
+   "volume": 0,
+   "label": "2,4 кВт (1 ф.) сухой керамический ТЭН",
+   "title": "Сухой керамический ТЭН S-TANK 2,4 кВт",
+   "category": "elektricheskie-teny-dlya-otopleniya",
+   "price": 180.0,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Мощность",
+     "value": "2,4 кВт"
+    },
+    {
+     "key": "Питание",
+     "value": "1 фаза"
+    },
+    {
+     "key": "Длина",
+     "value": "480 мм"
+    },
+    {
+     "key": "Вес",
+     "value": "3 кг"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "THERMOSTAT-24",
+   "series": "Термостат",
+   "volume": 0,
+   "label": "Термостат для ТЭНа 2,4 кВт",
+   "title": "Термостат S-TANK для ТЭНа 2,4 кВт",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 68.4,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Мощность",
+     "value": "до 3 кВт"
+    },
+    {
+     "key": "Длина",
+     "value": "800 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "THERMOSTAT-15",
+   "series": "Термостат",
+   "volume": 0,
+   "label": "Термостат для ТЭНа 15 кВт",
+   "title": "Термостат S-TANK для ТЭНа 15 кВт",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 471.6,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Мощность",
+     "value": "до 15 кВт"
+    },
+    {
+     "key": "Длина",
+     "value": "800 мм"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "PLUG-2",
+   "series": "Заглушка",
+   "volume": 0,
+   "label": "Заглушка чугунная 2\"",
+   "title": "Заглушка чугунная S-TANK 2\"",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 10.8,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Резьба",
+     "value": "2\""
+    },
+    {
+     "key": "Вес",
+     "value": "0,36 кг"
+    }
+   ]
+  },
+  {
+   "kind": "accessory",
+   "sheet": "ТЭНы+АНОДЫ",
+   "key": "PLUG-1-1-2",
+   "series": "Заглушка",
+   "volume": 0,
+   "label": "Заглушка чугунная 1 1/2\"",
+   "title": "Заглушка чугунная S-TANK 1 1/2\"",
+   "category": "komplektuyushchie-dlya-vodonagrevateley",
+   "price": 7.2,
+   "price_magnesium": null,
+   "price_titanium": null,
+   "on_request": false,
+   "specs": [
+    {
+     "key": "Резьба",
+     "value": "1 1/2\""
+    },
+    {
+     "key": "Вес",
+     "value": "0,23 кг"
+    }
+   ]
   }
  ]
 }

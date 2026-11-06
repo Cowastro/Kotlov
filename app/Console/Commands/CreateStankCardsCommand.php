@@ -39,6 +39,8 @@ class CreateStankCardsCommand extends Command
         'buffer_dhw' => ['HFWT-300', 'bufernye-emkosti'],
         'electric' => [null, 'electric'],
         'cold' => ['AT-500', 'bufernye-emkosti'],
+        // Anodes, heating elements, thermostats, plugs: the row names its category.
+        'accessory' => [null, null],
     ];
 
     public function handle(StankTeplodvorCatalog $site, ProductSourceEnricher $enricher): int
@@ -92,6 +94,7 @@ class CreateStankCardsCommand extends Command
                 continue;
             }
             [$model, $slug] = self::KIND_CATEGORY[$row['kind']];
+            $slug ??= (string) ($row['category'] ?? '');
             $categoryId = (int) (($model ? ($categoryOf[$model] ?? 0) : 0) ?: ($categories[$slug] ?? 0));
             if (! $categoryId) {
                 $stats['no_category']++;
@@ -100,8 +103,9 @@ class CreateStankCardsCommand extends Command
                 continue;
             }
             $title = self::cardTitle($row);
-            $url = $site->find($title);
-            $seriesUrl = $url ? null : $site->findSeries($key);
+            $accessory = $row['kind'] === 'accessory';
+            $url = $accessory ? null : $site->find($title);
+            $seriesUrl = $url || $accessory ? null : $site->findSeries($key);
             $ownImages = $url || $seriesUrl ? [] : ($seriesImages[StankPriceList::series($key)] ?? []);
             $stats['planned']++;
             $stats['on_site'] += (int) ($url !== null);
@@ -151,6 +155,9 @@ class CreateStankCardsCommand extends Command
     /** «Бак косвенного нагрева S-TANK BER2-200», «Буферная ёмкость S-TANK FLAT 600», «Холодоаккумулятор S-TANK SS CT 300». */
     public static function cardTitle(array $row): string
     {
+        if (filled($row['title'] ?? null)) {
+            return (string) $row['title'];
+        }
         $series = (string) $row['series'];
         $volume = (int) $row['volume'];
         $model = in_array($series, ['BER', 'BER2', 'PW', 'P Turbo', 'SS-HP', 'SOLAR SS', 'P Easy'], true) ? $series.'-'.$volume : $series.' '.$volume;
@@ -173,8 +180,8 @@ class CreateStankCardsCommand extends Command
         $sku = 'STANK-'.$row['key'];
         $specs = array_merge([
             ['key' => 'Производитель', 'value' => 'S-TANK'],
-            ['key' => 'Серия', 'value' => (string) $row['series']],
-            ['key' => 'Модель', 'value' => (string) $row['label']],
+            ['key' => $row['kind'] === 'accessory' ? 'Тип' : 'Серия', 'value' => (string) $row['series']],
+            ['key' => $row['kind'] === 'accessory' ? 'Артикул производителя' : 'Модель', 'value' => (string) $row['label']],
         ], (array) $row['specs']);
         if ($row['price_titanium'] !== null && $row['price_magnesium'] !== null) {
             $specs[] = ['key' => 'Анод', 'value' => (float) $row['price'] === (float) $row['price_titanium']
