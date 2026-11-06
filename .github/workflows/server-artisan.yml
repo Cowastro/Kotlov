@@ -199,6 +199,10 @@ jobs:
                 echo "source_bytes=$(wc -c < "$LOG_FILE" | tr -d ' ')"
                 echo "source_errors=$(grep -Eic 'error|exception|failed|critical' "$LOG_FILE" || true)"
                 echo "source_warnings=$(grep -Eic 'warning|warn' "$LOG_FILE" || true)"
+                # With artisan_args naming the command, its safe metric/audit filters below read this log too.
+                if [[ -n "${ARTISAN_ARGS:-}" ]]; then
+                  cat "$LOG_FILE"
+                fi
                 ;;
               diagnose-error-kinds)
                 test -f storage/logs/laravel.log
