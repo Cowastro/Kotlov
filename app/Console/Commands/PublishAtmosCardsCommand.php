@@ -68,6 +68,11 @@ class PublishAtmosCardsCommand extends Command
         [[4], '/шкаф/u', ['kollektornye-shkafy', 'komplektuyushhie-dlya-otopleniya'], ''],
         [[4, 7], '/комплект.{0,4}подключ/u', ['komplekty-podklyucheniya', 'radiatornaya-armatura', 'komplektuyushhie-dlya-otopleniya'], ''],
         [[4], '/./u', ['komplektuyushhie-dlya-otopleniya'], ''],
+        // The solar section also lists expansion tanks, solar fluid and pipes: each goes to its own group.
+        [[6], '/расширительн/u', ['membrannye-baki', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[6], '/солярн|жидкост|теплоносител/u', ['teplonositeli', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[6], '/труб(?!к)|solarflex/u', ['gofrirovannye-truby-iz-nerzhaveyushchej-stali', 'komplektuyushhie-dlya-otopleniya'], ''],
+        [[6], '/насосн.. групп|трубк|контроллер|регулятор/u', ['solnechnye-kollektory', 'komplektuyushhie-dlya-otopleniya'], ''],
         [[6], '/./u', ['solnechnye-kollektory', 'komplektuyushhie-dlya-otopleniya'], 'Солнечный коллектор'],
         [[7], '/клапан|кран|термоголов/u', ['radiatornaya-armatura', 'komplektuyushhie-dlya-otopleniya'], ''],
         [[7], '/./u', ['radiatory', 'radiatory-otopleniya', 'bimetallicheskie-radiatory', 'komplektuyushhie-dlya-otopleniya'], 'Радиатор'],
