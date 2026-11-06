@@ -91,7 +91,7 @@ class RegionalNewsTest extends TestCase
             ->assertRedirect('https://kotlov.by/city/select/minsk'.$return);
         $this->get('https://kotlov.by/city/select/minsk'.$return)
             ->assertRedirect('https://kotlov.by/regions/news')
-            ->assertCookie('selected_city', 'minsk');
+            ->assertPlainCookie('selected_city', 'minsk');
     }
 
     public function test_sitemap_and_cached_home_update_when_local_article_is_unpublished(): void
