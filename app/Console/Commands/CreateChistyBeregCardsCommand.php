@@ -281,7 +281,9 @@ class CreateChistyBeregCardsCommand extends Command
                 // The model names the type where the title does not: UPS, Magna, Star, APM — circulators; MHI, MVL — multistage.
                 $has('циркуляц') || (bool) preg_match('/(?<![a-z])(ups|magna|alpha|star|stratos|yonos|calio|apm|ghn|gpd|noc)(?![a-z])/u', $n) => 'tsirkulyatsionnyie',
                 $has('многоступ') || (bool) preg_match('/(?<![a-z])(mhi|mhil|mvl|mvi)(?![a-z])/u', $n) => 'mnogostupenchatye-nasosy',
-                $has('поверхност', 'самовсас', 'вихрев', 'центробеж', 'medana', 'cmf', 'jet') => 'poverhnostnyie',
+                $has('поверхност', 'самовсас', 'вихрев', 'центробеж', 'medana', 'cmf', 'jet') || (bool) preg_match('/(?<![a-z])wj(?![a-z])/u', $n) => 'poverhnostnyie',
+                // In-line and block pumps of buildings (Wilo IPL, IL, BL): industrial.
+                (bool) preg_match('/(?<![a-z])(ipl|ipn|il|bl|in-line)(?![a-z])/u', $n) => 'promyshlennye-nasosy',
                 default => null,
             },
             'kotly-i-dymoxody-avtomatika' => match (true) {

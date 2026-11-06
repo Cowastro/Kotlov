@@ -19,6 +19,8 @@ class CreateChistyBeregCardsCommandTest extends TestCase
     {
         $this->assertSame('tsirkulyatsionnyie', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос циркуляционный GHN 25/60-180 IMP Pumps Словения'));
         $this->assertSame('tsirkulyatsionnyie', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос UPS32-55 180 1x230V 50Hz 9H 95906409 GRUNDFOS Сербия'));
+        $this->assertSame('poverhnostnyie', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос WJ-202 X EM 4081221 Wilo Китай'));
+        $this->assertSame('promyshlennye-nasosy', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос IPL 40/160-4/2 H5 3606908 Wilo Россия'));
         $this->assertSame('mnogostupenchatye-nasosy', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос MHIL 106-E-1-230-50-2 4083890 WILO Германия'));
         $this->assertSame('skvajinnye-nasosy', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Насос вибрационный CPV 333 10 м нижний забор ECO Китай'));
         $this->assertSame('komplektuyushchie-dlya-nasosov', CreateChistyBeregCardsCommand::targetCategory('Насосы', 'Трос для скважинного насоса 3 мм'));
