@@ -322,6 +322,13 @@ class ProductForm
                                             ->fileAttachmentsDirectory('editor-uploads')
                                             ->fileAttachmentsDisk('public')
                                             ->fileAttachmentsVisibility('public'),
+
+                                        Textarea::make('video_url')
+                                            ->label('Видео в описании')
+                                            ->rows(2)
+                                            ->placeholder('https://www.youtube.com/watch?v=… или код <iframe …>')
+                                            ->helperText('Ссылка YouTube, Rutube, Vimeo или код «Встроить» с YouTube — ролик появится под описанием и во вкладке «Видео».')
+                                            ->dehydrateStateUsing(fn (?string $state): ?string => \App\Support\VideoEmbed::normalize($state)),
                                     ]),
 
                                 // ── Фотографии ────────────────────────────────────────────────
@@ -411,9 +418,6 @@ class ProductForm
                                             ->label('Вес (кг)')
                                             ->numeric(),
 
-                                        TextInput::make('video_url')
-                                            ->label('Ссылка на видео')
-                                            ->url(),
                                     ]),
 
                                 // ── SEO ───────────────────────────────────────────────────────

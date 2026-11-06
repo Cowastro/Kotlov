@@ -805,6 +805,8 @@
                     ];
                 }
                 $videoUrl = trim((string) ($product->video_url ?? ''));
+                // A pasted embed code (<iframe src="…">) works as well as a link.
+                $videoUrl = \App\Support\VideoEmbed::normalize($videoUrl) ?? $videoUrl;
                 $videoEmbedUrl = null;
                 $isDirectVideo = $videoUrl && preg_match('~\.(mp4|webm|mov)(?:\?|$)~i', $videoUrl);
                 if ($videoUrl && preg_match('~youtube\.com/embed/([A-Za-z0-9_-]{6,})~i', $videoUrl, $videoMatch)) {
@@ -944,6 +946,17 @@
                         @else
                             <p class="cl-text-2">Описание товара отсутствует.</p>
                         @endif
+                        @if ($videoEmbedUrl && ! str_contains($renderedProductContent, '<iframe'))
+                            <div class="product-video-wrap ratio ratio-16x9 mt-4 rounded overflow-hidden">
+                                <iframe
+                                    src="{{ $videoEmbedUrl }}"
+                                    title="Видео: {{ $product->name }}"
+                                    loading="lazy"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    referrerpolicy="strict-origin-when-cross-origin"
+                                    allowfullscreen></iframe>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -1058,7 +1071,7 @@
                 @if ($videoUrl)
                     <div class="tab-pane" id="video" role="tabpanel">
                         <div class="tab-content_desc site-prose">
-                            <div class="product-video-wrap">
+                            <div class="product-video-wrap {{ $videoEmbedUrl ? 'ratio ratio-16x9 rounded overflow-hidden' : '' }}">
                                 @if ($videoEmbedUrl)
                                     <iframe
                                         src="{{ $videoEmbedUrl }}"
