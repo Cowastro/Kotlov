@@ -52,4 +52,16 @@ class PublishAtmosCardsCommandTest extends TestCase
         $this->assertSame(Product::AVAILABILITY_CHECK, $later->availability_status);
         $this->assertSame('preorder', $later->supplierProducts()->sole()->stock_status);
     }
+
+    public function test_cyrillic_atmos_model_codes_get_the_boiler_title(): void
+    {
+        $command = new \App\Console\Commands\PublishAtmosCardsCommand;
+        $row = ['name' => 'С 15 S', 'family' => 'atmos', 'brand' => 'ATMOS', 'section' => 1, 'subsection' => 'Твердотопливные котлы ATMOS'];
+        [, $prefix] = $command->rule($row);
+        $this->assertSame('Твердотопливный котел ATMOS C 15 S', $command->cardName($row, $prefix));
+
+        $set = ['name' => 'АС 25 S', 'family' => 'atmos', 'brand' => 'ATMOS', 'section' => 1, 'subsection' => 'Твердотопливные котлы ATMOS с пеллетной горелкой'];
+        [, $prefix] = $command->rule($set);
+        $this->assertSame('Твердотопливный котел ATMOS AC 25 S с пеллетной горелкой', $command->cardName($set, $prefix));
+    }
 }

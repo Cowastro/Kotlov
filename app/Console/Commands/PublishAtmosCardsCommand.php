@@ -195,6 +195,8 @@ class PublishAtmosCardsCommand extends Command
     public function cardName(array $row, string $prefix): string
     {
         $name = trim(preg_replace('/\s+/u', ' ', $row['name']) ?? $row['name'], ' .,');
+        // ATMOS models typed in Cyrillic («С 15 S», «АС 25 S») are codes, not words.
+        $name = preg_replace_callback('/^(А?С)(?=\s?\d)/u', fn (array $m): string => $m[1] === 'АС' ? 'AC' : 'C', $name) ?? $name;
         $brand = self::BRANDS[$row['family']][0] ?? $row['brand'];
         $hasBrand = $row['family'] !== '' && (new SyncAtmosCommand)->family($name) === $row['family'];
         if (preg_match('/^\p{Cyrillic}/u', $name) === 1) {
