@@ -13,6 +13,7 @@ class PartnerBranchContactController extends Controller
     public function __invoke(Request $request, PartnerBranch $branch): JsonResponse
     {
         abort_unless($branch->isPublic(), 404);
+        abort_if($branch->isOnlineOnly(), 403, 'Магазин временно принимает заказы только онлайн.');
         $data = $request->validate(['product_id' => ['nullable', 'integer', 'exists:products,id']]);
 
         PartnerBranchContactView::query()->create([

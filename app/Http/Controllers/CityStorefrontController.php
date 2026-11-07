@@ -35,7 +35,7 @@ class CityStorefrontController extends Controller
                 'name' => $branch->name,
                 'url' => $canonical,
                 'image' => $branch->hero_image ? url(Storage::url($branch->hero_image)) : null,
-                'telephone' => $branch->phones[0] ?? null,
+                'telephone' => $branch->phoneLinks()[0]['display'] ?? null,
                 'email' => $branch->email,
                 'hasMap' => $branch->mapLink(),
                 'address' => [

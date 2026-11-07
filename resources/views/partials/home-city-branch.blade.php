@@ -26,9 +26,9 @@
                     <h2>{{ $primaryBranch->name }}</h2>
                     <dl>
                         @if($primaryBranch->address)<dt>Адрес</dt><dd>{{ $primaryBranch->address }}</dd>@endif
-                        <dt>Режим работы</dt><dd>{{ $primaryBranch->working_hours ?: 'Уточните график по телефону магазина' }}</dd>
+                        <dt>Режим работы</dt><dd>{{ $primaryBranch->isOnlineOnly() ? 'Только онлайн. Менеджер подтвердит заказ в рабочее время.' : ($primaryBranch->working_hours ?: 'Уточните график по телефону магазина') }}</dd>
                         @if($primaryBranch->email)<dt>E-mail</dt><dd><a href="mailto:{{ $primaryBranch->email }}">{{ $primaryBranch->email }}</a></dd>@endif
-                        @if($primaryBranch->phones)<dt>Телефон</dt><dd>@foreach($primaryBranch->phoneLinks() as $phone)<a href="tel:{{ $phone['href'] }}">{{ $phone['display'] }}</a>@if(!$loop->last)<br>@endif @endforeach</dd>@endif
+                        @if($branchPhones = $primaryBranch->phoneLinks())<dt>Телефон</dt><dd>@foreach($branchPhones as $phone)<a href="tel:{{ $phone['href'] }}">{{ $phone['display'] }}</a>@if(!$loop->last)<br>@endif @endforeach</dd>@endif
                     </dl>
                     @include('partials.branch-social-contacts', ['contactBranch' => $primaryBranch])
                     @if($primaryBranch->storefront_promo)<div class="city-store__promo">{{ $primaryBranch->storefront_promo }}</div>@endif

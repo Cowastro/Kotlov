@@ -117,14 +117,22 @@
                         @if($branch->address)
                             <div class="wtb__meta">{!! $wtbIcon('pin') !!}<span>@if($branch->map_url)<a href="{{ $branch->map_url }}" target="_blank" rel="noopener">{{ $branch->address }}</a>@else{{ $branch->address }}@endif</span></div>
                         @endif
-                        @if($branch->working_hours)<div class="wtb__meta">{!! $wtbIcon('clock') !!}<span>{{ $branch->working_hours }}</span></div>@endif
-                        <div class="wtb__social">@include('partials.branch-social-contacts', ['contactBranch' => $branch])</div>
+                        @if($branch->isOnlineOnly())
+                            <div class="wtb__meta">{!! $wtbIcon('clock') !!}<span>Менеджер подтвердит заказ в рабочее время</span></div>
+                        @else
+                            @if($branch->working_hours)<div class="wtb__meta">{!! $wtbIcon('clock') !!}<span>{{ $branch->working_hours }}</span></div>@endif
+                            <div class="wtb__social">@include('partials.branch-social-contacts', ['contactBranch' => $branch])</div>
+                        @endif
                     </div>
                     <div data-wtb-slot>
-                        <button type="button" class="wtb__phone"
+                        @if($branch->isOnlineOnly())
+                            <span class="wtb__badge">Только онлайн</span>
+                        @else
+                            <button type="button" class="wtb__phone"
                             data-wtb-phone="{{ route('partner-branches.phone', $branch) }}"
                             data-product-id="{{ $product->id ?? '' }}"
                             aria-label="Показать телефон {{ $branch->name }}">{!! $wtbIcon('phone') !!}<span class="wtb__phone-label">Показать телефон</span></button>
+                        @endif
                     </div>
                 </li>
             @endforeach

@@ -46,14 +46,16 @@ class CityContactResolver
     public function contactForCity(?City $city): array
     {
         $contact = $this->defaultContact();
+        $branch = null;
 
         if ($city?->exists
-            && $city->slug !== 'minsk'
             && Schema::hasTable('partner_branches')
             && Schema::hasTable('b2b_clients')) {
-            $branch = PartnerBranch::query()->visibleIn($city)->first();
+            $branch = PartnerBranch::query()->visibleIn($city)
+                ->when($city->slug === 'minsk', fn ($query) => $query->whereHas('client', fn ($client) => $client->where('unp', '193265863')))
+                ->first();
 
-            if ($branch) {
+            if ($branch && $city->slug !== 'minsk') {
                 foreach ([
                     'company_name' => $branch->name,
                     'phones' => $branch->phones,
@@ -84,6 +86,12 @@ class CityContactResolver
                     }
                 }
             }
+        }
+
+        $contact['online_only'] = $branch?->isOnlineOnly() ?? false;
+        $contact['working_hours'] = $branch?->working_hours;
+        if ($contact['online_only']) {
+            $contact['phones'] = [];
         }
 
         $contact['phone_links'] = collect($contact['phones'])

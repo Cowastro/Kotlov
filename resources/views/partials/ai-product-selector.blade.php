@@ -22,6 +22,7 @@
 
     <div class="ai-selector__assistance-menu" id="assistanceMenu" data-assistance-menu role="menu" hidden>
         <div class="ai-selector__assistance-title">Как вам помочь?</div>
+        @unless($cityContact['online_only'] ?? false)
         <button type="button" class="ai-selector__assistance-option ai-selector__assistance-option--callback" data-consultant-open data-bs-toggle="modal" data-bs-target="#quickCallback" role="menuitem">
             <span class="ai-selector__assistance-icon" aria-hidden="true">
                 <svg data-quick-callback-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -37,6 +38,7 @@
             </span>
             <i class="icon icon-CaretRightThin" aria-hidden="true"></i>
         </button>
+        @endunless
         <button type="button" class="ai-selector__assistance-option" data-support-chat-open role="menuitem">
             <span class="ai-selector__assistance-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

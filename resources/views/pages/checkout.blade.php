@@ -183,6 +183,7 @@
                                                         {{ old('delivery_type', ($isB2bCheckout ?? false) ? 'b2b_delivery' : ($lastOrder?->delivery_type ?: 'courier')) === $key ? 'selected' : '' }}>
                                                         {{ $method['checkout_name'] ?? $method['name'] }}
                                                         @if ($key === 'pickup')
+                                                            @if ($cityContact['online_only'] ?? false) — после подтверждения менеджером @endif
                                                         @elseif ($methodPrice === 0.0)
                                                             — Бесплатно
                                                         @elseif ($methodPrice !== null)

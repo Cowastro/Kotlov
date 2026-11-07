@@ -13,6 +13,7 @@ use App\Models\PartnerBranchContactView;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -132,10 +133,48 @@ class PartnerBranchesTest extends TestCase
             ->callTableAction('create', data: [
                 'city_id' => $minsk->id, 'name' => 'ООО «СБГ Бай»', 'address' => 'г. Минск, ул. Селицкого, 39Б',
                 'phones' => ['+375 (29) 111-11-11'], 'sort_order' => 100, 'is_active' => true,
+                'working_hours' => 'Пн–Пт 9:00–18:00', 'online_only' => true, 'online_only_weekdays' => ['6', '7'],
             ])
             ->assertHasNoTableActionErrors();
 
-        $this->assertSame($partner->id, PartnerBranch::query()->sole()->b2b_client_id);
+        $branch = PartnerBranch::query()->sole();
+        $this->assertSame($partner->id, $branch->b2b_client_id);
+        $this->assertTrue($branch->online_only);
+        $this->assertSame(['6', '7'], array_map('strval', $branch->online_only_weekdays));
+    }
+
+    public function test_online_only_hides_minsk_phone_until_the_deadline_and_keeps_other_points_open(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-07 17:00', 'Europe/Minsk'));
+        $minsk = $this->city('minsk', 'Минск');
+        $borisov = $this->city('borisov', 'Борисов');
+        $partner = $this->partner('ООО «СБГ Бай»');
+        $partner->update(['unp' => '193265863']);
+        $branch = $this->branch($partner, $minsk, 'СБГ Бай Минск', [
+            'online_only' => true, 'online_only_until' => now()->addHour(), 'telegram_username' => 'sbgopt_bot',
+        ]);
+        $other = $this->branch($partner, $borisov, 'СБГ Бай Борисов', ['phones' => ['+375 (29) 144-63-14']]);
+
+        $this->withUnencryptedCookie('selected_city', 'minsk')->get('https://kotlov.by/contacts')
+            ->assertOk()
+            ->assertSee('Заказы только онлайн')
+            ->assertDontSee('href="tel:+375293777092"', false)
+            ->assertDontSee('href="tel:+375333777093"', false)
+            ->assertDontSee('id="quickCallback"', false)
+            ->assertDontSee('https://t.me/sbgopt_bot', false);
+        $this->postJson(route('partner-branches.phone', $branch))->assertForbidden();
+        $this->postJson(route('partner-branches.phone', $other))->assertOk()
+            ->assertJsonPath('phones.0.href', '+375291446314');
+
+        $this->travel(1)->hour();
+        $this->postJson(route('partner-branches.phone', $branch))->assertOk();
+        $this->withUnencryptedCookie('selected_city', 'minsk')->get('https://kotlov.by/contacts')
+            ->assertOk()->assertDontSee('Заказы только онлайн')->assertSee('href="tel:+375293777092"', false);
+
+        $branch->update(['online_only' => false, 'online_only_weekdays' => ['6']]);
+        $this->postJson(route('partner-branches.phone', $branch))->assertForbidden();
+        $this->travelTo(Carbon::parse('2026-11-08 00:00', 'Europe/Minsk'));
+        $this->postJson(route('partner-branches.phone', $branch))->assertOk();
     }
 
     public function test_admin_list_shows_points_with_reveal_counts_and_partner_sees_them_in_cabinet(): void

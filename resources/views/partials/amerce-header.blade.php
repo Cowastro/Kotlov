@@ -21,9 +21,9 @@
                 @endif
             </div>
 
-            <div class="site-topbar__service d-none d-md-block">
-                Заказы онлайн 24/7 · Консультант ежедневно до 20:00
-            </div>
+            @unless($cityContact['online_only'] ?? false)
+                <div class="site-topbar__service d-none d-md-block">Заказы онлайн 24/7</div>
+            @endunless
 
             <div class="site-topbar__actions">
                 @php
@@ -32,9 +32,13 @@
                         'display' => $phone1 ?? '+375 (29) 377-70-92',
                     ];
                 @endphp
-                <a href="tel:{{ $headerPhone['href'] }}" class="site-topbar__phone text-white">
-                    {{ $headerPhone['display'] }}
-                </a>
+                @if($cityContact['online_only'] ?? false)
+                    <span class="site-topbar__phone text-white" title="Менеджер подтвердит заказ в рабочее время">Заказы только онлайн</span>
+                @else
+                    <a href="tel:{{ $headerPhone['href'] }}" class="site-topbar__phone text-white">
+                        {{ $headerPhone['display'] }}
+                    </a>
+                @endif
 
                 <a href="/partners" class="site-topbar__b2b text-white">
                     <span class="site-topbar__b2b-label">Партнёрам / </span>B2B
