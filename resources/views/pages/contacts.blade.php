@@ -13,7 +13,7 @@
         'map_url' => 'https://www.google.com/maps?q=Минск,+ул.+Селицкого,+39Б',
         'map_embed_url' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2350.8!2d27.5615!3d53.9065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46dbcfd35b1e6ad3%3A0xb97b72b3def99842!2z0YPQuy4g0KHQtdC70LjRhtC60L7Qs9C-LCAzOdCkLCDQnNC40L3RgdC6!5e0!3m2!1sru!2sby!4v1700000000000',
     ];
-    $whatsappPhone = ltrim($contact['phone_links'][count($contact['phone_links']) - 1]['href'] ?? '+375333777093', '+');
+    $whatsappPhone = ltrim($contact['phone_links'][count($contact['phone_links']) - 1]['href'] ?? '', '+');
 @endphp
 <main id="wrapper">
 
@@ -69,6 +69,7 @@
                             </p>
                         </div>
                         <div class="grid-info tf-grid-layout sm-col-2">
+                            @if($contact['phone_links'])
                             <div class="d-grid gap-8">
                                 <h6>Телефон:</h6>
                                 @foreach($contact['phone_links'] as $phone)
@@ -79,6 +80,7 @@
                                     </p>
                                 @endforeach
                             </div>
+                            @endif
                             <div class="d-grid gap-8">
                                 <h6>Email:</h6>
                                 <p>
@@ -102,9 +104,11 @@
                                     <li class="d-flex gap-4 mb-4">
                                         <span class="cl-text-2">Заказы онлайн:</span> круглосуточно, 24/7
                                     </li>
-                                    <li class="d-flex gap-4">
-                                        <span class="cl-text-2">Консультант:</span> ежедневно до 20:00
-                                    </li>
+                                    @if($contact['online_only'] ?? false)
+                                        <li>Магазин временно принимает заказы только онлайн. Менеджер подтвердит заказ в рабочее время.</li>
+                                    @elseif(filled($contact['working_hours'] ?? null))
+                                        <li>График магазина — {{ $contact['working_hours'] }}</li>
+                                    @endif
                                 </ul>
                             </div>
                             <div class="wd-full d-grid gap-8">
@@ -133,6 +137,7 @@
                                             </svg>
                                         </a>
                                     </li>
+                                    @if($whatsappPhone !== '')
                                     <li>
                                         <a href="https://wa.me/{{ $whatsappPhone }}" target="_blank">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -140,6 +145,7 @@
                                             </svg>
                                         </a>
                                     </li>
+                                    @endif
                                 </ul>
                             </div>
                         </div>

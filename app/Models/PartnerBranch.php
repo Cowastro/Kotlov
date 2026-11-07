@@ -15,6 +15,7 @@ class PartnerBranch extends Model
         'working_hours', 'telegram_username', 'viber_phone', 'whatsapp_phone', 'instagram_username', 'map_url', 'storefront_title', 'storefront_intro',
         'storefront_promo', 'hero_image', 'gallery', 'map_embed_url',
         'seo_title', 'seo_description', 'is_active', 'sort_order',
+        'online_only', 'online_only_until', 'online_only_weekdays',
     ];
 
     protected $casts = [
@@ -24,6 +25,9 @@ class PartnerBranch extends Model
         'gallery' => 'array',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
+        'online_only' => 'boolean',
+        'online_only_until' => 'datetime',
+        'online_only_weekdays' => 'array',
     ];
 
     public function city(): BelongsTo
@@ -59,9 +63,21 @@ class PartnerBranch extends Model
     /** @return list<array{display: string, href: string}> */
     public function phoneLinks(): array
     {
+        if ($this->isOnlineOnly()) {
+            return [];
+        }
+
         return collect($this->phones ?? [])->filter()
             ->map(fn ($phone): array => ['display' => (string) $phone, 'href' => '+'.preg_replace('/\D+/', '', (string) $phone)])
             ->values()->all();
+    }
+
+    public function isOnlineOnly(): bool
+    {
+        $now = now('Europe/Minsk');
+
+        return ($this->online_only && ($this->online_only_until === null || $now->lt($this->online_only_until)))
+            || in_array($now->dayOfWeekIso, array_map('intval', $this->online_only_weekdays ?? []), true);
     }
 
     public function mapLink(): ?string

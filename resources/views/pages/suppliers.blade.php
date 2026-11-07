@@ -200,7 +200,11 @@
                             </div>
                             <div id="sup-faq-4" class="collapse" data-bs-parent="#accordion-suppliers">
                                 <p class="faq-content cl-text-2">
-                                    Напишите на info@kotlov.by или позвоните по телефону +375 (29) 377-70-92.
+                                    @if($cityContact['online_only'] ?? false)
+                                        Напишите на info@kotlov.by.
+                                    @else
+                                        Напишите на info@kotlov.by или позвоните по телефону +375 (29) 377-70-92.
+                                    @endif
                                     Расскажите об ассортименте и объёмах — менеджер свяжется в течение рабочего дня,
                                     согласует условия сотрудничества и поможет запустить продажи на платформе.
                                     Первичная консультация бесплатна.

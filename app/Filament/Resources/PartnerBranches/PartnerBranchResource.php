@@ -13,7 +13,9 @@ use Filament\Actions\EditAction;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -87,6 +89,23 @@ class PartnerBranchResource extends Resource
             TagsInput::make('phones')->label('Телефоны')->placeholder('+375 (29) 000-00-00')->required()
                 ->helperText('Каждый номер — отдельно, Enter после ввода.'),
             TextInput::make('working_hours')->label('Режим работы')->placeholder('Пн–Пт 9:00–18:00, Сб–Вс — выходной')->required()->maxLength(255),
+            Toggle::make('online_only')->label('Временно только онлайн')->default(false)->live()
+                ->afterStateUpdated(function (bool $state, Set $set): void {
+                    if (! $state) {
+                        $set('online_only_until', null);
+                    }
+                })
+                ->helperText('Телефоны и звонки с сайта скрываются для этой точки. Заказы на сайте остаются доступны.'),
+            DateTimePicker::make('online_only_until')->label('До даты и времени')
+                ->seconds(false)->timezone('Europe/Minsk')
+                ->visible(fn (Get $get): bool => (bool) $get('online_only'))
+                ->dehydratedWhenHidden()
+                ->helperText('Минское время. Оставьте пустым, если выключите режим вручную.'),
+            Select::make('online_only_weekdays')->label('Только онлайн каждую неделю')
+                ->multiple()->options([
+                    '1' => 'Понедельник', '2' => 'Вторник', '3' => 'Среда', '4' => 'Четверг',
+                    '5' => 'Пятница', '6' => 'Суббота', '7' => 'Воскресенье',
+                ])->helperText('Действует весь выбранный день по минскому времени.'),
             TextInput::make('email')->label('E-mail')->email()->maxLength(255),
             TextInput::make('telegram_username')->label('Telegram магазина')->prefix('@')->maxLength(32)->regex('/^[a-zA-Z0-9_]{5,32}$/')->placeholder('kotlovlida'),
             TextInput::make('viber_phone')->label('Viber магазина')->tel()->maxLength(50)->regex('/^\+?[\d\s()\-]{7,50}$/'),
@@ -120,6 +139,9 @@ class PartnerBranchResource extends Resource
                 TextColumn::make('name')->label('Точка продаж')->searchable()->weight('bold')
                     ->description(fn (PartnerBranch $record): string => (string) $record->address),
                 TextColumn::make('city.name')->label('Город')->sortable(),
+                TextColumn::make('service_mode')->label('Приём заказов')->badge()
+                    ->state(fn (PartnerBranch $record): string => $record->isOnlineOnly() ? 'Только онлайн' : 'Обычный режим')
+                    ->color(fn (PartnerBranch $record): string => $record->isOnlineOnly() ? 'warning' : 'gray'),
                 static::moderationColumn(),
                 TextColumn::make('city.storefront_enabled')->label('Сайт города')->badge()
                     ->formatStateUsing(fn ($state): string => $state ? 'Опубликован' : 'Не опубликован'),

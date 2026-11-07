@@ -9,7 +9,11 @@
                 </div>
                 <div class="city-catalog-branch__contacts">
                     @if($cityStorefrontBranch->address)<strong>{{ $cityStorefrontBranch->address }}</strong>@endif
-                    @if($cityStorefrontBranch->working_hours)<small>{{ $cityStorefrontBranch->working_hours }}</small>@endif
+                    @if($cityStorefrontBranch->isOnlineOnly())
+                        <small>Только онлайн. Заказ подтвердим в рабочее время.</small>
+                    @elseif($cityStorefrontBranch->working_hours)
+                        <small>{{ $cityStorefrontBranch->working_hours }}</small>
+                    @endif
                     <div>
                         @if($cityStorefrontBranch->mapLink())<a href="{{ $cityStorefrontBranch->mapLink() }}" target="_blank" rel="noopener">Построить маршрут</a>@endif
                         <a href="/">О магазине</a>

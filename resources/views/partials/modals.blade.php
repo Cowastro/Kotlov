@@ -127,7 +127,9 @@
             @foreach(($cityContact['phone_links'] ?? [['display' => '+375 (29) 377-70-92', 'href' => '+375293777092'], ['display' => '+375 (33) 377-70-93', 'href' => '+375333777093']]) as $phone)
             <a href="tel:{{ $phone['href'] }}" class="cl-text-2 link {{ $loop->last ? '' : 'mb-4' }}">{{ $phone['display'] }}</a>
             @endforeach
-            <p class="lh-26 cl-text-2 mt-8 mb-0">Заказы онлайн — 24/7<br>Консультант — ежедневно до 20:00</p>
+            <p class="lh-26 cl-text-2 mt-8 mb-0">Заказы онлайн — 24/7
+                @if($cityContact['online_only'] ?? false)<br>Менеджер подтвердит заказ в рабочее время.@endif
+            </p>
         </div>
     </div>
 </div>
@@ -257,6 +259,7 @@
 <!-- /Share -->
 
 <!-- Quick callback -->
+@unless($cityContact['online_only'] ?? false)
 <div class="modal modalCentered fade modal-log modal-ask" id="quickCallback" tabindex="-1" aria-labelledby="quickCallbackTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -296,6 +299,7 @@
     </div>
 </div>
 <!-- /Quick callback -->
+@endunless
 
 <!-- Online support chat -->
 <div class="modal fade support-chat-modal" id="supportChat" tabindex="-1" aria-labelledby="supportChatTitle" aria-hidden="true"
@@ -307,10 +311,12 @@
             <div class="support-chat__header">
                 <div>
                     <div class="support-chat__title" id="supportChatTitle">Онлайн-чат KOTLOV</div>
+                    @unless($cityContact['online_only'] ?? false)
                     <div class="support-chat__availability is-online" data-consultant-status>
                         <span class="quick-callback-status__dot" aria-hidden="true"></span>
                         <span data-consultant-status-text>Консультант онлайн до 20:00</span>
                     </div>
+                    @endunless
                 </div>
                 <button type="button" class="support-chat__close" data-bs-dismiss="modal" aria-label="Закрыть">×</button>
             </div>

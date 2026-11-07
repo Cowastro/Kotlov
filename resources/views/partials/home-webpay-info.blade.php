@@ -31,9 +31,11 @@
                     <a class="home-webpay__requisites" href="{{ url('/rekvizity') }}">Информация о компании KOTLOV</a>
                 </div>
                 <div class="home-webpay__contacts">
+                    @unless($cityContact['online_only'] ?? false)
                     @foreach(($homeSeller['phones'] ?? ['+375 (29) 377-70-92', '+375 (33) 377-70-93']) as $phone)
                         <a href="tel:{{ preg_replace('/\D+/', '', $phone) }}">{{ $phone }}</a>
                     @endforeach
+                    @endunless
                     <a href="mailto:{{ $homeSellerEmail }}">{{ $homeSellerEmail }}</a>
                 </div>
             </div>

@@ -87,7 +87,11 @@
                                         <p class="text-white fw-medium mb-4">{{ $branch->name }}</p>
                                         @if($branch->address)<p class="cl-text-3 mb-8">{{ $branch->address }}</p>@endif
                                         <div data-wtb-slot>
-                                            <button type="button" class="footer-branch__phone" data-wtb-phone="{{ route('partner-branches.phone', $branch) }}" data-wtb-phones-class="footer-branch__phones">Показать телефон</button>
+                                            @if($branch->isOnlineOnly())
+                                                <p class="cl-text-3">Только онлайн. Заказ подтвердим в рабочее время.</p>
+                                            @else
+                                                <button type="button" class="footer-branch__phone" data-wtb-phone="{{ route('partner-branches.phone', $branch) }}" data-wtb-phones-class="footer-branch__phones">Показать телефон</button>
+                                            @endif
                                         </div>
                                     </div>
                                 @endforeach
