@@ -4,12 +4,13 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Filament\Resources\SupportConversations\SupportConversationResource;
-use App\Filament\Resources\SupportConversations\Pages\ListSupportConversations;
-use App\Filament\Resources\SupportConversations\Pages\ViewSupportConversation;
+use App\Filament\Resources\ContactRequests\Pages\ListContactRequests;
+use App\Livewire\ContactRequestDialog;
 use App\Models\ContactRequest;
 use App\Models\SupportChatSetting;
 use App\Models\SupportConversation;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -141,59 +142,66 @@ class SupportChatTest extends TestCase
         $this->assertNotNull($assistantMessage->fresh()->read_at);
     }
 
-    public function test_manager_can_read_and_reply_from_admin_chat(): void
+    public function test_site_chat_and_manager_reply_use_the_unified_inbox(): void
     {
         $manager = User::factory()->create([
             'role' => 'manager',
             'is_active' => true,
             'name' => 'Мария',
         ]);
-        $conversation = SupportConversation::query()->create([
-            'public_id' => fake()->uuid(),
-            'session_hash' => hash('sha256', 'visitor-session'),
+        $this->postJson(route('support-chat.start'), [
             'name' => 'Сергей',
             'phone' => '+375 29 555-66-77',
-            'status' => 'new',
-            'last_message_at' => now(),
-            'last_visitor_message_at' => now(),
-        ]);
-        $visitorMessage = $conversation->messages()->create([
-            'sender_type' => 'visitor',
-            'body' => 'Есть ли котёл в наличии?',
-        ]);
+            'message' => 'Есть ли котёл в наличии?',
+        ])->assertCreated();
 
-        $lead = ContactRequest::query()->where('external_id', $conversation->public_id)->sole();
-        $this->actingAs($manager)
-            ->get(ContactRequestResource::getUrl('view', ['record' => $lead], panel: 'admin'))
-            ->assertRedirect(SupportConversationResource::getUrl('view', ['record' => $conversation], panel: 'admin'));
+        $conversation = SupportConversation::query()->sole();
+        $lead = $conversation->inboxEntry()->sole();
+        $this->assertTrue($lead->needs_attention);
+        $cardUrl = ContactRequestResource::getUrl('view', ['record' => $lead], panel: 'admin');
+        $this->assertSame($cardUrl, $manager->notifications()->sole()->data['actions'][0]['url']);
 
-        Livewire::actingAs($manager)
-            ->test(ViewSupportConversation::class, ['record' => $conversation->getRouteKey()])
+        $this->actingAs($manager);
+        $this->get(SupportConversationResource::getUrl('view', ['record' => $conversation], panel: 'admin'))
+            ->assertRedirect($cardUrl);
+        $this->get($cardUrl)
+            ->assertOk()
             ->assertSee('Есть ли котёл в наличии?')
-            ->assertActionVisible('reply')
-            ->callAction('reply', ['body' => 'Да, проверяем остаток и сейчас уточним.'])
-            ->assertHasNoActionErrors();
+            ->assertSee('Напишите ответ…');
+        Livewire::test(ListContactRequests::class)
+            ->assertCanSeeTableRecords([$lead])
+            ->mountAction(TestAction::make('dialog')->table($lead))
+            ->assertActionMounted(TestAction::make('dialog')->table($lead));
 
-        $this->assertNotNull($visitorMessage->fresh()->read_at);
-        $this->assertDatabaseHas('support_messages', [
-            'support_conversation_id' => $conversation->id,
-            'sender_type' => 'manager',
-            'sender_id' => $manager->id,
-            'body' => 'Да, проверяем остаток и сейчас уточним.',
-        ]);
-        $this->assertDatabaseHas('support_conversations', [
-            'id' => $conversation->id,
-            'status' => 'answered',
-            'assigned_user_id' => $manager->id,
-        ]);
+        $dialog = Livewire::test(ContactRequestDialog::class, ['contactRequestId' => $lead->id])
+            ->assertSee('Есть ли котёл в наличии?')
+            ->set('draft', 'Да, проверяем остаток и сейчас уточним.')
+            ->call('sendReply')
+            ->assertHasNoErrors()
+            ->assertSet('draft', '');
+        $this->getJson(route('support-chat.show'))
+            ->assertOk()
+            ->assertJsonPath('conversation.status', 'answered')
+            ->assertJsonPath('messages.1.sender_name', 'Мария')
+            ->assertJsonPath('messages.1.body', 'Да, проверяем остаток и сейчас уточним.');
+
+        $this->assertNotNull($conversation->messages()->first()->read_at);
         $this->assertDatabaseHas('contact_requests', [
             'id' => $lead->id,
             'status' => 'waiting',
             'responsible_user_id' => $manager->id,
+            'needs_attention' => false,
         ]);
+
+        $dialog->call('closeSiteChat')->assertSee('Диалог завершён.');
+        $this->postJson(route('support-chat.send'), ['message' => 'Спасибо!'])->assertConflict();
+        $dialog->call('reopenSiteChat')->assertSee('Напишите ответ…');
+        $this->postJson(route('support-chat.send'), ['message' => 'Спасибо!'])->assertCreated();
+        $this->assertTrue($lead->fresh()->needs_attention);
+        $this->assertDatabaseCount('contact_requests', 1);
     }
 
-    public function test_manager_can_enable_and_disable_safe_ai_replies_from_chat_list(): void
+    public function test_manager_can_enable_and_disable_safe_ai_replies_from_unified_inbox(): void
     {
         config([
             'services.ai.api_key' => 'deepseek-test-key',
@@ -206,7 +214,7 @@ class SupportChatTest extends TestCase
         SupportChatSetting::query()->create(['key' => 'legacy-row', 'ai_enabled' => false]);
 
         Livewire::actingAs($manager)
-            ->test(ListSupportConversations::class)
+            ->test(ListContactRequests::class)
             ->assertActionVisible('toggleAiReplies')
             ->callAction('toggleAiReplies')
             ->assertHasNoActionErrors();
@@ -214,7 +222,7 @@ class SupportChatTest extends TestCase
         $this->assertTrue(SupportChatSetting::current()->fresh()->ai_enabled);
 
         Livewire::actingAs($manager)
-            ->test(ListSupportConversations::class)
+            ->test(ListContactRequests::class)
             ->callAction('toggleAiReplies')
             ->assertHasNoActionErrors();
 

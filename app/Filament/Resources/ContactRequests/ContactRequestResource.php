@@ -8,7 +8,6 @@ use App\Filament\Resources\ContactRequests\Pages\EditContactRequest;
 use App\Filament\Resources\ContactRequests\Schemas\ContactRequestInfolist;
 use App\Filament\Resources\ContactRequests\Schemas\ContactRequestForm;
 use App\Filament\Resources\ContactRequests\Tables\ContactRequestsTable;
-use App\Filament\Resources\SupportConversations\SupportConversationResource;
 use App\Models\ContactRequest;
 use App\Models\SupportConversation;
 use BackedEnum;
@@ -44,15 +43,13 @@ class ContactRequestResource extends Resource
     public static function table(Table $table): Table { return ContactRequestsTable::configure($table); }
     public static function getRelations(): array { return []; }
 
-    public static function siteChatUrl(ContactRequest $record): ?string
+    public static function forSiteChat(SupportConversation $chat): string
     {
-        if (! $record->isSiteChat()) {
-            return null;
-        }
+        $lead = $chat->inboxEntry()->first();
 
-        $chat = SupportConversation::query()->where('public_id', $record->external_id)->firstOrFail();
-
-        return SupportConversationResource::getUrl('view', ['record' => $chat]);
+        return $lead
+            ? static::getUrl('view', ['record' => $lead], panel: 'admin')
+            : static::getUrl('index', ['tab' => 'active', 'tableFilters' => ['source' => ['value' => ContactRequest::SITE_CHAT_SOURCE]]], panel: 'admin');
     }
 
     public static function getPages(): array

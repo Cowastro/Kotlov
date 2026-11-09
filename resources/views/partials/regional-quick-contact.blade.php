@@ -9,7 +9,23 @@
             ->when($quickContactCity->slug === 'minsk', fn ($query) => $query->whereHas('client', fn ($client) => $client->where('unp', '193265863')))->first();
     }
 @endphp
-@if($quickContactBranch && ! $quickContactBranch->isOnlineOnly() && ($quickContactBranch->telegram_username || $quickContactBranch->viber_phone || $quickContactBranch->whatsapp_phone || $quickContactBranch->instagram_username))
+@if($quickContactBranch && ! $quickContactBranch->isOnlineOnly() && $quickContactCity->slug === 'minsk')
+    <style>
+        .regional-store-contact{position:fixed;z-index:201;left:20px;bottom:24px;max-width:calc(100% - 40px)}
+        .regional-store-contact .store-contact-widget{margin:0;border:1px solid #e2e6e9;border-radius:14px;box-shadow:0 6px 24px #18232c20;padding:10px 12px 4px}
+        .regional-store-contact .store-contact-widget__link{min-height:40px}
+        body.modal-open .regional-store-contact,body.mobile-catalog-menu-is-open .regional-store-contact{visibility:hidden}
+        .ai-selector__launcher,.ai-selector__teaser{display:none!important}
+        @media(max-width:767px){
+            .regional-store-contact{left:12px;bottom:76px;max-width:calc(100% - 24px)}
+            .product-detail-page .regional-store-contact{bottom:148px}
+            body{padding-bottom:160px}
+        }
+    </style>
+    <aside class="regional-store-contact" aria-label="Быстрая связь с магазином">
+        @include('partials.write-to-store')
+    </aside>
+@elseif($quickContactBranch && ! $quickContactBranch->isOnlineOnly() && ($quickContactBranch->telegram_username || $quickContactBranch->viber_phone || $quickContactBranch->whatsapp_phone || $quickContactBranch->instagram_username))
 @include('partials.branch-social-styles')
 <style>
 .regional-quick-contact{position:fixed;z-index:201;left:20px;right:auto;bottom:24px;width:max-content;max-width:calc(100vw - 40px);padding:12px 14px;border:1px solid #e2e6e9;border-radius:16px;background:#fff;box-shadow:0 6px 28px #18232c24}.regional-quick-contact__heading{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;line-height:1.3;font-weight:600;color:#20262b}.regional-quick-contact__heading svg{width:17px;height:17px;flex:none;color:#e04747}.regional-quick-contact .branch-social{margin:0}.regional-quick-contact .branch-social__title,.regional-quick-contact small{display:none}.regional-quick-contact .branch-social__links{display:flex;flex-wrap:nowrap;gap:7px}.regional-quick-contact a.branch-social__link{min-height:42px;padding:6px 9px;gap:6px;width:auto;flex:none;white-space:nowrap}.regional-quick-contact .branch-social__icon{width:25px;height:25px;flex-basis:25px;border-radius:7px}.regional-quick-contact .branch-social__icon svg{width:18px;height:18px}.regional-quick-contact strong{font-size:12px}.ai-selector__launcher,.ai-selector__teaser{display:none!important}body.modal-open .regional-quick-contact,body.mobile-catalog-menu-is-open .regional-quick-contact{display:none}

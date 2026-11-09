@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -91,6 +92,12 @@ class SupportConversation extends Model
                 ...array_keys($inboxState),
             ]);
         }, 3);
+    }
+
+    public function inboxEntry(): HasOne
+    {
+        return $this->hasOne(ContactRequest::class, 'external_id', 'public_id')
+            ->where('external_source', ContactRequest::SITE_CHAT_SOURCE);
     }
 
     public function messages(): HasMany

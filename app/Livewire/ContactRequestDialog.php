@@ -4,6 +4,8 @@ namespace App\Livewire;
 
 use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Models\ContactRequest;
+use App\Models\SupportConversation;
+use Illuminate\Support\Facades\DB;
 use App\Services\LeadInbox;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
@@ -51,6 +53,13 @@ class ContactRequestDialog extends Component
     public function markSeen(): void
     {
         ContactRequestResource::authorizeEdit($this->lead);
+        if ($this->lead->isSiteChat() && preg_match('/^site:(\d+)$/', (string) $this->lead->last_external_event_id, $match)) {
+            $this->lead->siteChat?->messages()
+                ->where('sender_type', 'visitor')
+                ->where('id', '<=', (int) $match[1])
+                ->whereNull('read_at')
+                ->update(['read_at' => now()]);
+        }
         $this->lead->clearInboxAttention();
         unset($this->lead);
     }
@@ -60,7 +69,38 @@ class ContactRequestDialog extends Component
         $lead = $this->lead;
         ContactRequestResource::authorizeEdit($lead);
         $this->draft = trim($this->draft);
-        $this->validate(['draft' => ['required', 'string', 'max:1000']], [], ['draft' => 'ответ']);
+        $this->validate(['draft' => ['required', 'string', $lead->isSiteChat() ? 'max:2000' : 'max:1000']], [], ['draft' => 'ответ']);
+
+        if ($lead->isSiteChat()) {
+            $sent = $this->updateSiteChat(function (SupportConversation $chat): bool {
+                if ($chat->status === 'closed') {
+                    return false;
+                }
+                $now = now();
+                $chat->messages()->where('sender_type', 'visitor')->whereNull('read_at')->update(['read_at' => $now]);
+                $chat->messages()->create([
+                    'sender_type' => 'manager',
+                    'sender_id' => auth()->id(),
+                    'body' => $this->draft,
+                ]);
+                $chat->update([
+                    'status' => 'answered',
+                    'assigned_user_id' => auth()->id(),
+                    'last_message_at' => $now,
+                    'last_manager_message_at' => $now,
+                ]);
+
+                return true;
+            });
+            if ($sent) {
+                $this->draft = '';
+                $this->historyPage = 1;
+            } else {
+                $this->addError('draft', 'Диалог закрыт или недоступен. Текст ответа сохранён.');
+            }
+
+            return;
+        }
 
         $message = $inbox->reply($lead, auth()->id(), $this->draft, $this->sendKey);
         if (! $message) {
@@ -82,16 +122,51 @@ class ContactRequestDialog extends Component
         unset($this->lead);
     }
 
+    public function closeSiteChat(): void
+    {
+        $this->updateSiteChat(fn (SupportConversation $chat): bool => $chat->update(['status' => 'closed']));
+    }
+
+    public function reopenSiteChat(): void
+    {
+        $this->updateSiteChat(fn (SupportConversation $chat): bool => $chat->status === 'closed' && $chat->update(['status' => 'new']));
+    }
+
+    private function updateSiteChat(callable $update): bool
+    {
+        $lead = $this->lead;
+        ContactRequestResource::authorizeEdit($lead);
+        abort_unless($lead->isSiteChat(), 404);
+
+        $result = DB::transaction(function () use ($lead, $update): bool {
+            $chat = $lead->siteChat()->lockForUpdate()->first();
+            $active = ContactRequest::query()->whereKey($lead->id)->whereNull('archived_at')->lockForUpdate()->first();
+
+            return $chat && $active && $update($chat);
+        }, 3);
+
+        unset($this->lead);
+
+        return $result;
+    }
+
     public function render(): View
     {
         $lead = $this->lead;
         $canEdit = ContactRequestResource::canEdit($lead);
+        $chat = $lead->isSiteChat() ? $lead->siteChat : null;
+        $messages = $chat
+            ? $chat->messages()->with('sender')->reorder('id', 'desc')
+            : $lead->leadMessages()->with('user')->latest('id');
 
         return view('livewire.contact-request-dialog', [
             'lead' => $lead,
-            'history' => $lead->leadMessages()->with('user')->latest('id')->simplePaginate(30, page: $this->historyPage),
+            'chat' => $chat,
+            'history' => $messages->simplePaginate(30, page: $this->historyPage),
             'canEdit' => $canEdit,
-            'canReply' => $canEdit && app(LeadInbox::class)->replyChannel($lead) !== null,
+            'canReply' => $canEdit && ($lead->isSiteChat()
+                ? $chat && $chat->status !== 'closed' && ! $lead->archived_at
+                : app(LeadInbox::class)->replyChannel($lead) !== null),
         ]);
     }
 }

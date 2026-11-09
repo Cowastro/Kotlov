@@ -60,7 +60,7 @@ class SupportChatNotifierTest extends TestCase
                 && str_contains($message, '+375 29 123-45-67')
                 && str_contains($message, 'Нужен котёл для дома 150 м²')
                 && str_contains($message, '*Цена на сайте:* 4 321,50 BYN')
-                && str_contains($message, '/admin/support-conversations/'.$conversation->id)
+                && str_contains($message, '/admin/contact-requests/'.$conversation->inboxEntry()->sole()->id)
         )->andReturn(['ok' => true]);
 
         (new SupportChatNotifier($telegram))->notifyNewConversation($conversation);

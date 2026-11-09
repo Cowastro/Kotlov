@@ -19,15 +19,6 @@ class ViewContactRequest extends ViewRecord
 {
     protected static string $resource = ContactRequestResource::class;
 
-    public function mount(int|string $record): void
-    {
-        parent::mount($record);
-
-        if ($url = ContactRequestResource::siteChatUrl($this->record)) {
-            $this->redirect($url);
-        }
-    }
-
     public function getTitle(): string
     {
         return 'Обращение: '.$this->record->name;
@@ -79,7 +70,7 @@ class ViewContactRequest extends ViewRecord
                 ->label('Взять в работу')
                 ->icon('heroicon-o-hand-raised')
                 ->color('warning')
-                ->visible(fn (): bool => ! $this->record->archived_at && in_array($this->record->status, ['new', 'read'], true))
+                ->visible(fn (): bool => ! $this->record->isSiteChat() && ! $this->record->archived_at && in_array($this->record->status, ['new', 'read'], true))
                 ->action(function (): void {
                     $this->record->update([
                         'status' => 'in_progress',
@@ -92,7 +83,7 @@ class ViewContactRequest extends ViewRecord
                 ->label('Напомнить')
                 ->icon('heroicon-o-clock')
                 ->color('primary')
-                ->visible(fn (): bool => ! $this->record->archived_at && ! in_array($this->record->status, ['done', 'cancelled'], true))
+                ->visible(fn (): bool => ! $this->record->isSiteChat() && ! $this->record->archived_at && ! in_array($this->record->status, ['done', 'cancelled'], true))
                 ->fillForm(fn (): array => [
                     'next_follow_up_at' => $this->record->next_follow_up_at ?: now()->addHour(),
                     'admin_notes' => $this->record->admin_notes,
@@ -122,7 +113,7 @@ class ViewContactRequest extends ViewRecord
                 ->label('Завершить')
                 ->icon('heroicon-o-check-circle')
                 ->color('success')
-                ->visible(fn (): bool => ! in_array($this->record->status, ['done', 'cancelled'], true))
+                ->visible(fn (): bool => ! $this->record->isSiteChat() && ! in_array($this->record->status, ['done', 'cancelled'], true))
                 ->fillForm(fn (): array => ['admin_notes' => $this->record->admin_notes])
                 ->schema([
                     Textarea::make('admin_notes')
@@ -141,6 +132,7 @@ class ViewContactRequest extends ViewRecord
                 }),
 
             Action::make('manage')
+                ->hidden(fn (): bool => $this->record->isSiteChat())
                 ->label('Статус и ответственный')
                 ->icon('heroicon-o-adjustments-horizontal')
                 ->color('gray')
@@ -182,7 +174,7 @@ class ViewContactRequest extends ViewRecord
                     ->label('Отметить неактуальным')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (): bool => $this->record->status !== 'cancelled')
+                    ->visible(fn (): bool => ! $this->record->isSiteChat() && $this->record->status !== 'cancelled')
                     ->requiresConfirmation()
                     ->schema([
                         Textarea::make('admin_notes')->label('Причина')->rows(3)->required(),
@@ -196,8 +188,8 @@ class ViewContactRequest extends ViewRecord
                         ]);
                         $this->workflowSaved('Обращение отмечено неактуальным');
                     }),
-                EditAction::make()->label('Изменить исходные данные'),
-            ]),
+                EditAction::make()->label('Изменить исходные данные')->hidden(fn (): bool => $this->record->isSiteChat()),
+            ])->hidden(fn (): bool => $this->record->isSiteChat()),
         ];
     }
 

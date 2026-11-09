@@ -6,14 +6,12 @@ use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
 use App\Filament\Resources\InstallRequests\InstallRequestResource;
 use App\Filament\Resources\Orders\OrderResource;
-use App\Filament\Resources\SupportConversations\SupportConversationResource;
 use App\Filament\Resources\TelephonyCalls\TelephonyCallResource;
 use App\Models\ContactRequest;
 use App\Models\CrmMailThread;
 use App\Models\CrmReminder;
 use App\Models\InstallRequest;
 use App\Models\Order;
-use App\Models\SupportConversation;
 use App\Models\TelephonyCall;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -61,16 +59,14 @@ class AdminTodayDashboard
                     ->where('direction', 'incoming')
                     ->whereBetween('received_at', [$dayStart, $dayEnd]))
                 ->count(),
-            'chats' => $this->chats($managerId)->whereBetween('created_at', [$dayStart, $dayEnd])->count(),
         ];
 
         $attentionCounts = [
             'calls' => $this->calls($managerId)->needsAttention()->count(),
             'orders' => $this->orders($managerId)->whereNull('archived_at')->where('status', 'new')->count(),
-            'requests' => $this->requests($managerId)->whereIn('status', ContactRequest::OPEN_STATUSES)->count(),
+            'requests' => $this->requestsNeedingAttention($managerId)->count(),
             'installations' => $this->installations($managerId)->where('status', 'new')->count(),
             'mail' => $this->mail($managerId)->needsAttention()->count(),
-            'chats' => $this->chats($managerId)->where('status', 'new')->count(),
         ];
 
         $dueCalls = $this->calls($managerId)
@@ -115,10 +111,9 @@ class AdminTodayDashboard
             'links' => [
                 ['label' => 'Звонки', 'url' => TelephonyCallResource::getUrl('index')],
                 ['label' => 'Заказы', 'url' => OrderResource::getUrl('index')],
-                ['label' => 'Заявки', 'url' => ContactRequestResource::getUrl('index')],
+                ['label' => 'Обращения', 'url' => ContactRequestResource::getUrl('index')],
                 ['label' => 'Монтаж', 'url' => InstallRequestResource::getUrl('index')],
                 ['label' => 'Почта', 'url' => CrmMailThreadResource::getUrl('index')],
-                ['label' => 'Чат', 'url' => SupportConversationResource::getUrl('index')],
             ],
         ];
     }
@@ -186,15 +181,14 @@ class AdminTodayDashboard
                 priority: 2,
             )));
 
-        $this->requests($managerId)
+        $this->requestsNeedingAttention($managerId)
             ->with(['responsibleUser', 'telephonyCalls.assignedUser'])
-            ->whereIn('status', ContactRequest::OPEN_STATUSES)
             ->oldest()
             ->limit(20)
             ->get()
             ->each(fn (ContactRequest $request) => $items->push($this->item(
                 key: 'request:'.$request->id,
-                kind: $request->next_follow_up_at ? 'Напомнить по заявке' : 'Заявка с сайта',
+                kind: $request->next_follow_up_at ? 'Напомнить по заявке' : $request->channelLabel(),
                 title: $request->name,
                 subtitle: $this->compact([$request->phone, $request->product_name, $request->message]),
                 time: $request->next_follow_up_at ?: $request->created_at,
@@ -259,24 +253,6 @@ class AdminTodayDashboard
                 priority: 2,
             )));
 
-        $this->chats($managerId)
-            ->with('assignedUser')
-            ->where('status', 'new')
-            ->oldest('last_message_at')
-            ->limit(20)
-            ->get()
-            ->each(fn (SupportConversation $chat) => $items->push($this->item(
-                key: 'chat:'.$chat->id,
-                kind: 'Онлайн-чат',
-                title: $chat->name,
-                subtitle: $chat->phone,
-                time: $chat->last_message_at ?: $chat->created_at,
-                url: SupportConversationResource::getUrl('view', ['record' => $chat]),
-                tone: 'danger',
-                responsible: $chat->assignedUser?->name,
-                priority: 2,
-            )));
-
         return $items
             ->unique('key')
             ->sortBy(fn (array $item): string => sprintf('%02d-%s', $item['priority'], $item['timeSort']))
@@ -321,7 +297,7 @@ class AdminTodayDashboard
         $requests->latest()->limit(80)->get()
             ->each(fn (ContactRequest $request) => $items->push($this->item(
                 key: 'activity-request:'.$request->id,
-                kind: 'Заявка с сайта',
+                kind: $request->channelLabel(),
                 title: $request->name,
                 subtitle: $this->compact([$request->phone, $request->product_name]),
                 time: $request->created_at,
@@ -388,24 +364,6 @@ class AdminTodayDashboard
                 closed: in_array($thread->status, ['closed', 'spam'], true),
                 statusLabel: CrmMailThread::STATUSES[$thread->status] ?? $thread->status,
                 responsible: $thread->assignedUser?->name,
-            )));
-
-        $chats = $this->chats($managerId)
-            ->with('assignedUser')
-            ->whereBetween('created_at', [$rangeStart, $rangeEnd]);
-        $this->applyStatus($chats, $status, 'status', ['closed']);
-        $chats->latest()->limit(80)->get()
-            ->each(fn (SupportConversation $chat) => $items->push($this->item(
-                key: 'activity-chat:'.$chat->id,
-                kind: 'Онлайн-чат',
-                title: $chat->name,
-                subtitle: $chat->phone,
-                time: $chat->last_message_at ?: $chat->created_at,
-                url: SupportConversationResource::getUrl('view', ['record' => $chat]),
-                tone: $chat->status === 'new' ? 'warning' : 'success',
-                closed: $chat->status === 'closed',
-                statusLabel: SupportConversation::STATUSES[$chat->status] ?? $chat->status,
-                responsible: $chat->assignedUser?->name,
             )));
 
         return ($sort === 'asc' ? $items->sortBy('timeSort') : $items->sortByDesc('timeSort'))
@@ -536,12 +494,21 @@ class AdminTodayDashboard
     }
 
     /** @return Builder<ContactRequest> */
+    private function requestsNeedingAttention(?int $managerId): Builder
+    {
+        return $this->requests($managerId)
+            ->whereIn('status', ContactRequest::OPEN_STATUSES)
+            ->when(ContactRequest::inboxStateAvailable(), fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                ->whereNull('external_source')
+                ->orWhere('external_source', '!=', ContactRequest::SITE_CHAT_SOURCE)
+                ->orWhere('needs_attention', true)));
+    }
+
+    /** @return Builder<ContactRequest> */
     private function requests(?int $managerId): Builder
     {
         return ContactRequest::query()->when(ContactRequest::inboxStateAvailable(), fn (Builder $query) => $query->whereNull('archived_at'))
-            ->where(fn (Builder $query) => $query
-            ->whereNull('external_source')
-            ->orWhere('external_source', '!=', ContactRequest::SITE_CHAT_SOURCE))->when(
+            ->when(
             $managerId,
             fn (Builder $query, int $id): Builder => $query->where(function (Builder $query) use ($id): void {
                 $query->where('responsible_user_id', $id)
@@ -568,15 +535,6 @@ class AdminTodayDashboard
     private function mail(?int $managerId): Builder
     {
         return CrmMailThread::query()->when(
-            $managerId,
-            fn (Builder $query, int $id): Builder => $query->where('assigned_user_id', $id),
-        );
-    }
-
-    /** @return Builder<SupportConversation> */
-    private function chats(?int $managerId): Builder
-    {
-        return SupportConversation::query()->when(
             $managerId,
             fn (Builder $query, int $id): Builder => $query->where('assigned_user_id', $id),
         );

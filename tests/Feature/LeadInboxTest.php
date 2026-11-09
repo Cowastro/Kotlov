@@ -80,6 +80,23 @@ class LeadInboxTest extends TestCase
         ]);
     }
 
+    public function test_quick_callback_enters_the_inbox_with_a_call_action(): void
+    {
+        $this->mock(\App\Services\ContactRequestNotifier::class)->shouldReceive('notify')->once();
+        $this->withHeader('User-Agent', 'Mozilla/5.0 Mobile Safari')->postJson(route('ask.store'), [
+            'name' => 'Быстрый обратный звонок',
+            'phone' => '+375 29 354-40-41',
+            'source' => 'quick_callback',
+        ])->assertOk()->assertJsonPath('success', true);
+
+        $lead = ContactRequest::sole();
+        $this->assertTrue($lead->needs_attention);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        Livewire::actingAs($manager)->test(ListContactRequests::class)
+            ->assertCanSeeTableRecords([$lead])
+            ->assertSeeHtml('href="tel:+375293544041"');
+    }
+
     public function test_new_message_flags_existing_work_and_returns_archived_dialog_to_the_queue(): void
     {
         $this->freezeTime();
@@ -156,7 +173,11 @@ class LeadInboxTest extends TestCase
 
         $this->assertFalse($channel->fresh()->acceptsMessages());
         $this->assertSame('123:shop-bot', $channel->fresh()->access_token);
-        $this->assertStringNotContainsString('store-contact-widget', view('partials.write-to-store')->render());
+        $widget = view('partials.write-to-store')->render();
+        $this->assertStringContainsString('Написать в чат', $widget);
+        $this->assertStringContainsString('Заказать звонок', $widget);
+        $this->assertStringNotContainsString('https://t.me/', $widget);
+        $this->assertStringNotContainsString('https://wa.me/', $widget);
         $this->postJson('/integrations/telegram/leads', [], [
             'X-Telegram-Bot-Api-Secret-Token' => 'secure_shop_webhook_secret',
         ])->assertNotFound();

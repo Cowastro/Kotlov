@@ -42,10 +42,9 @@
             <div class="crm-today__channels" aria-label="Поступления по каналам">
                 <span class="crm-today__channel">Звонки {{ $todayCounts['calls'] }}</span>
                 <span class="crm-today__channel">Заказы {{ $todayCounts['orders'] }}</span>
-                <span class="crm-today__channel">Заявки {{ $todayCounts['requests'] }}</span>
+                <span class="crm-today__channel">Обращения {{ $todayCounts['requests'] }}</span>
                 <span class="crm-today__channel">Монтаж {{ $todayCounts['installations'] }}</span>
                 <span class="crm-today__channel">Почта {{ $todayCounts['mail'] }}</span>
-                <span class="crm-today__channel">Чат {{ $todayCounts['chats'] }}</span>
             </div>
         </section>
 

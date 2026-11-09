@@ -24,8 +24,8 @@ class ContactRequestsTable
             ->modifyQueryUsing(fn ($query) => $query->with(['latestLeadMessage', 'responsibleUser']))
             ->poll('15s')
             ->recordClasses(fn (ContactRequest $record): ?string => $record->needs_attention && ! $record->archived_at ? 'contact-request-needs-attention' : null)
-            ->recordAction(fn (ContactRequest $record): ?string => self::hasMessengerDialog($record) ? 'dialog' : null)
-            ->recordUrl(fn (ContactRequest $record): ?string => ! self::hasMessengerDialog($record) && ContactRequestResource::canView($record)
+            ->recordAction(fn (ContactRequest $record): ?string => self::hasDialog($record) ? 'dialog' : null)
+            ->recordUrl(fn (ContactRequest $record): ?string => ! self::hasDialog($record) && ContactRequestResource::canView($record)
                 ? ContactRequestResource::getUrl('view', ['record' => $record]) : null)
             ->columns([
                 TextColumn::make('name')
@@ -153,7 +153,7 @@ class ContactRequestsTable
                     ->label('Диалог')
                     ->icon('heroicon-o-chat-bubble-left-right')
                     ->authorize(fn (ContactRequest $record): bool => ContactRequestResource::canView($record))
-                    ->visible(fn (ContactRequest $record): bool => self::hasMessengerDialog($record))
+                    ->visible(fn (ContactRequest $record): bool => self::hasDialog($record))
                     ->modalHeading(fn (ContactRequest $record): string => $record->name)
                     ->slideOver()
                     ->modalWidth('3xl')
@@ -163,6 +163,14 @@ class ContactRequestsTable
                         'lead' => $record,
                         'placement' => 'queue',
                     ])),
+                Action::make('callBack')
+                    ->label('Перезвонить')
+                    ->icon('heroicon-o-phone')
+                    ->iconButton()
+                    ->visible(fn (ContactRequest $record): bool => $record->source === 'quick_callback'
+                        && ! $record->archived_at && in_array($record->status, ContactRequest::OPEN_STATUSES, true)
+                        && strlen(AdminPhoneLinks::digits($record->phone)) >= 7)
+                    ->url(fn (ContactRequest $record): string => 'tel:+'.AdminPhoneLinks::digits($record->phone)),
                 ViewAction::make()->iconButton()->tooltip('Открыть карточку'),
                 ActionGroup::make([
                     Action::make('markSeen')
@@ -217,8 +225,8 @@ class ContactRequestsTable
             ]);
     }
 
-    private static function hasMessengerDialog(ContactRequest $record): bool
+    private static function hasDialog(ContactRequest $record): bool
     {
-        return filled($record->external_source) && ! $record->isSiteChat();
+        return filled($record->external_source);
     }
 }

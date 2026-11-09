@@ -132,7 +132,7 @@ class AdminTodayDashboardTest extends TestCase
             'total' => 450,
         ]);
 
-        SupportConversation::query()->create([
+        $chat = SupportConversation::query()->create([
             'public_id' => fake()->uuid(),
             'session_hash' => hash('sha256', 'dashboard-chat'),
             'name' => 'Ольга',
@@ -140,6 +140,9 @@ class AdminTodayDashboardTest extends TestCase
             'status' => 'new',
             'last_message_at' => now()->subMinutes(5),
         ]);
+
+        $chat->messages()->create(['sender_type' => 'visitor', 'body' => 'Есть ли в наличии?']);
+        $chat->touch();
 
         $mailbox = CrmMailbox::query()->firstOrFail();
         $thread = CrmMailThread::query()->create([
@@ -170,10 +173,9 @@ class AdminTodayDashboardTest extends TestCase
         $this->assertSame([
             'calls' => 1,
             'orders' => 1,
-            'requests' => 1,
+            'requests' => 2,
             'installations' => 1,
             'mail' => 1,
-            'chats' => 1,
         ], $data['todayCounts']);
         $this->assertCount(6, $data['attentionItems']);
         $this->assertCount(6, $data['activityItems']);
