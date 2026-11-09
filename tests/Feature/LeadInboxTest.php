@@ -124,7 +124,16 @@ class LeadInboxTest extends TestCase
         $this->assertTrue($channel->acceptsMessages());
         $this->assertSame('123:shop-bot', $channel->access_token);
         $this->assertNotSame('123:shop-bot', DB::table('lead_channels')->where('provider', 'telegram')->value('access_token'));
-        $this->assertStringContainsString('https://t.me/example_shop_bot', view('partials.write-to-store')->render());
+        LeadChannel::create([
+            'provider' => 'whatsapp',
+            'enabled' => true,
+            'public_url' => 'https://wa.me/375290000000',
+        ]);
+
+        $widget = view('partials.write-to-store')->render();
+        $this->assertStringContainsString('Написать в магазин · Минск', $widget);
+        $this->assertStringContainsString('https://t.me/example_shop_bot', $widget);
+        $this->assertStringNotContainsString('https://wa.me/', $widget);
         $page->assertSee('Входящих сообщений пока нет');
 
         $page->mountAction('configureChannel', arguments: ['provider' => 'telegram'])
@@ -134,7 +143,7 @@ class LeadInboxTest extends TestCase
 
         $this->assertFalse($channel->fresh()->acceptsMessages());
         $this->assertSame('123:shop-bot', $channel->fresh()->access_token);
-        $this->assertStringNotContainsString('example_shop_bot', view('partials.write-to-store')->render());
+        $this->assertStringNotContainsString('store-contact-widget', view('partials.write-to-store')->render());
         $this->postJson('/integrations/telegram/leads', [], [
             'X-Telegram-Bot-Api-Secret-Token' => 'secure_shop_webhook_secret',
         ])->assertNotFound();

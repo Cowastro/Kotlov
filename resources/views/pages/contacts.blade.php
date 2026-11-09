@@ -158,9 +158,7 @@
                     <p class="mb-24 cl-text-2">
                         Оставьте заявку — перезвоним в течение рабочего дня
                     </p>
-                    <div class="mb-24">
-                        @include('partials.write-to-store', ['showFormLink' => false, 'showSiteChat' => true])
-                    </div>
+                    @include('partials.write-to-store')
                     <form class="form-get kv-form" action="/contacts" method="POST" novalidate>
                         @csrf
                         <x-form-protection />
