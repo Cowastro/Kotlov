@@ -298,12 +298,6 @@
         max-width: 12rem;
     }
 
-    .fi-resource-contact-requests.fi-resource-list-records-page {
-        width: 100%;
-        max-width: 80rem;
-        margin-inline: auto;
-    }
-
     .fi-resource-contact-requests.fi-resource-list-records-page .fi-ta-header-cell {
         padding-block: .5rem;
     }
