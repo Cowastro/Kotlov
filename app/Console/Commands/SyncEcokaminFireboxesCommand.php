@@ -78,10 +78,11 @@ class SyncEcokaminFireboxesCommand extends Command
 
         $this->info(sprintf('Found fireboxes: %d (skipped Invicta: %d)', count($items), count($skippedInvicta)));
 
-        $only = array_values(array_filter(array_map(fn ($v) => mb_strtolower(trim((string) $v)), (array) $this->option('only'))));
+        // Spaces are ignored: «--only=ДЕЛЬТАПРАЙМ» matches «Топка ДЕЛЬТА ПРАЙМ 1000».
+        $only = array_values(array_filter(array_map(fn ($v) => preg_replace('/\s+/u', '', mb_strtolower((string) $v)), (array) $this->option('only'))));
         if ($only !== []) {
             $items = array_values(array_filter($items, function (array $item) use ($only): bool {
-                $name = mb_strtolower($item['name']);
+                $name = preg_replace('/\s+/u', '', mb_strtolower($item['name']));
                 foreach ($only as $needle) {
                     if (str_contains($name, $needle)) {
                         return true;
