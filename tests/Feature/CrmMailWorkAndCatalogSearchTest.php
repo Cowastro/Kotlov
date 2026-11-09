@@ -101,8 +101,8 @@ class CrmMailWorkAndCatalogSearchTest extends TestCase
     public function test_mail_search_combines_email_and_older_message_content_with_the_selected_folder_and_mailbox(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
-        $mailbox = CrmMailbox::create(['name' => 'Work', 'email' => 'work@example.com', 'username' => 'work@example.com']);
-        $another = CrmMailbox::create(['name' => 'Orders', 'email' => 'orders@example.com', 'username' => 'orders@example.com']);
+        $mailbox = CrmMailbox::create(['name' => 'Work', 'email' => 'work@example.com', 'username' => 'work@example.com', 'is_enabled' => true]);
+        $another = CrmMailbox::create(['name' => 'Orders', 'email' => 'orders@example.com', 'username' => 'orders@example.com', 'is_enabled' => true]);
         $match = $this->mailThread($mailbox, 'closed', ['status' => 'closed']);
         $wrongMailbox = $this->mailThread($another, 'elsewhere', ['participant_email' => $match->participant_email]);
         $wrongText = $this->mailThread($mailbox, 'wrong-text', ['participant_email' => $match->participant_email]);
@@ -120,6 +120,7 @@ class CrmMailWorkAndCatalogSearchTest extends TestCase
         Livewire::test(ListCrmMailThreads::class)
             ->assertSee('Email, отправитель, тема, текст, № заказа или КП')
             ->call('selectMailbox', (string) $mailbox->id)
+            ->assertSet('mailbox', (string) $mailbox->id)
             ->searchTable($match->participant_email.' CH-217')
             ->assertCanNotSeeTableRecords([$match, $wrongMailbox, $wrongText])
             ->assertSee('Искать во всех письмах')
