@@ -160,6 +160,10 @@
             margin-top: .75rem;
         }
 
+        .crm-mail-list-page .fi-ta-header-toolbar .fi-ta-search-field {
+            width: min(28rem, 62vw);
+        }
+
         @media (max-width: 640px) {
             .crm-mail-queue__folders {
                 width: 100%;

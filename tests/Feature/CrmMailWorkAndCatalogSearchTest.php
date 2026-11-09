@@ -110,6 +110,7 @@ class CrmMailWorkAndCatalogSearchTest extends TestCase
         foreach ([$match, $wrongMailbox] as $thread) {
             $thread->messages()->create([
                 'mailbox_id' => $thread->mailbox_id, 'direction' => 'incoming', 'is_read' => true,
+                'from_email' => $thread->participant_email,
                 'subject' => 'Исходная тема', 'text_body' => 'Артикул CH-217 из запроса', 'received_at' => now()->subDay(),
             ]);
         }
