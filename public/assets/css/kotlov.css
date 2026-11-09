@@ -35,7 +35,6 @@
 .product-desktop-purchase-actions { display: grid; grid-template-columns: 1fr; gap: 12px; }
 .product-desktop-purchase-actions .tf-btn { min-height: 64px; flex-direction: column; gap: 3px; line-height: 1.2; text-align: center; }
 .product-desktop-purchase-actions .tf-btn small { color: rgba(255, 255, 255, .76); font-size: 12px; font-weight: 600; line-height: 1.2; }
-.product-desktop-purchase-actions .btn-outline small { color: #686868; }
 @media (min-width: 992px) {
     .product-desktop-purchase-actions.has-installment { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
