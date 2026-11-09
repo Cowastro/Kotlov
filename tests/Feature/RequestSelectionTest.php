@@ -39,6 +39,28 @@ class RequestSelectionTest extends TestCase
         $this->assertSame(36 * 7.0 + 12 * 300.0, RequestLineSelection::total($lines));
     }
 
+    public function test_short_request_lines_find_the_right_size(): void
+    {
+        $category = Category::query()->create(['name' => 'Отопление', 'slug' => 'request-selection-heating', 'is_active' => true]);
+        $pipe40 = $this->product($category, 'Труба полипропиленовая PN20 40х6,7 РВК', 6.0, true);
+        $this->product($category, 'Труба полипропиленовая PN20 20х3,4 РВК', 1.0, true);
+        $valve34 = $this->product($category, 'Клапан термостатический угловой 3/4" STI', 30.0, true);
+        $this->product($category, 'Клапан термостатический угловой 1/2" STI', 20.0, true);
+        $elbow = $this->product($category, 'Угольник полипропиленовый 90° 40 белый', 1.2, true);
+        $reducer = $this->product($category, 'Муфта полипропиленовая переходная 40х32 белая', 0.9, true);
+
+        $lines = app(RequestLineSelection::class)->select([
+            ['name' => 'Труба ПП ДУ32', 'quantity' => 36.0, 'unit' => 'м'],
+            ['name' => 'Термостатические клапаны для радиатора 3/4"', 'quantity' => 12.0, 'unit' => 'шт'],
+            ['name' => 'Муфта переходная ПП ДУ32-25', 'quantity' => 30.0, 'unit' => 'шт'],
+        ], useAi: false);
+
+        $this->assertSame($pipe40->id, $lines[0]['product_id']);
+        $this->assertSame($valve34->id, $lines[1]['product_id']);
+        $this->assertSame($reducer->id, $lines[2]['product_id']);
+        $this->assertNotNull($elbow->id);
+    }
+
     public function test_manager_creates_a_quote_from_the_chosen_lines(): void
     {
         $category = Category::query()->create(['name' => 'Радиаторы', 'slug' => 'request-selection-radiators', 'is_active' => true]);

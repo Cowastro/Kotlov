@@ -75,7 +75,7 @@ class RequestLineSelection
         $candidates = [];
         foreach ($lines as $index => $line) {
             $phrases = $queries[$index] ?? [];
-            $candidates[$index] = $this->candidates([...$phrases, $line['name']]);
+            $candidates[$index] = $this->candidates([$line['name'], ...$phrases]);
         }
 
         $picks = $useAi ? $this->rank($lines, $candidates) : [];
@@ -99,65 +99,158 @@ class RequestLineSelection
     }
 
     /**
-     * Catalogue candidates of a line: every phrase is an AND of its words over name, SKU and category; phrases are
-     * OR-ed. Active cards with a price; confirmed stock first, then the cheaper.
+     * Catalogue candidates of a line. Every phrase becomes groups of word stems and size variants (ПП = полипропилен,
+     * ДУ32 у полипропилена = 32 или 40, 3/4" = 3/4 или 20); groups are AND-ed over name, SKU and category. When nothing
+     * is found the numeric groups are dropped one by one, then only the words, then the first word. Active cards with
+     * a price, ranked by how many groups of the request line they match, then confirmed stock, then cheaper.
      *
-     * @param  list<string>  $phrases
-     * @return array<int, array{id: int, name: string, sku: ?string, price: float, unit: string, in_stock: bool, availability: string}>
+     * @param  list<string>  $phrases  the request line first, then AI search phrases
+     * @return array<int, array{id: int, name: string, sku: ?string, price: float, unit: string, in_stock: bool, availability: string, relevance: int}>
      */
     public function candidates(array $phrases): array
     {
+        $phrases = array_values(array_slice(array_unique(array_filter(array_map('trim', $phrases))), 0, 5));
+        $lineGroups = $phrases !== [] ? $this->tokenGroups($phrases[0]) : [];
         $found = collect();
-        foreach (array_slice(array_unique(array_filter(array_map('trim', $phrases))), 0, 5) as $phrase) {
-            preg_match_all('/[\p{L}\p{N}][\p{L}\p{N}.,\/×x-]*/u', mb_strtolower($phrase), $words);
-            $tokens = collect($words[0])
-                ->map(fn (string $token): string => trim($token, '.,-'))
-                ->filter(fn (string $token): bool => mb_strlen($token) >= 2 || preg_match('/\d/', $token) === 1)
-                ->take(6)
-                ->values();
-            if ($tokens->isEmpty()) {
-                continue;
-            }
+        foreach ($phrases as $phrase) {
+            foreach ($this->relaxations($this->tokenGroups($phrase)) as $groups) {
+                $products = $this->search($groups);
+                if ($products->isNotEmpty()) {
+                    $found = $found->concat($products);
 
-            $products = Product::query()
-                ->where('is_active', true)->where('is_archived', false)->where('price', '>', 0)
-                ->where(function (Builder $query) use ($tokens): void {
-                    foreach ($tokens as $token) {
-                        $needles = $this->needles($token);
-                        $query->where(function (Builder $q) use ($needles): void {
-                            foreach ($needles as $needle) {
-                                $q->orWhere('name', 'like', $needle)
-                                    ->orWhere('sku', 'like', $needle)
-                                    ->orWhereHas('category', fn (Builder $c) => $c->where('name', 'like', $needle));
-                            }
-                        });
-                    }
-                })
-                ->with(['supplierProducts.supplier:id,code,is_active', 'integrationProducts.source'])
-                ->prioritizeConfirmedStock()
-                ->orderBy('price')
-                ->limit(self::CANDIDATES_PER_LINE)
-                ->get();
-            $found = $found->concat($products);
-            if ($found->unique('id')->count() >= self::CANDIDATES_PER_LINE * 2) {
+                    break;
+                }
+            }
+            if ($found->unique('id')->count() >= self::CANDIDATES_PER_LINE * 3) {
                 break;
             }
         }
 
         return $found->unique('id')
-            ->map(fn (Product $product): array => [
-                'id' => (int) $product->id,
-                'name' => $product->name,
-                'sku' => $product->sku,
-                'price' => round((float) $product->price, 2),
-                'unit' => $product->unit ?: 'шт.',
-                'in_stock' => $product->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK,
-                'availability' => $product->availabilityLabel(),
-            ])
-            ->sortBy([['in_stock', 'desc'], ['price', 'asc']])
+            ->map(function (Product $product) use ($lineGroups): array {
+                $name = mb_strtolower($product->name);
+
+                return [
+                    'id' => (int) $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'price' => round((float) $product->price, 2),
+                    'unit' => $product->unit ?: 'шт.',
+                    'in_stock' => $product->effectiveAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK,
+                    'availability' => $product->availabilityLabel(),
+                    'relevance' => collect($lineGroups)->filter(fn (array $variants): bool => collect($variants)
+                        ->contains(fn (string $variant): bool => str_contains($name, $variant)))->count(),
+                ];
+            })
+            ->sortBy([['relevance', 'desc'], ['in_stock', 'desc'], ['price', 'asc']])
             ->take(self::CANDIDATES_PER_LINE)
             ->keyBy('id')
             ->all();
+    }
+
+    /**
+     * @param  list<list<string>>  $groups
+     * @return Collection<int, Product>
+     */
+    private function search(array $groups): Collection
+    {
+        if ($groups === []) {
+            return collect();
+        }
+
+        return Product::query()
+            ->where('is_active', true)->where('is_archived', false)->where('price', '>', 0)
+            ->where(function (Builder $query) use ($groups): void {
+                foreach ($groups as $variants) {
+                    $query->where(function (Builder $q) use ($variants): void {
+                        foreach ($variants as $variant) {
+                            foreach ($this->needles($variant) as $needle) {
+                                $q->orWhere('name', 'like', $needle)
+                                    ->orWhere('sku', 'like', $needle)
+                                    ->orWhereHas('category', fn (Builder $c) => $c->where('name', 'like', $needle));
+                            }
+                        }
+                    });
+                }
+            })
+            ->with(['supplierProducts.supplier:id,code,is_active', 'integrationProducts.source'])
+            ->prioritizeConfirmedStock()
+            ->orderBy('price')
+            ->limit(self::CANDIDATES_PER_LINE * 2)
+            ->get();
+    }
+
+    /**
+     * @param  list<list<string>>  $groups
+     * @return list<list<list<string>>>
+     */
+    private function relaxations(array $groups): array
+    {
+        $isNumeric = fn (array $variants): bool => preg_match('/\d/', $variants[0]) === 1;
+        $attempts = [$groups];
+        $current = $groups;
+        for ($i = count($current) - 1; $i >= 0; $i--) {
+            if ($isNumeric($current[$i])) {
+                array_splice($current, $i, 1);
+                $attempts[] = $current;
+            }
+        }
+        $words = array_values(array_filter($groups, fn (array $variants): bool => ! $isNumeric($variants)));
+        $attempts[] = $words;
+        if ($words !== []) {
+            $attempts[] = [$words[0]];
+        }
+
+        return collect($attempts)->filter()->unique(fn (array $attempt): string => (string) json_encode($attempt))->values()->all();
+    }
+
+    /**
+     * Search groups of a request phrase: each group is a list of variants (OR), groups are AND-ed.
+     *
+     * @return list<list<string>>
+     */
+    public function tokenGroups(string $phrase): array
+    {
+        $text = mb_strtolower($phrase);
+        $text = str_replace(['″', '”', '“', '"', '°', "'"], ' ', $text);
+        $text = preg_replace('/(?<![\p{L}])(?:ду|dn)\.?\s*(\d+)/u', ' du$1 ', $text) ?? $text;
+        $text = preg_replace('/(\d)\s*[-–xх×*]\s*(\d)/u', '$1 $2', $text) ?? $text;
+        preg_match_all('/\d+\/\d+|du\d+|\d+(?:[.,]\d+)?|\p{L}+/u', $text, $matches);
+
+        $stop = ['для', 'и', 'с', 'со', 'под', 'на', 'по', 'к', 'из', 'шт', 'м', 'мм', 'см', 'кг', 'тип', 'товар', 'du'];
+        $ppOuter = ['15' => '20', '20' => '25', '25' => '32', '32' => '40', '40' => '50', '50' => '63', '65' => '75'];
+        $inch = ['1/2' => '15', '3/4' => '20', '1/4' => '8', '3/8' => '10'];
+
+        $groups = [];
+        foreach ($matches[0] as $token) {
+            if (in_array($token, $stop, true)) {
+                continue;
+            }
+            if (in_array($token, ['пп', 'ппр', 'ppr', 'pp', 'ппрс'], true)) {
+                $groups[] = ['полипроп', 'ppr', 'ппр'];
+            } elseif (preg_match('/^du(\d+)$/', $token, $m)) {
+                $groups[] = array_values(array_unique(array_filter([$m[1], $ppOuter[$m[1]] ?? null])));
+            } elseif (isset($inch[$token])) {
+                $groups[] = [$token, 'ду '.$inch[$token], 'ду'.$inch[$token], 'dn'.$inch[$token], 'dn '.$inch[$token]];
+            } elseif (preg_match('/^\d/', $token)) {
+                $groups[] = [str_replace(',', '.', $token)];
+            } elseif (mb_strlen($token) >= 3) {
+                $groups[] = [$this->stem($token)];
+            }
+        }
+
+        return collect($groups)->unique(fn (array $variants): string => implode('|', $variants))->take(6)->values()->all();
+    }
+
+    private function stem(string $word): string
+    {
+        $length = mb_strlen($word);
+
+        return match (true) {
+            $length >= 7 => mb_substr($word, 0, 6),
+            $length >= 5 => mb_substr($word, 0, $length - 1),
+            default => $word,
+        };
     }
 
     /** @return list<string> */
