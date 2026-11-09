@@ -244,6 +244,7 @@ class ProductsTable
                     ->tooltip(fn (Product $record): string => self::reserveRequestTooltip($record))
                     ->url(fn (Product $record): ?string => $record->latestSupplierMailThread
                         ? CrmMailThreadResource::getUrl('index', [
+                            'tab' => 'all',
                             'filters' => ['product_id' => ['value' => $record->id]],
                         ])
                         : null)

@@ -9,6 +9,7 @@ use App\Models\CrmMailThread;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -61,5 +62,83 @@ class CrmMailWorkAndCatalogSearchTest extends TestCase
         $this->assertSame([$target->id], array_keys($service->catalogSearchProducts('нержавеющая сталь KOTLOV 95')));
         $target->update(['is_archived' => true]);
         $this->assertSame([], $service->catalogSearchProducts('KOTLOV XO 95'));
+    }
+
+    public function test_work_queue_filters_by_owner_and_reason_and_sorts_by_responsible_name(): void
+    {
+        $manager = User::factory()->create(['name' => 'Zeta Manager', 'role' => 'manager', 'is_active' => true]);
+        $other = User::factory()->create(['name' => 'Alpha Manager', 'role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::create(['name' => 'Work', 'email' => 'work@example.com', 'username' => 'work@example.com']);
+        $mine = $this->mailThread($mailbox, 'mine', ['assigned_user_id' => $manager->id, 'priority' => 'urgent']);
+        $otherDue = $this->mailThread($mailbox, 'other', [
+            'assigned_user_id' => $other->id, 'status' => 'waiting_customer', 'next_follow_up_at' => now()->subDay(),
+        ]);
+        $unassigned = $this->mailThread($mailbox, 'unassigned', ['last_message_at' => now()->subDays(2)]);
+        $draft = $this->mailThread($mailbox, 'draft', ['status' => 'draft', 'next_follow_up_at' => now()->subDay()]);
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ListCrmMailThreads::class)
+            ->assertCanSeeTableRecords([$mine, $otherDue, $unassigned], inOrder: true)
+            ->assertCanNotSeeTableRecords([$draft])
+            ->assertSee('Пора связаться')
+            ->filterTable('assigned_user_id', 'mine')
+            ->assertCanSeeTableRecords([$mine])
+            ->assertCanNotSeeTableRecords([$otherDue, $unassigned])
+            ->filterTable('assigned_user_id', 'unassigned')
+            ->assertCanSeeTableRecords([$unassigned])
+            ->assertCanNotSeeTableRecords([$mine, $otherDue])
+            ->filterTable('assigned_user_id', $other->id)
+            ->filterTable('reaction', 'follow_up')
+            ->assertCanSeeTableRecords([$otherDue])
+            ->call('resetTableFiltersForm')
+            ->sortTable('assignedUser.name', 'asc')
+            ->assertCanSeeTableRecords([$otherDue, $mine, $unassigned], inOrder: true)
+            ->sortTable('assignedUser.name', 'desc')
+            ->assertCanSeeTableRecords([$mine, $otherDue, $unassigned], inOrder: true);
+    }
+
+    public function test_mail_search_combines_email_and_older_message_content_with_the_selected_folder_and_mailbox(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::create(['name' => 'Work', 'email' => 'work@example.com', 'username' => 'work@example.com']);
+        $another = CrmMailbox::create(['name' => 'Orders', 'email' => 'orders@example.com', 'username' => 'orders@example.com']);
+        $match = $this->mailThread($mailbox, 'closed', ['status' => 'closed']);
+        $wrongMailbox = $this->mailThread($another, 'elsewhere', ['participant_email' => $match->participant_email]);
+        $wrongText = $this->mailThread($mailbox, 'wrong-text', ['participant_email' => $match->participant_email]);
+
+        foreach ([$match, $wrongMailbox] as $thread) {
+            $thread->messages()->create([
+                'mailbox_id' => $thread->mailbox_id, 'direction' => 'incoming', 'is_read' => true,
+                'subject' => 'Исходная тема', 'text_body' => 'Артикул CH-217 из запроса', 'received_at' => now()->subDay(),
+            ]);
+        }
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ListCrmMailThreads::class)
+            ->assertSee('Email, отправитель, тема, текст, № заказа или КП')
+            ->call('selectMailbox', (string) $mailbox->id)
+            ->searchTable($match->participant_email.' CH-217')
+            ->assertCanNotSeeTableRecords([$match, $wrongMailbox, $wrongText])
+            ->assertSee('Искать во всех письмах')
+            ->call('selectMailTab', 'all')
+            ->assertCanSeeTableRecords([$match])
+            ->assertCanNotSeeTableRecords([$wrongMailbox, $wrongText])
+            ->searchTable('Исходная тема')
+            ->assertCanSeeTableRecords([$match])
+            ->assertCanNotSeeTableRecords([$wrongMailbox, $wrongText]);
+    }
+
+    private function mailThread(CrmMailbox $mailbox, string $key, array $attributes = []): CrmMailThread
+    {
+        return $mailbox->threads()->create($attributes + [
+            'thread_key' => $key,
+            'participant_name' => 'Contact',
+            'participant_email' => $key.'@example.com',
+            'subject' => 'Последняя тема',
+            'status' => 'new',
+            'last_message_at' => now(),
+        ]);
     }
 }

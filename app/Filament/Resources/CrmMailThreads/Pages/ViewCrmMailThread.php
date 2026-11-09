@@ -421,7 +421,7 @@ class ViewCrmMailThread extends ViewRecord
                 ->modalDescription('Переписка исчезнет из рабочей почты. Следующие письма с этого адреса автоматически попадут в «Спам» без уведомлений и счётчика непрочитанных.')
                 ->action(function (): void {
                     $this->record->markAsSpam();
-                    $this->redirect(CrmMailThreadResource::getUrl('index', ['activeTab' => 'spam']));
+                    $this->redirect(CrmMailThreadResource::getUrl('index', ['tab' => 'spam']));
                 }),
             Action::make('restore_spam')
                 ->label('Вернуть и разблокировать')

@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\CrmMailThreads\Pages;
 
 use App\Filament\Resources\CrmMailThreads\CrmMailThreadResource;
-use App\Filament\Widgets\CrmMailHealthOverview;
 use App\Models\CrmMailbox;
 use App\Models\CrmMailMessage;
 use App\Models\CrmMailThread;
@@ -27,6 +26,8 @@ use Throwable;
 
 class ListCrmMailThreads extends ListRecords
 {
+    public const WORK_TABS = ['needs_response', 'my_work', 'inbox', 'all'];
+
     protected static string $resource = CrmMailThreadResource::class;
 
     protected array $extraBodyAttributes = ['class' => 'crm-mail-list-page'];
@@ -41,7 +42,7 @@ class ListCrmMailThreads extends ListRecords
 
     public function getSubheading(): ?string
     {
-        return 'Входящие, исходящие, черновики, спам и история общения с клиентами и поставщиками в одном месте.';
+        return 'Очередь ответов, переписки менеджеров и почтовые папки.';
     }
 
     public function mount(): void
@@ -191,13 +192,13 @@ class ListCrmMailThreads extends ListRecords
     {
         return static::threadQueryForMailbox(
             $this->selectedMailboxId(),
-            CrmMailThreadResource::getEloquentQuery(),
+            CrmMailThreadResource::getEloquentQuery()->without('messages'),
         );
     }
 
     public static function threadQueryForMailbox(?int $mailboxId, ?Builder $query = null): Builder
     {
-        return ($query ?? CrmMailThread::query())
+        return ($query ?? CrmMailThread::query()->visibleTo(auth()->user()))
             ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId));
     }
 
@@ -222,7 +223,8 @@ class ListCrmMailThreads extends ListRecords
             ->where('is_enabled', true)
             ->withCount(['messages as unread_count' => fn (Builder $query): Builder => $query
                 ->where('direction', 'incoming')
-                ->where('is_read', false)])
+                ->where('is_read', false)
+                ->whereHas('thread', fn (Builder $threads): Builder => $threads->whereNotIn('status', ['draft', 'spam', 'closed']))])
             ->orderByRaw("CASE WHEN email = 'info@kotlov.by' THEN 0 WHEN email = 'order@kotlov.by' THEN 1 ELSE 2 END")
             ->orderBy('email')
             ->get(['id', 'name', 'email']);
@@ -240,7 +242,18 @@ class ListCrmMailThreads extends ListRecords
     public function selectMailbox(string $mailbox): void
     {
         $this->mailbox = $mailbox;
+        unset($this->cachedTabs);
         $this->resetPage();
+    }
+
+    public function selectMailTab(string $tab): void
+    {
+        if (! isset($this->getCachedTabs()[$tab])) {
+            return;
+        }
+
+        $this->activeTab = $tab;
+        $this->updatedActiveTab();
     }
 
     public function content(Schema $schema): Schema
@@ -248,7 +261,8 @@ class ListCrmMailThreads extends ListRecords
         return $schema->components([
             View::make('filament.resources.crm-mail-threads.mailbox-switcher')
                 ->viewData(fn (): array => ['mailboxes' => $this->mailboxSwitchOptions()]),
-            $this->getTabsContentComponent(),
+            View::make('filament.resources.crm-mail-threads.work-queue')
+                ->viewData(fn (): array => ['tabs' => $this->getCachedTabs(), 'workTabs' => self::WORK_TABS]),
             RenderHook::make(PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_BEFORE),
             EmbeddedTable::make(),
             RenderHook::make(PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_AFTER),
@@ -266,7 +280,9 @@ class ListCrmMailThreads extends ListRecords
                     $skipped = 0;
                     $errors = [];
 
-                    foreach (CrmMailbox::query()->where('is_enabled', true)->get() as $mailbox) {
+                    foreach (CrmMailbox::query()->visibleTo(auth()->user())
+                        ->where('is_enabled', true)->when($this->selectedMailboxId(), fn (Builder $query, int $id): Builder => $query->whereKey($id))
+                        ->get() as $mailbox) {
                         try {
                             $result = app(ImapMailboxSynchronizer::class)->sync($mailbox);
                             $imported += $result['imported'];
@@ -392,13 +408,6 @@ class ListCrmMailThreads extends ListRecords
                         ->body('В корзину перемещено переписок: '.$count)
                         ->send();
                 }),
-        ];
-    }
-
-    protected function getHeaderWidgets(): array
-    {
-        return [
-            CrmMailHealthOverview::class,
         ];
     }
 }

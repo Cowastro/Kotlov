@@ -124,6 +124,48 @@
     /* Mail is reviewed on narrower office displays. Keep operational columns
        compact so the table fits without sacrificing sender and subject. */
     @media (min-width: 1024px) {
+        .crm-mail-queue__nav {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .crm-mail-queue__folders {
+            margin-inline-start: auto;
+            min-width: 12rem;
+        }
+
+        .crm-mail-queue__hint {
+            margin-top: .6rem;
+            font-size: .8125rem;
+            color: var(--gray-600);
+        }
+
+        .dark .crm-mail-queue__hint {
+            color: var(--gray-400);
+        }
+
+        .crm-mail-queue__health {
+            margin-top: .6rem;
+            font-size: .8125rem;
+        }
+
+        .crm-mail-queue__health summary {
+            cursor: pointer;
+            width: fit-content;
+        }
+
+        .crm-mail-queue__health > div {
+            margin-top: .75rem;
+        }
+
+        @media (max-width: 640px) {
+            .crm-mail-queue__folders {
+                width: 100%;
+            }
+        }
+
         .crm-mail-list-page .fi-ta-header-cell {
             padding: 0.5rem 0.375rem;
             font-size: 0.72rem;
