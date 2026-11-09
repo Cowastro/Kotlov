@@ -62,6 +62,24 @@ class LegacySeoRedirectTest extends TestCase
         }
     }
 
+    public function test_retired_dacha_aggregate_redirects_to_current_stove_root(): void
+    {
+        $response = $this->get('https://kotlov.by/dlya-dachi?brand=example');
+
+        $response->assertStatus(301);
+        $response->assertRedirect('https://kotlov.by/pechki?brand=example');
+    }
+
+    public function test_default_social_image_points_to_an_existing_catalog_asset(): void
+    {
+        $response = $this->withViewErrors([])->get('https://kotlov.by/about');
+        $response->assertOk();
+        $html = $response->getContent();
+
+        $this->assertStringContainsString('https://kotlov.by/img/popular/catalog.jpg', $html);
+        $this->assertStringNotContainsString('/img/og-default.jpg', $html);
+    }
+
     public function test_removed_legacy_product_falls_back_to_nearest_active_category(): void
     {
         $this->enableCityStorefront('skidel');

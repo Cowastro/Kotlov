@@ -131,6 +131,10 @@ class HandleRedirects
         //
         // Порядок важен: более специфичные паттерны — выше.
         $legacyPatterns = [
+            // Empty legacy aggregate was retired when the stove catalogue was
+            // restructured. Preserve its accumulated signals on the live root.
+            '~^/dlya-dachi$~' => '/pechki',
+
             // ── Тепловые насосы ───────────────────────────────────────────────
             // /teplovye-nasosy → /teplovyie-nasosyi (старое написание без iye)
             '~^/teplovye-nasosy/(.+)$~' => '/teplovyie-nasosyi/$1',
