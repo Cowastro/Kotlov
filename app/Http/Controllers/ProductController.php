@@ -159,7 +159,7 @@ class ProductController extends Controller
         $canonical = $canonicalBase.'/'.$productCategory->slug.'/'.$product->slug;
 
         $firstImage = $product->imageUrl(0);
-        $ogImageRaw = $firstImage ?: asset('img/popular/catalog.jpg');
+        $ogImageRaw = $firstImage ?: asset('img/og/kotlov-default.jpg');
         // og:image и Schema.org требуют абсолютный URL
         $ogImage = str_starts_with($ogImageRaw, '/') ? 'https://kotlov.by'.$ogImageRaw : $ogImageRaw;
 

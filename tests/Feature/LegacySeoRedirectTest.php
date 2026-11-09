@@ -76,7 +76,8 @@ class LegacySeoRedirectTest extends TestCase
         $response->assertOk();
         $html = $response->getContent();
 
-        $this->assertStringContainsString('https://kotlov.by/img/popular/catalog.jpg', $html);
+        $this->assertStringContainsString('https://kotlov.by/img/og/kotlov-default.jpg', $html);
+        $this->assertFileExists(public_path('img/og/kotlov-default.jpg'));
         $this->assertStringNotContainsString('/img/og-default.jpg', $html);
     }
 

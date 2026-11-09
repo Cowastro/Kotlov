@@ -23,7 +23,7 @@
     <meta property="og:description" content="{{ $ogDescription ?? $metaDescription }}">
     <meta property="og:type" content="{{ $ogType ?? 'website' }}">
     <meta property="og:url" content="{{ $ogUrl ?? url()->current() }}">
-    <meta property="og:image" content="{{ $ogImage ?? asset('img/popular/catalog.jpg') }}">
+    <meta property="og:image" content="{{ $ogImage ?? asset('img/og/kotlov-default.jpg') }}">
     @if(isset($ogImageSecure))
     <meta property="og:image:secure_url" content="{{ $ogImageSecure }}">
     @endif
@@ -55,7 +55,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $twitterTitle ?? $ogTitle ?? $metaTitle }}">
     <meta name="twitter:description" content="{{ $twitterDescription ?? $ogDescription ?? $metaDescription }}">
-    <meta name="twitter:image" content="{{ $twitterImage ?? $ogImage ?? asset('img/popular/catalog.jpg') }}">
+    <meta name="twitter:image" content="{{ $twitterImage ?? $ogImage ?? asset('img/og/kotlov-default.jpg') }}">
 
     @isset($schemaJson)
     <script type="application/ld+json">{!! $schemaJson !!}</script>

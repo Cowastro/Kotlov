@@ -98,6 +98,9 @@ class BrandController extends Controller
             ],
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        return view('pages.brand', compact('brand', 'products', 'brandCategories', 'h1', 'title', 'description', 'canonical', 'schemaJson'));
+        // Link previews (Telegram, Viber, social) show the brand logo, not the generic site picture.
+        $ogImage = filled($brand->logo) ? url($brand->image_url) : null;
+
+        return view('pages.brand', compact('brand', 'products', 'brandCategories', 'h1', 'title', 'description', 'canonical', 'schemaJson', 'ogImage'));
     }
 }

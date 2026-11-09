@@ -61,12 +61,12 @@ class Category extends Model
             return asset('storage/'.ltrim($path, '/'));
         }
 
-        return asset(static::fallbackImagePath($this->slug) ?? 'img/popular/catalog.jpg');
+        return asset(static::fallbackImagePath($this->slug) ?? 'img/products/product-placeholder.jpg');
     }
 
     public function catalogImageUrl(array $categoryIds): string
     {
-        $placeholder = 'img/popular/catalog.jpg';
+        $placeholder = 'img/products/product-placeholder.jpg';
         $image = $this->imageUrl();
         $imagePath = parse_url($image, PHP_URL_PATH);
 
