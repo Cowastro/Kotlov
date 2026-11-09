@@ -20,10 +20,10 @@
     var teaser = one('[data-ai-selector-teaser]');
     var assistanceMenu = one('[data-assistance-menu]');
     var supportChatElement = document.getElementById('supportChat');
-    var supportChatModal = supportChatElement ? window.bootstrap.Modal.getOrCreateInstance(supportChatElement) : null;
+    var supportChatOpeners = all('[data-support-chat-open]');
+    var supportChatTrigger = null;
     var supportChatConversation = null;
     var supportChatLastMessageId = 0;
-    var supportChatPagePosition = null;
     var teaserAutoHideTimer = null;
 
     function all(selector) { return Array.prototype.slice.call(document.querySelectorAll(selector)); }
@@ -113,23 +113,27 @@
         }
     }
 
-    function rememberSupportChatPagePosition() {
-        supportChatPagePosition = {
-            x: window.pageXOffset || document.documentElement.scrollLeft || 0,
-            y: window.pageYOffset || document.documentElement.scrollTop || 0
-        };
+    function fitSupportChatToKeyboard() {
+        var viewport = window.visualViewport;
+        var panel = supportChatElement;
+        var covered = viewport ? window.innerHeight - viewport.height - viewport.offsetTop : 0;
+        if (!panel.hidden && covered > 120 && viewport.scale === 1 && panel.contains(document.activeElement)) {
+            panel.style.setProperty('--support-chat-keyboard-bottom', (covered + 12) + 'px');
+            panel.style.setProperty('--support-chat-height-limit', Math.max(0, viewport.height - 24) + 'px');
+        } else {
+            panel.style.removeProperty('--support-chat-keyboard-bottom');
+            panel.style.removeProperty('--support-chat-height-limit');
+        }
     }
 
-    function restoreSupportChatPagePosition() {
-        if (!supportChatPagePosition) return;
-        var position = supportChatPagePosition;
-        var restore = function () { window.scrollTo(position.x, position.y); };
-        restore();
-        window.requestAnimationFrame(function () {
-            restore();
-            window.requestAnimationFrame(restore);
-        });
-        window.setTimeout(restore, 120);
+    function closeSupportChat() {
+        var restoreFocus = supportChatElement.contains(document.activeElement);
+        setHidden(supportChatElement, true);
+        supportChatOpeners.forEach(function (button) { button.setAttribute('aria-expanded', 'false'); });
+        fitSupportChatToKeyboard();
+        if (restoreFocus && supportChatTrigger && supportChatTrigger.getClientRects().length) {
+            supportChatTrigger.focus({ preventScroll: true });
+        }
     }
 
     function renderSupportChat(data) {
@@ -519,24 +523,32 @@
         });
     });
 
-    all('[data-support-chat-open]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            closeAssistanceMenu();
-            if (supportChatModal) supportChatModal.show();
-        });
-    });
-
     if (supportChatElement) {
         var supportStartForm = one('[data-support-chat-start-form]', supportChatElement);
         var supportMessageForm = one('[data-support-chat-message-form]', supportChatElement);
-        supportChatElement.addEventListener('show.bs.modal', rememberSupportChatPagePosition);
-        supportChatElement.addEventListener('shown.bs.modal', loadSupportChat);
-        supportChatElement.addEventListener('hide.bs.modal', function () {
-            if (document.activeElement && supportChatElement.contains(document.activeElement)) {
-                document.activeElement.blur();
+        var supportClose = one('[data-support-chat-close]', supportChatElement);
+        supportChatOpeners.forEach(function (button) {
+            button.addEventListener('click', function () {
+                closeAssistanceMenu();
+                supportChatTrigger = button.closest('[data-assistance-menu]') ? launcher : button;
+                var wasHidden = supportChatElement.hidden;
+                setHidden(supportChatElement, false);
+                supportChatOpeners.forEach(function (opener) { opener.setAttribute('aria-expanded', 'true'); });
+                supportClose.focus({ preventScroll: true });
+                if (wasHidden) loadSupportChat();
+            });
+        });
+        supportClose.addEventListener('click', closeSupportChat);
+        supportChatElement.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeSupportChat();
             }
         });
-        supportChatElement.addEventListener('hidden.bs.modal', restoreSupportChatPagePosition);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', fitSupportChatToKeyboard);
+            window.visualViewport.addEventListener('scroll', fitSupportChatToKeyboard);
+        }
         supportStartForm.addEventListener('submit', function (event) {
             event.preventDefault();
             supportChatError('', false);
@@ -575,7 +587,7 @@
                 supportChatError(error.message, true);
             }).finally(function () {
                 submit.disabled = false;
-                input.focus();
+                if (!supportChatElement.hidden && document.activeElement === submit) input.focus({ preventScroll: true });
             });
         });
         one('textarea[name="message"]', supportMessageForm).addEventListener('keydown', function (event) {
@@ -595,7 +607,7 @@
             setHidden(one('[data-support-chat-intro]', supportChatElement), false);
         });
         window.setInterval(function () {
-            if (supportChatConversation && supportChatElement.classList.contains('show')) loadSupportChat();
+            if (supportChatConversation && !supportChatElement.hidden) loadSupportChat();
         }, 5000);
     }
 
