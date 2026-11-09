@@ -43,7 +43,7 @@
     .primo-cover__price small{font-family:Manrope,Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:.12em}
     @media(max-width:1199px){.primo-cover .prime-cover__art{max-width:48%;height:82%}}
     @media(max-width:991px){.primo-cover .prime-cover__art{max-width:46%;height:72%}.primo-cover .prime-cover__facts{display:none}}
-    @media(max-width:767px){.primo-cover{background:radial-gradient(ellipse 70% 40% at 50% 84%,rgba(232,104,40,.34),transparent 72%),linear-gradient(180deg,#0a0807 0%,#140e0b 55%,#1d140f 100%)}.primo-cover .prime-cover__word{display:none}.primo-cover .prime-cover__copy{padding:24px 20px 0}.primo-cover .prime-cover__title{font-size:54px}.primo-cover .prime-cover__copy p{display:none}.primo-cover__gift{margin-bottom:12px;padding:6px 12px 6px 10px;font-size:11px}.primo-cover__price{font-size:26px}.primo-cover__buy{gap:8px 14px}.primo-cover .prime-cover__art{right:50%;left:auto;transform:translateX(50%);width:auto;height:44%;max-width:86%;bottom:2%}}
+    @media(max-width:767px){.primo-cover{background:radial-gradient(ellipse 70% 40% at 50% 84%,rgba(232,104,40,.34),transparent 72%),linear-gradient(180deg,#0a0807 0%,#140e0b 55%,#1d140f 100%)}.primo-cover .prime-cover__word{display:none}.primo-cover .prime-cover__copy{padding:24px 20px 0}.primo-cover .prime-cover__title{font-size:54px}.primo-cover .prime-cover__copy p{display:none}.primo-cover__gift{margin-bottom:12px;padding:6px 12px 6px 10px;font-size:11px}.primo-cover__price{flex-basis:100%;font-size:28px}.primo-cover__buy{gap:8px 14px}.primo-cover .prime-cover__art{right:50%;left:auto;transform:translateX(50%);width:auto;height:46%;max-width:92%;bottom:7%}}
     @media(max-width:400px){.primo-cover .prime-cover__title{font-size:46px}}
 </style>
 @endpush

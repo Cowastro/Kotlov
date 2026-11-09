@@ -10,16 +10,49 @@
     }
 @endphp
 @if($quickContactBranch && ! $quickContactBranch->isOnlineOnly() && $quickContactCity->slug === 'minsk')
+    {{-- Desktop: the contact card in the corner. Phone: a small round chat button; the card opens on tap. --}}
     <style>
         .regional-store-contact .store-contact-widget{margin:0;border:1px solid #e2e6e9;border-radius:14px;box-shadow:0 6px 24px #18232c20;padding:10px 12px 4px}
         .regional-store-contact .store-contact-widget__link{min-height:40px}
+        .regional-store-contact__fab,.regional-store-contact__close{display:none}
         body.modal-open .regional-store-contact,body.mobile-catalog-menu-is-open .regional-store-contact{visibility:hidden}
         .ai-selector__launcher,.ai-selector__teaser{display:none!important}
-        @media(max-width:767px){body{padding-bottom:160px}}
+
+        @media(max-width:767px){
+            body:has(.regional-store-contact) #goTop{bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+            .regional-store-contact__fab{position:relative;display:flex;align-items:center;justify-content:center;width:52px;height:52px;padding:0;border:0;border-radius:50%;background:#263342;color:#fff;box-shadow:0 8px 22px rgba(24,35,44,.32);cursor:pointer}
+            .regional-store-contact__fab svg{width:24px;height:24px}
+            .regional-store-contact__fab:after{position:absolute;top:3px;right:3px;width:11px;height:11px;border:2px solid #fff;border-radius:50%;background:#22c55e;content:""}
+            .regional-store-contact__panel{position:absolute;right:0;bottom:62px;width:min(340px,calc(100vw - 24px));opacity:0;transform:translateY(10px) scale(.97);transform-origin:right bottom;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
+            .regional-store-contact.is-open .regional-store-contact__panel{opacity:1;transform:none;pointer-events:auto}
+            .regional-store-contact.is-open .regional-store-contact__fab{background:#fff;color:#263342}
+            .regional-store-contact.is-open .regional-store-contact__fab:after{display:none}
+            .regional-store-contact .store-contact-widget{position:relative;padding:14px 14px 6px}
+            .regional-store-contact__close{position:absolute;top:6px;right:6px;z-index:1;display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:transparent;color:#6b7280;font-size:22px;line-height:1}
+        }
     </style>
-    <aside class="regional-store-contact" aria-label="Быстрая связь с магазином">
-        @include('partials.write-to-store')
+    <aside class="regional-store-contact" aria-label="Быстрая связь с магазином" data-store-contact>
+        <div class="regional-store-contact__panel" id="regionalStoreContactPanel">
+            <button type="button" class="regional-store-contact__close" data-store-contact-close aria-label="Закрыть">×</button>
+            @include('partials.write-to-store')
+        </div>
+        <button type="button" class="regional-store-contact__fab" data-store-contact-toggle aria-controls="regionalStoreContactPanel" aria-expanded="false" aria-label="Написать в магазин">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a7 7 0 0 1-7 7H9l-5 3v-6a7 7 0 0 1 5-11h4a7 7 0 0 1 7 7Z"/><path d="M8.5 10h7M8.5 13.5h4.5"/></svg>
+        </button>
     </aside>
+    <script>
+        (function () {
+            var box = document.querySelector('[data-store-contact]');
+            if (!box) return;
+            var toggle = box.querySelector('[data-store-contact-toggle]');
+            var set = function (open) { box.classList.toggle('is-open', open); toggle.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+            toggle.addEventListener('click', function (event) { event.stopPropagation(); set(!box.classList.contains('is-open')); });
+            box.querySelector('[data-store-contact-close]').addEventListener('click', function () { set(false); });
+            box.querySelectorAll('[data-support-chat-open],[data-consultant-open],.store-contact-widget__link').forEach(function (el) { el.addEventListener('click', function () { set(false); }); });
+            document.addEventListener('click', function (event) { if (!box.contains(event.target)) set(false); });
+            document.addEventListener('keydown', function (event) { if (event.key === 'Escape') set(false); });
+        })();
+    </script>
 @elseif($quickContactBranch && ! $quickContactBranch->isOnlineOnly() && ($quickContactBranch->telegram_username || $quickContactBranch->viber_phone || $quickContactBranch->whatsapp_phone || $quickContactBranch->instagram_username))
 @include('partials.branch-social-styles')
 <style>
