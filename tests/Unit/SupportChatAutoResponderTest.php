@@ -112,6 +112,36 @@ class SupportChatAutoResponderTest extends TestCase
         $this->assertSame(7, $conversation->messages()->count());
     }
 
+    public function test_provider_failure_explains_the_handoff_and_keeps_the_inbox_attention(): void
+    {
+        SupportChatSetting::current()->update(['ai_enabled' => true]);
+        [$chat, $visitor] = $this->conversationWithVisitorMessage();
+        $chat->touch();
+        Http::fake(['api.deepseek.test/*' => Http::response([], 503)]);
+
+        (new SupportChatAutoResponder)->reply($chat->id, $visitor->id);
+
+        $this->assertStringContainsString('Ваш вопрос уже виден менеджерам', $chat->messages()->reorder('id', 'desc')->value('body'));
+        $this->assertNotNull($chat->fresh()->ai_handoff_at);
+        $this->assertTrue($chat->inboxEntry()->sole()->needs_attention);
+    }
+
+    public function test_ai_discards_an_in_flight_reply_after_the_manager_answers(): void
+    {
+        SupportChatSetting::current()->update(['ai_enabled' => true]);
+        [$chat, $visitor] = $this->conversationWithVisitorMessage();
+        Http::fake(['api.deepseek.test/*' => function () use ($chat) {
+            $chat->messages()->create(['sender_type' => 'manager', 'body' => 'Я уже на связи.']);
+            $chat->update(['last_manager_message_at' => now()]);
+
+            return Http::response(['choices' => [['message' => ['content' => 'Уточнение от ИИ']]]]);
+        }]);
+
+        (new SupportChatAutoResponder)->reply($chat->id, $visitor->id);
+
+        $this->assertSame(['visitor', 'manager'], $chat->messages()->pluck('sender_type')->all());
+    }
+
     private function conversationWithVisitorMessage(): array
     {
         $conversation = SupportConversation::query()->create([

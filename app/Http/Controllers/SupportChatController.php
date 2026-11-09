@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\GenerateSupportChatAiReply;
 use App\Models\SupportChatSetting;
 use App\Models\SupportConversation;
+use App\Models\SupportMessage;
 use App\Rules\PhoneNotSpam;
 use App\Services\SupportChatNotifier;
 use Illuminate\Http\JsonResponse;
@@ -41,43 +42,29 @@ class SupportChatController extends Controller
             'page_url' => ['nullable', 'url:http,https', 'max:1000'],
         ]);
 
-        $conversation = DB::transaction(function () use ($request, $validated): SupportConversation {
-            $current = $this->currentConversation($request);
-            if ($current && $current->status !== 'closed') {
-                $current->update([
+        [$conversation, $message, $isFirstMessage] = DB::transaction(function () use ($request, $validated): array {
+            $conversation = $this->currentConversation($request, lock: true);
+            if ($conversation && $conversation->status !== 'closed') {
+                $conversation->fill([
                     'name' => $validated['name'],
                     'phone' => $validated['phone'],
                 ]);
-
-                return $current;
+            } else {
+                $conversation = SupportConversation::query()->create([
+                    'public_id' => (string) Str::uuid(),
+                    'session_hash' => hash('sha256', $request->session()->getId()),
+                    'name' => $validated['name'],
+                    'phone' => $validated['phone'],
+                    'status' => 'new',
+                    'page_url' => $validated['page_url'] ?? null,
+                ]);
             }
 
-            $conversation = SupportConversation::query()->create([
-                'public_id' => (string) Str::uuid(),
-                'session_hash' => hash('sha256', $request->session()->getId()),
-                'name' => $validated['name'],
-                'phone' => $validated['phone'],
-                'status' => 'new',
-                'page_url' => $validated['page_url'] ?? null,
-                'last_message_at' => now(),
-                'last_visitor_message_at' => now(),
-            ]);
+            $isFirstMessage = ! $conversation->messages()->exists();
 
-            $request->session()->put('support_conversation_id', $conversation->id);
-
-            return $conversation;
-        });
-
-        $isFirstMessage = ! $conversation->messages()->exists();
-        $message = $conversation->messages()->create([
-            'sender_type' => 'visitor',
-            'body' => $validated['message'],
-        ]);
-        $conversation->update([
-            'status' => 'new',
-            'last_message_at' => now(),
-            'last_visitor_message_at' => now(),
-        ]);
+            return [$conversation, $this->addVisitorMessage($conversation, $validated['message']), $isFirstMessage];
+        }, 3);
+        $request->session()->put('support_conversation_id', $conversation->id);
 
         if ($isFirstMessage) {
             $notifier->notifyNewConversation($conversation);
@@ -89,34 +76,44 @@ class SupportChatController extends Controller
 
     public function send(Request $request, SupportChatNotifier $notifier): JsonResponse
     {
-        $conversation = $this->currentConversation($request);
-        abort_if(! $conversation, 404, 'Диалог не найден. Начните новый чат.');
-        abort_if($conversation->status === 'closed', 409, 'Диалог закрыт. Начните новый чат.');
-
         $validated = $request->validate([
             'message' => ['required', 'string', 'min:1', 'max:2000'],
         ]);
 
-        $message = $conversation->messages()->create([
-            'sender_type' => 'visitor',
-            'body' => $validated['message'],
-        ]);
-        $conversation->update([
-            'status' => 'new',
-            'last_message_at' => now(),
-            'last_visitor_message_at' => now(),
-        ]);
+        [$conversation, $message] = DB::transaction(function () use ($request, $validated): array {
+            $conversation = $this->currentConversation($request, lock: true);
+            abort_if(! $conversation, 404, 'Диалог не найден. Начните новый чат.');
+            abort_if($conversation->status === 'closed', 409, 'Диалог закрыт. Начните новый чат.');
+
+            return [$conversation, $this->addVisitorMessage($conversation, $validated['message'])];
+        }, 3);
         $notifier->notifyNewMessage($conversation);
         $this->dispatchAiReply($conversation, $message->id);
 
         return $this->conversationResponse($conversation->fresh(), 201);
     }
 
-    private function currentConversation(Request $request): ?SupportConversation
+    private function addVisitorMessage(SupportConversation $conversation, string $body): SupportMessage
+    {
+        $message = $conversation->messages()->create([
+            'sender_type' => 'visitor',
+            'body' => $body,
+        ]);
+        $now = now();
+        $conversation->update([
+            'status' => 'new',
+            'last_message_at' => $now,
+            'last_visitor_message_at' => $now,
+        ]);
+
+        return $message;
+    }
+
+    private function currentConversation(Request $request, bool $lock = false): ?SupportConversation
     {
         $id = $request->session()->get('support_conversation_id');
 
-        return $id ? SupportConversation::query()->find($id) : null;
+        return $id ? SupportConversation::query()->when($lock, fn ($query) => $query->lockForUpdate())->find($id) : null;
     }
 
     private function conversationResponse(SupportConversation $conversation, int $status = 200): JsonResponse
@@ -146,7 +143,7 @@ class SupportChatController extends Controller
 
     private function dispatchAiReply(SupportConversation $conversation, int $messageId): void
     {
-        if (SupportChatSetting::aiEnabled()) {
+        if (! $conversation->aiIsPaused() && SupportChatSetting::aiEnabled()) {
             GenerateSupportChatAiReply::dispatchAfterResponse($conversation->id, $messageId);
         }
     }

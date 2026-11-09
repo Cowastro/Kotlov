@@ -15,6 +15,16 @@
             @if ($chat && \Illuminate\Support\Str::startsWith($chat->page_url ?? '', ['https://', 'http://']))
                 <a class="text-sm underline" href="{{ $chat->page_url }}" target="_blank" rel="noopener noreferrer">Страница клиента</a>
             @endif
+            @if ($aiStatus)
+                <x-filament::badge :color="$aiStatus === 'on' ? 'success' : 'gray'">
+                    {{ match ($aiStatus) {
+                        'off' => 'ИИ выключен',
+                        'unavailable' => 'ИИ недоступен',
+                        'paused' => 'Диалог у менеджера',
+                        'on' => 'ИИ включён для диалога',
+                    } }}
+                </x-filament::badge>
+            @endif
             @if ($lead->needs_attention)
                 <x-filament::badge color="danger">Требует реакции</x-filament::badge>
             @endif
@@ -22,6 +32,10 @@
         <div class="flex flex-wrap gap-2">
             @if ($canEdit && $lead->needs_attention)
                 <x-filament::button type="button" size="sm" color="gray" wire:click="markSeen">Просмотрено</x-filament::button>
+            @endif
+            @if ($canEdit && $aiStatus === 'paused')
+                <x-filament::button type="button" size="sm" wire:click="resumeSiteChatAi" wire:target="resumeSiteChatAi"
+                    wire:confirm="ИИ ответит на последнее сообщение, если оно ещё без ответа. Передать диалог?">Передать ИИ</x-filament::button>
             @endif
             @if ($chat && $canEdit && ! $lead->archived_at)
                 @if ($chat->status === 'closed')

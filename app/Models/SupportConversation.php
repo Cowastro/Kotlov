@@ -23,6 +23,7 @@ class SupportConversation extends Model
         'last_visitor_message_at',
         'last_manager_message_at',
         'ai_handoff_at',
+        'ai_resume_message_id',
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class SupportConversation extends Model
         'last_visitor_message_at' => 'datetime',
         'last_manager_message_at' => 'datetime',
         'ai_handoff_at' => 'datetime',
+        'ai_resume_message_id' => 'integer',
     ];
 
     public const STATUSES = [
@@ -92,6 +94,12 @@ class SupportConversation extends Model
                 ...array_keys($inboxState),
             ]);
         }, 3);
+    }
+
+    public function aiIsPaused(): bool
+    {
+        return $this->ai_handoff_at !== null
+            || ($this->ai_resume_message_id === null && ($this->assigned_user_id || $this->last_manager_message_at));
     }
 
     public function inboxEntry(): HasOne

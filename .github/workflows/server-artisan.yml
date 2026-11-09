@@ -914,6 +914,9 @@ jobs:
             grep -E '^metric\.php_security\.[a-z_]+=[0-9]+$' "$detail_log" || true
             echo "safe_php_security_metrics_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "support-chat:check-ai" ]]; then
+            grep -E '^support_chat_ai_(enabled|configured|responded|http_status)=[0-9]+$' "$detail_log" || true
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "system:diagnose-web-health" ]]; then
             echo "safe_web_health_metrics_begin"
             grep -E '^audit\.web_health\.(signature|symbol|package|source)=[a-zA-Z0-9_.\\:-]+$' "$detail_log" || true

@@ -3,11 +3,14 @@
 namespace App\Livewire;
 
 use App\Filament\Resources\ContactRequests\ContactRequestResource;
+use App\Jobs\GenerateSupportChatAiReply;
 use App\Models\ContactRequest;
+use App\Models\SupportChatSetting;
 use App\Models\SupportConversation;
-use Illuminate\Support\Facades\DB;
 use App\Services\LeadInbox;
+use App\Services\SupportChatAutoResponder;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -88,6 +91,7 @@ class ContactRequestDialog extends Component
                     'assigned_user_id' => auth()->id(),
                     'last_message_at' => $now,
                     'last_manager_message_at' => $now,
+                    'ai_resume_message_id' => null,
                 ]);
 
                 return true;
@@ -120,6 +124,33 @@ class ContactRequestDialog extends Component
             }
         }
         unset($this->lead);
+    }
+
+    public function resumeSiteChatAi(): void
+    {
+        $pendingReply = null;
+        $resumed = $this->updateSiteChat(function (SupportConversation $chat) use (&$pendingReply): bool {
+            $pendingReply = null;
+            if ($chat->status === 'closed' || ! $chat->aiIsPaused()
+                || ! SupportChatSetting::aiEnabled() || ! SupportChatAutoResponder::configured()) {
+                return false;
+            }
+
+            $latest = $chat->messages()->reorder('id', 'desc')->first();
+            $chat->update([
+                'ai_resume_message_id' => $latest?->id ?? 0,
+                'ai_handoff_at' => null,
+            ]);
+            if ($latest?->sender_type === 'visitor') {
+                $pendingReply = [$chat->id, $latest->id];
+            }
+
+            return true;
+        });
+
+        if ($resumed && $pendingReply) {
+            GenerateSupportChatAiReply::dispatchAfterResponse(...$pendingReply);
+        }
     }
 
     public function closeSiteChat(): void
@@ -159,9 +190,19 @@ class ContactRequestDialog extends Component
             ? $chat->messages()->with('sender')->reorder('id', 'desc')
             : $lead->leadMessages()->with('user')->latest('id');
 
+        $aiStatus = $chat && $chat->status !== 'closed' && ! $lead->archived_at
+            ? match (true) {
+                ! SupportChatSetting::aiEnabled() => 'off',
+                ! SupportChatAutoResponder::configured() => 'unavailable',
+                $chat->aiIsPaused() => 'paused',
+                default => 'on',
+            }
+            : null;
+
         return view('livewire.contact-request-dialog', [
             'lead' => $lead,
             'chat' => $chat,
+            'aiStatus' => $aiStatus,
             'history' => $messages->simplePaginate(30, page: $this->historyPage),
             'canEdit' => $canEdit,
             'canReply' => $canEdit && ($lead->isSiteChat()

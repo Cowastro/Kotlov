@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Filament\Resources\SupportConversations\SupportConversationResource;
 use App\Filament\Resources\ContactRequests\Pages\ListContactRequests;
+use App\Jobs\GenerateSupportChatAiReply;
 use App\Livewire\ContactRequestDialog;
 use App\Models\ContactRequest;
 use App\Models\SupportChatSetting;
@@ -12,6 +13,8 @@ use App\Models\SupportConversation;
 use App\Models\User;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -199,6 +202,70 @@ class SupportChatTest extends TestCase
         $this->postJson(route('support-chat.send'), ['message' => 'Спасибо!'])->assertCreated();
         $this->assertTrue($lead->fresh()->needs_attention);
         $this->assertDatabaseCount('contact_requests', 1);
+    }
+
+    public function test_ai_replies_to_a_new_chat_after_the_visitor_request(): void
+    {
+        $this->enableChatAi();
+
+        $this->postJson(route('support-chat.start'), [
+            'name' => 'Иван',
+            'phone' => '+375 29 555-66-77',
+            'message' => 'Нужна печь для бани',
+        ])->assertCreated();
+        $this->getJson(route('support-chat.show'))
+            ->assertJsonPath('messages.1.sender', 'assistant')
+            ->assertJsonPath('messages.1.body', 'Я ИИ-помощник KOTLOV. Какой объём парной?');
+    }
+
+    public function test_manager_can_return_a_dialog_to_ai_without_losing_its_owner_or_history(): void
+    {
+        $this->enableChatAi();
+        Bus::fake([GenerateSupportChatAiReply::class]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $this->postJson(route('support-chat.start'), [
+            'name' => 'Иван',
+            'phone' => '+375 29 555-66-77',
+            'message' => 'Нужна печь для бани',
+        ])->assertCreated();
+        $chat = SupportConversation::query()->sole();
+        $dialog = Livewire::actingAs($manager)
+            ->test(ContactRequestDialog::class, ['contactRequestId' => $chat->inboxEntry()->sole()->id])
+            ->set('draft', 'Добрый день!')
+            ->call('sendReply')->assertHasNoErrors()->assertSee('Диалог у менеджера');
+
+        $this->postJson(route('support-chat.send'), ['message' => 'Что можете предложить?'])->assertCreated();
+        $visitor = $chat->messages()->reorder('id', 'desc')->firstOrFail();
+        Bus::assertNotDispatchedAfterResponse(GenerateSupportChatAiReply::class, fn ($job) => $job->visitorMessageId === $visitor->id);
+        $dialog->assertSee('Передать ИИ')->call('resumeSiteChatAi')->assertSee('ИИ включён для диалога');
+        Bus::assertDispatchedAfterResponse(GenerateSupportChatAiReply::class, fn ($job) => $job->visitorMessageId === $visitor->id);
+        app()->call([(new GenerateSupportChatAiReply($chat->id, $visitor->id)), 'handle']);
+        $this->getJson(route('support-chat.show'))
+            ->assertJsonPath('messages.1.body', 'Добрый день!')
+            ->assertJsonPath('messages.3.sender', 'assistant');
+        $this->assertSame($manager->id, $chat->fresh()->assigned_user_id);
+        $this->assertNotNull($chat->fresh()->last_manager_message_at);
+        Http::assertSent(fn ($request) => str_contains(json_encode($request->data(), JSON_UNESCAPED_UNICODE), 'Нужна печь для бани')
+            && ! str_contains(json_encode($request->data(), JSON_UNESCAPED_UNICODE), 'Добрый день!'));
+
+        $dialog->set('draft', 'Снова отвечаю сам.')->call('sendReply')->assertSee('Диалог у менеджера');
+        $this->assertNull($chat->fresh()->ai_resume_message_id);
+    }
+
+    private function enableChatAi(): void
+    {
+        SupportChatSetting::current()->update(['ai_enabled' => true]);
+        config([
+            'services.ai.api_key' => 'deepseek-test-key',
+            'services.ai.api_url' => 'https://api.deepseek.test/chat/completions',
+            'services.telegram.bot_token' => null,
+        ]);
+        Http::preventStrayRequests();
+        Http::fake([
+            'api.deepseek.test/*' => Http::response([
+                'choices' => [['message' => ['content' => 'Я ИИ-помощник KOTLOV. Какой объём парной?']]],
+            ]),
+        ]);
     }
 
     public function test_manager_can_enable_and_disable_safe_ai_replies_from_unified_inbox(): void

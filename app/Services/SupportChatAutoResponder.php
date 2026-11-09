@@ -6,6 +6,8 @@ use App\Models\SupportChatSetting;
 use App\Models\SupportConversation;
 use App\Models\SupportMessage;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -30,44 +32,67 @@ class SupportChatAutoResponder
             return;
         }
 
-        $aiReplyCount = $conversation->messages->where('sender_type', 'assistant')->count();
-
+        $aiReplyCount = $conversation->messages
+            ->where('sender_type', 'assistant')
+            ->where('id', '>', $conversation->ai_resume_message_id ?? 0)
+            ->count();
         if ($aiReplyCount >= self::MAX_AI_REPLIES - 1) {
-            $this->storeReply($conversation, $this->handoffMessage(), true);
+            $this->storeReply($conversation, $visitorMessageId, $this->handoffMessage(), true);
 
             return;
         }
 
         try {
-            $response = $this->client()->post((string) config('services.ai.api_url'), [
-                'model' => (string) config('services.ai.model', 'deepseek-chat'),
-                'messages' => $this->messagesForApi($conversation),
-                'temperature' => 0.1,
-                'max_tokens' => 280,
-                'stream' => false,
-            ])->throw();
-
-            $body = trim((string) data_get($response->json(), 'choices.0.message.content'));
-            if ($body === '') {
-                throw new \RuntimeException('DeepSeek returned an empty support-chat response.');
-            }
-
-            $this->storeReply($conversation, mb_substr($body, 0, 1800));
+            $body = $this->requestReply($this->messagesForApi($conversation));
         } catch (Throwable $exception) {
-            Log::error('Support chat AI reply failed.', [
+            Log::warning('Support chat AI reply failed.', [
                 'conversation_id' => $conversationId,
                 'visitor_message_id' => $visitorMessageId,
-                'error' => $exception->getMessage(),
+                'exception' => $exception::class,
+                'http_status' => $exception instanceof RequestException ? $exception->response->status() : null,
             ]);
+            $this->storeReply(
+                $conversation,
+                $visitorMessageId,
+                'ИИ-помощник сейчас недоступен. Ваш вопрос уже виден менеджерам KOTLOV.',
+                true,
+            );
+
+            return;
         }
+
+        $this->storeReply($conversation, $visitorMessageId, $body);
+    }
+
+    public function checkProvider(): void
+    {
+        $this->requestReply([
+            ['role' => 'system', 'content' => $this->systemPrompt()],
+            ['role' => 'user', 'content' => 'Нужна печь для бани.'],
+        ]);
+    }
+
+    private function requestReply(array $messages): string
+    {
+        $response = $this->client()->post((string) config('services.ai.api_url'), [
+            'model' => (string) config('services.ai.model', 'deepseek-chat'),
+            'messages' => $messages,
+            'temperature' => 0.1,
+            'max_tokens' => 280,
+            'stream' => false,
+        ])->throw();
+
+        $body = trim((string) data_get($response->json(), 'choices.0.message.content'));
+        if ($body === '') {
+            throw new \RuntimeException('AI provider returned an empty support-chat response.');
+        }
+
+        return mb_substr($body, 0, 1800);
     }
 
     private function mayReply(SupportConversation $conversation, int $visitorMessageId): bool
     {
-        if ($conversation->status === 'closed'
-            || $conversation->assigned_user_id
-            || $conversation->last_manager_message_at
-            || $conversation->ai_handoff_at) {
+        if ($conversation->status === 'closed' || $conversation->aiIsPaused()) {
             return false;
         }
 
@@ -81,6 +106,8 @@ class SupportChatAutoResponder
     private function messagesForApi(SupportConversation $conversation): array
     {
         $history = $conversation->messages
+            ->filter(fn (SupportMessage $message): bool => $message->sender_type === 'visitor'
+                || ($message->sender_type === 'assistant' && $message->id > ($conversation->ai_resume_message_id ?? 0)))
             ->take(-10)
             ->map(fn (SupportMessage $message): array => [
                 'role' => $message->sender_type === 'visitor' ? 'user' : 'assistant',
@@ -122,16 +149,26 @@ PROMPT;
         return 'Спасибо, основные данные уточнены. Ваши имя и телефон уже сохранены — передаю запрос менеджеру KOTLOV. Он проверит детали и свяжется с вами в рабочее время.';
     }
 
-    private function storeReply(SupportConversation $conversation, string $body, bool $handoff = false): void
+    private function storeReply(SupportConversation $conversation, int $visitorMessageId, string $body, bool $handoff = false): void
     {
-        $conversation->messages()->create([
-            'sender_type' => 'assistant',
-            'body' => $body,
-        ]);
-        $conversation->update([
-            'last_message_at' => now(),
-            'ai_handoff_at' => $handoff ? now() : $conversation->ai_handoff_at,
-        ]);
+        DB::transaction(function () use ($conversation, $visitorMessageId, $body, $handoff): void {
+            $current = SupportConversation::query()->lockForUpdate()->find($conversation->id);
+            if (! $current || ! SupportChatSetting::aiEnabled()
+                || $current->ai_resume_message_id !== $conversation->ai_resume_message_id
+                || ! $this->mayReply($current->load('messages'), $visitorMessageId)
+                || $current->inboxEntry()->whereNotNull('archived_at')->exists()) {
+                return;
+            }
+
+            $current->messages()->create([
+                'sender_type' => 'assistant',
+                'body' => $body,
+            ]);
+            $current->update([
+                'last_message_at' => now(),
+                'ai_handoff_at' => $handoff ? now() : null,
+            ]);
+        }, 3);
     }
 
     private function client(): PendingRequest

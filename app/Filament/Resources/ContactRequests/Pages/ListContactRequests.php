@@ -62,7 +62,7 @@ class ListContactRequests extends ListRecords
                     : 'Включить безопасные AI-ответы?')
                 ->modalDescription(fn (): string => SupportChatSetting::aiEnabled()
                     ? 'После выключения новые сообщения будут ждать живого консультанта.'
-                    : 'DeepSeek задаст до трёх уточняющих вопросов без цен и обещаний, затем передаст запрос менеджеру. Контакты клиента уже сохранены до начала диалога.')
+                    : 'ИИ уточнит запрос в новых чатах и передаст его менеджеру. Если в диалоге уже отвечает сотрудник, вернуть автоответы можно кнопкой «Передать ИИ» внутри переписки.')
                 ->action(function (): void {
                     $setting = SupportChatSetting::current();
                     $enabled = ! $setting->ai_enabled;
