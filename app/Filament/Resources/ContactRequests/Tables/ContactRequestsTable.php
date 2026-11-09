@@ -30,7 +30,9 @@ class ContactRequestsTable
             ->columns([
                 TextColumn::make('name')
                     ->label('Клиент')
-                    ->description(fn (ContactRequest $record): ?string => $record->needs_attention ? 'Требует реакции' : $record->phone)
+                    ->icon(fn (ContactRequest $record): ?string => $record->needs_attention ? 'heroicon-m-exclamation-circle' : null)
+                    ->iconColor('warning')
+                    ->tooltip(fn (ContactRequest $record): ?string => $record->needs_attention ? 'Требует реакции' : null)
                     ->searchable(['name', 'phone', 'email', 'product_name', 'city'])
                     ->sortable()
                     ->weight('bold'),
@@ -80,7 +82,7 @@ class ContactRequestsTable
 
                 TextColumn::make('status')
                     ->label('Статус')
-                    ->description(fn (ContactRequest $record): ?string => $record->responsibleUser?->name)
+                    ->tooltip(fn (ContactRequest $record): ?string => $record->responsibleUser?->name)
                     ->badge()
                     ->color(fn ($state) => match ($state) {
                         'new' => 'info',
