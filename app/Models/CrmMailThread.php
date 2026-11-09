@@ -16,6 +16,8 @@ class CrmMailThread extends Model
 {
     use SoftDeletes;
 
+    public const AUTOMATIC_SPAM_THREAD_PREFIX = 'auto-spam:';
+
     public const STATUSES = [
         'draft' => 'Черновик',
         'new' => 'Новый лид',
@@ -73,7 +75,7 @@ class CrmMailThread extends Model
     protected static function booted(): void
     {
         static::forceDeleting(function (CrmMailThread $thread): void {
-            if ($thread->status === 'spam' && Schema::hasTable('crm_mail_blocked_senders')) {
+            if ($thread->status === 'spam' && ! $thread->isAutomaticSpamThread()) {
                 static::rememberBlockedSender($thread->mailbox_id, $thread->participant_email);
             }
 
@@ -327,6 +329,12 @@ class CrmMailThread extends Model
 
     public function restoreFromSpam(): void
     {
+        if ($this->isAutomaticSpamThread() && ! static::senderIsBlocked($this->mailbox_id, $this->participant_email)) {
+            $this->forceFill(['status' => 'waiting_manager', 'handled_at' => null])->save();
+
+            return;
+        }
+
         if (Schema::hasTable('crm_mail_blocked_senders')) {
             DB::table('crm_mail_blocked_senders')
                 ->where('mailbox_id', $this->mailbox_id)
@@ -363,7 +371,13 @@ class CrmMailThread extends Model
             ->where('mailbox_id', $mailboxId)
             ->where('participant_email', $email)
             ->where('status', 'spam')
+            ->where('thread_key', 'not like', self::AUTOMATIC_SPAM_THREAD_PREFIX.'%')
             ->exists();
+    }
+
+    private function isAutomaticSpamThread(): bool
+    {
+        return str_starts_with($this->thread_key, self::AUTOMATIC_SPAM_THREAD_PREFIX);
     }
 
     /** Mail of the mailboxes the employee may see (see CrmMailbox::scopeVisibleTo). */

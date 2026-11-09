@@ -192,6 +192,28 @@ class CrmMailModuleTest extends TestCase
         $this->assertFalse(CrmMailThread::senderIsBlocked($mailbox->id, 'spam@example.com'));
     }
 
+    public function test_automatically_filtered_mail_does_not_block_the_sender(): void
+    {
+        $mailbox = CrmMailbox::create([
+            'name' => 'KOTLOV',
+            'email' => 'automatic-spam@kotlov.by',
+            'username' => 'automatic-spam@kotlov.by',
+        ]);
+        $threads = collect([1, 2])->map(fn (int $uid) => CrmMailThread::create([
+            'mailbox_id' => $mailbox->id,
+            'thread_key' => CrmMailThread::AUTOMATIC_SPAM_THREAD_PREFIX.$uid,
+            'participant_email' => 'sender@example.com',
+            'status' => 'spam',
+        ]));
+
+        $this->assertFalse(CrmMailThread::senderIsBlocked($mailbox->id, 'sender@example.com'));
+        $threads[0]->restoreFromSpam();
+        $this->assertSame('waiting_manager', $threads[0]->fresh()->status);
+        $this->assertSame('spam', $threads[1]->fresh()->status);
+        $threads[1]->forceDelete();
+        $this->assertFalse(CrmMailThread::senderIsBlocked($mailbox->id, 'sender@example.com'));
+    }
+
     public function test_incoming_activity_cannot_restore_a_spam_thread_to_work(): void
     {
         $mailbox = CrmMailbox::create([
