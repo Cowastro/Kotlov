@@ -133,15 +133,23 @@
         opacity: .2;
     }
 
+    .orders-workspace .fi-ta-cell-items-list {
+        min-width: 8rem;
+    }
+
+    .orders-workspace .order-item-preview {
+        /* Use the space allocated by the table without letting long product names widen it. */
+        contain: inline-size;
+    }
+
     .orders-workspace .order-item-preview > summary .order-cell-line {
         display: inline-block;
-        max-width: clamp(7rem, 11vw, 16rem);
+        max-width: calc(100% - 1.2rem);
         vertical-align: bottom;
     }
 
     .orders-workspace .order-item-preview__count {
         display: block;
-        max-width: clamp(8rem, 11vw, 17rem);
         padding-inline-start: .8rem;
         font-size: .6875rem;
         font-weight: 500;
@@ -168,7 +176,6 @@
     }
 
     .orders-workspace .fi-ta-cell-customer-name a[href^="tel:"],
-    .orders-workspace .fi-ta-cell-economics .fi-ta-text-item-label,
     .orders-workspace .fi-ta-cell-economics .order-cell-details > summary {
         white-space: nowrap;
     }
@@ -179,6 +186,60 @@
 
     .dark .orders-workspace .order-control-indicator {
         color: var(--warning-400);
+    }
+
+    .orders-workspace .fi-ta-content-ctn {
+        container-type: inline-size;
+    }
+
+    @container (width < 64rem) {
+        .orders-workspace :is(.fi-ta-header-cell-economics, .fi-ta-cell-economics) {
+            display: none;
+        }
+
+        .orders-workspace .order-summary-total {
+            display: block;
+            font-weight: 600;
+        }
+    }
+
+    @container (min-width: 80rem) {
+        .orders-workspace .fi-ta-header-cell-number {
+            min-width: 9rem;
+        }
+
+        .orders-workspace .fi-ta-header-cell-customer-name {
+            min-width: 12rem;
+        }
+
+        .orders-workspace .fi-ta-header-cell-economics {
+            min-width: 11rem;
+        }
+
+        .orders-workspace .fi-ta-header-cell-status {
+            min-width: 10rem;
+        }
+
+        .orders-workspace .fi-ta-header-cell-responsible {
+            min-width: 8.5rem;
+        }
+
+        .orders-workspace .fi-ta-cell-customer-name .order-cell-line {
+            max-width: 100%;
+        }
+
+        .orders-workspace .fi-ta-cell-economics .fi-ta-text-item {
+            white-space: nowrap;
+        }
+
+        .orders-workspace .order-item-preview > summary .order-cell-line {
+            display: -webkit-inline-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            vertical-align: top;
+        }
     }
 
     @media (max-width: 1279px) {
