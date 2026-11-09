@@ -57,7 +57,7 @@ return [
         'token' => env('SMS_BY_TOKEN', ''),
         'password_object_id' => env('SMS_BY_PASSWORD_OBJECT_ID', ''),
         'alphaname_id' => env('SMS_BY_ALPHANAME_ID', ''),
-        'message' => env('SMS_BY_VERIFICATION_MESSAGE', 'Код подтверждения на Kotlov.by: %CODE%'),
+        'message' => env('SMS_BY_VERIFICATION_MESSAGE', \App\Services\SmsByClient::CODE_MESSAGE),
         'timeout' => (int) env('SMS_BY_TIMEOUT', 10),
         'verification_ttl' => (int) env('SMS_BY_VERIFICATION_TTL', 300),
     ],
