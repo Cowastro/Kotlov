@@ -80,9 +80,11 @@ class BrandController extends Controller
         $brandName = trim((string) ($brand->name ?: $brand->slug));
         $h1        = $brand->h1 ?: "Каталог {$brandName}";
         $seo = app(SeoMetadataBuilder::class);
-        $title = $seo->title($brand->meta_title, "{$brandName} — купить в Беларуси | KOTLOV");
+        // Brand meta may use the %city% placeholder like categories: «купить в %city%» → «купить в Минске».
+        $cityIn = view()->shared('cityIn') ?: 'в Беларуси';
+        $title = $seo->title($seo->replaceCity($brand->meta_title, $cityIn), "{$brandName} — купить в Беларуси | KOTLOV");
         $description = $seo->description(
-            $brand->meta_description,
+            $seo->replaceCity($brand->meta_description, $cityIn),
             "Каталог товаров бренда {$brandName}. Купить {$brandName} в Беларуси с доставкой. Гарантия, монтаж."
         );
         $canonicalBase = 'https://kotlov.by';
