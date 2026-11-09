@@ -91,4 +91,17 @@ class ImapMailboxSynchronizerEncodingTest extends TestCase
         $this->assertSame('2026-10-14 05:10:00', $date->format('Y-m-d H:i:s'));
         $this->assertSame('14.10.2026 08:10', $date->copy()->timezone('Europe/Minsk')->format('d.m.Y H:i'));
     }
+
+    public function test_unstorable_mail_dates_fall_back_to_the_imap_timestamp_or_import_time(): void
+    {
+        $service = (new ReflectionClass(ImapMailboxSynchronizer::class))->newInstanceWithoutConstructor();
+        $parse = new \ReflectionMethod($service, 'parseDate');
+        $receivedAt = Carbon::parse('2026-11-09 07:20:00', 'UTC');
+
+        $this->assertTrue($receivedAt->equalTo($parse->invoke($service, '0300-11-18 17:32:41', $receivedAt->timestamp)));
+        $this->assertTrue($receivedAt->equalTo($parse->invoke($service, '2099-11-18 17:32:41', $receivedAt->timestamp)));
+
+        $this->travelTo($receivedAt);
+        $this->assertTrue($receivedAt->equalTo($parse->invoke($service, '0300-11-18 17:32:41', 0)));
+    }
 }
