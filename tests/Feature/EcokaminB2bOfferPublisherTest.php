@@ -92,13 +92,13 @@ class EcokaminB2bOfferPublisherTest extends TestCase
             ->get(route('b2b.catalog'))
             ->assertOk()
             ->assertSeeText('Камин ЭкоКамин Мадрид')
-            ->assertSeeText('170,00')
+            ->assertSeeText('160,00')
             ->assertSeeText('Склад Москва: 8 шт.');
 
         $this->actingAs($user)
             ->postJson(route('cart.add'), ['product_id' => $product->id, 'quantity' => 2, 'pricing_mode' => 'b2b'])
             ->assertOk()
-            ->assertJsonPath('subtotal', 340);
+            ->assertJsonPath('subtotal', 320);
 
         $item = session('cart')[$product->id];
         $this->assertSame('b2b', $item['pricing_type']);

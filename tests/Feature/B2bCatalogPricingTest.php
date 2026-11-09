@@ -216,7 +216,7 @@ class B2bCatalogPricingTest extends TestCase
         $this->assertNotNull($item['integration_product_id']);
     }
 
-    public function test_ecokamin_partner_price_is_always_fifteen_percent_below_current_retail(): void
+    public function test_ecokamin_partner_price_is_always_twenty_percent_below_current_retail(): void
     {
         [$product, $user] = $this->catalogFixture(approved: true);
         $brand = Brand::query()->create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
@@ -233,16 +233,16 @@ class B2bCatalogPricingTest extends TestCase
         $this->actingAs($user)
             ->get(route('b2b.catalog', ['q' => $product->sku]))
             ->assertOk()
-            ->assertSeeText('170,00 BYN')
+            ->assertSeeText('160,00 BYN')
             ->assertSeeText('Розница 200,00')
             ->assertDontSeeText('80,00 BYN');
 
         $this->actingAs($user)
             ->postJson('/cart/add', ['product_id' => $product->id, 'quantity' => 2, 'pricing_mode' => 'b2b'])
             ->assertOk()
-            ->assertJsonPath('subtotal', 340);
+            ->assertJsonPath('subtotal', 320);
 
-        $this->assertSame(170.0, session('cart')[$product->id]['price']);
+        $this->assertSame(160.0, session('cart')[$product->id]['price']);
     }
 
     public function test_sanbusinessgroup_heat_pump_uses_fifteen_percent_retail_discount_without_source_price(): void

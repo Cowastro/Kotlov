@@ -50,6 +50,22 @@ class B2bCommercialProfileTest extends TestCase
         $this->assertSame($partnerLevel->id, $approved->b2b_price_level_id);
     }
 
+    public function test_ecokamin_dealer_price_is_twenty_percent_below_retail_for_every_level(): void
+    {
+        [$user, $client, $offer] = $this->fixture();
+        $brand = \App\Models\Brand::query()->create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        $offer->product->update(['brand_id' => $brand->id, 'price' => 200]);
+        $dealer = B2bPriceLevel::query()->where('code', 'dealer')->firstOrFail();
+        $dealer->update(['sale_price_discount_percent' => 5]);
+        $client->update(['b2b_price_level_id' => $dealer->id]);
+
+        $quote = app(B2bCatalogOfferResolver::class)->priceQuote($offer->fresh(['product.brand', 'source']), $user->fresh());
+
+        $this->assertSame(160.0, $quote['base_price']);
+        $this->assertSame(160.0, $quote['price']);
+        $this->assertNull($quote['price_level_code']);
+    }
+
     public function test_price_level_adjusts_only_the_ready_sale_price_and_is_saved_in_cart(): void
     {
         [$user, $client, $offer] = $this->fixture();

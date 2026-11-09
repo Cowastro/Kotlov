@@ -130,7 +130,12 @@ class B2bCatalogOfferResolver
             throw new \LogicException('Для предложения не рассчитана итоговая цена в BYN.');
         }
 
-        $priceLevel = $this->priceLevelFor($user);
+        // A fixed discount from retail (ЭкоКамин −20%, Царь-Печи, heat pumps) is the same dealer price for every
+        // partner: the partner level discount does not stack on top of it.
+        $priceLevel = $brandRetailPrice !== null && $offer->product
+            && app(B2bBrandRetailPricing::class)->isFixedRetailDiscount($offer->product, $offer)
+                ? null
+                : $this->priceLevelFor($user);
 
         return [
             'base_price' => round($basePrice, 2),

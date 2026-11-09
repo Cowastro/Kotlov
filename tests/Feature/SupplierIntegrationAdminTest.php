@@ -548,7 +548,7 @@ class SupplierIntegrationAdminTest extends TestCase
         $this->assertFalse(IntegrationProduct::query()->where('product_id', $purchaseOnly->id)->firstOrFail()->b2b_enabled);
     }
 
-    public function test_ecokamin_admin_list_uses_fifteen_percent_partner_discount_from_current_sale_price(): void
+    public function test_ecokamin_admin_list_uses_twenty_percent_partner_discount_from_current_sale_price(): void
     {
         // «обновлено HH:MM» is compared with now(): a minute boundary during the request made the test flaky.
         $this->travelTo(now()->startOfMinute()->addSeconds(5));
@@ -600,8 +600,8 @@ class SupplierIntegrationAdminTest extends TestCase
             ->set('tableSearch', $product->sku)
             ->assertSee('ЭкоКамин с действующей акционной ценой')
             ->assertSee('Заказ')
-            ->assertSee('170,00 BYN')
-            ->assertSee('30.00 BYN / 15.0%')
+            ->assertSee('160,00 BYN')
+            ->assertSee('40.00 BYN / 20.0%')
             ->assertSee('В наличии: 1 шт.')
             ->assertSee('обновлено '.now()->format('d.m.Y H:i'));
     }

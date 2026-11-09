@@ -29,6 +29,12 @@ class B2bBrandRetailPricing
         return round($retailPrice * (1 - $discount / 100), 2);
     }
 
+    /** The B2B price is the retail price less a fixed brand or category discount (not a price-list wholesale). */
+    public function isFixedRetailDiscount(Product $product, ?IntegrationProduct $offer = null): bool
+    {
+        return $this->priceListWholesale($product) === null && $this->discountPercent($product, $offer) !== null;
+    }
+
     public function discountPercent(Product $product, ?IntegrationProduct $offer = null): ?float
     {
         $supplierCategoryDiscount = $this->supplierCategoryDiscount($product, $offer);
