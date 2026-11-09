@@ -18,6 +18,8 @@ class EcokaminPrimeLaunchTest extends TestCase
 
         $this->get('/')->assertOk()
             ->assertSee('prime-cover__art', false)
+            ->assertSee('prime-cover--shaman', false)
+            ->assertSee('shaman-cover.webp', false)
             ->assertSee('prime-cover__title">ПРАЙМ', false)
             ->assertSee('/blog/ekokamin-praim-novye-topki-vega-i-delta', false);
 
