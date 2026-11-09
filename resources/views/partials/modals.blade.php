@@ -307,7 +307,12 @@
     data-support-chat-start-url="{{ route('support-chat.start') }}"
     data-support-chat-send-url="{{ route('support-chat.send') }}">
     <div class="support-chat__header">
-        <div>
+        <span class="support-chat__brand" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.5 11a7.5 7.5 0 0 1-7.5 7.5H9L4 21v-6a7.5 7.5 0 0 1 6.5-11.5H13a7.5 7.5 0 0 1 7.5 7.5Z"/><path d="M9 10h7m-7 4h4"/>
+            </svg>
+        </span>
+        <div class="support-chat__heading">
             <div class="support-chat__title" id="supportChatTitle">Онлайн-чат KOTLOV</div>
             @unless($cityContact['online_only'] ?? false)
             <div class="support-chat__availability is-online" data-consultant-status>
@@ -316,11 +321,17 @@
             </div>
             @endunless
         </div>
-        <button type="button" class="support-chat__close" data-support-chat-close aria-label="Свернуть чат">×</button>
+        <button type="button" class="support-chat__close" data-support-chat-close aria-label="Свернуть чат" title="Свернуть чат">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg>
+        </button>
     </div>
 
+    <div class="support-chat__loading" data-support-chat-loading role="status" hidden>Загружаем переписку…</div>
     <div class="support-chat__intro" data-support-chat-intro>
-        <p>Представьтесь и задайте вопрос. Контакт нужен, чтобы мы не потеряли вас, если чат закроется.</p>
+        <div class="support-chat__welcome">
+            <h2>Чем вам помочь?</h2>
+            <p>Напишите вопрос о товаре или заказе. Телефон поможет нам связаться с вами, если вы закроете чат.</p>
+        </div>
         <form data-support-chat-start-form>
             @csrf
             <x-form-protection />
@@ -341,27 +352,27 @@
                 <input type="checkbox" required>
                 <span>Согласен с <a href="/privacy" target="_blank">политикой обработки данных</a></span>
             </label>
-            <button type="submit" class="tf-btn animate-btn w-100">Начать чат</button>
-            <div class="support-chat__error" data-support-chat-error hidden></div>
+            <button type="submit" class="support-chat__start">Начать чат <span aria-hidden="true">→</span></button>
+            <div class="support-chat__error" data-support-chat-error role="alert" hidden></div>
         </form>
     </div>
 
     <div class="support-chat__conversation" data-support-chat-conversation hidden>
-        <div class="support-chat__contact" data-support-chat-contact></div>
-        <div class="support-chat__messages" data-support-chat-messages role="log" aria-live="polite"></div>
+        <div class="support-chat__messages" data-support-chat-messages role="log" aria-label="Переписка" aria-live="polite" tabindex="0"></div>
+        <button type="button" class="support-chat__latest" data-support-chat-latest hidden>К новым сообщениям <span aria-hidden="true">↓</span></button>
         <div class="support-chat__closed" data-support-chat-closed hidden>
             <span>Этот диалог завершён.</span>
             <button type="button" data-support-chat-restart>Начать новый чат</button>
         </div>
         <form class="support-chat__composer" data-support-chat-message-form>
             <textarea name="message" rows="1" maxlength="2000" placeholder="Напишите сообщение…" aria-label="Сообщение" required></textarea>
-            <button type="submit" aria-label="Отправить сообщение">
+            <button type="submit" aria-label="Отправить сообщение" title="Отправить сообщение" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" />
                 </svg>
             </button>
         </form>
-        <div class="support-chat__error" data-support-chat-thread-error hidden></div>
+        <div class="support-chat__error" data-support-chat-thread-error role="alert" hidden></div>
     </div>
 </section>
 <!-- /Online support chat -->
