@@ -24,6 +24,8 @@
     var supportChatTrigger = null;
     var supportChatConversation = null;
     var supportChatLastMessageId = 0;
+    var supportChatLastDay = '';
+    var supportChatLoaded = false;
     var teaserAutoHideTimer = null;
 
     function all(selector) { return Array.prototype.slice.call(document.querySelectorAll(selector)); }
@@ -136,62 +138,121 @@
         }
     }
 
-    function renderSupportChat(data) {
-        if (!supportChatElement) return;
-        var intro = one('[data-support-chat-intro]', supportChatElement);
-        var conversationHost = one('[data-support-chat-conversation]', supportChatElement);
-        supportChatConversation = data.conversation || null;
-        if (!supportChatConversation) {
-            setHidden(intro, false);
-            setHidden(conversationHost, true);
-            supportChatLastMessageId = 0;
-            return;
-        }
+    function supportChatAtLatest(messages) {
+        return messages.scrollHeight - messages.scrollTop - messages.clientHeight < 36;
+    }
 
-        setHidden(intro, true);
-        setHidden(conversationHost, false);
-        var contact = one('[data-support-chat-contact]', supportChatElement);
-        if (contact) contact.textContent = supportChatConversation.name + ' · ' + supportChatConversation.phone;
+    function supportChatScrollToLatest(messages, latest) {
+        messages.scrollTop = messages.scrollHeight;
+        setHidden(latest, true);
+    }
 
-        var messagesHost = one('[data-support-chat-messages]', supportChatElement);
-        var messages = Array.isArray(data.messages) ? data.messages : [];
-        var newestId = messages.length ? Number(messages[messages.length - 1].id) : 0;
-        var shouldScroll = newestId > supportChatLastMessageId;
-        messagesHost.replaceChildren();
-        messages.forEach(function (message) {
-            var row = document.createElement('div');
-            var isTeam = message.sender === 'manager' || message.sender === 'assistant';
-            row.className = 'support-chat__message support-chat__message--' + (isTeam ? 'manager' : 'visitor');
-            var bubble = document.createElement('div');
-            bubble.className = 'support-chat__bubble';
+    function supportChatMessageElement(message) {
+        var sender = message.sender === 'assistant' ? 'assistant' : message.sender === 'manager' ? 'manager' : 'visitor';
+        var row = document.createElement('div');
+        row.className = 'support-chat__message support-chat__message--' + sender;
+        var bubble = document.createElement('div');
+        bubble.className = 'support-chat__bubble';
+        if (sender !== 'visitor') {
+            var avatar = document.createElement('span');
+            avatar.className = 'support-chat__avatar';
+            avatar.setAttribute('aria-hidden', 'true');
+            avatar.textContent = sender === 'assistant' ? '✦' : 'К';
+            row.appendChild(avatar);
+
             var name = document.createElement('div');
             name.className = 'support-chat__bubble-name';
             name.textContent = message.sender_name;
-            var body = document.createElement('div');
-            body.className = 'support-chat__bubble-body';
-            body.textContent = message.body;
-            var time = document.createElement('div');
-            time.className = 'support-chat__bubble-time';
-            time.textContent = supportChatTime(message.created_at);
             bubble.appendChild(name);
-            bubble.appendChild(body);
-            bubble.appendChild(time);
-            row.appendChild(bubble);
-            messagesHost.appendChild(row);
-        });
-        supportChatLastMessageId = newestId;
-        if (shouldScroll) messagesHost.scrollTop = messagesHost.scrollHeight;
+        }
 
-        var closed = supportChatConversation.status === 'closed';
+        var body = document.createElement('div');
+        body.className = 'support-chat__bubble-body';
+        body.textContent = message.body;
+        bubble.appendChild(body);
+
+        var label = supportChatTime(message.created_at);
+        if (label) {
+            var time = document.createElement('time');
+            time.className = 'support-chat__bubble-time';
+            time.dateTime = message.created_at;
+            time.textContent = label;
+            bubble.appendChild(time);
+        }
+        row.appendChild(bubble);
+        return row;
+    }
+
+    function renderSupportChat(data, followLatest) {
+        if (!supportChatElement) return;
+        var intro = one('[data-support-chat-intro]', supportChatElement);
+        var conversationHost = one('[data-support-chat-conversation]', supportChatElement);
+        var messagesHost = one('[data-support-chat-messages]', supportChatElement);
+        var latest = one('[data-support-chat-latest]', supportChatElement);
+        var conversation = data.conversation || null;
+        var isNewConversation = !supportChatConversation || (conversation && supportChatConversation.id !== conversation.id);
+        supportChatConversation = conversation;
+        if (!conversation || isNewConversation) {
+            messagesHost.replaceChildren();
+            setHidden(latest, true);
+            supportChatLastMessageId = 0;
+            supportChatLastDay = '';
+        }
+
+        setHidden(intro, !!conversation);
+        setHidden(conversationHost, !conversation);
+        if (!conversation) return;
+
+        var keepLatest = followLatest === true || isNewConversation || supportChatAtLatest(messagesHost);
+        var messages = Array.isArray(data.messages) ? data.messages : [];
+        var fragment = document.createDocumentFragment();
+        messages.forEach(function (message) {
+            var id = Number(message.id);
+            if (!(id > supportChatLastMessageId)) return;
+
+            var date = message.created_at ? new Date(message.created_at) : null;
+            if (date && !Number.isNaN(date.getTime())) {
+                var day = date.toLocaleDateString('ru-RU', { timeZone: 'Europe/Minsk', day: 'numeric', month: 'long', year: 'numeric' });
+                if (day !== supportChatLastDay) {
+                    var separator = document.createElement('div');
+                    separator.className = 'support-chat__day';
+                    separator.textContent = day;
+                    fragment.appendChild(separator);
+                    supportChatLastDay = day;
+                }
+            }
+            fragment.appendChild(supportChatMessageElement(message));
+            supportChatLastMessageId = id;
+        });
+        var hasNew = fragment.hasChildNodes();
+        if (hasNew) messagesHost.appendChild(fragment);
+
+        var closed = conversation.status === 'closed';
         setHidden(one('[data-support-chat-closed]', supportChatElement), !closed);
         setHidden(one('[data-support-chat-message-form]', supportChatElement), closed);
+
+        if (keepLatest && (hasNew || followLatest === true)) supportChatScrollToLatest(messagesHost, latest);
+        else if (hasNew) setHidden(latest, false);
     }
 
     function loadSupportChat() {
         if (!supportChatElement) return Promise.resolve();
+        var loading = one('[data-support-chat-loading]', supportChatElement);
+        var intro = one('[data-support-chat-intro]', supportChatElement);
+        if (!supportChatLoaded) {
+            setHidden(intro, true);
+            setHidden(loading, false);
+        }
         return supportChatRequest(supportChatElement.dataset.supportChatShowUrl)
-            .then(renderSupportChat)
-            .catch(function (error) { supportChatError(error.message, true); });
+            .then(function (data) {
+                supportChatLoaded = true;
+                renderSupportChat(data);
+            })
+            .catch(function (error) {
+                if (!supportChatLoaded) setHidden(intro, false);
+                supportChatError(error.message, !!supportChatConversation);
+            })
+            .finally(function () { setHidden(loading, true); });
     }
 
     function closeAssistanceMenu() {
@@ -563,14 +624,38 @@
                 submit.disabled = false;
             });
         });
+        var supportInput = one('textarea[name="message"]', supportMessageForm);
+        var supportSubmit = one('button[type="submit"]', supportMessageForm);
+        var supportMessages = one('[data-support-chat-messages]', supportChatElement);
+        var supportLatest = one('[data-support-chat-latest]', supportChatElement);
+        var sendingSupportMessage = false;
+        function updateSupportComposer() {
+            var keepLatest = supportChatAtLatest(supportMessages);
+            supportInput.style.height = 'auto';
+            var height = supportInput.scrollHeight + 2;
+            supportInput.style.height = Math.min(106, height) + 'px';
+            supportInput.style.overflowY = height > 106 ? 'auto' : 'hidden';
+            supportSubmit.disabled = sendingSupportMessage || !supportInput.value.trim();
+            if (keepLatest) supportChatScrollToLatest(supportMessages, supportLatest);
+        }
+        supportInput.addEventListener('input', updateSupportComposer);
+        supportLatest.addEventListener('click', function () {
+            supportChatScrollToLatest(supportMessages, supportLatest);
+            supportMessages.focus({ preventScroll: true });
+        });
+        supportMessages.addEventListener('scroll', function () {
+            if (supportChatAtLatest(supportMessages)) setHidden(supportLatest, true);
+        }, { passive: true });
         supportMessageForm.addEventListener('submit', function (event) {
             event.preventDefault();
+            var draft = supportInput.value;
+            var message = draft.trim();
+            if (!message || sendingSupportMessage) return;
+
             supportChatError('', true);
-            var input = one('textarea[name="message"]', supportMessageForm);
-            var submit = one('button[type="submit"]', supportMessageForm);
-            var message = input.value.trim();
-            if (!message) return;
-            submit.disabled = true;
+            sendingSupportMessage = true;
+            supportMessageForm.setAttribute('aria-busy', 'true');
+            updateSupportComposer();
             supportChatRequest(supportChatElement.dataset.supportChatSendUrl, {
                 method: 'POST',
                 headers: {
@@ -581,19 +666,20 @@
                 },
                 body: JSON.stringify({ message: message })
             }).then(function (data) {
-                input.value = '';
-                renderSupportChat(data);
+                if (supportInput.value === draft) supportInput.value = '';
+                renderSupportChat(data, true);
             }).catch(function (error) {
                 supportChatError(error.message, true);
             }).finally(function () {
-                submit.disabled = false;
-                if (!supportChatElement.hidden && document.activeElement === submit) input.focus({ preventScroll: true });
+                sendingSupportMessage = false;
+                supportMessageForm.removeAttribute('aria-busy');
+                updateSupportComposer();
             });
         });
-        one('textarea[name="message"]', supportMessageForm).addEventListener('keydown', function (event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
+        supportInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
                 event.preventDefault();
-                supportMessageForm.requestSubmit();
+                if (!supportSubmit.disabled) supportMessageForm.requestSubmit();
             }
         });
         one('[data-support-chat-restart]', supportChatElement).addEventListener('click', function () {
