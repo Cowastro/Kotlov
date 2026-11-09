@@ -36,7 +36,7 @@ class RequestLineSelection
     public function recognize(?string $path, ?string $extension, string $text = ''): array
     {
         $recognized = $path !== null
-            ? $this->ocr->recognizeFile($path, (string) $extension, 'request-selection-ocr:v1:'.hash_file('sha256', $path))
+            ? $this->ocr->recognizeFile($path, (string) $extension, 'request-selection-ocr:v2:'.hash_file('sha256', $path))
             : $this->ocr->recognizeText($text);
 
         $lines = collect($recognized['rows'] ?? [])

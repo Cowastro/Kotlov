@@ -127,9 +127,9 @@ class B2bSpecificationOcrService
         if ($this->hasUsefulText($text)) {
             $result = ['rows' => $this->requestRows($text, []), 'method' => 'PDF-текст + DeepSeek'];
         } else {
-            $images = $extension === 'pdf'
+            $images = $this->prepareImages($extension === 'pdf'
                 ? ($this->renderPdfPages($path) ?: $this->embeddedPdfJpegs($path))
-                : [['mime' => $this->imageMime($extension), 'data' => (string) file_get_contents($path)]];
+                : [['mime' => $this->imageMime($extension), 'data' => (string) file_get_contents($path)]]);
             if ($images === [] || blank($images[0]['data'] ?? null)) {
                 throw new RuntimeException('Не удалось подготовить документ для распознавания.');
             }
@@ -172,6 +172,10 @@ class B2bSpecificationOcrService
 Верни только JSON-объект вида {"rows":[{"sku":null,"name":"...","quantity":1,"unit":"шт"}]} без Markdown и пояснений.
 Не придумывай значения. Сохраняй модель, артикул и технические числа точно. Пропускай заголовки, итоги, цены и строки без товара.
 quantity должна быть положительным числом, по умолчанию 1. Максимум 5000 строк.
+В name объединяй наименование с характеристиками из соседних колонок той же строки (материал, тип, размер, ДУ/DN,
+резьба, число секций), например «Радиатор биметаллический 10 секций», «Труба ПП ДУ32», «Отвод ПП 90° ДУ32».
+Добавляй только строки, которые реально есть в таблице. Одна и та же страница может быть дана в нескольких поворотах:
+читай её в том положении, где текст ровный, и выводи каждую строку один раз.
 PROMPT;
         $content = [['type' => 'text', 'text' => $prompt.($text !== '' ? "\n\nТекст документа:\n".mb_substr($text, 0, 60_000) : '')]];
         foreach (array_slice($images, 0, 8) as $image) {
@@ -314,6 +318,55 @@ PROMPT;
         }
 
         return $images;
+    }
+
+    /**
+     * Pages for the document model: at most 2000 px on the long side (a 3300×4700 scan reads worse and costs more).
+     * Scans are often a landscape table on a portrait sheet: for one or two pages the page also goes rotated by 90°
+     * both ways and the prompt asks to read the upright one. Without GD the pages go unchanged.
+     *
+     * @param  list<array{mime:string,data:string}>  $images
+     * @return list<array{mime:string,data:string}>
+     */
+    private function prepareImages(array $images): array
+    {
+        if (! function_exists('imagecreatefromstring') || $images === []) {
+            return $images;
+        }
+
+        $withRotations = count($images) <= 2;
+        $prepared = [];
+        foreach ($images as $image) {
+            $source = @imagecreatefromstring($image['data']);
+            if ($source === false) {
+                $prepared[] = $image;
+
+                continue;
+            }
+            $width = imagesx($source);
+            $height = imagesy($source);
+            $scale = min(1, 2000 / max($width, $height));
+            $page = $source;
+            if ($scale < 1) {
+                $page = imagescale($source, max(1, (int) round($width * $scale)), max(1, (int) round($height * $scale)), IMG_BICUBIC) ?: $source;
+            }
+            $versions = [$page];
+            if ($withRotations) {
+                foreach ([90, 270] as $angle) {
+                    $rotated = imagerotate($page, $angle, 0xFFFFFF);
+                    if ($rotated !== false) {
+                        $versions[] = $rotated;
+                    }
+                }
+            }
+            foreach ($versions as $version) {
+                ob_start();
+                imagejpeg($version, null, 85);
+                $prepared[] = ['mime' => 'image/jpeg', 'data' => (string) ob_get_clean()];
+            }
+        }
+
+        return array_slice($prepared, 0, 8);
     }
 
     private function hasUsefulText(string $text): bool
