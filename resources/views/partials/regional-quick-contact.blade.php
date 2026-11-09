@@ -11,16 +11,11 @@
 @endphp
 @if($quickContactBranch && ! $quickContactBranch->isOnlineOnly() && $quickContactCity->slug === 'minsk')
     <style>
-        .regional-store-contact{position:fixed;z-index:201;left:20px;bottom:24px;max-width:calc(100% - 40px)}
         .regional-store-contact .store-contact-widget{margin:0;border:1px solid #e2e6e9;border-radius:14px;box-shadow:0 6px 24px #18232c20;padding:10px 12px 4px}
         .regional-store-contact .store-contact-widget__link{min-height:40px}
         body.modal-open .regional-store-contact,body.mobile-catalog-menu-is-open .regional-store-contact{visibility:hidden}
         .ai-selector__launcher,.ai-selector__teaser{display:none!important}
-        @media(max-width:767px){
-            .regional-store-contact{left:12px;bottom:76px;max-width:calc(100% - 24px)}
-            .product-detail-page .regional-store-contact{bottom:148px}
-            body{padding-bottom:160px}
-        }
+        @media(max-width:767px){body{padding-bottom:160px}}
     </style>
     <aside class="regional-store-contact" aria-label="Быстрая связь с магазином">
         @include('partials.write-to-store')
