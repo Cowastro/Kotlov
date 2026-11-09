@@ -113,9 +113,7 @@
                                 </a>
                             </div>
                         @endif
-                        <div class="text-white">
-                            @include('partials.write-to-store')
-                        </div>
+                        @include('partials.write-to-store')
                     </div>
                 </div>
 

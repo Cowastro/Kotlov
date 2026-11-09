@@ -148,7 +148,7 @@
     @yield('content')
 
     @unless($minimalLayout ?? false)
-        @include('partials.footer', ['showSiteChat' => true])
+        @include('partials.footer')
         @include('partials.modals')
         @include('partials.ai-product-selector')
         @include('partials.regional-quick-contact')
