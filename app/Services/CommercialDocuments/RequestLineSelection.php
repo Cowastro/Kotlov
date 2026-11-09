@@ -27,6 +27,9 @@ class RequestLineSelection
 
     private const CANDIDATES_PER_LINE = 12;
 
+    /** Name fragments of a different application: excluded unless the request line names them. */
+    private const OTHER_APPLICATIONS = ['канализ', 'теплого пола', 'тёплого пола', 'теплый пол', 'тёплый пол'];
+
     public function __construct(
         private readonly AiContentEnricher $ai,
         private readonly B2bSpecificationOcrService $ocr,
@@ -111,13 +114,16 @@ class RequestLineSelection
     {
         $phrases = array_values(array_slice(array_unique(array_filter(array_map('trim', $phrases))), 0, 5));
         $lineGroups = $phrases !== [] ? $this->tokenGroups($phrases[0]) : [];
+        // Another application of the same material (sewage pipes, underfloor clips) only when the line asks for it.
+        $line = mb_strtolower($phrases[0] ?? '');
+        $exclude = array_values(array_filter(self::OTHER_APPLICATIONS, fn (string $word): bool => ! str_contains($line, $word)));
         $found = collect();
         foreach ($phrases as $phrase) {
             // The product name first: a category such as «Трубы и фитинги» would let cheap fittings crowd out pipes.
             $relaxations = $this->relaxations($this->tokenGroups($phrase));
             foreach ([false, true] as $withCategory) {
                 foreach ($relaxations as $groups) {
-                    $products = $this->search($groups, $withCategory);
+                    $products = $this->search($groups, $withCategory, $exclude);
                     if ($products->isNotEmpty()) {
                         $found = $found->concat($products);
 
@@ -156,7 +162,7 @@ class RequestLineSelection
      * @param  list<list<string>>  $groups
      * @return Collection<int, Product>
      */
-    private function search(array $groups, bool $withCategory = false): Collection
+    private function search(array $groups, bool $withCategory = false, array $exclude = []): Collection
     {
         if ($groups === []) {
             return collect();
@@ -178,6 +184,11 @@ class RequestLineSelection
                     });
                 }
             })
+            ->when($exclude !== [], fn (Builder $query) => $query->where(function (Builder $q) use ($exclude): void {
+                foreach ($exclude as $word) {
+                    $q->where('name', 'not like', '%'.$word.'%');
+                }
+            }))
             ->with(['supplierProducts.supplier:id,code,is_active', 'integrationProducts.source'])
             ->prioritizeConfirmedStock()
             ->orderBy('price')

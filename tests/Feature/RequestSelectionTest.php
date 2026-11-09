@@ -44,6 +44,7 @@ class RequestSelectionTest extends TestCase
         $category = Category::query()->create(['name' => 'Отопление', 'slug' => 'request-selection-heating', 'is_active' => true]);
         $pipe40 = $this->product($category, 'Труба полипропиленовая PN20 40х6,7 РВК', 6.0, true);
         $this->product($category, 'Труба полипропиленовая PN20 20х3,4 РВК', 1.0, true);
+        $this->product($category, 'Труба полипропиленовая для внутренней канализации 40х1,8х150 OSTENDORF', 0.5, true);
         $valve34 = $this->product($category, 'Клапан термостатический угловой 3/4" STI', 30.0, true);
         $this->product($category, 'Клапан термостатический угловой 1/2" STI', 20.0, true);
         $elbow = $this->product($category, 'Угольник полипропиленовый 90° 40 белый', 1.2, true);
