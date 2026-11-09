@@ -128,7 +128,7 @@ class B2bSpecificationOcrService
             $result = ['rows' => $this->requestRows($text, []), 'method' => 'PDF-текст + DeepSeek'];
         } else {
             $images = $extension === 'pdf'
-                ? $this->renderPdfPages($path)
+                ? ($this->renderPdfPages($path) ?: $this->embeddedPdfJpegs($path))
                 : [['mime' => $this->imageMime($extension), 'data' => (string) file_get_contents($path)]];
             if ($images === [] || blank($images[0]['data'] ?? null)) {
                 throw new RuntimeException('Не удалось подготовить документ для распознавания.');
@@ -272,6 +272,48 @@ PROMPT;
             }
             @rmdir($directory);
         }
+    }
+
+    /**
+     * A scanner PDF is a JPEG per page (/DCTDecode). Without poppler on the host, take those JPEG streams as they are.
+     *
+     * @return list<array{mime:string,data:string}>
+     */
+    private function embeddedPdfJpegs(string $path): array
+    {
+        $pdf = (string) @file_get_contents($path);
+        $images = [];
+        $cursor = 0;
+        // Plain string search: a regex over a multi-megabyte binary file exhausts the PCRE JIT stack.
+        while ($pdf !== '' && count($images) < 8 && ($marker = strpos($pdf, '/DCTDecode', $cursor)) !== false) {
+            $cursor = $marker + 10;
+            $dictStart = strrpos(substr($pdf, max(0, $marker - 2000), min($marker, 2000)), '<<');
+            $dictEnd = strpos($pdf, '>>', $marker);
+            $streamAt = $dictEnd !== false ? strpos($pdf, 'stream', $dictEnd) : false;
+            if ($dictStart === false || $streamAt === false || $streamAt - $dictEnd > 20) {
+                continue;
+            }
+            $header = substr($pdf, max(0, $marker - 2000) + $dictStart, $dictEnd - (max(0, $marker - 2000) + $dictStart));
+            $start = $streamAt + 6;
+            if (($pdf[$start] ?? '') === "\r") {
+                $start++;
+            }
+            if (($pdf[$start] ?? '') === "\n") {
+                $start++;
+            }
+            $length = preg_match('/\/Length\s+(\d+)(?!\s+\d+\s+R)/', $header, $m) ? (int) $m[1] : 0;
+            $data = $length > 0 ? substr($pdf, $start, $length) : '';
+            if (! str_starts_with($data, "\xFF\xD8")) {
+                $end = strpos($pdf, 'endstream', $start);
+                $data = $end !== false ? rtrim(substr($pdf, $start, $end - $start), "\r\n") : '';
+            }
+            if (str_starts_with($data, "\xFF\xD8") && strlen($data) > 10_000) {
+                $images[] = ['mime' => 'image/jpeg', 'data' => $data];
+                $cursor = $start + strlen($data);
+            }
+        }
+
+        return $images;
     }
 
     private function hasUsefulText(string $text): bool
