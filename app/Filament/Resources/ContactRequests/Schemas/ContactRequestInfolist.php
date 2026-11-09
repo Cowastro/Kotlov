@@ -17,6 +17,12 @@ class ContactRequestInfolist
         return $schema
             ->columns(3)
             ->components([
+                Section::make('Переписка')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->columnSpanFull()
+                    ->visible(fn (ContactRequest $record): bool => filled($record->external_source))
+                    ->schema([View::make('filament.contact-requests.history')]),
+
                 Section::make('Управление обращением')
                     ->description('Текущий этап, ответственный и ближайшее действие')
                     ->icon('heroicon-o-adjustments-horizontal')
@@ -74,9 +80,6 @@ class ContactRequestInfolist
                     ->schema([
                         TextEntry::make('message')->label('Что нужно клиенту')->prose()->columnSpanFull()
                             ->hidden(fn (ContactRequest $record): bool => filled($record->external_source)),
-                        View::make('filament.contact-requests.history')
-                            ->visible(fn (ContactRequest $record): bool => filled($record->external_source))
-                            ->columnSpanFull(),
                         TextEntry::make('product_name')->label('Товар')->placeholder('Не указан'),
                         TextEntry::make('requested_quantity')->label('Запрошено, шт.')->placeholder('—'),
                         TextEntry::make('product_url')

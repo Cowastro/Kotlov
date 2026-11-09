@@ -68,7 +68,7 @@ class ContactRequestWorkflowTest extends TestCase
         ]);
 
         $this->assertNull($request->phone);
-        $this->assertSame('Telegram-канал KOTLOV.BY', ContactRequest::$sources[$request->source]);
+        $this->assertSame('Telegram', ContactRequest::$sources[$request->source]);
         $this->assertDatabaseHas('contact_requests', [
             'id' => $request->id,
             'source' => 'telegram_channel',

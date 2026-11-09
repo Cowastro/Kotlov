@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ContactRequests\Tables;
 
+use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Models\ContactRequest;
 use App\Support\AdminPhoneLinks;
 use Filament\Actions\Action;
@@ -25,6 +26,7 @@ class ContactRequestsTable
             ->columns([
                 TextColumn::make('name')
                     ->label('Имя')
+                    ->description(fn (ContactRequest $record): ?string => $record->needs_attention ? 'Требует реакции' : null)
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
@@ -61,12 +63,12 @@ class ContactRequestsTable
                     ->sortable(),
 
                 TextColumn::make('source')
-                    ->label('Источник')
+                    ->label('Канал')
+                    ->state(fn (ContactRequest $record): string => $record->channelLabel())
                     ->badge()
-                    ->formatStateUsing(fn (?string $state): string => ContactRequest::$sources[$state] ?? ($state ?: '—'))
                     ->color(fn (?string $state): string => match ($state) {
-                        'ai_selection' => 'warning',
-                        'telegram_channel' => 'info',
+                        'AI-подбор' => 'warning',
+                        'Telegram', 'WhatsApp', 'Instagram', 'Viber' => 'info',
                         default => 'gray',
                     })
                     ->toggleable(),
@@ -138,13 +140,48 @@ class ContactRequestsTable
                     ->options(ContactRequest::$sources),
             ])
             ->recordActions([
+                Action::make('dialog')
+                    ->label('Диалог')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->authorize(fn (ContactRequest $record): bool => ContactRequestResource::canView($record))
+                    ->visible(fn (ContactRequest $record): bool => filled($record->external_source) && ! $record->isSiteChat())
+                    ->modalHeading(fn (ContactRequest $record): string => $record->name)
+                    ->slideOver()
+                    ->modalWidth('3xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Закрыть')
+                    ->modalContent(fn (ContactRequest $record) => view('filament.contact-requests.history', [
+                        'lead' => $record,
+                        'placement' => 'queue',
+                    ])),
                 ViewAction::make(),
                 ActionGroup::make([
+                    Action::make('markSeen')
+                        ->label('Просмотрено')
+                        ->icon('heroicon-o-check')
+                        ->authorize(fn (ContactRequest $record): bool => ContactRequestResource::canEdit($record))
+                        ->visible(fn (ContactRequest $record): bool => (bool) $record->needs_attention)
+                        ->action(fn (ContactRequest $record) => $record->clearInboxAttention()),
+                    Action::make('archive')
+                        ->label('В архив')
+                        ->icon('heroicon-o-archive-box')
+                        ->authorize(fn (ContactRequest $record): bool => ContactRequestResource::canEdit($record))
+                        ->visible(fn (ContactRequest $record): bool => ContactRequest::inboxStateAvailable()
+                            && ! $record->archived_at && in_array($record->status, ContactRequest::OPEN_STATUSES, true))
+                        ->action(fn (ContactRequest $record) => $record->update([
+                            'archived_at' => now(), 'needs_attention' => false,
+                        ])),
+                    Action::make('restore')
+                        ->label('Вернуть в активные')
+                        ->icon('heroicon-o-arrow-uturn-left')
+                        ->authorize(fn (ContactRequest $record): bool => ContactRequestResource::canEdit($record))
+                        ->visible(fn (ContactRequest $record): bool => filled($record->archived_at))
+                        ->action(fn (ContactRequest $record) => $record->update(['archived_at' => null])),
                     Action::make('read')
                         ->label('Взять в работу')
                         ->icon('heroicon-o-hand-raised')
                         ->color('warning')
-                        ->visible(fn (ContactRequest $record) => ! $record->isSiteChat() && in_array($record->status, ['new', 'read'], true))
+                        ->visible(fn (ContactRequest $record) => ! $record->isSiteChat() && ! $record->archived_at && in_array($record->status, ['new', 'read'], true))
                         ->action(fn ($record) => $record->update([
                             'status' => 'in_progress',
                             'responsible_user_id' => $record->responsible_user_id ?: auth()->id(),
