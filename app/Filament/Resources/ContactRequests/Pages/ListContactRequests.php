@@ -20,6 +20,11 @@ class ListContactRequests extends ListRecords
         return Width::Full;
     }
 
+    public function getTableColumnsSessionKey(): string
+    {
+        return parent::getTableColumnsSessionKey().'.compact-v1';
+    }
+
     protected function getHeaderActions(): array
     {
         return [

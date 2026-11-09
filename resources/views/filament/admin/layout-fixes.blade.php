@@ -306,6 +306,11 @@
         padding-block: .4rem;
     }
 
+    .fi-resource-contact-requests.fi-resource-list-records-page .fi-ta-selection-cell,
+    .fi-resource-contact-requests.fi-resource-list-records-page .fi-ta-cell:has(> .fi-ta-actions) {
+        padding-block: .375rem;
+    }
+
     .fi-resource-contact-requests.fi-resource-list-records-page .fi-ta-cell-message {
         max-width: min(34rem, 38vw);
     }
