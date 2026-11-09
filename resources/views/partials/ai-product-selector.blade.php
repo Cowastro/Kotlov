@@ -39,7 +39,7 @@
             <i class="icon icon-CaretRightThin" aria-hidden="true"></i>
         </button>
         @endunless
-        <button type="button" class="ai-selector__assistance-option" data-support-chat-open role="menuitem">
+        <button type="button" class="ai-selector__assistance-option" data-support-chat-open role="menuitem" aria-haspopup="dialog" aria-controls="supportChat" aria-expanded="false">
             <span class="ai-selector__assistance-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />

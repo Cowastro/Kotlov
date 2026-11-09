@@ -40,7 +40,7 @@
         Написать в магазин · Минск
     </p>
     <div class="store-contact-widget__actions">
-        <button type="button" class="store-contact-widget__action store-contact-widget__action--chat" data-support-chat-open aria-haspopup="dialog" aria-controls="supportChat">
+        <button type="button" class="store-contact-widget__action store-contact-widget__action--chat" data-support-chat-open aria-haspopup="dialog" aria-controls="supportChat" aria-expanded="false">
             <svg class="store-contact-widget__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 11a7 7 0 0 1-7 7H9l-5 3v-6a7 7 0 0 1 5-11h4a7 7 0 0 1 7 7Z"/><path d="M8 11h8"/></svg>
             Написать в чат
         </button>
