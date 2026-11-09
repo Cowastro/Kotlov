@@ -19,9 +19,9 @@ class AdminNavigationGroupTest extends TestCase
     public function test_sales_group_contains_only_sales_channels_and_commercial_documents(): void
     {
         $this->assertSame('Продажи', OrderResource::getNavigationGroup());
-        $this->assertSame('Продажи', SupportConversationResource::getNavigationGroup());
         $this->assertSame('Продажи', CommercialDocumentResource::getNavigationGroup());
         $this->assertSame('Продажи', ContactRequestResource::getNavigationGroup());
+        $this->assertFalse(SupportConversationResource::shouldRegisterNavigation());
         $this->assertSame('Продажи', DealByOrderResource::getNavigationGroup());
 
         $this->assertSame('Аналитика', StockDemandAnalytics::getNavigationGroup());
