@@ -103,8 +103,26 @@ class B2bSpecificationOcrService
             return $cached;
         }
 
-        $path = $disk->path($attachment->path);
-        $extension = $this->extension($attachment);
+        return $this->recognizeFile($disk->path($attachment->path), $this->extension($attachment), $cacheKey);
+    }
+
+    /**
+     * Rows of any PDF or image (a scanned purchase request, a specification): the PDF text when it has one,
+     * otherwise the rendered pages through the document model. Cached by $cacheKey for 30 days.
+     *
+     * @return array{rows: array<int, array<string, mixed>>, method: string}
+     */
+    public function recognizeFile(string $path, string $extension, string $cacheKey): array
+    {
+        $cached = Cache::get($cacheKey);
+        if (is_array($cached) && is_array($cached['rows'] ?? null)) {
+            return $cached;
+        }
+
+        $extension = mb_strtolower($extension);
+        if (! in_array($extension, self::DOCUMENT_EXTENSIONS, true)) {
+            throw new RuntimeException('Загрузите PDF или изображение (JPG, PNG, WEBP).');
+        }
         $text = $extension === 'pdf' ? $this->extractPdfText($path) : '';
         if ($this->hasUsefulText($text)) {
             $result = ['rows' => $this->requestRows($text, []), 'method' => 'PDF-текст + DeepSeek'];
@@ -121,6 +139,20 @@ class B2bSpecificationOcrService
         Cache::put($cacheKey, $result, now()->addDays(30));
 
         return $result;
+    }
+
+    /** @return array{rows: array<int, array<string, mixed>>, method: string} Rows of a pasted request (an e-mail, a list). */
+    public function recognizeText(string $text): array
+    {
+        $text = trim($text);
+        if (! $this->hasUsefulText($text)) {
+            throw new RuntimeException('Вставьте текст заявки: список позиций с количеством.');
+        }
+
+        return Cache::remember('request-text-ocr:v1:'.hash('sha256', $text), now()->addDays(7), fn (): array => [
+            'rows' => $this->requestRows($text, []),
+            'method' => 'Текст + DeepSeek',
+        ]);
     }
 
     /** @param list<array{mime:string,data:string}> $images
