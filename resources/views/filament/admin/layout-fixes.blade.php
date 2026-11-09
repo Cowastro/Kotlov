@@ -69,13 +69,25 @@
 
     /* The order queue is information-dense, so keep its rhythm compact without
        making controls or the rest of the admin panel smaller. */
+    .order-queue-nav {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .order-queue-nav__more {
+        min-width: 13rem;
+        margin-inline-start: auto;
+    }
+
     .orders-workspace .fi-ta-header-cell {
-        padding: 0.625rem;
+        padding: .5rem .375rem;
     }
 
     .orders-workspace .fi-ta-text:not(.fi-inline),
     .orders-workspace .fi-ta-icon {
-        padding: 0.6rem 0.5rem;
+        padding: .4rem .375rem;
     }
 
     .orders-workspace .fi-ta-actions {
@@ -85,6 +97,110 @@
 
     .orders-workspace .fi-ta-actions .fi-btn {
         padding-inline: 0.55rem;
+    }
+
+    .orders-workspace .fi-ta-header-toolbar .fi-ta-search-field {
+        width: min(24rem, 62vw);
+    }
+
+    .orders-workspace .order-cell-line {
+        display: block;
+        max-width: 9rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .orders-workspace .order-cell-details {
+        max-width: 100%;
+        text-align: start;
+    }
+
+    .orders-workspace .order-cell-details > summary {
+        cursor: pointer;
+        line-height: 1.1rem;
+        color: inherit;
+    }
+
+    .orders-workspace .order-cell-details__body {
+        margin-top: .375rem;
+        padding-inline-start: .375rem;
+        overflow-wrap: anywhere;
+    }
+
+    .orders-workspace .order-cell-details__body > hr {
+        margin-block: .375rem;
+        opacity: .2;
+    }
+
+    .orders-workspace .order-item-preview > summary .order-cell-line {
+        display: inline-block;
+        max-width: clamp(7rem, 11vw, 16rem);
+        vertical-align: bottom;
+    }
+
+    .orders-workspace .order-item-preview__count {
+        display: block;
+        max-width: clamp(8rem, 11vw, 17rem);
+        padding-inline-start: .8rem;
+        font-size: .6875rem;
+        font-weight: 500;
+        opacity: .75;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .orders-workspace .order-summary-status,
+    .orders-workspace .order-summary-total {
+        display: none;
+    }
+
+    .orders-workspace .order-payment-confirmed {
+        color: var(--success-600);
+        font-weight: 600;
+    }
+
+    .orders-workspace .order-control-indicator {
+        display: block;
+        color: var(--warning-600);
+        white-space: nowrap;
+    }
+
+    .orders-workspace .fi-ta-cell-customer-name a[href^="tel:"],
+    .orders-workspace .fi-ta-cell-economics .fi-ta-text-item-label,
+    .orders-workspace .fi-ta-cell-economics .order-cell-details > summary {
+        white-space: nowrap;
+    }
+
+    .dark .orders-workspace .order-payment-confirmed {
+        color: var(--success-400);
+    }
+
+    .dark .orders-workspace .order-control-indicator {
+        color: var(--warning-400);
+    }
+
+    @media (max-width: 1279px) {
+        .orders-workspace .order-summary-total {
+            display: block;
+            font-weight: 600;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .order-queue-nav__more {
+            width: 100%;
+        }
+
+        .orders-workspace .order-summary-status {
+            display: block;
+            max-width: 8rem;
+        }
+
+        .orders-workspace .fi-ta-actions {
+            gap: 0;
+        }
     }
 
     .orders-workspace .fi-ta-cell-responsible .fi-ta-text-item-label,

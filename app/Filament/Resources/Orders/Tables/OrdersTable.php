@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Orders\Tables;
 use App\Filament\Exports\OrderExporter;
 use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
 use App\Filament\Resources\Orders\Actions\RequestOrderSupplierReserveAction;
+use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -28,9 +30,11 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Section;
 use Filament\Support\Enums\IconSize;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -89,6 +93,9 @@ class OrdersTable
 
         return $table
             ->extraAttributes(['class' => 'orders-workspace'])
+            ->searchable()
+            ->searchPlaceholder('№ заказа, клиент, телефон или артикул')
+            ->searchUsing(fn (Builder $query, string $search): Builder => self::searchOrders($query, $search))
             ->modifyQueryUsing(fn (Builder $query) => $query
                 ->withSum('items', 'quantity')
                 ->with([
@@ -122,13 +129,16 @@ class OrdersTable
             ->columns([
                 TextColumn::make('number')
                     ->label('№ заказа')
-                    ->searchable()
                     ->sortable()
-                    ->description(fn (Order $record): string => collect([
-                        $record->dealByInbox?->sourceLabel(),
-                        $record->created_at?->format('d.m.Y H:i') ?? 'Дата не указана',
-                    ])->filter()->implode(' · '))
-                    ->width('132px')
+                    ->url(fn (Order $record): string => OrderResource::getUrl('view', ['record' => $record]))
+                    ->description(function (Order $record) use ($statusNames): HtmlString {
+                        $date = $record->created_at?->format('d.m.Y H:i') ?? 'Дата не указана';
+                        $status = $record->isArchivedAsIrrelevant() ? 'Архив' : ($statusNames[$record->status] ?? $record->status);
+
+                        return new HtmlString(e($date).'<span class="order-summary-status">'.e($status).'</span>'
+                            .'<span class="order-summary-total">'.e(self::formatMoney((float) $record->total)).'</span>');
+                    })
+                    ->width('114px')
                     ->grow(false)
                     ->weight('bold'),
 
@@ -142,44 +152,42 @@ class OrdersTable
 
                 TextColumn::make('customer_name')
                     ->label('Клиент')
-                    ->searchable()
-                    ->description(fn (Order $record): string => collect([
-                        $record->customer_phone,
-                        $record->delivery_city,
-                    ])->filter()->implode(' · ') ?: 'Контакты не указаны')
-                    ->width('180px')
+                    ->description(function (Order $record): HtmlString {
+                        $phone = preg_replace('/[^+0-9]/', '', (string) $record->customer_phone);
+                        $contact = $phone
+                            ? '<a href="tel:'.e($phone).'">'.e($record->customer_phone).'</a>'
+                            : e($record->customer_phone);
+                        $location = collect([$record->delivery_city, $record->partnerBranch?->name])->filter()->unique()->implode(' · ');
+                        $locationHint = collect([$location, Order::PARTNER_STATUSES[$record->partner_status] ?? null])->filter()->implode(' · ');
+
+                        return new HtmlString(($contact ?: 'Телефон не указан')
+                            .($location !== '' ? '<span class="order-cell-line" title="'.e($locationHint).'">'.e($location).'</span>' : ''));
+                    })
+                    ->disabledClick()
+                    ->limit(35)
+                    ->width('135px')
                     ->grow(false)
                     ->wrap(),
 
                 TextColumn::make('customer_phone')
                     ->label('Телефон')
-                    ->searchable()
                     ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
                     ->html()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('customer_email')
                     ->label('Email')
-                    ->searchable()
                     ->copyable()
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('delivery_city')
                     ->label('Город')
-                    ->searchable()
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('partnerBranch.name')
-                    ->label('Партнёр')
-                    ->placeholder('Центр KOTLOV')
-                    ->description(fn ($record): ?string => \App\Models\Order::PARTNER_STATUSES[$record->partner_status] ?? null)
-                    ->toggleable(),
-
                 TextColumn::make('delivery_address')
                     ->label('Адрес')
-                    ->searchable()
                     ->limit(32)
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -217,54 +225,12 @@ class OrdersTable
 
                 TextColumn::make('economics')
                     ->label('Экономика')
-                    ->state(fn (Order $record): string => 'Заказ '.number_format((float) $record->total, 2, '.', ' ').' BYN')
-                    ->description(function (Order $record): string {
-                        if ($settlement = $record->latestSettlement) {
-                            $current = app(OrderSettlementManager::class)->isCurrent($settlement, $record);
-
-                            return 'Взаиморасчёт №'.(int) $settlement->version
-                                .' · прибыль '.number_format((float) $settlement->net_profit, 2, '.', ' ').' BYN'
-                                .' · '.($current ? 'актуален' : 'маршрут изменён');
-                        }
-
-                        $snapshot = $record->placedEconomicSnapshot;
-                        if ($snapshot) {
-                            $goods = 'Снимок: товары '.number_format((float) $snapshot->goods_sale_total, 2, '.', ' ').' BYN';
-
-                            if ($snapshot->purchase_total === null) {
-                                $known = $snapshot->priced_items_count > 0
-                                    ? 'известный вход '.number_format((float) $snapshot->known_purchase_total, 2, '.', ' ').' BYN'
-                                    : 'входная стоимость не определена';
-
-                                return $goods.' · '.$known.' · без цены: '.$snapshot->missing_purchase_price_count;
-                            }
-
-                            return $goods
-                                .' · вход '.number_format((float) $snapshot->purchase_total, 2, '.', ' ').' BYN'
-                                .' · валовая маржа '.number_format((float) $snapshot->goods_margin_total, 2, '.', ' ').' BYN'
-                                .($snapshot->goods_margin_percent !== null
-                                    ? ' / '.number_format((float) $snapshot->goods_margin_percent, 1, '.', ' ').'%'
-                                    : '');
-                        }
-
-                        $summary = $record->managementSummary();
-                        $goods = 'Товары '.number_format($summary['sale_total'], 2, '.', ' ').' BYN';
-
-                        if ($summary['missing_price_count'] > 0) {
-                            $known = $summary['priced_items_count'] > 0
-                                ? 'Известный вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN'
-                                : 'Входная стоимость не рассчитана';
-
-                            return $goods.' · '.$known.' · Без цены: '.$summary['missing_price_count'];
-                        }
-
-                        $margin = number_format($summary['margin_total'], 2, '.', ' ').' BYN';
-                        $percent = $summary['margin_percent'] !== null
-                            ? ' / '.number_format($summary['margin_percent'], 1, '.', ' ').'%'
-                            : '';
-
-                        return $goods.' · Вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN · Маржа ≈ '.$margin.$percent;
-                    })
+                    ->state(fn (Order $record): string => 'Заказ '.self::formatMoney((float) $record->total))
+                    ->description(fn (Order $record): HtmlString => new HtmlString(
+                        '<details class="order-cell-details"><summary>'.e(self::economicSummary($record))
+                        .'</summary><div class="order-cell-details__body">'.e(self::economicDetails($record)).'</div></details>'
+                    ))
+                    ->disabledClick()
                     ->color(fn (Order $record): string => match (true) {
                         $record->latestSettlement !== null
                             && ! app(OrderSettlementManager::class)->isCurrent($record->latestSettlement, $record) => 'warning',
@@ -285,7 +251,8 @@ class OrdersTable
                     ->tooltip(fn (Order $record): string => $record->placedEconomicSnapshot
                         ? 'Неизменяемый снимок на момент оформления. Неизвестные расходы не считаются нулевыми.'
                         : 'Заказ без снимка: показана текущая оценка. Неизвестная цена не считается нулевой.')
-                    ->width('190px')
+                    ->width('135px')
+                    ->visibleFrom('xl')
                     ->grow(false)
                     ->wrap()
                     ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('total', $direction)),
@@ -336,19 +303,21 @@ class OrdersTable
                             ])->filter()->implode(' · ');
                         }
 
-                        if ($record->payment_status === 'paid') {
-                            return new HtmlString(
-                                '<span style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:3px 8px;border-radius:9999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:700">'
-                                .'✓ Оплачен</span>'
-                            );
-                        }
+                        $payment = $record->payment_status === 'paid'
+                            ? '<span class="order-payment-confirmed">✓ Оплачен</span>'
+                            : e($record->paymentStatusLabel());
+                        $problem = $record->managementSummary()['problem_count'] > 0
+                            ? '<span class="order-control-indicator" title="'.e(self::attentionTooltip($record)).'">'
+                                .e(self::compactAttentionLabel($record)).'</span>'
+                            : '';
 
-                        return $record->paymentStatusLabel();
+                        return new HtmlString($payment.$problem);
                     })
                     ->tooltip(fn (Order $record): ?string => $record->isArchivedAsIrrelevant()
                         ? $record->archive_reason
                         : null)
-                    ->width('150px')
+                    ->width('130px')
+                    ->visibleFrom('md')
                     ->grow(false),
 
                 IconColumn::make('onec_sync_state')
@@ -404,48 +373,48 @@ class OrdersTable
                         'warning' => 'heroicon-o-eye',
                         default => 'heroicon-o-check-circle',
                     })
-                    ->width('140px')
+                    ->width('94px')
+                    ->visibleFrom('lg')
                     ->grow(false)
-                    ->wrap(),
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('supply_route')
                     ->label('Поставка')
                     ->state(function (Order $record): string {
-                        $summary = $record->supplySummary();
+                        $names = $record->supplySummary()['supplier_names'];
 
-                        return $summary['supplier_names']->isNotEmpty()
-                            ? $summary['supplier_names']->implode(', ')
+                        return $names->isNotEmpty()
+                            ? $names->first().($names->count() > 1 ? ' +'.($names->count() - 1) : '')
                             : 'Поставщик не определён';
                     })
-                    ->description(function (Order $record): HtmlString|string {
+                    ->description(function (Order $record): HtmlString {
                         $summary = $record->supplySummary();
-                        $parts = [];
+                        $status = 'Резерв: '.self::supplierReserveStatus($record);
+                        $details = collect([
+                            e($summary['supplier_names']->implode(', ')),
+                            self::orderSupplierContacts($record),
+                            $summary['unresolved_count'] > 0 ? 'Без маршрута: '.$summary['unresolved_count'] : null,
+                        ])->filter()->implode('<br>');
 
-                        if ($summary['supplier_names']->count() > 1) {
-                            $parts[] = 'Смешанная поставка';
-                        }
-                        if ($summary['unresolved_count'] > 0) {
-                            $parts[] = 'Без маршрута: '.$summary['unresolved_count'];
-                        }
-
-                        $parts[] = 'Резерв: '.self::supplierReserveStatus($record);
-                        $status = implode(' · ', $parts);
-                        $contacts = self::orderSupplierContacts($record);
-
-                        if ($contacts && $status) {
-                            return new HtmlString($contacts.'<br><span class="text-gray-500">'.e($status).'</span>');
-                        }
-
-                        return $contacts ? new HtmlString($contacts) : $status;
+                        return new HtmlString($details !== ''
+                            ? '<details class="order-cell-details"><summary title="'.e($status).'">'.e($status)
+                                .'</summary><div class="order-cell-details__body">'.$details.'</div></details>'
+                            : e($status));
                     })
+                    ->disabledClick()
+                    ->limit(28)
+                    ->tooltip(fn (Order $record): string => $record->supplySummary()['supplier_names']->implode(', '))
                     ->color(fn (Order $record): string => match (true) {
                         $record->supplierOrderRequests->contains('status', 'rejected') => 'danger',
                         $record->supplySummary()['unresolved_count'] > 0 => 'danger',
                         default => 'success',
                     })
-                    ->width('170px')
+                    ->width('133px')
+                    ->visibleFrom('lg')
                     ->grow(false)
-                    ->wrap(),
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('supplier_reserve_status')
                     ->label('Резерв')
@@ -465,12 +434,14 @@ class OrdersTable
                     ->placeholder('—')
                     ->getStateUsing(fn (Order $record): ?string => self::compactResponsible($record))
                     ->tooltip(fn (Order $record): ?string => self::responsibleName($record))
-                    ->width('110px')
+                    ->width('90px')
+                    ->visibleFrom('xl')
                     ->grow(false)
                     ->wrap()
-                    ->searchable(query: fn (Builder $query, string $search) => $query
-                        ->where('assigned_to', 'like', "%{$search}%")
-                        ->orWhereHas('manager', fn ($q) => $q->where('name', 'like', "%{$search}%"))),
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query
+                        ->orderByRaw("CASE WHEN manager_id IS NULL AND NULLIF(TRIM(assigned_to), '') IS NULL THEN 1 ELSE 0 END")
+                        ->orderByRaw("COALESCE((SELECT name FROM users WHERE users.id = orders.manager_id), NULLIF(TRIM(assigned_to), '')) "
+                            .($direction === 'desc' ? 'DESC' : 'ASC'))),
 
                 TextColumn::make('updated_at')
                     ->label('Обновлен')
@@ -479,26 +450,12 @@ class OrdersTable
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('items_list')
-                    ->label('Товары')
-                    ->state(fn (Order $record): string => self::compactProductList($record))
+                    ->label('Товары и поставка')
+                    ->state(fn (Order $record): HtmlString => self::compactProductList($record))
                     ->html()
-                    ->tooltip(fn (Order $record): string => $record->items
-                        ->map(fn (OrderItem $item): string => collect([
-                            $item->product_name,
-                            $item->product_sku ? '['.$item->product_sku.']' : null,
-                        ])->filter()->implode(' '))
-                        ->filter()
-                        ->implode("\n"))
-                    ->width('220px')
-                    ->grow(false)
-                    ->wrap()
-                    ->searchable(query: function (Builder $query, string $search): Builder {
-                        return $query->orWhereHas('items', function (Builder $itemsQuery) use ($search): void {
-                            $itemsQuery
-                                ->where('product_sku', 'like', "%{$search}%")
-                                ->orWhere('product_name', 'like', "%{$search}%");
-                        });
-                    }),
+                    ->disabledClick()
+                    ->visibleFrom('md')
+                    ->wrap(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -531,6 +488,11 @@ class OrdersTable
                     ->label('Доставка')
                     ->options($deliveryNames),
 
+                SelectFilter::make('partner_branch_id')
+                    ->label('Филиал партнёра')
+                    ->relationship('partnerBranch', 'name')
+                    ->searchable(),
+
                 SelectFilter::make('onec_sync')
                     ->label('Состояние 1С')
                     ->options([
@@ -558,17 +520,24 @@ class OrdersTable
                     ->trueLabel('Есть ответственный')
                     ->falseLabel('Без ответственного')
                     ->queries(
-                        true: fn (Builder $query) => $query->whereNotNull('assigned_to'),
-                        false: fn (Builder $query) => $query->whereNull('assigned_to'),
+                        true: fn (Builder $query) => $query->where(fn (Builder $owner): Builder => $owner
+                            ->whereNotNull('manager_id')->orWhereRaw("NULLIF(TRIM(assigned_to), '') IS NOT NULL")),
+                        false: fn (Builder $query) => $query->withoutResponsible(),
                         blank: fn (Builder $query) => $query,
                     ),
 
                 SelectFilter::make('manager_id')
-                    ->label('Менеджер')
-                    ->options(fn () => User::whereIn('role', ['admin', 'manager', 'sales_manager'])
-                        ->pluck('name', 'id')
-                        ->toArray())
-                    ->placeholder('Все менеджеры'),
+                    ->label('Ответственный')
+                    ->options(fn (): array => ['mine' => 'Мои заказы', 'unassigned' => 'Без ответственного']
+                        + User::whereIn('role', ['admin', 'manager', 'sales_manager'])->orderBy('name')->pluck('name', 'id')->all())
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'mine' => $query->where('manager_id', auth()->id()),
+                        'unassigned' => $query->withoutResponsible(),
+                        null, '' => $query,
+                        default => $query->where('manager_id', (int) $data['value']),
+                    })
+                    ->searchable()
+                    ->placeholder('Все ответственные'),
 
                 Filter::make('my_orders')
                     ->label('Мои заказы')
@@ -586,13 +555,31 @@ class OrdersTable
                     ->query(fn (Builder $query, array $data): Builder => $query
                         ->when($data['created_from'] ?? null, fn (Builder $query, $date) => $query->whereDate('created_at', '>=', $date))
                         ->when($data['created_until'] ?? null, fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date))),
+            ], layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(['md' => 2, 'xl' => 4])
+            ->filtersFormSchema(fn (array $filters): array => [
+                $filters['status'],
+                $filters['manager_id'],
+                $filters['operational_problem'],
+                $filters['payment_status'],
+                Section::make('Дополнительные фильтры')->compact()->collapsible()->collapsed()->columnSpanFull()
+                    ->columns(['md' => 2, 'xl' => 4])
+                    ->schema(array_values(array_diff_key($filters, array_flip(['status', 'manager_id', 'operational_problem', 'payment_status'])))),
+            ])
+            ->deferFilters(false)
+            ->emptyStateHeading('Заказы не найдены')
+            ->emptyStateDescription('Проверьте выбранную очередь и фильтры.')
+            ->emptyStateActions([
+                Action::make('searchAllOrders')->label('Искать во всех заказах')->icon('heroicon-o-magnifying-glass')
+                    ->visible(fn (ListOrders $livewire): bool => $livewire->activeTab !== 'all' && filled($livewire->getTableSearch()))
+                    ->action(fn (ListOrders $livewire) => $livewire->selectOrderTab('all')),
             ])
             ->recordActions([
                 Action::make('advanceWorkflow')
                     ->label(fn (Order $record): string => self::compactWorkflowLabel($record))
                     ->icon(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['icon'] ?? 'heroicon-o-arrow-right')
                     ->color(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['color'] ?? 'gray')
-                    ->button()
+                    ->iconButton()
                     ->visible(fn (Order $record): bool => app(OrderWorkflow::class)->step($record) !== null)
                     ->tooltip(fn (Order $record): ?string => app(OrderWorkflow::class)->blocker($record)
                         ? 'Откроется короткое подтверждение наличия и способа исполнения.'
@@ -752,14 +739,12 @@ class OrdersTable
                             ->body('Заказ закрыт и перемещён в архив.')
                             ->send();
                     }),
-                FindOrderItemAnalogAction::make()
-                    ->iconButton()
-                    ->tooltip('Подобрать аналог'),
                 ViewAction::make()
                     ->label('Открыть заказ')
                     ->iconButton()
                     ->tooltip('Открыть заказ'),
                 ActionGroup::make([
+                    FindOrderItemAnalogAction::make(),
                     RequestOrderSupplierReserveAction::make(),
                     Action::make('openOrderOnline')
                         ->label('Открыть онлайн-заказ')
@@ -831,6 +816,102 @@ class OrdersTable
                     })
                     ->deselectRecordsAfterCompletion(),
             ]);
+    }
+
+    private static function searchOrders(Builder $query, string $search): Builder
+    {
+        $phone = preg_match('/^[+0-9().\s-]+$/u', $search) ? preg_replace('/\D/', '', $search) : '';
+        $terms = strlen($phone) >= 5 ? [$search] : (preg_split('/\s+/u', trim($search), -1, PREG_SPLIT_NO_EMPTY) ?: []);
+
+        foreach ($terms as $term) {
+            $pattern = '%'.$term.'%';
+            $query->where(fn (Builder $orders): Builder => $orders
+                ->whereAny(['number', 'customer_name', 'customer_phone', 'customer_email', 'company_name', 'company_unp',
+                    'delivery_city', 'delivery_address', 'assigned_to'], 'like', $pattern)
+                ->orWhereHas('items', fn (Builder $items): Builder => $items->whereAny(['product_sku', 'product_name'], 'like', $pattern))
+                ->orWhereHas('manager', fn (Builder $manager): Builder => $manager->where('name', 'like', $pattern))
+                ->orWhereHas('partnerBranch', fn (Builder $branch): Builder => $branch->where('name', 'like', $pattern))
+                ->when(strlen($phone) >= 5, fn (Builder $orders): Builder => $orders->orWhereRaw(
+                    "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(customer_phone, ' ', ''), '(', ''), ')', ''), '-', ''), '.', '') LIKE ?",
+                    ['%'.$phone.'%'],
+                )));
+        }
+
+        return $query;
+    }
+
+    private static function formatMoney(float $amount): string
+    {
+        return number_format($amount, 2, '.', ' ').' BYN';
+    }
+
+    private static function economicSummary(Order $record): string
+    {
+        if ($settlement = $record->latestSettlement) {
+            return app(OrderSettlementManager::class)->isCurrent($settlement, $record)
+                ? 'Прибыль '.self::formatMoney((float) $settlement->net_profit)
+                : 'Пересчитать прибыль';
+        }
+
+        $snapshot = $record->placedEconomicSnapshot;
+        $summary = $snapshot ? null : $record->managementSummary();
+        $missing = $snapshot?->missing_purchase_price_count ?? $summary['missing_price_count'] ?? 0;
+        if ($missing > 0) {
+            return 'Без закупочной: '.$missing;
+        }
+
+        $margin = $snapshot?->goods_margin_percent ?? $summary['margin_percent'] ?? null;
+
+        return $margin === null ? 'Маржа не рассчитана' : 'Маржа '.number_format((float) $margin, 1, '.', ' ').'%';
+    }
+
+    private static function economicDetails(Order $record): string
+    {
+        if ($settlement = $record->latestSettlement) {
+            $current = app(OrderSettlementManager::class)->isCurrent($settlement, $record);
+
+            return 'Взаиморасчёт №'.(int) $settlement->version
+                .' · прибыль '.number_format((float) $settlement->net_profit, 2, '.', ' ').' BYN'
+                .' · '.($current ? 'актуален' : 'маршрут изменён');
+        }
+
+        $snapshot = $record->placedEconomicSnapshot;
+        if ($snapshot) {
+            $goods = 'Снимок: товары '.number_format((float) $snapshot->goods_sale_total, 2, '.', ' ').' BYN';
+
+            if ($snapshot->purchase_total === null) {
+                $known = $snapshot->priced_items_count > 0
+                    ? 'известный вход '.number_format((float) $snapshot->known_purchase_total, 2, '.', ' ').' BYN'
+                    : 'входная стоимость не определена';
+
+                return $goods.' · '.$known.' · без цены: '.$snapshot->missing_purchase_price_count;
+            }
+
+            return $goods
+                .' · вход '.number_format((float) $snapshot->purchase_total, 2, '.', ' ').' BYN'
+                .' · валовая маржа '.number_format((float) $snapshot->goods_margin_total, 2, '.', ' ').' BYN'
+                .($snapshot->goods_margin_percent !== null
+                    ? ' / '.number_format((float) $snapshot->goods_margin_percent, 1, '.', ' ').'%'
+                    : '');
+        }
+
+        $summary = $record->managementSummary();
+        $goods = 'Товары '.number_format($summary['sale_total'], 2, '.', ' ').' BYN';
+
+        if ($summary['missing_price_count'] > 0) {
+            $known = $summary['priced_items_count'] > 0
+                ? 'Известный вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN'
+                : 'Входная стоимость не рассчитана';
+
+            return $goods.' · '.$known.' · Без цены: '.$summary['missing_price_count'];
+        }
+
+        $margin = number_format($summary['margin_total'], 2, '.', ' ').' BYN';
+        $percent = $summary['margin_percent'] !== null
+            ? ' / '.number_format($summary['margin_percent'], 1, '.', ' ').'%'
+            : '';
+
+        return $goods.' · Вход ≈ '.number_format($summary['purchase_total'], 2, '.', ' ').' BYN · Маржа ≈ '.$margin.$percent;
     }
 
     public static function supplierReserveStatus(Order $order): string
@@ -915,40 +996,42 @@ class OrdersTable
         };
     }
 
-    private static function compactProductList(Order $order): string
+    private static function compactProductList(Order $order): HtmlString
     {
-        $items = $order->items->values();
-        $visibleItems = $items->take(2)
-            ->map(fn (OrderItem $item): string => self::productLinks($item))
-            ->filter();
-        $remainingItems = $items->slice(2)
-            ->map(fn (OrderItem $item): string => self::productLinks($item))
-            ->filter();
-
-        $html = $visibleItems->join('<div style="height:8px"></div>');
-
-        if ($remainingItems->isNotEmpty()) {
-            $count = $remainingItems->count();
-            $word = match (true) {
-                ($count % 100) >= 11 && ($count % 100) <= 14 => 'товаров',
-                ($count % 10) === 1 => 'товар',
-                ($count % 10) >= 2 && ($count % 10) <= 4 => 'товара',
-                default => 'товаров',
-            };
-            $html .= '<details style="margin-top:8px">'
-                .'<summary style="cursor:pointer;color:#f59e0b;font-weight:600">Показать ещё '.$count.' '.$word.'</summary>'
-                .'<div style="height:8px"></div>'
-                .$remainingItems->join('<div style="height:8px"></div>')
-                .'</details>';
+        $items = $order->items;
+        if ($items->isEmpty()) {
+            return new HtmlString('Нет позиций');
         }
 
-        return '<div style="width:220px;max-width:220px;overflow-wrap:anywhere">'.$html.'</div>';
+        $name = e($items->first()->product_name);
+        $more = $items->count() - 1;
+        $quantity = self::formatStock((float) $items->sum('quantity'));
+        $suppliers = $order->supplySummary()['supplier_names'];
+        $supply = $suppliers->isEmpty() ? 'Поставщик не определён' : $suppliers->first();
+        if ($suppliers->count() > 1) {
+            $supply .= ' +'.($suppliers->count() - 1);
+        }
+        $reserve = 'Резерв: '.self::supplierReserveStatus($order);
+        $supplyDetails = collect([
+            e($suppliers->implode(', ')),
+            self::orderSupplierContacts($order),
+            e($reserve),
+        ])->filter()->implode('<br>');
+
+        return new HtmlString('<details class="order-cell-details order-item-preview">'
+            .'<summary title="'.$name.'"><span class="order-cell-line">'.$name.'</span>'
+            .'<span class="order-item-preview__count">'.($more > 0 ? '+'.$more.' · ' : '').$quantity.' шт. · '
+                .'<span title="'.e($supply.' · '.$reserve).'">'.e($supply).'</span></span></summary>'
+            .'<div class="order-cell-details__body">'.$items->map(fn (OrderItem $item): string => self::productLinks($item))->implode('<hr>')
+                .'<hr><strong>Поставка</strong><br>'.$supplyDetails.'</div>'
+            .'</details>');
     }
 
     private static function productLinks(OrderItem $item): string
     {
         $product = $item->product;
-        $name = e($item->product_name.($item->product_sku ? ' ['.$item->product_sku.']' : ''));
+        $name = e($item->product_name.($item->product_sku ? ' ['.$item->product_sku.']' : '')
+            .' × '.self::formatStock((float) $item->quantity));
 
         if (! $product) {
             return $name.'<div style="font-size:11px;color:#f59e0b">Карточка товара не связана</div>';

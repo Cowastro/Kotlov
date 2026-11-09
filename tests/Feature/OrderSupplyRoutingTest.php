@@ -81,7 +81,7 @@ class OrderSupplyRoutingTest extends TestCase
             ->assertSeeText('Экономика')
             ->assertSeeText('Заказ 240.00 BYN')
             ->assertSeeText('Товары 240.00 BYN · Вход ≈ 192.00 BYN · Маржа ≈ 48.00 BYN / 20.0%')
-            ->assertSeeText('Контроль')
+            ->assertSee('class="order-control-indicator"', false)
             ->assertSeeText('Проблем: ')
             ->assertSeeText('Оплата при получении')
             ->assertDontSeeText('Ожидает оплаты')
