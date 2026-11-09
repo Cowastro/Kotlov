@@ -40,6 +40,11 @@ class SpotlightPrimoTest extends TestCase
         $this->get('/')->assertOk()
             ->assertSee('primo-cover', false)
             ->assertSee('primo-cover.webp', false)
-            ->assertSee('/spotlight-topki/'.SpotlightProducts::PRIMO_700, false);
+            ->assertSee('/spotlight-topki/'.SpotlightProducts::PRIMO_700, false)
+            ->assertSee('/blog/ekokamin-primo-700-reshetka-gril-v-podarok', false);
+
+        $this->get('/blog/ekokamin-primo-700-reshetka-gril-v-podarok')->assertOk()
+            ->assertSee('решётка-гриль в подарок')
+            ->assertSee('/topki/topka-cugunnaia-primo-700', false);
     }
 }

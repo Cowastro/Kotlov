@@ -23,6 +23,7 @@
             <div class="primo-cover__buy">
                 <span class="primo-cover__price">@if ($primoOld)<del>{{ number_format($primoOld, 0, '.', ' ') }}</del>@endif{{ number_format((float) $primo->price, 0, '.', ' ') }} <small>BYN</small></span>
                 <a href="{{ $primoUrl }}" class="tf-btn btn-white">Купить PRIMO 700</a>
+                <a href="/blog/ekokamin-primo-700-reshetka-gril-v-podarok" class="prime-cover__more">О топке</a>
             </div>
         </div>
     </div>
