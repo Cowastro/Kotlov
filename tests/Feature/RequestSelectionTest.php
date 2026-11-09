@@ -56,7 +56,7 @@ class RequestSelectionTest extends TestCase
         });
 
         Livewire::test(RequestSelection::class)
-            ->set('text', 'Радиатор биметаллический 10 секций — 12 шт')
+            ->set('requestFile', \Illuminate\Http\UploadedFile::fake()->create('zayavka.pdf', 120, 'application/pdf'))
             ->call('select')
             ->assertSet('choice', [0 => $first->id])
             ->set('choice', [0 => $second->id])

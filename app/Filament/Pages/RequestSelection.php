@@ -33,7 +33,7 @@ class RequestSelection extends Page
     protected string $view = 'filament.pages.request-selection';
 
     /** @var \Livewire\Features\SupportFileUploads\TemporaryUploadedFile|null */
-    public $upload = null;
+    public $requestFile = null;
 
     public string $text = '';
 
@@ -64,10 +64,10 @@ class RequestSelection extends Page
     {
         abort_unless(static::canAccess(), 403);
         $this->validate([
-            'upload' => 'nullable|file|max:15360|mimes:pdf,jpg,jpeg,png,webp',
+            'requestFile' => 'nullable|file|max:15360|mimes:pdf,jpg,jpeg,png,webp',
             'text' => 'nullable|string|max:12000',
         ]);
-        if (! $this->upload && mb_strlen(trim($this->text)) < 5) {
+        if (! $this->requestFile && mb_strlen(trim($this->text)) < 5) {
             Notification::make()->warning()->title('Загрузите файл заявки или вставьте её текст')->send();
 
             return;
@@ -78,8 +78,8 @@ class RequestSelection extends Page
 
         try {
             $service = app(RequestLineSelection::class);
-            $recognized = $this->upload
-                ? $service->recognize($this->upload->getRealPath(), $this->upload->getClientOriginalExtension())
+            $recognized = $this->requestFile
+                ? $service->recognize($this->requestFile->getRealPath(), $this->requestFile->getClientOriginalExtension())
                 : $service->recognize(null, null, $this->text);
             $this->method = $recognized['method'];
             $this->lines = $service->select($recognized['lines']);
@@ -122,7 +122,7 @@ class RequestSelection extends Page
 
     public function startNew(): void
     {
-        $this->reset(['upload', 'text', 'method', 'lines', 'choice', 'quantity']);
+        $this->reset(['requestFile', 'text', 'method', 'lines', 'choice', 'quantity']);
     }
 
     public function total(): float

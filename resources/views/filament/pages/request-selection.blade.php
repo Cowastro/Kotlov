@@ -19,10 +19,10 @@
             <div class="rs-inputs">
                 <label class="rs-drop">
                     <strong>Файл заявки</strong>
-                    <input type="file" wire:model="upload" accept=".pdf,.jpg,.jpeg,.png,.webp">
+                    <input type="file" wire:model="requestFile" accept=".pdf,.jpg,.jpeg,.png,.webp">
                     <span class="rs-muted">PDF, JPG, PNG, WEBP — до 15 МБ</span>
-                    <span wire:loading wire:target="upload" class="rs-muted">Загружаем файл…</span>
-                    @error('upload') <span role="alert" class="rs-warning">{{ $message }}</span> @enderror
+                    <span wire:loading wire:target="requestFile" class="rs-muted">Загружаем файл…</span>
+                    @error('requestFile') <span role="alert" class="rs-warning">{{ $message }}</span> @enderror
                 </label>
                 <div>
                     <label for="rs-text" class="rs-muted">…или вставьте текст заявки</label>
@@ -30,7 +30,7 @@
                 </div>
             </div>
             <div class="rs-actions">
-                <x-filament::button type="submit" icon="heroicon-o-sparkles" wire:loading.attr="disabled" wire:target="select,upload">Распознать и подобрать</x-filament::button>
+                <x-filament::button type="submit" icon="heroicon-o-sparkles" wire:loading.attr="disabled" wire:target="select,requestFile">Распознать и подобрать</x-filament::button>
                 @if ($lines)<x-filament::button type="button" color="gray" wire:click="startNew">Новая заявка</x-filament::button>@endif
                 <span wire:loading wire:target="select" class="rs-muted" role="status">Распознаём заявку и подбираем товары — до минуты…</span>
             </div>
