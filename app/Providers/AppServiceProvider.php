@@ -2,13 +2,14 @@
 
 namespace App\Providers;
 
+use App\Database\RetryingMySqlConnector;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Product;
 use App\Models\WishlistItem;
-use App\Services\SupplierSyncJournalRecorder;
 use App\Services\B2bCatalogOfferResolver;
+use App\Services\SupplierSyncJournalRecorder;
 use App\Support\AdminRoleAccess;
 use App\Support\TransactionalMailbox;
 use Illuminate\Console\Events\CommandFinished;
@@ -24,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton('db.connector.mysql', fn (): RetryingMySqlConnector => new RetryingMySqlConnector);
         $this->app->scoped(B2bCatalogOfferResolver::class);
         $this->app->afterResolving('mail.manager', fn ($manager) => TransactionalMailbox::configure($manager));
     }
