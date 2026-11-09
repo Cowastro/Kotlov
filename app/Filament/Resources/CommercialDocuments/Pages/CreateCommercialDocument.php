@@ -101,6 +101,17 @@ class CreateCommercialDocument extends CreateRecord
         }
     }
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('fromRequest')
+                ->label('Загрузить заявку (ИИ)')
+                ->icon('heroicon-o-document-magnifying-glass')
+                ->color('warning')
+                ->url(\App\Filament\Pages\RequestSelection::getUrl()),
+        ];
+    }
+
     protected function getRedirectUrl(): string
     {
         return CommercialDocumentResource::getUrl('view', ['record' => $this->record]);

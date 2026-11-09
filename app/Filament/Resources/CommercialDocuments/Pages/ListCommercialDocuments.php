@@ -6,6 +6,8 @@ use App\Filament\Resources\CommercialDocuments\CommercialDocumentResource;
 use App\Filament\Widgets\CommercialDocumentsOverview;
 use App\Filament\Widgets\CommercialManagerPerformance;
 use App\Models\CommercialDocument;
+use App\Filament\Pages\RequestSelection;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -23,7 +25,14 @@ class ListCommercialDocuments extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [CreateAction::make()->label('Создать КП или счёт')];
+        return [
+            Action::make('fromRequest')
+                ->label('КП по заявке (ИИ)')
+                ->icon('heroicon-o-document-magnifying-glass')
+                ->color('warning')
+                ->url(RequestSelection::getUrl()),
+            CreateAction::make()->label('Создать КП или счёт'),
+        ];
     }
 
     protected function getHeaderWidgets(): array

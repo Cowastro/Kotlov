@@ -89,6 +89,8 @@ class RequestSelectionTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame([$second->id], session('commercial_document_product_ids'));
+        $this->get(\App\Filament\Resources\CommercialDocuments\CommercialDocumentResource::getUrl('index'))
+            ->assertOk()->assertSee('КП по заявке (ИИ)');
         $this->assertEquals([$second->id => 12], session('commercial_document_product_quantities'));
         $this->assertNotSame($first->id, $second->id);
     }

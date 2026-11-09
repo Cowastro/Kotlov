@@ -55,6 +55,14 @@ class RequestSelection extends Page
         return auth()->user()?->isManager() === true;
     }
 
+    /** Opened from «КП и счета» (the list and the create form), not a menu item of its own. */
+    protected static bool $shouldRegisterNavigation = false;
+
+    public function getBreadcrumbs(): array
+    {
+        return [\App\Filament\Resources\CommercialDocuments\CommercialDocumentResource::getUrl('index') => 'КП и счета', 'Подбор по заявке'];
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return 'Продажи';
