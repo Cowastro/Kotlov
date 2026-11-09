@@ -328,32 +328,36 @@
 
     <div class="support-chat__loading" data-support-chat-loading role="status" hidden>Загружаем переписку…</div>
     <div class="support-chat__intro" data-support-chat-intro>
-        <div class="support-chat__welcome">
-            <h2>Чем вам помочь?</h2>
-            <p>Напишите вопрос о товаре или заказе. Телефон поможет нам связаться с вами, если вы закроете чат.</p>
-        </div>
         <form data-support-chat-start-form>
-            @csrf
-            <x-form-protection />
-            <input type="hidden" name="page_url" value="{{ url()->current() }}">
-            <label class="support-chat__field">
-                <span>Ваше имя</span>
-                <input type="text" name="name" autocomplete="name" maxlength="100" placeholder="Как к вам обращаться?" required>
-            </label>
-            <label class="support-chat__field">
-                <span>Телефон</span>
-                <input type="tel" name="phone" autocomplete="tel" inputmode="tel" maxlength="50" placeholder="+375 (XX) XXX-XX-XX" required>
-            </label>
-            <label class="support-chat__field">
-                <span>Ваш вопрос</span>
-                <textarea name="message" rows="3" maxlength="2000" placeholder="Например: помогите подобрать котёл для дома 150 м²" required></textarea>
-            </label>
-            <label class="support-chat__consent">
-                <input type="checkbox" required>
-                <span>Согласен с <a href="/privacy" target="_blank">политикой обработки данных</a></span>
-            </label>
-            <button type="submit" class="support-chat__start">Начать чат <span aria-hidden="true">→</span></button>
-            <div class="support-chat__error" data-support-chat-error role="alert" hidden></div>
+            <div class="support-chat__intro-scroll">
+                <div class="support-chat__welcome">
+                    <h2>Чем вам помочь?</h2>
+                    <p>Напишите вопрос о товаре или заказе. Телефон поможет нам связаться с вами, если вы закроете чат.</p>
+                </div>
+                @csrf
+                <x-form-protection />
+                <input type="hidden" name="page_url" value="{{ url()->current() }}">
+                <label class="support-chat__field">
+                    <span>Ваше имя</span>
+                    <input type="text" name="name" autocomplete="name" maxlength="100" placeholder="Как к вам обращаться?" required>
+                </label>
+                <label class="support-chat__field">
+                    <span>Телефон</span>
+                    <input type="tel" name="phone" autocomplete="tel" inputmode="tel" maxlength="50" placeholder="+375 (XX) XXX-XX-XX" required>
+                </label>
+                <label class="support-chat__field">
+                    <span>Ваш вопрос</span>
+                    <textarea name="message" rows="3" maxlength="2000" placeholder="Например: помогите подобрать котёл для дома 150 м²" required></textarea>
+                </label>
+                <label class="support-chat__consent">
+                    <input type="checkbox" required>
+                    <span>Согласен с <a href="/privacy" target="_blank">политикой обработки данных</a></span>
+                </label>
+            </div>
+            <div class="support-chat__intro-footer">
+                <button type="submit" class="support-chat__start">Начать чат <span aria-hidden="true">→</span></button>
+                <div class="support-chat__error" data-support-chat-error role="alert" hidden></div>
+            </div>
         </form>
     </div>
 

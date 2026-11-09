@@ -3620,7 +3620,9 @@ a.category-v05.subcat-tile:hover .cate-icon {
 .support-chat button:focus-visible, .support-chat__messages:focus-visible { outline: 2px solid #c54a4f; outline-offset: 2px; }
 .support-chat__messages:focus-visible { outline-offset: -2px; }
 .support-chat__loading { flex: 1; display: grid; place-items: center; color: #62534e; background: #faf6f3; font-size: 13px; }
-.support-chat__intro { flex: 1 1 auto; min-height: 0; padding: 16px; overflow-y: auto; }
+.support-chat__intro, .support-chat__intro form { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; margin: 0; }
+.support-chat__intro-scroll { flex: 1 1 auto; min-height: 0; padding: 13px 16px 0; overflow-y: auto; overscroll-behavior: contain; }
+.support-chat__intro-footer { flex: 0 0 auto; padding: 9px 12px; border-top: 1px solid #eae3de; background: #fff; }
 .support-chat__welcome { margin-bottom: 13px; padding: 13px 14px; border: 1px solid #eee5df; border-radius: 14px; background: #faf6f3; }
 .support-chat__welcome h2 { margin: 0 0 4px; color: var(--support-chat-ink); font-size: 19px; font-weight: 750; line-height: 1.2; }
 .support-chat__welcome p { margin: 0; color: #62534e; font-size: 13px; line-height: 1.4; }
@@ -3638,8 +3640,8 @@ a.category-v05.subcat-tile:hover .cate-icon {
 .support-chat__start:disabled { opacity: .65; }
 .support-chat__conversation { display: flex; flex: 1 1 auto; min-height: 0; flex-direction: column; background: #f8f5f2; }
 .support-chat__messages { flex: 1 1 auto; min-height: 0; padding: 12px 14px 9px; overflow-y: auto; overscroll-behavior: contain; background: radial-gradient(#e9e1dc .7px, transparent .7px) 0 0 / 14px 14px; }
-.support-chat__messages, .support-chat__intro, .support-chat__composer textarea { scrollbar-width: thin; scrollbar-color: #cabdb7 transparent; }
-.support-chat__messages::-webkit-scrollbar-button, .support-chat__intro::-webkit-scrollbar-button, .support-chat__composer textarea::-webkit-scrollbar-button { display: none; }
+.support-chat__messages, .support-chat__intro-scroll, .support-chat__composer textarea { scrollbar-width: thin; scrollbar-color: #cabdb7 transparent; }
+.support-chat__messages::-webkit-scrollbar-button, .support-chat__intro-scroll::-webkit-scrollbar-button, .support-chat__composer textarea::-webkit-scrollbar-button { display: none; }
 .support-chat__day { width: fit-content; margin: 3px auto 13px; padding: 3px 10px; border-radius: 999px; color: #655651; background: #eee7e2; font-size: 11px; font-weight: 650; }
 .support-chat__message { display: flex; align-items: flex-end; gap: 7px; margin-bottom: 9px; }
 .support-chat__message--visitor { justify-content: flex-end; }
