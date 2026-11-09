@@ -56,4 +56,23 @@ class ContactRequestWorkflowTest extends TestCase
         $this->assertSame('in_progress', $request->status);
         $this->assertSame($manager->id, $request->responsible_user_id);
     }
+
+    public function test_telegram_channel_lead_can_be_saved_without_a_phone(): void
+    {
+        $request = ContactRequest::query()->create([
+            'name' => 'Сергей',
+            'phone' => null,
+            'message' => 'Искандер 14 есть в наличии?',
+            'source' => 'telegram_channel',
+            'status' => 'new',
+        ]);
+
+        $this->assertNull($request->phone);
+        $this->assertSame('Telegram-канал KOTLOV.BY', ContactRequest::$sources[$request->source]);
+        $this->assertDatabaseHas('contact_requests', [
+            'id' => $request->id,
+            'source' => 'telegram_channel',
+            'phone' => null,
+        ]);
+    }
 }

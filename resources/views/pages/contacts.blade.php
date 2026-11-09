@@ -154,10 +154,13 @@
 
                 {{-- Форма --}}
                 <div class="col-md-6">
-                    <h4 class="mb-8">Написать нам</h4>
+                    <h4 id="write-to-store" class="mb-8">Написать нам</h4>
                     <p class="mb-24 cl-text-2">
                         Оставьте заявку — перезвоним в течение рабочего дня
                     </p>
+                    <div class="mb-24">
+                        @include('partials.write-to-store', ['showFormLink' => false, 'showSiteChat' => true])
+                    </div>
                     <form class="form-get kv-form" action="/contacts" method="POST" novalidate>
                         @csrf
                         <x-form-protection />

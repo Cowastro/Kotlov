@@ -44,7 +44,8 @@ class ContactRequestForm
                     ->columnSpanFull()
                     ->schema([
                         TextInput::make('name')->label('Имя')->required(),
-                        TextInput::make('phone')->label('Телефон')->tel()->required(),
+                        TextInput::make('phone')->label('Телефон')->tel()
+                            ->required(fn (?ContactRequest $record): bool => blank($record?->external_source)),
                         TextInput::make('email')->label('Email')->email(),
                         TextInput::make('city')->label('Город'),
                     ]),

@@ -50,6 +50,11 @@ class ContactRequestNotifier
 
     private function sendTelegramNotification(ContactRequest $contactRequest): void
     {
+        // Messenger conversations already have their own inbox notifications.
+        if (in_array($contactRequest->source, ['telegram_channel', 'viber', 'instagram', 'whatsapp'], true)) {
+            return;
+        }
+
         $chatId = config('services.telegram.contact_requests_chat_id');
         if (! config('services.telegram.bot_token') || ! $chatId) {
             Log::warning('Telegram consultation notification skipped: credentials are not configured.', [
@@ -64,16 +69,8 @@ class ContactRequestNotifier
             ['\_', '\*', '\`', '\['],
             (string) $value
         );
-        $sourceLabels = [
-            'product_page' => 'Карточка товара',
-            'product_availability_request' => 'Уточнение наличия товара',
-            'consultation_form' => 'Форма консультации',
-            'quick_callback' => 'Быстрый звонок за 5 минут',
-            'ai_selection' => 'AI-подбор',
-            'b2b_price_request' => 'B2B: запрос оптовой цены',
-        ];
         $source = $contactRequest->source
-            ? ($sourceLabels[$contactRequest->source] ?? $contactRequest->source)
+            ? (ContactRequest::$sources[$contactRequest->source] ?? $contactRequest->source)
             : null;
         $product = $contactRequest->product_id
             ? $contactRequest->product()->first()
@@ -92,7 +89,7 @@ class ContactRequestNotifier
             $contactRequest->product_url ? "*Страница:*\n".$escape($contactRequest->product_url) : null,
             '',
             '*Имя:* '.$escape($contactRequest->name),
-            '*Телефон:* '.$escape($contactRequest->phone),
+            '*Телефон:* '.$escape($contactRequest->phone ?: 'Не указан'),
             $contactRequest->email ? '*Email:* '.$escape($contactRequest->email) : null,
             "*Что искал клиент:*\n".$escape($contactRequest->message ?: 'Не указано'),
             '',

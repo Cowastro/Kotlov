@@ -76,6 +76,8 @@ return [
         'telephony_chat_id' => env('TELEGRAM_TELEPHONY_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
         'mail_chat_id' => env('TELEGRAM_MAIL_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
         'installer_applications_chat_id' => env('TELEGRAM_INSTALLER_APPLICATIONS_CHAT_ID', env('TELEGRAM_ORDERS_CHAT_ID')),
+        'leads_bot_token' => env('TELEGRAM_LEADS_BOT_TOKEN', ''),
+        'leads_webhook_secret' => env('TELEGRAM_LEADS_WEBHOOK_SECRET', ''),
     ],
 
     // Google search API (serper.dev): КП product pages, Rusklimat photos/specs, Bania enrichment.

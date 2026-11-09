@@ -12,6 +12,15 @@ class EditContactRequest extends EditRecord
 {
     protected static string $resource = ContactRequestResource::class;
 
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        if ($url = ContactRequestResource::siteChatUrl($this->record)) {
+            $this->redirect($url);
+        }
+    }
+
     public function getMaxContentWidth(): Width|string|null
     {
         return Width::Full;

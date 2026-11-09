@@ -76,6 +76,27 @@ class ContactRequestNotifierTest extends TestCase
         (new ContactRequestNotifier($telegram))->notify($request);
     }
 
+    public function test_telegram_channel_lead_is_not_sent_back_to_telegram(): void
+    {
+        config([
+            'services.telegram.bot_token' => 'test-token',
+            'services.telegram.contact_requests_chat_id' => '-100987654321',
+        ]);
+        $request = new ContactRequest([
+            'name' => 'Сергей',
+            'phone' => null,
+            'source' => 'telegram_channel',
+            'message' => 'Искандер 14 есть в наличии?',
+        ]);
+        $request->id = 57;
+        $request->created_at = now();
+
+        $telegram = Mockery::mock(TelegramApi::class);
+        $telegram->shouldNotReceive('sendMessage');
+
+        (new ContactRequestNotifier($telegram))->notify($request);
+    }
+
     public function test_product_request_contains_current_storefront_price(): void
     {
         config([
