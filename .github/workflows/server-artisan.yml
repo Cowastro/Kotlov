@@ -475,6 +475,12 @@ jobs:
             grep -E '^audit\.ecokamin_fireboxes\.(plan=[0-9]+:(create|same|price):[0-9]+|(created|updated)=[0-9]+:[a-z0-9-]+)$' "$detail_log" || true
             echo "safe_ecokamin_fireboxes_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:apply-official-cards" ]]; then
+            echo "safe_official_cards_begin"
+            grep -E '^metric\.official_cards\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -E '^audit\.official_cards\.(card=[0-9]+:[a-z0-9-]+:[0-9]+:[0-9]+|missing=[a-z0-9-]+)$' "$detail_log" || true
+            echo "safe_official_cards_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:rewrite-template-descriptions" ]]; then
             echo "safe_template_descriptions_begin"
             grep -E '^metric\.template_descriptions\.[a-z_]+=[0-9]+$' "$detail_log" || true
