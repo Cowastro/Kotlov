@@ -927,6 +927,20 @@ class Product extends Model
         );
     }
 
+    /** Promoted products first (App\Support\Catalog\SpotlightProducts). */
+    public function scopePrioritizeSpotlight($query)
+    {
+        $slugs = \App\Support\Catalog\SpotlightProducts::slugs();
+        if ($slugs === []) {
+            return $query;
+        }
+
+        return $query->orderByRaw(
+            'CASE WHEN '.$this->qualifyColumn('slug').' IN ('.implode(', ', array_fill(0, count($slugs), '?')).') THEN 0 ELSE 1 END',
+            $slugs
+        );
+    }
+
     public function scopePrioritizeNamePatterns($query, array $patterns)
     {
         $patterns = collect($patterns)

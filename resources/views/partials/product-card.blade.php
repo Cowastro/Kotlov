@@ -1,4 +1,13 @@
 {{-- resources/views/partials/product-card.blade.php --}}
+@once
+@push('styles')
+<style>
+    .card-product--spotlight{position:relative;border-radius:16px;box-shadow:0 0 0 2px #c98b4c,0 18px 40px rgba(120,60,20,.16)}
+    .card-product--spotlight .card-product_wrapper{border-radius:14px 14px 0 0}
+    .product-badge_item.gift{background:linear-gradient(135deg,#1a120d,#3a2416);color:#f0cf9f;border:1px solid rgba(240,207,159,.55)}
+</style>
+@endpush
+@endonce
 
 @php
     $imageUrl   = $product->image_url;
@@ -58,9 +67,10 @@
         ? $product->heatPumpCatalogMeta()
         : null;
     $gasMeterMeta = \App\Support\Catalog\GasMeterSelectionGuide::forProduct($product);
+    $spotlightGift = \App\Support\Catalog\SpotlightProducts::gift($product->slug);
 @endphp
 
-<div class="card-product product-style_stroke{{ ! $canBuy ? ' card-product--consultation' : '' }}">
+<div class="card-product product-style_stroke{{ ! $canBuy ? ' card-product--consultation' : '' }}{{ $spotlightGift ? ' card-product--spotlight' : '' }}">
     <div class="card-product_wrapper square">
 
         <a href="{{ $productUrl }}" class="product-img">
@@ -112,7 +122,7 @@
         </ul>
 
         {{-- Бейджи --}}
-        @if ($isPublicSale || $product->is_new || $product->is_featured)
+        @if ($isPublicSale || $product->is_new || $product->is_featured || $spotlightGift)
             <ul class="product-badge_list">
                 @if ($isPublicSale)
                     <li class="product-badge_item text-caption-01 sale"><span class="badge-label-full">Акция</span><span class="badge-label-mobile">%</span></li>
@@ -120,6 +130,9 @@
                     <li class="product-badge_item text-caption-01 new"><span class="badge-label-full">Новинка</span><span class="badge-label-mobile">NEW</span></li>
                 @elseif ($product->is_featured)
                     <li class="product-badge_item text-caption-01 sale"><span class="badge-label-full">Хит продаж</span><span class="badge-label-mobile">Хит</span></li>
+                @endif
+                @if ($spotlightGift)
+                    <li class="product-badge_item text-caption-01 gift"><span class="badge-label-full">{{ $spotlightGift }}</span><span class="badge-label-mobile">Подарок</span></li>
                 @endif
             </ul>
         @endif

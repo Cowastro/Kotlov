@@ -357,6 +357,11 @@ class CatalogController extends Controller
         $isPipesCatalog = $category->slug === 'truby-i-fitingi'
             || $category->parent?->slug === 'truby-i-fitingi';
 
+        // Promoted products (SpotlightProducts) open the section in the default order.
+        if (blank(request('sort'))) {
+            $query->prioritizeSpotlight();
+        }
+
         // Confirmed stock is the primary catalogue order for every user-selected
         // sort. Price, popularity, name and novelty only sort within each group.
         $query->prioritizeConfirmedStock();

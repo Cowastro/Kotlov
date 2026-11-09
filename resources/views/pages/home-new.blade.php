@@ -188,6 +188,7 @@
                                     </div>
                                 </div>
                             @endisset
+                            @include('partials.ecokamin-primo-slide')
                             @if(($ecokaminPromoHits ?? collect())->count() >= 3 && now()->lt(\Carbon\CarbonImmutable::parse(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::ENDS_AT, 'Europe/Minsk')))
                             <div class="swiper-slide">
                                 @include('partials.ecokamin-promo-slide')

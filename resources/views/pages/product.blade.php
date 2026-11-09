@@ -367,6 +367,8 @@
                                     </div>
                                 @endif
 
+                                <x-spotlight-gift-note :product="$product" />
+
                                 @if ($product->slug === 'pelletnaya-gorelka-kotlov-xo-ceramic-pro-100-kvt' && $product->is_sale)
                                     <x-xo-promo-note />
                                 @endif

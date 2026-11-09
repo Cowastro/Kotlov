@@ -72,7 +72,8 @@
         </a>
 
         {{-- Бейджи --}}
-        @if ($isPublicSale || $product->is_new || $product->is_featured)
+        @php($spotlightGift = \App\Support\Catalog\SpotlightProducts::gift($product->slug))
+        @if ($isPublicSale || $product->is_new || $product->is_featured || $spotlightGift)
             <ul class="product-badge_list">
                 @if ($isPublicSale)
                     <li class="product-badge_item text-caption-01 sale">Акция</li>
@@ -80,6 +81,9 @@
                     <li class="product-badge_item text-caption-01 new">Новинка</li>
                 @elseif ($product->is_featured)
                     <li class="product-badge_item text-caption-01 sale">Хит продаж</li>
+                @endif
+                @if ($spotlightGift)
+                    <li class="product-badge_item text-caption-01 gift" style="background:#1a120d;color:#f0cf9f">{{ $spotlightGift }}</li>
                 @endif
             </ul>
         @endif
