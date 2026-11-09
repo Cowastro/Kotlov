@@ -276,7 +276,7 @@
             <div class="modal-main">
                 <form class="form-log" action="{{ route('ask.store') }}" method="POST" data-consultant-form>
                     @csrf
-                    <x-form-protection />
+                    <x-form-protection :track-time="false" />
                     <input type="hidden" name="name" value="Быстрый обратный звонок">
                     <input type="hidden" name="message" value="Клиент просит быстро перезвонить и помочь с выбором.">
                     <input type="hidden" name="source" value="quick_callback">

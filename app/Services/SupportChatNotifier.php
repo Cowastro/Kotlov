@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Filament\Resources\SupportConversations\SupportConversationResource;
+use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Models\SupportConversation;
 use App\Models\User;
 use Filament\Actions\Action;
@@ -50,7 +50,7 @@ class SupportChatNotifier
                 ->actions([
                     Action::make('open')
                         ->label('Ответить')
-                        ->url(SupportConversationResource::getUrl('view', ['record' => $conversation, 'action' => 'reply'], panel: 'admin'))
+                        ->url(ContactRequestResource::forSiteChat($conversation))
                         ->markAsRead(),
                 ])
                 ->sendToDatabase($recipients);
@@ -74,7 +74,7 @@ class SupportChatNotifier
             ['\_', '\*', '\`', '\['],
             (string) $value
         );
-        $adminUrl = SupportConversationResource::getUrl('view', ['record' => $conversation], panel: 'admin');
+        $adminUrl = ContactRequestResource::forSiteChat($conversation);
         $storefrontPrice = $this->storefrontPrice->line(
             $this->storefrontPrice->productFromUrl($conversation->page_url),
         );

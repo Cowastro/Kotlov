@@ -78,7 +78,7 @@ class PartnerBranchesTest extends TestCase
             ->assertOk()->assertSee('Заказ онлайн с доставкой в Брест');
     }
 
-    public function test_minsk_direct_contact_uses_sbg_bay_messengers_only(): void
+    public function test_minsk_quick_contact_uses_only_crm_channels_and_approved_store(): void
     {
         $city = $this->city('minsk', 'Минск');
         $partner = $this->partner('ООО «СБГ бай»');
@@ -88,13 +88,19 @@ class PartnerBranchesTest extends TestCase
             'whatsapp_phone' => '+375296322311', 'instagram_username' => 'pechkin_shop',
         ]);
         $this->branch($this->partner('Другой продавец'), $city, 'Другой продавец', ['sort_order' => 0, 'telegram_username' => 'another_store']);
+        \App\Models\LeadChannel::create([
+            'provider' => 'telegram', 'enabled' => true, 'access_token' => 'test-token',
+            'webhook_secret' => 'test-secret', 'public_url' => 'https://t.me/sbgopt_bot',
+        ]);
         $html = view('partials.regional-quick-contact', ['currentCity' => $city])->render();
-        foreach (['https://t.me/sbgopt_bot', 'viber://chat?number=%2B375296322311', 'https://wa.me/375296322311', 'https://www.instagram.com/pechkin_shop/'] as $link) {
-            $this->assertStringContainsString($link, $html);
+        foreach (['https://t.me/sbgopt_bot', 'Написать в чат', 'Заказать звонок'] as $option) {
+            $this->assertStringContainsString($option, $html);
         }
-        $this->assertStringNotContainsString('another_store', $html);
+        foreach (['viber://', 'https://wa.me/', 'https://www.instagram.com/', 'another_store'] as $link) {
+            $this->assertStringNotContainsString($link, $html);
+        }
         $branch->update(['is_active' => false]);
-        $this->assertStringNotContainsString('regional-quick-contact', view('partials.regional-quick-contact', ['currentCity' => $city])->render());
+        $this->assertStringNotContainsString('regional-store-contact', view('partials.regional-quick-contact', ['currentCity' => $city])->render());
     }
 
     public function test_phone_reveal_is_logged_and_points_without_access_stay_hidden(): void

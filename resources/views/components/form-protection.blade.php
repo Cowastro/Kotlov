@@ -5,13 +5,17 @@
     <x-form-protection />
 --}}
 
+@props(['trackTime' => true])
+
 {{-- Honeypot: обёрнут в div, сбрасывается JS перед отправкой (боты JS не выполняют) --}}
 <div style="position:absolute;left:-9999px;top:-9999px;height:0;overflow:hidden" aria-hidden="true">
     <input type="text" name="_hpf" tabindex="-1" autocomplete="new-password">
 </div>
 
 {{-- Время начала заполнения формы --}}
-<input type="hidden" name="form_started_at" value="{{ time() }}">
+@if ($trackTime)
+    <input type="hidden" name="form_started_at" value="{{ time() }}">
+@endif
 
 {{-- Cloudflare Turnstile (включается через .env FORM_TURNSTILE_ENABLED=true) --}}
 @if(config('services.turnstile.enabled') && config('services.turnstile.site_key'))

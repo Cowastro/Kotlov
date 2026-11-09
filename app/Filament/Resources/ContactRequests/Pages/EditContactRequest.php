@@ -16,8 +16,8 @@ class EditContactRequest extends EditRecord
     {
         parent::mount($record);
 
-        if ($url = ContactRequestResource::siteChatUrl($this->record)) {
-            $this->redirect($url);
+        if ($this->record->isSiteChat()) {
+            $this->redirect(ContactRequestResource::getUrl('view', ['record' => $this->record]));
         }
     }
 

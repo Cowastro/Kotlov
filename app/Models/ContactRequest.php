@@ -149,6 +149,11 @@ class ContactRequest extends Model
         return $this->hasOne(LeadMessage::class)->latestOfMany();
     }
 
+    public function siteChat(): BelongsTo
+    {
+        return $this->belongsTo(SupportConversation::class, 'external_id', 'public_id');
+    }
+
     public function isSiteChat(): bool
     {
         return $this->external_source === self::SITE_CHAT_SOURCE;
