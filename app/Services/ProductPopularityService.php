@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\Product;
 use App\Models\ProductView;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductPopularityService
 {
@@ -37,16 +39,30 @@ class ProductPopularityService
             return false;
         }
 
-        DB::transaction(function () use ($product, $userId, $sessionId): void {
-            ProductView::query()->create([
+        try {
+            DB::transaction(function () use ($product, $userId, $sessionId): void {
+                ProductView::query()->create([
+                    'product_id' => $product->id,
+                    'user_id' => $userId,
+                    'session_id' => $sessionId,
+                    'viewed_at' => now(),
+                ]);
+
+                Product::query()->whereKey($product->id)->increment('views_count');
+            }, 3);
+        } catch (QueryException $exception) {
+            if (! $this->isConcurrencyError($exception)) {
+                throw $exception;
+            }
+
+            // A popularity metric must never make the product page unavailable.
+            Log::warning('Product view counter skipped after a database concurrency conflict.', [
                 'product_id' => $product->id,
-                'user_id' => $userId,
-                'session_id' => $sessionId,
-                'viewed_at' => now(),
+                'sql_state' => (string) $exception->getCode(),
             ]);
 
-            Product::query()->whereKey($product->id)->increment('views_count');
-        });
+            return false;
+        }
 
         return true;
     }
@@ -110,5 +126,14 @@ class ProductPopularityService
             '/bot|crawl|spider|slurp|preview|facebookexternalhit|monitor|headless|lighthouse|pagespeed/i',
             $userAgent
         ) === 1;
+    }
+
+    protected function isConcurrencyError(QueryException $exception): bool
+    {
+        return in_array((string) $exception->getCode(), ['40001', '40P01'], true)
+            || str_contains($exception->getMessage(), 'Deadlock found')
+            || str_contains($exception->getMessage(), 'Lock wait timeout')
+            || str_contains($exception->getMessage(), '1213')
+            || str_contains($exception->getMessage(), '1205');
     }
 }

@@ -3,6 +3,8 @@
 namespace Tests\Unit;
 
 use App\Services\ProductPopularityService;
+use Illuminate\Database\QueryException;
+use PDOException;
 use PHPUnit\Framework\TestCase;
 
 class ProductPopularityServiceTest extends TestCase
@@ -25,5 +27,22 @@ class ProductPopularityServiceTest extends TestCase
         $unconfirmedRating = $service->score(5, 0, 10, 20, 100);
 
         $this->assertGreaterThan($unconfirmedRating, $trustedRating);
+    }
+
+    public function test_only_database_concurrency_errors_are_safe_to_skip(): void
+    {
+        $service = new class extends ProductPopularityService
+        {
+            public function concurrencyError(QueryException $exception): bool
+            {
+                return $this->isConcurrencyError($exception);
+            }
+        };
+
+        $deadlock = new QueryException('mysql', 'update products', [], new PDOException('Deadlock found', 40001));
+        $constraint = new QueryException('mysql', 'insert product_views', [], new PDOException('Duplicate entry', 23000));
+
+        $this->assertTrue($service->concurrencyError($deadlock));
+        $this->assertFalse($service->concurrencyError($constraint));
     }
 }
