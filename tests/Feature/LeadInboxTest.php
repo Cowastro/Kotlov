@@ -57,7 +57,10 @@ class LeadInboxTest extends TestCase
             ->assertSee('Вопрос 11')
             ->assertSee('Ответ в Telegram');
 
-        Livewire::test(ListContactRequests::class)
+        $queue = Livewire::test(ListContactRequests::class)->assertSet('columnsLayoutVersion', 'compact-v2');
+        $this->assertTrue($queue->instance()->isTableColumnToggledHidden('product_name'));
+        $this->assertTrue($queue->instance()->isTableColumnToggledHidden('next_follow_up_at'));
+        $queue
             ->assertCanSeeTableRecords([$lead])
             ->mountAction(TestAction::make('dialog')->table($lead))
             ->assertActionMounted(TestAction::make('dialog')->table($lead));
