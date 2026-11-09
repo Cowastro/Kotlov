@@ -113,12 +113,16 @@ class RequestLineSelection
         $lineGroups = $phrases !== [] ? $this->tokenGroups($phrases[0]) : [];
         $found = collect();
         foreach ($phrases as $phrase) {
-            foreach ($this->relaxations($this->tokenGroups($phrase)) as $groups) {
-                $products = $this->search($groups);
-                if ($products->isNotEmpty()) {
-                    $found = $found->concat($products);
+            // The product name first: a category such as «Трубы и фитинги» would let cheap fittings crowd out pipes.
+            $relaxations = $this->relaxations($this->tokenGroups($phrase));
+            foreach ([false, true] as $withCategory) {
+                foreach ($relaxations as $groups) {
+                    $products = $this->search($groups, $withCategory);
+                    if ($products->isNotEmpty()) {
+                        $found = $found->concat($products);
 
-                    break;
+                        break 2;
+                    }
                 }
             }
             if ($found->unique('id')->count() >= self::CANDIDATES_PER_LINE * 3) {
@@ -152,7 +156,7 @@ class RequestLineSelection
      * @param  list<list<string>>  $groups
      * @return Collection<int, Product>
      */
-    private function search(array $groups): Collection
+    private function search(array $groups, bool $withCategory = false): Collection
     {
         if ($groups === []) {
             return collect();
@@ -160,14 +164,15 @@ class RequestLineSelection
 
         return Product::query()
             ->where('is_active', true)->where('is_archived', false)->where('price', '>', 0)
-            ->where(function (Builder $query) use ($groups): void {
+            ->where(function (Builder $query) use ($groups, $withCategory): void {
                 foreach ($groups as $variants) {
-                    $query->where(function (Builder $q) use ($variants): void {
+                    $query->where(function (Builder $q) use ($variants, $withCategory): void {
                         foreach ($variants as $variant) {
                             foreach ($this->needles($variant) as $needle) {
-                                $q->orWhere('name', 'like', $needle)
-                                    ->orWhere('sku', 'like', $needle)
-                                    ->orWhereHas('category', fn (Builder $c) => $c->where('name', 'like', $needle));
+                                $q->orWhere('name', 'like', $needle)->orWhere('sku', 'like', $needle);
+                                if ($withCategory) {
+                                    $q->orWhereHas('category', fn (Builder $c) => $c->where('name', 'like', $needle));
+                                }
                             }
                         }
                     });
