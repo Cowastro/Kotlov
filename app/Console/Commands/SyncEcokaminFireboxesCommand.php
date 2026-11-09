@@ -15,6 +15,7 @@ class SyncEcokaminFireboxesCommand extends Command
         {--apply : Write changes to the database}
         {--dry-run : Preview without writing changes to the database}
         {--limit= : Limit number of products for testing}
+        {--only=* : Only fireboxes whose name contains this text, case ignored («ДЕЛЬТА ПРАЙМ»)}
         {--no-images : Do not download product images}
         {--enrich : Generate AI descriptions for products that have none (DeepSeek)}
         {--sleep=150 : Delay between product requests in milliseconds}';
@@ -76,6 +77,20 @@ class SyncEcokaminFireboxesCommand extends Command
         }
 
         $this->info(sprintf('Found fireboxes: %d (skipped Invicta: %d)', count($items), count($skippedInvicta)));
+
+        $only = array_values(array_filter(array_map(fn ($v) => mb_strtolower(trim((string) $v)), (array) $this->option('only'))));
+        if ($only !== []) {
+            $items = array_values(array_filter($items, function (array $item) use ($only): bool {
+                $name = mb_strtolower($item['name']);
+                foreach ($only as $needle) {
+                    if (str_contains($name, $needle)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }));
+        }
 
         if ($limit !== null && $limit > 0) {
             $items = array_slice($items, 0, $limit);
@@ -160,12 +175,18 @@ class SyncEcokaminFireboxesCommand extends Command
                 }
 
                 $stats[$isNew ? 'created' : 'updated']++;
+                $this->line(sprintf('audit.ecokamin_fireboxes.%s=%d:%s', $isNew ? 'created' : 'updated', $productId,
+                    (string) DB::table('products')->where('id', $productId)->value('slug')));
             } catch (\Throwable $e) {
                 $stats['errors']++;
                 $this->warn('  failed: ' . $e->getMessage());
             }
 
             usleep(max(0, (int) $this->option('sleep')) * 1000);
+        }
+
+        foreach ($stats as $key => $value) {
+            $this->line("metric.ecokamin_fireboxes.{$key}={$value}");
         }
 
         $this->table(['metric', 'count'], array_map(
@@ -188,6 +209,9 @@ class SyncEcokaminFireboxesCommand extends Command
             try {
                 $detail = $this->scrapeProduct($item['url']);
                 $article = $detail['article'] ?: $item['article'];
+                $action = $this->previewPriceAction(['article' => $article] + $item, $priceByn, $previewSupplierId);
+                $this->line(sprintf('audit.ecokamin_fireboxes.plan=%s:%s:%d', $item['bitrix_id'],
+                    $action === 'create' ? 'create' : (in_array($action, ['no change', 'keep price'], true) ? 'same' : 'price'), (int) round((float) $priceByn)));
                 $preview[] = [
                     'article' => $article,
                     'brand' => $item['brand'],
@@ -195,7 +219,7 @@ class SyncEcokaminFireboxesCommand extends Command
                         ? number_format($item['price'], 2, '.', '') . ' ' . $this->supplierCurrency
                         : 'no price',
                     'price_byn' => $priceByn !== null ? number_format($priceByn, 2, '.', '') : '—',
-                    'action' => $this->previewPriceAction(['article' => $article] + $item, $priceByn, $previewSupplierId),
+                    'action' => $action,
                     'name' => mb_substr($item['name'], 0, 44),
                     'url' => $this->shortUrl($item['url']),
                 ];
@@ -214,7 +238,7 @@ class SyncEcokaminFireboxesCommand extends Command
             usleep(max(0, (int) $this->option('sleep')) * 1000);
         }
 
-        foreach ($skippedInvicta as $item) {
+        foreach ($this->option('only') ? [] : $skippedInvicta as $item) {
             $preview[] = [
                 'article' => $item['article'],
                 'brand' => 'Invicta',
