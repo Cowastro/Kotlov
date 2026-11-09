@@ -166,6 +166,8 @@ class BlogController extends Controller
 
         $schemaJson = json_encode($this->articleSchema($post, $canonical), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $breadcrumbJson = json_encode($this->breadcrumbSchema($post, $canonical), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $faqSchema = $this->faqSchema($post);
+        $faqJson = $faqSchema ? json_encode($faqSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
 
         return view('pages.blog-single', compact(
             'post',
@@ -196,7 +198,8 @@ class BlogController extends Controller
             'isPelletBurnerContent',
             'pelletBurnerLinks',
             'schemaJson',
-            'breadcrumbJson'
+            'breadcrumbJson',
+            'faqJson'
         ));
     }
 
@@ -341,6 +344,33 @@ class BlogController extends Controller
                 'url' => '/akcii/kotlov-xo-ceramic-pro#xo-request',
             ],
         ]);
+    }
+
+    /** FAQPage from the «Частые вопросы» section of an article: <h3>question</h3> followed by <p>answer</p>. */
+    private function faqSchema(BlogPost $post): ?array
+    {
+        if (! preg_match('~<h2[^>]*>\s*Частые вопросы\s*</h2>(.*?)(?=<h2|$)~su', (string) $post->content, $section)) {
+            return null;
+        }
+
+        preg_match_all('~<h3[^>]*>(.*?)</h3>\s*<p[^>]*>(.*?)</p>~su', $section[1], $pairs, PREG_SET_ORDER);
+        $clean = fn (string $html): string => trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');
+        $questions = collect($pairs)
+            ->map(fn (array $pair): array => ['q' => $clean($pair[1]), 'a' => $clean($pair[2])])
+            ->filter(fn (array $item): bool => $item['q'] !== '' && $item['a'] !== '')
+            ->map(fn (array $item): array => [
+                '@type' => 'Question',
+                'name' => $item['q'],
+                'acceptedAnswer' => ['@type' => 'Answer', 'text' => $item['a']],
+            ])
+            ->values()
+            ->all();
+
+        return $questions === [] ? null : [
+            '@context' => 'https://schema.org',
+            '@type' => 'FAQPage',
+            'mainEntity' => $questions,
+        ];
     }
 
     private function articleSchema(BlogPost $post, string $canonical): array

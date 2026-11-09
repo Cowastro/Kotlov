@@ -45,6 +45,9 @@ class SpotlightPrimoTest extends TestCase
 
         $this->get('/blog/ekokamin-primo-700-reshetka-gril-v-podarok')->assertOk()
             ->assertSee('решётка-гриль в подарок')
-            ->assertSee('/topki/topka-cugunnaia-primo-700', false);
+            ->assertSee('/topki/topka-cugunnaia-primo-700', false)
+            ->assertSee('"@type":"FAQPage"', false)
+            ->assertSee('"name":"Это Invicta Philos?"', false)
+            ->assertSee('Чугунная каминная топка PRIMO 700 купить в Минске', false);
     }
 }

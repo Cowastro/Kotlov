@@ -63,6 +63,9 @@
     @isset($breadcrumbJson)
     <script type="application/ld+json">{!! $breadcrumbJson !!}</script>
     @endisset
+    @if(! empty($faqJson))
+    <script type="application/ld+json">{!! $faqJson !!}</script>
+    @endif
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="format-detection" content="telephone=no">
