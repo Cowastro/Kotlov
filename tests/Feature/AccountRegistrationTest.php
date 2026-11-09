@@ -196,6 +196,32 @@ class AccountRegistrationTest extends TestCase
             ->assertSeeText('обработки персональных данных');
     }
 
+    public function test_missing_sms_code_keeps_the_registration_tab_open_with_the_error(): void
+    {
+        config(['services.sms_by.enabled' => true]);
+
+        $this->from(route('login'))->post(route('register'), ['_form' => 'register'])
+            ->assertRedirect(route('login'))
+            ->assertSessionHasErrors(['phone_verification_token', 'phone_code']);
+
+        $this->withCookie(config('session.cookie'), session()->getId())->get(route('login'))->assertOk()
+            ->assertSee('id="tab-register" class="login-tab-content active"', false)
+            ->assertSeeText('Сначала запросите код подтверждения телефона.');
+    }
+
+    public function test_registration_modal_reopens_after_a_server_validation_error(): void
+    {
+        config(['services.sms_by.enabled' => true]);
+
+        $this->from('/')->post(route('register'), ['_form' => 'modal-register'])
+            ->assertRedirect('/')
+            ->assertSessionHasErrors('phone_code');
+
+        $this->withCookie(config('session.cookie'), session()->getId())->get('/')->assertOk()
+            ->assertSeeText('Введите код из SMS.')
+            ->assertSee("bootstrap.Modal.getOrCreateInstance(document.getElementById('register')).show()", false);
+    }
+
     public function test_sms_code_verifies_phone_during_registration(): void
     {
         config()->set('services.sms_by', [

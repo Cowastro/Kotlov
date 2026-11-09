@@ -744,9 +744,14 @@
                 <p class="desc-pop cl-text-2">Создайте аккаунт для удобного оформления заказов.</p>
             </div>
             <div class="modal-main">
+                @if(old('_form') === 'modal-register' && $errors->any())
+                    <ul class="alert alert-danger" role="alert">
+                        @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                    </ul>
+                @endif
                 <form action="/register" method="POST" class="form-log">
                     @csrf
-                    <input type="hidden" name="_form" value="register">
+                    <input type="hidden" name="_form" value="modal-register">
                     <input type="text" name="website" value="" style="display:none" tabindex="-1" autocomplete="off">
                     @include('partials.registration-fields', ['prefix' => 'modal-register'])
                     <div class="group-action">
@@ -759,6 +764,15 @@
     </div>
 </div>
 <!-- /Register -->
+@if(old('_form') === 'modal-register' && $errors->any())
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('register')).show();
+            });
+        </script>
+    @endpush
+@endif
 
 <!-- Sign In -->
 <div class="modal modalCentered fade modal-log" id="sign">
