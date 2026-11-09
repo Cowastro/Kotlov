@@ -36,4 +36,14 @@ class StankSeriesPhotosCommandTest extends TestCase
         $this->assertSame(['img/products/stank/ber2-200.webp'], $ber->fresh()->images);
         $this->assertNull($ber->fresh()->created_via);
     }
+
+    public function test_a_model_takes_the_picture_of_the_longest_prefix_of_its_key(): void
+    {
+        $c = \App\Console\Commands\StankSeriesPhotosCommand::class;
+        $this->assertSame(['img/products/stank/series/stank-itex-6-1.webp'], $c::siteImages('ITEX-6-3X'));
+        $this->assertSame(['img/products/stank/series/stank-anode-mg-1.webp'], $c::siteImages('ANODE-MG-450'));
+        $this->assertSame(['img/products/stank/series/stank-ct-1.webp', 'img/products/stank/series/stank-ct-2.webp'], $c::siteImages('CT-500'));
+        $this->assertSame([], $c::siteImages('ANODE-TI-100-200'));
+        $this->assertSame([], $c::siteImages('FLAT-600'));
+    }
 }

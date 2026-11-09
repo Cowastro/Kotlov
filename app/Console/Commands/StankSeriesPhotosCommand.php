@@ -55,7 +55,7 @@ class StankSeriesPhotosCommand extends Command
             $stats['hidden']++;
             $key = $keyOf($card);
             $series = $key !== null ? StankPriceList::series($key) : '';
-            $images = $series !== '' ? self::siteImages($series) : [];
+            $images = $key !== null ? self::siteImages($key) : [];
             $source = $images !== [] ? 'site' : 'none';
             if ($images === [] && $series !== '' && isset($ownImages[$series])) {
                 [$images, $source] = [$ownImages[$series], 'own'];
@@ -74,17 +74,26 @@ class StankSeriesPhotosCommand extends Command
         return self::SUCCESS;
     }
 
-    /** The s-tank.ru render of a series and its connection scheme: «img/products/stank/series/stank-atetro-1.webp». */
-    public static function siteImages(string $series): array
+    /**
+     * The s-tank.ru picture of a model by the longest prefix of its key there: «ATETRO-300» → the series render
+     * «stank-atetro-1.webp» and its scheme «-2»; «ITEX-6-3X» → «stank-itex-6-1.webp»; «ANODE-MG-450» → «stank-anode-mg-1.webp».
+     */
+    public static function siteImages(string $key): array
     {
-        $images = [];
-        foreach ([1, 2] as $n) {
-            $path = self::DIR.'/stank-'.strtolower($series).'-'.$n.'.webp';
-            if (is_file(public_path($path))) {
-                $images[] = $path;
+        $parts = explode('-', strtolower($key));
+        for ($n = count($parts); $n >= 1; $n--) {
+            $images = [];
+            foreach ([1, 2] as $i) {
+                $path = self::DIR.'/stank-'.implode('-', array_slice($parts, 0, $n)).'-'.$i.'.webp';
+                if (is_file(public_path($path))) {
+                    $images[] = $path;
+                }
+            }
+            if ($images !== []) {
+                return $images;
             }
         }
 
-        return $images;
+        return [];
     }
 }
