@@ -12,10 +12,9 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Wholesale contacts of ООО «СанБизнесГруп» for the retail department and
- * order pages: phone +375 29 351 29 82 and b2b@kotlov.by replace the old
- * city number in the supplier card, its CRM counterparty and the contact
- * snapshots of open orders. Also registers the b2b@kotlov.by CRM mailbox
- * (disabled until the password is entered in «Настройка почты»).
+ * order pages: the wholesale line +375 29 354-40-41 and info@kotlov.by replace
+ * every other phone and mailbox (personal ones included) in the supplier card,
+ * its CRM counterparty and the contact snapshots of open orders.
  *
  *   php artisan supplier:set-sanbusinessgroup-contacts            # dry run
  *   php artisan supplier:set-sanbusinessgroup-contacts --apply
@@ -24,13 +23,13 @@ class SetSanBusinessGroupContactsCommand extends Command
 {
     protected $signature = 'supplier:set-sanbusinessgroup-contacts {--apply : Save the new contacts}';
 
-    protected $description = 'Set the wholesale phone and b2b@kotlov.by as the СанБизнесГруп supplier contacts';
+    protected $description = 'Set the wholesale phone and info@kotlov.by as the only СанБизнесГруп supplier contacts';
 
     public const SUPPLIER_CODE = 'sanbusinessgroup';
 
-    public const PHONE = '+375 29 351 29 82';
+    public const PHONE = '+375 29 354-40-41';
 
-    public const EMAIL = 'b2b@kotlov.by';
+    public const EMAIL = 'info@kotlov.by';
 
     private const LABEL = 'Оптовый отдел';
 
@@ -55,6 +54,10 @@ class SetSanBusinessGroupContactsCommand extends Command
             ? CrmContactPoint::query()->where('counterparty_id', $supplier->crm_counterparty_id)->where('type', 'phone')->where('is_active', true)->get()
             : collect();
         $stalePoints = $points->reject(fn (CrmContactPoint $p): bool => $p->normalized_value === $phone);
+        $staleEmails = $supplier->crmCounterparty
+            ? CrmContactPoint::query()->where('counterparty_id', $supplier->crm_counterparty_id)->where('type', 'email')->where('is_active', true)
+                ->where('normalized_value', '!=', mb_strtolower(self::EMAIL))->get()
+            : collect();
         $openItems = OrderItem::query()
             ->where(fn ($q) => $q->where('fulfillment_supplier_id', $supplier->id)->orWhere('supply_supplier_id', $supplier->id))
             ->whereHas('order', fn ($q) => $q->whereNotIn('status', self::CLOSED_ORDER_STATUSES));
@@ -63,12 +66,13 @@ class SetSanBusinessGroupContactsCommand extends Command
             'emails_before' => count($supplier->contactEmailAddresses()),
             'has_counterparty' => (int) (bool) $supplier->crmCounterparty,
             'phone_points_to_disable' => $stalePoints->count(),
+            'email_points_to_disable' => $staleEmails->count(),
             'open_order_items' => (clone $openItems)->count(),
             'mailbox_exists' => (int) CrmMailbox::query()->where('email', self::EMAIL)->exists(),
         ];
 
         if ($apply) {
-            DB::transaction(function () use ($supplier, $stalePoints, $openItems, &$metrics): void {
+            DB::transaction(function () use ($supplier, $stalePoints, $staleEmails, $openItems, &$metrics): void {
                 $channels = collect($supplier->communication_channels ?? [])
                     ->filter(fn ($channel): bool => is_array($channel)
                         && ! in_array(mb_strtolower((string) ($channel['type'] ?? '')), ['phone', 'whatsapp', 'viber', 'telegram', 'email', 'mail'], true))
@@ -85,7 +89,7 @@ class SetSanBusinessGroupContactsCommand extends Command
 
                 $counterparty = $supplier->crmCounterparty;
                 if ($counterparty) {
-                    CrmContactPoint::query()->whereIn('id', $stalePoints->pluck('id'))->update(['is_active' => false, 'is_primary' => false, 'updated_at' => now()]);
+                    CrmContactPoint::query()->whereIn('id', $stalePoints->pluck('id')->merge($staleEmails->pluck('id')))->update(['is_active' => false, 'is_primary' => false, 'updated_at' => now()]);
                     CrmContactPoint::query()->where('counterparty_id', $counterparty->id)->where('type', 'email')->update(['is_primary' => false, 'updated_at' => now()]);
                     foreach ([['phone', self::PHONE], ['email', self::EMAIL]] as [$type, $value]) {
                         $point = CrmContactPoint::query()->firstOrNew([
