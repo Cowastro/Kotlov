@@ -10,10 +10,20 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Builder;
+use Livewire\Attributes\Locked;
 
 class ListContactRequests extends ListRecords
 {
     protected static string $resource = ContactRequestResource::class;
+
+    #[Locked]
+    public string $columnsLayoutVersion = 'compact-v1';
+
+    public function mount(): void
+    {
+        $this->columnsLayoutVersion = 'compact-v2';
+        parent::mount();
+    }
 
     public function getMaxContentWidth(): Width|string|null
     {
@@ -22,7 +32,7 @@ class ListContactRequests extends ListRecords
 
     public function getTableColumnsSessionKey(): string
     {
-        return parent::getTableColumnsSessionKey().'.compact-v1';
+        return parent::getTableColumnsSessionKey().'.'.$this->columnsLayoutVersion;
     }
 
     protected function getHeaderActions(): array
