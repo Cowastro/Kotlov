@@ -17,8 +17,8 @@ class EcokaminPrimeLaunchTest extends TestCase
         $this->assertTrue(DB::table('banners')->where('image', 'banners/ecokamin-prime-launch')->where('is_active', true)->exists());
 
         $this->get('/')->assertOk()
-            ->assertSee('prime-launch__models', false)
-            ->assertSee('Топки ЭкоКамин ПРАЙМ')
+            ->assertSee('prime-cover__art', false)
+            ->assertSee('prime-cover__title">ПРАЙМ', false)
             ->assertSee('/blog/ekokamin-praim-novye-topki-vega-i-delta', false);
 
         $this->get('/blog/ekokamin-praim-novye-topki-vega-i-delta')->assertOk()
