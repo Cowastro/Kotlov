@@ -54,6 +54,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -262,6 +263,10 @@ class CrmMailThreadResource extends Resource
     {
         return $table
             ->poll('60s')
+            ->searchable()
+            ->searchPlaceholder('Email, отправитель, тема, текст, № заказа или КП')
+            ->searchDebounce('650ms')
+            ->searchUsing(fn (Builder $query, string $search): Builder => static::searchMail($query, $search))
             ->recordClasses(fn (CrmMailThread $record): string => static::mailRowClasses($record))
             ->columns([
                 TextColumn::make('last_message_at')
@@ -277,13 +282,12 @@ class CrmMailThreadResource extends Resource
                 TextColumn::make('participant_name')
                     ->label('Отправитель')
                     ->weight('bold')
-                    ->searchable()
                     ->limit(30)
                     ->tooltip(fn (CrmMailThread $record): ?string => $record->participant_name)
                     ->description(fn (CrmMailThread $record): string => $record->participant_email)
                     ->width('11.5rem')
                     ->grow(false),
-                TextColumn::make('subject')->label('Последняя тема')->searchable()->limit(80)->wrap()
+                TextColumn::make('subject')->label('Последняя тема')->limit(80)->wrap()
                     ->description(fn (CrmMailThread $record): string => $record->messages_count.' писем · непрочитанных '.$record->unread_count)
                     ->icon(fn (CrmMailThread $record): ?string => filled($record->manager_note)
                         ? 'heroicon-o-document-text'
@@ -306,7 +310,9 @@ class CrmMailThreadResource extends Resource
                     ->limit(24)
                     ->width('7.5rem')
                     ->grow(false)
-                    ->sortable(),
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query
+                        ->orderByRaw('CASE WHEN crm_mail_threads.assigned_user_id IS NULL THEN 1 ELSE 0 END')
+                        ->orderBy(User::query()->select('name')->whereColumn('users.id', 'crm_mail_threads.assigned_user_id'), $direction)),
                 TextColumn::make('priority')->label('Приоритет')->badge()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::PRIORITIES[$state] ?? $state)
                     ->color(fn (string $state): string => match ($state) {
@@ -316,6 +322,9 @@ class CrmMailThreadResource extends Resource
                     ->grow(false),
                 TextColumn::make('status')->label('Состояние')->badge()->sortable()
                     ->formatStateUsing(fn (string $state): string => CrmMailThread::STATUSES[$state] ?? $state)
+                    ->description(fn (CrmMailThread $record): ?string => $record->hasDueFollowUp()
+                        ? 'Пора связаться · '.$record->next_follow_up_at->timezone('Europe/Minsk')->format('d.m H:i')
+                        : null)
                     ->color(fn (string $state): string => static::statusColor($state))
                     ->width('6.5rem')
                     ->grow(false),
@@ -330,19 +339,61 @@ class CrmMailThreadResource extends Resource
                     ->width('6.5rem')
                     ->grow(false),
             ])
-            ->defaultSort('last_message_at', 'desc')
+            ->defaultSort(function (Builder $query, ListCrmMailThreads $livewire): Builder {
+                if ($livewire->activeTab === 'needs_response' && blank($livewire->getTableSortColumn())) {
+                    return $query
+                        ->orderByRaw("CASE WHEN priority = 'urgent' THEN 0 WHEN next_follow_up_at <= ? THEN 1 WHEN priority = 'high' THEN 2 ELSE 3 END", [now()])
+                        ->orderBy('last_message_at');
+                }
+
+                return $query->orderByDesc('last_message_at');
+            }, 'desc')
             ->filters([
-                SelectFilter::make('status')->label('Статус')->options(CrmMailThread::STATUSES),
-                SelectFilter::make('sales_stage')->label('Стадия сделки')->options(CrmMailThread::SALES_STAGES),
-                SelectFilter::make('priority')->label('Приоритет')->options(CrmMailThread::PRIORITIES),
                 SelectFilter::make('assigned_user_id')
                     ->label('Ответственный')
-                    ->options(fn (): array => User::query()->crmStaff()
-                        ->orderBy('name')->pluck('name', 'id')->all())
+                    ->placeholder('Все ответственные')
+                    ->options(fn (): array => ['mine' => 'Мои переписки', 'unassigned' => 'Без ответственного']
+                        + User::query()
+                            ->where(fn (Builder $staff): Builder => $staff->crmStaff()
+                                ->orWhereIn('id', CrmMailThread::query()->withTrashed()->visibleTo(auth()->user())
+                                    ->whereNotNull('assigned_user_id')->select('assigned_user_id')))
+                            ->orderBy('name')->pluck('name', 'id')->all())
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'mine' => $query->where('assigned_user_id', auth()->id()),
+                        'unassigned' => $query->whereNull('assigned_user_id'),
+                        null, '' => $query,
+                        default => $query->where('assigned_user_id', (int) $data['value']),
+                    })
                     ->searchable()
                     ->preload(),
-                SelectFilter::make('mailbox_id')->label('Ящик')->relationship('mailbox', 'email'),
-                SelectFilter::make('product_id')->label('Товар')->relationship('product', 'name')->searchable(),
+                SelectFilter::make('reaction')->label('Причина реакции')->placeholder('Все причины')
+                    ->options([
+                        'new' => 'Новая переписка',
+                        'waiting_manager' => 'Нужен ответ',
+                        'follow_up' => 'Пора связаться',
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'new', 'waiting_manager' => $query->where('status', $data['value']),
+                        'follow_up' => $query->followUpDue(),
+                        default => $query,
+                    }),
+                SelectFilter::make('status')->label('Статус')->options(CrmMailThread::STATUSES),
+                SelectFilter::make('priority')->label('Приоритет')->options(CrmMailThread::PRIORITIES),
+                SelectFilter::make('sales_stage')->label('Стадия переписки')->options(CrmMailThread::SALES_STAGES),
+                SelectFilter::make('product_id')->label('Товар')
+                    ->relationship('product', 'name')
+                    ->searchable(['name', 'sku']),
+            ], layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(['md' => 3, 'xl' => 6])
+            ->deferFilters(false)
+            ->emptyStateHeading(fn (ListCrmMailThreads $livewire): string => filled($livewire->getTableSearch())
+                ? 'По запросу ничего не найдено'
+                : ($livewire->activeTab === 'needs_response' ? 'Нет переписок, требующих реакции' : 'Переписок нет'))
+            ->emptyStateDescription('Проверьте выбранный ящик, папку и фильтры.')
+            ->emptyStateActions([
+                Action::make('search_all_mail')->label('Искать во всех письмах')->icon('heroicon-o-magnifying-glass')
+                    ->visible(fn (ListCrmMailThreads $livewire): bool => $livewire->activeTab !== 'all' && filled($livewire->getTableSearch()))
+                    ->action(fn (ListCrmMailThreads $livewire) => $livewire->selectMailTab('all')),
             ])
             ->recordActions([
                 ViewAction::make()->label('Открыть')
@@ -705,6 +756,25 @@ class CrmMailThreadResource extends Resource
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ]);
+    }
+
+    private static function searchMail(Builder $query, string $search): Builder
+    {
+        foreach (preg_split('/\s+/u', trim($search), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $term) {
+            $pattern = '%'.$term.'%';
+            $query->where(fn (Builder $threads): Builder => $threads
+                ->whereAny(['participant_name', 'participant_email', 'subject'], 'like', $pattern)
+                ->orWhereHas('messages', fn (Builder $messages): Builder => $messages->visibleTo(auth()->user())
+                    ->whereAny(['from_email', 'from_name', 'subject', 'text_body'], 'like', $pattern))
+                ->orWhereHas('counterparty', fn (Builder $client): Builder => $client
+                    ->whereAny(['name', 'legal_name', 'unp'], 'like', $pattern))
+                ->orWhereHas('contact', fn (Builder $contact): Builder => $contact->where('full_name', 'like', $pattern))
+                ->orWhereHas('order', fn (Builder $orders): Builder => $orders->where('number', 'like', $pattern))
+                ->orWhereHas('supplierOrderRequest.order', fn (Builder $orders): Builder => $orders->where('number', 'like', $pattern))
+                ->orWhereHas('commercialDocuments', fn (Builder $documents): Builder => $documents->where('number', 'like', $pattern)));
+        }
+
+        return $query;
     }
 
     public static function statusColor(string $state): string

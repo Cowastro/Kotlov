@@ -210,12 +210,7 @@ class CrmMailThread extends Model
     public function scopeRequiresReaction(Builder $query): Builder
     {
         return $query->where(function (Builder $reaction): void {
-            $reaction->whereIn('status', ['new', 'waiting_manager'])
-                ->orWhere(function (Builder $followUp): void {
-                    $followUp->whereNotIn('status', ['closed', 'spam'])
-                        ->whereNotNull('next_follow_up_at')
-                        ->where('next_follow_up_at', '<=', now());
-                });
+            $reaction->needsAttention()->orWhere(fn (Builder $followUp): Builder => $followUp->followUpDue());
         });
     }
 
@@ -229,9 +224,15 @@ class CrmMailThread extends Model
     public function scopeFollowUpDue(Builder $query): Builder
     {
         return $query
-            ->whereNotIn('status', ['closed', 'spam'])
+            ->whereNotIn('status', ['draft', 'closed', 'spam'])
             ->whereNotNull('next_follow_up_at')
             ->where('next_follow_up_at', '<=', now());
+    }
+
+    public function hasDueFollowUp(): bool
+    {
+        return ! in_array($this->status, ['draft', 'closed', 'spam'], true)
+            && $this->next_follow_up_at?->lessThanOrEqualTo(now()) === true;
     }
 
     public function scopeAssignedWork(Builder $query, int $userId): Builder

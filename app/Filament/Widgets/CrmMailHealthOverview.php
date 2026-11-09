@@ -18,10 +18,10 @@ class CrmMailHealthOverview extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $mailboxes = CrmMailbox::query()->where('is_enabled', true)->get();
+        $mailboxes = CrmMailbox::query()->visibleTo(auth()->user())->where('is_enabled', true)->get();
         $lastAttempt = $mailboxes->sortByDesc('last_sync_at')->first()?->last_sync_at;
         $lastSuccess = $mailboxes->sortByDesc('last_success_at')->first()?->last_success_at;
-        $lastIncoming = CrmMailMessage::query()->where('direction', 'incoming')->max('received_at');
+        $lastIncoming = CrmMailMessage::query()->visibleTo(auth()->user())->where('direction', 'incoming')->max('received_at');
         $hasMailboxes = $mailboxes->isNotEmpty();
         $hasError = $mailboxes->contains(fn (CrmMailbox $mailbox): bool => filled($mailbox->last_error));
         $isStale = ! $lastAttempt || $lastAttempt->lt(now()->subMinutes(10));
