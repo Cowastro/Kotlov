@@ -3,11 +3,15 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\LeadChannelSettings;
+use App\Filament\Resources\ContactRequests\Pages\ListContactRequests;
 use App\Filament\Resources\ContactRequests\Pages\ViewContactRequest;
+use App\Livewire\ContactRequestDialog;
+use App\Livewire\ContactRequestIndicator;
 use App\Models\ContactRequest;
 use App\Models\LeadChannel;
 use App\Models\User;
 use App\Services\LeadInbox;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
@@ -48,14 +52,20 @@ class LeadInboxTest extends TestCase
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $this->actingAs($manager)->get('/admin/lead-channels')->assertForbidden();
 
-        $sendKey = (string) Str::uuid();
         Livewire::test(ViewContactRequest::class, ['record' => $lead->getRouteKey()])
             ->assertSee('Вопрос 11')
-            ->assertActionVisible('reply')
-            ->callAction('reply', ['body' => 'Есть в наличии', 'send_key' => $sendKey])
-            ->assertHasNoActionErrors()
-            ->assertSee('Принято каналом')
-            ->assertNotified('Канал принял ответ');
+            ->assertSee('Ответ в Telegram');
+
+        Livewire::test(ListContactRequests::class)
+            ->assertCanSeeTableRecords([$lead])
+            ->mountAction(TestAction::make('dialog')->table($lead))
+            ->assertActionMounted(TestAction::make('dialog')->table($lead));
+
+        $dialog = Livewire::test(ContactRequestDialog::class, ['contactRequestId' => $lead->id])
+            ->set('draft', 'Есть в наличии');
+        $sendKey = $dialog->get('sendKey');
+        $dialog->call('sendReply')->assertHasNoErrors()->assertSet('draft', '')->assertSee('Принято каналом');
+        $this->assertFalse($lead->fresh()->needs_attention);
 
         app(LeadInbox::class)->reply($lead, $manager->id, 'Есть в наличии', $sendKey);
         Http::assertSentCount(1);
@@ -64,6 +74,33 @@ class LeadInboxTest extends TestCase
         $this->assertDatabaseHas('lead_messages', [
             'contact_request_id' => $lead->id, 'user_id' => $manager->id, 'state' => 'sent', 'provider_message_id' => '88',
         ]);
+    }
+
+    public function test_new_message_flags_existing_work_and_returns_archived_dialog_to_the_queue(): void
+    {
+        config([
+            'services.telegram.leads_bot_token' => '321:bot-token',
+            'services.telegram.leads_webhook_secret' => 'incoming-token',
+        ]);
+        $lead = ContactRequest::create([
+            'name' => 'Клиент', 'message' => 'Прошлый вопрос', 'status' => 'in_progress',
+            'source' => 'telegram_channel', 'external_source' => 'telegram_bot', 'external_id' => 'chat:555',
+            'archived_at' => now(), 'needs_attention' => false,
+        ]);
+        $this->actingAs(User::factory()->create(['role' => 'manager', 'is_active' => true]));
+        $indicator = Livewire::test(ContactRequestIndicator::class)->assertDontSee('Входящие · 1');
+
+        $this->postJson('/integrations/telegram/leads', ['message' => [
+            'chat' => ['type' => 'private', 'id' => 555], 'message_id' => 12, 'text' => 'Новый вопрос',
+        ]], ['X-Telegram-Bot-Api-Secret-Token' => 'incoming-token'])->assertOk();
+        $indicator->call('$refresh')->assertSee('Входящие · 1');
+
+        $lead->refresh();
+        $this->assertNull($lead->archived_at);
+        $this->assertSame('in_progress', $lead->status);
+        Livewire::test(ContactRequestDialog::class, ['contactRequestId' => $lead->id])
+            ->call('markSeen')->assertDontSee('Требует реакции');
+        $indicator->call('$refresh')->assertDontSee('Входящие · 1');
     }
 
     public function test_admin_can_connect_and_pause_a_channel_with_encrypted_credentials(): void

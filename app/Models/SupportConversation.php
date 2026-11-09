@@ -58,15 +58,25 @@ class SupportConversation extends Model
     {
         DB::transaction(function (): void {
             $chat = self::query()->lockForUpdate()->findOrFail($this->id);
-            $message = $chat->messages()->where('sender_type', 'visitor')->reorder('id', 'desc')->value('body') ?? '';
+            $visitor = $chat->messages()->where('sender_type', 'visitor')->reorder('id', 'desc')->first(['id', 'body']);
+            $identity = ['external_source' => ContactRequest::SITE_CHAT_SOURCE, 'external_id' => $chat->public_id];
+            $inboxState = [];
+            if (ContactRequest::inboxStateAvailable()) {
+                $event = $visitor ? 'site:'.$visitor->id : null;
+                $previousEvent = ContactRequest::query()->where($identity)->value('last_external_event_id');
+                if ($event !== $previousEvent) {
+                    $inboxState = ['last_external_event_id' => $event, 'needs_attention' => $chat->status === 'new', 'archived_at' => null];
+                } elseif ($chat->status !== 'new' || $event === null) {
+                    $inboxState = ['needs_attention' => false];
+                }
+            }
 
             ContactRequest::query()->toBase()->upsert([
-                'external_source' => ContactRequest::SITE_CHAT_SOURCE,
-                'external_id' => $chat->public_id,
+                ...$identity,
                 'source' => ContactRequest::SITE_CHAT_SOURCE,
                 'name' => $chat->name,
                 'phone' => $chat->phone,
-                'message' => $message,
+                'message' => $visitor?->body ?? '',
                 'status' => match ($chat->status) {
                     'closed' => 'done',
                     'answered' => 'waiting',
@@ -75,8 +85,10 @@ class SupportConversation extends Model
                 'responsible_user_id' => $chat->assigned_user_id,
                 'created_at' => $chat->created_at,
                 'updated_at' => $chat->updated_at,
+                ...$inboxState,
             ], ['external_source', 'external_id'], [
                 'name', 'phone', 'message', 'status', 'responsible_user_id', 'updated_at',
+                ...array_keys($inboxState),
             ]);
         }, 3);
     }

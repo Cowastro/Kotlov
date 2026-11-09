@@ -33,26 +33,22 @@ class ListContactRequests extends ListRecords
 
     public function getTabs(): array
     {
-        $colors = [
-            'new' => 'info',
-            'read' => 'warning',
-            'done' => 'success',
-        ];
-
-        $tabs = [
-            'all' => Tab::make('Все')
-                ->badge(ContactRequest::count()),
-        ];
-
-        foreach (ContactRequest::$statuses as $status => $label) {
-            $count = ContactRequest::where('status', $status)->count();
-
-            $tabs[$status] = Tab::make($label)
-                ->modifyQueryUsing(fn (Builder $query) => $query->where('status', $status))
-                ->badge($count ?: null)
-                ->badgeColor($colors[$status] ?? 'gray');
+        if (! ContactRequest::inboxStateAvailable()) {
+            return [];
         }
 
-        return $tabs;
+        return [
+            'attention' => Tab::make('Требуют реакции')
+                ->modifyQueryUsing(fn (Builder $query) => $query->needsAttention())
+                ->excludeQueryWhenResolvingRecord()
+                ->badge(ContactRequest::query()->needsAttention()->count() ?: null)
+                ->badgeColor('danger'),
+            'active' => Tab::make('Активные')
+                ->modifyQueryUsing(fn (Builder $query) => $query->activeInbox())
+                ->excludeQueryWhenResolvingRecord(),
+            'archive' => Tab::make('Архив')
+                ->modifyQueryUsing(fn (Builder $query) => $query->archivedInbox())
+                ->excludeQueryWhenResolvingRecord(),
+        ];
     }
 }

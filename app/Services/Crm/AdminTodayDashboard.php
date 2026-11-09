@@ -538,7 +538,8 @@ class AdminTodayDashboard
     /** @return Builder<ContactRequest> */
     private function requests(?int $managerId): Builder
     {
-        return ContactRequest::query()->where(fn (Builder $query) => $query
+        return ContactRequest::query()->when(ContactRequest::inboxStateAvailable(), fn (Builder $query) => $query->whereNull('archived_at'))
+            ->where(fn (Builder $query) => $query
             ->whereNull('external_source')
             ->orWhere('external_source', '!=', ContactRequest::SITE_CHAT_SOURCE))->when(
             $managerId,

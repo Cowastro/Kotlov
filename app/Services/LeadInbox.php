@@ -63,6 +63,7 @@ class LeadInbox
                 'phone' => $lead->phone ?: $phone,
                 'status' => in_array($lead->status, ['done', 'cancelled', 'waiting'], true) ? 'new' : $lead->status,
                 'last_external_event_id' => $event,
+                ...(ContactRequest::inboxStateAvailable() ? ['needs_attention' => true, 'archived_at' => null] : []),
             ]);
 
             return ['request' => $lead, 'changed' => true];
@@ -77,6 +78,10 @@ class LeadInbox
 
     public function replyChannel(ContactRequest $lead): ?LeadChannel
     {
+        if ($lead->archived_at) {
+            return null;
+        }
+
         $provider = $lead->external_source === 'telegram_bot' ? 'telegram' : $lead->external_source;
         if (! isset(LeadChannel::LABELS[$provider])) {
             return null;

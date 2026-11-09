@@ -4,28 +4,20 @@ namespace App\Filament\Resources\ContactRequests\Pages;
 
 use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Models\ContactRequest;
-use App\Models\LeadChannel;
 use App\Models\User;
-use App\Services\LeadInbox;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Enums\Width;
-use Illuminate\Support\Str;
-use Livewire\Attributes\Locked;
 
 class ViewContactRequest extends ViewRecord
 {
     protected static string $resource = ContactRequestResource::class;
-
-    #[Locked]
-    public int $historyPage = 1;
 
     public function mount(int|string $record): void
     {
@@ -34,16 +26,6 @@ class ViewContactRequest extends ViewRecord
         if ($url = ContactRequestResource::siteChatUrl($this->record)) {
             $this->redirect($url);
         }
-    }
-
-    public function olderMessages(): void
-    {
-        $this->historyPage++;
-    }
-
-    public function newerMessages(): void
-    {
-        $this->historyPage = max(1, $this->historyPage - 1);
     }
 
     public function getTitle(): string
@@ -64,36 +46,26 @@ class ViewContactRequest extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('reply')
-                ->label('Ответить клиенту')
-                ->icon('heroicon-o-paper-airplane')
+            Action::make('restore')
+                ->label('Вернуть в активные')
+                ->icon('heroicon-o-arrow-uturn-left')
                 ->authorize(fn (): bool => ContactRequestResource::canEdit($this->record))
-                ->visible(fn (): bool => app(LeadInbox::class)->replyChannel($this->record) !== null)
-                ->modalDescription(function (): ?string {
-                    $channel = app(LeadInbox::class)->replyChannel($this->record);
+                ->visible(fn (): bool => filled($this->record->archived_at))
+                ->action(function (): void {
+                    $this->record->update(['archived_at' => null]);
+                    $this->workflowSaved('Обращение возвращено в активные');
+                    $this->redirect(ContactRequestResource::getUrl('view', ['record' => $this->record]));
+                }),
 
-                    return $channel ? 'Ответ уйдёт в исходный чат через '.LeadChannel::LABELS[$channel->provider].'.' : null;
-                })
-                ->modalSubmitActionLabel('Отправить')
-                ->fillForm(fn (): array => ['send_key' => (string) Str::uuid()])
-                ->schema([
-                    Textarea::make('body')->label('Сообщение')->rows(5)->required()->maxLength(1000)->trim(),
-                    Hidden::make('send_key')->required()->rules(['uuid']),
-                ])
-                ->action(function (array $data, LeadInbox $inbox, Action $action): void {
-                    ContactRequestResource::authorizeEdit($this->record);
-                    $message = $inbox->reply($this->record, auth()->id(), $data['body'], $data['send_key']);
-                    if (! $message) {
-                        Notification::make()->title('Канал ответа отключён')->danger()->send();
-                        $action->halt();
-                    }
-
-                    $this->historyPage = 1;
-                    match ($message->state) {
-                        'sent' => Notification::make()->title('Канал принял ответ')->success()->send(),
-                        'failed' => Notification::make()->title('Канал отклонил ответ')->danger()->send(),
-                        default => Notification::make()->title('Отправка не подтверждена')->warning()->send(),
-                    };
+            Action::make('markSeen')
+                ->label('Просмотрено')
+                ->icon('heroicon-o-check')
+                ->color('gray')
+                ->authorize(fn (): bool => ContactRequestResource::canEdit($this->record))
+                ->visible(fn (): bool => $this->record->needs_attention && blank($this->record->external_source))
+                ->action(function (): void {
+                    $this->record->clearInboxAttention();
+                    $this->record->refresh();
                 }),
 
             Action::make('callClient')
@@ -107,7 +79,7 @@ class ViewContactRequest extends ViewRecord
                 ->label('Взять в работу')
                 ->icon('heroicon-o-hand-raised')
                 ->color('warning')
-                ->visible(fn (): bool => in_array($this->record->status, ['new', 'read'], true))
+                ->visible(fn (): bool => ! $this->record->archived_at && in_array($this->record->status, ['new', 'read'], true))
                 ->action(function (): void {
                     $this->record->update([
                         'status' => 'in_progress',
@@ -120,7 +92,7 @@ class ViewContactRequest extends ViewRecord
                 ->label('Напомнить')
                 ->icon('heroicon-o-clock')
                 ->color('primary')
-                ->visible(fn (): bool => ! in_array($this->record->status, ['done', 'cancelled'], true))
+                ->visible(fn (): bool => ! $this->record->archived_at && ! in_array($this->record->status, ['done', 'cancelled'], true))
                 ->fillForm(fn (): array => [
                     'next_follow_up_at' => $this->record->next_follow_up_at ?: now()->addHour(),
                     'admin_notes' => $this->record->admin_notes,

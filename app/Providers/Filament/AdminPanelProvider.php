@@ -41,6 +41,7 @@ class AdminPanelProvider extends PanelProvider
                 fn () => view('filament.admin.layout-fixes'),
             )
             ->databaseNotifications()
+            ->renderHook(PanelsRenderHook::GLOBAL_SEARCH_BEFORE, fn () => view('filament.admin.contact-request-indicator'))
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
