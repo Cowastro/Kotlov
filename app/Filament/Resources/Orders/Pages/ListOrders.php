@@ -7,17 +7,45 @@ use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\EmbeddedTable;
+use Filament\Schemas\Components\RenderHook;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\View;
+use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListOrders extends ListRecords
 {
+    private const WORK_TABS = ['work_queue', 'attention', 'my', 'unassigned', 'all'];
+
     protected static string $resource = OrderResource::class;
 
     public function getMaxContentWidth(): Width|string|null
     {
         return Width::Full;
+    }
+
+    public function content(Schema $schema): Schema
+    {
+        return $schema->components([
+            View::make('filament.resources.orders.queue-navigation')
+                ->viewData(fn (): array => ['tabs' => $this->getCachedTabs(), 'workTabs' => self::WORK_TABS]),
+            RenderHook::make(PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_BEFORE),
+            EmbeddedTable::make(),
+            RenderHook::make(PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_AFTER),
+        ]);
+    }
+
+    public function selectOrderTab(string $tab): void
+    {
+        if (! isset($this->getCachedTabs()[$tab])) {
+            return;
+        }
+
+        $this->activeTab = $tab;
+        $this->updatedActiveTab();
     }
 
     protected function getHeaderActions(): array
@@ -42,13 +70,7 @@ class ListOrders extends ListRecords
         ];
 
         $workQueueCount = $this->ordersQuery()->operationallyActive()->count();
-        $unassigned = $this->ordersQuery()
-            ->operationallyActive()
-            ->whereNull('manager_id')
-            ->where(fn (Builder $query): Builder => $query
-                ->whereNull('assigned_to')
-                ->orWhere('assigned_to', ''))
-            ->count();
+        $unassigned = $this->ordersQuery()->operationallyActive()->withoutResponsible()->count();
         $myCount = $this->ordersQuery()->where('manager_id', auth()->id())->count();
         $attentionCount = $this->ordersQuery()->withOperationalProblem('needs_attention')->count();
         $missingPriceCount = $this->ordersQuery()->operationallyActive()->withOperationalProblem('missing_price')->count();
@@ -110,12 +132,7 @@ class ListOrders extends ListRecords
 
             'unassigned' => Tab::make('Без ответственного')
                 ->icon('heroicon-o-user-minus')
-                ->modifyQueryUsing(fn (Builder $query) => $query
-                    ->operationallyActive()
-                    ->whereNull('manager_id')
-                    ->where(fn (Builder $owner): Builder => $owner
-                        ->whereNull('assigned_to')
-                        ->orWhere('assigned_to', '')))
+                ->modifyQueryUsing(fn (Builder $query) => $query->operationallyActive()->withoutResponsible())
                 ->badge($unassigned ?: null)
                 ->badgeColor('danger'),
 
@@ -123,11 +140,11 @@ class ListOrders extends ListRecords
                 ->badge($this->ordersQuery()->count()),
         ];
 
+        $statusCounts = $this->ordersQuery()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
         foreach (Order::STATUSES as $key => $label) {
-            $count = $this->ordersQuery()->where('status', $key)->count();
             $tabs[$key] = Tab::make($label)
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', $key))
-                ->badge($count ?: null)
+                ->badge($statusCounts[$key] ?? null)
                 ->badgeColor($colors[$key] ?? 'gray');
         }
 

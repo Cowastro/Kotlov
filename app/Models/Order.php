@@ -593,12 +593,7 @@ class Order extends Model
             'mixed_suppliers' => $query->whereRaw(
                 '(select count(distinct snapshot_items.supply_supplier_id) from order_items as snapshot_items where snapshot_items.order_id = orders.id and snapshot_items.supply_captured_at is not null and snapshot_items.supply_supplier_id is not null) > 1',
             ),
-            'unassigned' => $query
-                ->operationallyActive()
-                ->whereNull('manager_id')
-                ->where(fn (Builder $owner): Builder => $owner
-                    ->whereNull('assigned_to')
-                    ->orWhere('assigned_to', '')),
+            'unassigned' => $query->operationallyActive()->withoutResponsible(),
             'sync_problem' => config('onec.order_queue_enabled', false)
                 ? $query->whereHas(
                     'integrationIssues',
@@ -623,6 +618,12 @@ class Order extends Model
                 }),
             default => $query,
         };
+    }
+
+    public function scopeWithoutResponsible(Builder $query): Builder
+    {
+        return $query->whereNull('manager_id')
+            ->whereRaw("NULLIF(TRIM(assigned_to), '') IS NULL");
     }
 
     /** @return array<string, mixed> */
