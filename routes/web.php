@@ -235,7 +235,7 @@ Route::get('/robots.txt', function (Request $request) {
     if (str_ends_with($request->getHost(), '.'.$baseDomain)) {
         $slug = str_replace('.'.$baseDomain, '', $request->getHost());
         if (City::findBySlug($slug)) {
-            return response("User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /b2b/\nDisallow: /account\nDisallow: /cart\nDisallow: /checkout\nDisallow: /city/select/\nDisallow: /*?\nSitemap: https://{$request->getHost()}/sitemap.xml\n", 200)
+            return response("User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /b2b/\nDisallow: /account\nDisallow: /cart\nDisallow: /checkout\nDisallow: /city/select\nDisallow: /*?\nSitemap: https://{$request->getHost()}/sitemap.xml\n", 200)
                 ->header('Content-Type', 'text/plain; charset=UTF-8');
         }
     }
@@ -489,6 +489,8 @@ Route::post('/where-to-buy/{branch}/phone', PartnerBranchContactController::clas
 Route::get('/city/select/{slug}', CitySelectionController::class)
     ->where('slug', '[a-z0-9-]+')
     ->name('city.select');
+Route::post('/city/select', CitySelectionController::class)
+    ->name('city.select.submit');
 Route::get('/akcii', [PromotionController::class, 'index'])->name('promotions.index');
 Route::get('/akcii/ecokamin-skidki', [PromotionController::class, 'ecokamin'])->name('promotions.ecokamin');
 Route::get('/akcii/kotlov-xo-ceramic-pro', [PromotionController::class, 'xoCeramicPro'])->name('promotions.xo-ceramic-pro');

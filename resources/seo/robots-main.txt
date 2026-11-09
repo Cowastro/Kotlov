@@ -2,6 +2,7 @@ User-agent: *
 Disallow: /admin/
 Disallow: /cart/
 Disallow: /compare
+Disallow: /city/select
 Disallow: /*pcnt=20
 Disallow: /*pcnt=40
 Disallow: /*pcnt=60

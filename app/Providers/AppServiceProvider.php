@@ -281,12 +281,9 @@ private function getCitiesByRegion(): array
         }
 
         $selectorSlug = $city['slug'] ?: 'minsk';
-        $returnTo = rawurlencode(request()->getRequestUri());
-        $link = "/city/select/{$selectorSlug}?return={$returnTo}";
         $grouped[$city['region']][] = [
             'name'   => $city['name'],
             'slug'   => $selectorSlug,
-            'link'   => $link,
             'active' => '',
         ];
     }

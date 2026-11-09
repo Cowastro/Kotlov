@@ -50,6 +50,32 @@ class CityContactSelectionTest extends TestCase
         $response->assertSee('Беларусь, г. Гомель, ул. Тестовая, 1');
     }
 
+    public function test_city_selector_posts_without_exposing_page_specific_crawl_urls(): void
+    {
+        $this->city('gomel', 'Гомель', false);
+
+        $html = view('partials.city-selector', [
+            'citySelectorEnabled' => true,
+            'citySelectorRegions' => [
+                'Минская' => [
+                    ['slug' => 'minsk', 'name' => 'Минск'],
+                    ['slug' => 'gomel', 'name' => 'Гомель'],
+                ],
+            ],
+        ])->render();
+
+        $this->assertStringContainsString('/city/select"', $html);
+        $this->assertStringContainsString('name="slug" value="gomel"', $html);
+        $this->assertStringNotContainsString('href="/city/select/', $html);
+
+        $this->post('https://kotlov.by/city/select', [
+            'slug' => 'gomel',
+            'return' => '/contacts',
+        ])->assertRedirect('/contacts')
+            ->assertHeader('X-Robots-Tag', 'noindex, nofollow')
+            ->assertPlainCookie('selected_city', 'gomel');
+    }
+
     public function test_active_city_without_a_dedicated_storefront_can_be_selected(): void
     {
         $this->city('vitebsk', 'Витебск', false);

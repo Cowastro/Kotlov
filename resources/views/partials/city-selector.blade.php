@@ -7,7 +7,9 @@
             </span>
         </div>
         <div class="canvas-body" style="overflow-y:auto;">
-            <div class="container-full py-24">
+            <form method="POST" action="{{ route('city.select.submit') }}" class="container-full py-24">
+                @csrf
+                <input type="hidden" name="return" value="{{ request()->getRequestUri() }}">
                 <div class="d-flex flex-wrap gap-8 mb-20">
                     @foreach(($citySelectorRegions ?? []) as $region => $cities)
                         <button type="button"
@@ -22,16 +24,16 @@
                     <div class="city-region-panel {{ $loop->first ? '' : 'd-none' }}" data-panel="{{ $loop->index }}">
                         <div class="d-flex flex-wrap gap-8">
                             @foreach($cities as $city)
-                                <a href="{{ $city['link'] }}" rel="nofollow"
+                                <button type="submit" name="slug" value="{{ $city['slug'] }}"
                                    class="city-link {{ ($selectedCityName ?? $cityName ?? 'Минск') === $city['name'] ? 'active' : '' }}"
-                                   style="padding:6px 14px;border:1px solid var(--line,#e0e0e0);border-radius:20px;font-size:14px;color:var(--text,#222);text-decoration:none;transition:all .2s;white-space:nowrap;">
+                                   style="padding:6px 14px;border:1px solid var(--line,#e0e0e0);border-radius:20px;background:#fff;font:inherit;font-size:14px;color:var(--text,#222);cursor:pointer;transition:all .2s;white-space:nowrap;">
                                     {{ $city['name'] }}
-                                </a>
+                                </button>
                             @endforeach
                         </div>
                     </div>
                 @endforeach
-            </div>
+            </form>
         </div>
     </div>
     <style>

@@ -114,7 +114,6 @@
     </a>
 
     @include('partials.callback-popup')
-    @include('partials.region-popup')
 
     {{-- Amerce JS: jquery НЕ подключаем повторно --}}
     <script src="{{ asset('amerce/assets/js/plugin/bootstrap.min.js') }}"></script>

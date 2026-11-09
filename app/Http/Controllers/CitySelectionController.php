@@ -9,8 +9,11 @@ use Illuminate\Http\Request;
 
 class CitySelectionController extends Controller
 {
-    public function __invoke(Request $request, string $slug, CityContactResolver $resolver): RedirectResponse
+    public function __invoke(Request $request, CityContactResolver $resolver, ?string $slug = null): RedirectResponse
     {
+        $slug ??= (string) $request->input('slug');
+        abort_unless(preg_match('/^[a-z0-9-]+$/', $slug) === 1, 404);
+
         $city = $resolver->selectableCity($slug);
         abort_unless($city, 404);
 
@@ -22,7 +25,7 @@ class CitySelectionController extends Controller
                 ->header('X-Robots-Tag', 'noindex, nofollow');
         }
 
-        $returnTo = (string) $request->query('return', '/');
+        $returnTo = (string) $request->input('return', '/');
         if (! str_starts_with($returnTo, '/') || str_starts_with($returnTo, '//') || str_contains($returnTo, '\\')) {
             $returnTo = '/';
         }
