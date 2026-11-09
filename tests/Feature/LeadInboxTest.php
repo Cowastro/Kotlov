@@ -12,6 +12,7 @@ use App\Models\LeadChannel;
 use App\Models\User;
 use App\Services\LeadInbox;
 use Filament\Actions\Testing\TestAction;
+use Filament\Notifications\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
@@ -78,6 +79,7 @@ class LeadInboxTest extends TestCase
 
     public function test_new_message_flags_existing_work_and_returns_archived_dialog_to_the_queue(): void
     {
+        $this->freezeTime();
         config([
             'services.telegram.leads_bot_token' => '321:bot-token',
             'services.telegram.leads_webhook_secret' => 'incoming-token',
@@ -87,13 +89,21 @@ class LeadInboxTest extends TestCase
             'source' => 'telegram_channel', 'external_source' => 'telegram_bot', 'external_id' => 'chat:555',
             'archived_at' => now(), 'needs_attention' => false,
         ]);
-        $this->actingAs(User::factory()->create(['role' => 'manager', 'is_active' => true]));
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $this->actingAs($manager);
+        Notification::make()->title('Старое уведомление')->viewData(['inboxAlert' => true])->sendToDatabase($manager);
         $indicator = Livewire::test(ContactRequestIndicator::class)->assertDontSee('Входящие · 1');
+        $indicator->call('pollInbox')->assertNotNotified();
 
         $this->postJson('/integrations/telegram/leads', ['message' => [
             'chat' => ['type' => 'private', 'id' => 555], 'message_id' => 12, 'text' => 'Новый вопрос',
         ]], ['X-Telegram-Bot-Api-Secret-Token' => 'incoming-token'])->assertOk();
-        $indicator->call('$refresh')->assertSee('Входящие · 1');
+        $indicator->call('pollInbox')->assertSee('Входящие · 1')->assertNotified('Новое сообщение · Telegram');
+        $indicator->call('pollInbox')->assertNotNotified();
+        $alert = $manager->unreadNotifications()->where('data->title', 'Новое сообщение · Telegram')->sole();
+        $this->assertSame('Клиент · Новый вопрос', $alert->data['body']);
+        $this->assertSame(url('/admin/contact-requests/'.$lead->id), $alert->data['actions'][0]['url']);
+        $this->assertSame('Ответить', $alert->data['actions'][0]['label']);
 
         $lead->refresh();
         $this->assertNull($lead->archived_at);

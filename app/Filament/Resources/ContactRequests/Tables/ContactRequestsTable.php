@@ -21,13 +21,17 @@ class ContactRequestsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with('latestLeadMessage'))
+            ->modifyQueryUsing(fn ($query) => $query->with(['latestLeadMessage', 'responsibleUser']))
             ->poll('15s')
+            ->recordClasses(fn (ContactRequest $record): ?string => $record->needs_attention && ! $record->archived_at ? 'contact-request-needs-attention' : null)
+            ->recordAction(fn (ContactRequest $record): ?string => self::hasMessengerDialog($record) ? 'dialog' : null)
+            ->recordUrl(fn (ContactRequest $record): ?string => ! self::hasMessengerDialog($record) && ContactRequestResource::canView($record)
+                ? ContactRequestResource::getUrl('view', ['record' => $record]) : null)
             ->columns([
                 TextColumn::make('name')
-                    ->label('Имя')
-                    ->description(fn (ContactRequest $record): ?string => $record->needs_attention ? 'Требует реакции' : null)
-                    ->searchable()
+                    ->label('Клиент')
+                    ->description(fn (ContactRequest $record): ?string => $record->needs_attention ? 'Требует реакции' : $record->phone)
+                    ->searchable(['name', 'phone', 'email', 'product_name', 'city'])
                     ->sortable()
                     ->weight('bold'),
 
@@ -38,13 +42,13 @@ class ContactRequestsTable
                     ->placeholder('Не указан')
                     ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
                     ->html()
-                    ->weight('bold'),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('message')
-                    ->label('Сообщение')
+                    ->label('Последнее сообщение')
                     ->state(fn (ContactRequest $record): string => $record->latestLeadMessage?->body ?? $record->message)
                     ->limit(90)
-                    ->lineClamp(2)
+                    ->lineClamp(1)
                     ->tooltip(fn (ContactRequest $record): string => $record->latestLeadMessage?->body ?? $record->message),
 
                 TextColumn::make('product_name')
@@ -54,13 +58,14 @@ class ContactRequestsTable
                     ->tooltip(fn ($record) => $record->product_name)
                     ->placeholder('—')
                     ->searchable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('city')
                     ->label('Город')
                     ->placeholder('—')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('source')
                     ->label('Канал')
@@ -75,6 +80,7 @@ class ContactRequestsTable
 
                 TextColumn::make('status')
                     ->label('Статус')
+                    ->description(fn (ContactRequest $record): ?string => $record->responsibleUser?->name)
                     ->badge()
                     ->color(fn ($state) => match ($state) {
                         'new' => 'info',
@@ -102,7 +108,8 @@ class ContactRequestsTable
                     ->icon('heroicon-o-user-circle')
                     ->placeholder('Не назначен')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('next_follow_up_at')
                     ->label('Следующий контакт')
@@ -110,11 +117,11 @@ class ContactRequestsTable
                     ->placeholder('—')
                     ->color(fn (ContactRequest $record): string => $record->next_follow_up_at?->isPast() ? 'danger' : 'gray')
                     ->sortable()
-                    ->toggleable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('updated_at')
                     ->label('Активность')
-                    ->dateTime('d.m.Y H:i')
+                    ->dateTime('d.m H:i', 'Europe/Minsk')
                     ->sortable(),
 
                 TextColumn::make('email')
@@ -144,7 +151,7 @@ class ContactRequestsTable
                     ->label('Диалог')
                     ->icon('heroicon-o-chat-bubble-left-right')
                     ->authorize(fn (ContactRequest $record): bool => ContactRequestResource::canView($record))
-                    ->visible(fn (ContactRequest $record): bool => filled($record->external_source) && ! $record->isSiteChat())
+                    ->visible(fn (ContactRequest $record): bool => self::hasMessengerDialog($record))
                     ->modalHeading(fn (ContactRequest $record): string => $record->name)
                     ->slideOver()
                     ->modalWidth('3xl')
@@ -154,7 +161,7 @@ class ContactRequestsTable
                         'lead' => $record,
                         'placement' => 'queue',
                     ])),
-                ViewAction::make(),
+                ViewAction::make()->iconButton()->tooltip('Открыть карточку'),
                 ActionGroup::make([
                     Action::make('markSeen')
                         ->label('Просмотрено')
@@ -206,5 +213,10 @@ class ContactRequestsTable
                     DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function hasMessengerDialog(ContactRequest $record): bool
+    {
+        return filled($record->external_source) && ! $record->isSiteChat();
     }
 }

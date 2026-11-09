@@ -298,6 +298,22 @@
         max-width: 12rem;
     }
 
+    .fi-resource-contact-requests.fi-resource-list-records-page .fi-ta-header-cell {
+        padding-block: .5rem;
+    }
+
+    .fi-resource-contact-requests.fi-resource-list-records-page .fi-ta-text:not(.fi-inline) {
+        padding-block: .4rem;
+    }
+
+    .fi-resource-contact-requests.fi-resource-list-records-page .fi-ta-cell-message {
+        max-width: min(34rem, 38vw);
+    }
+
+    .fi-resource-contact-requests.fi-resource-list-records-page .contact-request-needs-attention {
+        box-shadow: inset 3px 0 #f59e0b;
+    }
+
     /* Mail is reviewed on narrower office displays. Keep operational columns
        compact so the table fits without sacrificing sender and subject. */
     @media (min-width: 1024px) {
