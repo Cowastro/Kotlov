@@ -1,6 +1,7 @@
 @php
     $prefix = $prefix ?? 'registration';
     $accountType = old('account_type', 'legal');
+    $smsError = $errors->first('phone_verification_token') ?: $errors->first('phone_code');
 @endphp
 
 <div class="registration-fields" data-registration-fields data-company-lookup-url="{{ route('registration.company-lookup') }}">
@@ -41,12 +42,12 @@
     @if(config('services.sms_by.enabled'))
         <div class="phone-verification" data-phone-verification data-send-url="{{ route('registration.phone.send-code') }}">
             <input type="hidden" name="phone_verification_token" value="{{ old('phone_verification_token') }}" data-phone-verification-token>
-            <button type="button" class="phone-verification-send" data-phone-verification-send>Получить код по SMS</button>
+            <button type="button" class="phone-verification-send" data-phone-verification-send aria-describedby="{{ $prefix }}-sms-status">Получить код по SMS</button>
             <div class="phone-verification-code" data-phone-verification-code @if(!old('phone_verification_token')) hidden @endif>
                 <label for="{{ $prefix }}-phone-code" class="tf-lable fw-medium">Код из SMS <span class="text-primary">*</span></label>
-                <input type="text" id="{{ $prefix }}-phone-code" name="phone_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="6 цифр">
+                <input type="text" id="{{ $prefix }}-phone-code" name="phone_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="6 цифр" aria-describedby="{{ $prefix }}-sms-status">
             </div>
-            <p class="phone-verification-status" data-phone-verification-status aria-live="polite"></p>
+            <p id="{{ $prefix }}-sms-status" class="phone-verification-status {{ $smsError ? 'is-error' : '' }}" data-phone-verification-status aria-live="polite">{{ $smsError ?: 'Запросите и введите код, чтобы подтвердить телефон.' }}</p>
         </div>
     @endif
     <fieldset class="tf-field">
@@ -177,6 +178,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const token = wrapper.querySelector('[data-phone-verification-token]');
         const status = wrapper.querySelector('[data-phone-verification-status]');
         let timer = null;
+        let expiresAt = null;
+        let sending = false;
+
+        form.noValidate = true;
 
         function showStatus(message, type) {
             status.textContent = message;
@@ -193,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 remaining -= 1;
                 if (remaining <= 0) {
                     clearInterval(timer);
+                    timer = null;
                     button.disabled = false;
                     button.textContent = 'Отправить код повторно';
                     return;
@@ -201,11 +207,45 @@ document.addEventListener('DOMContentLoaded', function () {
             }, 1000);
         }
 
-        phone.addEventListener('input', function () {
+        function resetCode() {
             token.value = '';
             code.value = '';
             codeWrap.hidden = true;
-            showStatus('', '');
+            expiresAt = null;
+            clearInterval(timer);
+            timer = null;
+            button.disabled = sending;
+            button.textContent = 'Получить код по SMS';
+        }
+
+        phone.addEventListener('input', function () {
+            resetCode();
+            showStatus('Запросите код для этого номера.', '');
+        });
+
+        form.addEventListener('submit', function (event) {
+            if (!phone.value.trim()) {
+                event.preventDefault();
+                showStatus('Введите номер телефона и запросите код по SMS.', 'error');
+                phone.focus();
+                return;
+            }
+            if (expiresAt !== null && Date.now() >= expiresAt) {
+                resetCode();
+            }
+            if (!token.value) {
+                event.preventDefault();
+                showStatus('Нажмите «Получить код по SMS», затем введите код.', 'error');
+                (button.disabled ? phone : button).focus();
+                return;
+            }
+            if (!/^[0-9]{6}$/.test(code.value)) {
+                event.preventDefault();
+                showStatus('Введите шесть цифр из SMS.', 'error');
+                code.focus();
+                return;
+            }
+            if (!form.reportValidity()) event.preventDefault();
         });
 
         button.addEventListener('click', async function () {
@@ -215,6 +255,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            const requestedPhone = phone.value;
+            sending = true;
             button.disabled = true;
             showStatus('Отправляем код…', '');
 
@@ -226,9 +268,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': csrf.value
                     },
-                    body: JSON.stringify({phone: phone.value})
+                    body: JSON.stringify({phone: requestedPhone})
                 });
                 const payload = await response.json();
+                if (requestedPhone !== phone.value) return;
 
                 if (!response.ok) {
                     const message = payload.errors && payload.errors.phone
@@ -238,14 +281,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
 
                 token.value = payload.verification_token;
+                code.value = '';
+                expiresAt = Date.now() + payload.expires_in * 1000;
                 codeWrap.hidden = false;
-                code.required = true;
                 code.focus();
                 showStatus(payload.message, 'success');
                 startCooldown(60);
             } catch (error) {
-                button.disabled = false;
-                showStatus(error.message || 'Не удалось отправить код.', 'error');
+                if (requestedPhone === phone.value) {
+                    showStatus(error.message || 'Не удалось отправить код.', 'error');
+                }
+            } finally {
+                sending = false;
+                button.disabled = timer !== null;
             }
         });
     });

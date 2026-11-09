@@ -1,6 +1,7 @@
 @extends('layouts.amerce')
 
 @section('content')
+@php($registrationFailed = old('_form') === 'register' && $errors->any())
 <main id="wrapper">
 
     <section class="flat-spacing">
@@ -29,12 +30,12 @@
                     <div class="login-card">
 
                         <div class="login-tabs">
-                            <button class="login-tab-btn active" data-target="tab-login">Войти</button>
-                            <button class="login-tab-btn" data-target="tab-register">Регистрация</button>
+                            <button @class(['login-tab-btn', 'active' => ! $registrationFailed]) data-target="tab-login">Войти</button>
+                            <button @class(['login-tab-btn', 'active' => $registrationFailed]) data-target="tab-register">Регистрация</button>
                         </div>
 
                         {{-- ===== ТАБ ВХОД ===== --}}
-                        <div id="tab-login" class="login-tab-content active">
+                        <div id="tab-login" @class(['login-tab-content', 'active' => ! $registrationFailed])>
 
                             @if ($errors->any() && old('_form') === 'login')
                                 <div class="kotlov-alert kotlov-alert-error mb-16">
@@ -91,10 +92,10 @@
                         </div>
 
                         {{-- ===== ТАБ РЕГИСТРАЦИЯ ===== --}}
-                        <div id="tab-register" class="login-tab-content">
+                        <div id="tab-register" @class(['login-tab-content', 'active' => $registrationFailed])>
 
-                            @if ($errors->any() && old('_form') === 'register')
-                                <div class="kotlov-alert kotlov-alert-error mb-16">
+                            @if ($registrationFailed)
+                                <div class="kotlov-alert kotlov-alert-error mb-16" role="alert">
                                     @foreach ($errors->all() as $error)
                                         <p class="mb-0"><i class="icon icon-Warning"></i> {{ $error }}</p>
                                     @endforeach
@@ -221,10 +222,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // При ошибке — открываем нужный таб
-    @if (old('_form') === 'register' && $errors->any())
-        showTab('tab-register');
-    @endif
 });
 </script>
 @endpush
