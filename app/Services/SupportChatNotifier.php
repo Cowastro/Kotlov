@@ -8,6 +8,7 @@ use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class SupportChatNotifier
 {
@@ -39,15 +40,18 @@ class SupportChatNotifier
             ->get();
 
         if ($recipients->isNotEmpty()) {
+            $preview = $conversation->messages()->where('sender_type', 'visitor')->reorder('id', 'desc')->value('body');
             Notification::make()
                 ->title($title)
-                ->body($conversation->name.' · '.$conversation->phone)
+                ->body(e(implode(' · ', array_filter([$conversation->name, $conversation->phone, Str::limit(Str::squish((string) $preview), 120)]))))
                 ->icon('heroicon-o-chat-bubble-left-right')
                 ->iconColor('warning')
+                ->viewData(['inboxAlert' => true])
                 ->actions([
                     Action::make('open')
-                        ->label('Открыть чат')
-                        ->url(SupportConversationResource::getUrl('view', ['record' => $conversation], panel: 'admin')),
+                        ->label('Ответить')
+                        ->url(SupportConversationResource::getUrl('view', ['record' => $conversation, 'action' => 'reply'], panel: 'admin'))
+                        ->markAsRead(),
                 ])
                 ->sendToDatabase($recipients);
         }

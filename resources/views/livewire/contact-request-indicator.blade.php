@@ -1,4 +1,4 @@
-<div @if ($visible) wire:poll.10s @endif>
+<div @if ($visible) wire:poll.10s="pollInbox" @endif>
     @if ($visible)
         <div aria-live="polite">
             <x-filament::button tag="a" size="sm" :color="$count ? 'danger' : 'gray'" icon="heroicon-o-inbox"

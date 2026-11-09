@@ -2,10 +2,14 @@
 
 namespace App\Services;
 
+use App\Filament\Resources\ContactRequests\ContactRequestResource;
 use App\Models\ContactRequest;
+use App\Models\LeadChannel;
 use App\Models\User;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ContactRequestNotifier
 {
@@ -31,20 +35,31 @@ class ContactRequestNotifier
             return;
         }
 
+        $isMessenger = $contactRequest->external_source === 'telegram_bot' || isset(LeadChannel::LABELS[$contactRequest->external_source]);
+        $preview = $isMessenger
+            ? $contactRequest->leadMessages()->where('direction', 'incoming')->latest('id')->value('body')
+            : $contactRequest->message;
+
         Notification::make()
-            ->title(match ($contactRequest->source) {
+            ->title($isMessenger ? 'Новое сообщение · '.$contactRequest->channelLabel() : match ($contactRequest->source) {
                 'ai_selection' => 'Клиент просит помочь с AI-подбором',
                 'b2b_price_request' => 'Оптовик запросил цену',
                 default => 'Новая заявка на консультацию',
             })
-            ->body(implode(' · ', array_filter([
+            ->body(e(implode(' · ', array_filter([
                 $contactRequest->name,
-                $contactRequest->phone,
-                $contactRequest->product_name,
-                $contactRequest->city,
-            ])))
+                ...($isMessenger ? [] : [$contactRequest->phone, $contactRequest->product_name, $contactRequest->city]),
+                Str::limit(Str::squish((string) $preview), 120),
+            ]))))
             ->icon('heroicon-o-chat-bubble-left-right')
             ->iconColor('warning')
+            ->viewData(['inboxAlert' => true])
+            ->actions([
+                Action::make('openContactRequest')
+                    ->label($isMessenger ? 'Ответить' : 'Открыть обращение')
+                    ->url(ContactRequestResource::getUrl('view', ['record' => $contactRequest], panel: 'admin'))
+                    ->markAsRead(),
+            ])
             ->sendToDatabase($recipients);
     }
 
