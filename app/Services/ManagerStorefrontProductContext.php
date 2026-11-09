@@ -53,15 +53,24 @@ class ManagerStorefrontProductContext
         $productNameKey = $this->productNameKey($product->name);
         $isEcokamin = $product->brand?->slug === 'ecokamin'
             || mb_strtolower((string) $product->brand?->name) === 'экокамин';
+        // СанБизнесГруп sells ЭкоКамин to СБГ бай at the retail price less the dealer discount (−20%, the same
+        // fixed discount as the partner price), so this is our purchase price for every СанБизнесГруп channel.
+        $ecokaminPurchase = $isEcokamin && $retailPrice !== null
+            ? app(\App\Services\Pricing\B2bBrandRetailPricing::class)->priceFor($product)
+            : null;
+        $isSbg = fn ($supplier): bool => $supplier?->code === \App\Support\Suppliers\EcokaminChannel::SUPPLIER_CODE;
 
         $supplierOffers = $product->supplierProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->supplier?->name))
-            ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin, $product): array {
+            ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin, $product, $ecokaminPurchase, $isSbg): array {
                 $quantity = $offer->stock_quantity;
                 $inStock = (float) $quantity > 0 || $offer->in_stock === true;
                 $purchasePrice = $offer->stock_status !== 'missing_from_feed' && (float) $offer->price_byn > 0
                     ? (float) $offer->price_byn
                     : null;
+                if ($ecokaminPurchase !== null && $isSbg($offer->supplier)) {
+                    $purchasePrice = $ecokaminPurchase;
+                }
 
                 return [
                     'manual_match' => false,
@@ -95,10 +104,12 @@ class ManagerStorefrontProductContext
 
         $integrationOffers = $product->integrationProducts
             ->reject(fn ($offer): bool => $this->isTeplovManufacturer($offer->source?->supplier?->name))
-            ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin, $product): array {
+            ->map(function ($offer) use ($retailPrice, $productNameKey, $isEcokamin, $product, $ecokaminPurchase, $isSbg): array {
                 $quantity = (float) $offer->stock_quantity;
                 $source = $offer->source;
-                $purchasePrice = $offer->normalizedPriceByn();
+                $purchasePrice = $ecokaminPurchase !== null && $isSbg($source?->supplier)
+                    ? $ecokaminPurchase
+                    : $offer->normalizedPriceByn();
 
                 return [
                     // A manager-confirmed 1C link is the authoritative offer for
@@ -135,8 +146,9 @@ class ManagerStorefrontProductContext
                 ];
             });
 
-        $warehouseOffers = $product->warehouseStocks->map(function ($stock) use ($retailPrice): array {
+        $warehouseOffers = $product->warehouseStocks->map(function ($stock) use ($retailPrice, $ecokaminPurchase, $isSbg): array {
             $supplier = $stock->supplier;
+            $purchasePrice = $ecokaminPurchase !== null && $isSbg($supplier) ? $ecokaminPurchase : null;
 
             return [
                 'manual_match' => false,
@@ -149,10 +161,10 @@ class ManagerStorefrontProductContext
                 'contact' => $supplier?->contact,
                 'article' => $stock->external_article,
                 'supplier_product_name' => $stock->source_product_name,
-                'purchase_price' => null,
+                'purchase_price' => $purchasePrice,
                 'retail_price' => $retailPrice,
-                'margin' => null,
-                'margin_percent' => null,
+                'margin' => $this->margin($retailPrice, $purchasePrice),
+                'margin_percent' => $this->marginPercent($retailPrice, $purchasePrice),
                 'stock' => $stock->formattedAvailableQuantity(),
                 'stock_quantity' => (float) $stock->available_quantity,
                 'warehouse' => $stock->warehouse_name,

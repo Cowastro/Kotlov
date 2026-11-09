@@ -271,6 +271,26 @@ class ManagerStorefrontExperienceTest extends TestCase
         $this->assertSame(['Склад Москва', 'Сайт производителя ecokamin.ru'], collect($offers->first()['locations'])->pluck('warehouse')->all());
     }
 
+    public function test_ecokamin_purchase_from_sanbusinessgroup_is_retail_less_twenty_percent(): void
+    {
+        [$product, $offer] = $this->makeProductWithSupplierOffer();
+        $brand = Brand::create(['name' => 'ЭкоКамин', 'slug' => 'ecokamin']);
+        $product->update(['brand_id' => $brand->id, 'price' => 2380]);
+        $sbg = Supplier::query()->where('code', 'sanbusinessgroup')->firstOrFail();
+        $offer->forceFill(['supplier_id' => $sbg->id, 'price_byn' => 2380])->save();
+        ProductWarehouseStock::create([
+            'product_id' => $product->id, 'supplier_id' => $offer->supplier_id, 'warehouse_code' => 'ecokamin-moscow', 'warehouse_name' => 'Склад Москва',
+            'external_article' => 'TP700', 'source_product_name' => $product->name, 'total_quantity' => 95, 'available_quantity' => 95,
+            'delivery_days' => 7, 'as_of_date' => now()->toDateString(), 'last_synced_at' => now(),
+        ]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+
+        $first = app(ManagerStorefrontProductContext::class)->offers($product->fresh(), $manager)->first();
+
+        $this->assertSame(1904.0, $first['purchase_price']);
+        $this->assertSame(476.0, $first['margin']);
+    }
+
     public function test_internal_supplier_markup_is_not_rendered_for_guests(): void
     {
         [$product] = $this->makeProductWithSupplierOffer();
