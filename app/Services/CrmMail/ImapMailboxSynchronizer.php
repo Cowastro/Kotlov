@@ -16,6 +16,8 @@ use Throwable;
 
 class ImapMailboxSynchronizer
 {
+    private const BLOCKED_SENDER_DOMAINS = ['.le13heures.fr', '.offres-premium.com'];
+
     public function __construct(
         private readonly LeadMatcher $leadMatcher,
         private readonly CrmMailThreadResolver $threadResolver,
@@ -112,28 +114,35 @@ class ImapMailboxSynchronizer
                 $structure = imap_fetchstructure($imap, $messageNumber);
                 $bodies = $this->extractBodies($imap, $messageNumber, $structure);
                 $attachments = $this->extractAttachments($imap, $messageNumber, $structure, $mailbox->id, (int) $uid);
-                $latestSenderThread = CrmMailThread::query()
-                    ->where('mailbox_id', $mailbox->id)
-                    ->where('participant_email', $fromEmail)
-                    ->orderByDesc('updated_at')
-                    ->orderByDesc('id')
-                    ->first();
-                $isBlockedSender = CrmMailThread::senderIsBlocked($mailbox->id, $fromEmail);
+                $isBlockedDomain = $this->senderDomainIsBlocked($fromEmail);
+                $isBlockedSender = ! $isBlockedDomain && CrmMailThread::senderIsBlocked($mailbox->id, $fromEmail);
+                $hasSpamHeaders = ! $isBlockedDomain && ! $isBlockedSender && ! $inReplyTo
+                    && $this->hasSpamHeaders((string) @imap_fetchheader($imap, $messageNumber), $fromEmail);
 
-                if ($isBlockedSender) {
-                    $counterparty = $latestSenderThread->counterparty;
-                    $contact = $latestSenderThread->contact;
+                if ($isBlockedDomain) {
+                    $counterparty = $contact = null;
+                } elseif ($isBlockedSender) {
+                    $latestSenderThread = CrmMailThread::query()
+                        ->where('mailbox_id', $mailbox->id)
+                        ->where('participant_email', $fromEmail)
+                        ->orderByDesc('updated_at')
+                        ->orderByDesc('id')
+                        ->first();
+                    $counterparty = $latestSenderThread?->counterparty;
+                    $contact = $latestSenderThread?->contact;
                 } else {
                     [$counterparty, $contact] = $this->leadMatcher->resolve(
                         $fromEmail,
                         $fromName,
-                        $mailbox->create_leads,
+                        $mailbox->create_leads && ! $hasSpamHeaders,
                     );
                 }
+                $isAutomaticSpam = $isBlockedDomain || ($hasSpamHeaders && ! $counterparty && ! $contact);
+                $isSpam = $isBlockedSender || $isAutomaticSpam;
 
                 $message = DB::transaction(function () use (
                     $mailbox, $uid, $header, $fromEmail, $fromName, $subject, $messageId,
-                    $inReplyTo, $bodies, $attachments, $counterparty, $contact, $isBlockedSender
+                    $inReplyTo, $bodies, $attachments, $counterparty, $contact, $isSpam, $isAutomaticSpam
                 ): CrmMailMessage {
                     // Serialize persistence for one mailbox and repeat the identity
                     // check under the lock. This closes the race between two manual or
@@ -149,7 +158,7 @@ class ImapMailboxSynchronizer
                     }
 
                     $receivedAt = $this->parseDate($header->date ?? null, $header->udate ?? null);
-                    $thread = $this->threadResolver->resolve(
+                    $thread = $isAutomaticSpam ? null : $this->threadResolver->resolve(
                         $mailbox,
                         $fromEmail,
                         $counterparty?->id,
@@ -157,7 +166,7 @@ class ImapMailboxSynchronizer
                         $subject,
                     );
 
-                    $previousClientThread = $thread ? null : $this->threadResolver->latestForClient(
+                    $previousClientThread = $thread || $isAutomaticSpam ? null : $this->threadResolver->latestForClient(
                         $mailbox,
                         $fromEmail,
                         $counterparty?->id,
@@ -167,7 +176,9 @@ class ImapMailboxSynchronizer
                         $thread = CrmMailThread::withTrashed()->firstOrCreate(
                             [
                                 'mailbox_id' => $mailbox->id,
-                                'thread_key' => hash('sha256', $fromEmail.'|'.mb_strtolower(trim($subject))),
+                                'thread_key' => $isAutomaticSpam
+                                    ? CrmMailThread::AUTOMATIC_SPAM_THREAD_PREFIX.$uid
+                                    : hash('sha256', $fromEmail.'|'.mb_strtolower(trim($subject))),
                             ],
                             [
                                 'crm_counterparty_id' => $counterparty?->id,
@@ -176,7 +187,7 @@ class ImapMailboxSynchronizer
                                 'participant_name' => $fromName,
                                 'participant_email' => $fromEmail,
                                 'assigned_user_id' => $previousClientThread?->assigned_user_id,
-                                'status' => $isBlockedSender
+                                'status' => $isSpam
                                     ? 'spam'
                                     : ($previousClientThread ? 'waiting_manager' : 'new'),
                                 'priority' => $previousClientThread?->priority ?: 'normal',
@@ -204,7 +215,7 @@ class ImapMailboxSynchronizer
                         'text_body' => $bodies['text'],
                         'html_body' => $bodies['html'],
                         'attachments_count' => count($attachments),
-                        'is_read' => $isBlockedSender,
+                        'is_read' => $isSpam,
                         'received_at' => $receivedAt,
                         'metadata' => [
                             'size' => $header->Size ?? null,
@@ -220,16 +231,16 @@ class ImapMailboxSynchronizer
                         'participant_email' => $fromEmail,
                         'subject' => $subject,
                         'messages_count' => $thread->messages()->count(),
-                        'unread_count' => $isBlockedSender ? 0 : $thread->unread_count + 1,
+                        'unread_count' => $isSpam ? 0 : $thread->unread_count + 1,
                         'last_message_at' => $receivedAt,
-                        'status' => $isBlockedSender
+                        'status' => $isSpam
                             ? 'spam'
                             : ($wasTrashed || in_array($thread->status, ['closed', 'waiting_customer'], true)
                                 ? 'waiting_manager'
                                 : $thread->status),
                     ])->save();
 
-                    if (! $isBlockedSender) {
+                    if (! $isSpam) {
                         $thread->markCustomerReplied();
                     }
 
@@ -246,7 +257,7 @@ class ImapMailboxSynchronizer
                 }
 
                 // The shared Telegram chat shows the letter text: personal mailboxes stay private.
-                if (! $isBlockedSender && ! $mailbox->isPersonal()) {
+                if (! $isSpam && ! $mailbox->isPersonal()) {
                     $this->telegramNotifier->send($message);
                 }
 
@@ -275,6 +286,29 @@ class ImapMailboxSynchronizer
         }
 
         return compact('imported', 'skipped');
+    }
+
+    private function senderDomainIsBlocked(string $fromEmail): bool
+    {
+        return Str::endsWith('.'.Str::afterLast($fromEmail, '@'), self::BLOCKED_SENDER_DOMAINS);
+    }
+
+    private function hasSpamHeaders(string $headers, string $fromEmail): bool
+    {
+        $headers = preg_replace('/\r?\n[ \t]+/', ' ', $headers) ?? $headers;
+        if (preg_match('/^References:[ \t]*\S/im', $headers)) {
+            return false;
+        }
+
+        if (preg_match('/^X-Spam-(?:Flag|Status):[ \t]*yes\b/im', $headers)) {
+            return true;
+        }
+
+        $localPart = Str::before($fromEmail, '@');
+
+        return preg_match('/no[-_.]?reply|do[-_.]?not[-_.]?reply/i', $localPart)
+            && preg_match('/^List-Unsubscribe:[ \t]*\S/im', $headers)
+            && preg_match('/^(?:List-Unsubscribe-Post:[ \t]*List-Unsubscribe=One-Click\b|Precedence:[ \t]*(?:bulk|list)\b)/im', $headers);
     }
 
     private function existingMessageUnderLock(

@@ -104,4 +104,30 @@ class ImapMailboxSynchronizerEncodingTest extends TestCase
         $this->travelTo($receivedAt);
         $this->assertTrue($receivedAt->equalTo($parse->invoke($service, '0300-11-18 17:32:41', 0)));
     }
+
+    public function test_spam_domains_cover_subdomains_and_preserve_unrelated_senders(): void
+    {
+        $service = (new ReflectionClass(ImapMailboxSynchronizer::class))->newInstanceWithoutConstructor();
+        $check = new \ReflectionMethod($service, 'senderDomainIsBlocked');
+
+        $this->assertTrue($check->invoke($service, 'news@le13heures.fr'));
+        $this->assertTrue($check->invoke($service, 'another@bounces.le13heures.fr'));
+        $this->assertTrue($check->invoke($service, 'campaign@offres-premium.com'));
+        $this->assertFalse($check->invoke($service, 'sales@notle13heures.fr'));
+        $this->assertFalse($check->invoke($service, 'sales@company.fr'));
+    }
+
+    public function test_spam_headers_distinguish_newsletters_from_transactional_mail(): void
+    {
+        $service = (new ReflectionClass(ImapMailboxSynchronizer::class))->newInstanceWithoutConstructor();
+        $check = new \ReflectionMethod($service, 'hasSpamHeaders');
+        $newsletter = "List-Unsubscribe:\r\n <https://example.com/unsubscribe>\r\nList-Unsubscribe-Post: List-Unsubscribe=One-Click";
+
+        $this->assertTrue($check->invoke($service, $newsletter, 'blnoreply@example.com'));
+        $this->assertFalse($check->invoke($service, $newsletter, 'sales@example.com'));
+        $this->assertFalse($check->invoke($service, "List-Unsubscribe: <mailto:stop@example.com>", 'noreply@example.com'));
+        $this->assertTrue($check->invoke($service, "X-Spam-Status: Yes, score=9.1", 'sales@example.com'));
+        $this->assertFalse($check->invoke($service, "X-Spam-Flag: NO", 'sales@example.com'));
+        $this->assertFalse($check->invoke($service, $newsletter."\r\nReferences: <order@example.com>", 'noreply@example.com'));
+    }
 }
