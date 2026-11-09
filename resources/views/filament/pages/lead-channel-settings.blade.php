@@ -6,7 +6,7 @@
     @foreach (\App\Models\LeadChannel::LABELS as $provider => $label)
         @php($channel = \App\Models\LeadChannel::settings($provider))
         <x-filament::section>
-            <x-slot name="heading">{{ $label }}</x-slot>
+            <x-slot name="heading">{{ $provider === 'viber' ? 'Viber Bot' : $label }}</x-slot>
             <div class="grid gap-3">
                 <div class="flex flex-wrap items-center gap-3">
                     <x-filament::badge :color="$channel->acceptsMessages() ? 'success' : 'gray'">
@@ -17,6 +17,9 @@
                     @endif
                 </div>
                 <p class="text-sm text-gray-600 dark:text-gray-300">
+                    @if ($provider === 'viber')
+                        Для подключения нужен бот Viber. Сообщения в чат по номеру телефона идут на аккаунт Viber и требуют отдельной интеграции.
+                    @endif
                     {{ $channel->usesMeta() ? 'Укажите этот адрес в настройках вебхука Meta и подпишитесь на события messages.' : 'После сохранения настроек зарегистрируйте вебхук бота.' }}
                 </p>
                 @if ($channel->acceptsMessages())

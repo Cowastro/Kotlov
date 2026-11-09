@@ -18,7 +18,13 @@ class LeadChannelApi
             ],
             'viber' => [
                 'https://chatapi.viber.com/pa/send_message', ['X-Viber-Auth-Token' => $channel->access_token],
-                ['receiver' => $recipient, 'type' => 'text', 'text' => $body], 'message_token',
+                [
+                    'receiver' => $recipient,
+                    'type' => 'text',
+                    'text' => $body,
+                    'sender' => ['name' => 'KOTLOV'],
+                ],
+                'message_token',
             ],
             'whatsapp' => [
                 $this->metaUrl($channel, 'graph.facebook.com'), ['Authorization' => 'Bearer '.$channel->access_token],

@@ -54,12 +54,13 @@ class LeadChannelSettings extends Page
                             'instagram' => 'ID профессионального аккаунта',
                             default => 'URI бота Viber',
                         })
+                        ->helperText($channel->provider === 'viber' ? 'Возьмите URI из ссылки бота после chatURI=. Например, kotlov_bot.' : null)
                         ->visible($channel->provider !== 'telegram')
                         ->maxLength(100)
                         ->regex($channel->usesMeta() ? '/^\d+$/D' : '/^[A-Za-z0-9_.-]+$/D'),
                     TextInput::make('api_version')->label('Версия Graph API')
                         ->visible($channel->usesMeta())->placeholder('v25.0')->regex('/^v\d{1,3}\.\d{1,2}$/D'),
-                    TextInput::make('access_token')->label('Токен доступа')->password()->maxLength(4096)
+                    TextInput::make('access_token')->label($channel->provider === 'viber' ? 'Ключ приложения бота Viber' : 'Токен доступа')->password()->maxLength(4096)
                         ->regex($channel->provider === 'telegram' ? '/^\d+:[A-Za-z0-9_-]+$/D' : '/^[!-~]+$/D')
                         ->helperText($channel->access_token ? 'Токен сохранён. Заполните для замены.' : null),
                     TextInput::make('webhook_secret')->label($channel->usesMeta() ? 'App Secret' : 'Секрет вебхука')
@@ -70,7 +71,9 @@ class LeadChannelSettings extends Page
                         ->password()->maxLength(256)->regex('/^[A-Za-z0-9_-]{16,256}$/D')
                         ->helperText($channel->verify_token ? 'Токен сохранён. Заполните для замены.' : 'Придумайте токен и укажите его также в настройках Meta.'),
                     TextInput::make('public_url')->label('Ссылка «Написать» для сайта')->maxLength(500)
-                        ->helperText('Оставьте пустой, если канал предназначен только для CRM.')
+                        ->helperText($channel->provider === 'viber'
+                            ? 'Укажите ссылку бота, например viber://pa?chatURI=kotlov_bot. Пустое поле оставит канал только в CRM.'
+                            : 'Оставьте пустой, если канал предназначен только для CRM.')
                         ->rules([fn () => function (string $attribute, mixed $value, \Closure $fail) use ($channel): void {
                             if (! is_string($value) || ! $this->validPublicUrl($channel->provider, $value)) {
                                 $fail('Укажите ссылку на чат в выбранном мессенджере.');

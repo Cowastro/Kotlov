@@ -230,6 +230,7 @@ class LeadInboxTest extends TestCase
         Http::assertSent(fn (HttpRequest $request): bool => $request->url() === 'https://graph.instagram.com/v25.0/888/messages'
             && $request['recipient']['id'] === '44');
         Http::assertSent(fn (HttpRequest $request): bool => $request->url() === 'https://chatapi.viber.com/pa/send_message'
+            && data_get($request->data(), 'sender.name') === 'KOTLOV'
             && $request['receiver'] === 'A+/=');
 
         $this->assertNotNull(LeadChannel::settings('viber')->lastIncomingAt());
