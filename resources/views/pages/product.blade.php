@@ -248,6 +248,9 @@
                                         : $product->publicAvailabilityLabel();
                                     $displayAvailabilityStatus = $b2bOffer ? $availabilityStatus : $product->publicAvailabilityStatus();
                                     $displayPrice = $b2bComparison['wholesale_price'] ?? (float) $product->price;
+                                    $installmentMonthlyLabel = $displayPrice > 0
+                                        ? '≈ '.number_format($displayPrice / 6, 2, ',', ' ').' BYN/мес.'
+                                        : null;
                                     $onlineDiscountPercent = (float) config('shop.online_order_discount.percent', 3);
                                     $onlinePrice = ! $b2bOffer && $canBuy && $product->qualifiesForOnlineOrderDiscount() && (float) $product->price > 0
                                         ? round((float) $product->price * (1 - $onlineDiscountPercent / 100), 2)
@@ -533,8 +536,8 @@
                                                     data-qty-input=".product-main-qty"
                                                     data-after-add-url="{{ route('checkout', ['payment_type' => 'installment_6']) }}">
                                                     <span>В рассрочку до 6 месяцев</span>
-                                                    @if ($displayPrice > 0)
-                                                        <small>{{ number_format($displayPrice, 2, '.', ' ') }} BYN · без онлайн-скидки</small>
+                                                    @if ($installmentMonthlyLabel)
+                                                        <small>{{ $installmentMonthlyLabel }}</small>
                                                     @endif
                                                 </a>
                                             @endif
@@ -758,13 +761,15 @@
                                 class="mobile-sticky-installment d-flex btn-add-to-cart"
                                 data-product-id="{{ $product->id }}"
                                 data-after-add-url="{{ route('checkout', ['payment_type' => 'installment_6']) }}"
-                                aria-label="Купить в рассрочку до 6 месяцев">
-                                <span class="d-xl-none">В рассрочку</span>
-                                <small class="d-xl-none">до 6 мес.</small>
+                                aria-label="Купить в рассрочку до 6 месяцев{{ $installmentMonthlyLabel ? ', '.$installmentMonthlyLabel : '' }}">
+                                <span class="d-xl-none">Рассрочка до 6 мес.</span>
+                                @if ($installmentMonthlyLabel)
+                                    <small class="d-xl-none">{{ $installmentMonthlyLabel }}</small>
+                                @endif
                                 <span class="sticky-desktop-action-copy d-none d-xl-flex">
                                     <span>В рассрочку до 6 месяцев</span>
-                                    @if ($displayPrice > 0)
-                                        <small>{{ number_format($displayPrice, 2, '.', ' ') }} BYN</small>
+                                    @if ($installmentMonthlyLabel)
+                                        <small>{{ $installmentMonthlyLabel }}</small>
                                     @endif
                                 </span>
                             </a>
