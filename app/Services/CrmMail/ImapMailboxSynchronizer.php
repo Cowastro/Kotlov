@@ -148,7 +148,7 @@ class ImapMailboxSynchronizer
                         return $existingMessage;
                     }
 
-                    $receivedAt = $this->parseDate($header->date ?? null);
+                    $receivedAt = $this->parseDate($header->date ?? null, $header->udate ?? null);
                     $thread = $this->threadResolver->resolve(
                         $mailbox,
                         $fromEmail,
@@ -338,22 +338,33 @@ class ImapMailboxSynchronizer
         return filled($value) ? trim($value, " <>\t\n\r\0\x0B") : null;
     }
 
-    private function parseDate(?string $value): Carbon
+    private function parseDate(?string $value, ?int $imapTimestamp = null): Carbon
     {
-        return $this->tryParseDate($value) ?? now()->utc();
+        return $this->tryParseDate($value, $imapTimestamp) ?? now()->utc();
     }
 
-    private function tryParseDate(?string $value): ?Carbon
+    private function tryParseDate(?string $value, ?int $imapTimestamp): ?Carbon
     {
-        if (blank($value)) {
-            return null;
+        if (filled($value)) {
+            try {
+                $date = Carbon::parse($value)->utc();
+                if ($this->isStorableTimestamp($date->timestamp)) {
+                    return $date;
+                }
+            } catch (Throwable) {
+                // Invalid sender dates can still have a usable IMAP timestamp.
+            }
         }
 
-        try {
-            return Carbon::parse($value)->utc();
-        } catch (Throwable) {
-            return null;
-        }
+        return $imapTimestamp !== null && $this->isStorableTimestamp($imapTimestamp)
+            ? Carbon::createFromTimestampUTC($imapTimestamp)
+            : null;
+    }
+
+    private function isStorableTimestamp(int $timestamp): bool
+    {
+        // The CRM stores these dates in MySQL TIMESTAMP columns.
+        return $timestamp >= 1 && $timestamp <= 2147483647;
     }
 
     private function refreshReceivedAt($imap, CrmMailMessage $message, int $uid): void
@@ -368,7 +379,7 @@ class ImapMailboxSynchronizer
             return;
         }
 
-        $receivedAt = $this->tryParseDate($header->date ?? null);
+        $receivedAt = $this->tryParseDate($header->date ?? null, $header->udate ?? null);
         if (! $receivedAt || $message->received_at?->equalTo($receivedAt)) {
             return;
         }
