@@ -19,7 +19,9 @@ Schedule::command('integration:scan-issues')
 // projected into the regular manager workflow. Capture stays inert until
 // explicitly enabled.
 Schedule::command('deal:pull-orders')
-    ->everyTwoMinutes()
+    // Offset from the supplier auto-publish task so both do not open a DB
+    // connection in the same second on every even minute.
+    ->cron('1-59/2 * * * *')
     ->when(fn (): bool => (bool) config('services.deal_by.orders_capture_enabled'))
     ->withoutOverlapping(5)
     ->runInBackground()
@@ -32,13 +34,13 @@ Schedule::command('integration:prune-exchange-files')
     ->appendOutputTo(storage_path('logs/integration-exchange-cleanup.log'));
 
 Schedule::command('telephony:sync-a1')
-    ->everyFiveMinutes()
+    ->cron('2-59/5 * * * *')
     ->withoutOverlapping(10)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/a1-telephony-sync.log'));
 
 Schedule::command('crm:mail-sync')
-    ->everyFiveMinutes()
+    ->cron('4-59/5 * * * *')
     ->withoutOverlapping(10)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/crm-mail-sync.log'));
@@ -67,7 +69,7 @@ Schedule::command('orders:auto-publish-supplier-requests --apply')
 // Рыночные цены: команда сама выбирает только активные, явно разрешённые и
 // наступившие по расписанию источники. Без адаптера или разрешения запросов нет.
 Schedule::command('market:collect-prices')
-    ->everyFifteenMinutes()
+    ->cron('8,23,38,53 * * * *')
     ->withoutOverlapping(20)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/market-price-collection.log'));
@@ -155,21 +157,21 @@ Schedule::command('supplier:sync-maitek-group --apply --sync-retail-prices')
 // Новые карточки создаются только ручным запуском с --create-new.
 // Чистый берег: the morning xls is uploaded on the supplier page; the sync follows within 10 minutes.
 Schedule::command('supplier:sync-chisty-bereg --apply --if-new')
-    ->everyTenMinutes()
+    ->cron('6,16,26,36,46,56 * * * *')
     ->withoutOverlapping(30)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-sync.log'));
 
 // New heating offers of Чистый берег become cards (bereg.by photos and specs), a batch at a time.
 Schedule::command('supplier:chisty-bereg-create --limit=120 --apply')
-    ->everyFifteenMinutes()
+    ->cron('10,25,40,55 * * * *')
     ->withoutOverlapping(60)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-create.log'));
 
 // Cards made before the specs fix get the bereg.by specs; each card is tried once, so the run soon has nothing to do.
 Schedule::command('supplier:chisty-bereg-create --refill-specs --limit=150 --apply')
-    ->everyFifteenMinutes()
+    ->cron('12,27,42,57 * * * *')
     ->withoutOverlapping(60)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-refill-specs.log'));
@@ -177,7 +179,7 @@ Schedule::command('supplier:chisty-bereg-create --refill-specs --limit=150 --app
 // Hidden Чистый берег cards get photos from a shop page naming the item; each card is tried once.
 // One light AI search a card, within the daily limit of background searches (services.ai.market_research_daily_background_limit).
 Schedule::command('supplier:chisty-bereg-photos --limit=12 --apply')
-    ->hourly()
+    ->cron('14 * * * *')
     ->withoutOverlapping(60)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-photos.log'));
@@ -249,7 +251,7 @@ Schedule::command('deal:sync-brand-prices --supplier=prometall --apply')
 // Cards whose Чистый берег РРЦ equals опт get the market retail price (web research, a few cards at a time).
 // Each card is researched again after 90 days; every two hours keeps it at ~120 searches a day at most.
 Schedule::command('supplier:chisty-bereg-market-prices --limit=10 --recheck-days=90 --apply')
-    ->everyTwoHours()
+    ->cron('17 */2 * * *')
     ->withoutOverlapping(120)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/chisty-bereg-market.log'));
@@ -431,7 +433,7 @@ Schedule::command('catalog:hide-cards-awaiting-photos --publish --apply')
 
 // Cards a manager created from a supplier offer in a КП: AI description.
 Schedule::command('catalog:finish-offer-cards')
-    ->everyFifteenMinutes()
+    ->cron('3,18,33,48 * * * *')
     ->withoutOverlapping(30)
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/offer-cards.log'));
