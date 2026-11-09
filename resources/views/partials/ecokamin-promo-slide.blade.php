@@ -11,50 +11,55 @@
     $ecoEnds = \Carbon\CarbonImmutable::parse(\App\Console\Commands\ApplyEcokaminOctoberSaleCommand::ENDS_AT, 'Europe/Minsk');
     $ecoDelta = ($ecokaminPromoVariant ?? 'all') === 'delta';
     $ecoFireplaces = ($ecokaminPromoVariant ?? 'all') === 'fireplaces';
+    // A sale product shown as a cut-out with fire when the banner art has one (public/img/banners/ecokamin-sale/{slug}.webp).
+    $ecoArt = fn ($product): ?string => is_file(public_path('img/banners/ecokamin-sale/'.$product->slug.'.webp'))
+        ? asset('img/banners/ecokamin-sale/'.$product->slug.'.webp') : null;
 @endphp
 <div class="slider-wrap slideshow-wrap rounded-20 overflow-hidden eco-promo-slide">
-    <div class="eco-promo-slide__glow" aria-hidden="true"></div>
+    <span class="eco-promo-slide__word" aria-hidden="true">−{{ $ecokaminPromoMaxDiscount }}%</span>
     <div class="eco-promo-slide__layout">
         <div class="eco-promo-slide__copy">
-            <span class="eco-promo-slide__eyebrow">Акция производителя ЭкоКамин</span>
+            <div class="eco-promo-slide__mast"><span>ЭкоКамин</span><i></i><span>Акция до {{ $ecoEnds->format('d.m') }}</span></div>
             @if($ecoDelta)
-            <h2>Каминные топки<br><span>до −{{ $ecokaminPromoMaxDiscount }}%</span></h2>
+            <span class="eco-promo-slide__kicker">Каминные топки</span>
+            @elseif($ecoFireplaces)
+            <span class="eco-promo-slide__kicker">Камины и печи-камины</span>
+            @else
+            <span class="eco-promo-slide__kicker">Камины и топки</span>
+            @endif
+            <h2 class="eco-promo-slide__title"><small>до</small>−{{ $ecokaminPromoMaxDiscount }}%</h2>
+            @if($ecoDelta)
             <p>Дельта и Вега −20%, Альфа −25% с белым шамотом и −15% с чёрным, чугунная Primo 700 — по акционным ценам производителя.</p>
             @elseif($ecoFireplaces)
-            <h2>Камины и печи-камины<br><span>до −{{ $ecokaminPromoMaxDiscount }}%</span></h2>
-            <p>Угловые камины Прага −30%; Мадрид, Рио, Крит, Эклипс, Родос −20%; Мюнхен, Три стекла и печи-камины Бавария −15%. Таких цен больше не будет.</p>
+            <p>Угловые камины Прага −30%; Мадрид, Рио, Крит, Эклипс, Родос −20%; Мюнхен, Три стекла и печи-камины Бавария −15%.</p>
             @else
-            <h2>Камины и топки<br><span>до −{{ $ecokaminPromoMaxDiscount }}%</span></h2>
-            <p>Угловые камины Прага −30%, топки Дельта, Вега и Альфа, камины Мадрид, Рио, Родос, Мюнхен и печи-камины Бавария по акционным ценам производителя.</p>
+            <p>Угловые камины Прага −30%, топки Дельта, Вега и Альфа, камины Мадрид, Рио, Родос, Мюнхен и печи-камины Бавария по ценам производителя.</p>
             @endif
             <div class="eco-promo-slide__timer" data-eco-countdown="{{ $ecoEnds->toIso8601String() }}" aria-label="До конца акции">
                 <span><b data-unit="d">–</b><small>дней</small></span>
                 <span><b data-unit="h">–</b><small>часов</small></span>
                 <span><b data-unit="m">–</b><small>минут</small></span>
-                <em>до {{ $ecoEnds->format('d.m') }}</em>
             </div>
             <div class="eco-promo-slide__actions">
                 @if($ecoDelta)
-                <a href="{{ route('promotions.ecokamin') }}#topki" class="tf-btn animate-btn eco-promo-slide__cta">Все топки по акции</a>
+                <a href="{{ route('promotions.ecokamin') }}#topki" class="tf-btn btn-white">Все топки по акции</a>
                 <a href="{{ route('promotions.ecokamin') }}#kaminy" class="eco-promo-slide__more">Камины по акции</a>
                 @elseif($ecoFireplaces)
-                <a href="{{ route('promotions.ecokamin') }}#kaminy" class="tf-btn animate-btn eco-promo-slide__cta">Все камины по акции</a>
-                <a href="{{ route('promotions.ecokamin') }}#bavaria" class="eco-promo-slide__more">Печи-камины Бавария −15%</a>
+                <a href="{{ route('promotions.ecokamin') }}#kaminy" class="tf-btn btn-white">Все камины по акции</a>
+                <a href="{{ route('promotions.ecokamin') }}#bavaria" class="eco-promo-slide__more">Бавария −15%</a>
                 @else
-                <a href="{{ route('promotions.ecokamin') }}" class="tf-btn animate-btn eco-promo-slide__cta">Все товары акции</a>
+                <a href="{{ route('promotions.ecokamin') }}" class="tf-btn btn-white">Все товары акции</a>
                 <a href="{{ route('promotions.ecokamin') }}#topki" class="eco-promo-slide__more">Топки до −25%</a>
                 @endif
             </div>
         </div>
         <div class="eco-promo-slide__products" aria-label="{{ $ecoDelta ? 'Каминные топки по акции' : ($ecoFireplaces ? 'Камины по акции' : 'Хиты акции ЭкоКамин') }}">
             @foreach($ecokaminPromoHits->take(3) as $hit)
-            <a href="/{{ $hit->category->slug }}/{{ $hit->slug }}" class="eco-promo-slide__product">
-                <span class="eco-promo-slide__offer">−{{ $hit->discount_percent }}%</span>
-                <span class="eco-promo-slide__media"><img loading="eager" decoding="async" src="{{ $hit->image_url }}" alt="{{ $hit->name }}"></span>
-                <span class="eco-promo-slide__name">
-                    <strong>{{ \Illuminate\Support\Str::limit($ecoShort($hit), 32) }}</strong>
-                    <span class="eco-promo-slide__price"><del>{{ number_format((float) $hit->price_old, 0, '.', ' ') }}</del>{{ number_format((float) $hit->price, 0, '.', ' ') }} BYN</span>
-                </span>
+            @php($ecoHitArt = $ecoArt($hit))
+            <a href="/{{ $hit->category->slug }}/{{ $hit->slug }}" class="eco-promo-slide__product{{ $ecoHitArt ? '' : ' eco-promo-slide__product--photo' }}">
+                <span class="eco-promo-slide__media"><img loading="eager" decoding="async" src="{{ $ecoHitArt ?: $hit->image_url }}" alt="{{ $hit->name }}"><span class="eco-promo-slide__offer">−{{ $hit->discount_percent }}%</span></span>
+                <span class="eco-promo-slide__name">{{ \Illuminate\Support\Str::limit($ecoShort($hit), 30) }}</span>
+                <span class="eco-promo-slide__price"><del>{{ number_format((float) $hit->price_old, 0, '.', ' ') }}</del>{{ number_format((float) $hit->price, 0, '.', ' ') }} BYN</span>
             </a>
             @endforeach
         </div>
@@ -62,41 +67,43 @@
 </div>
 @once
 @push('styles')
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&text=ABCDEFGHIJKLMNOPQRSTUVWXYZ%D0%90%D0%91%D0%92%D0%93%D0%94%D0%95%D0%81%D0%96%D0%97%D0%98%D0%99%D0%9A%D0%9B%D0%9C%D0%9D%D0%9E%D0%9F%D0%A0%D0%A1%D0%A2%D0%A3%D0%A4%D0%A5%D0%A6%D0%A7%D0%A8%D0%A9%D0%AA%D0%AB%D0%AC%D0%AD%D0%AE%D0%AF0123456789%25%E2%88%92-%E2%80%93.%2C&display=swap" rel="stylesheet">
 <style>
-    .eco-promo-slide{position:relative;width:100%;height:560px;background:radial-gradient(circle at 74% 62%,#5a2412 0%,#2a120b 34%,#140b08 62%,#0d0807 100%);color:#fff;isolation:isolate}
-    .eco-promo-slide__glow{position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 72% 100%,rgba(255,122,41,.42),transparent 46%),radial-gradient(circle at 92% 8%,rgba(232,70,47,.22),transparent 32%),linear-gradient(90deg,rgba(13,8,7,.9),rgba(13,8,7,.2) 55%,transparent);animation:ecoGlow 6s ease-in-out infinite alternate}
-    .eco-promo-slide__glow:after{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(90deg,#000,transparent 70%);content:""}
-    @keyframes ecoGlow{from{opacity:.82}to{opacity:1}}
-    .eco-promo-slide__layout{position:relative;display:grid;grid-template-columns:minmax(0,.86fr) minmax(600px,1.14fr);gap:clamp(24px,2.4vw,42px);align-items:center;height:100%;padding:42px clamp(38px,3.5vw,62px);box-sizing:border-box}
+    .eco-promo-slide{position:relative;width:100%;height:560px;color:#f6efe7;isolation:isolate;background:radial-gradient(ellipse 50% 60% at 74% 72%,rgba(232,104,40,.30),rgba(232,104,40,0) 70%),radial-gradient(ellipse 80% 90% at 70% 100%,rgba(90,40,20,.35),transparent 70%),linear-gradient(115deg,#0a0807 0%,#120d0b 42%,#1b130f 100%)}
+    .eco-promo-slide:after{position:absolute;inset:0;z-index:3;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(214,172,120,.18),inset 0 0 120px rgba(0,0,0,.55);border-radius:inherit;content:""}
+    .eco-promo-slide__word{position:absolute;right:-1%;top:-6%;z-index:0;font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:700;font-size:clamp(170px,21vw,320px);line-height:1;color:transparent;-webkit-text-stroke:1px rgba(214,172,120,.14);user-select:none;white-space:nowrap}
+    .eco-promo-slide__layout{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:clamp(16px,2vw,36px);align-items:center;height:100%;padding:34px clamp(28px,3.4vw,62px) 26px clamp(32px,4.6vw,80px);box-sizing:border-box}
     .eco-promo-slide__layout>*{min-width:0}
-    .eco-promo-slide__eyebrow{display:inline-flex;align-items:center;gap:9px;margin-bottom:16px;padding:7px 12px;border:1px solid rgba(255,140,90,.4);border-radius:999px;background:rgba(232,70,47,.14);color:#ffa078;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
-    .eco-promo-slide__eyebrow:before{width:18px;height:2px;background:currentColor;content:""}
-    .eco-promo-slide__copy h2{margin:0 0 14px;color:#fff;font-size:clamp(42px,3.5vw,62px);line-height:1;letter-spacing:-.045em;text-shadow:0 12px 36px rgba(0,0,0,.3)}
-    .eco-promo-slide__copy h2 span{background:linear-gradient(90deg,#ffb36b,#ff5a36);-webkit-background-clip:text;background-clip:text;color:transparent}
-    .eco-promo-slide__copy p{max-width:560px;margin:0 0 20px;color:rgba(255,255,255,.74);font-size:16px;line-height:1.48}
-    .eco-promo-slide__timer{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:24px}
-    .eco-promo-slide__timer span{display:flex;flex-direction:column;align-items:center;min-width:62px;padding:9px 8px 7px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.06);backdrop-filter:blur(8px)}
-    .eco-promo-slide__timer b{font-size:24px;line-height:1;font-variant-numeric:tabular-nums}
-    .eco-promo-slide__timer small{margin-top:4px;color:rgba(255,255,255,.6);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
-    .eco-promo-slide__timer em{margin-left:6px;color:#ffa078;font-size:13px;font-style:normal;font-weight:600}
-    .eco-promo-slide__actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-    .eco-promo-slide__cta{background:linear-gradient(135deg,#ff6a3d,#e8462f)!important;border-color:transparent!important;color:#fff!important;box-shadow:0 14px 34px rgba(232,70,47,.35)}
-    .eco-promo-slide__more{padding:12px 16px;color:#fff;text-decoration:underline;text-underline-offset:4px}
-    .eco-promo-slide__products{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;height:380px;padding:19px;border:1px solid rgba(255,255,255,.12);border-radius:30px;background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 32px 80px rgba(0,0,0,.32);box-sizing:border-box;backdrop-filter:blur(14px)}
-    .eco-promo-slide__products:before{position:absolute;z-index:-1;right:6%;bottom:0;width:80%;height:70%;border-radius:50%;background:rgba(255,106,61,.3);filter:blur(80px);content:""}
-    .eco-promo-slide__product{position:relative;display:flex;height:342px;padding:44px 10px 68px;overflow:hidden;border-radius:20px;background:linear-gradient(160deg,#fff 0%,#f3efeb 100%);box-shadow:0 18px 38px rgba(0,0,0,.3);box-sizing:border-box;transition:transform .25s ease,box-shadow .25s ease}
-    .eco-promo-slide__product:hover{transform:translateY(-6px);box-shadow:0 26px 52px rgba(0,0,0,.4)}
-    .eco-promo-slide__media{display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:hidden;border-radius:12px;background:#fff}
-    .eco-promo-slide__media img{width:100%;height:100%;object-fit:contain}
-    .eco-promo-slide__offer{position:absolute;top:13px;left:13px;z-index:2;padding:7px 11px;border-radius:999px;background:linear-gradient(135deg,#ff6a3d,#e8462f);color:#fff;font-size:12px;font-weight:800;box-shadow:0 8px 20px rgba(232,70,47,.32)}
-    .eco-promo-slide__name{position:absolute;right:8px;bottom:11px;left:8px;color:#17191d;font-size:12px;line-height:1.18;text-align:center}
-    .eco-promo-slide__name strong{display:block;margin-bottom:5px;font-weight:700}
-    .eco-promo-slide__price{display:flex;align-items:baseline;justify-content:center;gap:6px;color:#e8462f;font-size:14px;font-weight:800;white-space:nowrap}
-    .eco-promo-slide__price del{color:#9a9ea4;font-size:11px;font-weight:500}
-    @media(max-width:1439px){.eco-promo-slide{height:510px}.eco-promo-slide__layout{grid-template-columns:minmax(0,.9fr) minmax(500px,1.1fr);padding:34px 38px}.eco-promo-slide__copy h2{font-size:48px}.eco-promo-slide__copy p{font-size:14px}.eco-promo-slide__products{height:330px;padding:14px;gap:10px}.eco-promo-slide__product{height:302px;padding:40px 8px 62px}}
-    @media(max-width:991px){.eco-promo-slide{height:500px}.eco-promo-slide__layout{grid-template-columns:minmax(0,1fr) minmax(340px,.95fr);gap:20px;padding:30px}.eco-promo-slide__copy h2{font-size:40px}.eco-promo-slide__copy p{display:none}.eco-promo-slide__products{grid-template-columns:repeat(2,minmax(0,1fr));height:260px;padding:10px;gap:8px;border-radius:22px}.eco-promo-slide__product{height:240px;padding:34px 6px 54px;border-radius:15px}.eco-promo-slide__product:nth-child(3){display:none}}
-    @media(max-width:767px){.eco-promo-slide{height:550px}.eco-promo-slide__layout{display:flex;flex-direction:column;align-items:stretch;gap:14px;padding:26px 20px 24px;overflow:hidden}.eco-promo-slide__copy h2{font-size:36px}.eco-promo-slide__timer{margin-bottom:14px}.eco-promo-slide__timer span{min-width:52px;padding:7px 6px 5px}.eco-promo-slide__timer b{font-size:19px}.eco-promo-slide__products{flex:1;grid-template-columns:repeat(3,minmax(0,1fr));height:auto;min-height:0;padding:8px;gap:6px;border-radius:18px}.eco-promo-slide__product,.eco-promo-slide__product:nth-child(3){display:flex;flex-direction:column;height:100%;min-height:150px;padding:28px 5px 8px;border-radius:13px}.eco-promo-slide__product:hover{transform:none}.eco-promo-slide__media{flex:1;min-height:0}.eco-promo-slide__offer{top:5px;left:5px;padding:3px 7px;font-size:10px}.eco-promo-slide__name{position:static;margin-top:6px;font-size:10px}.eco-promo-slide__name strong{display:-webkit-box;min-height:2.36em;margin-bottom:3px;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical}.eco-promo-slide__price{flex-direction:column;align-items:center;gap:0;font-size:11px}.eco-promo-slide__price del{font-size:9px}}
-    @media(max-width:575px){.eco-promo-slide{height:500px}.eco-promo-slide__layout{gap:10px;padding:18px 14px 18px}.eco-promo-slide__eyebrow{margin-bottom:8px;padding:5px 9px;font-size:9px}.eco-promo-slide__copy h2{margin-bottom:10px;font-size:30px}.eco-promo-slide__timer em{display:none}.eco-promo-slide__cta{min-height:38px;padding:8px 14px;font-size:12px}.eco-promo-slide__more{padding:8px 6px;font-size:12px}}
+    .eco-promo-slide__word,.eco-promo-slide__title,.eco-promo-slide__timer b,.eco-promo-slide__offer,.eco-promo-slide__price{font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum" 1}
+    .eco-promo-slide__mast{display:flex;align-items:center;gap:12px;margin-bottom:18px;color:#d6ac78;font-size:11px;font-weight:600;letter-spacing:.32em;text-transform:uppercase;white-space:nowrap}
+    .eco-promo-slide__mast i{display:block;width:44px;height:1px;background:rgba(214,172,120,.6)}
+    .eco-promo-slide__kicker{display:block;margin-bottom:2px;color:rgba(246,239,231,.72);font-size:13px;letter-spacing:.18em;text-transform:uppercase}
+    .eco-promo-slide__title{display:flex;align-items:baseline;gap:12px;margin:0 0 10px;font-family:'Playfair Display',Georgia,'Times New Roman',serif;font-weight:700;font-size:clamp(70px,8vw,128px);line-height:.95;letter-spacing:.01em;background:linear-gradient(180deg,#fff6e8 0%,#f0cf9f 55%,#c98b4c 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .eco-promo-slide__title small{font-family:Manrope,Arial,sans-serif;font-size:.2em;font-weight:600;letter-spacing:.2em;text-transform:uppercase}
+    .eco-promo-slide__copy p{max-width:470px;margin:0 0 18px;color:rgba(246,239,231,.74);font-size:14px;line-height:1.55}
+    .eco-promo-slide__timer{display:flex;align-items:stretch;width:max-content;margin-bottom:22px;border:1px solid rgba(214,172,120,.3);border-radius:14px}
+    .eco-promo-slide__timer span{display:flex;flex-direction:column;align-items:center;min-width:70px;padding:8px 10px 6px}
+    .eco-promo-slide__timer span+span{border-left:1px solid rgba(214,172,120,.22)}
+    .eco-promo-slide__timer b{font-family:'Playfair Display',Georgia,serif;font-size:28px;line-height:1;color:#f0cf9f;font-variant-numeric:tabular-nums}
+    .eco-promo-slide__timer small{margin-top:4px;color:rgba(246,239,231,.55);font-size:10px;text-transform:uppercase;letter-spacing:.12em}
+    .eco-promo-slide__actions{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px}
+    .eco-promo-slide__more{color:#ecd9c2;font-size:14px;text-decoration:underline;text-underline-offset:4px}
+    .eco-promo-slide__more:hover{color:#f0b67a}
+    .eco-promo-slide__products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:clamp(10px,1.6vw,26px);height:100%}
+    .eco-promo-slide__product{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0;color:#f6efe7;text-decoration:none;text-align:center}
+    .eco-promo-slide__media{position:relative;display:flex;align-items:flex-end;justify-content:center;width:100%;height:340px;margin-bottom:14px}
+    .eco-promo-slide__media img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 26px 30px rgba(0,0,0,.55));transition:transform .35s ease}
+    .eco-promo-slide__product:hover .eco-promo-slide__media img{transform:translateY(-6px)}
+    .eco-promo-slide__product--photo .eco-promo-slide__media img{padding:10px;border-radius:16px;background:#fff}
+    .eco-promo-slide__offer{position:absolute;top:0;right:4%;display:flex;align-items:center;justify-content:center;width:60px;height:60px;border:1px solid rgba(240,207,159,.7);border-radius:50%;background:rgba(14,10,8,.72);color:#f0cf9f;font-family:'Playfair Display',Georgia,serif;font-size:17px;font-weight:700;backdrop-filter:blur(6px)}
+    .eco-promo-slide__name{display:block;max-width:100%;margin-bottom:4px;overflow:hidden;font-size:12px;font-weight:600;line-height:1.3;letter-spacing:.06em;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}
+    .eco-promo-slide__price{display:flex;align-items:baseline;justify-content:center;gap:8px;color:#f0cf9f;font-family:'Playfair Display',Georgia,serif;font-size:19px;font-weight:700;white-space:nowrap}
+    .eco-promo-slide__price del{color:rgba(246,239,231,.45);font-family:Manrope,Arial,sans-serif;font-size:12px;font-weight:500}
+    @media(max-width:1439px){.eco-promo-slide{height:520px}.eco-promo-slide__media{height:300px}}
+    @media(max-width:1199px){.eco-promo-slide__copy p{display:none}.eco-promo-slide__layout{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}}
+    @media(max-width:991px){.eco-promo-slide{height:500px}.eco-promo-slide__layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);padding:30px}.eco-promo-slide__products{grid-template-columns:repeat(2,minmax(0,1fr))}.eco-promo-slide__product:nth-child(3){display:none}.eco-promo-slide__media{height:270px}}
+    @media(max-width:767px){.eco-promo-slide{height:640px}.eco-promo-slide__word{display:none}.eco-promo-slide__layout{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:24px 18px 16px}.eco-promo-slide__mast{margin-bottom:12px;font-size:10px}.eco-promo-slide__mast i{width:24px}.eco-promo-slide__title{font-size:72px;margin-bottom:8px}.eco-promo-slide__timer{margin-bottom:14px}.eco-promo-slide__timer span{min-width:58px;padding:6px 8px 5px}.eco-promo-slide__timer b{font-size:22px}.eco-promo-slide__products{flex:1;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;min-height:0}.eco-promo-slide__product:nth-child(3){display:flex}.eco-promo-slide__media{flex:1;height:auto;min-height:0;margin-bottom:6px}.eco-promo-slide__offer{top:auto;bottom:4px;right:-2px;width:40px;height:40px;font-size:12px}.eco-promo-slide__name{font-size:9px;letter-spacing:.03em}.eco-promo-slide__price{flex-wrap:wrap;gap:0 4px;font-size:14px;white-space:normal}.eco-promo-slide__price del{font-size:9px}.eco-promo-slide__actions{gap:4px 14px}}
+    @media(max-width:400px){.eco-promo-slide{height:620px}.eco-promo-slide__title{font-size:62px}}
 </style>
 @endpush
 @push('scripts')

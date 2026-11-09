@@ -119,10 +119,10 @@ class EcokaminOctoberSaleTest extends TestCase
             $fireplace->forceFill(['category_id' => $pechiKaminy->id])->save();
         }
         \App\Support\Promotions\EcokaminPromotion::forget();
-        $this->get('/pechi-kaminy')->assertOk()->assertSee('Камины и печи-камины<br>', false)->assertSee('Все камины по акции')->assertSee('Рио КР206')->assertDontSee('Дельта 800 три стекла');
+        $this->get('/pechi-kaminy')->assertOk()->assertSee('eco-promo-slide__kicker">Камины и печи-камины</span>', false)->assertSee('Все камины по акции')->assertSee('Рио КР206')->assertDontSee('Дельта 800 три стекла');
         Category::query()->create(['slug' => 'pechki', 'name' => 'Печи', 'parent_id' => 0, 'is_active' => true]);
-        $this->get('/pechki')->assertOk()->assertSee('Камины и печи-камины<br>', false)->assertSee('Рио КР206');
-        $this->get('/topki')->assertOk()->assertSee('Каминные топки<br>', false)->assertSee('Дельта 800 три стекла')->assertSee('Все топки по акции')->assertDontSee('Рио КР206');
+        $this->get('/pechki')->assertOk()->assertSee('eco-promo-slide__kicker">Камины и печи-камины</span>', false)->assertSee('Рио КР206');
+        $this->get('/topki')->assertOk()->assertSee('eco-promo-slide__kicker">Каминные топки</span>', false)->assertSee('Дельта 800 три стекла')->assertSee('Все топки по акции')->assertDontSee('Рио КР206');
 
         Carbon::setTestNow('2026-12-01 00:05:00');
         $this->assertFalse($rio->fresh()->isPublicSale());
