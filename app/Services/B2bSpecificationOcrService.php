@@ -145,7 +145,7 @@ class B2bSpecificationOcrService
     public function recognizeText(string $text): array
     {
         $text = trim($text);
-        if (! $this->hasUsefulText($text)) {
+        if (mb_strlen(preg_replace('/[^\p{L}\p{N}]+/u', '', $text) ?? '') < 5) {
             throw new RuntimeException('Вставьте текст заявки: список позиций с количеством.');
         }
 
