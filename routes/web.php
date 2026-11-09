@@ -37,6 +37,7 @@ use App\Http\Controllers\HeatPumpLandingController;
 use App\Http\Controllers\InstallerAccountController;
 use App\Http\Controllers\InstallerController;
 use App\Http\Controllers\InstallRequestController;
+use App\Http\Controllers\LeadChannelWebhookController;
 use App\Http\Controllers\MarketResearchReportPdfController;
 use App\Http\Controllers\OneCExchangeController;
 use App\Http\Controllers\OrderPortalController;
@@ -55,6 +56,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SupportChatController;
 use App\Http\Controllers\TaxpayerLookupController;
+use App\Http\Controllers\TelegramLeadWebhookController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\TisFerrit1mmPriceListController;
 use App\Http\Controllers\TisStandard30PriceListController;
@@ -71,6 +73,7 @@ use App\Models\EmailSubscriber;
 use App\Models\Product;
 use App\Rules\NoHtmlOrLinks;
 use App\Rules\PhoneNotSpam;
+use App\Services\ContactRequestNotifier;
 use App\Support\Catalog\BelomoGasMeterDesignations;
 use App\Support\Catalog\BelomoSelectorLineup;
 use App\Support\Catalog\GasMeterSelectionGuide;
@@ -622,14 +625,14 @@ Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
 
 // ===== Контакты =====
 Route::get('/contacts', fn () => view('pages.contacts'))->name('contacts');
-Route::post('/contacts', function (Request $request) {
+Route::post('/contacts', function (Request $request, ContactRequestNotifier $notifier) {
     $data = $request->validate([
         'name' => ['required', 'string', 'max:100', new NoHtmlOrLinks],
         'phone' => ['required', 'string', 'max:30', new PhoneNotSpam],
         'email' => 'nullable|email|max:150',
         'message' => ['required', 'string', 'max:1000', new NoHtmlOrLinks],
     ]);
-    ContactRequest::create($data);
+    $notifier->notify(ContactRequest::create([...$data, 'source' => 'site_contact_form']));
 
     return back()->with('success', 'Сообщение отправлено! Мы свяжемся с вами в течение рабочего дня.');
 })->middleware('public.form.protect:contacts')->name('contact.store');
@@ -678,6 +681,15 @@ Route::get('/brands/{slug}', [BrandController::class, 'show'])->name('brand.show
 
 // ===== Telegram Webhook =====
 Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle']);
+
+Route::post('/integrations/telegram/leads', TelegramLeadWebhookController::class)
+    ->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
+    ->name('integrations.telegram.leads.webhook');
+
+Route::match(['get', 'post'], '/integrations/leads/{provider}', LeadChannelWebhookController::class)
+    ->whereIn('provider', ['viber', 'instagram', 'whatsapp'])
+    ->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
+    ->name('integrations.leads.webhook');
 
 // ===== ВАТС A1 =====
 Route::get('/admin/telephony-calls/{telephonyCall}/recording', A1CallRecordingController::class)

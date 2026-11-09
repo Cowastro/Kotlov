@@ -538,7 +538,9 @@ class AdminTodayDashboard
     /** @return Builder<ContactRequest> */
     private function requests(?int $managerId): Builder
     {
-        return ContactRequest::query()->when(
+        return ContactRequest::query()->where(fn (Builder $query) => $query
+            ->whereNull('external_source')
+            ->orWhere('external_source', '!=', ContactRequest::SITE_CHAT_SOURCE))->when(
             $managerId,
             fn (Builder $query, int $id): Builder => $query->where(function (Builder $query) use ($id): void {
                 $query->where('responsible_user_id', $id)

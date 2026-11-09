@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\ContactRequests\ContactRequestResource;
+use App\Filament\Resources\SupportConversations\SupportConversationResource;
 use App\Filament\Resources\SupportConversations\Pages\ListSupportConversations;
 use App\Filament\Resources\SupportConversations\Pages\ViewSupportConversation;
+use App\Models\ContactRequest;
 use App\Models\SupportChatSetting;
 use App\Models\SupportConversation;
 use App\Models\User;
@@ -48,6 +51,13 @@ class SupportChatTest extends TestCase
             'message' => 'Желательно настенный двухконтурный.',
         ])->assertCreated()->assertJsonCount(2, 'messages');
         $this->assertDatabaseCount('notifications', 2);
+        $this->assertDatabaseCount('contact_requests', 1);
+        $this->assertDatabaseHas('contact_requests', [
+            'external_source' => ContactRequest::SITE_CHAT_SOURCE,
+            'external_id' => $conversation->public_id,
+            'status' => 'new',
+            'message' => 'Желательно настенный двухконтурный.',
+        ]);
 
         $this->getJson(route('support-chat.show'))
             ->assertOk()
@@ -152,6 +162,11 @@ class SupportChatTest extends TestCase
             'body' => 'Есть ли котёл в наличии?',
         ]);
 
+        $lead = ContactRequest::query()->where('external_id', $conversation->public_id)->sole();
+        $this->actingAs($manager)
+            ->get(ContactRequestResource::getUrl('view', ['record' => $lead], panel: 'admin'))
+            ->assertRedirect(SupportConversationResource::getUrl('view', ['record' => $conversation], panel: 'admin'));
+
         Livewire::actingAs($manager)
             ->test(ViewSupportConversation::class, ['record' => $conversation->getRouteKey()])
             ->assertSee('Есть ли котёл в наличии?')
@@ -170,6 +185,11 @@ class SupportChatTest extends TestCase
             'id' => $conversation->id,
             'status' => 'answered',
             'assigned_user_id' => $manager->id,
+        ]);
+        $this->assertDatabaseHas('contact_requests', [
+            'id' => $lead->id,
+            'status' => 'waiting',
+            'responsible_user_id' => $manager->id,
         ]);
     }
 

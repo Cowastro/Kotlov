@@ -6,6 +6,7 @@ use App\Models\ContactRequest;
 use App\Support\AdminPhoneLinks;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 
@@ -55,6 +56,7 @@ class ContactRequestInfolist
                             ->label('Телефон')
                             ->icon('heroicon-o-phone')
                             ->copyable()
+                            ->placeholder('Не указан')
                             ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
                             ->html(),
                         TextEntry::make('email')
@@ -70,7 +72,11 @@ class ContactRequestInfolist
                     ->icon('heroicon-o-chat-bubble-left-right')
                     ->columnSpan(2)
                     ->schema([
-                        TextEntry::make('message')->label('Что нужно клиенту')->prose()->columnSpanFull(),
+                        TextEntry::make('message')->label('Что нужно клиенту')->prose()->columnSpanFull()
+                            ->hidden(fn (ContactRequest $record): bool => filled($record->external_source)),
+                        View::make('filament.contact-requests.history')
+                            ->visible(fn (ContactRequest $record): bool => filled($record->external_source))
+                            ->columnSpanFull(),
                         TextEntry::make('product_name')->label('Товар')->placeholder('Не указан'),
                         TextEntry::make('requested_quantity')->label('Запрошено, шт.')->placeholder('—'),
                         TextEntry::make('product_url')
@@ -107,14 +113,7 @@ class ContactRequestInfolist
                         TextEntry::make('source')
                             ->label('Канал')
                             ->badge()
-                            ->formatStateUsing(fn (?string $state): string => match ($state) {
-                                'product_page' => 'Карточка товара',
-                                'consultation_form' => 'Форма консультации',
-                                'quick_callback' => 'Быстрый звонок',
-                                'ai_selection' => 'AI-подбор',
-                                'b2b_price_request' => 'B2B: оптовая цена',
-                                default => $state ?: 'Не указан',
-                            }),
+                            ->formatStateUsing(fn (?string $state): string => ContactRequest::$sources[$state] ?? ($state ?: 'Не указан')),
                         TextEntry::make('product_id')->label('ID товара')->placeholder('—'),
                         TextEntry::make('updated_at')->label('Последнее изменение')->dateTime('d.m.Y H:i', 'Europe/Minsk'),
                     ]),

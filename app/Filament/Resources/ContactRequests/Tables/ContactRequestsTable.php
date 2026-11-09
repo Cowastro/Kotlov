@@ -20,6 +20,8 @@ class ContactRequestsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('latestLeadMessage'))
+            ->poll('15s')
             ->columns([
                 TextColumn::make('name')
                     ->label('Имя')
@@ -31,15 +33,17 @@ class ContactRequestsTable
                     ->label('Телефон')
                     ->searchable()
                     ->copyable()
+                    ->placeholder('Не указан')
                     ->formatStateUsing(fn (?string $state): ?HtmlString => AdminPhoneLinks::render($state))
                     ->html()
                     ->weight('bold'),
 
                 TextColumn::make('message')
                     ->label('Сообщение')
+                    ->state(fn (ContactRequest $record): string => $record->latestLeadMessage?->body ?? $record->message)
                     ->limit(90)
                     ->lineClamp(2)
-                    ->tooltip(fn ($record) => $record->message),
+                    ->tooltip(fn (ContactRequest $record): string => $record->latestLeadMessage?->body ?? $record->message),
 
                 TextColumn::make('product_name')
                     ->label('Товар')
@@ -59,14 +63,12 @@ class ContactRequestsTable
                 TextColumn::make('source')
                     ->label('Источник')
                     ->badge()
-                    ->formatStateUsing(fn (?string $state) => match ($state) {
-                        'product_page' => 'Карточка товара',
-                        'consultation_form' => 'Форма консультации',
-                        'ai_selection' => 'AI-подбор',
-                        'b2b_price_request' => 'B2B: цена',
-                        default => $state ?: '—',
+                    ->formatStateUsing(fn (?string $state): string => ContactRequest::$sources[$state] ?? ($state ?: '—'))
+                    ->color(fn (?string $state): string => match ($state) {
+                        'ai_selection' => 'warning',
+                        'telegram_channel' => 'info',
+                        default => 'gray',
                     })
-                    ->color(fn (?string $state) => $state === 'ai_selection' ? 'warning' : 'gray')
                     ->toggleable(),
 
                 TextColumn::make('status')
@@ -108,8 +110,8 @@ class ContactRequestsTable
                     ->sortable()
                     ->toggleable(),
 
-                TextColumn::make('created_at')
-                    ->label('Дата')
+                TextColumn::make('updated_at')
+                    ->label('Активность')
                     ->dateTime('d.m.Y H:i')
                     ->sortable(),
 
@@ -120,7 +122,8 @@ class ContactRequestsTable
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->defaultSort('created_at', 'desc')
+            ->defaultSort('updated_at', 'desc')
+            ->checkIfRecordIsSelectableUsing(fn (ContactRequest $record): bool => ! $record->isSiteChat())
             ->filters([
                 SelectFilter::make('status')
                     ->label('Статус')
@@ -130,6 +133,9 @@ class ContactRequestsTable
                     ->relationship('responsibleUser', 'name')
                     ->searchable()
                     ->preload(),
+                SelectFilter::make('source')
+                    ->label('Источник')
+                    ->options(ContactRequest::$sources),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -138,7 +144,7 @@ class ContactRequestsTable
                         ->label('Взять в работу')
                         ->icon('heroicon-o-hand-raised')
                         ->color('warning')
-                        ->visible(fn ($record) => in_array($record->status, ['new', 'read'], true))
+                        ->visible(fn (ContactRequest $record) => ! $record->isSiteChat() && in_array($record->status, ['new', 'read'], true))
                         ->action(fn ($record) => $record->update([
                             'status' => 'in_progress',
                             'responsible_user_id' => $record->responsible_user_id ?: auth()->id(),
@@ -148,14 +154,14 @@ class ContactRequestsTable
                         ->label('Обработана')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
-                        ->visible(fn ($record) => $record->status !== 'done')
+                        ->visible(fn (ContactRequest $record) => ! $record->isSiteChat() && $record->status !== 'done')
                         ->action(fn ($record) => $record->update([
                             'status' => 'done',
                             'responsible_user_id' => $record->responsible_user_id ?: auth()->id(),
                             'next_follow_up_at' => null,
                         ])),
 
-                    EditAction::make(),
+                    EditAction::make()->hidden(fn (ContactRequest $record): bool => $record->isSiteChat()),
                 ]),
             ])
             ->toolbarActions([
