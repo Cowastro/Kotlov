@@ -27,7 +27,7 @@ class ListContactRequests extends ListRecords
 
     public function getMaxContentWidth(): Width|string|null
     {
-        return Width::Full;
+        return Width::SevenExtraLarge;
     }
 
     public function getTableColumnsSessionKey(): string
