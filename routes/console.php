@@ -213,12 +213,9 @@ Schedule::command('supplier:chisty-bereg-photos --supplier=vistar --limit=30 --a
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/vistar-photos.log'));
 
-// Hidden S-TANK cards made from the price list look for a photo the same way.
-Schedule::command('supplier:chisty-bereg-photos --supplier=stank --limit=30 --apply')
-    ->dailyAt('09:20')
-    ->withoutOverlapping(60)
-    ->runInBackground()
-    ->appendOutputTo(storage_path('logs/stank-photos.log'));
+// Hidden S-TANK cards are not searched daily: the web has no photos of them. A tank takes the s-tank.ru render of its
+// series (supplier:stank-series-photos --apply); the rest (FLAT, titanium anodes, thermostats, plugs) wait for the
+// supplier's photos.
 
 // Hidden Престиж Тепло cards made from the price list look for a photo the same way, 60 a day (≈380 cards in a week).
 Schedule::command('supplier:chisty-bereg-photos --supplier=prestizh_teplo --limit=60 --apply')
