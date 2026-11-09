@@ -343,7 +343,7 @@ class CrmMailThreadResource extends Resource
                 if ($livewire->activeTab === 'needs_response' && blank($livewire->getTableSortColumn())) {
                     return $query
                         ->orderByRaw("CASE WHEN priority = 'urgent' THEN 0 WHEN next_follow_up_at <= ? THEN 1 WHEN priority = 'high' THEN 2 ELSE 3 END", [now()])
-                        ->orderBy('last_message_at');
+                        ->orderByDesc('last_message_at');
                 }
 
                 return $query->orderByDesc('last_message_at');

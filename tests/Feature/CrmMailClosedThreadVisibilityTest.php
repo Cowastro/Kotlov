@@ -64,6 +64,27 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
         $this->assertSame('2', $page->instance()->getTabs()['needs_response']->getBadge());
     }
 
+    public function test_reaction_tab_lists_newest_mail_first_by_default(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::create(['name' => 'Order', 'email' => 'order-sort@example.com', 'username' => 'order-sort@example.com']);
+        $old = $this->thread($mailbox, 'old@example.com', 'new');
+        $old->forceFill(['last_message_at' => now()->subDays(20)])->save();
+        $fresh = $this->thread($mailbox, 'fresh@example.com', 'new');
+        $fresh->forceFill(['last_message_at' => now()->subHour()])->save();
+        $middle = $this->thread($mailbox, 'middle@example.com', 'waiting_manager');
+        $middle->forceFill(['last_message_at' => now()->subDays(3)])->save();
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(ListCrmMailThreads::class)
+            ->assertSet('activeTab', 'needs_response')
+            ->assertCanSeeTableRecords([$fresh, $middle, $old], inOrder: true)
+            ->set('activeTab', 'all')
+            ->assertCanSeeTableRecords([$fresh, $middle, $old], inOrder: true);
+    }
+
     public function test_trashed_thread_can_be_opened_from_trash_without_appearing_in_active_tabs(): void
     {
         $mailbox = CrmMailbox::create([
