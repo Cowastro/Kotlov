@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\City;
 use App\Models\Product;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -94,6 +97,51 @@ class SeoSurfaceTest extends TestCase
             ->assertOk()
             ->assertSeeText('Allow: /pechi-kaminy?page=')
             ->assertSee('Disallow: /pechi-kaminy?page=*&', false);
+    }
+
+    public function test_minsk_fireplaces_diversify_the_first_row_and_filter_by_confirmed_stock(): void
+    {
+        $category = Category::query()->create(['parent_id' => 0, 'name' => 'Печи-камины', 'slug' => 'pechi-kaminy', 'is_active' => true]);
+        $supplier = Supplier::query()->create(['code' => 'fireplace-test-supplier', 'name' => 'Поставщик', 'is_active' => true]);
+        $brands = collect(range(1, 4))->map(fn (int $i) => Brand::query()->create(['name' => "Бренд $i", 'slug' => "fireplace-brand-$i", 'is_active' => true]));
+
+        $ids = collect([0, 0, 1, 2, 3])->map(function (int $brand, int $i) use ($brands, $category, $supplier): int {
+            $confirmed = $i < 4;
+            $product = Product::query()->create([
+                'category_id' => $category->id,
+                'brand_id' => $brands[$brand]->id,
+                'name' => "Печь-камин $i",
+                'slug' => "fireplace-row-$i",
+                'sku' => "FIREPLACE-ROW-$i",
+                'price' => 100 + $i,
+                'popularity_score' => 10 - $i,
+                'is_active' => true,
+                'in_stock' => true,
+                'manual_stock_management' => true,
+                'availability_status' => $confirmed ? Product::AVAILABILITY_IN_STOCK : Product::AVAILABILITY_CHECK,
+            ]);
+            SupplierProduct::query()->create([
+                'product_id' => $product->id,
+                'supplier_id' => $supplier->id,
+                'supplier_article' => $product->sku,
+                'match_confidence' => 'brand_assignment',
+            ]);
+
+            return $product->id;
+        })->all();
+
+        $url = 'https://kotlov.by/pechi-kaminy';
+        $this->get($url)->assertOk()
+            ->assertSeeText('Печи-камины для дома и дачи в Минске')
+            ->assertSee($url.'?in_stock=1#catalog-products', false)
+            ->assertSeeText('Офис KOTLOV в Минске')
+            ->assertSeeText('Самовывоз со склада KOTLOV в Минске')
+            ->assertViewHas('products', fn ($page) => $page->pluck('id')->all() === [$ids[0], $ids[2], $ids[3], $ids[4], $ids[1]]);
+        $this->get($url.'?in_stock=1')->assertOk()
+            ->assertViewHas('products', fn ($page) => $page->total() === 4
+                && $page->pluck('id')->all() === [$ids[0], $ids[2], $ids[3], $ids[1]]);
+        $this->get($url.'?sort=price_asc')->assertOk()
+            ->assertViewHas('products', fn ($page) => $page->pluck('id')->all() === $ids);
     }
 
     private function enableCityStorefront(string $slug): City

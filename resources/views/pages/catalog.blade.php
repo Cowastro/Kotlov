@@ -53,11 +53,30 @@
                     @endif
                     <p class="text-caption-01">{{ $category->name }}</p>
                 </div>
-                <h1>{{ $category->h1 ?: $category->name }}</h1>
+                <h1>{{ $isMinskFireplaceCatalog ? 'Печи-камины для дома и дачи в Минске' : ($category->h1 ?: $category->name) }}</h1>
                 @if ($catalogIntro ?? $category->content)
                     <p class="text-body-1 cl-text-2">
                         {{ $catalogIntro ?? Str::limit(strip_tags(html_entity_decode($category->content, ENT_QUOTES | ENT_HTML5, 'UTF-8')), 200) }}
                     </p>
+                @endif
+                @if ($isMinskFireplaceCatalog)
+                    @php
+                        $inStock = request('in_stock') === '1';
+                        $stockFilter = request()->except('in_stock', 'page');
+                        if (! $inStock) {
+                            $stockFilter['in_stock'] = '1';
+                        }
+                    @endphp
+                    <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 mt-3">
+                        <a href="{{ url()->current() }}{{ $stockFilter ? '?'.http_build_query($stockFilter) : '' }}#catalog-products"
+                            class="tf-btn small {{ $inStock ? 'btn-stroke' : '' }}">
+                            {{ $inStock ? 'Показать все товары' : 'В наличии' }}
+                        </a>
+                        <div class="text-caption-01 cl-text-2">
+                            <div>Офис KOTLOV в Минске: <a class="link" href="{{ route('contacts') }}">{{ $minskFireplaceOfficeAddress }}</a></div>
+                            <div>Самовывоз со склада KOTLOV в Минске: <a class="link" href="{{ url('/dostavka') }}">{{ config('shop.delivery_methods.pickup.address') }}</a> · по согласованию</div>
+                        </div>
+                    </div>
                 @endif
             </div>
         </div>
@@ -143,13 +162,8 @@
         @include('partials.pellet-boiler-quick-filters')
     @endif
 
-    @if (($ecokaminPromoHits ?? collect())->count() >= 3)
-        <section class="catalog-ecokamin-promo">
-            <div class="container">
-                @include('partials.ecokamin-promo-slide')
-            </div>
-        </section>
-        <style>.catalog-ecokamin-promo{padding:28px 0 8px}</style>
+    @if (! $isMinskFireplaceCatalog)
+        @include('partials.catalog-ecokamin-promo')
     @endif
 
     @if (in_array($category->slug, ['pechki', 'pechi-kaminy', 'pechi', 'peci-drovianye-otopitelnye', 'burzhuiki-pechi', 'dlya-dachi', 'kaminy', 'topki'], true))
@@ -186,7 +200,7 @@
     @endif
 
     {{-- Каталог --}}
-    <section class="flat-spacing" id="catalog-products">
+    <section class="flat-spacing{{ $isMinskFireplaceCatalog ? ' pt-3' : '' }}" id="catalog-products">
         <div class="container">
             <div class="row">
 
@@ -637,6 +651,10 @@
             </div>
         </div>
     </section>
+
+    @if ($isMinskFireplaceCatalog)
+        @include('partials.catalog-ecokamin-promo')
+    @endif
 
     @if ($category->slug === 'teplovyie-nasosyi' && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort']))
         @include('partials.heat-pump-category-content', ['articles' => $heatPumpArticles ?? collect()])
