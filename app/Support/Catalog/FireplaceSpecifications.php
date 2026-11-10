@@ -51,10 +51,16 @@ final class FireplaceSpecifications
                 }
 
                 $label = $labels[$key] ?? $name;
-                if (! isset(self::CARD_FIELDS[$label]) && ! isset($rows[$label]) && ! isset($seen[$key])) {
-                    $rows[$label] = self::withUnit($value, $unit);
-                    $seen[$key] = true;
+                if (isset($rows[$label]) || isset($seen[$key])) {
+                    continue;
                 }
+
+                if (isset(self::CARD_FIELDS[$label]) && in_array(mb_strtolower(trim($value)), ['нет', '—', '-', '0', 'нет данных', 'не указано'], true)) {
+                    continue;
+                }
+
+                $rows[$label] = self::withUnit($value, $unit);
+                $seen[$key] = true;
             }
         }
 
@@ -177,7 +183,7 @@ final class FireplaceSpecifications
 
         $number = trim(preg_replace('/(?<=\d)\s*(?:'.$unitPattern.')(?=\s|[-–—]|$)/iu', '', mb_strtolower($value)));
         $decimal = '\d+(?:[,.]\d+)?';
-        if (! preg_match('/^(?:(?:от|до|более|менее)\s+)?'.$decimal.'(?:(?:\s*[-–—]\s*|\s+до\s+)'.$decimal.')?$/u', $number)
+        if (! preg_match('/^(?:(?:от|до|свыше|(?:не )?(?:более|менее))\s+)?'.$decimal.'(?:(?:\s*[-–—]\s*|\s+до\s+)'.$decimal.')?$/u', $number)
             || ! preg_match('/[1-9]/', $number)) {
             return null;
         }
