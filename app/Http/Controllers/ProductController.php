@@ -14,6 +14,8 @@ use App\Services\SeoMetadataBuilder;
 use App\Support\Catalog\ElectricFireplaceNavigation;
 use App\Support\Catalog\FireplaceSpecifications;
 use App\Support\Catalog\GasMeterSelectionGuide;
+use App\Support\Catalog\BoilerCatalog;
+use App\Support\Catalog\BoilerSpecifications;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
@@ -88,6 +90,14 @@ class ProductController extends Controller
             'elektrokamini' => FireplaceSpecifications::electricDetails($product, $attributeValues),
             default => null,
         };
+
+        $boilerCardSpecs = [];
+        $boilerSlug = $productCategory->slug;
+        if ($boilerSlug !== 'kotly' && isset(BoilerCatalog::NAMES[$boilerSlug])) {
+            $product->loadMissing(['allAttributeValues.attribute', 'allAttributeValues.option']);
+            $specifications = app(BoilerSpecifications::class);
+            $boilerCardSpecs = $specifications->catalogFacts($product, $boilerSlug, $specifications->dimensions($boilerSlug))['card'];
+        }
 
         $showCompatibleInserts = $productCategory->slug === 'oblicovki';
         $compatibleElectricProducts = match ($productCategory->slug) {
@@ -367,7 +377,7 @@ class ProductController extends Controller
         return view('pages.product', compact(
             'product',
             'attributeValues',
-            'fireplaceSpecs',
+            'fireplaceSpecs', 'boilerCardSpecs',
             'compatibleElectricProducts',
             'showCompatibleInserts',
             'relatedProducts',
