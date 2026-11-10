@@ -12,6 +12,7 @@ use App\Models\ProductAttributeValue;
 use App\Services\ChimneyDiameterQuickFilter;
 use App\Services\CityContactResolver;
 use App\Services\SeoMetadataBuilder;
+use App\Services\SaunaStoveFilterNormalizer;
 use App\Services\StoveHeatingAreaNormalizer;
 use App\Support\Catalog\ElectricFireplaceNavigation;
 use App\Support\Catalog\FireplaceSpecifications;
@@ -741,6 +742,34 @@ class CatalogController extends Controller
             }
         }
 
+        $isSaunaStoveCatalog = in_array($category->slug, SaunaStoveFilterNormalizer::CATEGORIES, true);
+        $rawSaunaVolume = request()->query('sauna_volume');
+        $saunaVolume = is_string($rawSaunaVolume) && preg_match('/^\d{1,3}(?:[.,]\d{1,2})?$/D', $rawSaunaVolume)
+            ? (float) str_replace(',', '.', $rawSaunaVolume)
+            : null;
+        $saunaVolume = $isSaunaStoveCatalog && $saunaVolume > 0 && $saunaVolume <= 100 ? $saunaVolume : null;
+        $saunaVolumeLabels = [];
+        if ($saunaVolume !== null) {
+            $normalizer = app(SaunaStoveFilterNormalizer::class);
+            $candidates = (clone $query)->reorder()
+                ->setEagerLoads([])
+                ->select('products.id', 'products.category_id', 'products.specs', 'products.short_description')
+                ->with(['category:id,slug', 'allAttributeValues.attribute', 'allAttributeValues.option'])
+                ->lazyById(100, 'products.id', 'id');
+
+            foreach ($candidates as $product) {
+                if (! in_array($product->category?->slug, SaunaStoveFilterNormalizer::CATEGORIES, true)) {
+                    continue;
+                }
+                $volume = $normalizer->steamRoomVolume($product);
+                if ($volume !== null && $volume['min'] !== null && $volume['min'] <= $saunaVolume && $saunaVolume <= $volume['max']) {
+                    $saunaVolumeLabels[$product->id] = $normalizer->steamRoomVolumeLabel($volume);
+                }
+            }
+
+            $query->whereIntegerInRaw('products.id', array_keys($saunaVolumeLabels));
+        }
+
         $totalCount = $query->count();
         $products = $query->paginate(24)->withQueryString();
         if ($isMinskFireplaceCatalog && $products->onFirstPage()
@@ -767,6 +796,24 @@ class CatalogController extends Controller
         }
 
         $fireplaceSpecsByProduct = $electricFireplaceCards + $specificationCards;
+        if ($isSaunaStoveCatalog) {
+            $normalizer = app(SaunaStoveFilterNormalizer::class);
+            $stoves = $products->getCollection()->filter(
+                fn (Product $product) => in_array($product->category?->slug, SaunaStoveFilterNormalizer::CATEGORIES, true)
+            );
+            if ($saunaVolume === null) {
+                foreach ($stoves->load('allAttributeValues.attribute', 'allAttributeValues.option') as $product) {
+                    if ($volume = $normalizer->steamRoomVolume($product)) {
+                        $saunaVolumeLabels[$product->id] = $normalizer->steamRoomVolumeLabel($volume);
+                    }
+                }
+            }
+            foreach ($stoves as $product) {
+                if (isset($saunaVolumeLabels[$product->id])) {
+                    $fireplaceSpecsByProduct[$product->id]['Объём парной'] = $saunaVolumeLabels[$product->id];
+                }
+            }
+        }
         if (in_array($category->slug, HeatPumpProductPresenter::PUMP_CATEGORIES, true)) {
             $presenter = app(HeatPumpProductPresenter::class);
             $pumps = $products->getCollection()->filter(
@@ -896,6 +943,10 @@ class CatalogController extends Controller
             if (request()->except('page') !== []) {
                 $robots = 'noindex, follow';
             }
+        }
+
+        if ($isSaunaStoveCatalog && request()->query('sauna_volume') !== null) {
+            $robots = 'noindex, follow';
         }
 
         $canonical = $categoryUrl;
@@ -1409,6 +1460,8 @@ class CatalogController extends Controller
             'stoveHeatingFacts',
             'minskFireplaceOfficeAddress',
             'fireplaceSpecsByProduct',
+            'isSaunaStoveCatalog',
+            'saunaVolume',
             'subcategories',
             'brands',
             'filterAttributes',
