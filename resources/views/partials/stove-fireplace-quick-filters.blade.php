@@ -102,6 +102,7 @@
     };
 
     $stoveQuickLinks = collect($stoveQuickFilterConfig['items'] ?? [])
+        ->reject(fn ($item) => isset($stoveAreaLinks) && $category->slug === 'pechki' && $item[3] === 'Дом')
         ->map(fn ($item) => $stoveFilterLink($item[0], $item[1], $item[2], $item[3]))
         ->filter()
         ->values();
@@ -145,6 +146,11 @@
         ],
         default => null,
     };
+
+    if (isset($stoveAreaLinks) && $category->slug === 'pechki' && $stoveGuide) {
+        $stoveQuickLinks = collect($stoveAreaLinks)->concat($stoveQuickLinks);
+        $stoveGuide['text'] = 'Фильтр группирует печи по верхней границе указанной площади. Оценки при потолке 2,5 м подписаны отдельно. При выборе мощности учитывайте теплопотери дома.';
+    }
 @endphp
 
 @include('partials.catalog-quick-filter-styles')

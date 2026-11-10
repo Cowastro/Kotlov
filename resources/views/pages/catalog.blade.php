@@ -162,7 +162,7 @@
         @include('partials.pellet-boiler-quick-filters')
     @endif
 
-    @if (! $isMinskFireplaceCatalog)
+    @if (! $isMinskFireplaceCatalog && ! $isStoveHeatingCatalog)
         @include('partials.catalog-ecokamin-promo')
     @endif
 
@@ -200,7 +200,7 @@
     @endif
 
     {{-- Каталог --}}
-    <section class="flat-spacing{{ $isMinskFireplaceCatalog ? ' pt-3' : '' }}" id="catalog-products">
+    <section class="flat-spacing{{ $isMinskFireplaceCatalog || $isStoveHeatingCatalog ? ' pt-3' : '' }}" id="catalog-products">
         <div class="container">
             <div class="row">
 
@@ -326,8 +326,27 @@
                                 {{-- Производитель --}}
                                 @include('partials.catalog-brand-filter', ['brands' => $brands])
 
+                                @if ($stoveAreaLinks !== [])
+                                    <div class="widget-facet">
+                                        <h6 class="mb-2">Площадь обогрева</h6>
+                                        <ul class="filter-group-check">
+                                            @foreach ($stoveAreaLinks as $link)
+                                                <li class="list-item">
+                                                    <a href="{{ $link['url'] }}#catalog-products"
+                                                        class="link {{ $link['active'] ? 'fw-bold' : '' }}"
+                                                        @if ($link['active']) aria-label="Сбросить фильтр площади {{ $link['label'] }}" @endif>
+                                                        {{ $link['label'] }} <span class="count">({{ $link['count'] }})</span>
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                    <div class="br-line"></div>
+                                @endif
+
                                 {{-- Атрибуты категории (select-тип, in_filter=true) --}}
                                 @foreach ($filterAttributes as $attr)
+                                    @continue(in_array($attr->id, $stoveAreaAttributeIds, true))
                                     <div class="widget-facet">
                                         <div class="facet-title" data-bs-target="#attr-{{ $attr->id }}"
                                             role="button" data-bs-toggle="collapse" aria-expanded="false">
@@ -564,7 +583,7 @@
                         {{-- List вид товаров --}}
                         <div class="tf-list-layout wrapper-shop" id="listLayout" style="display: none;">
                             @forelse ($products as $product)
-                                @include('partials.product-card-list', ['product' => $product, 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? []])
+                                @include('partials.product-card-list', ['product' => $product, 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? [], 'stoveHeatingFact' => $stoveHeatingFacts[$product->id] ?? null])
                             @empty
                                 <div class="text-center py-48 wd-full">
                                     <p class="h5 cl-text-2">Товары не найдены</p>
@@ -600,7 +619,7 @@
                         {{-- Сетка товаров --}}
                         <div class="wrapper-shop tf-grid-layout tf-col-2 md-col-3" id="gridLayout">
                             @forelse ($products as $product)
-                                @include('partials.product-card', ['product' => $product, 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? []])
+                                @include('partials.product-card', ['product' => $product, 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? [], 'stoveHeatingFact' => $stoveHeatingFacts[$product->id] ?? null])
                             @empty
                                 <div class="wd-full text-center py-48">
                                     <i class="icon icon-Package fs-48 cl-text-3 mb-16"></i>
@@ -652,7 +671,7 @@
         </div>
     </section>
 
-    @if ($isMinskFireplaceCatalog)
+    @if ($isMinskFireplaceCatalog || $isStoveHeatingCatalog)
         @include('partials.catalog-ecokamin-promo')
     @endif
 
