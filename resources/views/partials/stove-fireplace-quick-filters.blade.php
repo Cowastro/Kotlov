@@ -180,6 +180,32 @@
                     <span>{{ $stoveQuickFilterConfig['subtitle'] }}</span>
                 </div>
                 <p class="catalog-seo-guide__text">{{ $stoveGuide['text'] }}</p>
+                @foreach ($fireboxFilters ?? [] as $key => $filter)
+                    @if (array_sum($filter['counts']) > 0 || $filter['selected'] !== null)
+                        <div class="d-md-none px-3 mb-1 text-caption-01 fw-semibold" aria-hidden="true">{{ $filter['label'] }}</div>
+                        <nav class="catalog-quick-filter__items mb-2" aria-label="{{ $filter['label'] }}">
+                            <span class="catalog-quick-filter__label">{{ $filter['label'] }}</span>
+                            @foreach ($filter['options'] as $value => $label)
+                                @php
+                                    $active = $filter['selected'] === $value;
+                                    $count = $filter['counts'][$value];
+                                    $params = request()->except($key, 'page');
+                                    if (! $active) {
+                                        $params[$key] = $value;
+                                    }
+                                @endphp
+                                @if ($count > 0 || $active)
+                                    <a href="{{ url()->current().($params ? '?'.http_build_query($params) : '') }}#catalog-products"
+                                       class="catalog-quick-filter__item {{ $active ? 'is-active' : '' }}"
+                                       @if ($active) aria-current="true" @endif>
+                                        {{ $label }}
+                                        <span class="catalog-quick-filter__count">{{ $count }}</span>
+                                    </a>
+                                @endif
+                            @endforeach
+                        </nav>
+                    @endif
+                @endforeach
                 @if ($stoveQuickLinks->isNotEmpty())
                     @include('partials.catalog-quick-filter-swipe-hint')
                     <nav class="catalog-quick-filter__items" aria-label="{{ $stoveQuickFilterConfig['aria'] }}">

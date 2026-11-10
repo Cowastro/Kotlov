@@ -16,6 +16,7 @@ use App\Services\SaunaStoveFilterNormalizer;
 use App\Services\StoveHeatingAreaNormalizer;
 use App\Support\Catalog\ElectricFireplaceNavigation;
 use App\Support\Catalog\FireplaceSpecifications;
+use App\Support\Catalog\FireboxSpecifications;
 use App\Support\CategoryNavigationGroups;
 use App\Support\Promotions\EcokaminPromotion;
 use App\Support\Catalog\BoilerCatalog;
@@ -784,6 +785,53 @@ class CatalogController extends Controller
             $query->whereIntegerInRaw('products.id', array_keys($saunaVolumeLabels));
         }
 
+        $fireboxCards = [];
+        $fireboxFilters = [];
+        $isFireboxCatalog = $category->slug === FireboxSpecifications::CATEGORY;
+        if ($isFireboxCatalog) {
+            $fireboxSpecs = app(FireboxSpecifications::class);
+            $rawGlass = request()->query('firebox_glass');
+            $rawDoor = request()->query('firebox_door');
+            $glass = is_string($rawGlass) && isset(FireboxSpecifications::GLASS[$rawGlass]) ? $rawGlass : null;
+            $door = is_string($rawDoor) && isset(FireboxSpecifications::DOOR[$rawDoor]) ? $rawDoor : null;
+            $glassCounts = array_fill_keys(array_keys(FireboxSpecifications::GLASS), 0);
+            $doorCounts = array_fill_keys(array_keys(FireboxSpecifications::DOOR), 0);
+            $matches = [];
+
+            $candidates = (clone $query)->reorder()
+                ->setEagerLoads([])
+                ->select('products.id', 'products.name', 'products.specs')
+                ->with(['allAttributeValues.attribute', 'allAttributeValues.option'])
+                ->lazyById(100, 'products.id', 'id');
+
+            foreach ($candidates as $product) {
+                $facts = $fireboxSpecs->facts($product);
+                $glassMatches = $glass === null || $glass === $facts['glass'];
+                $doorMatches = $door === null || in_array($door, $facts['doors'], true);
+
+                if ($doorMatches && $facts['glass'] !== null) {
+                    $glassCounts[$facts['glass']]++;
+                }
+                if ($glassMatches) {
+                    foreach ($facts['doors'] as $knownDoor) {
+                        $doorCounts[$knownDoor]++;
+                    }
+                }
+                if ($glassMatches && $doorMatches) {
+                    $matches[] = $product->id;
+                    $fireboxCards[$product->id] = $facts['card'];
+                }
+            }
+
+            if ($glass !== null || $door !== null) {
+                $query->whereIntegerInRaw('products.id', $matches);
+            }
+            $fireboxFilters = [
+                'firebox_glass' => ['label' => 'Форма стекла', 'options' => FireboxSpecifications::GLASS, 'counts' => $glassCounts, 'selected' => $glass],
+                'firebox_door' => ['label' => 'Открывание дверцы', 'options' => FireboxSpecifications::DOOR, 'counts' => $doorCounts, 'selected' => $door],
+            ];
+        }
+
         $totalCount = $query->count();
         $products = $query->paginate(24)->withQueryString();
         if ($isMinskFireplaceCatalog && $products->onFirstPage()
@@ -809,7 +857,7 @@ class CatalogController extends Controller
             }
         }
 
-        $fireplaceSpecsByProduct = $electricFireplaceCards + $specificationCards;
+        $fireplaceSpecsByProduct = $electricFireplaceCards + $specificationCards + $fireboxCards;
         if ($isSaunaStoveCatalog) {
             $normalizer = app(SaunaStoveFilterNormalizer::class);
             $stoves = $products->getCollection()->filter(
@@ -960,6 +1008,10 @@ class CatalogController extends Controller
         }
 
         if ($isSaunaStoveCatalog && request()->query('sauna_volume') !== null) {
+            $robots = 'noindex, follow';
+        }
+
+        if ($isFireboxCatalog && request()->hasAny(['firebox_glass', 'firebox_door'])) {
             $robots = 'noindex, follow';
         }
 
@@ -1474,6 +1526,7 @@ class CatalogController extends Controller
             'stoveHeatingFacts',
             'minskFireplaceOfficeAddress',
             'fireplaceSpecsByProduct',
+            'fireboxFilters',
             'isSaunaStoveCatalog',
             'saunaPickerSlug',
             'saunaVolume',
