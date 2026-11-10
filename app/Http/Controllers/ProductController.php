@@ -14,6 +14,7 @@ use App\Services\ProductVariantSelector;
 use App\Services\SeoMetadataBuilder;
 use App\Support\Catalog\ElectricFireplaceNavigation;
 use App\Support\Catalog\FireplaceSpecifications;
+use App\Support\Catalog\FireboxSpecifications;
 use App\Support\Catalog\GasMeterSelectionGuide;
 use App\Support\Catalog\BoilerCatalog;
 use App\Support\Catalog\BoilerSpecifications;
@@ -113,6 +114,11 @@ class ProductController extends Controller
             if ($volume = $normalizer->steamRoomVolume($product)) {
                 $productCardSpecs['Объём парной'] = $normalizer->steamRoomVolumeLabel($volume);
             }
+        }
+
+        if ($productCategory->slug === FireboxSpecifications::CATEGORY) {
+            $product->loadMissing(['allAttributeValues.attribute', 'allAttributeValues.option']);
+            $productCardSpecs = app(FireboxSpecifications::class)->facts($product)['card'];
         }
 
         $showCompatibleInserts = $productCategory->slug === 'oblicovki';

@@ -251,10 +251,10 @@ return [
             [
                 'title' => 'По форме',
                 'links' => [
-                    ['name' => 'Прямое стекло',     'url' => '/kaminy?filter=pryamoe'],
-                    ['name' => 'Боковое остекление', 'url' => '/kaminy?filter=bokovoe'],
-                    ['name' => 'Трёхсторонние',     'url' => '/kaminy?filter=3storon'],
-                    ['name' => 'Угловые',           'url' => '/kaminy?filter=uglovye'],
+                    ['name' => 'Прямое стекло',     'url' => '/topki?firebox_glass=straight#catalog-products'],
+                    ['name' => 'Туннельные',        'url' => '/topki?firebox_glass=tunnel#catalog-products'],
+                    ['name' => 'Трёхсторонние',     'url' => '/topki?firebox_glass=three-sided#catalog-products'],
+                    ['name' => 'Угловые',           'url' => '/topki?firebox_glass=corner#catalog-products'],
                 ],
             ],
             [
