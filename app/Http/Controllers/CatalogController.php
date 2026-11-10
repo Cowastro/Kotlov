@@ -13,6 +13,7 @@ use App\Services\ChimneyDiameterQuickFilter;
 use App\Services\CityContactResolver;
 use App\Services\SeoMetadataBuilder;
 use App\Services\StoveHeatingAreaNormalizer;
+use App\Support\Catalog\ElectricFireplaceNavigation;
 use App\Support\Catalog\FireplaceSpecifications;
 use App\Support\CategoryNavigationGroups;
 use App\Support\Promotions\EcokaminPromotion;
@@ -93,10 +94,16 @@ class CatalogController extends Controller
             }
         }
 
+        $showElectricFireplaceNavigation = in_array($category->slug, ['elektrokamini', 'oblicovki'], true);
+        $fireplaceType = ElectricFireplaceNavigation::selection($category->slug, request()->query('fireplace_type'));
+        $fireplaceSelectionIds = $fireplaceType === null ? null
+            : ElectricFireplaceNavigation::productIds($activeCategoryIds, $fireplaceType);
+        $scopeFireplaceType = fn ($query) => $query->whereIntegerInRaw('products.id', $fireplaceSelectionIds);
+
         // Бренды с количеством товаров в категории
-        $brands = Brand::whereHas('products', fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds)
+        $brands = Brand::whereHas('products', fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds)->when($fireplaceSelectionIds !== null, $scopeFireplaceType)
         )
-            ->withCount(['products' => fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds),
+            ->withCount(['products' => fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds)->when($fireplaceSelectionIds !== null, $scopeFireplaceType),
             ])
             ->orderBy('name')
             ->get();
@@ -181,6 +188,7 @@ class CatalogController extends Controller
             ->whereHas('product', fn ($q) => $q
                 ->orderable()
                 ->whereIn('category_id', $activeCategoryIds)
+                ->when($fireplaceSelectionIds !== null, $scopeFireplaceType)
                 ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
             )
             ->groupBy('attribute_id', 'option_id')
@@ -262,6 +270,7 @@ class CatalogController extends Controller
         $priceRange = Product::query()
             ->orderable()
             ->whereIn('category_id', $activeCategoryIds)
+            ->when($fireplaceSelectionIds !== null, $scopeFireplaceType)
             ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
             ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
             ->first();
@@ -280,6 +289,7 @@ class CatalogController extends Controller
             ->orderable()
             ->withSupplierChannels()
             ->whereIn('category_id', $activeCategoryIds)
+            ->when($fireplaceSelectionIds !== null, $scopeFireplaceType)
             ->with(['category', 'brand']);
 
         // Фильтр по цене
@@ -434,6 +444,7 @@ class CatalogController extends Controller
         $electricFireplaceCards = [];
         $nicheWidthMax = null;
         $hasNicheWidths = false;
+        $selectedElectricMode = null;
         if ($isElectricFireplaceCatalog) {
             $electricModes = [
                 'heat' => 'С обогревом',
@@ -446,6 +457,7 @@ class CatalogController extends Controller
             }
             $mode = request()->query('electric_mode');
             $mode = is_string($mode) && isset($electricModes[$mode]) ? $mode : null;
+            $selectedElectricMode = $mode === null ? null : $electricModes[$mode];
             $matches = [];
             $counts = array_fill_keys(array_keys($electricModes), 0);
             $stockCount = 0;
@@ -1062,7 +1074,7 @@ class CatalogController extends Controller
         }
 
         // Баннер акции ЭкоКамин в разделах каминов и топок.
-        $ecokaminPromo = ! $isElectricFireplaceCatalog
+        $ecokaminPromo = ! $showElectricFireplaceNavigation
             && (in_array($category->slug, ['kaminy', 'pechi-kaminy', 'topki', 'pechki'], true) || $category->parent?->slug === 'kaminy')
             ? EcokaminPromotion::showcase()
             : null;
@@ -1085,6 +1097,10 @@ class CatalogController extends Controller
             ? PartnerBranch::query()->visibleIn($currentCity)->first()
             : null;
 
+        $electricFilterChips = $showElectricFireplaceNavigation
+            ? $this->electricFilterChips($brands, $subcategories, $rawAttributes, $selectedElectricMode, $nicheWidthMax, $inStockOnly)
+            : [];
+
         return view('pages.catalog', compact(
             'isChimneySection',
             'ecokaminPromoHits',
@@ -1096,6 +1112,9 @@ class CatalogController extends Controller
             'isElectricFireplaceCatalog',
             'cityIn',
             'electricFireplaceLinks',
+            'showElectricFireplaceNavigation',
+            'fireplaceType',
+            'electricFilterChips',
             'nicheWidthMax',
             'hasNicheWidths',
             'stoveAreaAttributeIds',
@@ -1285,6 +1304,72 @@ class CatalogController extends Controller
                 $attributeQuery->whereRaw($numericValue.' <= ?', [$range['max']]);
             }
         });
+    }
+
+    private function electricFilterChips(
+        Collection $brands,
+        Collection $subcategories,
+        Collection $attributes,
+        ?string $mode,
+        ?int $nicheWidth,
+        bool $inStock
+    ): array {
+        $params = request()->except('page');
+        $chips = [];
+        $add = function (string $label, array $remaining) use (&$chips): void {
+            $chips[] = [
+                'label' => $label,
+                'url' => url()->current().($remaining ? '?'.http_build_query($remaining) : '').'#catalog-products',
+            ];
+        };
+
+        $brand = request('brand') && is_scalar(request('brand'))
+            ? ($brands->find((int) request('brand')) ?? Brand::query()->find((int) request('brand')))
+            : null;
+        $subcategory = $subcategories->firstWhere('slug', request('subcategory'));
+        foreach ([
+            'in_stock' => $inStock ? 'В наличии' : null,
+            'electric_mode' => $mode,
+            'niche_width_max' => $nicheWidth ? 'Ниша до '.$nicheWidth.' мм' : null,
+            'brand' => $brand?->name,
+            'subcategory' => $subcategory?->name,
+        ] as $key => $label) {
+            if ($label !== null) {
+                $add($label, request()->except('page', $key));
+            }
+        }
+
+        foreach (['price_min' => 'Цена от ', 'price_max' => 'Цена до '] as $key => $label) {
+            if (isset($params[$key]) && is_numeric($params[$key])) {
+                $add($label.$params[$key].' BYN', request()->except('page', $key));
+            }
+        }
+
+        $options = $attributes->flatMap->options->keyBy('id');
+        foreach ((array) ($params['attr'] ?? []) as $attributeId => $selection) {
+            $attribute = $attributes->find((int) $attributeId);
+            if ($attribute === null) {
+                continue;
+            }
+            $selectedOptions = array_filter((array) $selection, 'is_scalar');
+            foreach ($selectedOptions as $id) {
+                $option = $options->get((int) $id);
+                if ($option === null || $this->normalizeFilterName($attribute->name)
+                    !== $this->normalizeFilterName($attributes->find($option->attribute_id)?->name ?? '')) {
+                    continue;
+                }
+
+                $remaining = $params;
+                $remaining['attr'][$attributeId] = array_values(array_diff($selectedOptions, [$id]));
+                $remaining['attr'] = array_filter($remaining['attr']);
+                if ($remaining['attr'] === []) {
+                    unset($remaining['attr']);
+                }
+                $add($attribute->name.' · '.$option->name, $remaining);
+            }
+        }
+
+        return $chips;
     }
 
     private function electricFireplaceFilterLink(string $parameter, string $value, string $label, bool $active, int $count): array

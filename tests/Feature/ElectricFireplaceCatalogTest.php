@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -108,5 +109,67 @@ class ElectricFireplaceCatalogTest extends TestCase
         $this->get('https://kotlov.by/robots.txt')->assertOk()
             ->assertSeeText('Allow: /elektrokamini?page=')
             ->assertSee('Disallow: /elektrokamini?page=*&', false);
+    }
+    public function test_fireplace_entries_active_filters_and_confirmed_links_between_products(): void
+    {
+        $electric = Category::query()->create(['name' => 'Электрокамины', 'slug' => 'elektrokamini', 'is_active' => true]);
+        $portals = Category::query()->create(['name' => 'Порталы', 'slug' => 'oblicovki', 'is_active' => true]);
+        $add = fn (Category $category, string $slug, string $name, array $specs = []) => Product::query()->create([
+            'category_id' => $category->id, 'slug' => $slug, 'name' => $name, 'sku' => $slug, 'price' => 100,
+            'is_active' => true, 'availability_status' => Product::AVAILABILITY_CHECK, 'specs' => $specs,
+        ]);
+        $insert = $add($electric, 'elektrokamin-real-flame-vision-42-led', 'Электрокамин Real Flame Vision 42 LED', [
+            ['key' => 'Мощность обогрева, кВт', 'value' => '1,5'],
+            ['key' => 'Ширина ниши, мм', 'value' => '600'],
+        ]);
+        $kit = $add($electric, 'electric-test-kit', 'Каминокомплект с очагом и порталом');
+        $bio = $add($electric, 'electric-test-bio', 'Тумба с биокамином');
+        $portal = $add($portals, 'portal-smolcom-deli-v42', 'Портал Smolcom Deli V42');
+        $other = $add($portals, 'similar-but-unconfirmed', 'Портал для очага 42');
+        $hidden = $add($portals, 'portal-smolcom-optima-v42', 'Портал Smolcom Optima V42');
+        $hidden->update(['is_active' => false]);
+        $add($portals, 'electric-test-insulation', 'Плита изоляционная');
+        $attribute = Attribute::query()->create([
+            'category_id' => $electric->id, 'name' => 'Цвет', 'type' => 'select', 'in_filter' => true,
+        ]);
+        $black = $attribute->options()->create(['name' => 'Чёрный']);
+        $white = $attribute->options()->create(['name' => 'Белый']);
+        $insert->allAttributeValues()->create(['attribute_id' => $attribute->id, 'option_id' => $black->id]);
+
+        $url = 'https://kotlov.by/elektrokamini';
+        $this->get($url.'?fireplace_type=insert')->assertOk()
+            ->assertSeeText('Электроочаги в Минске')
+            ->assertViewHas('products', fn ($page) => $page->pluck('id')->all() === [$insert->id]);
+        $this->get($url.'?fireplace_type=kit')->assertOk()
+            ->assertViewHas('products', fn ($page) => $page->pluck('id')->all() === [$kit->id]);
+        $this->get('https://kotlov.by/oblicovki?fireplace_type=portal')->assertOk()
+            ->assertViewHas('products', fn ($page) => $page->total() === 2
+                && $page->pluck('id')->contains($portal->id));
+
+        $this->get($url.'?fireplace_type=insert&electric_mode=heat&niche_width_max=650&price_min=99&page=1')->assertOk()
+            ->assertSee('aria-label="Выбранные фильтры"', false)
+            ->assertSeeText('Сбросить все фильтры')
+            ->assertSee($url.'?fireplace_type=insert#catalog-products', false)
+            ->assertViewHas('electricFilterChips', fn (array $chips) => collect($chips)
+                ->contains(fn ($chip) => $chip['label'] === 'Ниша до 650 мм'
+                    && $chip['url'] === $url.'?fireplace_type=insert&electric_mode=heat&price_min=99#catalog-products'));
+        $params = ['fireplace_type' => 'insert', 'attr' => [$attribute->id => [$black->id, $white->id]]];
+        $this->get($url.'?'.http_build_query($params))->assertOk()
+            ->assertViewHas('electricFilterChips', fn (array $chips) => collect($chips)
+                ->contains(fn ($chip) => $chip['label'] === 'Цвет · Белый'
+                    && $chip['url'] === $url.'?'.http_build_query([
+                        'fireplace_type' => 'insert', 'attr' => [$attribute->id => [$black->id]],
+                    ]).'#catalog-products'));
+
+        $this->get($url.'/'.$insert->slug)->assertOk()
+            ->assertSeeText('Совместимые порталы')
+            ->assertViewHas('compatibleElectricProducts', fn ($products) => $products->pluck('id')->all() === [$portal->id]);
+        $this->get('https://kotlov.by/oblicovki/'.$portal->slug)->assertOk()
+            ->assertSeeText('Совместимые электроочаги')
+            ->assertViewHas('compatibleElectricProducts', fn ($products) => $products->pluck('id')->all() === [$insert->id]);
+        $this->get('https://kotlov.by/oblicovki/'.$other->slug)->assertOk()
+            ->assertDontSee('id="compatible-electric-products"', false);
+        $this->get($url.'/'.$bio->slug)->assertOk()
+            ->assertDontSee('id="compatible-electric-products"', false);
     }
 }

@@ -112,4 +112,119 @@ return [
             'mm' => ['width' => 775, 'height' => 654, 'depth' => 298],
         ],
     ],
+
+    // Exact models named in the portal's published compatibility specification.
+    'compatibility' => [
+        'portal-smolcom-deli-v42' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-deli-v42#specifications',
+            'inserts' => [
+                'elektrokamin-real-flame-vision-42-led',
+                'elektrokamin-real-flame-vision-42-log-led',
+            ],
+        ],
+        'portal-smolcom-optima-v42' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-optima-v42#specifications',
+            'inserts' => [
+                'elektrokamin-real-flame-vision-42-led',
+                'elektrokamin-real-flame-vision-42-log-led',
+            ],
+        ],
+        'portal-smolcom-govard-v42' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-govard-v42#specifications',
+            'inserts' => [
+                'elektrokamin-real-flame-vision-42-led',
+                'elektrokamin-real-flame-vision-42-log-led',
+            ],
+        ],
+        'portal-smolcom-line-v60' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-line-v60#specifications',
+            'inserts' => [
+                'elektrokamin-real-flame-vision-60-led',
+                'elektrokamin-real-flame-vision-60-log-led',
+            ],
+        ],
+        'portal-smolcom-valerie-v60' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-valerie-v60#specifications',
+            'inserts' => [
+                'elektrokamin-real-flame-vision-60-led',
+                'elektrokamin-real-flame-vision-60-log-led',
+            ],
+        ],
+        'portal-smolcom-albion-v60' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-albion-v60#specifications',
+            'inserts' => [
+                'elektrokamin-real-flame-vision-60-led',
+                'elektrokamin-real-flame-vision-60-log-led',
+            ],
+        ],
+        'portal-smolcom-albion-v23' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-albion-v23#specifications',
+            'inserts' => [
+                'elektrokamin-royal-flame-vision-23-ef-led-fx-12172',
+                'elektrokamin-royal-flame-vision-23-ef-led-3d-fx-12171',
+            ],
+        ],
+        'portal-smolcom-jazz2-v23' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-jazz2-v23#specifications',
+            'inserts' => [
+                'elektrokamin-royal-flame-vision-23-ef-led-fx-12172',
+                'elektrokamin-royal-flame-vision-23-ef-led-3d-fx-12171',
+            ],
+        ],
+        'portal-smolcom-lauritz-v23' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-lauritz-v23#specifications',
+            'inserts' => [
+                'elektrokamin-royal-flame-vision-23-ef-led-fx-12172',
+                'elektrokamin-royal-flame-vision-23-ef-led-3d-fx-12171',
+            ],
+        ],
+        'portal-smolcom-marta-v23' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-marta-v23#specifications',
+            'inserts' => [
+                'elektrokamin-royal-flame-vision-23-ef-led-fx-12172',
+                'elektrokamin-royal-flame-vision-23-ef-led-3d-fx-12171',
+            ],
+        ],
+        'luton-2-r' => [
+            'source' => 'https://kotlov.by/oblicovki/luton-2-r#specifications',
+            'inserts' => [
+                'elektrokamin-royal-flame-dioramic-33-led-fx',
+                'elektrokamin-royal-flame-dioramic-33-w-led-fx',
+            ],
+        ],
+        'portal-praga' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-praga#specifications',
+            'inserts' => [
+                'elektrokamin-royal-flame-dioramic-33-led-fx',
+                'elektrokamin-royal-flame-dioramic-33-w-led-fx',
+            ],
+        ],
+        'portal-smolcom-lindos-fs33' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-lindos-fs33#specifications',
+            'inserts' => [
+                'elektrokamin-royal-flame-dioramic-33-led-fx',
+            ],
+        ],
+        'portal-smolcom-govard-fs33w' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-smolcom-govard-fs33w#specifications',
+            'inserts' => [
+                'elektrokamin-royal-flame-dioramic-33-w-led-fx',
+            ],
+        ],
+        'portal-boston' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-boston#specifications',
+            'inserts' => [
+                'elektrokamin-dimplex-symphony-26-df2608-int',
+                'elektrokamin-royal-flame-jupiter-fx-n-black',
+                'elektrokamin-dimplex-xhd28l-int',
+            ],
+        ],
+        'portal-soho' => [
+            'source' => 'https://kotlov.by/oblicovki/portal-soho#specifications',
+            'inserts' => [
+                'elektrokamin-dimplex-symphony-26-df2608-int',
+                'elektrokamin-royal-flame-jupiter-fx-n-black',
+            ],
+        ],
+    ],
 ];
