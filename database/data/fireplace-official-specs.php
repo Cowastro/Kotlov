@@ -52,7 +52,7 @@ return [
     'pec-otopitelnaia-fireway-solo' => ['https://fireway.pro/fireway-solo.html', ['Материал' => 'Чугун']],
     'pec-otopitelnaia-fireway-solo-ii-s-selkografiei' => ['https://fireway.pro/pech-kamin-solo-ii-steklo-shelkografiya.html', ['Материал' => 'Чугун']],
     'pec-otopitelnaia-fireway-bruno-i' => ['https://fireway.pro/bruno.html', ['Материал' => 'Чугун']],
-    'pec-otopitelnaia-fireway-bruno-ii' => ['https://fireway.pro/bruno-ii.html', ['Материал' => 'Чугун']],
+    'pec-otopitelnaia-fireway-bruno-ii' => ['https://firewayhot.com/product/bruno-ii-cast-iron-stove/', ['Площадь обогрева' => '80 м²', 'Материал' => 'Чугун']],
     'pec-otopitelnaia-fireway-dacha-i' => ['https://fireway.pro/stoves-fireplaces/dacha-i.html', ['Площадь обогрева' => '120 м²', 'Материал' => 'Чугун']],
     'pec-otopitelnaia-fireway-delta-i' => ['https://firewayhot.com/product/delta-i-cast-iron-stove/', ['Материал' => 'Чугун']],
     'pec-otopitelno-varocnaia-fireway-alfa' => ['https://firewayhot.com/product/alfa-cast-iron-stove/', ['Материал' => 'Чугун']],
