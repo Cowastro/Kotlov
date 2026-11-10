@@ -97,9 +97,14 @@ class SmolcomSiteCatalog
 
     private function fetch(string $url): string
     {
-        $response = Http::timeout(30)->retry(2, 1000, throw: false)
-            ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; KotlovBot/1.0)', 'Accept-Language' => 'ru-RU,ru;q=0.9'])
-            ->get($url);
+        try {
+            $response = Http::connectTimeout(10)->timeout(30)->retry(2, 1000, throw: false)
+                ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; KotlovBot/1.0)', 'Accept-Language' => 'ru-RU,ru;q=0.9'])
+                ->get($url);
+        } catch (\Throwable) {
+            // An unreachable site gives no photos, it does not stop the others.
+            return '';
+        }
 
         return $response->successful() ? $response->body() : '';
     }
