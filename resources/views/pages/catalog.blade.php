@@ -807,7 +807,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const normalize = value => String(value || '').toLocaleLowerCase('ru-RU').replace(/ё/g, 'е').trim();
 
         if (window.matchMedia('(max-width: 767px)').matches) {
-            groups.forEach((group, index) => { group.open = index === 0; });
             groups.forEach(function (group) {
                 group.addEventListener('toggle', function () {
                     if (!group.open || searchInput.value.trim()) return;
@@ -838,8 +837,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 visibleTotal += visibleInGroup;
             });
 
-            if (!tokens.length && window.matchMedia('(max-width: 767px)').matches) {
-                groups.forEach((group, index) => { group.open = index === 0; });
+            if (!tokens.length) {
+                groups.forEach(group => { group.open = groups.length === 1; });
             }
 
             if (emptyState) emptyState.hidden = visibleTotal > 0;
