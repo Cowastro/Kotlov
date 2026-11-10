@@ -79,6 +79,21 @@ class CatalogController extends Controller
             abort(404);
         }
 
+        $isSaunaStoveCatalog = in_array($category->slug, SaunaStoveFilterNormalizer::CATEGORIES, true);
+        $saunaPickerSlug = $isSaunaStoveCatalog ? $category->slug : null;
+        // This legacy category has the stove slug but contains sauna accessories.
+        if ($category->slug === 'pechi-dlya-bani') {
+            $saunaPickerSlug = Category::active()->whereIn('slug', SaunaStoveFilterNormalizer::WOOD_CATEGORIES)
+                ->pluck('slug')
+                ->sortBy(fn (string $slug) => array_search($slug, SaunaStoveFilterNormalizer::WOOD_CATEGORIES, true))
+                ->first();
+            if ($saunaPickerSlug !== null && request()->query('sauna_volume') !== null) {
+                $params = http_build_query(request()->only('sauna_volume', 'in_stock'));
+
+                return redirect(url('/'.$saunaPickerSlug).'?'.$params.'#catalog-products');
+            }
+        }
+
         if ($category->slug === 'dlya-dachi') {
             $pechki = Category::where('slug', 'pechki')->first();
             if ($pechki) {
@@ -742,7 +757,6 @@ class CatalogController extends Controller
             }
         }
 
-        $isSaunaStoveCatalog = in_array($category->slug, SaunaStoveFilterNormalizer::CATEGORIES, true);
         $rawSaunaVolume = request()->query('sauna_volume');
         $saunaVolume = is_string($rawSaunaVolume) && preg_match('/^\d{1,3}(?:[.,]\d{1,2})?$/D', $rawSaunaVolume)
             ? (float) str_replace(',', '.', $rawSaunaVolume)
@@ -1461,6 +1475,7 @@ class CatalogController extends Controller
             'minskFireplaceOfficeAddress',
             'fireplaceSpecsByProduct',
             'isSaunaStoveCatalog',
+            'saunaPickerSlug',
             'saunaVolume',
             'subcategories',
             'brands',

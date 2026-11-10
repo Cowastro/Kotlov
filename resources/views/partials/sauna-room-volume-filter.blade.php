@@ -1,5 +1,7 @@
 @php
-    $preservedFilters = request()->only('brand', 'brand_sort', 'price_min', 'price_max', 'sort', 'subcategory', 'attr', 'in_stock');
+    $preservedFilters = $isSaunaStoveCatalog
+        ? request()->only('brand', 'brand_sort', 'price_min', 'price_max', 'sort', 'subcategory', 'attr', 'in_stock')
+        : request()->only('in_stock');
     $resetVolumeQuery = http_build_query($preservedFilters);
 @endphp
 
@@ -7,9 +9,13 @@
     <div class="border rounded-3 p-3 p-md-4">
         <h2 id="sauna-room-filter-title" class="h5 mb-2">Подбор печи по объёму парной</h2>
         <p id="sauna-room-filter-help" class="text-caption-01 cl-text-2 mb-3">
-            Укажите объём в м³. Покажем модели, у которых в характеристиках указан подходящий диапазон.
+            @if ($isSaunaStoveCatalog)
+                Укажите объём в м³. Покажем модели, у которых в характеристиках указан подходящий диапазон.
+            @else
+                Здесь представлены аксессуары для парной. Укажите объём в м³, чтобы открыть подходящие модели в каталоге дровяных печей.
+            @endif
         </p>
-        <form action="{{ url()->current() }}#catalog-products" method="get" class="d-flex flex-wrap align-items-end gap-2">
+        <form action="{{ url('/'.$saunaPickerSlug) }}#catalog-products" method="get" class="d-flex flex-wrap align-items-end gap-2">
             @foreach (\Illuminate\Support\Arr::dot($preservedFilters) as $key => $value)
                 @if (is_scalar($value))
                     @php([$first, $rest] = array_pad(explode('.', $key, 2), 2, null))
