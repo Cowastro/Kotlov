@@ -189,14 +189,14 @@ return [
             'sources' => ['https://kotlov.by/oblicovki/luton-2-r#specifications'],
             'inserts' => [
                 'elektrokamin-royal-flame-dioramic-33-led-fx',
-                'elektrokamin-royal-flame-dioramic-33-w-led-fx',
+                'interflame-panoramic-33w-led-fx',
             ],
         ],
         'portal-praga' => [
             'sources' => ['https://kotlov.by/oblicovki/portal-praga#specifications'],
             'inserts' => [
                 'elektrokamin-royal-flame-dioramic-33-led-fx',
-                'elektrokamin-royal-flame-dioramic-33-w-led-fx',
+                'interflame-panoramic-33w-led-fx',
             ],
         ],
         'portal-smolcom-lindos-fs33' => [
@@ -208,7 +208,7 @@ return [
         'portal-smolcom-govard-fs33w' => [
             'sources' => ['https://kotlov.by/oblicovki/portal-smolcom-govard-fs33w#specifications'],
             'inserts' => [
-                'elektrokamin-royal-flame-dioramic-33-w-led-fx',
+                'interflame-panoramic-33w-led-fx',
             ],
         ],
         'portal-soho' => [
