@@ -179,9 +179,9 @@
                                     {{ $product->h1 ?: $product->name }}
                                 </h1>
 
-                                @if (! empty($boilerCardSpecs))
+                                @if (! empty($productCardSpecs))
                                     <div class="mb-3">
-                                        @include('partials.fireplace-card-specs', ['fireplaceCardSpecs' => $boilerCardSpecs])
+                                        @include('partials.fireplace-card-specs', ['fireplaceCardSpecs' => $productCardSpecs])
                                     </div>
                                 @endif
 

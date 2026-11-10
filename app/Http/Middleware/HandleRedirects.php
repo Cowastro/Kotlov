@@ -16,6 +16,7 @@ use App\Models\PartnerBranch;
 use App\Models\Product;
 use Closure;
 use App\Support\Catalog\BoilerCatalog;
+use App\Support\Catalog\WaterHeaterCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -677,7 +678,10 @@ class HandleRedirects
             return null;
         }
 
-        if (count($segments) === 2 && (BoilerCatalog::LANDINGS[$segments[0]]['slug'] ?? null) === $segments[1]) {
+        if (count($segments) === 2 && (
+            (BoilerCatalog::LANDINGS[$segments[0]]['slug'] ?? null) === $segments[1]
+            || ($segments[0] === 'electric' && isset(WaterHeaterCatalog::LANDINGS[$segments[1]]))
+        )) {
             return null;
         }
 
