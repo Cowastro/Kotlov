@@ -8,7 +8,6 @@ use App\Models\SupplierProduct;
 use App\Services\Suppliers\SmolcomSiteCatalog;
 use App\Services\Suppliers\SmolkomPriceList;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 
 /**
  * Takes off the photos a web search put on Смолком cards when they are wrong (another colour or model, a drawing, a
@@ -56,7 +55,7 @@ class SmolkomPhotoCleanupCommand extends Command
                 && (! $recheck || $site->photos((string) ($o->raw['article'] ?? '')) !== []))
             ->groupBy($family);
 
-        $stats = ['wrong' => 0, 'watermarked' => 0, 'temp_photo' => 0, 'hidden' => 0];
+        $stats = ['wrong' => 0, 'watermarked' => 0, 'temp_photo' => 0, 'hidden' => 0, 'note_fixed' => 0];
         foreach ($offers as $offer) {
             $product = $offer->product;
             $source = (string) $product->content_source_url;
@@ -67,6 +66,17 @@ class SmolkomPhotoCleanupCommand extends Command
             $marked = ! $wrong && ! in_array($product->slug, $keep, true) && array_filter((array) $product->images) !== []
                 && collect($hosts)->contains(fn (string $h) => str_contains($source, $h));
             if (! $wrong && ! $marked) {
+                // A card already showing a sibling colour keeps a whole note (an older run cut it at 250 characters).
+                if (! empty($offer->raw['temp_photo_from']) && ($donorCard = Product::query()->find($offer->raw['temp_photo_from']))) {
+                    $donorOffer = SupplierProduct::query()->where('supplier_id', $supplier->id)->where('product_id', $donorCard->id)->first();
+                    $colour = mb_strtolower(trim((string) ($donorOffer?->raw['colour'] ?? '')));
+                    $fixed = self::withNote((string) $product->short_description, $colour);
+                    if ($colour !== '' && $fixed !== $product->short_description) {
+                        $stats['note_fixed'] = ($stats['note_fixed'] ?? 0) + 1;
+                        $this->option('apply') && $product->forceFill(['short_description' => $fixed])->save();
+                    }
+                }
+
                 continue;
             }
             $stats[$wrong ? 'wrong' : 'watermarked']++;
@@ -83,7 +93,7 @@ class SmolkomPhotoCleanupCommand extends Command
                 $colour = mb_strtolower(trim((string) ($donor->raw['colour'] ?? '')));
                 $product->forceFill([
                     'images' => array_values(array_filter((array) $donor->product->images)),
-                    'short_description' => Str::limit(trim(self::stripNote((string) $product->short_description).' '.sprintf(self::NOTE, $colour)), 250, ''),
+                    'short_description' => self::withNote((string) $product->short_description, $colour),
                     'is_active' => true,
                     'created_via' => null,
                     'content_source_url' => 'https://smolcom.by/',
@@ -102,9 +112,17 @@ class SmolkomPhotoCleanupCommand extends Command
         return self::SUCCESS;
     }
 
-    /** The short description without the temporary photo note. */
+    /** The note first, the description untouched after it. */
+    public static function withNote(string $text, string $colour): string
+    {
+        return trim(sprintf(self::NOTE, $colour).' '.self::stripNote($text));
+    }
+
+    /** The short description without the temporary photo note (also a note cut short at the end). */
     public static function stripNote(string $text): string
     {
-        return trim((string) preg_replace('/\s*На фото — цвет «[^»]*», фото этого цвета скоро добавим\.\s*/u', ' ', $text));
+        $text = (string) preg_replace('/\s*На фото — цвет «[^»]*», фото этого цвета скоро добавим\.\s*/u', ' ', $text);
+
+        return trim((string) preg_replace('/\s*На фото — цвет[^.]*$/u', '', $text));
     }
 }

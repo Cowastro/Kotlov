@@ -189,7 +189,8 @@ class SyncSmolkomCommandTest extends TestCase
             $this->assertArrayNotHasKey('photo_searched_at', $offer->raw);
         }
         $this->assertSame(['img/products/official/white.jpg'], $white->fresh()->images);
-        $this->assertSame('Портал. '.sprintf(SmolkomPhotoCleanupCommand::NOTE, 'бьянко белый'), $black->short_description);
+        $this->assertSame(sprintf(SmolkomPhotoCleanupCommand::NOTE, 'бьянко белый').' Портал.', $black->short_description);
+        $this->assertSame('Портал.', SmolkomPhotoCleanupCommand::stripNote('Портал. На фото — цвет'));
         $this->assertSame('Портал.', SmolkomPhotoCleanupCommand::stripNote((string) $black->short_description));
     }
 
