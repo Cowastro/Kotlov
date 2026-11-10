@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Console\Commands\ChistyBeregPhotosCommand;
 use App\Console\Commands\CreateSmolkomCardsCommand;
+use App\Console\Commands\SmolkomPhotoCleanupCommand;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
@@ -147,6 +149,45 @@ class SyncSmolkomCommandTest extends TestCase
         foreach (array_merge((array) $black->images, (array) $ignite->fresh()->images) as $path) {
             @unlink(public_path($path));
         }
+    }
+
+    public function test_wrong_and_watermarked_photos_are_taken_off_and_a_sibling_colour_shows_for_now(): void
+    {
+        $this->assertTrue(ChistyBeregPhotosCommand::watermarked('https://www.21vek.by/fireplaces/x.html'));
+        $this->assertFalse(ChistyBeregPhotosCommand::watermarked('https://belsklad.by/x'));
+
+        $category = Category::query()->create(['name' => 'Облицовки', 'slug' => 'oblicovki', 'parent_id' => 0, 'is_active' => true]);
+        $brand = Brand::query()->create(['name' => 'Smolcom', 'slug' => 'smolcom', 'is_active' => true]);
+        $supplier = Supplier::query()->updateOrCreate(['code' => 'smolkom'], ['name' => 'Смолком', 'currency' => 'BYN', 'is_active' => true]);
+        $card = function (string $slug, string $colour, array $images, string $source) use ($category, $brand, $supplier) {
+            $product = Product::query()->create(['name' => 'Портал Smolcom Line V42 '.$colour, 'slug' => $slug, 'sku' => 'SMOLKOM-'.strtoupper($slug),
+                'category_id' => $category->id, 'brand_id' => $brand->id, 'price' => 1110, 'is_active' => true, 'images' => $images,
+                'short_description' => 'Портал.', 'content_source_url' => $source]);
+            SupplierProduct::query()->create(['supplier_id' => $supplier->id, 'product_id' => $product->id, 'supplier_article' => 'a-'.$slug, 'supplier_name' => 'Line V42',
+                'price' => 856, 'currency' => 'BYN', 'raw' => ['article' => 'LINV4'.$slug, 'colour' => $colour, 'name' => 'LINE V42', 'group' => 'ПОРТАЛЫ', 'photo_searched_at' => '2026-11-10']]);
+
+            return $product;
+        };
+        $white = $card('white', 'Бьянко белый', ['img/products/official/white.jpg'], 'https://smolcom.by/');
+        $black = $card('black', 'Черный', ['img/products/official/wrong.jpg'], 'https://belsklad.by/line');
+        $grey = $card('grey', 'Серый графит', ['img/products/official/21vek.jpg'], 'https://www.21vek.by/fireplaces/line.html');
+
+        $this->artisan('supplier:smolkom-photo-cleanup', ['--slug' => ['black'], '--apply' => true])
+            ->expectsOutputToContain('metric.smolkom_photo_cleanup.wrong=1')
+            ->expectsOutputToContain('metric.smolkom_photo_cleanup.watermarked=1')
+            ->expectsOutputToContain('metric.smolkom_photo_cleanup.temp_photo=2')
+            ->assertSuccessful();
+        foreach ([$black, $grey] as $product) {
+            $product->refresh();
+            $this->assertSame(['img/products/official/white.jpg'], $product->images);
+            $this->assertStringContainsString('На фото — цвет «бьянко белый»', (string) $product->short_description);
+            $offer = SupplierProduct::query()->where('product_id', $product->id)->sole();
+            $this->assertSame($white->id, $offer->raw['temp_photo_from']);
+            $this->assertArrayNotHasKey('photo_searched_at', $offer->raw);
+        }
+        $this->assertSame(['img/products/official/white.jpg'], $white->fresh()->images);
+        $this->assertSame('Портал. '.sprintf(SmolkomPhotoCleanupCommand::NOTE, 'бьянко белый'), $black->short_description);
+        $this->assertSame('Портал.', SmolkomPhotoCleanupCommand::stripNote((string) $black->short_description));
     }
 
     private function priceList(): string

@@ -10,6 +10,7 @@ use App\Services\SupplierProductAvailabilityService;
 use App\Services\Suppliers\FireplaceBrandSiteCatalog;
 use App\Services\Suppliers\SmolcomSiteCatalog;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 
 /**
  * Photos from smolcom.by for the Смолком cards that have none: the offer of the same article («GOVV4Ч») carries the
@@ -37,7 +38,7 @@ class SmolkomSitePhotosCommand extends Command
         $offers = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')
             ->with('product')->orderBy('id')->get()
             ->filter(fn (SupplierProduct $offer): bool => $offer->product && ! $offer->product->is_archived
-                && array_filter((array) $offer->product->images) === [] && filled($offer->raw['article'] ?? null))
+                && (array_filter((array) $offer->product->images) === [] || ! empty($offer->raw['temp_photo_from'])) && filled($offer->raw['article'] ?? null))
             ->values();
         $stats = ['without_photo' => $offers->count(), 'site_offers' => $site->size(), 'brand_site_offers' => $brands->size(), 'found' => 0, 'found_brand_site' => 0, 'saved' => 0, 'published' => 0, 'errors' => 0];
         $touched = [];
@@ -58,13 +59,19 @@ class SmolkomSitePhotosCommand extends Command
                 continue;
             }
             try {
-                $enricher->enrichFromParsed($product, $source, ['images' => [], 'specs' => [], 'description' => ''], [
-                    'verified_images' => $photos, 'update_images' => true, 'update_specs' => false, 'update_content' => false,
+                // A card showing another colour for now gets its own photos in place of those.
+                $temporary = ! empty($offer->raw['temp_photo_from']);
+                $result = $enricher->enrichFromParsed($product, $source, ['images' => [], 'specs' => [], 'description' => ''], [
+                    'verified_images' => $photos, 'update_images' => true, 'replace_images' => $temporary, 'update_specs' => false, 'update_content' => false,
                     'update_service' => false, 'update_documents' => false, 'update_video' => false,
                 ]);
                 $product->refresh();
-                if (array_filter((array) $product->images) === []) {
+                if (array_filter((array) $product->images) === [] || (int) ($result['images_saved'] ?? 0) === 0) {
                     continue;
+                }
+                if ($temporary) {
+                    $product->forceFill(['short_description' => SmolkomPhotoCleanupCommand::stripNote((string) $product->short_description)])->save();
+                    $offer->forceFill(['raw' => Arr::except((array) $offer->raw, ['temp_photo_from'])])->save();
                 }
                 $stats['saved']++;
                 if ($product->created_via === Product::CREATED_VIA_AWAITING_PHOTOS) {

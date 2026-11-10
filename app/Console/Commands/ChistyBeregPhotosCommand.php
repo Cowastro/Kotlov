@@ -104,7 +104,8 @@ class ChistyBeregPhotosCommand extends Command
 
                     continue;
                 }
-                $urls = array_values(array_filter(array_keys($urls), fn (string $url): bool => ! str_contains($url, $ownSite) && ! preg_match('/\.(pdf|docx?|xlsx?)(\?|$)/i', $url)));
+                $urls = array_values(array_filter(array_keys($urls), fn (string $url): bool => ! str_contains($url, $ownSite) && ! preg_match('/\.(pdf|docx?|xlsx?)(\?|$)/i', $url)
+                    && ! self::watermarked($url)));
                 $found = null;
                 $started = microtime(true);
                 foreach (array_slice($urls, 0, self::PAGES) as $url) {
@@ -152,6 +153,16 @@ class ChistyBeregPhotosCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /** Shops that put their logo on product photos: their pictures are never taken (21vek.by, 10.11.2026). */
+    public const WATERMARKED_HOSTS = ['21vek.by'];
+
+    public static function watermarked(string $url): bool
+    {
+        $host = mb_strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return collect(self::WATERMARKED_HOSTS)->contains(fn (string $h) => $host === $h || str_ends_with($host, '.'.$h));
     }
 
     /** A safe word for the log in place of the provider's message. */
