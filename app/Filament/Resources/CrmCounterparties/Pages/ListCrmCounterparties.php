@@ -5,16 +5,19 @@ namespace App\Filament\Resources\CrmCounterparties\Pages;
 use App\Filament\Resources\CrmCounterparties\CrmCounterpartyResource;
 use App\Models\CrmCounterparty;
 use App\Services\Crm\Imports\OneCCrmImporter;
+use App\Services\Crm\PartnerSpreadsheet;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 class ListCrmCounterparties extends ListRecords
@@ -42,6 +45,58 @@ class ListCrmCounterparties extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('export_partners')
+                ->label('Экспорт партнёров в Excel')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->schema([
+                    CheckboxList::make('classifications')->label('Какие категории выгрузить')
+                        ->options(CrmCounterparty::CLASSIFICATIONS)->default(['b2b_partner', 'b2b_prospect'])->columns(2)->required(),
+                ])
+                ->modalDescription('Менеджер правит файл и возвращает его — загрузите кнопкой «Импорт партнёров из Excel». Колонку ID не меняйте.')
+                ->modalSubmitActionLabel('Скачать')
+                ->action(fn (array $data): BinaryFileResponse => response()
+                    ->download(app(PartnerSpreadsheet::class)->export(array_values((array) $data['classifications'])), 'partnery-'.now()->format('Y-m-d').'.xlsx')
+                    ->deleteFileAfterSend()),
+            Action::make('import_partners')
+                ->label('Импорт партнёров из Excel')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('gray')
+                ->schema([
+                    FileUpload::make('file')->label('Файл .xlsx, выгруженный кнопкой «Экспорт партнёров»')
+                        ->disk('local')->directory('crm-imports')->maxSize(20480)->required()
+                        ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']),
+                    Toggle::make('dry_run')->label('Пробная загрузка — только показать изменения')->default(true),
+                ])
+                ->action(function (array $data): void {
+                    $storedFile = is_array($data['file']) ? reset($data['file']) : $data['file'];
+                    $dryRun = (bool) ($data['dry_run'] ?? true);
+                    try {
+                        $s = app(PartnerSpreadsheet::class)->import(Storage::disk('local')->path($storedFile), $dryRun, auth()->id());
+                        Notification::make()
+                            ->title(($dryRun ? 'Пробная загрузка: ничего не сохранено' : 'Партнёры обновлены')." — строк {$s['rows']}")
+                            ->body(implode("
+", array_filter([
+                                "Изменится карточек: {$s['updated']}, новых: {$s['created']}, без изменений: {$s['unchanged']}",
+                                "Телефоны: +{$s['phones_added']} / отключено {$s['phones_off']}; e-mail: +{$s['emails_added']} / отключено {$s['emails_off']}",
+                                $s['changes'] !== [] ? "Изменения:
+".implode("
+", $s['changes']) : null,
+                                $s['errors'] !== [] ? "Замечания:
+".implode("
+", $s['errors']) : null,
+                                $dryRun ? 'Если всё верно — загрузите тот же файл без галочки «Пробная загрузка».' : null,
+                            ])))
+                            ->{$s['errors'] === [] ? 'success' : 'warning'}()
+                            ->persistent()
+                            ->send();
+                    } catch (Throwable $exception) {
+                        report($exception);
+                        Notification::make()->title('Файл не загружен')->body($exception->getMessage())->danger()->persistent()->send();
+                    } finally {
+                        Storage::disk('local')->delete($storedFile);
+                    }
+                }),
             Action::make('import_one_c')
                 ->label('Импорт из 1С')
                 ->icon('heroicon-o-arrow-up-tray')
