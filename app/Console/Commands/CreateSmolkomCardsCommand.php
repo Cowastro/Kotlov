@@ -142,6 +142,11 @@ class CreateSmolkomCardsCommand extends Command
     public static function hasSimilar(array $cards, array $words, array $colours): bool
     {
         foreach ($cards as $card) {
+            // The same model without a colour is the white one: other colours become cards of their own, offered as
+            // «Выберите цвет» on the card page.
+            if ($card['colours'] === [] && $card['words'] === $words && $colours !== []) {
+                continue;
+            }
             $colourOk = $card['colours'] === [] || $card['colours'] === $colours;
             $common = array_intersect($card['words'], $words);
             if ($colourOk && count($common) >= 2 && (array_diff($words, $card['words']) === [] || array_diff($card['words'], $words) === [])) {
@@ -200,7 +205,7 @@ class CreateSmolkomCardsCommand extends Command
         $sku = 'SMOLKOM-'.Str::upper(Str::limit(Str::slug((string) $offer->supplier_article), 60, ''));
         $specs = collect((array) ($raw['sizes'] ?? []))->map(fn ($value, $key) => ['key' => (string) $key, 'value' => (string) $value])->values()->all();
         if (filled($raw['colour'] ?? null)) {
-            $specs[] = ['key' => 'Цвет', 'value' => (string) $raw['colour']];
+            $specs[] = ['key' => 'Цвет', 'value' => mb_strtolower(trim((string) $raw['colour']))];
         }
         if (filled($raw['section'] ?? null)) {
             $specs[] = ['key' => $kind === 'portals' ? 'Под очаг' : 'Типоразмер', 'value' => (string) $raw['section']];

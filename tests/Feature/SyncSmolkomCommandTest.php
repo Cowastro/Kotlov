@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
+use App\Services\ProductVariantSelector;
 use App\Services\Suppliers\SmolkomPriceList;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -60,12 +61,24 @@ class SyncSmolkomCommandTest extends TestCase
         // Lumsden comes in two colours; the card without a colour takes the white one.
         $this->assertSame('a-lumstbb', $offer($lumsden)->supplier_article);
 
+        // The colourless Lumsden card got the colour of its row.
+        $this->assertSame('бьянко белый', collect($lumsden->fresh()->specs)->firstWhere('key', 'Цвет')['value']);
+
         // The unlinked Crystal 36 becomes a hidden card in the category of the linked electric fireplaces; Lumsden in
-        // oak is left to the colourless Lumsden card.
+        // oak becomes its own card, offered next to the white one as a colour.
         $this->artisan('supplier:smolkom-create', ['--apply' => true])
-            ->expectsOutputToContain('metric.smolkom_create.card_exists=1')
-            ->expectsOutputToContain('metric.smolkom_create.created=1')
+            ->expectsOutputToContain('metric.smolkom_create.card_exists=0')
+            ->expectsOutputToContain('metric.smolkom_create.created=2')
             ->assertSuccessful();
+        $oak = Product::query()->where('sku', 'SMOLKOM-A-LUMSTDA')->sole();
+        $this->assertSame('Портал Smolcom Lumsden STD-ASP дуб антик', $oak->name);
+        $selector = app(ProductVariantSelector::class)->forAdmin($lumsden->fresh());
+        $this->assertSame('Выберите цвет:', $selector['title']);
+        $this->assertSame(['Бьянко белый', 'Дуб антик'], $selector['variants']->pluck('label')->all());
+        // The storefront shows only cards on sale: the oak card is hidden until it has a photo.
+        $this->assertNull(app(ProductVariantSelector::class)->forProduct($lumsden->fresh()));
+        $oak->forceFill(['is_active' => true])->save();
+        $this->assertSame(2, app(ProductVariantSelector::class)->forProduct($lumsden->fresh())['variants']->count());
         $new = Product::query()->where('sku', 'SMOLKOM-A-64935693')->sole();
         $this->assertSame(['Электрокамин Royal Flame Crystal 36 RF', $electric->id, $royal->id, 2190.0, false],
             [$new->name, $new->category_id, $new->brand_id, (float) $new->price, (bool) $new->is_active]);

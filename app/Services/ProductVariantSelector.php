@@ -43,6 +43,10 @@ class ProductVariantSelector
             return $this->buildChimneyDiameter($product, $forAdmin);
         }
 
+        if (in_array($product->category?->slug, self::COLOUR_CATEGORIES, true) && $this->specValue($product, 'Цвет') !== '') {
+            return $this->buildColour($product, $forAdmin);
+        }
+
         if ($product->category?->slug !== 'membrannye-baki') {
             return null;
         }
@@ -185,6 +189,63 @@ class ProductVariantSelector
         return [
             'type' => 'diameter',
             'title' => 'Выберите диаметр:',
+            'variants' => $variants,
+        ];
+    }
+
+    /** Portals and electric fireplaces: one model in several colours, each colour its own card with «Цвет». */
+    private const COLOUR_CATEGORIES = ['oblicovki', 'elektrokamini', 'elektrokaminy', 'portaly-dlya-elektrokaminov'];
+
+    private function buildColour(Product $product, bool $forAdmin): ?array
+    {
+        $family = \App\Services\Suppliers\SmolkomPriceList::modelKey((string) $product->name);
+        if ($family === '' || ! $product->brand_id) {
+            return null;
+        }
+
+        $variants = Product::query()
+            ->where('category_id', $product->category_id)
+            ->where('brand_id', $product->brand_id)
+            ->when(! $forAdmin, fn ($query) => $query
+                ->where('variant_selector_excluded', false)
+                ->where('is_active', true)
+                ->where('is_archived', false)
+                ->where('price', '>', 0))
+            ->withSupplierChannels()
+            ->with(['category:id,name,slug', 'brand:id,name,slug'])
+            ->get()
+            ->map(function (Product $candidate) use ($family, $product): ?array {
+                $colour = $this->specValue($candidate, 'Цвет');
+                if ($colour === '' || \App\Services\Suppliers\SmolkomPriceList::modelKey((string) $candidate->name) !== $family) {
+                    return null;
+                }
+                $label = mb_strtoupper(mb_substr($colour, 0, 1)).mb_substr($colour, 1);
+
+                return [
+                    'product' => $candidate,
+                    'value' => mb_strtolower($colour),
+                    // White first, then the others by name.
+                    'sort' => [str_contains(mb_strtolower($colour), 'бел') ? 0 : 1, mb_strtolower($colour)],
+                    'label' => $label,
+                    'url' => url('/'.$candidate->category->slug.'/'.$candidate->slug),
+                    'availability_status' => $candidate->publicAvailabilityStatus(),
+                    'availability_label' => $candidate->publicAvailabilityLabel(),
+                    'is_current' => $candidate->is($product),
+                    'is_excluded' => (bool) $candidate->variant_selector_excluded,
+                ];
+            })
+            ->filter()
+            ->sortBy(fn (array $variant) => [$variant['sort'], $variant['is_current'] ? 0 : 1])
+            ->unique('value')
+            ->values();
+
+        if ($variants->count() < 2 || ! $variants->contains('is_current', true)) {
+            return null;
+        }
+
+        return [
+            'type' => 'colour',
+            'title' => 'Выберите цвет:',
             'variants' => $variants,
         ];
     }

@@ -256,7 +256,7 @@ class SyncSmolkomCommand extends Command
             'last_run_at' => now(),
             'last_status' => 'running',
         ]);
-        $stats = ['offers' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'gone_from_file' => 0, 'errors' => 0];
+        $stats = ['offers' => 0, 'colour_set' => 0, 'retail_updated' => 0, 'retail_kept_other_supplier' => 0, 'gone_from_file' => 0, 'errors' => 0];
         $touched = [];
         $seen = [];
         foreach ($rows as $row) {
@@ -307,6 +307,11 @@ class SyncSmolkomCommand extends Command
                     $product->forceFill(['price' => $row['rrc'], 'requires_price_confirmation' => false])->save();
                     $stats['retail_updated']++;
                 }
+                if ($row['colour'] !== '' && ($specs = self::withColour((array) $product->specs, $row['colour'])) !== null) {
+                    // The colour of the row: the card joins «Выберите цвет» with the other colours of its model.
+                    $product->forceFill(['specs' => $specs])->save();
+                    $stats['colour_set'] = ($stats['colour_set'] ?? 0) + 1;
+                }
                 if ($product->brand_id) {
                     $supplier->brands()->syncWithoutDetaching([$product->brand_id]);
                 }
@@ -328,6 +333,25 @@ class SyncSmolkomCommand extends Command
         $sync->forceFill(['last_status' => $stats['errors'] ? 'partial' : 'updated', 'last_exit_code' => $stats['errors'] ? 1 : 0, 'last_run_at' => now()])->save();
 
         return $stats;
+    }
+
+    /** The specs with «Цвет» added, or null when the card already names a colour. */
+    public static function withColour(array $specs, string $colour): ?array
+    {
+        foreach ($specs as $key => $spec) {
+            if ((is_array($spec) && mb_strtolower(trim((string) ($spec['key'] ?? ''))) === 'цвет') || (is_string($key) && mb_strtolower(trim($key)) === 'цвет')) {
+                return null;
+            }
+        }
+        $colour = mb_strtolower(trim($colour));
+        if ($specs !== [] && ! array_is_list($specs)) {
+            $specs['Цвет'] = $colour;
+
+            return $specs;
+        }
+        $specs[] = ['key' => 'Цвет', 'value' => $colour];
+
+        return $specs;
     }
 
     private function supplier(): Supplier
