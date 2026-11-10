@@ -231,6 +231,21 @@ Schedule::command('supplier:chisty-bereg-photos --supplier=prestizh_teplo --limi
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/prestizh-photos.log'));
 
+// Смолком shares its price list (stock, опт, РРЦ) as a Google Drive file: taken every morning; hidden cards made from it
+// look for a photo the same way as the others, each card once.
+Schedule::command('supplier:sync-smolkom --from-drive --apply')
+    ->dailyAt('07:25')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/smolkom-sync.log'));
+
+Schedule::command('supplier:chisty-bereg-photos --supplier=smolkom --limit=30 --apply')
+    ->dailyAt('09:20')
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/smolkom-photos.log'));
+
 // Hidden Fireway cards made from the Камин-профессионал price list look for a photo the same way, each card once.
 Schedule::command('supplier:chisty-bereg-photos --supplier=kaminproff --limit=30 --apply')
     ->dailyAt('08:20')

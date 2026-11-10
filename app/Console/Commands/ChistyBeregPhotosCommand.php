@@ -41,6 +41,7 @@ class ChistyBeregPhotosCommand extends Command
             SyncAkvateploservisCommand::SUPPLIER_CODE => [SyncAkvateploservisCommand::SUPPLIER_CODE, ['GALMET-', 'APAMET-'], 'galmet.by'],
             SyncTeplotopCommand::SUPPLIER_CODE => [SyncTeplotopCommand::SUPPLIER_CODE, ['TEPLOTOP-'], 'ttop.by'],
             SyncVistarCommand::SUPPLIER_CODE => [SyncVistarCommand::SUPPLIER_CODE, ['VISTAR-'], 'baxi.ru'],
+            SyncSmolkomCommand::SUPPLIER_CODE => [SyncSmolkomCommand::SUPPLIER_CODE, ['SMOLKOM-'], 'smolcom.ru'],
             'stank' => ['stank', ['STANK-'], 's-tank.ru'],
             'prestizh_teplo' => ['prestizh_teplo', ['PRESTIZH-'], 'prestizh-teplo.by'],
             default => [SyncChistyBeregCommand::SUPPLIER_CODE, ['BEREG-'], 'bereg.by'],

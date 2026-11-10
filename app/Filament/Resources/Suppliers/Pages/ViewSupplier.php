@@ -6,6 +6,7 @@ use App\Console\Commands\SyncAkvateploservisCommand;
 use App\Console\Commands\SyncChistyBeregCommand;
 use App\Console\Commands\SyncCooperDoorsCommand;
 use App\Console\Commands\SyncKaminproffCommand;
+use App\Console\Commands\SyncSmolkomCommand;
 use App\Console\Commands\SyncTeplotopCommand;
 use App\Console\Commands\SyncPrestizhTeploCommand;
 use App\Console\Commands\SyncVistarCommand;
@@ -15,6 +16,7 @@ use App\Services\Suppliers\AkvateploservisPriceList;
 use App\Services\Suppliers\ChistyBeregPriceList;
 use App\Services\Suppliers\CooperWholesalePriceList;
 use App\Services\Suppliers\KaminproffPriceList;
+use App\Services\Suppliers\SmolkomPriceList;
 use App\Services\Suppliers\TeplotopPriceList;
 use App\Services\Suppliers\TeplovSukhovPriceList;
 use App\Services\Suppliers\PrestizhTeploPriceList;
@@ -329,6 +331,41 @@ class ViewSupplier extends ViewRecord
                         ->persistent()
                         ->send();
                 }),
+            Action::make('smolkom_price')
+                ->label('Загрузить прайс')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('primary')
+                ->visible(fn (): bool => $this->getRecord()->code === SyncSmolkomCommand::SUPPLIER_CODE)
+                ->modalDescription('«Прайс-лист Смолком Камин» (xlsx). Свободный остаток, опт и РРЦ обновятся сразу, строки привяжутся к карточкам Smolcom, Dimplex, Royal Flame и Real Flame. Файл с Google Drive и так забирается каждое утро.')
+                ->schema([
+                    FileUpload::make('file')
+                        ->label('Файл xlsx')
+                        ->required()
+                        ->rules(['extensions:xls,xlsx'])
+                        ->maxSize(30720)
+                        ->disk('local')
+                        ->directory('supplier-price-uploads'),
+                ])
+                ->action(function (array $data): void {
+                    $stored = (string) (is_array($data['file']) ? reset($data['file']) : $data['file']);
+                    $path = Storage::disk('local')->path($stored);
+                    $rows = is_file($path) ? count(SmolkomPriceList::parse($path)) : 0;
+                    if ($rows === 0) {
+                        Storage::disk('local')->delete($stored);
+                        Notification::make()->danger()->title('В файле нет строк прайса «Смолком» (бренд, номенклатура, РРЦ)')->send();
+
+                        return;
+                    }
+                    SmolkomPriceList::store($path);
+                    Storage::disk('local')->delete($stored);
+                    $this->notifySmolkomSync($rows, []);
+                }),
+            Action::make('smolkom_drive')
+                ->label('Обновить с Google Drive')
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->visible(fn (): bool => $this->getRecord()->code === SyncSmolkomCommand::SUPPLIER_CODE)
+                ->action(fn () => $this->notifySmolkomSync(0, ['--from-drive' => true])),
             Action::make('kaminproff_price')
                 ->label('Загрузить прайс')
                 ->icon('heroicon-o-arrow-up-tray')
@@ -417,5 +454,22 @@ class ViewSupplier extends ViewRecord
         preg_match_all('/^metric\.teplov_sukhov\.([a-z_]+)=(\d+)$/m', Artisan::output(), $m);
 
         return array_map('intval', array_combine($m[1], $m[2]));
+    }
+
+    private function notifySmolkomSync(int $rows, array $options): void
+    {
+        Artisan::call('supplier:sync-smolkom', ['--apply' => true, ...$options]);
+        preg_match_all('/^metric\.smolkom\.([a-z_]+)=(\d+)$/m', Artisan::output(), $m);
+        $metrics = array_combine($m[1], $m[2]);
+        if (array_key_exists('drive_downloaded', $metrics) && ! (int) $metrics['drive_downloaded']) {
+            Notification::make()->warning()->title('Google Drive не отдал файл — использован последний загруженный прайс')->send();
+        }
+        $linked = (int) ($metrics['linked_before'] ?? 0) + (int) ($metrics['article'] ?? 0) + (int) ($metrics['model'] ?? 0) + (int) ($metrics['manual'] ?? 0);
+        Notification::make()->success()
+            ->title('Прайс «Смолком»: '.($rows ?: (int) ($metrics['rows'] ?? 0)).' позиций')
+            ->body(sprintf('Привязано к карточкам: %d. Предложено на подтверждение: %d. Без карточки: %d. В наличии: %d. Цен на сайте обновлено: %d.',
+                $linked, (int) ($metrics['suggested'] ?? 0), (int) ($metrics['unlinked'] ?? 0), (int) ($metrics['in_stock'] ?? 0), (int) ($metrics['retail_updated'] ?? 0)))
+            ->persistent()
+            ->send();
     }
 }
