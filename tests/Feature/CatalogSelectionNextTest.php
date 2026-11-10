@@ -74,6 +74,8 @@ class CatalogSelectionNextTest extends TestCase
         $this->get('/'.$category->slug.'?'.http_build_query(['attr' => [$attribute => [$option]]]))
             ->assertOk()
             ->assertSeeText($meter->name)
+            ->assertSee('Ультразвуковой счётчик Русбелгаз РБГ У G1,6 А')
+            ->assertDontSee('Диафрагменный: привычная механическая конструкция')
             ->assertDontSeeText($other->name);
         $this->get('/'.$category->slug.'/'.$meter->slug)
             ->assertOk()
