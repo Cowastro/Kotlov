@@ -203,9 +203,14 @@ class ProductVariantSelector
             return null;
         }
 
+        // One maker under several brand records («Smolcom» and «Смолком»).
+        $brandKey = fn (?string $name): string => strtr(\Illuminate\Support\Str::slug((string) $name, ''), ['smolkom' => 'smolcom']);
+        $product->loadMissing('brand:id,name');
+        $key = $brandKey($product->brand?->name);
+        $brandIds = \App\Models\Brand::query()->get(['id', 'name'])->filter(fn ($b) => $brandKey($b->name) === $key)->pluck('id')->push($product->brand_id)->unique()->all();
         $variants = Product::query()
             ->where('category_id', $product->category_id)
-            ->where('brand_id', $product->brand_id)
+            ->whereIn('brand_id', $brandIds)
             ->when(! $forAdmin, fn ($query) => $query
                 ->where('variant_selector_excluded', false)
                 ->where('is_active', true)
