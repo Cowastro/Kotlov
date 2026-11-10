@@ -165,6 +165,10 @@
             {{ $product->name }}
         </a>
 
+        @if (! empty($fireplaceCardSpecs))
+            @include('partials.fireplace-card-specs')
+        @endif
+
         @if ($heatPumpMeta)
             <div class="heat-pump-card-meta" aria-label="Основные характеристики модели">
                 <div class="heat-pump-card-meta__chips">

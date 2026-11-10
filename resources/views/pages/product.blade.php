@@ -833,7 +833,7 @@
                     ->map(fn ($value) => mb_strtolower(trim((string) ($value->attribute?->name ?? ''))))
                     ->filter()
                     ->values();
-                $rawSpecs = !empty($product->specs)
+                $rawSpecs = $fireplaceSpecs === null && !empty($product->specs)
                     ? collect(is_array($product->specs) ? $product->specs : (json_decode($product->specs, true) ?? []))
                           ->map(function ($spec, $key) {
                               if (is_array($spec)) {
@@ -883,7 +883,7 @@
                           ->unique(fn($s) => mb_strtolower(trim($s['key'])))
                           ->values()
                     : collect();
-                $hasSpecs = $attributeValues->count() > 0 || $rawSpecs->count() > 0;
+                $hasSpecs = $fireplaceSpecs !== null ? $fireplaceSpecs !== [] : $attributeValues->isNotEmpty() || $rawSpecs->isNotEmpty();
             @endphp
             <ul class="tab-btn-wrap-v1" role="tablist">
                 <li class="nav-tab-item" role="presentation">
@@ -973,7 +973,14 @@
                         <div class="tab-content_desc site-prose">
                             <table class="table table-bordered table-striped">
                                 <tbody>
-                                    @if ($attributeValues->count() > 0)
+                                    @if ($fireplaceSpecs !== null)
+                                        @foreach ($fireplaceSpecs as $label => $value)
+                                            <tr>
+                                                <th scope="row" class="fw-medium" style="width:45%">{{ $label }}</th>
+                                                <td>{{ $value }}</td>
+                                            </tr>
+                                        @endforeach
+                                    @elseif ($attributeValues->count() > 0)
                                         @foreach ($attributeValues as $val)
                                             @php
                                                 $isEmpty = ! $val->hasDisplayValue();
@@ -1271,7 +1278,7 @@
                                     <li class="cl-text-2">— По Минску: 1-2 рабочих дня</li>
                                     <li class="cl-text-2">— По регионам: 2-5 рабочих дней</li>
                                     <li class="cl-text-2">— Крупногабаритное оборудование — по договорённости</li>
-                                    <li class="cl-text-2">— Самовывоз: ул. Селицкого 39Б, каб.23, Минск</li>
+                                    <li class="cl-text-2">— Самовывоз со склада KOTLOV: {{ config('shop.delivery_methods.pickup.address') }} · по предварительному согласованию</li>
                                 </ul>
                             </div>
                         </div>

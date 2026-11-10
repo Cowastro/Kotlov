@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Attribute;
+use App\Models\AttributeOption;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\City;
@@ -142,6 +144,57 @@ class SeoSurfaceTest extends TestCase
                 && $page->pluck('id')->all() === [$ids[0], $ids[2], $ids[3], $ids[1]]);
         $this->get($url.'?sort=price_asc')->assertOk()
             ->assertViewHas('products', fn ($page) => $page->pluck('id')->all() === $ids);
+    }
+
+    public function test_fireplace_cards_and_details_share_the_same_specs(): void
+    {
+        $category = Category::query()->create(['parent_id' => 0, 'name' => 'Печи-камины', 'slug' => 'pechi-kaminy', 'is_active' => true]);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Печь-камин тестовая',
+            'slug' => 'test-fireplace-specs',
+            'sku' => 'FIREPLACE-SPECS',
+            'price' => 100,
+            'is_active' => true,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+            'specs' => [
+                ['key' => 'Тепловая мощность, кВт', 'value' => '6 кВт', 'unit' => 'кВт'],
+                ['key' => 'Площадь обогрева, м2', 'value' => 'от 25 до 55 м2'],
+                ['key' => 'Объём отапливаемого помещения', 'value' => '135 м³'],
+                ['key' => 'Диаметр дымохода, мм', 'value' => '120', 'unit' => 'мм'],
+                ['key' => 'Диаметр дымоходного патрубка', 'value' => '120 мм'],
+                ['key' => 'КПД, %', 'value' => '80 %', 'unit' => '%'],
+            ],
+        ]);
+        $area = Attribute::query()->create([
+            'category_id' => $category->id, 'name' => 'Площадь отапливаемого помещения', 'type' => 'select', 'in_product' => true,
+        ]);
+        $material = Attribute::query()->create([
+            'category_id' => $category->id, 'name' => 'Материал', 'type' => 'select', 'in_product' => true,
+        ]);
+        $product->allAttributeValues()->createMany([
+            ['attribute_id' => $area->id, 'option_id' => AttributeOption::query()->create(['attribute_id' => $area->id, 'name' => '50–100 м²'])->id],
+            ['attribute_id' => $material->id, 'option_id' => AttributeOption::query()->create(['attribute_id' => $material->id, 'name' => 'Сталь'])->id],
+        ]);
+
+        $response = $this->get('https://kotlov.by/pechi-kaminy')->assertOk()
+            ->assertSeeText('6 кВт')
+            ->assertSeeText('25–55 м²')
+            ->assertSeeText('Сталь')
+            ->assertDontSeeText('135 м³');
+        $this->assertSame(2, substr_count($response->getContent(), 'class="fireplace-card-specs '));
+
+        $this->get('https://kotlov.by/pechi-kaminy/'.$product->slug)->assertOk()
+            ->assertViewHas('fireplaceSpecs', [
+                'Мощность' => '6 кВт',
+                'Площадь обогрева' => '25–55 м²',
+                'Материал' => 'Сталь',
+                'Объём отапливаемого помещения' => '135 м³',
+                'Диаметр дымохода' => '120 мм',
+                'КПД' => '80 %',
+            ])
+            ->assertSeeText('Самовывоз со склада KOTLOV: '.config('shop.delivery_methods.pickup.address'))
+            ->assertDontSeeText('Самовывоз: ул. Селицкого 39Б');
     }
 
     private function enableCityStorefront(string $slug): City

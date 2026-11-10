@@ -11,6 +11,7 @@ use App\Services\HeatPumpProductPresenter;
 use App\Services\ProductPopularityService;
 use App\Services\ProductVariantSelector;
 use App\Services\SeoMetadataBuilder;
+use App\Support\Catalog\FireplaceSpecifications;
 use App\Support\Catalog\GasMeterSelectionGuide;
 use Illuminate\Support\Facades\Log;
 
@@ -81,6 +82,9 @@ class ProductController extends Controller
             ->filter(fn ($value) => $value->hasDisplayValue())
             ->unique(fn ($val) => mb_strtolower(trim($val->attribute->name ?? '')))
             ->values();
+        $fireplaceSpecs = $productCategory->slug === 'pechi-kaminy'
+            ? FireplaceSpecifications::details($product, $attributeValues)
+            : null;
 
         // Похожие товары
         $relatedProducts = Product::where('category_id', $product->category_id)
@@ -353,6 +357,7 @@ class ProductController extends Controller
         return view('pages.product', compact(
             'product',
             'attributeValues',
+            'fireplaceSpecs',
             'relatedProducts',
             'showsChimneyOffer',
             'isChimneyProduct',
