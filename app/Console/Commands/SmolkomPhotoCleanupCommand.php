@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
+use App\Services\Suppliers\SmolcomSiteCatalog;
 use App\Services\Suppliers\SmolkomPriceList;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
@@ -24,13 +25,15 @@ class SmolkomPhotoCleanupCommand extends Command
     protected $signature = 'supplier:smolkom-photo-cleanup
         {--slug=* : Cards whose photo is wrong}
         {--host=* : Photo sources to drop (default 21vek.by: watermarked)}
+        {--keep=* : Cards from such a source whose photo has no watermark}
+        {--recheck-site : Also take off smolcom.by photos the site no longer gives for the colour of the card}
         {--apply : Write the change}';
 
     protected $description = 'Remove wrong or watermarked web photos from Смолком cards; show a sibling colour photo for now';
 
     public const NOTE = 'На фото — цвет «%s», фото этого цвета скоро добавим.';
 
-    public function handle(): int
+    public function handle(SmolcomSiteCatalog $site): int
     {
         $supplier = Supplier::query()->where('code', SyncSmolkomCommand::SUPPLIER_CODE)->first();
         if (! $supplier) {
@@ -40,6 +43,8 @@ class SmolkomPhotoCleanupCommand extends Command
         }
         $slugs = array_filter(array_map('trim', (array) $this->option('slug')));
         $hosts = array_filter(array_map('trim', (array) $this->option('host'))) ?: ['21vek.by'];
+        $keep = array_filter(array_map('trim', (array) $this->option('keep')));
+        $recheck = (bool) $this->option('recheck-site');
         $offers = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->with('product')->get()
             ->filter(fn (SupplierProduct $o) => $o->product && str_starts_with((string) $o->product->sku, 'SMOLKOM-'));
         $family = fn (SupplierProduct $o): string => SmolkomPriceList::modelKey((string) ($o->raw['name'] ?? ''));
@@ -47,15 +52,20 @@ class SmolkomPhotoCleanupCommand extends Command
         // Cards with the price list model's own smolcom.by photos, by model.
         $donors = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->with('product')->get()
             ->filter(fn (SupplierProduct $o) => $o->product && $o->product->is_active && str_contains((string) $o->product->content_source_url, 'smolcom.by')
-                && array_filter((array) $o->product->images) !== [] && empty($o->raw['temp_photo_from']))
+                && array_filter((array) $o->product->images) !== [] && empty($o->raw['temp_photo_from']) && ! in_array($o->product->slug, $slugs, true)
+                && (! $recheck || $site->photos((string) ($o->raw['article'] ?? '')) !== []))
             ->groupBy($family);
 
         $stats = ['wrong' => 0, 'watermarked' => 0, 'temp_photo' => 0, 'hidden' => 0];
         foreach ($offers as $offer) {
             $product = $offer->product;
             $source = (string) $product->content_source_url;
-            $wrong = in_array($product->slug, $slugs, true);
-            $marked = ! $wrong && array_filter((array) $product->images) !== [] && collect($hosts)->contains(fn (string $h) => str_contains($source, $h));
+            $wrong = in_array($product->slug, $slugs, true)
+                // A smolcom.by photo that the site shows for every colour of the model.
+                || ($recheck && empty($offer->raw['temp_photo_from']) && str_contains($source, 'smolcom.by') && array_filter((array) $product->images) !== []
+                    && $site->photos((string) ($offer->raw['article'] ?? '')) === []);
+            $marked = ! $wrong && ! in_array($product->slug, $keep, true) && array_filter((array) $product->images) !== []
+                && collect($hosts)->contains(fn (string $h) => str_contains($source, $h));
             if (! $wrong && ! $marked) {
                 continue;
             }

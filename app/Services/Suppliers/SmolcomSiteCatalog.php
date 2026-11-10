@@ -23,14 +23,14 @@ class SmolcomSiteCatalog
     /** @return list<string> absolute photo URLs of the offer with this article */
     public function photos(string $article): array
     {
-        $this->index ??= Cache::remember('smolcom-site:index:v1', now()->addWeek(), fn (): array => $this->build());
+        $this->index ??= Cache::remember('smolcom-site:index:v2', now()->addWeek(), fn (): array => $this->build());
 
         return $this->index[self::articleKey($article)] ?? [];
     }
 
     public function size(): int
     {
-        $this->index ??= Cache::remember('smolcom-site:index:v1', now()->addWeek(), fn (): array => $this->build());
+        $this->index ??= Cache::remember('smolcom-site:index:v2', now()->addWeek(), fn (): array => $this->build());
 
         return count($this->index);
     }
@@ -72,6 +72,17 @@ class SmolcomSiteCatalog
             $key = self::articleKey(html_entity_decode($article[1]));
             if ($photos !== [] && ! isset($result[$key])) {
                 $result[$key] = array_slice($photos, 0, 6);
+            }
+        }
+        // A photo shown for several colours of the page is the product's common picture, not the photo of a colour
+        // (Line V42 «черный» showed the white one): only photos of one offer count.
+        $count = array_count_values(array_merge(...array_values($result ?: [[]])));
+        foreach ($result as $key => $photos) {
+            $own = array_values(array_filter($photos, fn (string $photo): bool => ($count[$photo] ?? 0) === 1));
+            if ($own === []) {
+                unset($result[$key]);
+            } else {
+                $result[$key] = $own;
             }
         }
 
