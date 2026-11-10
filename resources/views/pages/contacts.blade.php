@@ -2,6 +2,8 @@
 
 @section('content')
 @php
+    $replacementSlug = request()->query('replace_meter');
+    $replacementMeter = is_string($replacementSlug) ? \App\Support\Catalog\GasMeterSelectionGuide::verifiedSpecs($replacementSlug) : null;
     $contact = $cityContact ?? [
         'company_name' => config('legal.seller.short_name', 'KOTLOV.BY'),
         'phone_links' => [
@@ -218,7 +220,7 @@
                                 <textarea id="contact-message" name="message"
                                     placeholder="Ваш вопрос или комментарий"
                                     data-required="1" data-label="Сообщение"
-                                    class="{{ $errors->has('message') ? 'kv-invalid' : '' }}">{{ old('message') }}</textarea>
+                                    class="{{ $errors->has('message') ? 'kv-invalid' : '' }}">{{ old('message', $replacementMeter ? 'Прошу подобрать замену газового счётчика '.$replacementMeter['model'].'.' : '') }}</textarea>
                                 @error('message')<span class="kv-field-error kv-field-error--visible">{{ $message }}</span>@enderror
                             </fieldset>
                             <div class="checkbox-wrap">

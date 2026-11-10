@@ -6,6 +6,75 @@ use App\Models\Product;
 
 class HeatPumpProductPresenter
 {
+    public const ROOT = 'teplovyie-nasosyi';
+    public const AIR_WATER = 'teplovye-nasosy-vozduh-voda';
+    public const PARTS = 'komplektuyushchie-dlya-teplovykh-nasosov';
+
+    public const PUMP_CATEGORIES = [
+        self::ROOT, self::AIR_WATER, 'geotermalnye-teplovye-nasosy', 'teplovye-nasosy-dlya-basseynov',
+    ];
+
+    public function rtcModel(Product $product): ?string
+    {
+        if ($product->category?->slug !== self::AIR_WATER
+            || ! preg_match('/\bRegulus RTC (6i|13e)\b/i', $product->name, $match)) {
+            return null;
+        }
+
+        return strtolower($match[1]);
+    }
+
+    public function catalogSpecs(Product $product): array
+    {
+        // Regulus publishes these values in the technical sheets for 17735 and 19437.
+        $rtc = $this->rtcModel($product);
+        if ($rtc !== null) {
+            return [
+                'Тепловая мощность A7/W35' => $rtc === '6i' ? '5,42 кВт (A7/W35, 85 Гц)' : '10,13 кВт (A7/W35, 79 Гц)',
+                'SCOP' => $rtc === '6i' ? 'SCOP 4,47' : 'SCOP 4,71',
+                'Температура подачи' => 'До 55 °C',
+                'Питание' => '230 В, 1 фаза',
+            ];
+        }
+
+        $specs = $this->normalizeSpecs($product->specs);
+        foreach ($product->allAttributeValues as $attributeValue) {
+            if ($attributeValue->hasDisplayValue()) {
+                $specs[mb_strtolower(trim($attributeValue->attribute->name))] ??= $attributeValue->display_value;
+            }
+        }
+
+        $card = [];
+        foreach ($specs as $name => $value) {
+            if (preg_match('/(?:тепловая мощность|мощность обогрева|мощность отопления).*a\s*7\s*\/\s*w\s*35/ui', $name)) {
+                $card['Тепловая мощность A7/W35'] = preg_match('/a\s*7\s*\/\s*w\s*35/ui', $value) ? $value : $value.' (A7/W35)';
+                break;
+            }
+        }
+
+        $power = $this->value($specs, ['тепловая мощность', 'мощность теплового насоса', 'мощность отопления']);
+        if ($card === [] && $power !== null) {
+            $card['Тепловая мощность'] = $power;
+        }
+        $scop = $this->value($specs, ['scop', 'сезонный коэффициент эффективности (scop)']);
+        if ($scop !== null) {
+            $card['SCOP'] = str_starts_with(mb_strtolower($scop), 'scop') ? $scop : 'SCOP '.$scop;
+        }
+        $temperature = $this->value($specs, [
+            'максимальная температура в контуре отопления', 'максимальная температура воды',
+            'макс. температура воды', 'максимальная температура подачи',
+        ]);
+        if ($temperature !== null) {
+            $card['Температура подачи'] = $temperature;
+        }
+        $supply = $this->value($specs, ['питание', 'напряжение питания', 'электропитание']);
+        if ($supply !== null) {
+            $card['Питание'] = $supply;
+        }
+
+        return $card;
+    }
+
     public function build(Product $product): ?array
     {
         $brandName = trim((string) ($product->brand?->name ?? ''));
@@ -54,6 +123,10 @@ class HeatPumpProductPresenter
             if (is_array($row)) {
                 $name = trim((string) ($row['key'] ?? $row['name'] ?? ''));
                 $value = trim((string) ($row['value'] ?? ''));
+                $unit = trim((string) ($row['unit'] ?? ''));
+                if ($value !== '' && $unit !== '' && ! str_contains($value, $unit)) {
+                    $value .= ' '.$unit;
+                }
             } elseif (is_string($key)) {
                 $name = trim($key);
                 $value = trim((string) $row);

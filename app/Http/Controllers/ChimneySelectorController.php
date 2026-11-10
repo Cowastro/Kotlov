@@ -228,10 +228,11 @@ class ChimneySelectorController extends Controller
         if ($request->integer('equipment')) {
             $equipment = Product::query()->with('category')->find($request->integer('equipment'));
         }
-        if ($equipment && ! $promotion->productIsEligibleEquipment($equipment)) {
+        if ($equipment && (! $equipment->is_active || $equipment->is_archived || ! $promotion->productIsEligibleEquipment($equipment))) {
             $equipment = null;
         }
-        $defaultDiameter = $equipment ? $this->diameter($equipment) : null;
+        $equipmentDiameter = $equipment ? $promotion->equipmentOutletDiameter($equipment) : null;
+        $defaultDiameter = in_array($equipmentDiameter, ChimneyBundlePromotion::SELECTOR_INLETS, true) ? $equipmentDiameter : null;
         $cartPromotion = $promotion->quote(session('cart', []));
         $discountUnlocked = $equipment !== null || $cartPromotion['equipment_product_ids'] !== [];
         $equipmentInCart = $equipment !== null && isset(session('cart', [])[$equipment->id]);
@@ -245,6 +246,7 @@ class ChimneySelectorController extends Controller
             'catalog' => $catalog,
             'equipment' => $equipment,
             'defaultDiameter' => $defaultDiameter,
+            'equipmentDiameter' => $equipmentDiameter,
             'discountPercent' => (float) config('shop.chimney_bundle_discount.percent', 10),
             'selfSelectionDiscountPercent' => (float) config('shop.chimney_bundle_discount.self_selection_percent', 5),
             'discountUnlocked' => $discountUnlocked,
@@ -303,13 +305,6 @@ class ChimneySelectorController extends Controller
             str_contains($normalizedName, 'колен') || str_contains($normalizedName, 'отвод') => 'elbow',
             default => 'other',
         };
-    }
-
-    private function diameter(Product $product): ?string
-    {
-        $text = $product->name.' '.json_encode((array) $product->specs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-        return $this->diameterFromText($text);
     }
 
     private function diameterFromText(string $text): ?string

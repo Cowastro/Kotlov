@@ -13,14 +13,20 @@
             return null;
         }
 
-        $params = request()->except(['attr', 'page']);
-        $params['attr'][$attribute->id] = [$option->id];
+        $params = request()->except('page');
+        $params['attr'] = (array) ($params['attr'] ?? []);
+        $selected = array_map('intval', (array) ($params['attr'][$attribute->id] ?? []));
+        $active = in_array((int) $option->id, $selected, true);
+        $params['attr'][$attribute->id] = $active
+            ? array_values(array_diff($selected, [$option->id]))
+            : [...$selected, $option->id];
+        $query = http_build_query($params);
 
         return [
-            'url' => url()->current().'?'.http_build_query($params),
+            'url' => url()->current().($query === '' ? '' : '?'.$query).'#catalog-products',
             'label' => $option->name,
             'count' => $option->products_count,
-            'active' => in_array($option->id, (array) request('attr.'.$attribute->id, [])),
+            'active' => $active,
         ];
     };
     $heatPumpQuickLinks = collect([
@@ -53,7 +59,11 @@
             </div>
             <div class="hp-category-intro__actions">
                 <a href="/montazh-teplovyh-nasosov#heat-pump-request" class="tf-btn btn-primary" data-analytics-event="heat_pump_lead_click">Получить расчёт</a>
-                <a href="/montazh-teplovyh-nasosov" class="tf-btn btn-white">Как проходит монтаж</a>
+                @if (($heatPumpArticles ?? collect())->contains(fn ($post) => str_starts_with($post->slug, 'montazh-') || $post->slug === 'teplovoy-nasos-115-kvt-r290-ostroshitskiy-gorodok'))
+                    <a href="/teplovyie-nasosyi#heat-pump-cases" class="tf-btn btn-white">Смотреть реальные объекты</a>
+                @else
+                    <a href="/montazh-teplovyh-nasosov" class="tf-btn btn-white">Как проходит монтаж</a>
+                @endif
             </div>
         </div>
 

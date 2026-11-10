@@ -15,7 +15,7 @@
                     <p>{{ ($managerMode ?? false) ? 'Задайте параметры, скорректируйте комплект и сохраните расчёт в CRM.' : 'Соберите комплект «'.$preferredBrandName.'», получите скидку за самостоятельный подбор и отправьте схему менеджеру на бесплатную проверку.' }}</p>
                     <div class="cs-hero__actions"><a href="{{ \App\Support\KnowledgeBase::URL }}" class="tf-btn btn-white btn-stroke">База знаний</a><a href="#calculator" class="tf-btn animate-btn">Рассчитать комплект</a></div>
                     @if ($equipment)
-                        <div class="cs-equipment"><strong>Выбрано оборудование:</strong> {{ $equipment->name }}@if($defaultDiameter) · патрубок {{ $defaultDiameter }} мм @endif</div>
+                        <div class="cs-equipment"><strong>Выбрано оборудование:</strong> {{ $equipment->name }}@if($equipmentDiameter) · патрубок {{ $equipmentDiameter }} мм @endif</div>
                     @endif
                 </div>
                 <div class="cs-discount">
@@ -31,9 +31,14 @@
             <div class="cs-layout">
                 <form class="cs-form" data-cs-form>
                     <div class="cs-step"><span>01</span><div><h2>Диаметр дымохода</h2><p>Он должен совпадать с диаметром выходного патрубка оборудования.</p></div></div>
+                    @if ($equipment && ! $defaultDiameter)
+                        <p class="cs-field-note">
+                            {{ $equipmentDiameter ? 'Для этого диаметра нужна проверка комплекта специалистом.' : 'Сверьте диаметр патрубка с паспортом оборудования перед расчётом.' }}
+                        </p>
+                    @endif
                     <div class="cs-options" data-choice="diameter">
-                        @foreach (['100','110','115','120','130','150','160','180','200'] as $diameter)
-                            <label><input type="radio" name="diameter" value="{{ $diameter }}" @checked($defaultDiameter === $diameter || (!$defaultDiameter && $diameter === '115'))><span>Ø {{ $diameter }} мм</span></label>
+                        @foreach (\App\Services\ChimneyBundlePromotion::SELECTOR_INLETS as $diameter)
+                            <label><input type="radio" name="diameter" value="{{ $diameter }}" required @checked($defaultDiameter === $diameter || (!$equipment && $diameter === '115'))><span>Ø {{ $diameter }} мм</span></label>
                         @endforeach
                     </div>
 
@@ -183,7 +188,7 @@
         var darcoOption = monoMaterialSelect.querySelector('[data-darco-option]');
         var mcBlackOption = monoMaterialSelect.querySelector('[data-mc-black-option]');
         var selected = form.querySelector('input[name="diameter"]:checked');
-        var inlet = selected ? selected.value : '115';
+        var inlet = selected ? selected.value : '';
         var darcoAvailable = ['120','150'].includes(chimneyDiameterSelect.value);
         var mcBlackDiameter = inlet === '115' ? '115' : chimneyDiameterSelect.value;
         var mcBlackAvailable = ['115','150'].includes(mcBlackDiameter) && catalog.some(function (product) {
@@ -195,9 +200,9 @@
     }
     function syncChimneyDiameters() {
         var selected = form.querySelector('input[name="diameter"]:checked');
-        var inlet = selected ? selected.value : '115';
+        var inlet = selected ? selected.value : '';
         var previous = chimneyDiameterSelect.value;
-        var options = standardDiameters[inlet] || [inlet];
+        var options = inlet ? (standardDiameters[inlet] || [inlet]) : [];
         chimneyDiameterSelect.innerHTML = options.map(function (diameter) { return '<option value="' + diameter + '">Ø ' + diameter + ' мм</option>'; }).join('');
         chimneyDiameterSelect.value = options.includes(sharedChimneyDiameter) ? sharedChimneyDiameter : (options.includes(previous) ? previous : (preferredDiameter[inlet] || options[0]));
         sharedChimneyDiameter = null;
@@ -1025,7 +1030,7 @@
         window.history.replaceState({}, '', cleanUrl);
     });
     if (sharedParams.get('fresh') === '1' && clearButton) clearButton.click();
-    else form.requestSubmit();
+    else if (form.elements.diameter.value) form.requestSubmit();
 })();
 </script>
 @endpush

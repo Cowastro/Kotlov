@@ -125,6 +125,9 @@ class ProductController extends Controller
 
         $chimneyPromotion = app(ChimneyBundlePromotion::class);
         $showsChimneyOffer = $chimneyPromotion->productIsEligibleEquipment($product);
+        $chimneyOutletDiameter = $showsChimneyOffer && $product->is_active && ! $product->is_archived
+            ? $chimneyPromotion->equipmentOutletDiameter($product)
+            : null;
         // A chimney part: point to the calculator that assembles the whole kit.
         $isChimneyProduct = $chimneyPromotion->productIsChimney($product);
         $chimneyProducts = $showsChimneyOffer
@@ -149,7 +152,11 @@ class ProductController extends Controller
 
         $reviews = $product->reviews;
         $variantSelector = app(ProductVariantSelector::class)->forProduct($product);
-        $gasMeterGuide = GasMeterSelectionGuide::forProduct($product);
+        $verifiedGasMeter = GasMeterSelectionGuide::verifiedSpecs($product->slug);
+        $gasMeterGuide = $verifiedGasMeter === null ? GasMeterSelectionGuide::forProduct($product) : null;
+        if ($verifiedGasMeter !== null) {
+            $productCardSpecs = $verifiedGasMeter['card'];
+        }
 
         // SEO
         $sharedCityIn = view()->shared('cityIn');
@@ -174,7 +181,7 @@ class ProductController extends Controller
             ->filter()
             ->values();
 
-        $description = $seo->productDescription($product, $cityIn, $seoHighlights);
+        $description = $verifiedGasMeter['description'] ?? $seo->productDescription($product, $cityIn, $seoHighlights);
 
         $keywords = $replaceCityIn($product->meta_keywords)
             ?: ($nameFull.', купить '.mb_strtolower($nameFull).', цена, '.$cityIn);
@@ -325,6 +332,22 @@ class ProductController extends Controller
         $robots = $product->canBeOrdered() ? null : 'noindex, follow';
 
         $heatPumpGuides = collect();
+        $compatibleHeatPumpParts = collect();
+        if (in_array($productCategory->slug, HeatPumpProductPresenter::PUMP_CATEGORIES, true)) {
+            $product->loadMissing(['allAttributeValues.attribute', 'allAttributeValues.option']);
+            $heatPumpPresenter = app(HeatPumpProductPresenter::class);
+            $productCardSpecs = $heatPumpPresenter->catalogSpecs($product);
+
+            if ($heatPumpPresenter->rtcModel($product) !== null) {
+                $compatibleHeatPumpParts = Product::query()
+                    ->where('slug', 'nasosnaia-gruppa-s-reguliatorami-regulus-cse-ir-14')
+                    ->whereHas('category', fn ($query) => $query->where('slug', HeatPumpProductPresenter::PARTS))
+                    ->orderable()
+                    ->withSupplierChannels()
+                    ->with(['category', 'brand'])
+                    ->get();
+            }
+        }
         $heatPumpProfile = null;
         $kotlovHeatPumpModels = collect();
         if (in_array($productCategory->slug, ['teplovyie-nasosyi', 'teplovye-nasosy-vozduh-voda'], true)) {
@@ -389,6 +412,7 @@ class ProductController extends Controller
             'showCompatibleInserts',
             'relatedProducts',
             'showsChimneyOffer',
+            'chimneyOutletDiameter',
             'isChimneyProduct',
             'chimneyProducts',
             'analogProducts',
@@ -405,7 +429,9 @@ class ProductController extends Controller
             'heatPumpProfile',
             'kotlovHeatPumpModels',
             'variantSelector',
-            'gasMeterGuide'
+            'gasMeterGuide',
+            'verifiedGasMeter',
+            'compatibleHeatPumpParts',
         ));
     }
 }

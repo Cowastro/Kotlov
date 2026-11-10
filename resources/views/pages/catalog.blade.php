@@ -208,6 +208,15 @@
     @endif
 
     {{-- Каталог --}}
+    @if ($category->slug === \App\Services\HeatPumpProductPresenter::ROOT && $selectedSubcategory === null)
+        <div class="container d-flex flex-wrap align-items-center gap-3 mt-3">
+            <a href="{{ route('heat-pumps.installation') }}#heat-pump-request" class="fw-semibold link" data-analytics-event="heat_pump_lead_click">Нужен расчёт по теплопотерям?</a>
+            @if ($subcategories->contains('slug', \App\Services\HeatPumpProductPresenter::PARTS))
+                <a href="{{ url('/'.\App\Services\HeatPumpProductPresenter::PARTS) }}" class="link">Комплектующие для тепловых насосов →</a>
+            @endif
+        </div>
+    @endif
+
     <section class="flat-spacing{{ $isMinskFireplaceCatalog || $isStoveHeatingCatalog || $isElectricFireplaceCatalog || $specificationHeading !== null ? ' pt-3' : '' }}" id="catalog-products">
         <div class="container">
             <div class="row">
