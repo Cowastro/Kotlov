@@ -11,6 +11,7 @@ use App\Services\HeatPumpProductPresenter;
 use App\Services\ProductPopularityService;
 use App\Services\ProductVariantSelector;
 use App\Services\SeoMetadataBuilder;
+use App\Support\Catalog\ElectricFireplaceNavigation;
 use App\Support\Catalog\FireplaceSpecifications;
 use App\Support\Catalog\GasMeterSelectionGuide;
 use Illuminate\Support\Facades\Log;
@@ -86,6 +87,13 @@ class ProductController extends Controller
             'pechi-kaminy' => FireplaceSpecifications::details($product, $attributeValues),
             'elektrokamini' => FireplaceSpecifications::electricDetails($product, $attributeValues),
             default => null,
+        };
+
+        $showCompatibleInserts = $productCategory->slug === 'oblicovki';
+        $compatibleElectricProducts = match ($productCategory->slug) {
+            'elektrokamini' => ElectricFireplaceNavigation::compatiblePortals($product),
+            'oblicovki' => ElectricFireplaceNavigation::compatibleInserts($product),
+            default => collect(),
         };
 
         // Похожие товары
@@ -360,6 +368,8 @@ class ProductController extends Controller
             'product',
             'attributeValues',
             'fireplaceSpecs',
+            'compatibleElectricProducts',
+            'showCompatibleInserts',
             'relatedProducts',
             'showsChimneyOffer',
             'isChimneyProduct',

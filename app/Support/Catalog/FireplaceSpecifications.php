@@ -97,6 +97,35 @@ final class FireplaceSpecifications
         return compact('card', 'heating', 'steam', 'openingWidth');
     }
 
+    public static function electricType(Product $product): ?string
+    {
+        $sources = self::sources($product, $product->attributeValues);
+        if (self::isBioFireplace($product, $sources)) {
+            return null;
+        }
+
+        $types = collect($sources)->flatMap(fn (array $source) => array_values(array_intersect_key($source, array_flip([
+            'тип', 'тип камина', 'тип электрокамина', 'тип товара', 'тип установки', 'способ установки',
+        ]))))->map(fn (array $row) => self::normalizeName($row[1]));
+
+        if (preg_match('/каминокомплект|\bс порталом\b/iu', $product->name)
+            || $types->contains(fn (string $value) => str_contains($value, 'каминокомплект'))) {
+            return 'kit';
+        }
+
+        if ($types->contains(fn (string $value) => preg_match('/(?:электроочаг|^очаг$|встраива)/u', $value))
+            || preg_match('/(?:^|\s)(?:электроочаг|очаг)(?:\s|$)/iu', $product->name)
+            || config('electric-fireplaces.openings.'.$product->slug) !== null) {
+            return 'insert';
+        }
+
+        // These model families are sold as separate fireboxes in the supplier's catalog.
+        return preg_match(
+            '/\b(?:Dimplex\s+(?:Symphony|XHD\d+[A-Z]*|Cassette|Revillusion)|(?:Royal\s*Flame|Real\s*Flame)\s+(?:Vision|Dioramic|Moonblaze|Majestic|Fobos|Galaxy|Emerald|Jupiter|Crystal|Aspen|FireSpace|5D\s+V-ART))\b/iu',
+            $product->name
+        ) === 1 ? 'insert' : null;
+    }
+
     /** @return array<string, string>|null */
     public static function electricDetails(Product $product, iterable $attributes): ?array
     {

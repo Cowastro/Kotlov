@@ -54,6 +54,11 @@
                     <p class="text-caption-01">{{ $category->name }}</p>
                 </div>
                 <h1>{{ match (true) {
+                    $fireplaceType !== null => (match ($fireplaceType) {
+                        'insert' => 'Электроочаги',
+                        'kit' => 'Каминокомплекты',
+                        'portal' => 'Порталы для электрокаминов',
+                    }).' '.$cityIn,
                     $isMinskFireplaceCatalog => 'Печи-камины для дома и дачи в Минске',
                     $isElectricFireplaceCatalog => 'Электрокамины '.$cityIn,
                     default => $category->h1 ?: $category->name,
@@ -87,6 +92,10 @@
     </section>
 
     @include('partials.catalog-city-storefront')
+
+    @if ($showElectricFireplaceNavigation)
+        @include('partials.electric-fireplace-navigation')
+    @endif
 
     @if ($category->slug === 'schetchiki-gaza')
         <section class="gas-meter-selector-cta" aria-labelledby="gas-meter-selector-cta-title">
@@ -424,8 +433,15 @@
 
                                 {{-- Кнопка сброса --}}
                                 @php
-                                    $hasActiveCatalogFilters = count(request()->except('sort', 'page', 'brand_sort')) > 0;
-                                    $resetCatalogUrl = url()->current() . (request('brand_sort') === 'alpha' ? '?brand_sort=alpha' : '');
+                                    $hasActiveCatalogFilters = count(request()->except('sort', 'page', 'brand_sort', 'fireplace_type')) > 0;
+                                    $resetCatalogParameters = array_filter([
+                                        'fireplace_type' => $fireplaceType,
+                                        'brand_sort' => request('brand_sort') === 'alpha' ? 'alpha' : null,
+                                    ]);
+                                    $resetCatalogUrl = url()->current().($resetCatalogParameters ? '?'.http_build_query($resetCatalogParameters) : '');
+                                    if ($showElectricFireplaceNavigation) {
+                                        $resetCatalogUrl .= '#catalog-products';
+                                    }
                                 @endphp
                                 @if ($hasActiveCatalogFilters)
                                     <a href="{{ $resetCatalogUrl }}" class="tf-btn btn-outline w-100 mt-8">
@@ -613,22 +629,27 @@
                                 ]);
                                 $resetCatalogUrl = $resetCatalogUrl ?? (url()->current() . ($resetCatalogParameters ? '?' . http_build_query($resetCatalogParameters) : ''));
                             @endphp
-                            @if ($hasActiveCatalogFilters)
+                            @if ($hasActiveCatalogFilters && ! $showElectricFireplaceNavigation)
                                 <div class="br-line type-vertical"></div>
-                                <div id="applied-filters">
-                                    @if ($nicheWidthMax !== null)
-                                        <a href="{{ url()->current() }}{{ request()->except('niche_width_max', 'page') ? '?'.http_build_query(request()->except('niche_width_max', 'page')) : '' }}#catalog-products"
-                                           class="d-inline-flex align-items-center gap-2 border rounded-pill px-2 text-caption-01"
-                                           aria-label="Убрать фильтр ширины ниши">
-                                            Ниша до {{ $nicheWidthMax }} мм <i class="icon icon-X2" aria-hidden="true"></i>
-                                        </a>
-                                    @endif
-                                </div>
+                                <div id="applied-filters"></div>
                                 <a href="{{ $resetCatalogUrl }}" class="remove-all-filters d-flex align-items-center gap-4 cl-text-2">
                                     <i class="icon icon-X2"></i> Сбросить
                                 </a>
                             @endif
                         </div>
+
+                        @if ($showElectricFireplaceNavigation && $hasActiveCatalogFilters)
+                            <div class="d-flex flex-wrap align-items-center gap-2 mb-16" aria-label="Выбранные фильтры">
+                                @foreach ($electricFilterChips as $chip)
+                                    <a href="{{ $chip['url'] }}"
+                                       class="d-inline-flex align-items-center gap-2 border rounded-pill px-2 py-1 text-caption-01"
+                                       aria-label="Убрать фильтр {{ $chip['label'] }}">
+                                        {{ $chip['label'] }} <i class="icon icon-X2" aria-hidden="true"></i>
+                                    </a>
+                                @endforeach
+                                <a href="{{ $resetCatalogUrl }}" class="link fw-semibold text-caption-01">Сбросить все фильтры</a>
+                            </div>
+                        @endif
 
                         {{-- List вид товаров --}}
                         <div class="tf-list-layout wrapper-shop" id="listLayout" style="display: none;">

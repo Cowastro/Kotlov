@@ -406,6 +406,10 @@
                                     </aside>
                                 @endif
 
+                                @if ($compatibleElectricProducts->isNotEmpty())
+                                    <p class="mb-16"><a href="#compatible-electric-products" class="link fw-semibold">{{ $showCompatibleInserts ? 'Подобрать совместимый очаг' : 'Подобрать совместимый портал' }}</a></p>
+                                @endif
+
                                 @if ($variantSelector)
                                     <div class="product-model-selector mb-16" aria-label="{{ $variantSelector['title'] }}">
                                         <p class="product-model-selector__title">{{ $variantSelector['title'] }}</p>
@@ -1342,6 +1346,24 @@
                         @endforeach
                     </div>
                     <div class="sw-dot-default tf-sw-pagination"></div>
+                </div>
+            </div>
+        </section>
+    @endif
+
+    @if ($compatibleElectricProducts->isNotEmpty())
+        <section class="flat-spacing" id="compatible-electric-products" aria-labelledby="compatible-electric-products-title">
+            <div class="container">
+                <div class="sect-heading type-2 text-center">
+                    <h2 class="s-title" id="compatible-electric-products-title">{{ $showCompatibleInserts ? 'Совместимые электроочаги' : 'Совместимые порталы' }}</h2>
+                    <p>{{ $showCompatibleInserts ? 'Эти очаги подходят к данному порталу.' : 'Эти порталы подходят к данной модели очага.' }}</p>
+                </div>
+                <div class="tf-grid-layout tf-col-2 md-col-3 xl-col-4">
+                    @foreach ($compatibleElectricProducts as $compatibleProduct)
+                        <div>
+                            @include('partials.product-card', ['product' => $compatibleProduct])
+                        </div>
+                    @endforeach
                 </div>
             </div>
         </section>
