@@ -198,7 +198,7 @@ class ProductVariantSelector
 
     private function buildColour(Product $product, bool $forAdmin): ?array
     {
-        $family = \App\Services\Suppliers\SmolkomPriceList::modelKey((string) $product->name);
+        $family = $this->colourFamily($product);
         if ($family === '' || ! $product->brand_id) {
             return null;
         }
@@ -212,11 +212,11 @@ class ProductVariantSelector
                 ->where('is_archived', false)
                 ->where('price', '>', 0))
             ->withSupplierChannels()
-            ->with(['category:id,name,slug', 'brand:id,name,slug'])
+            ->with(['category:id,name,slug', 'brand:id,name,slug', 'supplierProducts:id,product_id,raw'])
             ->get()
             ->map(function (Product $candidate) use ($family, $product): ?array {
                 $colour = $this->specValue($candidate, 'Цвет');
-                if ($colour === '' || \App\Services\Suppliers\SmolkomPriceList::modelKey((string) $candidate->name) !== $family) {
+                if ($colour === '' || $this->colourFamily($candidate) !== $family) {
                     return null;
                 }
                 $label = mb_strtoupper(mb_substr($colour, 0, 1)).mb_substr($colour, 1);
@@ -248,6 +248,17 @@ class ProductVariantSelector
             'title' => 'Выберите цвет:',
             'variants' => $variants,
         ];
+    }
+
+    /**
+     * The model of a colour family: the model of the price list row the card is linked to («BOSTON MB/JUP/SYM26»
+     * for the old card «Портал Boston»), else the model words of the card title.
+     */
+    private function colourFamily(Product $product): string
+    {
+        $row = $product->supplierProducts->first(fn ($offer) => isset($offer->raw['group'], $offer->raw['colour'], $offer->raw['name']));
+
+        return \App\Services\Suppliers\SmolkomPriceList::modelKey((string) ($row?->raw['name'] ?? $product->name));
     }
 
     /** Chimney part categories where one element comes in a row of diameters. */
