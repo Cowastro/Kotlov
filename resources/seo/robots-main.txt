@@ -9,6 +9,8 @@ Disallow: /*pcnt=60
 Disallow: /*pcnt=80
 Disallow: /*pcnt=100
 Disallow: /*?
+Allow: /pechi-kaminy?page=
+Disallow: /pechi-kaminy?page=*&
 
 Allow: /css/styles.css
 Allow: /js/general.js

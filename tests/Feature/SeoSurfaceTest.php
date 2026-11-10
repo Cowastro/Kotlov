@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\City;
+use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
@@ -58,6 +59,41 @@ class SeoSurfaceTest extends TestCase
         $this->get('https://gomel.kotlov.by/robots.txt')
             ->assertStatus(301)
             ->assertRedirect('https://kotlov.by/robots.txt');
+    }
+
+    public function test_fireplace_catalog_exposes_only_unfiltered_pagination_to_search_engines(): void
+    {
+        $category = Category::query()->create([
+            'parent_id' => 0,
+            'name' => 'Печи-камины',
+            'slug' => 'pechi-kaminy',
+            'is_active' => true,
+        ]);
+
+        for ($i = 1; $i <= 25; $i++) {
+            Product::query()->create([
+                'category_id' => $category->id,
+                'name' => "Печь-камин $i",
+                'slug' => "test-fireplace-$i",
+                'sku' => "FIREPLACE-$i",
+                'price' => 100,
+                'is_active' => true,
+                'availability_status' => Product::AVAILABILITY_CHECK,
+            ]);
+        }
+
+        $url = 'https://kotlov.by/pechi-kaminy';
+        $canonical = '<link rel="canonical" href="'.$url.'">';
+        $this->get($url)->assertOk()->assertSee($canonical, false)->assertSee($url.'?page=2', false);
+        $this->get($url.'?page=1')->assertOk()->assertSee($canonical, false);
+        $this->get($url.'?page=2')->assertOk()->assertSee('<link rel="canonical" href="'.$url.'?page=2">', false);
+        $this->get($url.'?page=2&sort=price_asc')->assertOk()->assertSee($canonical, false);
+        $this->get($url.'?page=3')->assertNotFound();
+
+        $this->get('https://kotlov.by/robots.txt')
+            ->assertOk()
+            ->assertSeeText('Allow: /pechi-kaminy?page=')
+            ->assertSee('Disallow: /pechi-kaminy?page=*&', false);
     }
 
     private function enableCityStorefront(string $slug): City
