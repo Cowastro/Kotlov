@@ -66,7 +66,9 @@
     $heatPumpMeta = method_exists($product, 'heatPumpCatalogMeta')
         ? $product->heatPumpCatalogMeta()
         : null;
-    $gasMeterMeta = \App\Support\Catalog\GasMeterSelectionGuide::forProduct($product);
+    $verifiedGasMeter = \App\Support\Catalog\GasMeterSelectionGuide::verifiedSpecs((string) $product->slug);
+    $gasMeterMeta = $verifiedGasMeter ? null : \App\Support\Catalog\GasMeterSelectionGuide::forProduct($product);
+    $fireplaceCardSpecs = $verifiedGasMeter['card'] ?? $fireplaceCardSpecs ?? [];
     $spotlightGift = \App\Support\Catalog\SpotlightProducts::gift($product->slug);
 @endphp
 
@@ -108,7 +110,7 @@
                     data-online-price="{{ $onlinePrice !== null ? number_format($onlinePrice, 2, '.', ' ').' BYN' : '' }}"
                     data-online-saving="{{ $onlineSaving !== null ? number_format($onlineSaving, 2, '.', ' ').' BYN' : '' }}"
                     data-category="{{ $product->category->name ?? '' }}"
-                    data-description="{{ Str::limit($gasMeterMeta ? ($gasMeterMeta['size'].' — '.$gasMeterMeta['purpose'].'. '.implode('. ', $gasMeterMeta['facts'])) : strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.'), 240) }}"
+                    data-description="{{ Str::limit($verifiedGasMeter['description'] ?? ($gasMeterMeta ? ($gasMeterMeta['size'].' — '.$gasMeterMeta['purpose'].'. '.implode('. ', $gasMeterMeta['facts'])) : strip_tags($product->short_description ?: $product->content ?: 'Описание товара отсутствует.')), 240) }}"
                     data-image="{{ $product->image_url }}"
                     data-images='@json($quickViewImages)'
                     data-url="{{ $productUrl }}"

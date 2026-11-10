@@ -19,7 +19,6 @@ use App\Support\CategoryNavigationGroups;
 use App\Support\Promotions\EcokaminPromotion;
 use App\Support\Catalog\BoilerCatalog;
 use App\Services\HeatPumpProductPresenter;
-use App\Support\Catalog\GasMeterSelectionGuide;
 use App\Support\Catalog\BoilerSpecifications;
 use App\Support\Catalog\WaterHeaterCatalog;
 use Illuminate\Http\Request;
@@ -778,11 +777,6 @@ class CatalogController extends Controller
             }
         }
 
-        if ($category->slug === 'schetchiki-gaza') {
-            foreach ($products as $product) {
-                $fireplaceSpecsByProduct[$product->id] = GasMeterSelectionGuide::verifiedSpecs($product->slug)['card'] ?? [];
-            }
-        }
         if (in_array($category->slug, [...$stoveCardCategories, 'dlya-dachi'], true)) {
             $stoveProducts = $products->getCollection()->filter(
                 fn (Product $product) => in_array($product->category?->slug, $stoveCardCategories, true)
