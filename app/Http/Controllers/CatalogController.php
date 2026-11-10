@@ -12,7 +12,7 @@ use App\Models\ProductAttributeValue;
 use App\Services\ChimneyDiameterQuickFilter;
 use App\Services\CityContactResolver;
 use App\Services\SeoMetadataBuilder;
-use App\Support\Catalog\FireplaceCardSpecs;
+use App\Support\Catalog\FireplaceSpecifications;
 use App\Support\CategoryNavigationGroups;
 use App\Support\Promotions\EcokaminPromotion;
 use Illuminate\Http\Request;
@@ -497,7 +497,7 @@ class CatalogController extends Controller
         $fireplaceSpecsByProduct = [];
         if ($isMinskFireplaceCatalog) {
             foreach ($products->getCollection()->load('attributeValues') as $product) {
-                $fireplaceSpecsByProduct[$product->id] = FireplaceCardSpecs::forProduct($product);
+                $fireplaceSpecsByProduct[$product->id] = FireplaceSpecifications::card($product);
             }
         }
 

@@ -146,7 +146,7 @@ class SeoSurfaceTest extends TestCase
             ->assertViewHas('products', fn ($page) => $page->pluck('id')->all() === $ids);
     }
 
-    public function test_fireplace_cards_prefer_exact_area_and_leave_volume_out(): void
+    public function test_fireplace_cards_and_details_share_the_same_specs(): void
     {
         $category = Category::query()->create(['parent_id' => 0, 'name' => 'Печи-камины', 'slug' => 'pechi-kaminy', 'is_active' => true]);
         $product = Product::query()->create([
@@ -161,6 +161,9 @@ class SeoSurfaceTest extends TestCase
                 ['key' => 'Тепловая мощность, кВт', 'value' => '6 кВт', 'unit' => 'кВт'],
                 ['key' => 'Площадь обогрева, м2', 'value' => 'от 25 до 55 м2'],
                 ['key' => 'Объём отапливаемого помещения', 'value' => '135 м³'],
+                ['key' => 'Диаметр дымохода, мм', 'value' => '120', 'unit' => 'мм'],
+                ['key' => 'Диаметр дымоходного патрубка', 'value' => '120 мм'],
+                ['key' => 'КПД, %', 'value' => '80 %', 'unit' => '%'],
             ],
         ]);
         $area = Attribute::query()->create([
@@ -180,6 +183,18 @@ class SeoSurfaceTest extends TestCase
             ->assertSeeText('Сталь')
             ->assertDontSeeText('135 м³');
         $this->assertSame(2, substr_count($response->getContent(), 'class="fireplace-card-specs '));
+
+        $this->get('https://kotlov.by/pechi-kaminy/'.$product->slug)->assertOk()
+            ->assertViewHas('fireplaceSpecs', [
+                'Мощность' => '6 кВт',
+                'Площадь обогрева' => '25–55 м²',
+                'Материал' => 'Сталь',
+                'Объём отапливаемого помещения' => '135 м³',
+                'Диаметр дымохода' => '120 мм',
+                'КПД' => '80 %',
+            ])
+            ->assertSeeText('Самовывоз со склада KOTLOV: '.config('shop.delivery_methods.pickup.address'))
+            ->assertDontSeeText('Самовывоз: ул. Селицкого 39Б');
     }
 
     private function enableCityStorefront(string $slug): City
