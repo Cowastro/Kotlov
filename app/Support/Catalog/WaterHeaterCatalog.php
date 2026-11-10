@@ -15,10 +15,10 @@ class WaterHeaterCatalog extends SpecificationCatalog
     public const BUFFER = 'bufernye-emkosti';
 
     public const TYPES = [
-        'electric' => ['name' => 'Электрические водонагреватели', 'short' => 'Электрические', 'description' => 'Накопительные и проточные'],
-        self::GAS => ['name' => 'Газовые водонагреватели', 'short' => 'Газовые', 'description' => 'Газовые колонки и водонагреватели'],
-        'kosvennye' => ['name' => 'Бойлеры косвенного нагрева', 'short' => 'Косвенного нагрева', 'description' => 'Нагрев от системы отопления'],
-        'kombinirovannye' => ['name' => 'Комбинированные водонагреватели', 'short' => 'Комбинированные', 'description' => 'Несколько источников нагрева'],
+        'electric' => ['name' => 'Электрические водонагреватели', 'short' => 'Электрические', 'description' => 'Накопительные и проточные', 'icon' => 'lightning'],
+        self::GAS => ['name' => 'Газовые водонагреватели', 'short' => 'Газовые', 'description' => 'Газовые колонки и водонагреватели', 'icon' => 'flame'],
+        'kosvennye' => ['name' => 'Бойлеры косвенного нагрева', 'short' => 'Косвенного нагрева', 'description' => 'Нагрев от системы отопления', 'icon' => 'indirect'],
+        'kombinirovannye' => ['name' => 'Комбинированные водонагреватели', 'short' => 'Комбинированные', 'description' => 'Несколько источников нагрева', 'icon' => 'combined'],
     ];
 
     public const LANDINGS = [
