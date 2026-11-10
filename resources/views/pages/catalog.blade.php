@@ -330,6 +330,24 @@
                                 {{-- Производитель --}}
                                 @include('partials.catalog-brand-filter', ['brands' => $brands])
 
+                                @if ($hasNicheWidths || $nicheWidthMax !== null)
+                                    <div class="widget-facet">
+                                        <form action="{{ url()->current() }}#catalog-products" method="get">
+                                            @foreach (\Illuminate\Support\Arr::dot(request()->except('page', 'niche_width_max')) as $key => $value)
+                                                <input type="hidden" name="{{ preg_replace('/\.([^.]*)/', '[$1]', $key) }}" value="{{ $value }}">
+                                            @endforeach
+                                            <h6 class="mb-2"><label for="niche-width-max">Ширина ниши до, мм</label></h6>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <input id="niche-width-max" class="w-50" name="niche_width_max" type="number" inputmode="numeric"
+                                                    min="1" max="10000" step="1" placeholder="Например, 740" value="{{ $nicheWidthMax }}">
+                                                <button type="submit" class="tf-btn btn-outline">Подобрать</button>
+                                            </div>
+                                            <p class="text-caption-01 cl-text-2 mt-2">Сверьте также высоту и глубину проёма.</p>
+                                        </form>
+                                    </div>
+                                    <div class="br-line"></div>
+                                @endif
+
                                 @if ($isElectricFireplaceCatalog)
                                     <div class="widget-facet">
                                         <h6 class="mb-2">Режим и эффект пламени</h6>
@@ -597,7 +615,15 @@
                             @endphp
                             @if ($hasActiveCatalogFilters)
                                 <div class="br-line type-vertical"></div>
-                                <div id="applied-filters"></div>
+                                <div id="applied-filters">
+                                    @if ($nicheWidthMax !== null)
+                                        <a href="{{ url()->current() }}{{ request()->except('niche_width_max', 'page') ? '?'.http_build_query(request()->except('niche_width_max', 'page')) : '' }}#catalog-products"
+                                           class="d-inline-flex align-items-center gap-2 border rounded-pill px-2 text-caption-01"
+                                           aria-label="Убрать фильтр ширины ниши">
+                                            Ниша до {{ $nicheWidthMax }} мм <i class="icon icon-X2" aria-hidden="true"></i>
+                                        </a>
+                                    @endif
+                                </div>
                                 <a href="{{ $resetCatalogUrl }}" class="remove-all-filters d-flex align-items-center gap-4 cl-text-2">
                                     <i class="icon icon-X2"></i> Сбросить
                                 </a>

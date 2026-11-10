@@ -40,4 +40,76 @@ return [
             'specs' => ['Тип камина' => 'Биокамин'],
         ],
     ],
+
+    // Installation opening dimensions, kept in width × height × depth order.
+    'openings' => [
+        'ocag-elektriceskii-electrolux-sphere-plus-efpp-3320rls-n' => [
+            'source' => 'https://rkcdn.ru/products/de5d2311-b059-11ee-b8d6-00505601218a/src.pdf#page=8',
+            'mm' => ['width' => 740, 'height' => 525, 'depth' => 209],
+        ],
+        'ocag-elektriceskii-electrolux-sphere-plus-efpp-3320rls' => [
+            'source' => 'https://rkcdn.ru/products/de5d2311-b059-11ee-b8d6-00505601218a/src.pdf#page=8',
+            'mm' => ['width' => 740, 'height' => 525, 'depth' => 209],
+        ],
+        'vstraivaemyi-ocag-electrolux-efpp-3020ls-diagonal-31-diuim' => [
+            'source' => 'https://rkcdn.ru/products/de5d2311-b059-11ee-b8d6-00505601218a/src.pdf#page=8',
+            'mm' => ['width' => 740, 'height' => 525, 'depth' => 207],
+        ],
+        'vstraivaemyi-ocag-electrolux-efpp-2520ls-diagonal-25-diuimov' => [
+            'source' => 'https://rkcdn.ru/products/de5d2311-b059-11ee-b8d6-00505601218a/src.pdf#page=8',
+            'mm' => ['width' => 582, 'height' => 425, 'depth' => 185],
+        ],
+        'interflame-panoramic-25-led-fx' => [
+            'source' => 'https://royalflame.ru/catalog/ochag-dioramic-25-led-fx/',
+            'mm' => ['width' => 635, 'height' => 470, 'depth' => 332],
+        ],
+        'elektrokamin-royal-flame-dioramic-28-led-fx' => [
+            'source' => 'https://royalflame.ru/catalog/ochag-dioramic-28-led-fx/',
+            'mm' => ['width' => 746, 'height' => 597, 'depth' => 288],
+        ],
+        'elektrokamin-royal-flame-dioramic-33-led-fx' => [
+            'source' => 'https://royalflame.ru/catalog/ochag-dioramic-33-led-fx/',
+            'mm' => ['width' => 866, 'height' => 663, 'depth' => 350],
+        ],
+        'interflame-panoramic-33w-led-fx' => [
+            'source' => 'https://royalflame.ru/catalog/ochag-dioramic-33w-led-fx/',
+            'mm' => ['width' => 866, 'height' => 500, 'depth' => 350],
+        ],
+        'elektrokamin-royal-flame-vision-26-ef-led-fx' => [
+            'source' => 'https://royalflame.ru/catalog/ochag-vision-26-ef-led-fx/',
+            'mm' => ['width' => 686, 'height' => 447, 'depth' => 240],
+        ],
+        'elektrokamin-royal-flame-vision-26-ef-led-3d-fx' => [
+            'source' => 'https://royalflame.ru/catalog/ochag-vision-26-ef-led-3d-fx/',
+            'mm' => ['width' => 686, 'height' => 447, 'depth' => 240],
+        ],
+        'elektrokamin-royal-flame-vision-28-ef-led-fx' => [
+            'source' => 'https://royalflame.ru/catalog/ochag-vision-28-ef-led-fx/',
+            'mm' => ['width' => 740, 'height' => 583, 'depth' => 210],
+        ],
+        'elektrokamin-royal-flame-vision-23-ef-led-fx-12172' => [
+            'source' => 'https://royalflame.ru/catalog/ochag-vision-23-ef-led-fx/',
+            'mm' => ['width' => 577, 'height' => 497, 'depth' => 190],
+        ],
+        'elektrokamin-royal-flame-vision-30-ef-led-fx' => [
+            'source' => 'https://royalflame.ru/catalog/ochag-vision-30-ef-led-fx/',
+            'mm' => ['width' => 787, 'height' => 610, 'depth' => 242],
+        ],
+        'elektrokamin-dimplex-xhd26l-int' => [
+            'source' => 'https://dimplex.ru/catalog/ochag-xhd26l-int/',
+            'mm' => ['width' => 660, 'height' => 479, 'depth' => 180],
+        ],
+        'elektrokamin-dimplex-xhd28l-int' => [
+            'source' => 'https://dimplex.ru/catalog/ochag-xhd28l-int/',
+            'mm' => ['width' => 695, 'height' => 596, 'depth' => 180],
+        ],
+        'elektrokamin-dimplex-symphony-26-df2608-int' => [
+            'source' => 'https://dimplex.ru/catalog/ochag-symphony-26-df2608/',
+            'mm' => ['width' => 695, 'height' => 596, 'depth' => 222],
+        ],
+        'elektrokamin-dimplex-symphony-30-df3020-int' => [
+            'source' => 'https://dimplex.ru/catalog/ochag-symphony-30-df3020-int/',
+            'mm' => ['width' => 775, 'height' => 654, 'depth' => 298],
+        ],
+    ],
 ];

@@ -11,6 +11,8 @@ Disallow: /*pcnt=100
 Disallow: /*?
 Allow: /pechi-kaminy?page=
 Disallow: /pechi-kaminy?page=*&
+Allow: /elektrokamini?page=
+Disallow: /elektrokamini?page=*&
 
 Allow: /css/styles.css
 Allow: /js/general.js

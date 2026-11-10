@@ -432,12 +432,18 @@ class CatalogController extends Controller
 
         $electricFireplaceLinks = [];
         $electricFireplaceCards = [];
+        $nicheWidthMax = null;
+        $hasNicheWidths = false;
         if ($isElectricFireplaceCatalog) {
             $electricModes = [
                 'heat' => 'С обогревом',
                 'no-heat' => 'Без обогрева',
                 'steam' => 'С водяным паром',
             ];
+            $requestedWidth = request()->query('niche_width_max');
+            if (is_string($requestedWidth) && preg_match('/^[1-9]\d{0,4}$/D', $requestedWidth) && (int) $requestedWidth <= 10000) {
+                $nicheWidthMax = (int) $requestedWidth;
+            }
             $mode = request()->query('electric_mode');
             $mode = is_string($mode) && isset($electricModes[$mode]) ? $mode : null;
             $matches = [];
@@ -446,6 +452,12 @@ class CatalogController extends Controller
 
             foreach ((clone $query)->with('attributeValues')->lazyById(100) as $product) {
                 $facts = FireplaceSpecifications::electricCatalogFacts($product);
+                $openingWidth = $facts['openingWidth'];
+                $hasNicheWidths = $hasNicheWidths || $openingWidth !== null;
+                if ($nicheWidthMax !== null && ($openingWidth === null || $openingWidth > $nicheWidthMax)) {
+                    continue;
+                }
+
                 $inStock = $product->publicAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK;
                 $filters = [
                     'heat' => $facts['heating'] === true,
@@ -465,7 +477,7 @@ class CatalogController extends Controller
                 }
             }
 
-            if ($mode !== null || $inStockOnly) {
+            if ($mode !== null || $inStockOnly || $nicheWidthMax !== null) {
                 $query->whereIntegerInRaw('products.id', $matches);
             }
 
@@ -700,7 +712,9 @@ class CatalogController extends Controller
             : 'https://'.request()->getHost();
         $categoryUrl = $canonicalBase.'/'.$category->slug;
         $canonical = $categoryUrl;
-        if ($isMinskFireplaceCatalog && array_keys(request()->query()) === ['page']) {
+        $hasIndexablePagination = $isMinskFireplaceCatalog
+            || ($isElectricFireplaceCatalog && request()->getHost() === config('app.base_domain', 'kotlov.by'));
+        if ($hasIndexablePagination && array_keys(request()->query()) === ['page']) {
             $page = $products->currentPage();
             abort_if($page > $products->lastPage(), 404);
             if ($page > 1) {
@@ -1082,6 +1096,8 @@ class CatalogController extends Controller
             'isElectricFireplaceCatalog',
             'cityIn',
             'electricFireplaceLinks',
+            'nicheWidthMax',
+            'hasNicheWidths',
             'stoveAreaAttributeIds',
             'stoveAreaLinks',
             'stoveHeatingFacts',
