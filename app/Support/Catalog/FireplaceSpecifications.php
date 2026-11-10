@@ -31,6 +31,38 @@ final class FireplaceSpecifications
         return self::summary(self::sources($product, $product->attributeValues));
     }
 
+    /** @return array{label: string, value: string, is_area: bool}|null */
+    public static function heatingFact(Product $product): ?array
+    {
+        [$values, $specs] = self::sources($product, $product->attributeValues);
+        $areaLabel = 'Площадь обогрева';
+        $areaNames = [...self::CARD_FIELDS[$areaLabel], 'максимальная площадь обогрева', 'максимальная отапливаемая площадь'];
+        $area = self::summary([$values, $specs], [$areaLabel => $areaNames])[$areaLabel] ?? null;
+        if ($area !== null) {
+            return ['label' => $areaLabel, 'value' => $area, 'is_area' => true];
+        }
+
+        foreach ($areaNames as $name) {
+            // The existing volume importer records the ceiling height in the stored estimate.
+            $stored = $specs[$name][1] ?? '';
+            if (preg_match('/^(.+?)\s*\(при высоте потолка 2[,.]5 м\)$/iu', trim($stored), $matches)) {
+                $estimate = self::format($areaLabel, $matches[1], '');
+                if ($estimate !== null) {
+                    return ['label' => 'Оценка при потолке 2,5 м', 'value' => $estimate, 'is_area' => true];
+                }
+            }
+        }
+
+        $volumeLabel = 'Объём обогрева';
+        $volumeNames = [
+            ...self::DETAIL_ALIASES['Объём отапливаемого помещения'],
+            'объем обогрева', 'максимальный объем обогрева', 'максимальный объем отапливаемого помещения', 'объем помещения', 'объем отопления',
+        ];
+        $volume = self::summary([$values, $specs], [$volumeLabel => $volumeNames])[$volumeLabel] ?? null;
+
+        return $volume === null ? null : ['label' => $volumeLabel, 'value' => $volume, 'is_area' => false];
+    }
+
     /** @return array<string, string> */
     public static function details(Product $product, iterable $attributes): array
     {
@@ -102,10 +134,10 @@ final class FireplaceSpecifications
         return [$values, $specs, $options];
     }
 
-    private static function summary(array $sources): array
+    private static function summary(array $sources, array $fields = self::CARD_FIELDS): array
     {
         $result = [];
-        foreach (self::CARD_FIELDS as $label => $names) {
+        foreach ($fields as $label => $names) {
             // Prefer recorded measurements over filter options such as “50–100 м²”.
             foreach ($sources as $source) {
                 foreach ($names as $name) {
@@ -173,9 +205,11 @@ final class FireplaceSpecifications
                 : null;
         }
 
-        [$unitPattern, $suffix] = $label === 'Мощность'
-            ? ['квт|kw', 'кВт']
-            : ['[мm][²2]|кв\.\s*м\.?', 'м²'];
+        [$unitPattern, $suffix] = match ($label) {
+            'Мощность' => ['квт|kw', 'кВт'],
+            'Объём обогрева' => ['[мm][³3]|куб\.?\s*м\.?', 'м³'],
+            default => ['[мm][²2]|кв\.\s*м\.?', 'м²'],
+        };
 
         if (trim($unit) !== '' && ! preg_match('/^(?:'.$unitPattern.')$/iu', trim($unit))) {
             return null;

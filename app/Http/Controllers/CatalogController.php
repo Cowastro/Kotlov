@@ -12,6 +12,7 @@ use App\Models\ProductAttributeValue;
 use App\Services\ChimneyDiameterQuickFilter;
 use App\Services\CityContactResolver;
 use App\Services\SeoMetadataBuilder;
+use App\Services\StoveHeatingAreaNormalizer;
 use App\Support\Catalog\FireplaceSpecifications;
 use App\Support\CategoryNavigationGroups;
 use App\Support\Promotions\EcokaminPromotion;
@@ -291,6 +292,11 @@ class CatalogController extends Controller
 
         $isMinskFireplaceCatalog = $category->slug === 'pechi-kaminy'
             && request()->getHost() === config('app.base_domain', 'kotlov.by');
+        $isStoveHeatingCatalog = $category->slug === 'pechki';
+        $stoveAreaNormalizer = $isStoveHeatingCatalog ? app(StoveHeatingAreaNormalizer::class) : null;
+        $stoveAreaAttributeIds = $stoveAreaNormalizer
+            ? $rawAttributes->filter(fn (Attribute $attribute) => $stoveAreaNormalizer->isAreaKey($attribute->name))->modelKeys()
+            : [];
         $inStockOnly = request('in_stock') === '1';
 
         // The Minsk fireplace filter uses the same confirmed status as the card.
@@ -313,6 +319,7 @@ class CatalogController extends Controller
 
         // Фильтр по атрибутам
         // request('attr') содержит id первичного атрибута → ищем по всем его дублям
+        $legacyStoveAreaFilters = [];
         if (request('attr')) {
             // Строим карту: первичный id → все id дублей (включая сам)
             $attrMap = $filterAttributes->mapWithKeys(fn ($attr) => [
@@ -329,10 +336,15 @@ class CatalogController extends Controller
                         ->values()
                         ->all();
 
-                    $query->whereHas('allAttributeValues', function ($q) use ($allAttrIds, $allOptionIds) {
+                    $attributeFilter = function ($q) use ($allAttrIds, $allOptionIds) {
                         $q->whereIn('attribute_id', $allAttrIds)
                             ->whereIn('option_id', $allOptionIds);
-                    });
+                    };
+                    if (in_array((int) $attrId, $stoveAreaAttributeIds, true)) {
+                        $legacyStoveAreaFilters[] = $attributeFilter;
+                    } else {
+                        $query->whereHas('allAttributeValues', $attributeFilter);
+                    }
                 }
             }
         }
@@ -352,6 +364,67 @@ class CatalogController extends Controller
             $chimneySteelGroups = app(ChimneyDiameterQuickFilter::class)->steelGroups($query);
             if (request()->filled('chimney_steel')) {
                 $query->whereIn('products.id', $chimneySteelGroups->get(strtoupper((string) request('chimney_steel')), collect()));
+            }
+        }
+
+        $stoveHeatingFacts = [];
+        $stoveAreaLinks = [];
+        if ($isStoveHeatingCatalog) {
+            $bands = [
+                'under-50' => [StoveHeatingAreaNormalizer::UNDER_50, 'До 50 м²'],
+                '50-to-100' => [StoveHeatingAreaNormalizer::FROM_50_TO_100, '50–100 м²'],
+                'over-100' => [StoveHeatingAreaNormalizer::OVER_100, 'Более 100 м²'],
+            ];
+            $castingId = $subcategories->firstWhere('slug', 'pechnoe-i-kaminnoe-lite')?->id;
+            $castingIds = $castingId ? $this->collectCategoryAndDescendantIds($castingId)->all() : [];
+            $groups = [];
+            $heatingProducts = (clone $query)->setEagerLoads([])
+                ->whereIntegerNotInRaw('category_id', $castingIds)
+                ->select('id', 'specs')
+                ->with('attributeValues')
+                ->lazyById(100);
+            foreach ($heatingProducts as $product) {
+                $fact = FireplaceSpecifications::heatingFact($product);
+                if ($fact === null) {
+                    continue;
+                }
+
+                $stoveHeatingFacts[$product->id] = $fact;
+                if ($fact['is_area'] && ($range = $stoveAreaNormalizer->classify($fact['value'])) !== null) {
+                    $groups[$range][] = $product->id;
+                }
+            }
+
+            $selectedBand = request()->query('heating_area');
+            if (! is_string($selectedBand) || ! isset($bands[$selectedBand])) {
+                foreach ($legacyStoveAreaFilters as $attributeFilter) {
+                    $query->whereHas('allAttributeValues', $attributeFilter);
+                }
+            }
+            foreach ($bands as $key => [$range, $label]) {
+                $ids = $groups[$range] ?? [];
+                $active = $selectedBand === $key;
+                if ($active) {
+                    $query->whereIntegerInRaw('products.id', $ids);
+                } elseif ($ids === []) {
+                    continue;
+                }
+
+                $params = request()->except('page', 'heating_area');
+                foreach ($stoveAreaAttributeIds as $attributeId) {
+                    unset($params['attr'][$attributeId]);
+                }
+                if (empty($params['attr'])) {
+                    unset($params['attr']);
+                }
+                if (! $active) {
+                    $params['heating_area'] = $key;
+                }
+
+                $stoveAreaLinks[] = [
+                    'url' => url()->current().($params ? '?'.http_build_query($params) : ''),
+                    'label' => $label, 'prefix' => 'Площадь', 'count' => count($ids), 'active' => $active,
+                ];
             }
         }
 
@@ -951,6 +1024,10 @@ class CatalogController extends Controller
             'ecokaminPromoVariant',
             'category',
             'isMinskFireplaceCatalog',
+            'isStoveHeatingCatalog',
+            'stoveAreaAttributeIds',
+            'stoveAreaLinks',
+            'stoveHeatingFacts',
             'minskFireplaceOfficeAddress',
             'fireplaceSpecsByProduct',
             'subcategories',

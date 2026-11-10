@@ -15,6 +15,7 @@ class StoveHeatingAreaNormalizer
         'площадь отопления',
         'площадь обогрева',
         'отапливаемая площадь',
+        'обогреваемая площадь',
         'максимальная площадь обогрева',
         'максимальная отапливаемая площадь',
     ];
@@ -146,7 +147,7 @@ class StoveHeatingAreaNormalizer
         // for example "Отапливаемая площадь, м2". Strip only an area unit
         // suffix; unrelated fields such as surface area must stay ignored.
         $withoutUnit = preg_replace(
-            '/\s*[,;:]?\s*(?:м2|кв\.?\s*м)\.?\s*$/u',
+            '/\s*[,;:]?\s*\(?(?:м2|кв\.?\s*м)\.?\)?\s*$/u',
             '',
             $normalized
         ) ?? $normalized;

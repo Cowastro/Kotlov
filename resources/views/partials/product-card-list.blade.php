@@ -97,6 +97,9 @@
         @if (! empty($fireplaceCardSpecs))
             @include('partials.fireplace-card-specs')
         @endif
+        @if (! empty($stoveHeatingFact))
+            @include('partials.stove-heating-fact')
+        @endif
 
         @if ($heatPumpMeta)
             <div class="heat-pump-card-meta heat-pump-card-meta--list" aria-label="Основные характеристики модели">
