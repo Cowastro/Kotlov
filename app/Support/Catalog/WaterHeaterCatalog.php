@@ -113,21 +113,18 @@ class WaterHeaterCatalog extends SpecificationCatalog
         foreach ($product->allAttributeValues as $value) {
             $raw = $value->option?->name ?? $value->value;
             if ($value->attribute && filled($raw)) {
-                $key = $this->normalize($value->attribute->name);
-                $suffix = $this->normalize((string) $value->attribute->suffix);
-                if ($suffix !== '' && ! str_ends_with($key, ' '.$suffix)) {
-                    $key .= ' '.$suffix;
-                }
-                $rows[] = [$key, (string) $raw, 2];
+                $rows[] = [$this->fieldKey($value->attribute->name, (string) $value->attribute->suffix), (string) $raw, 2];
             }
         }
         foreach ($product->specs ?: [] as $key => $raw) {
+            $unit = '';
             if (is_array($raw)) {
                 $key = $raw['key'] ?? $raw['name'] ?? '';
+                $unit = is_string($raw['unit'] ?? null) ? $raw['unit'] : '';
                 $raw = $raw['value'] ?? '';
             }
             if (is_string($key) && is_scalar($raw)) {
-                $rows[] = [$this->normalize($key), (string) $raw, 1];
+                $rows[] = [$this->fieldKey($key, $unit), (string) $raw, 1];
             }
         }
 
@@ -259,6 +256,14 @@ class WaterHeaterCatalog extends SpecificationCatalog
         }
 
         return count($matches) === 1 ? array_key_first($matches) : null;
+    }
+
+    private function fieldKey(string $name, string $unit): string
+    {
+        $key = $this->normalize($name);
+        $suffix = $this->normalize($unit);
+
+        return $suffix === '' || str_ends_with($key, ' '.$suffix) ? $key : $key.' '.$suffix;
     }
 
     private function normalize(string $value): string

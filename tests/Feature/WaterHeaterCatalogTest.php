@@ -48,10 +48,10 @@ class WaterHeaterCatalogTest extends TestCase
         ]);
         $flow = $this->product($category, 'QA-Flow', [
             'Тип нагрева' => 'Проточный',
-            'Максимальная производительность ГВС, л/мин' => '5,2',
-            'Мощность, Вт' => '6000',
+            ['key' => 'Максимальная производительность ГВС', 'value' => '5,2', 'unit' => 'л/мин'],
+            ['key' => 'Мощность', 'value' => '6000', 'unit' => 'Вт'],
         ]);
-        $this->product($category, 'QA-Unknown', ['Производительность' => '80 л/ч']);
+        $this->product($category, 'QA-Unknown', [['key' => 'Производительность', 'value' => '80', 'unit' => 'л/ч'], ['key' => 'Объём', 'value' => '1', 'unit' => 'м³']]);
 
         $this->get('/electric/nakopitelnye?q=QA')->assertOk()
             ->assertSee('2,5 кВт')
