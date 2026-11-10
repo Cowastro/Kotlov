@@ -7,7 +7,9 @@ use Illuminate\Support\Str;
 
 class SaunaStoveFilterNormalizer
 {
-    public const CATEGORIES = ['pechi-dlya-bani', 'drovyanye-pechi-dlya-bani', 'drovianye-peci-bannye', 'elektrokamenki'];
+    public const WOOD_CATEGORIES = ['drovianye-peci-bannye', 'drovyanye-pechi-dlya-bani'];
+
+    public const CATEGORIES = [...self::WOOD_CATEGORIES, 'elektrokamenki'];
 
     /** @return array{min: ?float, max: float}|null */
     public function steamRoomVolume(Product $product): ?array

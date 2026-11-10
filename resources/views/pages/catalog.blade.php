@@ -158,7 +158,7 @@
         @include('partials.heat-pump-category-intro')
     @endif
 
-    @if ($isSaunaStoveCatalog)
+    @if ($saunaPickerSlug !== null)
         @include('partials.sauna-room-volume-filter')
     @endif
 
