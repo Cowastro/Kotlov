@@ -13,10 +13,10 @@
  */
 
 $boilerTypes = [
-    'gazovye' => ['name' => 'Газовые', 'description' => 'Настенные и напольные', 'icon' => 'icon-ShieldCheck'],
-    'elektricheskie' => ['name' => 'Электрические', 'description' => 'Для сети 220 и 380 В', 'icon' => 'icon-Lightning'],
-    'tverdotoplivnye' => ['name' => 'Твердотопливные', 'description' => 'На дровах и угле', 'icon' => 'icon-Leaf'],
-    'kotly-na-pelletah' => ['name' => 'Пеллетные', 'description' => 'С подачей пеллет', 'icon' => 'icon-Sparkle'],
+    'gazovye' => ['name' => 'Газовые', 'description' => 'Настенные и напольные', 'icon' => 'flame'],
+    'elektricheskie' => ['name' => 'Электрические', 'description' => 'Для сети 220 и 380 В', 'icon' => 'lightning'],
+    'tverdotoplivnye' => ['name' => 'Твердотопливные', 'description' => 'На дровах и угле', 'icon' => 'wood'],
+    'kotly-na-pelletah' => ['name' => 'Пеллетные', 'description' => 'С подачей пеллет', 'icon' => 'pellets'],
 ];
 
 return [
