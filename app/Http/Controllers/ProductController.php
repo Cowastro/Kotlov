@@ -16,6 +16,7 @@ use App\Support\Catalog\FireplaceSpecifications;
 use App\Support\Catalog\GasMeterSelectionGuide;
 use App\Support\Catalog\BoilerCatalog;
 use App\Support\Catalog\BoilerSpecifications;
+use App\Support\Catalog\WaterHeaterCatalog;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
@@ -91,12 +92,18 @@ class ProductController extends Controller
             default => null,
         };
 
-        $boilerCardSpecs = [];
+        $productCardSpecs = [];
         $boilerSlug = $productCategory->slug;
         if ($boilerSlug !== 'kotly' && isset(BoilerCatalog::NAMES[$boilerSlug])) {
             $product->loadMissing(['allAttributeValues.attribute', 'allAttributeValues.option']);
             $specifications = app(BoilerSpecifications::class);
-            $boilerCardSpecs = $specifications->catalogFacts($product, $boilerSlug, $specifications->dimensions($boilerSlug))['card'];
+            $productCardSpecs = $specifications->catalogFacts($product, $boilerSlug, $specifications->dimensions($boilerSlug))['card'];
+        }
+
+        if (WaterHeaterCatalog::name($productCategory->slug) !== null) {
+            $product->loadMissing(['allAttributeValues.attribute', 'allAttributeValues.option']);
+            $catalog = app(WaterHeaterCatalog::class);
+            $productCardSpecs = $catalog->productFacts($product, $productCategory->slug, $catalog->dimensions($productCategory->slug))['card'];
         }
 
         $showCompatibleInserts = $productCategory->slug === 'oblicovki';
@@ -377,7 +384,7 @@ class ProductController extends Controller
         return view('pages.product', compact(
             'product',
             'attributeValues',
-            'fireplaceSpecs', 'boilerCardSpecs',
+            'fireplaceSpecs', 'productCardSpecs',
             'compatibleElectricProducts',
             'showCompatibleInserts',
             'relatedProducts',

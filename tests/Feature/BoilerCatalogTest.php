@@ -41,7 +41,7 @@ class BoilerCatalogTest extends TestCase
 
         $this->get('/elektricheskie?boiler[voltage]=380')->assertOk()
             ->assertViewHas('products', fn ($products) => $products->total() === 2)
-            ->assertViewHas('boilerFacets', function ($facets) {
+            ->assertViewHas('specificationFacets', function ($facets) {
                 return $facets['voltage']['options'][220]['count'] === 1
                     && $facets['voltage']['options'][380]['count'] === 2
                     && array_keys($facets['area']['options']) === ['to-90'];
@@ -49,7 +49,7 @@ class BoilerCatalogTest extends TestCase
 
         $this->get('/elektricheskie?boiler[voltage]=380&boiler[power]=to-12')->assertOk()
             ->assertViewHas('products', fn ($products) => $products->pluck('name')->all() === ['Network B'])
-            ->assertViewHas('boilerFacets', fn ($facets) => ! isset($facets['area']));
+            ->assertViewHas('specificationFacets', fn ($facets) => ! isset($facets['area']));
     }
 
     public function test_pellet_power_filter_accepts_the_old_url_and_power_from_specs(): void
@@ -61,7 +61,7 @@ class BoilerCatalogTest extends TestCase
 
         $this->get('/kotly-na-pelletah?power=up-to-25&brand='.$brand->id)->assertOk()
             ->assertViewHas('products', fn ($products) => $products->pluck('name')->all() === ['Pellet A'])
-            ->assertViewHas('boilerFacets', fn ($facets) => $facets['power']['options']['up-to-25']['active']
+            ->assertViewHas('specificationFacets', fn ($facets) => $facets['power']['options']['up-to-25']['active']
                 && ! str_contains($facets['power']['options']['up-to-25']['url'], 'power='));
 
         $this->get('/kotly-na-pelletah?boiler[hopper]=to-100&brand='.$brand->id)->assertOk()

@@ -8,6 +8,7 @@ use App\Models\InstallerProfile;
 use App\Models\PartnerBranch;
 use App\Models\Product;
 use App\Support\Catalog\BoilerCatalog;
+use App\Support\Catalog\WaterHeaterCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -24,7 +25,7 @@ Route::get('/sitemap.xml', function (Request $request) {
             return redirect()->away('https://'.$baseDomain.'/sitemap.xml', 301);
         }
 
-        $xml = Cache::remember('sitemap.city.'.$city->slug.'.v3', 3600, function () use ($host, $city) {
+        $xml = Cache::remember('sitemap.city.'.$city->slug.'.v4', 3600, function () use ($host, $city) {
             $categories = Category::active()
                 ->whereNotNull('slug')
                 ->where('slug', '!=', 'aktsiiiskidki')
@@ -40,6 +41,12 @@ Route::get('/sitemap.xml', function (Request $request) {
                 }
             }
 
+            $gasCategory = $categories->firstWhere('slug', WaterHeaterCatalog::GAS);
+            $gasAlias = $categories->firstWhere('slug', 'gas');
+            if ($gasCategory && $gasAlias && isset($publishedCategoryIds[$gasAlias->id])) {
+                $publishedCategoryIds[$gasCategory->id] = true;
+            }
+
             $cityNews = BlogPost::published()->regional()->where('city_id', $city->id)->get();
             $urls = collect([
                 ['location' => 'https://'.$host.'/', 'last_modified' => null],
@@ -47,7 +54,8 @@ Route::get('/sitemap.xml', function (Request $request) {
             ])
                 ->when($cityNews->isNotEmpty(), fn ($urls) => $urls->push(['location' => 'https://'.$host.'/news', 'last_modified' => null]))
                 ->concat($categories
-                    ->filter(fn (Category $category): bool => isset($publishedCategoryIds[(int) $category->id]))
+                    ->filter(fn (Category $category): bool => isset($publishedCategoryIds[(int) $category->id])
+                        && ($category->slug !== 'gas' || ! $gasCategory))
                     ->sortBy(fn (Category $category): string => str_pad((string) $category->sort_order, 10, '0', STR_PAD_LEFT).'-'.str_pad((string) $category->id, 10, '0', STR_PAD_LEFT))
                     ->map(fn (Category $category): array => [
                         'location' => 'https://'.$host.'/'.$category->slug,
@@ -86,7 +94,7 @@ Route::get('/sitemap.xml', function (Request $request) {
             ->header('Cache-Control', 'public, max-age=3600');
     }
 
-    $xml = Cache::remember('sitemap.xml.v5', 86400, function () {
+    $xml = Cache::remember('sitemap.xml.v6', 86400, function () {
         $baseUrl = 'https://kotlov.by';
         $urls = [];
 
@@ -129,7 +137,14 @@ Route::get('/sitemap.xml', function (Request $request) {
             }
         }
 
+        if (Category::active()->where('slug', 'electric')->exists()) {
+            foreach (array_keys(WaterHeaterCatalog::LANDINGS) as $selection) {
+                $addUrl('/electric/'.$selection);
+            }
+        }
+
         Category::active()
+            ->when(Category::active()->where('slug', WaterHeaterCatalog::GAS)->exists(), fn ($query) => $query->where('slug', '!=', 'gas'))
             ->whereNotNull('slug')
             ->where('slug', '!=', 'aktsiiiskidki')
             ->orderBy('sort_order')->orderBy('id')

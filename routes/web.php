@@ -993,6 +993,11 @@ foreach (\App\Support\Catalog\BoilerCatalog::LANDINGS as $boilerCategory => $sel
         ->defaults('selection', $selection['slug']);
 }
 
+foreach (array_keys(\App\Support\Catalog\WaterHeaterCatalog::LANDINGS) as $selection) {
+    Route::get('/electric/'.$selection, [CatalogController::class, 'waterHeaterLanding'])
+        ->defaults('selection', $selection);
+}
+
 // ===== Динамические роуты — ПОСЛЕДНИМИ =====
 
 // 1 сегмент — категория
