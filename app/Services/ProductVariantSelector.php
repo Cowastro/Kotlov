@@ -261,7 +261,9 @@ class ProductVariantSelector
      */
     private function colourFamily(Product $product): string
     {
-        $row = $product->supplierProducts->first(fn ($offer) => isset($offer->raw['group'], $offer->raw['colour'], $offer->raw['name']));
+        // Only a Смолком row has «group», «colour», «name» and «sizes» (other suppliers' offers keep other data).
+        $row = $product->supplierProducts->first(fn ($offer) => is_array($offer->raw) && isset($offer->raw['group'], $offer->raw['name'])
+            && array_key_exists('colour', $offer->raw) && array_key_exists('sizes', $offer->raw));
 
         return \App\Services\Suppliers\SmolkomPriceList::modelKey((string) ($row?->raw['name'] ?? $product->name));
     }
