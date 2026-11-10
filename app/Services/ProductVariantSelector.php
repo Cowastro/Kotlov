@@ -198,7 +198,8 @@ class ProductVariantSelector
 
     private function buildColour(Product $product, bool $forAdmin): ?array
     {
-        $family = $this->colourFamily($product);
+        // The open card may carry its offers loaded without «raw»: read them afresh.
+        $family = $this->colourFamily($product, $product->supplierProducts()->get(['id', 'product_id', 'raw']));
         if ($family === '' || ! $product->brand_id) {
             return null;
         }
@@ -221,7 +222,7 @@ class ProductVariantSelector
             ->get()
             ->map(function (Product $candidate) use ($family, $product): ?array {
                 $colour = $this->specValue($candidate, 'Цвет');
-                if ($colour === '' || $this->colourFamily($candidate) !== $family) {
+                if ($colour === '' || ($candidate->is($product) ? $family : $this->colourFamily($candidate, $candidate->supplierProducts)) !== $family) {
                     return null;
                 }
                 $label = mb_strtoupper(mb_substr($colour, 0, 1)).mb_substr($colour, 1);
@@ -259,10 +260,10 @@ class ProductVariantSelector
      * The model of a colour family: the model of the price list row the card is linked to («BOSTON MB/JUP/SYM26»
      * for the old card «Портал Boston»), else the model words of the card title.
      */
-    private function colourFamily(Product $product): string
+    private function colourFamily(Product $product, \Illuminate\Support\Collection $offers): string
     {
         // Only a Смолком row has «group», «colour», «name» and «sizes» (other suppliers' offers keep other data).
-        $row = $product->supplierProducts->first(fn ($offer) => is_array($offer->raw) && isset($offer->raw['group'], $offer->raw['name'])
+        $row = $offers->first(fn ($offer) => is_array($offer->raw) && isset($offer->raw['group'], $offer->raw['name'])
             && array_key_exists('colour', $offer->raw) && array_key_exists('sizes', $offer->raw));
 
         return \App\Services\Suppliers\SmolkomPriceList::modelKey((string) ($row?->raw['name'] ?? $product->name));
