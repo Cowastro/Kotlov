@@ -162,6 +162,11 @@ class CityStorefrontSeoTest extends TestCase
         $this->get('https://borisov.kotlov.by/city/select/minsk?return=%2Fcatalog')
             ->assertRedirect('https://kotlov.by/city/select/minsk?return=%2Fcatalog');
 
+        // The city form of a storefront posts to «/city/select»: the way back to Minsk keeps the city (it was a 404).
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class)
+            ->post('https://borisov.kotlov.by/city/select', ['slug' => 'minsk', 'return' => '/catalog'])
+            ->assertRedirect('https://kotlov.by/city/select/minsk?return=%2Fcatalog');
+
         $this->get('https://kotlov.by/city/select/minsk?return=%2Fcatalog')
             ->assertRedirect('https://kotlov.by/catalog')
             ->assertPlainCookie('selected_city', 'minsk');

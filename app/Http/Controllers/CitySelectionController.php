@@ -20,14 +20,17 @@ class CitySelectionController extends Controller
         $baseDomain = config('app.base_domain', 'kotlov.by');
         $hasStorefront = $city->slug !== 'minsk' && $city->storefront_enabled
             && PartnerBranch::query()->visibleIn($city)->exists();
-        if (! $hasStorefront && str_ends_with($request->getHost(), '.'.$baseDomain)) {
-            return redirect()->away('https://'.$baseDomain.$request->getRequestUri())
-                ->header('X-Robots-Tag', 'noindex, nofollow');
-        }
-
         $returnTo = (string) $request->input('return', '/');
         if (! str_starts_with($returnTo, '/') || str_starts_with($returnTo, '//') || str_contains($returnTo, '\\')) {
             $returnTo = '/';
+        }
+
+        // From a city subdomain (lida.kotlov.by) to a city without its own storefront (Minsk): the choice is made on
+        // the main domain, where the cookie lives. A redirect turns the POST of the city form into a GET, so it goes
+        // to the GET address with the city in the path — «/city/select» alone has no GET route (404).
+        if (! $hasStorefront && str_ends_with($request->getHost(), '.'.$baseDomain)) {
+            return redirect()->away('https://'.$baseDomain.'/city/select/'.$city->slug.'?'.http_build_query(['return' => $returnTo]))
+                ->header('X-Robots-Tag', 'noindex, nofollow');
         }
 
         $fromRegionalNews = preg_match('~^/news(?:/[^/]+)?/?$~', explode('?', $returnTo, 2)[0]) === 1;
