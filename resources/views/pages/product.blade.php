@@ -185,6 +185,14 @@
                                     </div>
                                 @endif
 
+                                @if (in_array($chimneyOutletDiameter, \App\Services\ChimneyBundlePromotion::SELECTOR_INLETS, true))
+                                    <p class="mb-3">
+                                        <a class="link fw-semibold" href="{{ route('chimney-selector', ['equipment' => $product->id]) }}#calculator">
+                                            Подобрать дымоход для патрубка Ø {{ $chimneyOutletDiameter }} мм →
+                                        </a>
+                                    </p>
+                                @endif
+
                                 {{-- Мета --}}
                                 <div class="product-infor-meta mb-20">
                                     @if ($product->rating > 0)
@@ -397,7 +405,20 @@
                                     </p>
                                 @endif
 
-                                @if ($gasMeterGuide)
+                                @if ($verifiedGasMeter)
+                                    <aside class="gas-meter-fit mb-16" aria-label="Паспортные характеристики">
+                                        <p class="gas-meter-fit__eyebrow">По паспорту производителя</p>
+                                        <ul>
+                                            @foreach ($verifiedGasMeter['details'] as $label => $value)
+                                                <li><strong>{{ $label }}</strong> · {{ $value }}</li>
+                                            @endforeach
+                                        </ul>
+                                        <a href="{{ $verifiedGasMeter['source'] }}" class="link">Паспорт модели</a>
+                                        <div class="mt-2">
+                                            <a href="{{ route('contacts', ['replace_meter' => $product->slug]) }}#write-to-store" class="link fw-semibold">Подобрать замену по этой модели →</a>
+                                        </div>
+                                    </aside>
+                                @elseif ($gasMeterGuide)
                                     <aside class="gas-meter-fit mb-16" aria-label="Подсказка по выбору газового счётчика">
                                         <p class="gas-meter-fit__eyebrow">Подойдёт ли вам</p>
                                         <p class="gas-meter-fit__title">{{ $gasMeterGuide['size'] }} — {{ $gasMeterGuide['purpose'] }}</p>
@@ -1315,6 +1336,20 @@
             </div>
         </div>
     </section>
+
+    @if ($compatibleHeatPumpParts->isNotEmpty())
+        <section class="flat-spacing" aria-labelledby="heat-pump-compatible-parts">
+            <div class="container">
+                <h2 id="heat-pump-compatible-parts" class="s-title mb-3">Совместимые комплектующие</h2>
+                <p class="cl-text-2 mb-3">Насосная группа для серии Regulus RTC. <a href="https://www.regulus.sk/sk/prislusenstvo-tepelnych-cerpadiel" class="link">Каталог производителя</a></p>
+                <div class="tf-grid-layout tf-col-2 md-col-3 lg-col-4">
+                    @foreach ($compatibleHeatPumpParts as $part)
+                        @include('partials.product-card', ['product' => $part])
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
 
     @if (($heatPumpGuides ?? collect())->isNotEmpty())
         @include('partials.product-heat-pump-resources', ['articles' => $heatPumpGuides])

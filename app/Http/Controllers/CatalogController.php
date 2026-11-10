@@ -18,6 +18,8 @@ use App\Support\Catalog\FireplaceSpecifications;
 use App\Support\CategoryNavigationGroups;
 use App\Support\Promotions\EcokaminPromotion;
 use App\Support\Catalog\BoilerCatalog;
+use App\Services\HeatPumpProductPresenter;
+use App\Support\Catalog\GasMeterSelectionGuide;
 use App\Support\Catalog\BoilerSpecifications;
 use App\Support\Catalog\WaterHeaterCatalog;
 use Illuminate\Http\Request;
@@ -89,6 +91,7 @@ class CatalogController extends Controller
         }
 
         $isBoilerHub = $category->slug === 'kotly';
+        $isHeatPumpHub = $category->slug === HeatPumpProductPresenter::ROOT;
         $isWaterHeaterHub = $category->slug === WaterHeaterCatalog::ROOT;
         $heaterName = WaterHeaterCatalog::name($category->slug);
         $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName;
@@ -180,6 +183,13 @@ class CatalogController extends Controller
             if ($sub && $sub->id !== $category->id && ($isWaterHeaterHub ? $activeCategoryIds : $allCategoryIds)->contains($sub->id)) {
                 $selectedSubcategory = $sub;
                 $activeCategoryIds = $this->collectCategoryAndDescendantIds($sub->id);
+            }
+        }
+
+        if ($isHeatPumpHub && $selectedSubcategory === null) {
+            $heatPumpParts = $subcategories->firstWhere('slug', HeatPumpProductPresenter::PARTS);
+            if ($heatPumpParts) {
+                $activeCategoryIds = $activeCategoryIds->diff($this->collectCategoryAndDescendantIds($heatPumpParts->id))->values();
             }
         }
 
@@ -369,7 +379,7 @@ class CatalogController extends Controller
 
         $allProductsCount = Product::query()
             ->orderable()
-            ->whereIn('category_id', ($isBoilerHub || $isWaterHeaterHub) ? $activeCategoryIds : $allCategoryIds)
+            ->whereIn('category_id', ($isBoilerHub || $isWaterHeaterHub || $isHeatPumpHub) ? $activeCategoryIds : $allCategoryIds)
             ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
             ->count();
 
@@ -758,6 +768,21 @@ class CatalogController extends Controller
         }
 
         $fireplaceSpecsByProduct = $electricFireplaceCards + $specificationCards;
+        if (in_array($category->slug, HeatPumpProductPresenter::PUMP_CATEGORIES, true)) {
+            $presenter = app(HeatPumpProductPresenter::class);
+            $pumps = $products->getCollection()->filter(
+                fn (Product $product) => in_array($product->category?->slug, HeatPumpProductPresenter::PUMP_CATEGORIES, true)
+            );
+            foreach ($pumps->load('allAttributeValues.attribute', 'allAttributeValues.option') as $product) {
+                $fireplaceSpecsByProduct[$product->id] = $presenter->catalogSpecs($product);
+            }
+        }
+
+        if ($category->slug === 'schetchiki-gaza') {
+            foreach ($products as $product) {
+                $fireplaceSpecsByProduct[$product->id] = GasMeterSelectionGuide::verifiedSpecs($product->slug)['card'] ?? [];
+            }
+        }
         if (in_array($category->slug, [...$stoveCardCategories, 'dlya-dachi'], true)) {
             $stoveProducts = $products->getCollection()->filter(
                 fn (Product $product) => in_array($product->category?->slug, $stoveCardCategories, true)
@@ -832,6 +857,10 @@ class CatalogController extends Controller
             $rawDesc && mb_strlen($rawDesc) <= SeoMetadataBuilder::DESCRIPTION_LIMIT ? $rawDesc : null,
             $autoDescription
         );
+
+        if ($isHeatPumpHub && $selectedSubcategory === null) {
+            $description = 'Тепловые насосы для дома и бассейна. Сравните мощность, SCOP, температуру подачи и цены. Запросите подбор по теплопотерям дома.';
+        }
 
         if ($isMinskFireplaceCatalog) {
             $description = 'Печи-камины из стали и чугуна для дома и дачи. Сравните мощность, площадь обогрева и цены. Проверьте наличие и подберите дымоход.';
@@ -999,7 +1028,7 @@ class CatalogController extends Controller
             $schemaNodes[] = [
                 '@context' => 'https://schema.org',
                 '@type' => 'ItemList',
-                'name' => 'Тепловые насосы воздух-вода',
+                'name' => $selectedSubcategory?->name ?? 'Тепловые насосы',
                 'numberOfItems' => $products->count(),
                 'itemListElement' => $products->values()->map(fn (Product $product, int $index) => [
                     '@type' => 'ListItem',

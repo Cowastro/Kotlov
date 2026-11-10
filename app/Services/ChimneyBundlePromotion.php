@@ -92,6 +92,52 @@ class ChimneyBundlePromotion
         ];
     }
 
+    public const SELECTOR_INLETS = ['100', '110', '115', '120', '130', '150', '160', '180', '200'];
+
+    public function equipmentOutletDiameter(Product $product): ?string
+    {
+        $official = app(StoveOfficialTechnicalSpecCatalog::class)->entries()[$product->slug]['specs'] ?? [];
+        $diameters = $this->outletDiameters($official);
+        if ($diameters === []) {
+            $product->loadMissing(['allAttributeValues.attribute', 'allAttributeValues.option']);
+            $attributes = $product->allAttributeValues
+                ->filter(fn ($attribute) => $attribute->hasDisplayValue())
+                ->map(fn ($attribute) => [
+                    'key' => $attribute->attribute->name,
+                    'value' => $attribute->option?->name ?? $attribute->value,
+                ])
+                ->all();
+            $rawSpecs = $product->specs;
+            $specs = is_string($rawSpecs) ? json_decode($rawSpecs, true) : $rawSpecs;
+            $diameters = $this->outletDiameters(array_merge((array) $specs, $attributes));
+        }
+
+        return count($diameters) === 1 ? $diameters[0] : null;
+    }
+
+    private function outletDiameters(array $rows): array
+    {
+        $diameters = [];
+        foreach ($rows as $key => $row) {
+            $label = is_array($row) ? ($row['key'] ?? $row['name'] ?? '') : $key;
+            $value = is_array($row) ? ($row['value'] ?? '') : $row;
+            $label = trim(mb_strtolower((string) $label));
+            $label = rtrim(preg_replace('/(?:,?\s*(?:мм|mm)|\s*\((?:мм|mm)\))$/u', '', $label) ?? $label);
+            if (! in_array($label, [
+                'диаметр дымохода', 'диаметр выхода дымохода', 'диаметр патрубка дымохода',
+                'диаметр дымового патрубка', 'диаметр дымоходного патрубка', 'диаметр выходного патрубка',
+            ], true)) {
+                continue;
+            }
+
+            if (is_scalar($value) && preg_match('/^\s*(?:[Øø⌀Фф]\s*)?(\d{2,3})(?:[,.]0+)?\s*(?:мм|mm)?\s*$/u', (string) $value, $match)) {
+                $diameters[] = $match[1];
+            }
+        }
+
+        return array_values(array_unique($diameters));
+    }
+
     public function productIsEligibleEquipment(Product $product): bool
     {
         return $this->slugsAreEligibleEquipment($this->productCategorySlugs($product));
