@@ -30,14 +30,15 @@ class FillOfficialFireplaceSpecsTest extends TestCase
             'sku' => 'META-TEST', 'name' => 'Мета-Бел Ритм', 'price' => 100,
             'is_active' => true, 'availability_status' => Product::AVAILABILITY_CHECK, 'specs' => [],
         ]);
+        $storedSpecs = $product->fresh()->specs;
 
         $this->artisan('catalog:fill-official-fireplace-specs')->expectsOutput('metric.fireplace_specs.fields=1')->assertSuccessful();
-        $this->assertSame($existing, $product->fresh()->specs);
+        $this->assertSame($storedSpecs, $product->fresh()->specs);
 
         $this->artisan('catalog:fill-official-fireplace-specs --apply')->expectsOutput('metric.fireplace_specs.fields=1')->assertSuccessful();
         $product->refresh();
         $this->assertSame(['Мощность' => '12 кВт', 'Материал' => 'Чугун'], FireplaceSpecifications::card($product));
-        $this->assertSame($existing, array_slice($product->specs, 1));
+        $this->assertSame($storedSpecs, array_slice($product->specs, 1));
         $this->assertSame('https://fireway.pro/dacha-ll.html', $product->specs[0]['source_url']);
         $this->assertSame([], $other->fresh()->specs);
 
