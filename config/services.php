@@ -57,6 +57,10 @@ return [
         'token' => env('SMS_BY_TOKEN', ''),
         'password_object_id' => env('SMS_BY_PASSWORD_OBJECT_ID', ''),
         'alphaname_id' => env('SMS_BY_ALPHANAME_ID', ''),
+        // Mailings: Viber name id (empty = found by sender_name), secret in the webhook URL for «СТОП» replies and statuses.
+        'vibername_id' => env('SMS_BY_VIBERNAME_ID', ''),
+        'sender_name' => env('SMS_BY_SENDER_NAME', 'KOTLOV.BY'),
+        'webhook_secret' => env('SMS_BY_WEBHOOK_SECRET', ''),
         'message' => env('SMS_BY_VERIFICATION_MESSAGE', \App\Services\SmsByClient::CODE_MESSAGE),
         'timeout' => (int) env('SMS_BY_TIMEOUT', 10),
         'verification_ttl' => (int) env('SMS_BY_VERIFICATION_TTL', 300),

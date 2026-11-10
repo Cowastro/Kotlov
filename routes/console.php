@@ -45,6 +45,13 @@ Schedule::command('crm:mail-sync')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/crm-mail-sync.log'));
 
+// Viber/SMS рассылки CRM: отправляет только запущенные менеджером рассылки и обновляет статусы доставки.
+Schedule::command('crm:send-mailings')
+    ->everyMinute()
+    ->withoutOverlapping(15)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/crm-mailings.log'));
+
 Schedule::command('commercial-documents:expire-quotes')
     ->dailyAt('00:15')
     ->timezone('Europe/Minsk')

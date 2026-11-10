@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CrmMailingLists\Pages;
 
+use App\Filament\Resources\CrmMailingCampaigns\CrmMailingCampaignResource;
 use App\Filament\Resources\CrmMailingLists\CrmMailingListResource;
 use App\Models\CrmMailingList;
 use App\Services\Crm\MailingAudience;
@@ -47,6 +48,11 @@ class EditCrmMailingList extends EditRecord
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('gray')
                 ->action(fn (): StreamedResponse => $this->exportCsv()),
+            Action::make('newCampaign')
+                ->label('Отправить Viber/SMS')
+                ->icon('heroicon-o-chat-bubble-left-right')
+                ->color('success')
+                ->url(fn (): string => CrmMailingCampaignResource::getUrl('create', ['list' => $this->record->getKey()])),
             DeleteAction::make(),
         ];
     }

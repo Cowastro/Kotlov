@@ -702,6 +702,13 @@ Route::match(['get', 'post'], '/integrations/a1/telephony/{secret}', A1Telephony
     ->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
     ->name('telephony.a1.webhook');
 
+// ===== SMS.BY: статусы и ответы «СТОП» на рассылки (секрет в пути, запросы не подписываются) =====
+Route::match(['get', 'post'], '/integrations/smsby/{secret}', \App\Http\Controllers\SmsByWebhookController::class)
+    ->where('secret', '[A-Za-z0-9_-]{24,128}')
+    ->withoutMiddleware([PreventRequestForgery::class, ValidateCsrfToken::class])
+    ->middleware('throttle:120,1')
+    ->name('integrations.smsby.webhook');
+
 // sitemap.xml — вынесен в routes/sitemap.php без session middleware
 
 // ===== SVG-иконки каталога =====

@@ -778,6 +778,11 @@ jobs:
             grep -E '^metric\.normalize_phones\.[a-z_]+=[0-9]+$' "$detail_log" || true
             echo "safe_normalize_phones_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "crm:send-mailings" ]]; then
+            echo "safe_send_mailings_begin"
+            grep -E '^metric\.send_mailings\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            echo "safe_send_mailings_end"
+          fi
           if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:merge-duplicate-cards" ]]; then
             echo "safe_merge_cards_metrics_begin"
             grep -E '^metric\.merge_cards\.[a-z_]+=[0-9]+$' "$detail_log" || true
