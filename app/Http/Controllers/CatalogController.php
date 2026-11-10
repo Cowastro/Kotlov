@@ -534,7 +534,17 @@ class CatalogController extends Controller
         $canonicalBase = $category->slug === 'schetchiki-gaza'
             ? 'https://'.config('app.base_domain', 'kotlov.by')
             : 'https://'.request()->getHost();
-        $canonical = $canonicalBase.'/'.$category->slug;
+        $categoryUrl = $canonicalBase.'/'.$category->slug;
+        $canonical = $categoryUrl;
+        if ($category->slug === 'pechi-kaminy'
+            && request()->getHost() === config('app.base_domain', 'kotlov.by')
+            && array_keys(request()->query()) === ['page']) {
+            $page = $products->currentPage();
+            abort_if($page > $products->lastPage(), 404);
+            if ($page > 1) {
+                $canonical .= '?page='.$page;
+            }
+        }
 
         // Schema.org BreadcrumbList
         $breadcrumbs = [
@@ -558,7 +568,7 @@ class CatalogController extends Controller
             '@type' => 'ListItem',
             'position' => $pos,
             'name' => $categorySchemaName,
-            'item' => $canonical,
+            'item' => $categoryUrl,
         ];
 
         $breadcrumbSchema = [
