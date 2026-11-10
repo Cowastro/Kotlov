@@ -146,7 +146,7 @@ class SyncSmolkomCommand extends Command
             ->when($supplier, fn ($q) => $q->where('supplier_id', '!=', $supplier->id))
             ->get(['supplier_article', 'product_id'])->groupBy('supplier_article')->map(fn ($g) => $g->pluck('product_id')->map(fn ($id) => (int) $id)->unique()->values()->all());
 
-        $stats = ['rows' => count($rows), 'manual' => 0, 'linked_before' => 0, 'article' => 0, 'model' => 0, 'suggested' => 0, 'unlinked' => 0];
+        $stats = ['rows' => count($rows), 'manual' => 0, 'linked_before' => 0, 'article' => 0, 'model' => 0, 'model_base_colour' => 0, 'suggested' => 0, 'unlinked' => 0];
         // Rows of one model and brand: a card without a colour is that row only when the model has one row.
         $rowsOfModel = [];
         foreach ($rows as $i => $row) {
@@ -193,9 +193,9 @@ class SyncSmolkomCommand extends Command
                 $proposals[] = ['row' => $i, 'product' => $within[0], 'score' => 2, 'reason' => 'model'];
             } elseif (count($plain) === 1 && count($siblings) === 1) {
                 $proposals[] = ['row' => $i, 'product' => $plain[0], 'score' => 2, 'reason' => 'model'];
-            } elseif (count($plain) === 1 && $siblings[0] === $i) {
-                // A card without a colour for a model in colours: offered with the first row of the model.
-                $row['suggested_product_id'] = $plain[0];
+            } elseif (count($plain) === 1 && $i === $this->baseRow($rows, $siblings)) {
+                // A card without a colour for a model in colours stands for the white one (бьянко белый), else the first.
+                $proposals[] = ['row' => $i, 'product' => $plain[0], 'score' => 1, 'reason' => 'model_base_colour'];
             }
         }
         unset($row);
@@ -225,6 +225,20 @@ class SyncSmolkomCommand extends Command
         unset($row);
 
         return [$rows, $stats];
+    }
+
+    /** The row a colourless card of a model takes: бьянко белый, then plain white, then the first row. */
+    private function baseRow(array $rows, array $siblings): int
+    {
+        foreach ([['белый', 'бьянко'], ['белый']] as $colours) {
+            foreach ($siblings as $i) {
+                if ($rows[$i]['colours'] === $colours) {
+                    return $i;
+                }
+            }
+        }
+
+        return $siblings[0];
     }
 
     /** @return array<string,int> */

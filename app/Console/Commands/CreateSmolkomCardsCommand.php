@@ -56,8 +56,10 @@ class CreateSmolkomCardsCommand extends Command
                 && ($group === 'all' || self::kind((array) $offer->raw) === $group))
             ->values();
         $existing = [];
+        $similar = [];
         foreach (DB::table('products')->whereIn('brand_id', array_merge(...array_values($brandIds ?: [[0]])))->where('is_archived', false)->get(['name', 'brand_id']) as $card) {
             $existing[$card->brand_id.'|'.SmolkomPriceList::modelKey((string) $card->name).'|'.implode(',', SmolkomPriceList::colourWords((string) $card->name))] = true;
+            $similar[(int) $card->brand_id][] = ['words' => SmolkomPriceList::modelWords((string) $card->name), 'colours' => SmolkomPriceList::colourWords((string) $card->name)];
         }
 
         $stats = ['offers' => $offers->count(), 'planned' => 0, 'card_exists' => 0, 'no_brand' => 0, 'no_category' => 0, 'on_site' => 0, 'created' => 0, 'with_photo' => 0, 'errors' => 0];
@@ -75,7 +77,8 @@ class CreateSmolkomCardsCommand extends Command
                 continue;
             }
             $colours = implode(',', SmolkomPriceList::colourWords((string) ($raw['colour'] ?? '')));
-            if (isset($existing[$brandId.'|'.SmolkomPriceList::modelKey((string) ($raw['name'] ?? '')).'|'.$colours])) {
+            if (isset($existing[$brandId.'|'.SmolkomPriceList::modelKey((string) ($raw['name'] ?? '')).'|'.$colours])
+                || self::hasSimilar($similar[$brandId] ?? [], SmolkomPriceList::modelWords((string) ($raw['name'] ?? '')), SmolkomPriceList::colourWords((string) ($raw['colour'] ?? '')))) {
                 $stats['card_exists']++;
                 $this->line('audit.smolkom_create.card_exists='.$code);
 
@@ -130,6 +133,23 @@ class CreateSmolkomCardsCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * A card of the brand whose model words hold the row's or are held by them («Luton FS33/FS33W/L33» for «LUTON
+     * FS33»), in the same colour or without one: probably the same item written otherwise, so no new card.
+     */
+    public static function hasSimilar(array $cards, array $words, array $colours): bool
+    {
+        foreach ($cards as $card) {
+            $colourOk = $card['colours'] === [] || $card['colours'] === $colours;
+            $common = array_intersect($card['words'], $words);
+            if ($colourOk && count($common) >= 2 && (array_diff($words, $card['words']) === [] || array_diff($card['words'], $words) === [])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function kind(array $raw): string

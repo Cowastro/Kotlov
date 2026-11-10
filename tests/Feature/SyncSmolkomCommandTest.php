@@ -42,7 +42,8 @@ class SyncSmolkomCommandTest extends TestCase
             ->expectsOutputToContain('metric.smolkom.rows=7')
             ->expectsOutputToContain('metric.smolkom.model=3')
             ->expectsOutputToContain('metric.smolkom.article=1')
-            ->expectsOutputToContain('metric.smolkom.suggested=1')
+            ->expectsOutputToContain('metric.smolkom.model_base_colour=1')
+            ->expectsOutputToContain('metric.smolkom.suggested=0')
             ->assertSuccessful();
 
         $supplier = Supplier::query()->where('code', 'smolkom')->sole();
@@ -56,13 +57,14 @@ class SyncSmolkomCommandTest extends TestCase
         $this->assertSame(['in_stock', 6], [$offer($vision)->stock_status, $offer($vision)->stock_quantity]);
         // Another supplier carries the Aspen card: its price stays.
         $this->assertSame(100.0, (float) $byBarcode->fresh()->price);
-        // Lumsden comes in two colours; the card without a colour is only offered.
-        $this->assertSame(0, SupplierProduct::query()->where('supplier_id', $supplier->id)->where('product_id', $lumsden->id)->count());
-        $this->assertSame($lumsden->id, SupplierProduct::query()->where('supplier_id', $supplier->id)->where('supplier_article', 'a-lumstbb')->sole()->raw['suggested_product_id']);
+        // Lumsden comes in two colours; the card without a colour takes the white one.
+        $this->assertSame('a-lumstbb', $offer($lumsden)->supplier_article);
 
-        // The unlinked Crystal 36 becomes a hidden card in the category of the linked electric fireplaces.
+        // The unlinked Crystal 36 becomes a hidden card in the category of the linked electric fireplaces; Lumsden in
+        // oak is left to the colourless Lumsden card.
         $this->artisan('supplier:smolkom-create', ['--apply' => true])
-            ->expectsOutputToContain('metric.smolkom_create.created=2')
+            ->expectsOutputToContain('metric.smolkom_create.card_exists=1')
+            ->expectsOutputToContain('metric.smolkom_create.created=1')
             ->assertSuccessful();
         $new = Product::query()->where('sku', 'SMOLKOM-A-64935693')->sole();
         $this->assertSame(['Электрокамин Royal Flame Crystal 36 RF', $electric->id, $royal->id, 2190.0, false],
