@@ -33,6 +33,13 @@ class CrmMailingListTest extends TestCase
 
         Supplier::query()->create(['code' => 'saunaopt', 'name' => 'СаунаОпт', 'contact' => 'opt@saunaopt.by, +375 44 777-88-99']);
 
+        foreach (['Адамович Владимир Иванович ИП', 'Кравцова Елена Семёновна', 'Кравцов Сергей Константинович'] as $name) {
+            CrmCounterparty::query()->create(['type' => 'person', 'classification' => 'retail', 'status' => 'active', 'source' => 'manual', 'name' => $name]);
+        }
+        $finder = app(MailingAudience::class);
+        $this->assertSame([], $finder->find('ИП Иванов'));
+        $this->assertCount(1, $finder->find('Ип кравцов'));
+
         $list = CrmMailingList::query()->create(['name' => 'Дилеры']);
         $stats = app(MailingAudience::class)->addByNames($list, "грандтеплокомпани\nОлещик/ТД пинск\nСаунаопт\nИП Неизвестный\nграндтеплокомпани");
 

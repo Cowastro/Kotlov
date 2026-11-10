@@ -18,11 +18,11 @@ use Illuminate\Support\Collection;
  */
 class MailingAudience
 {
-    private const LEGAL_FORMS = ['ип', 'ооо', 'одо', 'оао', 'зао', 'чуп', 'чтуп', 'уп', 'чп', 'пк', 'ао', 'llc'];
+    private const LEGAL_FORMS = ['ип', 'ооо', 'одо', 'оао', 'зао', 'чуп', 'чтуп', 'уп', 'чп', 'чпуп', 'пк', 'ао', 'llc'];
 
     private const MAX_MATCHES_PER_LINE = 5;
 
-    /** @var array<int, array{kind:string,id:int,counterparty:?int,keys:array<int,string>}>|null */
+    /** @var array<int, array{kind:string,id:int,counterparty:?int,names:array<int,array<int,string>>}>|null */
     private ?array $index = null;
 
     /**
@@ -75,18 +75,30 @@ class MailingAudience
      */
     public function find(string $line): array
     {
-        $variants = collect(explode('/', $line))->map(fn (string $v): string => $this->key($v))->filter(fn (string $v): bool => mb_strlen($v) >= 4)->unique();
+        $variants = collect(explode('/', $line))->map(fn (string $v): array => $this->words($v))
+            ->filter(fn (array $w): bool => mb_strlen(implode('', $w)) >= 4)->unique(fn (array $w): string => implode('', $w));
         if ($variants->isEmpty()) {
             return [];
         }
 
-        // Exact name matches first, then containment; each line keeps its best few hits.
+        // Whole words only, written together or apart («грандтеплокомпани» = «Гранд Тепло Компани»), so «Иванов» does not
+        // find «…Иванович» and «Кравцов» does not find «Кравцова». Exact name first, then the name containing the query,
+        // then the query containing the whole name («Теплая баня-Павлюк» → «Теплая баня»).
         $hits = [];
         foreach ($this->index() as $row) {
             $score = 0;
-            foreach ($variants as $variant) {
-                foreach ($row['keys'] as $key) {
-                    $score = max($score, $key === $variant ? 3 : (str_contains($key, $variant) ? 2 : (mb_strlen($key) >= 6 && str_contains($variant, $key) ? 1 : 0)));
+            foreach ($variants as $variantWords) {
+                $variant = implode('', $variantWords);
+                $variantRuns = null;
+                foreach ($row['names'] as $words) {
+                    $full = implode('', $words);
+                    if ($full === $variant) {
+                        $score = 3;
+                    } elseif (isset($this->runs($words)[$variant])) {
+                        $score = max($score, 2);
+                    } elseif (mb_strlen($full) >= 6 && isset(($variantRuns ??= $this->runs($variantWords))[$full])) {
+                        $score = max($score, 1);
+                    }
                 }
             }
             if ($score > 0) {
@@ -167,14 +179,40 @@ class MailingAudience
     /** Lower-case letters and digits only, legal forms and quotes dropped: «ООО "Гранд Тепло Компани"» → грандтеплокомпани. */
     public function key(string $name): string
     {
-        $name = str_replace('ё', 'е', mb_strtolower($name));
-        $words = preg_split('/[^\p{L}\p{N}]+/u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        $words = array_values(array_filter($words, fn (string $w): bool => ! in_array($w, self::LEGAL_FORMS, true)));
-
-        return implode('', $words);
+        return implode('', $this->words($name));
     }
 
-    /** @return array<int, array{kind:string,id:int,counterparty:?int,keys:array<int,string>}> */
+    /** @return array<int, string> «ООО "Гранд Тепло-Компани"» → [гранд, тепло, компани] */
+    public function words(string $name): array
+    {
+        $name = str_replace('ё', 'е', mb_strtolower($name));
+        $words = preg_split('/[^\p{L}\p{N}]+/u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return array_values(array_filter($words, fn (string $w): bool => ! in_array($w, self::LEGAL_FORMS, true)));
+    }
+
+    /**
+     * Every run of consecutive words written together: [гранд, тепло, компани] → гранд, грандтепло, грандтеплокомпани, тепло…
+     *
+     * @param  array<int, string>  $words
+     * @return array<string, true>
+     */
+    private function runs(array $words): array
+    {
+        $runs = [];
+        $count = min(count($words), 12);
+        for ($i = 0; $i < $count; $i++) {
+            $run = '';
+            for ($j = $i; $j < $count; $j++) {
+                $run .= $words[$j];
+                $runs[$run] = true;
+            }
+        }
+
+        return $runs;
+    }
+
+    /** @return array<int, array{kind:string,id:int,counterparty:?int,names:array<int,array<int,string>>}> */
     private function index(): array
     {
         if ($this->index !== null) {
@@ -182,9 +220,10 @@ class MailingAudience
         }
         $rows = [];
         $add = function (string $kind, int $id, ?int $counterparty, array $names) use (&$rows): void {
-            $keys = collect($names)->map(fn ($n): string => $this->key((string) $n))->filter(fn (string $k): bool => mb_strlen($k) >= 3)->unique()->values()->all();
-            if ($keys !== []) {
-                $rows[] = ['kind' => $kind, 'id' => $id, 'counterparty' => $counterparty, 'keys' => $keys];
+            $list = collect($names)->map(fn ($n): array => $this->words((string) $n))
+                ->filter(fn (array $w): bool => mb_strlen(implode('', $w)) >= 3)->unique(fn (array $w): string => implode(' ', $w))->values()->all();
+            if ($list !== []) {
+                $rows[] = ['kind' => $kind, 'id' => $id, 'counterparty' => $counterparty, 'names' => $list];
             }
         };
         CrmCounterparty::query()->select(['id', 'name', 'public_name', 'legal_name'])->chunkById(2000, function (Collection $chunk) use ($add): void {
