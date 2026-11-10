@@ -28,29 +28,52 @@ class CityStorefrontSeoTest extends TestCase
 
     public function test_approved_branch_gets_a_local_storefront_with_map_and_schema(): void
     {
-        $borisov = $this->city('borisov', 'Борисов');
+        // A city without its own branded hero shows the branch title and intro in the first slide.
+        $molodechno = $this->city('molodechno', 'Молодечно');
         $category = $this->categoryWithProduct('pechki', 'Печи');
-        $this->branch($borisov, [
-            'storefront_title' => 'Магазин печей KOTLOV в Борисове',
-            'storefront_intro' => 'Подбор печей и дымоходов в Борисове.',
+        $this->branch($molodechno, [
+            'storefront_title' => 'Магазин печей KOTLOV в Молодечно',
+            'storefront_intro' => 'Подбор печей и дымоходов в Молодечно.',
             'storefront_promo' => 'Бесплатная проверка комплектации дымохода.',
-            'map_url' => 'https://maps.example/borisov',
-            'seo_title' => 'Котлы и печи в Борисове | KOTLOV',
+            'map_url' => 'https://maps.example/molodechno',
+            'seo_title' => 'Котлы и печи в Молодечно | KOTLOV',
         ]);
 
-        $this->get('https://borisov.kotlov.by/')
+        $this->get('https://molodechno.kotlov.by/')
             ->assertOk()
-            ->assertSee('<link rel="canonical" href="https://borisov.kotlov.by/">', false)
-            ->assertSee('<title>Котлы и печи в Борисове | KOTLOV</title>', false)
-            ->assertSee('Магазин печей KOTLOV в Борисове')
-            ->assertSee('Подбор печей и дымоходов в Борисове.')
+            ->assertSee('<link rel="canonical" href="https://molodechno.kotlov.by/">', false)
+            ->assertSee('<title>Котлы и печи в Молодечно | KOTLOV</title>', false)
+            ->assertSee('Магазин печей KOTLOV в Молодечно')
+            ->assertSee('Подбор печей и дымоходов в Молодечно.')
             ->assertSee('Популярные разделы')
             ->assertSee('home-popular-categories', false)
             ->assertSee('Бесплатная проверка комплектации дымохода.')
-            ->assertSee('https://maps.example/borisov')
+            ->assertSee('https://maps.example/molodechno')
             ->assertSee('https://www.google.com/maps?q=', false)
             ->assertSee('/'.$category->slug)
             ->assertSee('"@type":"Store"', false)
+            ->assertSee('"addressLocality":"Молодечно"', false);
+    }
+
+    public function test_borisov_and_lida_have_the_branded_city_hero(): void
+    {
+        $borisov = $this->city('borisov', 'Борисов');
+        $this->categoryWithProduct('pechki', 'Печи');
+        $this->branch($borisov, [
+            'storefront_title' => 'Магазин печей KOTLOV в Борисове',
+            'storefront_promo' => 'Бесплатная проверка комплектации дымохода.',
+            'seo_title' => 'Котлы и печи в Борисове | KOTLOV',
+        ]);
+
+        // The branded slide carries the city wordmark instead of the branch title; the promo stays in the branch block.
+        $this->get('https://borisov.kotlov.by/')
+            ->assertOk()
+            ->assertSee('<title>Котлы и печи в Борисове | KOTLOV</title>', false)
+            ->assertSee('city-home-slide--branded', false)
+            ->assertSee('BORISOV.KOTLOV.BY')
+            ->assertSee('Магазин отопления')
+            ->assertDontSee('Магазин печей KOTLOV в Борисове')
+            ->assertSee('Бесплатная проверка комплектации дымохода.')
             ->assertSee('"addressLocality":"Борисов"', false);
     }
 
