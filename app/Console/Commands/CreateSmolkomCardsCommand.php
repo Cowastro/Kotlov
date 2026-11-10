@@ -60,10 +60,10 @@ class CreateSmolkomCardsCommand extends Command
         // A card already linked to a row of another model is that model, not a spelling of this one.
         $linkedModel = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->get(['product_id', 'raw'])
             ->mapWithKeys(fn (SupplierProduct $o) => [(int) $o->product_id => SmolkomPriceList::modelKey((string) ($o->raw['name'] ?? ''))]);
-        foreach (DB::table('products')->whereIn('brand_id', array_merge(...array_values($brandIds ?: [[0]])))->where('is_archived', false)->get(['id', 'name', 'brand_id']) as $card) {
+        foreach (DB::table('products')->whereIn('brand_id', array_merge(...array_values($brandIds ?: [[0]])))->where('is_archived', false)->get(['id', 'name', 'brand_id', 'slug']) as $card) {
             $existing[$card->brand_id.'|'.SmolkomPriceList::modelKey((string) $card->name).'|'.implode(',', SmolkomPriceList::colourWords((string) $card->name))] = true;
             $similar[(int) $card->brand_id][] = ['words' => SmolkomPriceList::modelWords((string) $card->name), 'colours' => SmolkomPriceList::colourWords((string) $card->name),
-                'linked_key' => $linkedModel[(int) $card->id] ?? null];
+                'linked_key' => $linkedModel[(int) $card->id] ?? null, 'slug' => (string) $card->slug];
         }
 
         $stats = ['offers' => $offers->count(), 'planned' => 0, 'card_exists' => 0, 'no_brand' => 0, 'no_category' => 0, 'on_site' => 0, 'created' => 0, 'with_photo' => 0, 'errors' => 0];
@@ -81,10 +81,10 @@ class CreateSmolkomCardsCommand extends Command
                 continue;
             }
             $colours = implode(',', SmolkomPriceList::colourWords((string) ($raw['colour'] ?? '')));
-            if (isset($existing[$brandId.'|'.SmolkomPriceList::modelKey((string) ($raw['name'] ?? '')).'|'.$colours])
-                || self::hasSimilar($similar[$brandId] ?? [], SmolkomPriceList::modelWords((string) ($raw['name'] ?? '')), SmolkomPriceList::colourWords((string) ($raw['colour'] ?? '')))) {
+            $like = self::similarCard($similar[$brandId] ?? [], SmolkomPriceList::modelWords((string) ($raw['name'] ?? '')), SmolkomPriceList::colourWords((string) ($raw['colour'] ?? '')));
+            if (isset($existing[$brandId.'|'.SmolkomPriceList::modelKey((string) ($raw['name'] ?? '')).'|'.$colours]) || $like !== null) {
                 $stats['card_exists']++;
-                $this->line('audit.smolkom_create.card_exists='.$code);
+                $this->line('audit.smolkom_create.card_exists='.$code.($like ? ':'.Str::slug($like) : ''));
 
                 continue;
             }
@@ -145,6 +145,12 @@ class CreateSmolkomCardsCommand extends Command
      */
     public static function hasSimilar(array $cards, array $words, array $colours): bool
     {
+        return self::similarCard($cards, $words, $colours) !== null;
+    }
+
+    /** The address of the similar card, '' when it has none, null when there is no such card. */
+    public static function similarCard(array $cards, array $words, array $colours): ?string
+    {
         foreach ($cards as $card) {
             if (($card['linked_key'] ?? null) !== null && $card['linked_key'] !== implode(' ', $words)) {
                 continue;
@@ -157,11 +163,11 @@ class CreateSmolkomCardsCommand extends Command
             $colourOk = $card['colours'] === [] || $card['colours'] === $colours;
             $common = array_intersect($card['words'], $words);
             if ($colourOk && count($common) >= 2 && (array_diff($words, $card['words']) === [] || array_diff($card['words'], $words) === [])) {
-                return true;
+                return (string) ($card['slug'] ?? '');
             }
         }
 
-        return false;
+        return null;
     }
 
     public static function kind(array $raw): string
