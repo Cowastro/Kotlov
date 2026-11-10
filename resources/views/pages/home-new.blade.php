@@ -348,10 +348,10 @@
                     </div>
 
                     <div dir="ltr" class="swiper tf-swiper swiper-cate"
-                        data-preview="5" data-tablet="4" data-mobile-sm="3" data-mobile="2"
+                        data-preview="6" data-tablet="4" data-mobile-sm="3" data-mobile="2"
                         data-space-lg="40" data-space-md="20" data-space="10"
                         data-grid="2" data-pagination="2" data-pagination-sm="2"
-                        data-pagination-md="3" data-pagination-lg="5">
+                        data-pagination-md="3" data-pagination-lg="6">
                         <div class="swiper-wrapper">
 
                         @foreach ($popularCategories as $category)

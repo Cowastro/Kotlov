@@ -280,22 +280,26 @@ Route::get('/', function () {
         $directCounts = $sellableProducts()->whereNotNull('category_id')
             ->selectRaw('category_id, COUNT(*) as total')->groupBy('category_id')->pluck('total', 'category_id');
 
-        $popularCategories = Category::query()
-            ->where('is_active', true)
+        $popularCategories = $categories
             ->whereIn('slug', [
                 'kotly', 'teplovyie-nasosyi', 'kaminy', 'pechki',
                 'dymohody', 'bani-i-sauny', 'vodonagrevateli',
                 'pelletnye-gorelki', 'komplektuyushhie-dlya-otopleniya', 'vodosnabzhenie',
             ])
-            ->orderBy('sort_order')
-            ->limit(10)
-            ->get()
             ->values();
+
+        $fireplaces = $categories->firstWhere('slug', 'pechi-kaminy');
+        if ($fireplaces) {
+            $stovesIndex = $popularCategories->search(fn (Category $category) => $category->slug === 'pechki');
+            $popularCategories->splice($stovesIndex === false ? 0 : $stovesIndex + 1, 0, [$fireplaces]);
+        }
 
         $popularCategories->each(function (Category $category) use ($categoryBranchIds, $directCounts) {
             $branchIds = $categoryBranchIds($category->id);
             $category->products_count = $branchIds->sum(fn ($id) => (int) $directCounts->get($id, 0));
-            $category->catalogThumb = $category->catalogImageUrl($branchIds->all());
+            $category->catalogThumb = $category->slug === 'pechi-kaminy'
+                ? asset('img/banners/ecokamin-sale/pech-kamin-ecokamin-bavariya-optima.webp')
+                : $category->catalogImageUrl($branchIds->all());
         });
 
         $kotlyCatId = Category::where('slug', 'kotly')->value('id');
