@@ -564,7 +564,7 @@
                         {{-- List вид товаров --}}
                         <div class="tf-list-layout wrapper-shop" id="listLayout" style="display: none;">
                             @forelse ($products as $product)
-                                @include('partials.product-card-list', ['product' => $product])
+                                @include('partials.product-card-list', ['product' => $product, 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? []])
                             @empty
                                 <div class="text-center py-48 wd-full">
                                     <p class="h5 cl-text-2">Товары не найдены</p>
@@ -600,7 +600,7 @@
                         {{-- Сетка товаров --}}
                         <div class="wrapper-shop tf-grid-layout tf-col-2 md-col-3" id="gridLayout">
                             @forelse ($products as $product)
-                                @include('partials.product-card', ['product' => $product])
+                                @include('partials.product-card', ['product' => $product, 'fireplaceCardSpecs' => $fireplaceSpecsByProduct[$product->id] ?? []])
                             @empty
                                 <div class="wd-full text-center py-48">
                                     <i class="icon icon-Package fs-48 cl-text-3 mb-16"></i>

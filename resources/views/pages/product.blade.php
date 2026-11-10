@@ -1271,7 +1271,7 @@
                                     <li class="cl-text-2">— По Минску: 1-2 рабочих дня</li>
                                     <li class="cl-text-2">— По регионам: 2-5 рабочих дней</li>
                                     <li class="cl-text-2">— Крупногабаритное оборудование — по договорённости</li>
-                                    <li class="cl-text-2">— Самовывоз: ул. Селицкого 39Б, каб.23, Минск</li>
+                                    <li class="cl-text-2">— Самовывоз со склада KOTLOV: {{ config('shop.delivery_methods.pickup.address') }} · по предварительному согласованию</li>
                                 </ul>
                             </div>
                         </div>

@@ -12,6 +12,7 @@ use App\Models\ProductAttributeValue;
 use App\Services\ChimneyDiameterQuickFilter;
 use App\Services\CityContactResolver;
 use App\Services\SeoMetadataBuilder;
+use App\Support\Catalog\FireplaceCardSpecs;
 use App\Support\CategoryNavigationGroups;
 use App\Support\Promotions\EcokaminPromotion;
 use Illuminate\Http\Request;
@@ -493,6 +494,13 @@ class CatalogController extends Controller
             $products->setCollection($firstRow->concat($pageProducts->diff($firstRow)));
         }
 
+        $fireplaceSpecsByProduct = [];
+        if ($isMinskFireplaceCatalog) {
+            foreach ($products->getCollection()->load('attributeValues') as $product) {
+                $fireplaceSpecsByProduct[$product->id] = FireplaceCardSpecs::forProduct($product);
+            }
+        }
+
         // Город с поддомена (через middleware CitySubdomain)
         $sharedCityIn = view()->shared('cityIn');
         $cityIn = $sharedCityIn ?: 'в Беларуси';
@@ -944,6 +952,7 @@ class CatalogController extends Controller
             'category',
             'isMinskFireplaceCatalog',
             'minskFireplaceOfficeAddress',
+            'fireplaceSpecsByProduct',
             'subcategories',
             'brands',
             'filterAttributes',
