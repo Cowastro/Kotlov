@@ -618,6 +618,12 @@ jobs:
             grep -aE '^audit\.smolkom\.row=[a-z0-9-]+:(s?[0-9]+|none):[a-z_]+:[a-z0-9-]*$' "$detail_log" || true
             echo "safe_smolkom_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:smolkom-site-photos" ]]; then
+            echo "safe_smolkom_site_photos_begin"
+            grep -aE '^metric\.smolkom_site_photos\.[a-z_]+=[0-9]+$' "$detail_log" || true
+            grep -aE '^audit\.smolkom_site_photos\.card=[a-z0-9-]+:([0-9]+|none)$' "$detail_log" || true
+            echo "safe_smolkom_site_photos_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:smolkom-create" ]]; then
             echo "safe_smolkom_create_begin"
             grep -aE '^metric\.smolkom_create\.[a-z_]+=[0-9]+$' "$detail_log" || true

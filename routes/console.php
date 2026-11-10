@@ -240,6 +240,13 @@ Schedule::command('supplier:sync-smolkom --from-drive --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/smolkom-sync.log'));
 
+// smolcom.by has the photos of every colour under the price list article: taken first, the web search is the fallback.
+Schedule::command('supplier:smolkom-site-photos --apply')
+    ->dailyAt('07:40')
+    ->withoutOverlapping(60)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/smolkom-site-photos.log'));
+
 Schedule::command('supplier:chisty-bereg-photos --supplier=smolkom --limit=30 --apply')
     ->dailyAt('09:20')
     ->withoutOverlapping(60)

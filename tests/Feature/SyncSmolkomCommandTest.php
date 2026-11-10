@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierProduct;
 use App\Services\ProductVariantSelector;
+use App\Services\Suppliers\SmolcomSiteCatalog;
 use App\Services\Suppliers\SmolkomPriceList;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -93,6 +94,47 @@ class SyncSmolkomCommandTest extends TestCase
         $this->assertSame(['белый', 'бьянко', 'черный'], SmolkomPriceList::colourWords('Бьянко белый/черный'));
         $this->assertSame('Портал Smolcom Albion V42 бьянко белый', CreateSmolkomCardsCommand::cardTitle(['group' => 'ПОРТАЛЫ', 'brand' => 'Smolcom', 'name' => 'ALBION V42', 'colour' => 'Бьянко белый']));
         $this->assertSame('Dimplex Cas 400 Log Led муляж дров', CreateSmolkomCardsCommand::cardTitle(['group' => 'ЭЛЕКТРОКАМИНЫ', 'brand' => 'Dimplex', 'name' => 'Cas 400 Log Led муляж дров', 'colour' => '']));
+    }
+
+    public function test_smolcom_site_photos_of_the_same_article_fill_a_hidden_colour_card(): void
+    {
+        $page = "<script>var ob = new JCCatalogElement({'OFFERS':[{'ID':'903','NAME':'Портал Smolcom Govard V42','TREE':{'PROP_671':'45'},"
+            ."'DISPLAY_PROPERTIES':{'ARTICLE':{'NAME':'Артикул','VALUE':'GOVV4Ч','CODE':'ARTICLE'}},'SLIDER':[{'ID':'1','SRC':'/upload/iblock/a1/black.jpg','WIDTH':'1772'},"
+            ."{'ID':'2','SRC':'/upload/resize_cache/iblock/a1/450_450/black.jpg'}]},"
+            ."{'ID':'904','NAME':'Портал Smolcom Govard V42','DISPLAY_PROPERTIES':{'ARTICLE':{'NAME':'Артикул','VALUE':'GOVV4Бб','CODE':'ARTICLE'}},'SLIDER':[{'ID':'3','SRC':'/upload/iblock/b2/white.jpg'}]}]});</script>";
+        $this->assertSame(['govv4ч' => ['https://smolcom.by/upload/iblock/a1/black.jpg'], 'govv4бб' => ['https://smolcom.by/upload/iblock/b2/white.jpg']],
+            SmolcomSiteCatalog::parseOffers($page));
+
+        $image = imagecreatetruecolor(800, 800);
+        imagefilledrectangle($image, 100, 100, 700, 700, imagecolorallocate($image, 20, 20, 20));
+        imagefilledrectangle($image, 0, 0, 800, 90, imagecolorallocate($image, 200, 120, 60));
+        ob_start();
+        imagejpeg($image);
+        $jpeg = (string) ob_get_clean();
+        Http::fake([
+            'smolcom.by/sitemap-iblock-23.xml' => Http::response('<urlset></urlset>'),
+            'smolcom.by/sitemap-iblock-26.xml' => Http::response('<urlset><url><loc>https://smolcom.by/catalog/portali/portaly-iz-dereva-mdf/796/</loc></url></urlset>'),
+            'smolcom.by/catalog/*' => Http::response($page),
+            'smolcom.by/upload/*' => Http::response($jpeg, 200, ['Content-Type' => 'image/jpeg']),
+        ]);
+        $category = Category::query()->create(['name' => 'Облицовки', 'slug' => 'oblicovki', 'parent_id' => 0, 'is_active' => true]);
+        $brand = Brand::query()->create(['name' => 'Smolcom', 'slug' => 'smolcom', 'is_active' => true]);
+        $black = Product::query()->create(['name' => 'Портал Smolcom Govard V42 черный', 'slug' => 'portal-govard-v42-black', 'sku' => 'SMOLKOM-A-GOVV4C',
+            'category_id' => $category->id, 'brand_id' => $brand->id, 'price' => 1290, 'is_active' => false, 'created_via' => Product::CREATED_VIA_AWAITING_PHOTOS, 'images' => []]);
+        $supplier = Supplier::query()->updateOrCreate(['code' => 'smolkom'], ['name' => 'Смолком', 'currency' => 'BYN', 'is_active' => true]);
+        SupplierProduct::query()->create(['supplier_id' => $supplier->id, 'product_id' => $black->id, 'supplier_article' => 'a-govv4c', 'supplier_name' => 'Smolcom GOVARD V42, Черный',
+            'price' => 993, 'currency' => 'BYN', 'raw' => ['article' => 'GOVV4Ч', 'colour' => 'Черный', 'name' => 'GOVARD V42', 'group' => 'ПОРТАЛЫ']]);
+
+        $this->artisan('supplier:smolkom-site-photos', ['--apply' => true])
+            ->expectsOutputToContain('metric.smolkom_site_photos.saved=1')
+            ->expectsOutputToContain('metric.smolkom_site_photos.published=1')
+            ->assertSuccessful();
+        $black->refresh();
+        $this->assertTrue($black->is_active);
+        $this->assertCount(1, array_filter((array) $black->images));
+        foreach ((array) $black->images as $path) {
+            @unlink(public_path($path));
+        }
     }
 
     private function priceList(): string
