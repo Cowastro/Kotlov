@@ -96,9 +96,9 @@ class ProductForm
                     ]),
 
                 Section::make('Варианты модели на сайте')
-                    ->description('Автоматическая связь карточек одной серии. Для баков варианты определяются по бренду, модели и литражу.')
+                    ->description('Автоматическая связь карточек одной серии: баки — по бренду, модели и литражу; порталы и электрокамины — по бренду, модели и характеристике «Цвет».')
                     ->columnSpanFull()
-                    ->visible(fn (?Product $record): bool => $record?->category?->slug === 'membrannye-baki')
+                    ->visible(fn (?Product $record): bool => in_array($record?->category?->slug, ['membrannye-baki', 'oblicovki', 'elektrokamini', 'elektrokaminy', 'portaly-dlya-elektrokaminov'], true))
                     ->schema([
                         Toggle::make('variant_selector_excluded')
                             ->label('Не показывать эту карточку среди вариантов серии')
