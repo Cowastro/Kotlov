@@ -9,6 +9,7 @@ use App\Models\CrmMailingList;
 use App\Models\CrmMailingListMember;
 use App\Models\PartnerBranch;
 use App\Models\Supplier;
+use App\Services\Telephony\PhoneNumber;
 use Illuminate\Support\Collection;
 
 /**
@@ -165,7 +166,7 @@ class MailingAudience
 
         return [
             'emails' => collect($emails)->map(fn (string $e): string => mb_strtolower(trim($e)))->filter(fn (string $e): bool => filter_var($e, FILTER_VALIDATE_EMAIL) !== false)->unique()->values()->all(),
-            'phones' => collect($phones)->map(fn (string $p): string => trim($p))->filter(fn (string $p): bool => strlen(preg_replace('/\D/', '', $p) ?? '') >= 7)
+            'phones' => collect($phones)->flatMap(fn (string $p): array => PhoneNumber::extract($p)['phones'])->filter(fn (string $p): bool => strlen(preg_replace('/\D/', '', $p) ?? '') >= 7)
                 ->unique(fn (string $p): string => substr(preg_replace('/\D/', '', $p) ?? '', -9))->values()->all(),
             'messengers' => collect($messengers)->map(fn (string $m): string => trim($m))->filter(fn (string $m): bool => ! str_ends_with($m, ':'))->unique()->values()->all(),
         ];

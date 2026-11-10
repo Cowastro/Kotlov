@@ -16,6 +16,10 @@ class CrmContactPoint extends Model
     {
         static::saving(function (CrmContactPoint $point): void {
             $point->value = trim($point->value);
+            // One Belarusian number is always stored as «+375 29 123-45-67» (mailings, Viber, SMS).
+            if ($point->type === 'phone' && ($formatted = PhoneNumber::format($point->value)) !== null) {
+                $point->value = $formatted;
+            }
             $point->normalized_value = $point->type === 'phone'
                 ? (PhoneNumber::normalize($point->value) ?? '')
                 : mb_strtolower($point->value);

@@ -30,7 +30,8 @@ class SetSanBusinessGroupContactsCommandTest extends TestCase
             ->expectsOutputToContain('metric.sbg_contacts.phone_points_to_disable=1')
             ->expectsOutputToContain('metric.sbg_contacts.email_points_to_disable=2')
             ->assertSuccessful();
-        $this->assertCount(2, $supplier->fresh()->contactPhoneNumbers());
+        // «8 017 123-45-67» is stored as «+375 17 123-45-67» — the same number as the channel, listed once.
+        $this->assertCount(1, $supplier->fresh()->contactPhoneNumbers());
 
         $this->artisan('supplier:set-sanbusinessgroup-contacts --apply')
             ->expectsOutputToContain('metric.sbg_contacts.new_phone_first=1')
