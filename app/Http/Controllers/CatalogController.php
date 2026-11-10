@@ -293,6 +293,7 @@ class CatalogController extends Controller
         $isMinskFireplaceCatalog = $category->slug === 'pechi-kaminy'
             && request()->getHost() === config('app.base_domain', 'kotlov.by');
         $isStoveHeatingCatalog = $category->slug === 'pechki';
+        $stoveCardCategories = ['pechki', 'pechi-kaminy', 'burzhuiki-pechi', 'peci-drovianye-otopitelnye'];
         $stoveAreaNormalizer = $isStoveHeatingCatalog ? app(StoveHeatingAreaNormalizer::class) : null;
         $stoveAreaAttributeIds = $stoveAreaNormalizer
             ? $rawAttributes->filter(fn (Attribute $attribute) => $stoveAreaNormalizer->isAreaKey($attribute->name))->modelKeys()
@@ -568,9 +569,12 @@ class CatalogController extends Controller
         }
 
         $fireplaceSpecsByProduct = [];
-        if ($isMinskFireplaceCatalog) {
-            foreach ($products->getCollection()->load('attributeValues') as $product) {
-                $fireplaceSpecsByProduct[$product->id] = FireplaceSpecifications::card($product);
+        if (in_array($category->slug, [...$stoveCardCategories, 'dlya-dachi'], true)) {
+            $stoveProducts = $products->getCollection()->filter(
+                fn (Product $product) => in_array($product->category?->slug, $stoveCardCategories, true)
+            );
+            foreach ($stoveProducts->load('attributeValues') as $product) {
+                $fireplaceSpecsByProduct[$product->id] = FireplaceSpecifications::catalogCard($product);
             }
         }
 

@@ -34,7 +34,27 @@ final class FireplaceSpecifications
     /** @return array{label: string, value: string, is_area: bool}|null */
     public static function heatingFact(Product $product): ?array
     {
-        [$values, $specs] = self::sources($product, $product->attributeValues);
+        return self::resolveHeatingFact(self::sources($product, $product->attributeValues));
+    }
+
+    /** @return array<string, string> */
+    public static function catalogCard(Product $product): array
+    {
+        $sources = self::sources($product, $product->attributeValues);
+        $otherSpecs = self::summary($sources, [
+            'Мощность' => self::CARD_FIELDS['Мощность'],
+            'Материал' => self::CARD_FIELDS['Материал'],
+        ]);
+        $heating = self::resolveHeatingFact($sources);
+
+        return array_intersect_key($otherSpecs, ['Мощность' => true])
+            + ($heating === null ? [] : [$heating['label'] => $heating['value']])
+            + array_intersect_key($otherSpecs, ['Материал' => true]);
+    }
+
+    private static function resolveHeatingFact(array $sources): ?array
+    {
+        [$values, $specs] = $sources;
         $areaLabel = 'Площадь обогрева';
         $areaNames = [...self::CARD_FIELDS[$areaLabel], 'максимальная площадь обогрева', 'максимальная отапливаемая площадь'];
         $area = self::summary([$values, $specs], [$areaLabel => $areaNames])[$areaLabel] ?? null;
