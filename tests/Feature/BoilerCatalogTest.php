@@ -66,6 +66,9 @@ class BoilerCatalogTest extends TestCase
 
         $this->get('/kotly-na-pelletah?boiler[hopper]=to-100&brand='.$brand->id)->assertOk()
             ->assertViewHas('products', fn ($products) => $products->pluck('name')->all() === ['Pellet A']);
+
+        $this->get('/kotly-na-pelletah?boiler[hopper_volume]=to-100&brand='.$brand->id)->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->pluck('name')->all() === ['Pellet B']);
     }
 
     private function category(string $slug): Category

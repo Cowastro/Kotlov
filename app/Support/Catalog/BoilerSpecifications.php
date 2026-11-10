@@ -103,6 +103,12 @@ class BoilerSpecifications
 
         return $slug === 'kotly-na-pelletah' ? [
             'power' => self::PELLET_POWER,
+            'hopper_volume' => [
+                'to-100' => ['до 100 л', null, 100],
+                'to-200' => ['свыше 100 до 200 л', 100, 200],
+                'to-350' => ['свыше 200 до 350 л', 200, 350],
+                'over-350' => ['свыше 350 л', 350, null],
+            ],
             'hopper' => [
                 'to-50' => ['до 50 кг', null, 50],
                 'to-100' => ['свыше 50 до 100 кг', 50, 100],
@@ -125,6 +131,7 @@ class BoilerSpecifications
             'power' => ['Мощность', array_map(fn (array $range) => $range[0], $ranges['power'])],
             'area' => ['Площадь обогрева', array_map(fn (array $range) => $range[0], $ranges['area'])],
             ...($slug === 'kotly-na-pelletah' ? [
+                'hopper_volume' => ['Объём бункера', array_map(fn (array $range) => $range[0], $ranges['hopper_volume'])],
                 'hopper' => ['Вместимость бункера', array_map(fn (array $range) => $range[0], $ranges['hopper'])],
             ] : []),
             ...match ($slug) {
@@ -165,6 +172,7 @@ class BoilerSpecifications
             $unit = match ($kind) {
                 'power' => 'кВт',
                 'area' => 'м²',
+                'hopper_volume' => 'л',
                 'hopper' => 'кг',
             };
             $card[$dimensions[$kind][0]] = str_replace('.', ',', (string) $value).' '.$unit;
@@ -301,7 +309,7 @@ class BoilerSpecifications
     private function factKeyScore(string $key, string $kind): int
     {
         $key = $this->normalizeName($key);
-        if ($kind === 'hopper') {
+        if (in_array($kind, ['hopper', 'hopper_volume'], true)) {
             return str_contains($key, 'бункер') && preg_match('/объем|вместимост|емкост|вес.*пеллет|загрузк/u', $key) ? 20 : 0;
         }
         if ($kind === 'area') {
@@ -334,12 +342,13 @@ class BoilerSpecifications
         $unitPattern = match ($kind) {
             'power' => '(?:квт|kw)',
             'area' => '(?:м²|м2|m2|m²|кв\.?\s*м)',
+            'hopper_volume' => '(?:л(?:итр\pL*)?|l|дм[³3]|dm[³3])',
             'hopper' => '(?:кг|kg)',
         };
-        preg_match_all('/(\d+(?:\.\d+)?)\s*'.$unitPattern.'/ui', $raw, $withUnit);
+        preg_match_all('/(\d+(?:\.\d+)?)\s*'.$unitPattern.'(?![\pL\pN])/ui', $raw, $withUnit);
         $numbers = array_map('floatval', $withUnit[1] ?? []);
         if ($numbers === []) {
-            if ($kind === 'hopper' && ! preg_match('/\b(?:кг|kg)\b/ui', $field)) {
+            if (in_array($kind, ['hopper', 'hopper_volume'], true) && ! preg_match('/\b'.$unitPattern.'(?![\pL\pN])/ui', $field)) {
                 return null;
             }
             if (preg_match('/\pL|[³²%]/u', $raw) && ! preg_match('/^(?:до|от)\s*\d+(?:\.\d+)?$/ui', $raw)) {
@@ -360,7 +369,7 @@ class BoilerSpecifications
 
     private function numericFromName(string $name, string $kind): ?float
     {
-        if ($kind === 'hopper') {
+        if (in_array($kind, ['hopper', 'hopper_volume'], true)) {
             return null;
         }
 
