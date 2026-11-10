@@ -157,7 +157,7 @@ class CreateSmolkomCardsCommand extends Command
             }
             // The same model without a colour is the white one: other colours become cards of their own, offered as
             // «Выберите цвет» on the card page.
-            if ($card['colours'] === [] && $card['words'] === $words && $colours !== []) {
+            if ($card['colours'] === [] && ($card['words'] === $words || ($card['linked_key'] ?? null) === implode(' ', $words)) && $colours !== []) {
                 continue;
             }
             $colourOk = $card['colours'] === [] || $card['colours'] === $colours;
