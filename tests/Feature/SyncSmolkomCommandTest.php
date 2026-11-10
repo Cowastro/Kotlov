@@ -116,6 +116,10 @@ class SyncSmolkomCommandTest extends TestCase
             'smolcom.by/sitemap-iblock-26.xml' => Http::response('<urlset><url><loc>https://smolcom.by/catalog/portali/portaly-iz-dereva-mdf/796/</loc></url></urlset>'),
             'smolcom.by/catalog/*' => Http::response($page),
             'smolcom.by/upload/*' => Http::response($jpeg, 200, ['Content-Type' => 'image/jpeg']),
+            'dimplex.ru/sitemap/*' => Http::response('<urlset><url><loc>https://dimplex.ru/catalog/ochag-ignite-xlf50/</loc></url></urlset>'),
+            'dimplex.ru/catalog/*' => Http::response('<h1>Очаг Ignite XLF50</h1><img src="/upload/iblock/ce0/Ignite_1500x1000.jpg"><dl class="param"><dt><span>Артикул</span></dt><dd>64920045</dd></dl>'),
+            'dimplex.ru/upload/*' => Http::response($jpeg, 200, ['Content-Type' => 'image/jpeg']),
+            'royalflame.ru/*' => Http::response('', 404),
         ]);
         $category = Category::query()->create(['name' => 'Облицовки', 'slug' => 'oblicovki', 'parent_id' => 0, 'is_active' => true]);
         $brand = Brand::query()->create(['name' => 'Smolcom', 'slug' => 'smolcom', 'is_active' => true]);
@@ -125,14 +129,22 @@ class SyncSmolkomCommandTest extends TestCase
         SupplierProduct::query()->create(['supplier_id' => $supplier->id, 'product_id' => $black->id, 'supplier_article' => 'a-govv4c', 'supplier_name' => 'Smolcom GOVARD V42, Черный',
             'price' => 993, 'currency' => 'BYN', 'raw' => ['article' => 'GOVV4Ч', 'colour' => 'Черный', 'name' => 'GOVARD V42', 'group' => 'ПОРТАЛЫ']]);
 
+        $dimplex = Brand::query()->create(['name' => 'Dimplex', 'slug' => 'dimplex', 'is_active' => true]);
+        $ignite = Product::query()->create(['name' => 'Электрокамин Dimplex Ignite XLF 50', 'slug' => 'ignite-xlf-50', 'sku' => 'SMOLKOM-A-64920045',
+            'category_id' => $category->id, 'brand_id' => $dimplex->id, 'price' => 6780, 'is_active' => false, 'created_via' => Product::CREATED_VIA_AWAITING_PHOTOS, 'images' => []]);
+        SupplierProduct::query()->create(['supplier_id' => $supplier->id, 'product_id' => $ignite->id, 'supplier_article' => 'a-64920045', 'supplier_name' => 'Dimplex Ignite XLF 50',
+            'price' => 6103, 'currency' => 'BYN', 'raw' => ['article' => '64920045', 'colour' => '', 'name' => 'Ignite XLF 50', 'group' => 'ЭЛЕКТРОКАМИНЫ']]);
+
         $this->artisan('supplier:smolkom-site-photos', ['--apply' => true])
-            ->expectsOutputToContain('metric.smolkom_site_photos.saved=1')
-            ->expectsOutputToContain('metric.smolkom_site_photos.published=1')
+            ->expectsOutputToContain('metric.smolkom_site_photos.found_brand_site=1')
+            ->expectsOutputToContain('metric.smolkom_site_photos.saved=2')
+            ->expectsOutputToContain('metric.smolkom_site_photos.published=2')
             ->assertSuccessful();
         $black->refresh();
         $this->assertTrue($black->is_active);
         $this->assertCount(1, array_filter((array) $black->images));
-        foreach ((array) $black->images as $path) {
+        $this->assertTrue($ignite->fresh()->is_active);
+        foreach (array_merge((array) $black->images, (array) $ignite->fresh()->images) as $path) {
             @unlink(public_path($path));
         }
     }
