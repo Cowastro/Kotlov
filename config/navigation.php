@@ -12,7 +12,21 @@
  *   - Promo-колонка мегаменю (бренды, баннер, CTA)
  */
 
+$boilerTypes = [
+    'gazovye' => ['name' => 'Газовые', 'description' => 'Настенные и напольные', 'icon' => 'icon-ShieldCheck'],
+    'elektricheskie' => ['name' => 'Электрические', 'description' => 'Для сети 220 и 380 В', 'icon' => 'icon-Lightning'],
+    'tverdotoplivnye' => ['name' => 'Твердотопливные', 'description' => 'На дровах и угле', 'icon' => 'icon-Leaf'],
+    'kotly-na-pelletah' => ['name' => 'Пеллетные', 'description' => 'С подачей пеллет', 'icon' => 'icon-Sparkle'],
+];
+
 return [
+
+    'boiler_types' => $boilerTypes,
+    'former_boiler_subcategories' => [
+        'pelletnye-gorelki', 'zapchasti-dlya-kotlov', 'regulyatory', 'datchiki',
+        'stabilizatory-napryazheniya', 'komplektuyushchie-stabilizatorov', 'istochniki-besperebojnogo-pitaniya', 'avtotransformatory-latr',
+        'signalizatory-zagazovannosti', 'gazovye-shlangi', 'regulyatoryi-davleniya-gaza', 'schetchiki-gaza',
+    ],
 
     // Количество колонок в левой зоне мегаменю (xl-col-N). По умолчанию 2.
     'columns' => [
@@ -26,16 +40,6 @@ return [
     // Группы подразделов крупных разделов: заголовки колонок мегаменю и блоки на странице раздела.
     // Подраздел, не попавший ни в одну группу, показывается в группе «Ещё».
     'groups' => [
-        'kotly' => [
-            ['title' => 'Котлы', 'icon' => 'icon-Lightning', 'description' => 'Газовые, электрические, твердотопливные и пеллетные котлы.',
-                'slugs' => ['gazovye', 'elektricheskie', 'tverdotoplivnye', 'kotly-na-pelletah']],
-            ['title' => 'Горелки и запчасти', 'icon' => 'icon-Sparkle', 'description' => 'Пеллетные горелки, бункеры, шнеки и запчасти для котлов.',
-                'slugs' => ['pelletnye-gorelki', 'zapchasti-dlya-kotlov']],
-            ['title' => 'Автоматика и электропитание', 'icon' => 'icon-Devices', 'description' => 'Термостаты, датчики, стабилизаторы и ИБП для котла.',
-                'slugs' => ['regulyatory', 'datchiki', 'stabilizatory-napryazheniya', 'istochniki-besperebojnogo-pitaniya', 'avtotransformatory-latr', 'komplektuyushchie-stabilizatorov']],
-            ['title' => 'Газовое оборудование', 'icon' => 'icon-ShieldCheck', 'description' => 'Сигнализаторы загазованности, газовые шланги, регуляторы и счётчики газа.',
-                'slugs' => ['signalizatory-zagazovannosti', 'gazovye-shlangi', 'regulyatoryi-davleniya-gaza', 'schetchiki-gaza']],
-        ],
         'teplyj-pol' => [
             ['title' => 'Водяной', 'icon' => 'icon-Leaf', 'description' => 'Трубы, коллекторы и узлы для водяного тёплого пола.',
                 'slugs' => ['vodyanoy-teplyy-pol']],
@@ -82,6 +86,8 @@ return [
                 'slugs' => ['grebenki', 'gidravlicheskie-razdeliteli-i-kollektory', 'gruppy-bystrogo-montazha-kotelnyx', 'kollektornye-shkafy', 'komplekty-podklyucheniya', 'montajnyie-komplektyi']],
             ['title' => 'Баки, нагрев, теплоносители', 'icon' => 'icon-Package', 'description' => 'Мембранные баки, ТЭНы и жидкости для систем отопления.',
                 'slugs' => ['membrannye-baki', 'elektricheskie-teny-dlya-otopleniya', 'teplonositeli']],
+            ['title' => 'Автоматика и запчасти для котлов', 'icon' => 'icon-Devices', 'description' => 'Терморегуляторы, датчики температуры и запасные части.',
+                'slugs' => ['regulyatory', 'datchiki', 'zapchasti-dlya-kotlov']],
         ],
         'vodosnabzhenie' => [
             ['title' => 'Насосы', 'icon' => 'icon-Leaf', 'description' => 'Циркуляционные, скважинные, поверхностные, дренажные и промышленные.',
@@ -102,6 +108,7 @@ return [
     // Маппинг slug категории → иконка
     'icons' => [
         'kotly'                              => 'heater.svg',
+        'gazovoe-oborudovanie'                => 'heater.svg',
         'kotly-otopleniya'                   => 'heater.svg',
         'teplovyie-nasosyi'                  => 'fan.svg',
         'pelletnye-gorelki'                 => 'fire_p.svg',
@@ -124,6 +131,8 @@ return [
     // чтобы меню не показывало битые <img>, если серверный /icons недоступен.
     'icon_classes' => [
         'kotly'                              => 'icon-Lightning',
+        'gazovoe-oborudovanie'                => 'icon-ShieldCheck',
+        'elektropitanie-i-zashchita'            => 'icon-Lightning',
         'teplovyie-nasosyi'                  => 'icon-Wind',
         'pelletnye-gorelki'                 => 'icon-Sparkle',
         'vodonagrevateli'                    => 'icon-Leaf',
@@ -150,12 +159,9 @@ return [
 
         'kotly' => [
             [
-                'title' => 'Популярное',
+                'title' => 'Быстрый подбор',
                 'links' => [
-                    ['name' => 'Для дома',              'url' => '/kotly?filter=dom'],
-                    ['name' => 'Для дачи',              'url' => '/kotly?filter=dacha'],
-                    ['name' => 'Длительного горения',   'url' => '/tverdotoplivnye?filter=dlitelnoe'],
-                    ['name' => 'Конденсационные',       'url' => '/gazovye?filter=kondensacionnye'],
+                    ['name' => 'Котлы в наличии', 'url' => '/kotly?in_stock=1#catalog-products'],
                 ],
             ],
             [
