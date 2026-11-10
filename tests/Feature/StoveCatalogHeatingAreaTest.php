@@ -38,8 +38,9 @@ class StoveCatalogHeatingAreaTest extends TestCase
         $this->get('/pechki')->assertOk()
             ->assertSee('heating_area=over-100#catalog-products', false)
             ->assertSeeText('120 м²')
-            ->assertSeeText('Оценка при потолке 2,5 м')
-            ->assertSeeText('до 200 м³')
+            ->assertSeeText('Оценка при потолке 2,5 м: до 80 м²')
+            ->assertSeeText('Объём обогрева: до 200 м³')
+            ->assertSee('class="fireplace-card-specs ', false)
             ->assertDontSee('id="attr-'.$area->id.'"', false)
             ->assertViewHas('stoveHeatingFacts', fn (array $facts) => ! isset($facts[$accessory->id]) && ! $facts[$volume->id]['is_area']);
 
