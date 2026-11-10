@@ -123,6 +123,13 @@ class SmolkomPhotoCleanupCommand extends Command
     {
         $text = (string) preg_replace('/\s*На фото — цвет «[^»]*», фото этого цвета скоро добавим\.\s*/u', ' ', $text);
 
-        return trim((string) preg_replace('/\s*На фото — цвет[^.]*$/u', '', $text));
+        $cut = (bool) preg_match('/\s*На фото —[^.]*$/u', $text);
+        $text = trim((string) preg_replace('/\s*На фото —[^.]*$/u', '', $text));
+        // An older run cut the text itself at 250 characters: keep the whole sentences.
+        if ($cut && ! preg_match('/[.!?…]$/u', $text) && ($end = mb_strrpos($text, '.')) !== false) {
+            $text = mb_substr($text, 0, $end + 1);
+        }
+
+        return $text;
     }
 }

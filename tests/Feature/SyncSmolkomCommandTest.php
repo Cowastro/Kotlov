@@ -191,6 +191,7 @@ class SyncSmolkomCommandTest extends TestCase
         $this->assertSame(['img/products/official/white.jpg'], $white->fresh()->images);
         $this->assertSame(sprintf(SmolkomPhotoCleanupCommand::NOTE, 'бьянко белый').' Портал.', $black->short_description);
         $this->assertSame('Портал.', SmolkomPhotoCleanupCommand::stripNote('Портал. На фото — цвет'));
+        $this->assertSame('Портал. Белый.', SmolkomPhotoCleanupCommand::stripNote('Портал. Белый. Размеры для встраиван На фото —'));
         $this->assertSame('Портал.', SmolkomPhotoCleanupCommand::stripNote((string) $black->short_description));
     }
 
