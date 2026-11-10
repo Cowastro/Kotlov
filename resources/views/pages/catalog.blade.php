@@ -53,7 +53,11 @@
                     @endif
                     <p class="text-caption-01">{{ $category->name }}</p>
                 </div>
-                <h1>{{ $isMinskFireplaceCatalog ? 'Печи-камины для дома и дачи в Минске' : ($category->h1 ?: $category->name) }}</h1>
+                <h1>{{ match (true) {
+                    $isMinskFireplaceCatalog => 'Печи-камины для дома и дачи в Минске',
+                    $isElectricFireplaceCatalog => 'Электрокамины '.$cityIn,
+                    default => $category->h1 ?: $category->name,
+                } }}</h1>
                 @if ($catalogIntro ?? $category->content)
                     <p class="text-body-1 cl-text-2">
                         {{ $catalogIntro ?? Str::limit(strip_tags(html_entity_decode($category->content, ENT_QUOTES | ENT_HTML5, 'UTF-8')), 200) }}
@@ -166,7 +170,7 @@
         @include('partials.catalog-ecokamin-promo')
     @endif
 
-    @if (in_array($category->slug, ['pechki', 'pechi-kaminy', 'pechi', 'peci-drovianye-otopitelnye', 'burzhuiki-pechi', 'dlya-dachi', 'kaminy', 'topki'], true))
+    @if (in_array($category->slug, ['pechki', 'pechi-kaminy', 'pechi', 'peci-drovianye-otopitelnye', 'burzhuiki-pechi', 'dlya-dachi', 'kaminy', 'topki', 'elektrokamini'], true))
         @include('partials.stove-fireplace-quick-filters')
     @endif
 
@@ -200,7 +204,7 @@
     @endif
 
     {{-- Каталог --}}
-    <section class="flat-spacing{{ $isMinskFireplaceCatalog || $isStoveHeatingCatalog ? ' pt-3' : '' }}" id="catalog-products">
+    <section class="flat-spacing{{ $isMinskFireplaceCatalog || $isStoveHeatingCatalog || $isElectricFireplaceCatalog ? ' pt-3' : '' }}" id="catalog-products">
         <div class="container">
             <div class="row">
 
@@ -326,6 +330,25 @@
                                 {{-- Производитель --}}
                                 @include('partials.catalog-brand-filter', ['brands' => $brands])
 
+                                @if ($isElectricFireplaceCatalog)
+                                    <div class="widget-facet">
+                                        <h6 class="mb-2">Режим и эффект пламени</h6>
+                                        <ul class="filter-group-check">
+                                            @foreach ($electricFireplaceLinks as $link)
+                                                @continue($link['label'] === 'В наличии')
+                                                <li class="list-item">
+                                                    <a href="{{ $link['url'] }}#catalog-products"
+                                                       class="link {{ $link['active'] ? 'fw-bold' : '' }}"
+                                                       @if ($link['active']) aria-current="true" @endif>
+                                                        {{ $link['label'] }} <span class="count">({{ $link['count'] }})</span>
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                    <div class="br-line"></div>
+                                @endif
+
                                 @if ($stoveAreaLinks !== [])
                                     <div class="widget-facet">
                                         <h6 class="mb-2">Площадь обогрева</h6>
@@ -347,6 +370,7 @@
                                 {{-- Атрибуты категории (select-тип, in_filter=true) --}}
                                 @foreach ($filterAttributes as $attr)
                                     @continue(in_array($attr->id, $stoveAreaAttributeIds, true))
+                                    @continue($isElectricFireplaceCatalog && mb_strtolower(trim($attr->name)) === 'обогрев')
                                     <div class="widget-facet">
                                         <div class="facet-title" data-bs-target="#attr-{{ $attr->id }}"
                                             role="button" data-bs-toggle="collapse" aria-expanded="false">
