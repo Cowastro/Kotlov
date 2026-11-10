@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Models\InstallerProfile;
 use App\Models\PartnerBranch;
 use App\Models\Product;
+use App\Support\Catalog\BoilerCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -85,7 +86,7 @@ Route::get('/sitemap.xml', function (Request $request) {
             ->header('Cache-Control', 'public, max-age=3600');
     }
 
-    $xml = Cache::remember('sitemap.xml.v4', 86400, function () {
+    $xml = Cache::remember('sitemap.xml.v5', 86400, function () {
         $baseUrl = 'https://kotlov.by';
         $urls = [];
 
@@ -120,6 +121,12 @@ Route::get('/sitemap.xml', function (Request $request) {
             '/teplovye-nasosy-dlya-teplogo-pola', '/teplovye-nasosy-dlya-doma',
         ] as $path) {
             $addUrl($path);
+        }
+
+        foreach (BoilerCatalog::LANDINGS as $slug => $landing) {
+            if (Category::active()->where('slug', $slug)->exists()) {
+                $addUrl('/'.$slug.'/'.$landing['slug']);
+            }
         }
 
         Category::active()

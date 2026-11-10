@@ -51,7 +51,13 @@
                         </a>
                         <i class="icon icon-CaretRightThin cl-text-3"></i>
                     @endif
-                    <p class="text-caption-01">{{ $category->name }}</p>
+                    @if ($boilerLanding !== null)
+                        <a href="{{ url('/'.$category->slug) }}" class="text-caption-01 cl-text-3 link">{{ \App\Support\Catalog\BoilerCatalog::NAMES[$category->slug] }}</a>
+                        <i class="icon icon-CaretRightThin cl-text-3"></i>
+                        <p class="text-caption-01">{{ $boilerLanding['short'] }}</p>
+                    @else
+                        <p class="text-caption-01">{{ $category->name }}</p>
+                    @endif
                 </div>
                 <h1>{{ match (true) {
                     $fireplaceType !== null => (match ($fireplaceType) {
@@ -62,6 +68,7 @@
                     $isMinskFireplaceCatalog => 'Печи-камины для дома и дачи в Минске',
                     $isElectricFireplaceCatalog => 'Электрокамины '.$cityIn,
                     $isBoilerHub && $selectedSubcategory !== null => $selectedSubcategory->h1 ?: $selectedSubcategory->name,
+                    $boilerHeading !== null => $boilerHeading,
                     default => $category->h1 ?: $category->name,
                 } }}</h1>
                 @if ($catalogIntro ?? $category->content)
@@ -164,20 +171,8 @@
         @include('partials.electric-sauna-heater-quick-filters')
     @endif
 
-    @if ($category->slug === 'tverdotoplivnye')
-        @include('partials.solid-fuel-boiler-quick-filters')
-    @endif
-
-    @if ($category->slug === 'gazovye')
-        @include('partials.gas-boiler-quick-filters')
-    @endif
-
-    @if ($category->slug === 'elektricheskie')
-        @include('partials.electric-boiler-quick-filters')
-    @endif
-
-    @if ($category->slug === 'kotly-na-pelletah')
-        @include('partials.pellet-boiler-quick-filters')
+    @if ($boilerHeading !== null)
+        @include('partials.boiler-catalog-search')
     @endif
 
     @if (! $isMinskFireplaceCatalog && ! $isStoveHeatingCatalog)
@@ -218,7 +213,7 @@
     @endif
 
     {{-- Каталог --}}
-    <section class="flat-spacing{{ $isMinskFireplaceCatalog || $isStoveHeatingCatalog || $isElectricFireplaceCatalog || $isBoilerHub ? ' pt-3' : '' }}" id="catalog-products">
+    <section class="flat-spacing{{ $isMinskFireplaceCatalog || $isStoveHeatingCatalog || $isElectricFireplaceCatalog || $boilerHeading !== null ? ' pt-3' : '' }}" id="catalog-products">
         <div class="container">
             <div class="row">
 
@@ -400,7 +395,25 @@
                                 @endif
 
                                 {{-- Атрибуты категории (select-тип, in_filter=true) --}}
-                                @foreach ($filterAttributes as $attr)
+                                @foreach ($boilerFacets as $key => $facet)
+                                    <details class="widget-facet" @if ($loop->first || collect($facet['options'])->contains('active', true)) open @endif>
+                                        <summary class="fw-semibold mb-2">{{ $facet['label'] }}</summary>
+                                        <ul class="list-unstyled d-flex flex-column gap-2">
+                                            @foreach ($facet['options'] as $option)
+                                                <li>
+                                                    <a href="{{ $option['url'] }}" rel="nofollow"
+                                                       class="d-flex justify-content-between align-items-center gap-2 link {{ $option['active'] ? 'fw-semibold' : '' }}"
+                                                       @if ($option['active']) aria-current="true" @endif>
+                                                        <span>{{ $option['label'] }}</span>
+                                                        <span class="count">{{ $option['count'] }}</span>
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </details>
+                                    <div class="br-line"></div>
+                                @endforeach
+                                @foreach ($boilerFilterAttributes as $attr)
                                     @continue(in_array($attr->id, $stoveAreaAttributeIds, true))
                                     @continue($isElectricFireplaceCatalog && mb_strtolower(trim($attr->name)) === 'обогрев')
                                     @continue($isBoilerHub && $selectedSubcategory === null && !request()->filled('attr.'.$attr->id))
@@ -445,7 +458,7 @@
                                         'brand_sort' => request('brand_sort') === 'alpha' ? 'alpha' : null,
                                     ]);
                                     $resetCatalogUrl = url()->current().($resetCatalogParameters ? '?'.http_build_query($resetCatalogParameters) : '');
-                                    if ($showElectricFireplaceNavigation) {
+                                    if ($showElectricFireplaceNavigation || $boilerHeading !== null) {
                                         $resetCatalogUrl .= '#catalog-products';
                                     }
                                 @endphp
@@ -635,7 +648,7 @@
                                 ]);
                                 $resetCatalogUrl = $resetCatalogUrl ?? (url()->current() . ($resetCatalogParameters ? '?' . http_build_query($resetCatalogParameters) : ''));
                             @endphp
-                            @if ($hasActiveCatalogFilters && ! $showElectricFireplaceNavigation)
+                            @if ($hasActiveCatalogFilters && ! $showElectricFireplaceNavigation && $boilerHeading === null)
                                 <div class="br-line type-vertical"></div>
                                 <div id="applied-filters"></div>
                                 <a href="{{ $resetCatalogUrl }}" class="remove-all-filters d-flex align-items-center gap-4 cl-text-2">
@@ -644,7 +657,7 @@
                             @endif
                         </div>
 
-                        @if ($showElectricFireplaceNavigation && $hasActiveCatalogFilters)
+                        @if (($showElectricFireplaceNavigation || $boilerHeading !== null) && $hasActiveCatalogFilters)
                             <div class="d-flex flex-wrap align-items-center gap-2 mb-16" aria-label="Выбранные фильтры">
                                 @foreach ($electricFilterChips as $chip)
                                     <a href="{{ $chip['url'] }}"
@@ -747,6 +760,22 @@
             </div>
         </div>
     </section>
+
+    @if ($category->slug === 'tverdotoplivnye')
+        @include('partials.solid-fuel-boiler-quick-filters', ['boilerUnified' => true])
+    @endif
+
+    @if ($category->slug === 'gazovye')
+        @include('partials.gas-boiler-quick-filters', ['boilerUnified' => true])
+    @endif
+
+    @if ($category->slug === 'elektricheskie')
+        @include('partials.electric-boiler-quick-filters', ['boilerUnified' => true])
+    @endif
+
+    @if ($category->slug === 'kotly-na-pelletah')
+        @include('partials.pellet-boiler-quick-filters', ['boilerUnified' => true])
+    @endif
 
     @if ($isMinskFireplaceCatalog || $isStoveHeatingCatalog)
         @include('partials.catalog-ecokamin-promo')

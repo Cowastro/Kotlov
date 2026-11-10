@@ -987,6 +987,12 @@ Route::get('/proxy-image/{path}', function ($path) {
         PreventRequestForgery::class,
     ]);
 
+foreach (\App\Support\Catalog\BoilerCatalog::LANDINGS as $boilerCategory => $selection) {
+    Route::get('/'.$boilerCategory.'/'.$selection['slug'], [CatalogController::class, 'boilerLanding'])
+        ->defaults('category', $boilerCategory)
+        ->defaults('selection', $selection['slug']);
+}
+
 // ===== Динамические роуты — ПОСЛЕДНИМИ =====
 
 // 1 сегмент — категория

@@ -17,6 +17,8 @@ use App\Support\Catalog\ElectricFireplaceNavigation;
 use App\Support\Catalog\FireplaceSpecifications;
 use App\Support\CategoryNavigationGroups;
 use App\Support\Promotions\EcokaminPromotion;
+use App\Support\Catalog\BoilerCatalog;
+use App\Support\Catalog\BoilerSpecifications;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -29,7 +31,15 @@ class CatalogController extends Controller
         'over-100' => ['label' => 'свыше 100 кВт', 'min' => 100, 'max' => null],
     ];
 
-    public function show(string $categorySlug)
+    public function boilerLanding(string $category, string $selection)
+    {
+        $landing = BoilerCatalog::LANDINGS[$category] ?? null;
+        abort_unless($landing && $landing['slug'] === $selection, 404);
+
+        return $this->show($category, $landing);
+    }
+
+    public function show(string $categorySlug, ?array $boilerLanding = null)
     {
         $selectedBrandId = request('brand') ? (int) request('brand') : null;
 
@@ -66,6 +76,11 @@ class CatalogController extends Controller
         }
 
         $isBoilerHub = $category->slug === 'kotly';
+        $boilerName = $boilerLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? null;
+        $boilerSearch = request()->query('q');
+        $boilerSearch = $boilerName !== null && is_string($boilerSearch) ? mb_substr(trim($boilerSearch), 0, 100) : '';
+        $boiler = $boilerName !== null ? app(BoilerCatalog::class) : null;
+
         $boilerTypes = $isBoilerHub ? collect(config('navigation.boiler_types')) : collect();
         $subcategorySlug = request('subcategory');
         if ($isBoilerHub && is_string($subcategorySlug)
@@ -152,7 +167,7 @@ class CatalogController extends Controller
         $pelletPowerAttributeIds = collect();
         $pelletPowerRanges = collect();
         $isPelletPowerCatalog = in_array($category->slug, ['pelletnye-gorelki', 'kotly-na-pelletah'], true);
-        if ($isPelletPowerCatalog) {
+        if ($isPelletPowerCatalog && $boiler === null) {
             $pelletPowerAttributeIds = Attribute::query()
                 ->where('type', 'value')
                 ->whereHas('values', fn ($valueQuery) => $valueQuery
@@ -339,7 +354,7 @@ class CatalogController extends Controller
             $query->where('brand_id', request('brand'));
         }
 
-        if ($isPelletPowerCatalog && request('power')) {
+        if ($isPelletPowerCatalog && $boiler === null && request('power')) {
             $this->applyPelletPowerRange(
                 $query,
                 $pelletPowerAttributeIds,
@@ -644,6 +659,23 @@ class CatalogController extends Controller
             $query->whereIntegerInRaw('products.id', $confirmedIds);
         }
 
+        $boilerFacets = [];
+        $boilerCards = [];
+        $boilerMatchingIds = null;
+        if ($boiler !== null) {
+            $boiler->search($query, $boilerSearch);
+            if (! $isBoilerHub) {
+                $boilerSelection = (array) request()->query('boiler', []);
+                if ($category->slug === 'kotly-na-pelletah' && is_string(request('power'))) {
+                    $boilerSelection['power'] ??= request('power');
+                }
+                $boilerFacts = $boiler->facets($query, $category->slug, $activeCategoryIds, $boilerSelection, $boilerLanding['filters'] ?? []);
+                $boilerFacets = $boilerFacts['facets'];
+                $boilerCards = $boilerFacts['cards'];
+                $boilerMatchingIds = $boilerFacts['matched'];
+            }
+        }
+
         $totalCount = $query->count();
         $products = $query->paginate(24)->withQueryString();
         if ($isMinskFireplaceCatalog && $products->onFirstPage()
@@ -659,7 +691,17 @@ class CatalogController extends Controller
             $products->setCollection($firstRow->concat($pageProducts->diff($firstRow)));
         }
 
-        $fireplaceSpecsByProduct = $electricFireplaceCards;
+        if ($isBoilerHub) {
+            $specifications = app(BoilerSpecifications::class);
+            foreach ($products->getCollection()->load('allAttributeValues.attribute', 'allAttributeValues.option') as $product) {
+                $slug = $product->category?->slug;
+                if ($slug !== 'kotly' && isset(BoilerCatalog::NAMES[$slug])) {
+                    $boilerCards[$product->id] = $specifications->catalogFacts($product, $slug, $specifications->dimensions($slug))['card'];
+                }
+            }
+        }
+
+        $fireplaceSpecsByProduct = $electricFireplaceCards + $boilerCards;
         if (in_array($category->slug, [...$stoveCardCategories, 'dlya-dachi'], true)) {
             $stoveProducts = $products->getCollection()->filter(
                 fn (Product $product) => in_array($product->category?->slug, $stoveCardCategories, true)
@@ -742,8 +784,33 @@ class CatalogController extends Controller
             ? 'https://'.config('app.base_domain', 'kotlov.by')
             : 'https://'.request()->getHost();
         $categoryUrl = $canonicalBase.'/'.$category->slug;
+        $boilerHeading = null;
+        $robots = null;
+        if ($boilerName !== null) {
+            $boilerCity = request()->getHost() === config('app.base_domain', 'kotlov.by') ? 'в Минске' : $cityIn;
+            $boilerHeading = $boilerName.' '.$boilerCity;
+            $title = $boilerLanding === null
+                ? $seo->categoryTitle($category->slug, $boilerName, $boilerCity, null)
+                : $seo->title(null, $boilerName.' — купить '.$boilerCity.' | KOTLOV');
+            $boilerDescription = match ($category->slug) {
+                'gazovye' => 'Настенные и напольные газовые котлы для отопления и горячей воды. Сравните контуры, мощность и камеру сгорания.',
+                'elektricheskie' => 'Электрокотлы для дома. Сравните модели по мощности, площади отопления и подключению к сети 220 или 380 В.',
+                'tverdotoplivnye' => 'Котлы на дровах и угле для отопления дома. Сравните мощность, площадь обогрева и материал топки.',
+                'kotly-na-pelletah' => 'Пеллетные котлы с автоматической подачей топлива. Подбор по мощности и площади обогрева.',
+                default => 'Газовые, электрические, твердотопливные и пеллетные котлы. Сравните характеристики, цены и наличие.',
+            };
+            $description = $seo->description(null, 'Купить '.mb_strtolower($boilerName).' '.$boilerCity.'. '.($boilerLanding['description'] ?? $boilerDescription));
+            if ($boilerLanding !== null) {
+                $categoryUrl .= '/'.$boilerLanding['slug'];
+                abort_if($products->total() === 0 && request()->query() === [], 404);
+            }
+            if (request()->except('page') !== []) {
+                $robots = 'noindex, follow';
+            }
+        }
+
         $canonical = $categoryUrl;
-        $hasIndexablePagination = $isMinskFireplaceCatalog
+        $hasIndexablePagination = $boilerName !== null || $isMinskFireplaceCatalog
             || ($isElectricFireplaceCatalog && request()->getHost() === config('app.base_domain', 'kotlov.by'));
         if ($hasIndexablePagination && array_keys(request()->query()) === ['page']) {
             $page = $products->currentPage();
@@ -769,14 +836,22 @@ class CatalogController extends Controller
             ];
         }
 
-        $categorySchemaName = trim((string) ($category->h1 ?: $category->name ?: $category->slug));
+        $categorySchemaName = BoilerCatalog::NAMES[$category->slug] ?? trim((string) ($category->h1 ?: $category->name ?: $category->slug));
 
         $breadcrumbs[] = [
             '@type' => 'ListItem',
-            'position' => $pos,
+            'position' => $pos++,
             'name' => $categorySchemaName,
-            'item' => $categoryUrl,
+            'item' => $canonicalBase.'/'.$category->slug,
         ];
+        if ($boilerLanding !== null) {
+            $breadcrumbs[] = [
+                '@type' => 'ListItem',
+                'position' => $pos,
+                'name' => $boilerLanding['title'],
+                'item' => $categoryUrl,
+            ];
+        }
 
         $breadcrumbSchema = [
             '@context' => 'https://schema.org',
@@ -1117,9 +1192,90 @@ class CatalogController extends Controller
             ? PartnerBranch::query()->visibleIn($currentCity)->first()
             : null;
 
-        $electricFilterChips = $showElectricFireplaceNavigation
-            ? $this->electricFilterChips($brands, $subcategories, $rawAttributes, $selectedElectricMode, $nicheWidthMax, $inStockOnly)
+        $electricFilterChips = $showElectricFireplaceNavigation || $boilerName !== null
+            ? $this->catalogFilterChips($brands, $subcategories, $rawAttributes, $selectedElectricMode, $nicheWidthMax, $inStockOnly)
             : [];
+
+        if ($boilerName !== null) {
+            if ($boilerSearch !== '') {
+                $electricFilterChips[] = [
+                    'label' => 'Поиск: '.$boilerSearch,
+                    'url' => request()->fullUrlWithoutQuery(['q', 'page']).'#catalog-products',
+                ];
+            }
+            $boilerParams = request()->except('page');
+            foreach ($boilerFacets as $key => &$facet) {
+                foreach ($facet['options'] as $value => &$option) {
+                    $params = $boilerParams;
+                    if ($key === 'power' && $category->slug === 'kotly-na-pelletah') {
+                        unset($params['power']);
+                    }
+                    $params['boiler'] = (array) ($params['boiler'] ?? []);
+                    if ($option['active']) {
+                        unset($params['boiler'][$key]);
+                    } else {
+                        $params['boiler'][$key] = $value;
+                    }
+                    $option['url'] = url()->current().($params ? '?'.http_build_query($params) : '').'#catalog-products';
+                    if ($option['active']) {
+                        $electricFilterChips[] = ['label' => $option['label'], 'url' => $option['url']];
+                    }
+                }
+                unset($option);
+            }
+            unset($facet);
+            $catalogIntro = $boilerLanding['description'] ?? $catalogIntro;
+        }
+        $boilerCollection = BoilerCatalog::LANDINGS[$category->slug] ?? null;
+        $boilerReplacedAttributes = [
+            'power' => '/^мощност/u',
+            'area' => '/^(?:обогреваемая площадь|площадь (?:обогрева|отопления))/u',
+            'mount' => '/^(?:установка|тип установки|способ установки|монтаж)/u',
+            'circuits' => '/^(?:количество контуров|контурность)/u',
+            'chamber' => '/^(?:камера сгорания|тип камеры сгорания)/u',
+            'fuel' => '/^(?:топливо|тип топлива|вид топлива)/u',
+            'firebox' => '/^материал топки/u',
+            'voltage' => '/^напряжение/u',
+        ];
+        $boilerFilterAttributes = $filterAttributes;
+        if ($boiler !== null && ! $isBoilerHub) {
+            $replaced = array_intersect_key($boilerReplacedAttributes, $boilerFacets + ($boilerLanding['filters'] ?? []));
+            $boilerFilterAttributes = $filterAttributes->reject(function ($attribute) use ($replaced) {
+                if (request()->filled('attr.'.$attribute->id)) {
+                    return false;
+                }
+                foreach ($replaced as $pattern) {
+                    if (preg_match($pattern, $this->normalizeFilterName($attribute->name))) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+        }
+
+        if ($boilerMatchingIds !== null && $boilerFilterAttributes->isNotEmpty()) {
+            $matchingOptions = ProductAttributeValue::query()
+                ->whereIntegerInRaw('product_id', $boilerMatchingIds)
+                ->whereIntegerInRaw('attribute_id', $boilerFilterAttributes->flatMap(fn ($attr) => $attr->all_ids)->all())
+                ->whereNotNull('option_id')
+                ->selectRaw('option_id, count(distinct product_id) as cnt')
+                ->groupBy('option_id')
+                ->pluck('cnt', 'option_id');
+
+            $boilerFilterAttributes = $boilerFilterAttributes->filter(function ($attribute) use ($matchingOptions) {
+                if (request()->filled('attr.'.$attribute->id)) {
+                    return true;
+                }
+                $attribute->options = $attribute->options->filter(function ($option) use ($matchingOptions) {
+                    $option->products_count = collect($option->all_ids)->sum(fn ($id) => $matchingOptions[$id] ?? 0);
+
+                    return $option->products_count > 0;
+                });
+
+                return $attribute->options->isNotEmpty();
+            });
+        }
 
         return view('pages.catalog', compact(
             'isChimneySection',
@@ -1168,6 +1324,7 @@ class CatalogController extends Controller
             'catalogIntro',
             'catalogSpotlight',
             'catalogNavigationGroups', 'cityStorefrontBranch', 'isCityStorefront',
+            'boilerHeading', 'boilerSearch', 'boilerFacets', 'boilerFilterAttributes', 'boilerLanding', 'boilerCollection', 'robots',
             'isBoilerHub', 'boilerTypes', 'boilerCategories', 'selectedSubcategory', 'inStockOnly'
         ));
     }
@@ -1327,7 +1484,7 @@ class CatalogController extends Controller
         });
     }
 
-    private function electricFilterChips(
+    private function catalogFilterChips(
         Collection $brands,
         Collection $subcategories,
         Collection $attributes,

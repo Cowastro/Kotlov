@@ -29,7 +29,7 @@
             <p class="catalog-seo-guide__text">
                 Сначала определите требуемую мощность, затем сравните объём бункера, диапазон модуляции и доступность сервиса. Автоматическая подача пеллет уменьшает число ручных загрузок, а запас по мощности должен подтверждаться расчётом теплопотерь.
             </p>
-            @if ($pelletBoilerPowerLinks->isNotEmpty())
+            @if (! ($boilerUnified ?? false) && $pelletBoilerPowerLinks->isNotEmpty())
                 @include('partials.catalog-quick-filter-swipe-hint')
                 <nav class="catalog-quick-filter__items" aria-label="Быстрый подбор пеллетного котла">
                     <span class="catalog-quick-filter__label">Мощность:</span>

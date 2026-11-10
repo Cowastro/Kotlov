@@ -179,6 +179,12 @@
                                     {{ $product->h1 ?: $product->name }}
                                 </h1>
 
+                                @if (! empty($boilerCardSpecs))
+                                    <div class="mb-3">
+                                        @include('partials.fireplace-card-specs', ['fireplaceCardSpecs' => $boilerCardSpecs])
+                                    </div>
+                                @endif
+
                                 {{-- Мета --}}
                                 <div class="product-infor-meta mb-20">
                                     @if ($product->rating > 0)

@@ -15,6 +15,7 @@ use App\Models\InstallerProfile;
 use App\Models\PartnerBranch;
 use App\Models\Product;
 use Closure;
+use App\Support\Catalog\BoilerCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -673,6 +674,10 @@ class HandleRedirects
         if (count($segments) < 2 || in_array($segments[0], [
             'admin', 'api', 'blog', 'installers', 'storage', 'images', 'proxy-image',
         ], true)) {
+            return null;
+        }
+
+        if (count($segments) === 2 && (BoilerCatalog::LANDINGS[$segments[0]]['slug'] ?? null) === $segments[1]) {
             return null;
         }
 
