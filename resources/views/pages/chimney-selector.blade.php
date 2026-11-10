@@ -166,6 +166,23 @@
     var currentCalculationUrl = window.location.href;
     if (!form || !result) return;
 
+    var trackedStages = new Set();
+    function trackCalculation(stage, parameters) {
+        if (managerMode || trackedStages.has(stage)) return;
+
+        trackedStages.add(stage);
+        var send = function () {
+            document.dispatchEvent(new CustomEvent('kotlov:chimney-analytics', {
+                detail: Object.assign({stage: stage}, parameters || {})
+            }));
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { setTimeout(send, 0); }, {once: true});
+        } else {
+            send();
+        }
+    }
+
     var standardDiameters = {
         '100':['120'], '110':['120'], '115':['120'], '120':['120'],
         '130':['120','150'], '150':['150'], '160':['180'], '180':['180'], '200':['200']
@@ -410,6 +427,8 @@
     form.addEventListener('submit', function (event) {
         event.preventDefault();
         calculationActive = true;
+        var automatic = !event.submitter;
+        trackCalculation('start', {automatic: automatic});
         var data = new FormData(form);
         var height = Number(data.get('height'));
         var clampValue = data.get('clamps');
@@ -937,6 +956,7 @@
             });
         }
         renderBundle();
+        trackCalculation('result', {automatic: automatic, complete: missing === 0});
         if (calculateButton) calculateButton.textContent = 'Комплект рассчитан — обновить';
     });
     var recalculateTimer;
@@ -990,6 +1010,7 @@
                 window.top.location.href = payload.admin_url;
                 return;
             }
+            if (payload.success === true) trackCalculation('request');
             requestFeedback.className = 'cs-check-modal__feedback is-success';
             requestFeedback.textContent = payload.message || 'Заявка создана. Менеджер свяжется с вами.';
             requestFeedback.hidden = false;

@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Services\ChimneyBundlePromotion;
 use App\Services\HeatPumpProductPresenter;
+use App\Services\SaunaStoveFilterNormalizer;
 use App\Services\ProductPopularityService;
 use App\Services\ProductVariantSelector;
 use App\Services\SeoMetadataBuilder;
@@ -104,6 +105,14 @@ class ProductController extends Controller
             $product->loadMissing(['allAttributeValues.attribute', 'allAttributeValues.option']);
             $catalog = app(WaterHeaterCatalog::class);
             $productCardSpecs = $catalog->productFacts($product, $productCategory->slug, $catalog->dimensions($productCategory->slug))['card'];
+        }
+
+        if (in_array($productCategory->slug, SaunaStoveFilterNormalizer::CATEGORIES, true)) {
+            $product->loadMissing(['allAttributeValues.attribute', 'allAttributeValues.option']);
+            $normalizer = app(SaunaStoveFilterNormalizer::class);
+            if ($volume = $normalizer->steamRoomVolume($product)) {
+                $productCardSpecs['Объём парной'] = $normalizer->steamRoomVolumeLabel($volume);
+            }
         }
 
         $showCompatibleInserts = $productCategory->slug === 'oblicovki';

@@ -44,7 +44,7 @@
         ['attribute' => 'Максимальный объем парилки (m3)', 'option' => '30 и более', 'label' => 'от 30 м³', 'prefix' => 'Парная'],
         ['attribute' => 'Дверца', 'option' => 'со стеклом', 'label' => 'со стеклом', 'prefix' => 'Дверца'],
         ['attribute' => 'Выносная топка', 'option' => 'да', 'label' => 'выносная', 'prefix' => 'Топка'],
-    ])->map(fn ($item) => $saunaFilterLink(
+    ])->reject(fn ($item) => ($hideMaximumVolume ?? false) && $item['prefix'] === 'Парная')->map(fn ($item) => $saunaFilterLink(
         $item['attribute'],
         $item['option'],
         $item['label'],

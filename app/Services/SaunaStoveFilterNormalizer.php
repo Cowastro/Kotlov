@@ -2,10 +2,88 @@
 
 namespace App\Services;
 
+use App\Models\Product;
 use Illuminate\Support\Str;
 
 class SaunaStoveFilterNormalizer
 {
+    public const CATEGORIES = ['pechi-dlya-bani', 'drovyanye-pechi-dlya-bani', 'drovianye-peci-bannye', 'elektrokamenki'];
+
+    /** @return array{min: ?float, max: float}|null */
+    public function steamRoomVolume(Product $product): ?array
+    {
+        $rows = [];
+        foreach ($product->specs ?? [] as $key => $row) {
+            $rows[] = is_array($row) ? $row : ['key' => $key, 'value' => $row];
+        }
+        foreach ($product->allAttributeValues as $attribute) {
+            if ($attribute->hasDisplayValue()) {
+                $rows[] = ['key' => $attribute->attribute->name, 'value' => $attribute->option?->name ?? $attribute->value];
+            }
+        }
+
+        $ranges = [];
+        foreach ($rows as $row) {
+            $key = $this->normalize((string) ($row['key'] ?? $row['name'] ?? ''));
+            $value = $row['value'] ?? null;
+            if (! is_scalar($value) || ! preg_match('/объ?ем.*(?:парн|парил)/u', $key)) {
+                continue;
+            }
+            // The old maximum-volume filter stores buckets, not a model's specification.
+            if (str_starts_with($key, 'максимальн')) {
+                continue;
+            }
+            if ($volume = $this->parseSteamRoomVolume((string) $value)) {
+                $ranges[] = $volume;
+            }
+        }
+
+        if ($ranges !== []) {
+            $maxima = array_unique(array_column($ranges, 'max'));
+            $minima = array_unique(array_filter(array_column($ranges, 'min')));
+            if (count($maxima) !== 1 || count($minima) > 1) {
+                return null;
+            }
+
+            return ['min' => $minima === [] ? null : (float) reset($minima), 'max' => $ranges[0]['max']];
+        }
+
+        // Use a description only when it explicitly names the steam room and a range in cubic metres.
+        $description = $this->normalize(strip_tags(html_entity_decode($product->short_description ?? '')));
+        if (preg_match('/(?:парн\p{L}*|парил\p{L}*)\s+(?:объ?ем\p{L}*\s+)?((?:от\s+)?\d{1,3}(?:[.,]\d+)?\s*(?:м[³3]\s*)?(?:до|[-–—])\s*\d{1,3}(?:[.,]\d+)?\s*м[³3])/u', $description, $match)) {
+            return $this->parseSteamRoomVolume($match[1]);
+        }
+
+        return null;
+    }
+
+    public function steamRoomVolumeLabel(array $volume): string
+    {
+        $format = fn (float $number) => str_replace('.', ',', (string) $number);
+
+        return ($volume['min'] === null ? 'До ' : $format($volume['min']).'–').$format($volume['max']).' м³';
+    }
+
+    private function parseSteamRoomVolume(string $value): ?array
+    {
+        $value = trim(str_replace(',', '.', $this->normalize(html_entity_decode($value))));
+        $number = '(\d{1,3}(?:\.\d+)?)';
+        $unit = '(?:\s*[мm]\s*[³3])?';
+        if (preg_match('/^(?:от\s+)?'.$number.$unit.'\s*(?:до|[-–—])\s*'.$number.$unit.'$/u', $value, $match)) {
+            $min = (float) $match[1];
+            $max = (float) $match[2];
+        } elseif (preg_match('/^до\s+'.$number.$unit.'$/u', $value, $match)) {
+            $min = null;
+            $max = (float) $match[1];
+        } else {
+            return null;
+        }
+
+        return $max > 0 && $max <= 100 && ($min === null || ($min > 0 && $min <= $max))
+            ? ['min' => $min, 'max' => $max]
+            : null;
+    }
+
     /**
      * Extract only facts explicitly present in the product card. A model number
      * on its own is never treated as the steam-room volume.

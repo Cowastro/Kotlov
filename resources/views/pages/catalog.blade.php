@@ -158,8 +158,12 @@
         @include('partials.heat-pump-category-intro')
     @endif
 
+    @if ($isSaunaStoveCatalog)
+        @include('partials.sauna-room-volume-filter')
+    @endif
+
     @if (in_array($category->slug, ['drovyanye-pechi-dlya-bani', 'drovianye-peci-bannye'], true))
-        @include('partials.sauna-stove-quick-filters')
+        @include('partials.sauna-stove-quick-filters', ['hideMaximumVolume' => $isSaunaStoveCatalog])
     @endif
 
     @if ($category->slug === 'elektrokamenki')

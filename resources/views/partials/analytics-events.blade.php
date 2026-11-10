@@ -28,6 +28,11 @@ document.addEventListener('DOMContentLoaded', function () {
             'pellet_burner_hotta_lead_success'
         ];
 
+        var catalogueGoals = ['sauna_volume_results', 'chimney_calculation_start', 'chimney_calculation_result', 'chimney_request_success'];
+        if (typeof window.ym === 'function' && catalogueGoals.includes(eventName)) {
+            window.ym(113419397, 'reachGoal', eventName);
+        }
+
         if (typeof window.ym === 'function' && metrikaGoals.indexOf(eventName) !== -1) {
             window.ym(113419397, 'reachGoal', eventName);
 
@@ -38,6 +43,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 window.ym(113419397, 'reachGoal', 'install_request_success');
             }
         }
+    }
+
+    document.addEventListener('kotlov:chimney-analytics', function (event) {
+        var stage = event.detail && event.detail.stage;
+        var stages = {
+            start: 'chimney_calculation_start',
+            result: 'chimney_calculation_result',
+            request: 'chimney_request_success'
+        };
+        if (!Object.hasOwn(stages, stage)) return;
+
+        var parameters = {};
+        if (stage !== 'request') {
+            parameters.automatic = event.detail.automatic === true;
+        }
+        if (stage === 'result') {
+            parameters.complete = event.detail.complete === true;
+        }
+        pushEvent(stages[stage], parameters);
+    });
+
+    var saunaResults = document.querySelector('[data-sauna-volume-results]');
+    if (saunaResults) {
+        pushEvent('sauna_volume_results', {
+            result_count: Number(saunaResults.dataset.saunaVolumeResults)
+        });
     }
 
     document.addEventListener('click', function (event) {
