@@ -833,6 +833,10 @@ class CatalogController extends Controller
             $autoDescription
         );
 
+        if ($isMinskFireplaceCatalog) {
+            $description = 'Печи-камины из стали и чугуна для дома и дачи. Сравните мощность, площадь обогрева и цены. Проверьте наличие и подберите дымоход.';
+        }
+
         $keywords = $replaceCityIn($category->meta_keywords)
             ?: ($name.', купить '.$nameLower.' '.$cityIn.', цена, каталог');
 
@@ -1291,8 +1295,18 @@ class CatalogController extends Controller
             $catalogIntro = $specificationLanding['description'] ?? $catalogIntro;
         }
         $specificationCollections = match ($category->slug) {
-            'electric' => array_map(fn ($slug, $entry) => ['slug' => $slug, ...$entry], array_keys(WaterHeaterCatalog::LANDINGS), WaterHeaterCatalog::LANDINGS),
-            default => isset(BoilerCatalog::LANDINGS[$category->slug]) ? [BoilerCatalog::LANDINGS[$category->slug]] : [],
+            'kotly' => [
+                ['path' => '/gazovye/nastennye-dvuhkonturnye', 'short' => 'Настенные двухконтурные газовые котлы'],
+                ['path' => '/tverdotoplivnye/na-drovah', 'short' => 'Твердотопливные котлы на дровах'],
+            ],
+            WaterHeaterCatalog::ROOT, 'electric' => [
+                ['path' => '/electric/nakopitelnye', 'short' => 'Накопительные водонагреватели'],
+                ['path' => '/electric/protochnye', 'short' => 'Проточные водонагреватели'],
+            ],
+            default => isset(BoilerCatalog::LANDINGS[$category->slug]) ? [[
+                'path' => '/'.$category->slug.'/'.BoilerCatalog::LANDINGS[$category->slug]['slug'],
+                'short' => BoilerCatalog::LANDINGS[$category->slug]['short'],
+            ]] : [],
         };
         $replacedSpecificationAttributes = $heaterName !== null ? [
             'volume' => '/^(?:объем|объём)(?: (?:внутреннего )?бака)?(?:[ (,]|$)/ui',

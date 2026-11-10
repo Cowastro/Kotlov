@@ -22,7 +22,7 @@
             <a class="tf-btn btn-stroke small" href="{{ url('/'.$category->slug) }}">Все товары раздела</a>
         @else
             @foreach ($specificationCollections as $collection)
-                <a class="tf-btn btn-stroke small" href="{{ url('/'.$category->slug.'/'.$collection['slug']) }}">
+                <a class="tf-btn btn-stroke small" href="{{ url($collection['path']) }}">
                     {{ $collection['short'] }}
                 </a>
             @endforeach
