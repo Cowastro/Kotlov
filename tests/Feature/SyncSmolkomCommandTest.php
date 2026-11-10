@@ -106,6 +106,9 @@ class SyncSmolkomCommandTest extends TestCase
             ."{'ID':'904','NAME':'Портал Smolcom Govard V42','DISPLAY_PROPERTIES':{'ARTICLE':{'NAME':'Артикул','VALUE':'GOVV4Бб','CODE':'ARTICLE'}},'SLIDER':[{'ID':'3','SRC':'/upload/iblock/b2/white.jpg'}]}]});</script>";
         $this->assertSame(['govv4ч' => ['https://smolcom.by/upload/iblock/a1/black.jpg'], 'govv4бб' => ['https://smolcom.by/upload/iblock/b2/white.jpg']],
             SmolcomSiteCatalog::parseOffers($page));
+        // One picture for every colour of a page is not the photo of a colour.
+        $shared = str_replace('/upload/iblock/b2/white.jpg', '/upload/iblock/a1/black.jpg', $page);
+        $this->assertSame([], SmolcomSiteCatalog::parseOffers($shared));
 
         $image = imagecreatetruecolor(800, 800);
         imagefilledrectangle($image, 100, 100, 700, 700, imagecolorallocate($image, 20, 20, 20));
