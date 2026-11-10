@@ -17,7 +17,7 @@ class HeatPumpProductPresenter
     public function rtcModel(Product $product): ?string
     {
         if ($product->category?->slug !== self::AIR_WATER
-            || ! preg_match('/Regulus RTC (6i|13e)/i', $product->name, $match)) {
+            || ! preg_match('/\bRegulus RTC (6i|13e)\b/i', $product->name, $match)) {
             return null;
         }
 

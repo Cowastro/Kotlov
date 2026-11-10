@@ -24,10 +24,8 @@ class CatalogSelectionNextTest extends TestCase
 
         $rootResponse = $this->get('/'.$root->slug);
         $this->assertSame(200, $rootResponse->status(), 'Hub redirect: '.$rootResponse->headers->get('Location'));
-        $rootResponse
-            ->assertSeeText('SCOP 4,71')
-            ->assertSeeText($pump->name)
-            ->assertDontSeeText($group->name);
+        $this->assertTrue(str_contains(strip_tags($rootResponse->getContent()), 'SCOP 4,71'), 'Pump data must appear on the catalog page.');
+        $rootResponse->assertSeeText($pump->name)->assertDontSeeText($group->name);
 
         $partsResponse = $this->get('/'.$parts->slug);
         $this->assertSame(200, $partsResponse->status(), 'Parts redirect: '.$partsResponse->headers->get('Location'));
