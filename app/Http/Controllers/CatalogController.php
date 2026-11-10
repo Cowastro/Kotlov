@@ -293,6 +293,7 @@ class CatalogController extends Controller
         $isMinskFireplaceCatalog = $category->slug === 'pechi-kaminy'
             && request()->getHost() === config('app.base_domain', 'kotlov.by');
         $isStoveHeatingCatalog = $category->slug === 'pechki';
+        $isElectricFireplaceCatalog = $category->slug === 'elektrokamini';
         $stoveCardCategories = ['pechki', 'pechi-kaminy', 'burzhuiki-pechi', 'peci-drovianye-otopitelnye'];
         $stoveAreaNormalizer = $isStoveHeatingCatalog ? app(StoveHeatingAreaNormalizer::class) : null;
         $stoveAreaAttributeIds = $stoveAreaNormalizer
@@ -301,7 +302,7 @@ class CatalogController extends Controller
         $inStockOnly = request('in_stock') === '1';
 
         // The Minsk fireplace filter uses the same confirmed status as the card.
-        if ($inStockOnly && ! $isMinskFireplaceCatalog) {
+        if ($inStockOnly && ! $isMinskFireplaceCatalog && ! $isElectricFireplaceCatalog) {
             $query->where('in_stock', true);
         }
 
@@ -426,6 +427,53 @@ class CatalogController extends Controller
                     'url' => url()->current().($params ? '?'.http_build_query($params) : ''),
                     'label' => $label, 'prefix' => 'Площадь', 'count' => count($ids), 'active' => $active,
                 ];
+            }
+        }
+
+        $electricFireplaceLinks = [];
+        $electricFireplaceCards = [];
+        if ($isElectricFireplaceCatalog) {
+            $electricModes = [
+                'heat' => 'С обогревом',
+                'no-heat' => 'Без обогрева',
+                'steam' => 'С водяным паром',
+            ];
+            $mode = request()->query('electric_mode');
+            $mode = is_string($mode) && isset($electricModes[$mode]) ? $mode : null;
+            $matches = [];
+            $counts = array_fill_keys(array_keys($electricModes), 0);
+            $stockCount = 0;
+
+            foreach ((clone $query)->with('attributeValues')->lazyById(100) as $product) {
+                $facts = FireplaceSpecifications::electricCatalogFacts($product);
+                $inStock = $product->publicAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK;
+                $filters = [
+                    'heat' => $facts['heating'] === true,
+                    'no-heat' => $facts['heating'] === false,
+                    'steam' => $facts['steam'],
+                ];
+                $matchesMode = $mode === null || $filters[$mode];
+                $stockCount += (int) ($inStock && $matchesMode);
+                if (! $inStockOnly || $inStock) {
+                    foreach ($filters as $key => $matchesFilter) {
+                        $counts[$key] += (int) $matchesFilter;
+                    }
+                    if ($matchesMode) {
+                        $matches[] = $product->id;
+                        $electricFireplaceCards[$product->id] = $facts['card'];
+                    }
+                }
+            }
+
+            if ($mode !== null || $inStockOnly) {
+                $query->whereIntegerInRaw('products.id', $matches);
+            }
+
+            $electricFireplaceLinks[] = $this->electricFireplaceFilterLink('in_stock', '1', 'В наличии', $inStockOnly, $stockCount);
+            foreach ($electricModes as $key => $label) {
+                if ($counts[$key] > 0 || $mode === $key) {
+                    $electricFireplaceLinks[] = $this->electricFireplaceFilterLink('electric_mode', $key, $label, $mode === $key, $counts[$key]);
+                }
             }
         }
 
@@ -568,7 +616,7 @@ class CatalogController extends Controller
             $products->setCollection($firstRow->concat($pageProducts->diff($firstRow)));
         }
 
-        $fireplaceSpecsByProduct = [];
+        $fireplaceSpecsByProduct = $electricFireplaceCards;
         if (in_array($category->slug, [...$stoveCardCategories, 'dlya-dachi'], true)) {
             $stoveProducts = $products->getCollection()->filter(
                 fn (Product $product) => in_array($product->category?->slug, $stoveCardCategories, true)
@@ -898,6 +946,7 @@ class CatalogController extends Controller
 
         $installerRecruitment = $this->installerRecruitmentContext($category);
         $catalogIntro = match ($category->slug) {
+            'elektrokamini' => 'Электрические очаги и камины для дома. Сравните диагональ, эффект пламени, мощность и площадь обогрева.',
             'tverdotoplivnye' => 'Твердотопливные котлы для отопления дома на дровах, угле и пеллетах. Подберите модель по мощности, площади обогрева и типу топлива.',
             'kotly-na-pelletah' => 'Пеллетные котлы с автоматической подачей топлива для дома и коммерческих объектов. Сравните мощность, объём бункера, автоматику и доступность сервисного обслуживания.',
             'gazovye' => 'Газовые котлы для отопления и горячего водоснабжения. Подберите одноконтурную или двухконтурную модель по мощности, способу установки и типу камеры сгорания.',
@@ -999,7 +1048,8 @@ class CatalogController extends Controller
         }
 
         // Баннер акции ЭкоКамин в разделах каминов и топок.
-        $ecokaminPromo = in_array($category->slug, ['kaminy', 'pechi-kaminy', 'topki', 'pechki'], true) || $category->parent?->slug === 'kaminy'
+        $ecokaminPromo = ! $isElectricFireplaceCatalog
+            && (in_array($category->slug, ['kaminy', 'pechi-kaminy', 'topki', 'pechki'], true) || $category->parent?->slug === 'kaminy')
             ? EcokaminPromotion::showcase()
             : null;
         // Свой вариант баннера: в топках — про топки Дельта, Альфа, Вега, Primo; в печах и печах-каминах — про камины.
@@ -1029,6 +1079,9 @@ class CatalogController extends Controller
             'category',
             'isMinskFireplaceCatalog',
             'isStoveHeatingCatalog',
+            'isElectricFireplaceCatalog',
+            'cityIn',
+            'electricFireplaceLinks',
             'stoveAreaAttributeIds',
             'stoveAreaLinks',
             'stoveHeatingFacts',
@@ -1216,6 +1269,21 @@ class CatalogController extends Controller
                 $attributeQuery->whereRaw($numericValue.' <= ?', [$range['max']]);
             }
         });
+    }
+
+    private function electricFireplaceFilterLink(string $parameter, string $value, string $label, bool $active, int $count): array
+    {
+        $params = request()->except('page', $parameter);
+        if (! $active) {
+            $params[$parameter] = $value;
+        }
+
+        return [
+            'url' => url()->current().($params ? '?'.http_build_query($params) : ''),
+            'label' => $label,
+            'count' => $count,
+            'active' => $active,
+        ];
     }
 
     private function collectCategoryAndDescendantIds(int $categoryId): Collection

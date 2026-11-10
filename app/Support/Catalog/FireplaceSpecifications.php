@@ -12,6 +12,14 @@ final class FireplaceSpecifications
         'Материал' => ['материал корпуса', 'материал'],
     ];
 
+    private const ELECTRIC_FIELDS = [
+        'Диагональ экрана' => ['диагональ экрана', 'диагональ очага', 'диагональ'],
+        'Мощность обогрева' => ['мощность обогрева', 'мощность нагрева', 'тепловая мощность', 'мощность нагревателя'],
+        'Площадь обогрева' => self::CARD_FIELDS['Площадь обогрева'],
+        'Обогрев' => ['обогрев', 'режим обогрева', 'функция обогрева'],
+        'Эффект пламени' => ['имитация огня', 'технология имитации пламени'],
+    ];
+
     private const DETAIL_ALIASES = [
         'Объём отапливаемого помещения' => ['объем отапливаемого помещения', 'объем отапливания', 'отапливаемый объем'],
         'Диаметр дымохода' => ['диаметр дымохода', 'диаметр дымоходного патрубка'],
@@ -23,7 +31,7 @@ final class FireplaceSpecifications
         'Подача воздуха извне' => ['подача воздуха извне', 'подача воздуха из вне'],
     ];
 
-    private const UNITS = '[мm][²2]|[мm][³3]|кв\.\s*м\.?|квт|kw|мм|см|кг|мес\.?|ч\.?|%';
+    private const UNITS = '[мm][²2]|[мm][³3]|кв\.\s*м\.?|квт|kw|вт|w|мм|см|кг|мес\.?|ч\.?|%';
 
     /** @return array<string, string> */
     public static function card(Product $product): array
@@ -50,6 +58,163 @@ final class FireplaceSpecifications
         return array_intersect_key($otherSpecs, ['Мощность' => true])
             + ($heating === null ? [] : [$heating['label'] => $heating['value']])
             + array_intersect_key($otherSpecs, ['Материал' => true]);
+    }
+
+    /** @return array{card: array<string, string>, heating: ?bool, steam: bool} */
+    public static function electricCatalogFacts(Product $product): array
+    {
+        $sources = self::sources($product, $product->attributeValues);
+        if (self::isBioFireplace($product, $sources)) {
+            return ['card' => ['Тип камина' => 'Биокамин'], 'heating' => null, 'steam' => false];
+        }
+
+        $rows = self::electricRows($product, $sources);
+        $heating = match ($rows['Обогрев'] ?? null) {
+            'Да' => true,
+            'Нет' => false,
+            default => null,
+        };
+        $steam = ($rows['Эффект пламени'] ?? null) === 'Водяной пар';
+        $card = array_intersect_key($rows, array_flip(['Диагональ экрана', 'Мощность обогрева', 'Площадь обогрева', 'Эффект пламени']));
+        if ($heating === false || ($heating === true && ! isset($card['Мощность обогрева']))) {
+            $card['Обогрев'] = $heating ? 'С обогревом' : 'Без обогрева';
+        }
+
+        return compact('card', 'heating', 'steam');
+    }
+
+    /** @return array<string, string>|null */
+    public static function electricDetails(Product $product, iterable $attributes): ?array
+    {
+        $sources = self::sources($product, $attributes);
+        if (self::isBioFireplace($product, $sources)) {
+            return null;
+        }
+
+        $rows = self::electricRows($product, $sources);
+        $coveredFields = array_intersect_key(self::ELECTRIC_FIELDS, $rows);
+        $coveredFields['Площадь обогрева'] = self::ELECTRIC_FIELDS['Площадь обогрева'];
+        $aliases = array_merge(...array_values($coveredFields));
+        $seen = [];
+        foreach ($sources as $source) {
+            foreach ($source as $key => [$name, $value, $unit]) {
+                $key = self::electricKey($key);
+                if (isset($seen[$key]) || ($key !== 'технология имитации пламени' && in_array($key, $aliases, true))) {
+                    continue;
+                }
+
+                $seen[$key] = true;
+                $rows[html_entity_decode($name, ENT_QUOTES | ENT_HTML5, 'UTF-8')] ??= self::withUnit(
+                    html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'), $unit
+                );
+            }
+        }
+
+        return $rows;
+    }
+
+    private static function isBioFireplace(Product $product, array $sources): bool
+    {
+        if (preg_match('/биокамин/iu', $product->name)
+            || config('electric-fireplaces.models.'.$product->slug.'.specs.Тип камина') === 'Биокамин') {
+            return true;
+        }
+
+        foreach ($sources as $source) {
+            $fuel = $source['тип топлива'][1] ?? $source['вид топлива'][1] ?? '';
+            if (mb_strtolower(trim($fuel)) === 'биотопливо') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function electricRows(Product $product, array $sources): array
+    {
+        $verified = config('electric-fireplaces.models.'.$product->slug.'.specs', []);
+        $values = [];
+        foreach ($sources as $sourceIndex => $source) {
+            foreach ($source as $key => [$name, $value, $unit]) {
+                $values[self::electricKey($key)][] = [$value, $unit, $sourceIndex];
+            }
+        }
+
+        $rows = [];
+        foreach (self::ELECTRIC_FIELDS as $label => $keys) {
+            $candidates = [];
+            foreach ($keys as $key) {
+                foreach ($values[$key] ?? [] as [$value, $unit, $sourceIndex]) {
+                    // A range option is for filtering. Exact diagonal and yes/no options are facts.
+                    if ($sourceIndex === 2 && ! in_array($label, ['Диагональ экрана', 'Обогрев', 'Эффект пламени'], true)) {
+                        continue;
+                    }
+                    $normalized = self::electricValue($label, $value, $unit);
+                    if ($normalized !== null) {
+                        $candidates[$normalized] = $normalized;
+                    }
+                }
+            }
+            if (count($candidates) === 1) {
+                $rows[$label] = reset($candidates);
+            }
+        }
+
+        if (preg_match('/парово[йие]\s+(?:электрический\s+)?очаг|очаг\s+парово[йие]/iu', $product->name)
+            || collect($values['эффект opti-myst'] ?? [])->contains(fn ($row) => mb_strtolower(trim($row[0])) === 'да')) {
+            $rows['Эффект пламени'] = 'Водяной пар';
+        }
+
+        $rows = $verified + $rows;
+        if (($rows['Обогрев'] ?? null) === 'Нет') {
+            unset($rows['Мощность обогрева'], $rows['Площадь обогрева']);
+        } elseif (isset($rows['Мощность обогрева']) || isset($rows['Площадь обогрева'])
+            || collect($values['режим работы'] ?? [])->contains(fn ($row) => preg_match('/(?:^|[,;])\s*с обогревом(?:\s|[,;]|$)/iu', $row[0]))) {
+            $rows['Обогрев'] = 'Да';
+        }
+
+        return array_replace(array_intersect_key(self::ELECTRIC_FIELDS, $rows), $rows);
+    }
+
+    private static function electricKey(string $key): string
+    {
+        $key = html_entity_decode($key, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim(preg_replace('/[\s,(]+(?:[мm][²2]|квт|kw|вт|w)\)?$/iu', '', $key), " ,");
+    }
+
+    private static function electricValue(string $label, string $value, string $unit): ?string
+    {
+        $value = trim(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $unit = trim($unit);
+
+        return match ($label) {
+            'Диагональ экрана' => preg_match('/^(\d{1,3}(?:[,.]\d+)?)\s*(?:["″]|дюйм(?:а|ов)?\.?)?$/iu', $value, $match)
+                ? str_replace('.', ',', $match[1]).'″' : null,
+            'Мощность обогрева' => self::electricPower($value, $unit),
+            'Площадь обогрева' => self::format($label, $value, $unit),
+            'Обогрев' => match (mb_strtolower($value)) {
+                'да', 'есть', 'с обогревом' => 'Да',
+                'нет', 'без обогрева' => 'Нет',
+                default => null,
+            },
+            'Эффект пламени' => match (true) {
+                (bool) preg_match('/водян(?:ой|ого) пар|парово[йе]|opti[- ]?myst/iu', $value) => 'Водяной пар',
+                (bool) preg_match('/^([235]d)(?:[ -]|$)/iu', $value, $match) => strtoupper($match[1]).'-пламя',
+                default => null,
+            },
+        };
+    }
+
+    private static function electricPower(string $value, string $unit): ?string
+    {
+        if (preg_match('/^(\d+)\s*(вт|w)?$/iu', $value, $match)
+            && (isset($match[2]) || in_array(mb_strtolower($unit), ['вт', 'w'], true))
+            && (int) $match[1] > 0) {
+            return str_replace('.', ',', (string) ((int) $match[1] / 1000)).' кВт';
+        }
+
+        return self::format('Мощность', $value, $unit);
     }
 
     private static function resolveHeatingFact(array $sources): ?array

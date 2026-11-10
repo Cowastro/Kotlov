@@ -55,6 +55,7 @@
         'dlya-dachi',
         'kaminy',
         'topki',
+        'elektrokamini',
     ];
     $requestedStoveScope = (string) request('subcategory', '');
     $stoveFilterScope = in_array($requestedStoveScope, $stoveFilterScopes, true)
@@ -62,6 +63,11 @@
         : $category->slug;
 
     $stoveQuickFilterConfig = match ($stoveFilterScope) {
+        'elektrokamini' => [
+            'title' => 'Подберите электрокамин',
+            'subtitle' => 'по режиму работы и эффекту пламени',
+            'aria' => 'Быстрый подбор электрокамина',
+        ],
         'pechki', 'pechi-kaminy', 'dlya-dachi' => [
             'title' => 'Подберите печь для дома',
             'subtitle' => 'по материалу и площади обогрева',
@@ -108,6 +114,11 @@
         ->values();
 
     $stoveGuide = match ($stoveFilterScope) {
+        'elektrokamini' => [
+            'text' => 'Для встраиваемого очага проверьте монтажные размеры ниши. Для комплекта с порталом сверяйте габариты всей конструкции.',
+            'aria' => 'Порталы для электрических очагов',
+            'links' => [['/oblicovki', 'Порталы для электрокаминов']],
+        ],
         'pechki' => [
             'text' => 'Для постоянного отопления учитывайте не только площадь, но и теплопотери дома, материал печи и диаметр дымохода. Если производитель указывает только объём, площадь рассчитана для стандартной высоты потолка 2,5 м. Окончательную мощность лучше подтверждать расчётом.',
             'aria' => 'Связанные разделы для выбора печи',
@@ -147,6 +158,10 @@
         default => null,
     };
 
+    if ($stoveFilterScope === 'elektrokamini') {
+        $stoveQuickLinks = collect($electricFireplaceLinks);
+    }
+
     if (isset($stoveAreaLinks) && $category->slug === 'pechki' && $stoveGuide) {
         $stoveQuickLinks = collect($stoveAreaLinks)->concat($stoveQuickLinks);
         $stoveGuide['text'] = 'Фильтр группирует печи по верхней границе указанной площади. Оценки при потолке 2,5 м подписаны отдельно. При выборе мощности учитывайте теплопотери дома.';
@@ -173,7 +188,9 @@
                             <a href="{{ $link['url'] }}#catalog-products"
                                class="catalog-quick-filter__item {{ $link['active'] ? 'is-active' : '' }}"
                                @if ($link['active']) aria-current="true" @endif>
-                                <span class="catalog-quick-filter__prefix">{{ $link['prefix'] }}</span>
+                                @if (! empty($link['prefix']))
+                                    <span class="catalog-quick-filter__prefix">{{ $link['prefix'] }}</span>
+                                @endif
                                 {{ $link['label'] }}
                                 <span class="catalog-quick-filter__count">{{ $link['count'] }}</span>
                             </a>

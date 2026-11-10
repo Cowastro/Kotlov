@@ -82,9 +82,11 @@ class ProductController extends Controller
             ->filter(fn ($value) => $value->hasDisplayValue())
             ->unique(fn ($val) => mb_strtolower(trim($val->attribute->name ?? '')))
             ->values();
-        $fireplaceSpecs = $productCategory->slug === 'pechi-kaminy'
-            ? FireplaceSpecifications::details($product, $attributeValues)
-            : null;
+        $fireplaceSpecs = match ($productCategory->slug) {
+            'pechi-kaminy' => FireplaceSpecifications::details($product, $attributeValues),
+            'elektrokamini' => FireplaceSpecifications::electricDetails($product, $attributeValues),
+            default => null,
+        };
 
         // Похожие товары
         $relatedProducts = Product::where('category_id', $product->category_id)
