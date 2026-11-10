@@ -61,6 +61,7 @@
                     }).' '.$cityIn,
                     $isMinskFireplaceCatalog => 'Печи-камины для дома и дачи в Минске',
                     $isElectricFireplaceCatalog => 'Электрокамины '.$cityIn,
+                    $isBoilerHub && $selectedSubcategory !== null => $selectedSubcategory->h1 ?: $selectedSubcategory->name,
                     default => $category->h1 ?: $category->name,
                 } }}</h1>
                 @if ($catalogIntro ?? $category->content)
@@ -92,6 +93,10 @@
     </section>
 
     @include('partials.catalog-city-storefront')
+
+    @if ($isBoilerHub)
+        @include('partials.boiler-catalog-navigation')
+    @endif
 
     @if ($showElectricFireplaceNavigation)
         @include('partials.electric-fireplace-navigation')
@@ -213,7 +218,7 @@
     @endif
 
     {{-- Каталог --}}
-    <section class="flat-spacing{{ $isMinskFireplaceCatalog || $isStoveHeatingCatalog || $isElectricFireplaceCatalog ? ' pt-3' : '' }}" id="catalog-products">
+    <section class="flat-spacing{{ $isMinskFireplaceCatalog || $isStoveHeatingCatalog || $isElectricFireplaceCatalog || $isBoilerHub ? ' pt-3' : '' }}" id="catalog-products">
         <div class="container">
             <div class="row">
 
@@ -229,7 +234,7 @@
                             <div class="canvas-body">
 
                                 {{-- Подкатегории --}}
-                                @if ($subcategories->count() > 0)
+                                @if (! $isBoilerHub && $subcategories->count() > 0)
                                     <div class="widget-facet">
                                         <div class="facet-title" data-bs-target="#subcategories" role="button"
                                             data-bs-toggle="collapse" aria-expanded="true">
@@ -398,6 +403,7 @@
                                 @foreach ($filterAttributes as $attr)
                                     @continue(in_array($attr->id, $stoveAreaAttributeIds, true))
                                     @continue($isElectricFireplaceCatalog && mb_strtolower(trim($attr->name)) === 'обогрев')
+                                    @continue($isBoilerHub && $selectedSubcategory === null && !request()->filled('attr.'.$attr->id))
                                     <div class="widget-facet">
                                         <div class="facet-title" data-bs-target="#attr-{{ $attr->id }}"
                                             role="button" data-bs-toggle="collapse" aria-expanded="false">
@@ -514,7 +520,7 @@
                                 Подходящий раздел не найден. Попробуйте изменить запрос или воспользуйтесь общим поиском сайта.
                             </p>
                         </section>
-                    @elseif ($subcategories->count() > 0 && !request('subcategory'))
+                    @elseif (! $isBoilerHub && $subcategories->count() > 0 && !request('subcategory'))
                         <div class="row g-0 g-md-12 mb-32 subcat-list">
                             @foreach ($subcategories as $i => $sub)
                                 @php

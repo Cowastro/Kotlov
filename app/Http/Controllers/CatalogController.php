@@ -65,31 +65,49 @@ class CatalogController extends Controller
             $allCategoryIds = $this->collectCategoryAndDescendantIds($category->id);
         }
 
+        $isBoilerHub = $category->slug === 'kotly';
+        $boilerTypes = $isBoilerHub ? collect(config('navigation.boiler_types')) : collect();
+        $subcategorySlug = request('subcategory');
+        if ($isBoilerHub && is_string($subcategorySlug)
+            && in_array($subcategorySlug, config('navigation.former_boiler_subcategories'), true)
+            && Category::query()->where('slug', $subcategorySlug)->where('is_active', true)->exists()) {
+            $query = http_build_query(request()->except('subcategory'));
+
+            return redirect(url('/'.$subcategorySlug).($query === '' ? '' : '?'.$query), 301);
+        }
+
         // Подкатегории для фильтра
         $subcategories = Category::where('parent_id', $category->id)
             ->where('is_active', true)
             ->orderBy('name')
             ->orderBy('sort_order')
             ->get()
-            ->each(function ($subcategory) use ($selectedBrandId) {
+            ->each(function ($subcategory) use ($selectedBrandId, $isBoilerHub) {
                 $ids = $this->collectCategoryAndDescendantIds($subcategory->id);
                 $subcategory->products_count = Product::query()
                     ->orderable()
                     ->whereIn('category_id', $ids)
-                    ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
+                    ->when($selectedBrandId && ! $isBoilerHub, fn ($query) => $query->where('brand_id', $selectedBrandId))
                     ->count();
             })
             ->filter(fn ($subcategory) => $subcategory->products_count > 0)
             ->values();
 
-        // Если выбрана подкатегория
-        $activeCategoryIds = $allCategoryIds;
-        if (request('subcategory')) {
-            $sub = Category::where('slug', request('subcategory'))
+        $boilerCategories = $boilerTypes->keys()
+            ->map(fn (string $slug) => $subcategories->firstWhere('slug', $slug))
+            ->filter();
+
+        $activeCategoryIds = $isBoilerHub
+            ? $boilerCategories->flatMap(fn (Category $boiler) => $this->collectCategoryAndDescendantIds($boiler->id))->unique()->values()
+            : $allCategoryIds;
+        $selectedSubcategory = null;
+        if (is_string($subcategorySlug) && $subcategorySlug !== '') {
+            $sub = Category::where('slug', $subcategorySlug)
                 ->where('is_active', true)
                 ->first();
 
-            if ($sub && $allCategoryIds->contains($sub->id)) {
+            if ($sub && $sub->id !== $category->id && $allCategoryIds->contains($sub->id)) {
+                $selectedSubcategory = $sub;
                 $activeCategoryIds = $this->collectCategoryAndDescendantIds($sub->id);
             }
         }
@@ -280,7 +298,7 @@ class CatalogController extends Controller
 
         $allProductsCount = Product::query()
             ->orderable()
-            ->whereIn('category_id', $allCategoryIds)
+            ->whereIn('category_id', $isBoilerHub ? $activeCategoryIds : $allCategoryIds)
             ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
             ->count();
 
@@ -610,6 +628,7 @@ class CatalogController extends Controller
                     ! $catalogStockAlreadyOrdered && ($isChimneyCatalog
                         || $isStoveOrFireplaceCatalog
                         || $isPipesCatalog
+                        || ($isBoilerHub && $selectedSubcategory === null)
                         || in_array($category->slug, ['tverdotoplivnye', 'bufernye-emkosti', 'kosvennye'], true))
                 );
         }
@@ -972,6 +991,7 @@ class CatalogController extends Controller
 
         $installerRecruitment = $this->installerRecruitmentContext($category);
         $catalogIntro = match ($category->slug) {
+            'kotly' => $selectedSubcategory === null ? 'Выберите котёл по виду топлива. Для быстрого подбора можно показать модели в наличии.' : null,
             'elektrokamini' => 'Электрические очаги и камины для дома. Сравните диагональ, эффект пламени, мощность и площадь обогрева.',
             'tverdotoplivnye' => 'Твердотопливные котлы для отопления дома на дровах, угле и пеллетах. Подберите модель по мощности, площади обогрева и типу топлива.',
             'kotly-na-pelletah' => 'Пеллетные котлы с автоматической подачей топлива для дома и коммерческих объектов. Сравните мощность, объём бункера, автоматику и доступность сервисного обслуживания.',
@@ -1147,7 +1167,8 @@ class CatalogController extends Controller
             'installerRecruitment',
             'catalogIntro',
             'catalogSpotlight',
-            'catalogNavigationGroups', 'cityStorefrontBranch', 'isCityStorefront'
+            'catalogNavigationGroups', 'cityStorefrontBranch', 'isCityStorefront',
+            'isBoilerHub', 'boilerTypes', 'boilerCategories', 'selectedSubcategory', 'inStockOnly'
         ));
     }
 
