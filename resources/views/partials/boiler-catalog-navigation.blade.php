@@ -6,11 +6,11 @@
                     $type = $boilerTypes->get($boiler->slug);
                 @endphp
                 <div class="col-6 col-lg-3">
-                    <a class="link border rounded-3 p-3 d-flex flex-column gap-1 h-100"
+                    <a class="link border rounded-3 p-2 p-md-3 d-flex flex-column gap-1 h-100"
                        href="{{ url('/'.$boiler->slug) }}{{ $inStockOnly ? '?in_stock=1#catalog-products' : '' }}"
                        @if ($selectedSubcategory?->slug === $boiler->slug) aria-current="page" @endif>
                         <i class="icon {{ $type['icon'] }} fs-20 mb-1" aria-hidden="true"></i>
-                        <strong>{{ $type['name'] }}</strong>
+                        <strong class="fs-14 text-break">{{ $type['name'] }}</strong>
                         <span class="text-caption-01 cl-text-2">{{ $type['description'] }}</span>
                         <span class="text-caption-01 cl-text-2">{{ $boiler->products_count }} в каталоге</span>
                     </a>
