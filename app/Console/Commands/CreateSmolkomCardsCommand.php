@@ -57,9 +57,13 @@ class CreateSmolkomCardsCommand extends Command
             ->values();
         $existing = [];
         $similar = [];
-        foreach (DB::table('products')->whereIn('brand_id', array_merge(...array_values($brandIds ?: [[0]])))->where('is_archived', false)->get(['name', 'brand_id']) as $card) {
+        // A card already linked to a row of another model is that model, not a spelling of this one.
+        $linkedModel = SupplierProduct::query()->where('supplier_id', $supplier->id)->whereNotNull('product_id')->get(['product_id', 'raw'])
+            ->mapWithKeys(fn (SupplierProduct $o) => [(int) $o->product_id => SmolkomPriceList::modelKey((string) ($o->raw['name'] ?? ''))]);
+        foreach (DB::table('products')->whereIn('brand_id', array_merge(...array_values($brandIds ?: [[0]])))->where('is_archived', false)->get(['id', 'name', 'brand_id']) as $card) {
             $existing[$card->brand_id.'|'.SmolkomPriceList::modelKey((string) $card->name).'|'.implode(',', SmolkomPriceList::colourWords((string) $card->name))] = true;
-            $similar[(int) $card->brand_id][] = ['words' => SmolkomPriceList::modelWords((string) $card->name), 'colours' => SmolkomPriceList::colourWords((string) $card->name)];
+            $similar[(int) $card->brand_id][] = ['words' => SmolkomPriceList::modelWords((string) $card->name), 'colours' => SmolkomPriceList::colourWords((string) $card->name),
+                'linked_key' => $linkedModel[(int) $card->id] ?? null];
         }
 
         $stats = ['offers' => $offers->count(), 'planned' => 0, 'card_exists' => 0, 'no_brand' => 0, 'no_category' => 0, 'on_site' => 0, 'created' => 0, 'with_photo' => 0, 'errors' => 0];
@@ -142,6 +146,9 @@ class CreateSmolkomCardsCommand extends Command
     public static function hasSimilar(array $cards, array $words, array $colours): bool
     {
         foreach ($cards as $card) {
+            if (($card['linked_key'] ?? null) !== null && $card['linked_key'] !== implode(' ', $words)) {
+                continue;
+            }
             // The same model without a colour is the white one: other colours become cards of their own, offered as
             // «Выберите цвет» on the card page.
             if ($card['colours'] === [] && $card['words'] === $words && $colours !== []) {
