@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -128,6 +129,12 @@ class ElectricFireplaceCatalogTest extends TestCase
         $hidden = $add($portals, 'portal-smolcom-optima-v42', 'Портал Smolcom Optima V42');
         $hidden->update(['is_active' => false]);
         $add($portals, 'electric-test-insulation', 'Плита изоляционная');
+        $attribute = Attribute::query()->create([
+            'category_id' => $electric->id, 'name' => 'Цвет', 'type' => 'select', 'in_filter' => true,
+        ]);
+        $black = $attribute->options()->create(['name' => 'Чёрный']);
+        $white = $attribute->options()->create(['name' => 'Белый']);
+        $insert->allAttributeValues()->create(['attribute_id' => $attribute->id, 'option_id' => $black->id]);
 
         $url = 'https://kotlov.by/elektrokamini';
         $this->get($url.'?fireplace_type=insert')->assertOk()
@@ -146,6 +153,13 @@ class ElectricFireplaceCatalogTest extends TestCase
             ->assertViewHas('electricFilterChips', fn (array $chips) => collect($chips)
                 ->contains(fn ($chip) => $chip['label'] === 'Ниша до 650 мм'
                     && $chip['url'] === $url.'?fireplace_type=insert&electric_mode=heat&price_min=99#catalog-products'));
+        $params = ['fireplace_type' => 'insert', 'attr' => [$attribute->id => [$black->id, $white->id]]];
+        $this->get($url.'?'.http_build_query($params))->assertOk()
+            ->assertViewHas('electricFilterChips', fn (array $chips) => collect($chips)
+                ->contains(fn ($chip) => $chip['label'] === 'Цвет · Белый'
+                    && $chip['url'] === $url.'?'.http_build_query([
+                        'fireplace_type' => 'insert', 'attr' => [$attribute->id => [$black->id]],
+                    ]).'#catalog-products'));
 
         $this->get($url.'/'.$insert->slug)->assertOk()
             ->assertSeeText('Совместимые порталы')

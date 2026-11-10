@@ -829,9 +829,11 @@ function applyPriceFilter() {
 
 function applyAttrFilter(attrId, optionId, checked) {
     const url = new URL(window.location.href);
-    const key = `attr[${attrId}][]`;
+    const group = `attr[${attrId}]`;
+    const selectedKeys = [...new Set(url.searchParams.keys())]
+        .filter(key => key === group || key.startsWith(`${group}[`));
 
-    let current = url.searchParams.getAll(key);
+    let current = selectedKeys.flatMap(key => url.searchParams.getAll(key));
 
     if (checked) {
         if (!current.includes(String(optionId))) {
@@ -841,8 +843,8 @@ function applyAttrFilter(attrId, optionId, checked) {
         current = current.filter(v => v !== String(optionId));
     }
 
-    url.searchParams.delete(key);
-    current.forEach(v => url.searchParams.append(key, v));
+    selectedKeys.forEach(key => url.searchParams.delete(key));
+    current.forEach(value => url.searchParams.append(`${group}[]`, value));
     url.searchParams.delete('page');
     window.location.href = url.toString();
 }
