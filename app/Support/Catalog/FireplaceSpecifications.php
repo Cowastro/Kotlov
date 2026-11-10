@@ -20,6 +20,12 @@ final class FireplaceSpecifications
         'Эффект пламени' => ['имитация огня', 'технология имитации пламени'],
     ];
 
+    private const OPENING_AXES = [
+        'width' => 'Ширина ниши',
+        'height' => 'Высота ниши',
+        'depth' => 'Глубина ниши',
+    ];
+
     private const DETAIL_ALIASES = [
         'Объём отапливаемого помещения' => ['объем отапливаемого помещения', 'объем отапливания', 'отапливаемый объем'],
         'Диаметр дымохода' => ['диаметр дымохода', 'диаметр дымоходного патрубка'],
@@ -60,12 +66,12 @@ final class FireplaceSpecifications
             + array_intersect_key($otherSpecs, ['Материал' => true]);
     }
 
-    /** @return array{card: array<string, string>, heating: ?bool, steam: bool} */
+    /** @return array{card: array<string, string>, heating: ?bool, steam: bool, openingWidth: ?int} */
     public static function electricCatalogFacts(Product $product): array
     {
         $sources = self::sources($product, $product->attributeValues);
         if (self::isBioFireplace($product, $sources)) {
-            return ['card' => ['Тип камина' => 'Биокамин'], 'heating' => null, 'steam' => false];
+            return ['card' => ['Тип камина' => 'Биокамин'], 'heating' => null, 'steam' => false, 'openingWidth' => null];
         }
 
         $rows = self::electricRows($product, $sources);
@@ -80,7 +86,15 @@ final class FireplaceSpecifications
             $card['Обогрев'] = $heating ? 'С обогревом' : 'Без обогрева';
         }
 
-        return compact('card', 'heating', 'steam');
+        $opening = self::opening($product, $sources);
+        $openingWidth = $opening['width'] ?? null;
+        if (count($opening) === 3) {
+            $card['Размеры ниши (Ш×В×Г)'] = 'Ниша '.implode(' × ', $opening).' мм';
+        } elseif ($openingWidth !== null) {
+            $card['Ширина ниши'] = 'Ниша '.$openingWidth.' мм по ширине';
+        }
+
+        return compact('card', 'heating', 'steam', 'openingWidth');
     }
 
     /** @return array<string, string>|null */
@@ -91,7 +105,8 @@ final class FireplaceSpecifications
             return null;
         }
 
-        $rows = self::electricRows($product, $sources);
+        $openingRows = self::openingRows(self::opening($product, $sources));
+        $rows = self::electricRows($product, $sources) + $openingRows;
         $coveredFields = array_intersect_key(self::ELECTRIC_FIELDS, $rows);
         $coveredFields['Площадь обогрева'] = self::ELECTRIC_FIELDS['Площадь обогрева'];
         $aliases = array_merge(...array_values($coveredFields));
@@ -99,7 +114,9 @@ final class FireplaceSpecifications
         foreach ($sources as $source) {
             foreach ($source as $key => [$name, $value, $unit]) {
                 $key = self::electricKey($key);
-                if (isset($seen[$key]) || ($key !== 'технология имитации пламени' && in_array($key, $aliases, true))) {
+                if (isset($seen[$key]) || ($key !== 'технология имитации пламени' && in_array($key, $aliases, true))
+                    || (isset($openingRows['Ширина ниши'], $openingRows['Высота ниши'], $openingRows['Глубина ниши'])
+                        && self::isOpeningField($key))) {
                     continue;
                 }
 
@@ -111,6 +128,94 @@ final class FireplaceSpecifications
         }
 
         return $rows;
+    }
+
+    /** @return array<string, string> */
+    public static function electricOpeningRows(Product $product): array
+    {
+        $sources = self::sources($product, $product->attributeValues);
+
+        return self::isBioFireplace($product, $sources)
+            ? []
+            : self::openingRows(self::opening($product, $sources));
+    }
+
+    private static function openingRows(array $opening): array
+    {
+        $rows = [];
+        foreach ($opening as $axis => $value) {
+            $rows[self::OPENING_AXES[$axis]] = $value.' мм';
+        }
+
+        return $rows;
+    }
+
+    private static function opening(Product $product, array $sources): array
+    {
+        $verified = config('electric-fireplaces.openings.'.$product->slug.'.mm', []);
+        $candidates = [];
+        foreach (array_slice($sources, 0, 2) as $source) {
+            foreach ($source as $key => [, $value, $unit]) {
+                if (! self::isOpeningField($key)) {
+                    continue;
+                }
+
+                $dimensions = [];
+                if (preg_match('/^(ширина|высота|глубина) /u', $key, $axis)) {
+                    $dimensions[match ($axis[1]) {
+                        'ширина' => 'width',
+                        'высота' => 'height',
+                        'глубина' => 'depth',
+                    }] = self::openingMillimetres($value, $unit);
+                } elseif (preg_match('/([швг])\s*[xх×]\s*([швг])\s*[xх×]\s*([швг])/u', $key, $axes)
+                    && count(array_unique(array_slice($axes, 1))) === 3
+                    && preg_match('/^\s*(\d+(?:[,.]\d+)?)\s*[xх×]\s*(\d+(?:[,.]\d+)?)\s*[xх×]\s*(\d+(?:[,.]\d+)?)\s*(мм|см|mm|cm)?\s*$/iu', $value, $numbers)) {
+                    $axisKeys = ['ш' => 'width', 'в' => 'height', 'г' => 'depth'];
+                    foreach ([1, 2, 3] as $index) {
+                        $dimensions[$axisKeys[$axes[$index]]] = self::openingMillimetres($numbers[$index], $numbers[4] ?? $unit);
+                    }
+                }
+
+                foreach ($dimensions as $axis => $mm) {
+                    if ($mm !== null) {
+                        $candidates[$axis][$mm] = $mm;
+                    }
+                }
+            }
+        }
+
+        $opening = [];
+        foreach (self::OPENING_AXES as $axis => $label) {
+            $values = $candidates[$axis] ?? [];
+            if (isset($verified[$axis])) {
+                $opening[$axis] = $verified[$axis];
+            } elseif (count($values) === 1) {
+                $opening[$axis] = reset($values);
+            }
+        }
+
+        return $opening;
+    }
+
+    private static function isOpeningField(string $key): bool
+    {
+        return preg_match('/^(?:(?:ширина|высота|глубина) (?:ниши|встраивания|монтажного про[её]ма)|размеры? (?:ниши|встраивания)|установочные размеры|установочный размер|монтажные размеры|монтажный размер|габариты встраивания)(?:$|[\s,(])/u', $key) === 1;
+    }
+
+    private static function openingMillimetres(string $value, string $unit): ?int
+    {
+        if (! preg_match('/^\s*(\d+(?:[,.]\d+)?)\s*(мм|см|mm|cm)?\s*$/iu', $value, $number)) {
+            return null;
+        }
+
+        $factor = match (mb_strtolower(trim($number[2] ?? $unit))) {
+            'мм', 'mm' => 1,
+            'см', 'cm' => 10,
+            default => null,
+        };
+        $mm = (float) str_replace(',', '.', $number[1]) * ($factor ?? 0);
+
+        return $mm >= 1 && $mm <= 10000 && $mm === floor($mm) ? (int) $mm : null;
     }
 
     private static function isBioFireplace(Product $product, array $sources): bool

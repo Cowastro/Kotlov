@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CompareItem;
-use App\Models\Product;
+use App\Support\Catalog\FireplaceSpecifications;
 use Illuminate\Http\Request;
 
 class CompareController extends Controller
@@ -16,15 +16,7 @@ class CompareController extends Controller
     public function index()
     {
         $query = CompareItem::with([
-            'product' => fn ($q) => $q->with([
-                'brand', 'category',
-                'attributeValues' => fn ($q) => $q
-                    ->with('attribute', 'option')
-                    ->whereHas('attribute', fn ($attributeQuery) => $attributeQuery
-                        ->where('is_comparable', true)
-                        ->whereNotIn('name', Product::supplierTechnicalAttributeNames()))
-                    ->orderBy('attribute_id'),
-            ]),
+            'product.brand', 'product.category', 'product.attributeValues',
         ]);
 
         if (auth()->check()) {
@@ -38,13 +30,17 @@ class CompareController extends Controller
 
         // Собираем все уникальные атрибуты со всех товаров
         $allAttributes = $products->flatMap(function ($product) {
-            return $product->attributeValues->map(fn ($v) => [
+            return $product->attributeValues->filter(fn ($value) => $value->attribute?->is_comparable)->map(fn ($v) => [
                 'id' => $v->attribute_id,
                 'name' => $v->attribute->name ?? '',
             ]);
         })->unique('id')->sortBy('name')->values();
 
-        return view('pages.compare', compact('products', 'items', 'allAttributes'));
+        $openingByProduct = $products->filter(fn ($product) => $product->category?->slug === 'elektrokamini')
+            ->mapWithKeys(fn ($product) => [$product->id => FireplaceSpecifications::electricOpeningRows($product)]);
+        $openingLabels = $openingByProduct->flatMap(fn ($rows) => array_keys($rows))->unique()->values();
+
+        return view('pages.compare', compact('products', 'items', 'allAttributes', 'openingByProduct', 'openingLabels'));
     }
 
     public function add(Request $request)

@@ -135,6 +135,15 @@
                                 @endforeach
                             </tr>
 
+                            @foreach ($openingLabels as $label)
+                                <tr class="compare-row">
+                                    <td class="compare-col compare-title">{{ $label }}</td>
+                                    @foreach ($products as $product)
+                                        <td class="compare-col compare-value">{{ $openingByProduct[$product->id][$label] ?? '—' }}</td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+
                             {{-- Атрибуты из БД --}}
                             @foreach ($allAttributes as $attr)
                                 <tr class="compare-row">
