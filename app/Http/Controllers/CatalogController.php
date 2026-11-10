@@ -10,6 +10,7 @@ use App\Models\PartnerBranch;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Services\ChimneyDiameterQuickFilter;
+use App\Services\CityContactResolver;
 use App\Services\SeoMetadataBuilder;
 use App\Support\CategoryNavigationGroups;
 use App\Support\Promotions\EcokaminPromotion;
@@ -287,8 +288,12 @@ class CatalogController extends Controller
             $query->where('price', '<=', request('price_max'));
         }
 
-        // Фильтр по наличию
-        if (request('in_stock') == '1') {
+        $isMinskFireplaceCatalog = $category->slug === 'pechi-kaminy'
+            && request()->getHost() === config('app.base_domain', 'kotlov.by');
+        $inStockOnly = request('in_stock') === '1';
+
+        // The Minsk fireplace filter uses the same confirmed status as the card.
+        if ($inStockOnly && ! $isMinskFireplaceCatalog) {
             $query->where('in_stock', true);
         }
 
@@ -462,8 +467,31 @@ class CatalogController extends Controller
                 );
         }
 
+        if ($isMinskFireplaceCatalog && $inStockOnly) {
+            $confirmedIds = (clone $query)->reorder()
+                ->without(['category', 'brand'])
+                ->select('id', 'is_active', 'is_archived', 'availability_status', 'requires_price_confirmation', 'manual_stock_management', 'in_stock')
+                ->lazyById(100)
+                ->filter(fn (Product $product) => $product->publicAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK)
+                ->pluck('id')
+                ->all();
+            $query->whereIntegerInRaw('products.id', $confirmedIds);
+        }
+
         $totalCount = $query->count();
         $products = $query->paginate(24)->withQueryString();
+        if ($isMinskFireplaceCatalog && $products->onFirstPage()
+            && ! request()->anyFilled(['sort', 'brand', 'subcategory', 'price_min', 'price_max', 'attr'])) {
+            $pageProducts = $products->getCollection();
+            $branded = $pageProducts->filter(fn (Product $product) => $product->brand_id !== null);
+            $available = $branded->filter(fn (Product $product) => $product->publicAvailabilityStatus() === Product::AVAILABILITY_IN_STOCK);
+            $orderable = $inStockOnly ? collect() : $branded->diff($available)->filter(
+                fn (Product $product) => $product->publicAvailabilityStatus() === Product::AVAILABILITY_CHECK
+                    && $product->hasVerifiedPublicPrice()
+            );
+            $firstRow = $available->concat($orderable)->unique('brand_id')->take(4);
+            $products->setCollection($firstRow->concat($pageProducts->diff($firstRow)));
+        }
 
         // Город с поддомена (через middleware CitySubdomain)
         $sharedCityIn = view()->shared('cityIn');
@@ -492,6 +520,9 @@ class CatalogController extends Controller
         }
 
         $currentCity = view()->shared('currentCity');
+        $minskFireplaceOfficeAddress = $isMinskFireplaceCatalog
+            ? app(CityContactResolver::class)->contactForCity($currentCity)['address']
+            : null;
         $isCityStorefront = $currentCity?->exists && $currentCity->slug !== 'minsk';
         if ($isCityStorefront) {
             $cityCase = preg_replace('/^в\s+/ui', '', $cityIn) ?: $currentCity->name;
@@ -536,9 +567,7 @@ class CatalogController extends Controller
             : 'https://'.request()->getHost();
         $categoryUrl = $canonicalBase.'/'.$category->slug;
         $canonical = $categoryUrl;
-        if ($category->slug === 'pechi-kaminy'
-            && request()->getHost() === config('app.base_domain', 'kotlov.by')
-            && array_keys(request()->query()) === ['page']) {
+        if ($isMinskFireplaceCatalog && array_keys(request()->query()) === ['page']) {
             $page = $products->currentPage();
             abort_if($page > $products->lastPage(), 404);
             if ($page > 1) {
@@ -913,6 +942,8 @@ class CatalogController extends Controller
             'ecokaminPromoMaxDiscount',
             'ecokaminPromoVariant',
             'category',
+            'isMinskFireplaceCatalog',
+            'minskFireplaceOfficeAddress',
             'subcategories',
             'brands',
             'filterAttributes',
