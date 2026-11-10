@@ -40,6 +40,8 @@
                 border-color: var(--text);
             }
 
+            .catalog-type-card[hidden] { display: none; }
+
             .catalog-type-card__icon {
                 display: grid;
                 place-items: center;
@@ -57,6 +59,9 @@
             .catalog-type-card--pellets { --type-ink: #42633b; --type-fill: #eef4e9; }
             .catalog-type-card--indirect { --type-ink: #684694; --type-fill: #f3edfa; }
             .catalog-type-card--combined { --type-ink: #17615c; --type-fill: #e7f5f2; }
+            .catalog-type-card--equipment { --type-ink: #48576b; --type-fill: #edf1f6; }
+
+            .catalog-type-card__icon .icon { font-size: 21px; }
 
             .catalog-type-card__text {
                 display: grid;
@@ -113,27 +118,52 @@
     ];
 @endphp
 
-<div class="catalog-type-nav__header">
-    <h2>{{ $heading }}</h2>
-    @include('partials.catalog-stock-toggle')
-</div>
+@isset($heading)
+    <div class="catalog-type-nav__header">
+        <h2>{{ $heading }}</h2>
+        @if ($showStockToggle ?? true)
+            @include('partials.catalog-stock-toggle')
+        @endif
+    </div>
+@endisset
 
 @if (count($entries) > 0)
     <div class="catalog-type-nav__grid">
         @foreach ($entries as $slug => $entry)
-            <a class="catalog-type-card catalog-type-card--{{ $entry['icon'] }}"
-               href="{{ url('/'.$slug) }}{{ $inStockOnly ? '?in_stock=1#catalog-products' : '' }}"
+            @php
+                $icon = $entry['icon'];
+                $tone = match ($icon) {
+                    'icon-Sparkle' => 'flame',
+                    'icon-Lightning', 'icon-Lightning-1', 'icon-Devices' => 'lightning',
+                    'icon-Leaf' => 'pellets',
+                    'icon-Layout', 'icon-CopySimple', 'icon-Tag' => 'indirect',
+                    'icon-Wind', 'icon-filter', 'icon-GitDiff', 'icon-ArrowClockwise' => 'combined',
+                    default => isset($categoryIcons[$icon]) ? $icon : 'equipment',
+                };
+                $href = $entry['url'] ?? url('/'.$slug).($inStockOnly ? '?in_stock=1#catalog-products' : '');
+            @endphp
+            <a class="catalog-type-card catalog-type-card--{{ $tone }}"
+               href="{{ $href }}"
+               @isset($entry['search']) data-accessories-item data-search="{{ $entry['search'] }}" @endisset
                @if (($selectedTypeSlug ?? null) === $slug) aria-current="page" @endif>
                 <span class="catalog-type-card__icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
-                         stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                        <path d="{{ $categoryIcons[$entry['icon']] }}"></path>
-                    </svg>
+                    @isset($categoryIcons[$icon])
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+                             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                            <path d="{{ $categoryIcons[$icon] }}"></path>
+                        </svg>
+                    @else
+                        <i class="icon {{ $icon }}"></i>
+                    @endisset
                 </span>
                 <span class="catalog-type-card__text">
                     <strong class="catalog-type-card__name">{{ $entry['name'] }}</strong>
-                    <span class="catalog-type-card__detail">{{ $entry['description'] }}</span>
-                    <span class="catalog-type-card__detail">{{ $entry['count'] }} в каталоге</span>
+                    @if (! empty($entry['description']))
+                        <span class="catalog-type-card__detail">{{ $entry['description'] }}</span>
+                    @endif
+                    @isset($entry['count'])
+                        <span class="catalog-type-card__detail">{{ $entry['count'] }} в каталоге</span>
+                    @endisset
                 </span>
                 <i class="catalog-type-card__arrow icon icon-CaretRightThin" aria-hidden="true"></i>
             </a>

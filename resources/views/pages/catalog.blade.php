@@ -26,15 +26,6 @@
     @endpush
 @endif
 
-{{-- The grouped subcategory block of large sections (config navigation.groups). --}}
-@if (($catalogNavigationGroups ?? collect())->isNotEmpty())
-    @push('styles')
-        <style>
-            .accessories-nav{margin-bottom:38px;padding:14px;border:1px solid #e5e5e5;border-radius:24px;background:#f7f7f7}.accessories-nav__top{display:grid;grid-template-columns:minmax(0,1fr) minmax(290px,420px);align-items:end;gap:28px;margin-bottom:14px;padding:25px 26px;border-radius:18px;background:linear-gradient(135deg,#111 0%,#252525 78%,#351616 100%);box-shadow:0 14px 34px rgba(0,0,0,.1)}.accessories-nav__eyebrow{display:block;margin-bottom:6px;color:#ff6b70;font-size:11px;font-weight:750;letter-spacing:.07em;text-transform:uppercase}.accessories-nav__top h2{margin:0 0 6px;color:#fff;font-size:clamp(24px,3vw,34px);line-height:1.12}.accessories-nav__top p{margin:0;color:rgba(255,255,255,.68);font-size:13px;line-height:1.5}.accessories-nav__search{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 16px;border:1px solid rgba(255,255,255,.22);border-radius:14px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.13);transition:border-color .18s,box-shadow .18s}.accessories-nav__search:focus-within{border-color:#ff6b70;box-shadow:0 0 0 3px rgba(255,107,112,.2),0 8px 24px rgba(0,0,0,.13)}.accessories-nav__search .icon{flex:0 0 auto;color:#333;font-size:19px}.accessories-nav__search input{width:100%;border:0;background:transparent;color:#111;outline:0;font-size:14px}.accessories-nav__search input::placeholder{color:#8a8a8a}.accessories-nav__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.catalog-nav-group{position:relative;overflow:hidden;border:1px solid #dedede;border-radius:18px;background:#fff;box-shadow:0 5px 18px rgba(0,0,0,.045);transition:border-color .18s,box-shadow .18s,transform .18s}.catalog-nav-group::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:#df4145;opacity:.82}.catalog-nav-group:hover{border-color:#cacaca;box-shadow:0 10px 28px rgba(0,0,0,.075);transform:translateY(-1px)}.catalog-nav-group[hidden]{display:none}.catalog-nav-group__summary{display:flex;align-items:flex-start;gap:12px;padding:19px 20px 16px 22px;cursor:pointer;list-style:none}.catalog-nav-group__summary::-webkit-details-marker{display:none}.catalog-nav-group__group-icon{display:grid;width:36px;height:36px;flex:0 0 36px;place-items:center;border-radius:10px;background:#171717;color:#fff;font-size:18px}.catalog-nav-group__heading{min-width:0;flex:1}.catalog-nav-group__heading h3{margin:0 0 4px;color:#171717;font-size:17px;line-height:1.25}.catalog-nav-group__heading p{margin:0;color:#737373;font-size:12px;line-height:1.45}.catalog-nav-group__caret{display:grid;width:28px;height:28px;flex:0 0 28px;place-items:center;color:#777;font-size:13px;transition:transform .18s}.catalog-nav-group[open] .catalog-nav-group__caret{transform:rotate(180deg)}.catalog-nav-group__items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 8px;padding:0 14px 14px 18px}.catalog-nav-item{display:grid;grid-template-columns:25px minmax(0,1fr) auto;align-items:center;gap:8px;min-height:48px;padding:7px 8px;border-top:1px solid #ededed;border-radius:8px;color:#222;transition:background .16s,color .16s}.catalog-nav-item[hidden]{display:none}.catalog-nav-item:hover{background:#f7f7f7;color:var(--primary)}.catalog-nav-item__icon{display:grid;width:25px;height:25px;place-items:center;color:#575757;font-size:16px}.catalog-nav-item:hover .catalog-nav-item__icon{color:var(--primary)}.catalog-nav-item__text{min-width:0;font-size:13px;font-weight:650;line-height:1.28}.catalog-nav-item__meta{display:flex;align-items:center;gap:5px}.catalog-nav-item__count{display:inline-grid;min-width:23px;height:20px;padding:0 5px;place-items:center;border-radius:999px;background:#efefef;color:#686868;font-size:10px;font-weight:650;white-space:nowrap}.catalog-nav-item__meta .icon{color:#a5a5a5;font-size:10px}.accessories-nav__empty{margin:14px 0 0;padding:18px;border:1px dashed #ccc;border-radius:14px;background:#fff;color:#666;font-size:14px;text-align:center}.accessories-nav__empty[hidden]{display:none}@media(max-width:991px){.accessories-nav__top{grid-template-columns:1fr;gap:15px}.accessories-nav__grid{grid-template-columns:1fr}.catalog-nav-group__items{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:767px){.accessories-nav{margin:0 -4px 28px;padding:9px;border-radius:18px}.accessories-nav__top{gap:16px;padding:20px 17px;border-radius:14px}.accessories-nav__top h2{font-size:24px}.accessories-nav__search{min-height:48px}.accessories-nav__grid{gap:9px}.catalog-nav-group{border-radius:13px}.catalog-nav-group:hover{transform:none}.catalog-nav-group__summary{padding:15px 13px 15px 17px}.catalog-nav-group__heading h3{font-size:16px}.catalog-nav-group__heading p{font-size:11px}.catalog-nav-group__items{grid-template-columns:1fr;padding:0 10px 10px 14px}.catalog-nav-item{min-height:50px;padding:7px 4px}.catalog-nav-item__text{font-size:14px}.catalog-nav-item__count{font-size:10px}}
-        </style>
-    @endpush
-@endif
-
 @section('content')
 <main id="wrapper">
 
@@ -103,14 +94,14 @@
 
     @if ($isBoilerHub)
         @include('partials.boiler-catalog-navigation')
-    @endif
-
-    @if ($isWaterHeaterHub)
+    @elseif ($isWaterHeaterHub)
         @include('partials.water-heater-navigation')
-    @endif
-
-    @if ($showElectricFireplaceNavigation)
+    @elseif ($showElectricFireplaceNavigation)
         @include('partials.electric-fireplace-navigation')
+    @elseif ($subcategories->isNotEmpty() && ! request()->filled('subcategory'))
+        @include('partials.catalog-subcategory-navigation', [
+            'showSubcategoryStockToggle' => ! $isMinskFireplaceCatalog && $specificationHeading === null,
+        ])
     @endif
 
     @if ($category->slug === 'schetchiki-gaza')
@@ -480,88 +471,6 @@
                 {{-- Список товаров --}}
                 <div class="col-xl-9">
 
-                    {{-- Подкатегории (category-v05) — только без активного фильтра --}}
-                    @if (($catalogNavigationGroups ?? collect())->isNotEmpty() && !request('subcategory'))
-                        <section class="accessories-nav" data-accessories-nav aria-labelledby="accessories-nav-title">
-                            <div class="accessories-nav__top">
-                                <div>
-                                    <span class="accessories-nav__eyebrow">{{ $category->name }}</span>
-                                    <h2 id="accessories-nav-title">Выберите раздел</h2>
-                                    <p>Подразделы собраны по назначению. Начните вводить название, чтобы быстро найти нужный.</p>
-                                </div>
-                                <label class="accessories-nav__search" for="accessories-nav-search">
-                                    <i class="icon icon-MagnifyingGlass" aria-hidden="true"></i>
-                                    <input type="search" id="accessories-nav-search"
-                                           placeholder="Например: {{ $catalogNavigationGroups->flatMap(fn ($group) => $group['items'])->take(3)->map(fn ($sub) => Str::lower($sub->name))->implode(', ') }}"
-                                           autocomplete="off">
-                                </label>
-                            </div>
-
-                            <div class="accessories-nav__grid">
-                                @foreach ($catalogNavigationGroups as $group)
-                                    <details class="catalog-nav-group" data-accessories-group open>
-                                        <summary class="catalog-nav-group__summary">
-                                            <span class="catalog-nav-group__group-icon" aria-hidden="true">
-                                                <i class="icon {{ $group['icon'] }}"></i>
-                                            </span>
-                                            <span class="catalog-nav-group__heading">
-                                                <h3>{{ $group['title'] }}</h3>
-                                                <p>{{ $group['description'] }}</p>
-                                            </span>
-                                            <span class="catalog-nav-group__caret" aria-hidden="true">
-                                                <i class="icon icon-CaretDown"></i>
-                                            </span>
-                                        </summary>
-                                        <div class="catalog-nav-group__items">
-                                        @foreach ($group['items'] as $sub)
-                                            @php
-                                                $icon = \App\Support\CategoryIconResolver::resolve($sub->slug, $sub->name);
-                                            @endphp
-                                            <a href="/{{ $sub->slug }}{{ request('brand') ? '?brand=' . (int) request('brand') : '' }}"
-                                               class="catalog-nav-item text-decoration-none"
-                                               data-accessories-item
-                                               data-search="{{ Str::lower($group['title'].' '.$group['description'].' '.$sub->name) }}">
-                                                <span class="catalog-nav-item__icon" aria-hidden="true"><i class="icon {{ $icon }}"></i></span>
-                                                <span class="catalog-nav-item__text">{{ $sub->name }}</span>
-                                                <span class="catalog-nav-item__meta">
-                                                    <span class="catalog-nav-item__count">{{ $sub->products_count }}</span>
-                                                    <i class="icon icon-CaretRight" aria-hidden="true"></i>
-                                                </span>
-                                            </a>
-                                        @endforeach
-                                        </div>
-                                    </details>
-                                @endforeach
-                            </div>
-                            <p class="accessories-nav__empty" data-accessories-empty hidden>
-                                Подходящий раздел не найден. Попробуйте изменить запрос или воспользуйтесь общим поиском сайта.
-                            </p>
-                        </section>
-                    @elseif (! $isBoilerHub && $subcategories->count() > 0 && !request('subcategory'))
-                        <div class="row g-0 g-md-12 mb-32 subcat-list">
-                            @foreach ($subcategories as $i => $sub)
-                                @php
-                                    $icon = \App\Support\CategoryIconResolver::resolve($sub->slug, $sub->name);
-                                @endphp
-                                <div class="col-12 col-md-4 col-xl-3">
-                                    <a href="/{{ $sub->slug }}{{ request('brand') ? '?brand=' . (int) request('brand') : '' }}"
-                                       class="category-v05 subcat-tile h-100 text-decoration-none">
-                                        <span class="cate-icon">
-                                            <i class="icon {{ $icon }}"></i>
-                                        </span>
-                                        <span class="subcat-tile__text">
-                                            <span class="cate_name h6 fw-medium d-block">{{ $sub->name }}</span>
-                                            <span class="cate_quantity text-caption-01">{{ $sub->products_count }} товаров</span>
-                                        </span>
-                                        <span class="subcat-tile__arrow d-md-none" aria-hidden="true">
-                                            <i class="icon icon-CaretRight"></i>
-                                        </span>
-                                    </a>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-
                     <div class="tf-shop-control">
                         {{-- Кнопка открытия фильтров на мобильных --}}
                         <button type="button" id="filterShop" class="tf-btn-filter d-xl-none">
@@ -901,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function () {
             groups.forEach((group, index) => { group.open = index === 0; });
             groups.forEach(function (group) {
                 group.addEventListener('toggle', function () {
-                    if (!group.open) return;
+                    if (!group.open || searchInput.value.trim()) return;
                     groups.forEach(other => { if (other !== group) other.open = false; });
                 });
             });
@@ -928,6 +837,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (tokens.length && visibleInGroup) group.open = true;
                 visibleTotal += visibleInGroup;
             });
+
+            if (!tokens.length && window.matchMedia('(max-width: 767px)').matches) {
+                groups.forEach((group, index) => { group.open = index === 0; });
+            }
 
             if (emptyState) emptyState.hidden = visibleTotal > 0;
         });
