@@ -65,10 +65,10 @@ class BlogPost extends Model
     {
         $invalidate = function (self $post): void {
             Cache::forget('home:data:v9');
-            Cache::forget('sitemap.xml.v4');
+            Cache::forget('sitemap.xml.v6');
             foreach (array_unique(array_filter([$post->city_id, $post->getOriginal('city_id')])) as $cityId) {
                 if ($city = City::find($cityId)) {
-                    Cache::forget('sitemap.city.'.$city->slug.'.v3');
+                    Cache::forget('sitemap.city.'.$city->slug.'.v4');
                 }
             }
         };

@@ -41,6 +41,12 @@ Route::get('/sitemap.xml', function (Request $request) {
                 }
             }
 
+            $gasCategory = $categories->firstWhere('slug', WaterHeaterCatalog::GAS);
+            $gasAlias = $categories->firstWhere('slug', 'gas');
+            if ($gasCategory && $gasAlias && isset($publishedCategoryIds[$gasAlias->id])) {
+                $publishedCategoryIds[$gasCategory->id] = true;
+            }
+
             $cityNews = BlogPost::published()->regional()->where('city_id', $city->id)->get();
             $urls = collect([
                 ['location' => 'https://'.$host.'/', 'last_modified' => null],
@@ -49,7 +55,7 @@ Route::get('/sitemap.xml', function (Request $request) {
                 ->when($cityNews->isNotEmpty(), fn ($urls) => $urls->push(['location' => 'https://'.$host.'/news', 'last_modified' => null]))
                 ->concat($categories
                     ->filter(fn (Category $category): bool => isset($publishedCategoryIds[(int) $category->id])
-                        && ($category->slug !== 'gas' || ! $categories->contains('slug', WaterHeaterCatalog::GAS)))
+                        && ($category->slug !== 'gas' || ! $gasCategory))
                     ->sortBy(fn (Category $category): string => str_pad((string) $category->sort_order, 10, '0', STR_PAD_LEFT).'-'.str_pad((string) $category->id, 10, '0', STR_PAD_LEFT))
                     ->map(fn (Category $category): array => [
                         'location' => 'https://'.$host.'/'.$category->slug,
