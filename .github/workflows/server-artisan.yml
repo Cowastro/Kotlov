@@ -756,6 +756,9 @@ jobs:
             grep -E '^audit\.ecokamin_stoves\.existing=[0-9]+:[0-9]+:[a-z0-9._(),-]+:[01]:[01]:[0-9]+$' "$detail_log" || true
             echo "safe_ecokamin_stoves_metrics_end"
           fi
+          if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:fill-official-fireplace-specs" ]]; then
+            grep -E '^metric\.fireplace_specs\.[a-z_]+=[0-9]+$' "$detail_log" || true
+          fi
           if [[ ( "$TASK" == "artisan-dry-run" || "$TASK" == "artisan-apply" ) && "${ARTISAN_ARGV[0]:-}" == "catalog:expire-sale-campaigns" ]]; then
             echo "safe_sale_campaigns_metrics_begin"
             grep -E '^metric\.sale_campaigns\.[a-z_]+=[0-9]+$' "$detail_log" || true
