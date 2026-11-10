@@ -50,9 +50,8 @@ class CatalogSubcategoryAlphabeticalOrderTest extends TestCase
 
         $html = $this->get('/'.$parent->slug)
             ->assertOk()
-            ->assertSee('class="row g-0 g-md-12 mb-32 subcat-list"', false)
-            ->assertSee('class="col-12 col-md-4 col-xl-3"', false)
-            ->assertSee('class="subcat-tile__arrow d-md-none"', false)
+            ->assertSee('class="catalog-type-nav__grid"', false)
+            ->assertSee('class="catalog-type-card__icon"', false)
             ->getContent();
 
         $expectedOrder = [
