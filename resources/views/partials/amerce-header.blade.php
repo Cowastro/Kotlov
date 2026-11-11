@@ -180,12 +180,12 @@
 
             <div class="col-left">
                 <div class="nav-category-wrap main-action-active">
-                    <div class="btn-nav-drop btn-active text-nowrap radius-8">
+                    <button type="button" class="btn-nav-drop btn-active text-nowrap radius-8" aria-expanded="false" aria-controls="desktop-catalog">
                         <i class="icon icon-List fs-24"></i>
                         <span class="name-category fw-medium">Каталог товаров</span>
-                    </div>
+                    </button>
 
-                    <ul class="box-nav-category active-item radius-12">
+                    <ul id="desktop-catalog" class="box-nav-category active-item radius-12">
 
                         @foreach ($navCategories as $rootCat)
                             @php
