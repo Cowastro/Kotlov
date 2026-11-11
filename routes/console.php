@@ -240,6 +240,14 @@ Schedule::command('supplier:sync-smolkom --from-drive --apply')
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/smolkom-sync.log'));
 
+// ООО «БЛК7» (b2b.blk7.by): Lavoro stock, retail and wholesale prices from the open brand page, every 3 hours.
+Schedule::command('supplier:sync-blk7 --brand=lavoro --apply')
+    ->cron('35 7-21/3 * * *')
+    ->timezone($supplierSyncTimezone)
+    ->withoutOverlapping(30)
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/blk7-sync.log'));
+
 // smolcom.by has the photos of every colour under the price list article: taken first, the web search is the fallback.
 Schedule::command('supplier:smolkom-site-photos --apply')
     ->dailyAt('07:40')
