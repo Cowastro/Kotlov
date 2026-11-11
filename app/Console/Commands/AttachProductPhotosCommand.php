@@ -18,7 +18,7 @@ class AttachProductPhotosCommand extends Command
 {
     protected $signature = 'catalog:attach-photos
         {--copy=* : TARGET_ID:SOURCE_ID — copy the photos of the source card}
-        {--url=* : TARGET_ID:IMAGE_URL — download this image}
+        {--url=* : TARGET_ID:IMAGE_URL — download this image; several as URL,URL,URL}
         {--replace : Also cards that already have photos (a stub picture): the new photos replace them}
         {--apply : Write the photos}';
 
@@ -46,7 +46,9 @@ class AttachProductPhotosCommand extends Command
         foreach ((array) $this->option('url') as $pair) {
             [$targetId, $url] = array_pad(explode(':', (string) $pair, 2), 2, '');
             $target = Product::query()->find((int) $targetId);
-            if (! $target || (! empty($target->images) && ! $this->option('replace')) || ! filter_var($url, FILTER_VALIDATE_URL)) {
+            // Several photos of one card: URL,URL,URL.
+            $urls = array_values(array_filter(array_map('trim', preg_split('/[|,]/', $url) ?: []), fn (string $u): bool => filter_var($u, FILTER_VALIDATE_URL) !== false));
+            if (! $target || (! empty($target->images) && ! $this->option('replace')) || $urls === []) {
                 $stats['skipped']++;
                 $this->line('audit.attach_photos.skipped='.(int) $targetId);
 
@@ -54,8 +56,8 @@ class AttachProductPhotosCommand extends Command
             }
             $saved = 0;
             if ($this->option('apply')) {
-                $saved = (int) ($enricher->enrichFromParsed($target, $url, ['images' => []], [
-                    'verified_images' => [$url], 'update_images' => true, 'replace_images' => (bool) $this->option('replace'), 'update_specs' => false, 'update_service' => false,
+                $saved = (int) ($enricher->enrichFromParsed($target, $urls[0], ['images' => []], [
+                    'verified_images' => $urls, 'update_images' => true, 'replace_images' => (bool) $this->option('replace'), 'update_specs' => false, 'update_service' => false,
                     'update_documents' => false, 'update_video' => false, 'update_content' => false,
                 ])['images_saved'] ?? 0);
             }
