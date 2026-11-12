@@ -84,8 +84,70 @@ class HeaterSpecificationsTest extends TestCase
             $this->assertNotEmpty($fact['source_model'], $slug);
             $this->assertStringStartsWith('https://', $fact['source']['url'], $slug);
             $this->assertGreaterThan(0, $fact['power_kw'], $slug);
-            $this->assertGreaterThan(0, $fact['area_max_m2'], $slug);
+            if (isset($fact['area_max_m2'])) {
+                $this->assertGreaterThan(0, $fact['area_max_m2'], $slug);
+                $this->assertLessThanOrEqual($fact['area_max_m2'], $fact['area_min_m2'] ?? $fact['area_max_m2'], $slug);
+            }
             $this->assertEmpty(array_diff($fact['mount'], ['wall', 'floor']), $slug);
+        }
+    }
+
+    public function test_partial_passports_do_not_publish_legacy_or_estimated_area(): void
+    {
+        $category = $this->category('elektricheskie-konvektoryi');
+        $catalog = app(HeaterCatalog::class);
+        $product = $this->product($category, 'elektrokonvektor-elboom-ev1-usat1-15-230-ip20', [
+            'specs' => ['Площадь обогрева' => 'до 15 м²', 'Цвет' => 'Белый'],
+        ]);
+        $facts = $catalog->productFacts($product, $category->slug, $catalog->dimensions($category->slug));
+        $this->assertSame('1,5 кВт', $facts['card']['Мощность обогрева']);
+        $this->assertSame(['wall', 'floor'], $facts['options']['mount']);
+        $this->assertArrayNotHasKey('area', $facts['options']);
+        $this->assertArrayNotHasKey('Площадь обогрева', $catalog->details($product, []));
+        $this->get('/elektricheskie-konvektoryi?heating[area]=to-15')->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->isEmpty());
+
+        foreach (['hotta-aet-24-220-v-elektriceskii-teploakkumuliator', 'elektrokonvektor-elboom-ev1-usat-15-230-ip20'] as $slug) {
+            $this->assertSame([], HeaterCatalog::verified(new Product(['slug' => $slug])));
+        }
+    }
+
+    public function test_incremental_migration_writes_exact_ratings_preserves_specs_and_deduplicates_sources(): void
+    {
+        $category = $this->category('elektricheskie-konvektoryi');
+        $product = $this->product($category, 'konvektor-elektriceskii-energolux-gchvi-25', ['specs' => ['Цвет' => 'Белый']]);
+        $migration = require database_path('migrations/2026_11_12_170000_remaining_heater_manufacturer_facts.php');
+        $migration->up();
+        $migration->up();
+        $product->refresh();
+        $details = app(HeaterCatalog::class)->details($product, []);
+        $this->assertSame('2,2 кВт', $details['Мощность обогрева']);
+        $this->assertSame('2,5 кВт', $details['Потребляемая мощность']);
+        $this->assertSame('до 30 м²', $details['Площадь обогрева']);
+        $this->assertSame('Белый', $product->specs['Цвет']);
+        $this->assertCount(2, $product->documents);
+    }
+
+    public function test_exact_manual_tables_and_audit_distinguish_partial_from_complete_models(): void
+    {
+        $records = HeaterCatalog::records();
+        $this->assertSame(15, $records['royal-thermo-rchce-1502']['area_max_m2']);
+        $this->assertSame(20, $records['royal-thermo-rchce-2002']['area_max_m2']);
+        $this->assertSame(0.675, $records['teplyiy-plintus-elektricheskiy-mrtektum-smart-line-16m-belyiy-korichnevyiy']['power_kw']);
+        $this->assertArrayNotHasKey('area_max_m2', $records['konvektor-elektriceskii-electrolux-echag2-1000-ef']);
+        $this->assertSame(25, $records['elektrokonvektor-plintusnyi-electrolux-echag-2000-pi']['area_max_m2']);
+        $audit = json_decode(file_get_contents(resource_path('data/heater-specification-audit.json')), true);
+        $complete = collect($records)->filter(fn ($fact) => isset($fact['power_kw'], $fact['area_max_m2'], $fact['mount']))->count();
+        $this->assertSame($complete, $audit['verified']);
+        $this->assertSame(count($records) - $complete, $audit['partially_verified']);
+        $this->assertSame($audit['reviewed'] - count($records), $audit['without_manufacturer_evidence']);
+        foreach ($audit['unresolved'] as $row) {
+            $fact = $records[$row['slug']] ?? [];
+            $expected = [];
+            foreach (['power_kw' => 'power_kw', 'area_m2' => 'area_max_m2', 'mount' => 'mount'] as $name => $key) {
+                if (! isset($fact[$key])) $expected[] = $name;
+            }
+            $this->assertSame($expected, $row['missing'], $row['slug']);
         }
     }
 }
