@@ -24,6 +24,7 @@ use App\Support\Catalog\BoilerCatalog;
 use App\Services\HeatPumpProductPresenter;
 use App\Support\Catalog\BoilerSpecifications;
 use App\Support\Catalog\WaterHeaterCatalog;
+use App\Support\Catalog\HeaterCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -111,15 +112,17 @@ class CatalogController extends Controller
         $isHeatPumpHub = $category->slug === HeatPumpProductPresenter::ROOT;
         $isWaterHeaterHub = $category->slug === WaterHeaterCatalog::ROOT;
         $heaterName = WaterHeaterCatalog::name($category->slug);
-        $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName;
+        $roomHeaterName = HeaterCatalog::NAMES[$category->slug] ?? null;
+        $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName ?? $roomHeaterName;
         $specificationSearch = request()->query('q');
         $specificationSearch = $specificationName !== null && is_string($specificationSearch) ? mb_substr(trim($specificationSearch), 0, 100) : '';
         $specificationCatalog = match (true) {
+            $roomHeaterName !== null => app(HeaterCatalog::class),
             $heaterName !== null => app(WaterHeaterCatalog::class),
             $specificationName !== null => app(BoilerCatalog::class),
             default => null,
         };
-        $specificationParameter = $heaterName !== null ? 'heater' : 'boiler';
+        $specificationParameter = $roomHeaterName !== null ? 'heating' : ($heaterName !== null ? 'heater' : 'boiler');
         if ($category->slug === WaterHeaterCatalog::GAS && ($gasId = Category::active()->where('slug', 'gas')->value('id'))) {
             $allCategoryIds = $allCategoryIds->merge($this->collectCategoryAndDescendantIds($gasId))->unique()->values();
         }
@@ -304,6 +307,13 @@ class CatalogController extends Controller
             ->orderBy('sort_order')
             ->get();
 
+        $legacyHeaterAttributeIds = $roomHeaterName !== null
+            ? $rawAttributes->filter(fn ($attribute) => HeaterCatalog::managed($attribute->name))->modelKeys()
+            : [];
+        if ($legacyHeaterAttributeIds !== []) {
+            $rawAttributes = $rawAttributes->reject(fn ($attribute) => in_array($attribute->id, $legacyHeaterAttributeIds, true));
+        }
+
         // Счётчики товаров по всем опциям одним групповым запросом —
         // раньше был отдельный COUNT на каждую опцию каждого фильтра (N+1)
         $optionCounts = ProductAttributeValue::query()
@@ -463,6 +473,7 @@ class CatalogController extends Controller
             ]);
 
             foreach (request('attr') as $attrId => $optionIds) {
+                if (in_array((int) $attrId, $legacyHeaterAttributeIds, true)) continue;
                 if (! empty($optionIds)) {
                     $attr = $attrMap->get((int) $attrId);
                     $allAttrIds = $attr?->all_ids ?? [(int) $attrId];
@@ -1006,6 +1017,9 @@ class CatalogController extends Controller
                 WaterHeaterCatalog::BUFFER => 'Теплоаккумуляторы для систем отопления. Подбор буферной ёмкости по объёму и числу теплообменников.',
                 default => 'Газовые, электрические, твердотопливные и пеллетные котлы. Сравните характеристики, цены и наличие.',
             };
+            if ($roomHeaterName !== null) {
+                $boilerDescription = 'Сравните подтверждённые мощность, площадь обогрева и тип установки. Площадь указана по данным производителя и зависит от условий помещения.';
+            }
             $description = $seo->description(null, 'Купить '.mb_strtolower($specificationName).' '.$specificationCity.'. '.($specificationLanding['description'] ?? $boilerDescription));
             if ($specificationLanding !== null) {
                 $categoryUrl .= '/'.$specificationLanding['slug'];
@@ -1460,7 +1474,9 @@ class CatalogController extends Controller
                 unset($option);
             }
             unset($facet);
-            $catalogIntro = $specificationLanding['description'] ?? $catalogIntro;
+            $catalogIntro = $roomHeaterName !== null
+                ? 'Сравните мощность, площадь обогрева и тип установки. Площадь указана производителем: результат зависит от теплоизоляции и условий помещения.'
+                : ($specificationLanding['description'] ?? $catalogIntro);
         }
         $specificationCollections = match ($category->slug) {
             'kotly' => [
@@ -1476,7 +1492,10 @@ class CatalogController extends Controller
                 'short' => BoilerCatalog::LANDINGS[$category->slug]['short'],
             ]] : [],
         };
-        $replacedSpecificationAttributes = $heaterName !== null ? [
+        $replacedSpecificationAttributes = $roomHeaterName !== null ? [
+            'power' => '/мощност/u', 'area' => '/площад|эффективен для/u',
+            'mount' => '/установ|монтаж|размещен/u',
+        ] : ($heaterName !== null ? [
             'volume' => '/^(?:объем|объём)(?: (?:внутреннего )?бака)?(?:[ (,]|$)/ui',
             'kind' => '/^тип (?:нагрева|водонагревателя)$/ui',
             'flow' => '/^производительность/u',
@@ -1492,10 +1511,10 @@ class CatalogController extends Controller
             'fuel' => '/^(?:топливо|тип топлива|вид топлива)/u',
             'firebox' => '/^материал топки/u',
             'voltage' => '/^напряжение/u',
-        ];
+        ]);
         $specificationFilterAttributes = $filterAttributes;
         if ($specificationCatalog !== null && ! $isBoilerHub) {
-            $replaced = array_intersect_key($replacedSpecificationAttributes, $specificationFacets + ($specificationLanding['filters'] ?? []));
+            $replaced = $roomHeaterName !== null ? $replacedSpecificationAttributes : array_intersect_key($replacedSpecificationAttributes, $specificationFacets + ($specificationLanding['filters'] ?? []));
             $specificationFilterAttributes = $filterAttributes->reject(function ($attribute) use ($replaced) {
                 if (request()->filled('attr.'.$attribute->id)) {
                     return false;

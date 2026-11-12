@@ -1,0 +1,724 @@
+{
+  "checked_at": "2026-11-12",
+  "policy": "Exact model matches only. No area estimates from power. Missing fields remain unknown.",
+  "products": {
+    "ballu-beccmr-1500": {
+      "power_kw": 1.5,
+      "area_max_m2": 20.0,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-ip-54-bec-cmr-1500/",
+        "document": "https://rkcdn.ru/products/adbbd62a-54d0-11ef-b8d9-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Ballu IP 54 BEC/CMR-1500"
+    },
+    "ballu-beccmr-2000": {
+      "power_kw": 2.0,
+      "area_max_m2": 25.0,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-ip-54-bec-cmr-2000/",
+        "document": "https://rkcdn.ru/products/adbbd62c-54d0-11ef-b8d9-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Ballu IP 54 BEC/CMR-2000"
+    },
+    "ballu-becemt-1500": {
+      "power_kw": 1.5,
+      "area_max_m2": 20.0,
+      "mount": [
+        "floor"
+      ],
+      "mount_note": "Кронштейн для настенной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-camino-eco-turbo-bec-emt-1500/",
+        "document": "https://rkcdn.ru/products/ba18cf05-9e57-11e9-9e72-ac162d7b6f40/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Ballu Camino Eco Turbo BEC/EMT-1500"
+    },
+    "ballu-becemt-2000": {
+      "power_kw": 2.0,
+      "area_max_m2": 25.0,
+      "mount": [
+        "floor"
+      ],
+      "mount_note": "Кронштейн для настенной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-camino-eco-turbo-bec-emt-2000/",
+        "document": "https://rkcdn.ru/products/c04c6cb1-9e57-11e9-9e72-ac162d7b6f40/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Ballu Camino Eco Turbo BEC/EMT-2000"
+    },
+    "ballu-beceter-2000": {
+      "power_kw": 2.0,
+      "area_max_m2": 25.0,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-ettore-bec-eter-2000/",
+        "document": "https://rkcdn.ru/products/0249d32e-6868-11eb-b729-005056010604/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Ballu Ettore BEC/ETER-2000"
+    },
+    "ballu-becetmr-1500": {
+      "power_kw": 1.5,
+      "area_max_m2": 20.0,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/elektricheskiy-obogrevatel-ballu-ettore-bec-etmr-1500/",
+        "document": "https://rkcdn.ru/products/c6592200-6872-11eb-b729-005056010604/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Ballu Ettore BEC/ETMR-1500"
+    },
+    "ballu-becevu-1500": {
+      "power_kw": 1.5,
+      "area_max_m2": 20.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-ballu-evolution-transformer-bec-evu-1500/",
+        "document": "https://rkcdn.ru/products/a2d2ed24-48bd-11ef-b8d9-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Ballu Evolution Transformer BEC/EVU-1500"
+    },
+    "ballu-becevu-2000": {
+      "power_kw": 2.0,
+      "area_max_m2": 25.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-ballu-evolution-transformer-bec-evu-2000/",
+        "document": "https://rkcdn.ru/products/b60c5134-48bd-11ef-b8d9-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Ballu Evolution Transformer BEC/EVU-2000"
+    },
+    "ballu-becevu-500": {
+      "power_kw": 0.5,
+      "area_max_m2": 8.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-ballu-evolution-transformer-bec-evu-50022/",
+        "document": "https://rkcdn.ru/products/a6383d25-88d4-11f0-b8e0-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Ballu Evolution Transformer BEC/EVU-500"
+    },
+    "ballu-bohcl-05wrn": {
+      "power_kw": 1.0,
+      "area_max_m2": 15.0,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/maslyanyy-radiator-ballu-boh-cl-05wrn/",
+        "document": "https://rkcdn.ru/products/d87a4e4c-f3fb-11ed-b736-005056013a69/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Масляный радиатор Ballu Classic BOH/CL-05WRN 1000 (5 секций)"
+    },
+    "ballu-bohcl-07wrn": {
+      "power_kw": 1.5,
+      "area_max_m2": 20.0,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/maslyanyy-radiator-ballu-boh-cl-07wrn/",
+        "document": "https://rkcdn.ru/products/eab7100c-f3fb-11ed-b736-005056013a69/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Масляный радиатор Ballu Classic BOH/CL-07WRN 1500 (7 секций)"
+    },
+    "ballu-bohcl-11wrn": {
+      "power_kw": 2.2,
+      "area_max_m2": 27.0,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/maslyanyy-radiator-ballu-boh-cl-11wrn/",
+        "document": "https://rkcdn.ru/products/e23e0a91-f3fb-11ed-b736-005056013a69/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Масляный радиатор Ballu Classic BOH/CL-11WRN 2200 (11 секций)"
+    },
+    "electrolux-echag2-1000-t": {
+      "power_kw": 1.0,
+      "area_max_m2": 15.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-air-gate-transformer-ech-ag2-1000-t/",
+        "document": "https://rkcdn.ru/products/d4132bf1-44af-11ed-b732-005056013a69/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Electrolux серии Air Gate Transformer ECH/AG2-1000 T"
+    },
+    "electrolux-echag2-1500-t": {
+      "power_kw": 1.5,
+      "area_max_m2": 20.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-air-gate-transformer-ech-ag2-1500-t/",
+        "document": "https://rkcdn.ru/products/c7d44ade-44af-11ed-b732-005056013a69/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Electrolux серии Air Gate Transformer ECH/AG2-1500 T"
+    },
+    "electrolux-echag2-2000-t": {
+      "power_kw": 2.0,
+      "area_max_m2": 25.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-air-gate-transformer-ech-ag2-2000-t/",
+        "document": "https://rkcdn.ru/products/c0d5f1f1-44af-11ed-b732-005056013a69/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Electrolux серии Air Gate Transformer ECH/AG2-2000 T"
+    },
+    "elektriceskii-konvektor-timberk-tecpf10n-dg-1000": {
+      "power_kw": 1.0,
+      "area_min_m2": 10,
+      "area_max_m2": 13,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf10n_dg/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF10N DG 1000"
+    },
+    "elektriceskii-konvektor-timberk-tecpf10n-dg-1500": {
+      "power_kw": 1.5,
+      "area_min_m2": 15,
+      "area_max_m2": 18,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf10n_dg/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF10N DG 1500"
+    },
+    "elektriceskii-konvektor-timberk-tecpf10n-dg-2000": {
+      "power_kw": 2.0,
+      "area_min_m2": 20,
+      "area_max_m2": 23,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf10n_dg/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF10N DG 2000"
+    },
+    "elektriceskii-konvektor-timberk-tecpf11n-dg-1000": {
+      "power_kw": 1.0,
+      "area_min_m2": 10,
+      "area_max_m2": 13,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf11n_dg/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF11N DG 1000"
+    },
+    "elektriceskii-konvektor-timberk-tecpf11n-dg-1500": {
+      "power_kw": 1.5,
+      "area_min_m2": 15,
+      "area_max_m2": 18,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf11n_dg/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF11N DG 1500"
+    },
+    "elektriceskii-konvektor-timberk-tecpf11n-dg-2000": {
+      "power_kw": 2.0,
+      "area_min_m2": 20,
+      "area_max_m2": 23,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf11n_dg/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF11N DG 2000"
+    },
+    "elektriceskii-konvektor-timberk-tecpf8n-m-1000": {
+      "power_kw": 1.0,
+      "area_min_m2": 10,
+      "area_max_m2": 13,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf8n_m/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF8N M 1000"
+    },
+    "elektriceskii-konvektor-timberk-tecpf8n-m-1500": {
+      "power_kw": 1.5,
+      "area_min_m2": 15,
+      "area_max_m2": 18,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf8n_m/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF8N M 1500"
+    },
+    "elektriceskii-konvektor-timberk-tecpf8n-m-2000": {
+      "power_kw": 2.0,
+      "area_min_m2": 20,
+      "area_max_m2": 23,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf8n_m/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF8N M 2000"
+    },
+    "elektriceskii-konvektor-timberk-tecpf9n-dg-1000": {
+      "power_kw": 1.0,
+      "area_min_m2": 10,
+      "area_max_m2": 13,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf9n_dg/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF9N DG 1000"
+    },
+    "elektriceskii-konvektor-timberk-tecpf9n-dg-1500": {
+      "power_kw": 1.5,
+      "area_min_m2": 15,
+      "area_max_m2": 18,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf9n_dg/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF9N DG 1500"
+    },
+    "elektriceskii-konvektor-timberk-tecpf9n-dg-2000": {
+      "power_kw": 2.0,
+      "area_min_m2": 20,
+      "area_max_m2": 23,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tec_pf9n_dg/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TEC.PF9N DG 2000"
+    },
+    "konvektor-elektriceskii-electrolux-echa2-1000-m": {
+      "power_kw": 1.0,
+      "area_max_m2": 15.0,
+      "mount": [
+        "wall"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-a2-1000-m/",
+        "document": "https://rkcdn.ru/products/e551b407-c681-11ef-b8dc-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Electrolux ECH/A2-1000 M"
+    },
+    "konvektor-elektriceskii-electrolux-echa2-1500-m": {
+      "power_kw": 1.5,
+      "area_max_m2": 20.0,
+      "mount": [
+        "wall"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-a2-1500-m/",
+        "document": "https://rkcdn.ru/products/c25a9ceb-c681-11ef-b8dc-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Electrolux ECH/A2-1500 M"
+    },
+    "konvektor-elektriceskii-electrolux-echa2-2000-m": {
+      "power_kw": 2.0,
+      "area_max_m2": 25.0,
+      "mount": [
+        "wall"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-a2-2000-m/",
+        "document": "https://rkcdn.ru/products/d7798752-c681-11ef-b8dc-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Electrolux ECH/A2-2000 M"
+    },
+    "konvektor-elektriceskii-electrolux-echa2-2500-m": {
+      "power_kw": 2.5,
+      "area_max_m2": 30.0,
+      "mount": [
+        "wall"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-a2-2500-m/",
+        "document": "https://rkcdn.ru/products/f69f68b1-c681-11ef-b8dc-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Electrolux ECH/A2-2500 M"
+    },
+    "konvektor-elektriceskii-electrolux-echag2-1500-t-otopitelnyi-modul": {
+      "power_kw": 1.5,
+      "area_max_m2": 20.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-air-gate-transformer-ech-ag2-1500-t/",
+        "document": "https://rkcdn.ru/products/c7d44ade-44af-11ed-b732-005056013a69/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Electrolux серии Air Gate Transformer ECH/AG2-1500 T"
+    },
+    "konvektor-elektriceskii-electrolux-echbne-1000": {
+      "power_kw": 1.0,
+      "area_max_m2": 15.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-electrolux-ech-bne-1000-brilliant-next/",
+        "document": "https://rkcdn.ru/products/c67822b4-3eda-11eb-b729-005056010604/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Электропанель Electrolux ECH/BNE-1000 Brilliant Next"
+    },
+    "konvektor-elektriceskii-electrolux-echbne-1500": {
+      "power_kw": 1.5,
+      "area_max_m2": 20.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-electrolux-ech-bne-1500-brilliant-next/",
+        "document": "https://rkcdn.ru/products/d05322a6-3eda-11eb-b729-005056010604/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Электропанель Electrolux ECH/BNE-1500 Brilliant Next"
+    },
+    "konvektor-elektriceskii-electrolux-echr-1000-t-otopitelnyi-modul": {
+      "power_kw": 1.0,
+      "area_max_m2": 15.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-rapid-transformer-ech-r-1000-t/",
+        "document": "https://rkcdn.ru/products/142b3706-69e1-11ef-b8db-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Electrolux серии Rapid Transformer ECH/R-1000 T"
+    },
+    "konvektor-elektriceskii-electrolux-echr-1500-t-otopitelnyi-modul": {
+      "power_kw": 1.5,
+      "area_max_m2": 20.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-rapid-transformer-ech-r-1500-t/",
+        "document": "https://rkcdn.ru/products/1db8439d-69e1-11ef-b8db-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Electrolux серии Rapid Transformer ECH/R-1500 T"
+    },
+    "konvektor-elektriceskii-electrolux-echr-2000-t-otopitelnyi-modul": {
+      "power_kw": 2.0,
+      "area_max_m2": 25.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-rapid-transformer-ech-r-2000-t/",
+        "document": "https://rkcdn.ru/products/0c8a134c-69e1-11ef-b8db-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Electrolux серии Rapid Transformer ECH/R-2000 T"
+    },
+    "konvektor-elektriceskii-electrolux-echr-2500-t-otopitelnyi-modul": {
+      "power_kw": 2.5,
+      "area_max_m2": 30.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "mount_note": "Комплект напольной установки приобретается отдельно.",
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-rapid-transformer-ech-r-2500-t/",
+        "document": "https://rkcdn.ru/products/142b3704-69e1-11ef-b8db-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Electrolux серии Rapid Transformer ECH/R-2500 T"
+    },
+    "konvektor-elektriceskii-electrolux-rapid-echr-2000-m": {
+      "power_kw": 2.0,
+      "area_max_m2": 25.0,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-r-2000-m/",
+        "document": "https://rkcdn.ru/products/57bfdb62-0890-11ef-b8d8-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Electrolux ECH/R -2000 M"
+    },
+    "konvektor-elektricheskiy-enks-1000": {
+      "power_kw": 1.0,
+      "area_max_m2": 10.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://tenko.ua/catalog/good/konvektor-enks1000",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Tenko ЭНК(С) 1000"
+    },
+    "konvektor-elektricheskiy-tenko-enkh-1000": {
+      "power_kw": 1.0,
+      "area_max_m2": 10.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://tenko.ua/catalog/good/konvektor-enkh1000",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Tenko ЭНК(Х) 1000"
+    },
+    "konvektor-elektricheskiy-tenko-enkh-1500": {
+      "power_kw": 1.5,
+      "area_max_m2": 15.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://tenko.ua/catalog/good/konvektor-enkh1500",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Tenko ЭНК(Х) 1500"
+    },
+    "konvektor-elektricheskiy-tenko-enkh-2000": {
+      "power_kw": 2.0,
+      "area_max_m2": 20.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://tenko.ua/catalog/good/konvektor-enkh2000",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Tenko ЭНК(Х) 2000"
+    },
+    "konvektor-elektricheskiy-tenko-enkh-500": {
+      "power_kw": 0.5,
+      "area_max_m2": 5.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://tenko.ua/catalog/good/konvektor-enkh500",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Tenko ЭНК(Х) 500"
+    },
+    "konvektor-elektricheskiy-tenko-enks-1500": {
+      "power_kw": 1.5,
+      "area_max_m2": 15.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://tenko.ua/catalog/good/konvektor-enks1500",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Tenko ЭНК(С) 1500"
+    },
+    "maslianyi-radiator-timberk-tor-211507-bc": {
+      "power_kw": 1.5,
+      "area_min_m2": 15,
+      "area_max_m2": 20,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tor_21_bc/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TOR 21.1507 BC"
+    },
+    "maslianyi-radiator-timberk-tor-212009-bc": {
+      "power_kw": 2,
+      "area_min_m2": 20,
+      "area_max_m2": 24,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tor_21_bc/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TOR 21.2009 BC"
+    },
+    "maslianyi-radiator-timberk-tor-212512-bc": {
+      "power_kw": 2.5,
+      "area_min_m2": 24,
+      "area_max_m2": 28,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/tor_21_bc/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "TOR 21.2512 BC"
+    },
+    "royal-thermo-rchcm-500": {
+      "power_kw": 0.5,
+      "area_max_m2": 5.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-royal-thermo-capella-rchc-m-500/",
+        "document": "https://rkcdn.ru/products/27780cbf-607b-11ef-b8db-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Royal Thermo Capella RCHC/M-500"
+    },
+    "royal-thermo-rchcm-502": {
+      "power_kw": 0.5,
+      "area_max_m2": 5.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-royal-thermo-capella-rchc-m-502/",
+        "document": "https://rkcdn.ru/products/27780cbb-607b-11ef-b8db-00505601218a/src.pdf",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "Конвектор электрический Royal Thermo Capella RCHC/M-502"
+    },
+    "teplovaia-puska-timberk-t-hg3-q12t": {
+      "power_kw": 3,
+      "area_max_m2": 30,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/t-hg-q12t/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "T-HG3-Q12T"
+    },
+    "teplovaia-puska-timberk-t-hg5-q12t": {
+      "power_kw": 5,
+      "area_max_m2": 50,
+      "mount": [
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.timberk.ru/catalog/product/t-hg-q12t/",
+        "checked_at": "2026-11-12"
+      },
+      "source_model": "T-HG5-Q12T"
+    }
+  }
+}
