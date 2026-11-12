@@ -321,6 +321,48 @@
 
     /* Mail is reviewed on narrower office displays. Keep operational columns
        compact so the table fits without sacrificing sender and subject. */
+    .crm-mail-list-page .crm-mail-row-unread > td {
+        background-color: #fffbeb;
+    }
+
+    .crm-mail-list-page .crm-mail-row-unread:hover > td {
+        background-color: #fef3c7;
+    }
+
+    .dark .crm-mail-list-page .crm-mail-row-unread > td {
+        background-color: #342b1d;
+    }
+
+    .dark .crm-mail-list-page .crm-mail-row-unread:hover > td {
+        background-color: #403322;
+    }
+
+    .crm-mail-list-page .crm-mail-row-unread > td:first-child {
+        box-shadow: inset 3px 0 #f59e0b;
+    }
+
+    .crm-mail-list-page .crm-mail-unread-label {
+        display: inline-flex;
+        align-items: center;
+        gap: .375rem;
+        color: #92400e;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .dark .crm-mail-list-page .crm-mail-unread-label {
+        color: #fcd34d;
+    }
+
+    .crm-mail-list-page .crm-mail-unread-label::before {
+        content: '';
+        width: .375rem;
+        height: .375rem;
+        border-radius: 50%;
+        background-color: #f59e0b;
+        flex-shrink: 0;
+    }
+
     @media (min-width: 1024px) {
         .crm-mail-queue__nav {
             display: flex;
