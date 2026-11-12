@@ -100,7 +100,7 @@
         @include('partials.electric-fireplace-navigation')
     @elseif ($subcategories->isNotEmpty() && ! request()->filled('subcategory'))
         @include('partials.catalog-subcategory-navigation', [
-            'showSubcategoryStockToggle' => ! $isMinskFireplaceCatalog && $specificationHeading === null,
+            'showSubcategoryStockToggle' => ! $isMinskFireplaceCatalog && ($specificationHeading === null || $category->slug === 'radiatory'),
         ])
     @endif
 

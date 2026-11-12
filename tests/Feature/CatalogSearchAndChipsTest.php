@@ -54,15 +54,16 @@ class CatalogSearchAndChipsTest extends TestCase
         $otherBrand = Brand::create(['name' => 'Other', 'slug' => 'other-brand']);
         $match = $this->product($child, 'panel-ax-42', ['name' => 'Panel AX-42', 'brand_id' => $brand->id]);
         $other = $this->product($child, 'panel-other', ['name' => 'Other model', 'brand_id' => $otherBrand->id]);
-        $attribute = Attribute::create(['category_id' => $child->id, 'name' => 'Подключение', 'type' => 'select', 'in_filter' => true]);
-        foreach ([[$match, 'Нижнее'], [$other, 'Боковое']] as [$product, $label]) {
+        // Unmanaged attributes still narrow with search; connection now requires manufacturer evidence.
+        $attribute = Attribute::create(['category_id' => $child->id, 'name' => 'Цвет', 'type' => 'select', 'in_filter' => true]);
+        foreach ([[$match, 'Белый'], [$other, 'Чёрный']] as [$product, $label]) {
             $option = AttributeOption::create(['attribute_id' => $attribute->id, 'name' => $label]);
             ProductAttributeValue::create(['product_id' => $product->id, 'attribute_id' => $attribute->id, 'option_id' => $option->id]);
         }
         $response = $this->get('/radiatory?q=AX-42')->assertOk();
         $this->assertSame([$match->id], $response->viewData('products')->modelKeys());
         $this->assertSame([$brand->id], $response->viewData('brands')->modelKeys());
-        $this->assertSame(['Нижнее'], $response->viewData('filterAttributes')->first()->options->pluck('name')->all());
+        $this->assertSame(['Белый'], $response->viewData('filterAttributes')->first()->options->pluck('name')->all());
         $child->update(['is_active' => false]);
         $this->get('/radiatory?q=AX-42')->assertOk()->assertViewHas('products', fn ($products) => $products->isEmpty());
     }

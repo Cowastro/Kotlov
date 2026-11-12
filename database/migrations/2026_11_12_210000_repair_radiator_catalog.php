@@ -56,7 +56,8 @@ return new class extends Migration
         DB::transaction(function () use ($backup): void {
             foreach ($backup as $id => $row) {
                 $product = Product::whereKey($id)->where('slug', $row['slug'])->first();
-                if ($product && $product->only(array_keys($row['replacement'])) === $row['replacement']) $product->forceFill($row['original'])->saveQuietly();
+                // MySQL normalizes JSON object key order; compare associative values, not insertion order.
+                if ($product && $product->only(array_keys($row['replacement'])) == $row['replacement']) $product->forceFill($row['original'])->saveQuietly();
             }
         });
         Cache::flush();
