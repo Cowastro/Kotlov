@@ -758,6 +758,7 @@ class OrdersTable
                     ->tooltip('Открыть заказ'),
                 ActionGroup::make([
                     FindOrderItemAnalogAction::make(),
+                    \App\Filament\Resources\Orders\Actions\OrderReviewLinkAction::make(),
                     RequestOrderSupplierReserveAction::make(),
                     Action::make('openOrderOnline')
                         ->label('Открыть онлайн-заказ')

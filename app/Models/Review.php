@@ -10,7 +10,7 @@ class Review extends Model
 {
     protected $fillable = [
         'user_id', 'author_name', 'author_email', 'author_phone',
-        'reviewable_type', 'reviewable_id',
+        'reviewable_type', 'reviewable_id', 'order_id',
         'rating', 'text', 'photos', 'is_approved',
         'reply', 'replied_at',
     ];
@@ -63,6 +63,11 @@ class Review extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 
     public function scopeApproved($query)

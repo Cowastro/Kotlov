@@ -12,6 +12,9 @@ class ReviewInfolist
     {
         return $schema
             ->components([
+                TextEntry::make('order.number')->label('Заказ')->placeholder('Без привязки к заказу')
+                    ->url(fn ($record): ?string => $record->order_id
+                        ? \App\Filament\Resources\Orders\OrderResource::getUrl('view', ['record' => $record->order_id]) : null),
                 TextEntry::make('user.name')
                     ->label('User')
                     ->placeholder('-'),
