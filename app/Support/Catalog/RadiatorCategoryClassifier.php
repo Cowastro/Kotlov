@@ -33,8 +33,9 @@ final class RadiatorCategoryClassifier
 
         // Manufacturer-documented families; never classify an entire brand as one material.
         if (preg_match('~royal[\s-]*thermo~u', $context)) {
-            if (preg_match('~piano\s*forte|biliner|revolution\s+bimetall|infinity~u', $name)) return 'bimetallicheskie-radiatory';
-            if (preg_match('~insignia|shift\s*[qr]|ventil\s*compact|compact\s*c\b~u', $name)) return 'stalnye-radiatory';
+            if (preg_match('~piano\s*forte|biliner|revolution\s+bimetall|infinity|monoblock\s+b\b~u', $name)) return 'bimetallicheskie-radiatory';
+            if (preg_match('~monoblock\s+a\b|\b(?:dreamliner|indigo)(?:\s+a)?\s*(?:350|500)\b|\brevolution\s+(?:350|500)\b~u', $name)) return 'alyuminievye-radiatory';
+            if (preg_match('~insignia|shift\s*[qr]|ventil\s*compact|compact\s+v?c(?:10|11|20|21|22|30|33)\b~u', $name)) return 'stalnye-radiatory';
         }
         if (preg_match('~лидея|lideya|lidea~u', $context) && preg_match('~\b(?:лк|лу|lk|lu)\b~u', $name)) return 'stalnye-radiatory';
         if (preg_match('~lammin|ламмин~u', $context) && preg_match('~\b(?:eco|premium)\s*(al|bm)(?=\b|\d)~u', $name, $m)) return $m[1] === 'bm' ? 'bimetallicheskie-radiatory' : 'alyuminievye-radiatory';

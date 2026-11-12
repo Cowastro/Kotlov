@@ -2176,6 +2176,46 @@
         "https://rifar.ru/documentation/"
       ]
     },
+    "radiator-aliuminievyi-royal-thermo-indigo-a-500-10-sekc": {
+      "name": "Радиатор алюминиевый Royal Thermo Indigo A 500 - 10 секц.",
+      "material": "aluminium",
+      "sections": 10,
+      "sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf"
+      ]
+    },
+    "radiator-aliuminievyi-royal-thermo-monoblock-a-500-10-sekc": {
+      "name": "Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 – 10 секц.",
+      "material": "aluminium",
+      "sections": 10,
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/radiator-alyuminievyy-royal-thermo-monoblock-a-500-2-0-4-sekts/"
+      ]
+    },
+    "radiator-aliuminievyi-royal-thermo-monoblock-a-500-20-12-sekc": {
+      "name": "Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 2.0 – 12 секц.",
+      "material": "aluminium",
+      "sections": 12,
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/radiator-alyuminievyy-royal-thermo-monoblock-a-500-2-0-4-sekts/"
+      ]
+    },
+    "radiator-aliuminievyi-royal-thermo-monoblock-a-500-20-8-sekc": {
+      "name": "Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 2.0 – 8 секц.",
+      "material": "aluminium",
+      "sections": 8,
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/radiator-alyuminievyy-royal-thermo-monoblock-a-500-2-0-4-sekts/"
+      ]
+    },
+    "radiator-aliuminievyi-royal-thermo-monoblock-a-500-4-sekc": {
+      "name": "Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 – 4 секц.",
+      "material": "aluminium",
+      "sections": 4,
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/radiator-alyuminievyy-royal-thermo-monoblock-a-500-2-0-4-sekts/"
+      ]
+    },
     "radiator-bimetalliceskii-rifar-base-200": {
       "name": "Радиатор биметаллический Rifar Base 200",
       "material": "bimetal",
@@ -4173,6 +4213,13 @@
       "connection": "side",
       "sources": [
         "https://progreem.by/upload/iblock/69b/Tekhnicheskiy-pasport-radiatorov-Prado.pdf"
+      ]
+    },
+    "radiator-royal-thermo-indigo-500": {
+      "name": "Радиатор Royal Thermo Indigo 500",
+      "material": "aluminium",
+      "sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf"
       ]
     },
     "radiator-royal-thermo-monoblock-b-100-500": {
@@ -7154,11 +7201,32 @@
         "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
       ]
     },
+    "royal-thermo-optimal-350": {
+      "name": "Радиатор Royal Thermo Revolution 350",
+      "material": "aluminium",
+      "sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf"
+      ]
+    },
+    "royal-thermo-optimal-500": {
+      "name": "Радиатор Royal Thermo Revolution 500",
+      "material": "aluminium",
+      "sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf"
+      ]
+    },
     "royal-thermo-pianoforte": {
       "name": "Радиатор Royal Thermo PianoForte 500",
       "material": "bimetal",
       "sources": [
         "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+      ]
+    },
+    "royal-thermo-skyliner-500": {
+      "name": "Радиатор Royal Thermo DreamLiner 500",
+      "material": "aluminium",
+      "sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf"
       ]
     },
     "stalnoi-trubcatyi-radiator-rifar-tubog-2180-04-d1": {

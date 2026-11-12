@@ -44,6 +44,11 @@ class RadiatorCatalogTest extends TestCase
             ['Fondital ALUSTAL BIMETAL SUPER 500/100 - 12 сек.', 'bimetallicheskie-radiatory'],
             ['Buderus BH1-W0 K белый', 'radiatornaya-armatura'],
             ['Buderus 22/500/1200 VK-Profil', 'stalnye-radiatory'],
+            ['Радиатор панельный Royal Thermo COMPACT C22-500-1600 RAL9016', 'stalnye-radiatory'],
+            ['Радиатор Royal Thermo Monoblock B 100 500', 'bimetallicheskie-radiatory'],
+            ['Радиатор Royal Thermo DreamLiner 500', 'alyuminievye-radiatory'],
+            ['Радиатор Royal Thermo Revolution 350', 'alyuminievye-radiatory'],
+            ['Радиатор Royal Thermo Indigo 500', 'alyuminievye-radiatory'],
         ];
         $rus = app(\App\Console\Commands\SyncRusklimatCommand::class);
         $tep = app(\App\Console\Commands\ImportTeplodvorCatalogCommand::class);
@@ -60,6 +65,26 @@ class RadiatorCatalogTest extends TestCase
         $method = new \ReflectionMethod($thermo, 'categoryId');
         $this->assertEquals($categories['alyuminievye-radiatory']->id, $method->invoke($thermo, ['name' => 'Радиатор алюминиевый Rifar Alum', 'section' => 'Стальные радиаторы']));
         $this->assertEquals($categories['radiatory']->id, $method->invoke($thermo, ['name' => 'Радиатор неизвестный', 'section' => '', 'description' => '']));
+    }
+
+    public function test_remaining_named_families_leave_the_root_and_rollback_preserves_later_manual_changes(): void
+    {
+        Storage::fake('local');
+        $categories = $this->categories();
+        $panel = $this->product($categories['radiatory'], 'compact-family', 'Радиатор панельный Royal Thermo COMPACT C22-500-1600 RAL9016');
+        $aluminium = $this->product($categories['radiatory'], 'dream-family', 'Радиатор Royal Thermo DreamLiner 500');
+        $indigo = $this->product($categories['alyuminievye-radiatory'], 'radiator-royal-thermo-indigo-500', 'Радиатор Royal Thermo Indigo 500', ['short_description' => 'Радиатор — это высокоэффективный биметаллический прибор.']);
+        $migration = require database_path('migrations/2026_11_12_211000_finish_radiator_model_classification.php');
+        $migration->up();
+        $migration->up();
+        $this->assertEquals($categories['stalnye-radiatory']->id, $panel->fresh()->category_id);
+        $this->assertEquals($categories['alyuminievye-radiatory']->id, $aluminium->fresh()->category_id);
+        $this->assertStringNotContainsString('биметаллический', $indigo->fresh()->short_description);
+        $this->assertSame('Алюминий', $indigo->fresh()->specs['Материал']);
+        $panel->update(['category_id' => $categories['bimetallicheskie-radiatory']->id]);
+        $migration->down();
+        $this->assertEquals($categories['bimetallicheskie-radiatory']->id, $panel->fresh()->category_id);
+        $this->assertEquals($categories['radiatory']->id, $aluminium->fresh()->category_id);
     }
 
     public function test_verified_output_keeps_temperature_difference_and_never_estimates_room_area(): void
