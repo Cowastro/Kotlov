@@ -6,7 +6,7 @@
 @section('content')
 <main id="wrapper">
     <section class="flat-spacing">
-        <div class="container" style="max-width:1000px;">
+        <div class="container" style="width:100%;max-width:1000px;">
             <div class="sect-heading type-2 text-center" style="margin-bottom:32px;">
                 <h1 class="s-title">Отзывы о магазине KOTLOV</h1>
                 <p class="s-desc text-body-1 cl-text-2">О консультации, оформлении заказа, доставке и работе менеджеров.</p>
