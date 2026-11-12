@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Product;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * Merges pairs of duplicate cards found by a supplier sync (e.g. the
@@ -86,7 +87,14 @@ class MergeDuplicateCardsCommand extends Command
             }
         };
 
-        $apply ? DB::transaction($run) : $run();
+        try {
+            $apply ? DB::transaction($run) : $run();
+        } catch (\Throwable $e) {
+            // The workflow log shows only safe lines: the error kind and a slug of its message, nothing is written.
+            $this->line('audit.merge_cards.failed='.class_basename($e).':'.Str::limit(Str::slug($e->getMessage()), 120, ''));
+
+            return self::FAILURE;
+        }
 
         foreach ($stats as $key => $value) {
             $this->line("metric.merge_cards.{$key}={$value}");
