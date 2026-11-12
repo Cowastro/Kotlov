@@ -93,7 +93,7 @@ abstract class SpecificationCatalog
             function () use ($slug, $categoryIds, $dimensions) {
                 $facts = [];
                 foreach (Product::query()->orderable()->whereIn('category_id', $categoryIds)
-                    ->select('id', 'name', 'specs', 'category_id')
+                    ->select('id', 'name', 'slug', 'specs', 'category_id')
                     ->with(['category:id,slug', 'allAttributeValues.attribute', 'allAttributeValues.option'])->lazyById(150) as $product) {
                     $facts[$product->id] = $this->productFacts($product, $slug, $dimensions);
                 }

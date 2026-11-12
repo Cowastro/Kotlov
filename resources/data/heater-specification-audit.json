@@ -1,0 +1,377 @@
+{
+  "checked_at": "2026-11-12",
+  "reviewed": 89,
+  "verified": 52,
+  "unresolved": [
+    {
+      "slug": "konvektor-elektriceskii-energolux-gchvi-25",
+      "name": "Конвектор электрический Energolux GCH/VI-25",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "royal-thermo-rchce-1502",
+      "name": "Royal Thermo RCHC/E-1502",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "ballu-becpl-1500",
+      "name": "Ballu BEC/PL-1500",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "electrolux-eihag2-1000-e",
+      "name": "Electrolux EIH/AG2-1000 E",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "royal-thermo-rchce-2002",
+      "name": "Royal Thermo RCHC/E-2002",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "hotta-aet-24-220-v-elektriceskii-teploakkumuliator",
+      "name": "HOTTA АЭТ-2.4 (220 В) электрический теплоаккумулятор",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-plintusnyiy-elboom-ev-p-027-230",
+      "name": "Электроконвектор плинтусный ELBOOM ЭВ-П 0,27/230",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-usat1-20-230-ip20",
+      "name": "Электроконвектор ELBOOM ЭВ1-УСАТ1-2,0/230 (IP20)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-echb-1000-e",
+      "name": "Конвектор электрический Electrolux ECH/B-1000 E",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-nbat1-15-230-b-e-ip24",
+      "name": "Электроконвектор ELBOOM ЭВ1-НБАТ1-1,5/230 Б Е (IP24)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-plintusnyiy-elboom-ev-p-018-230-podrobnee-https-sbgby-p95516566-elektrokonvektor-plintusnyj-elboomhtml",
+      "name": "Электроконвектор плинтусный ELBOOM ЭВ-П 0,18/230",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-nbat1-20-230-b-e-ip24-podrobnee-https-sbgby-p95452184-elektrokonvektor-elboom-ev1html",
+      "name": "Электроконвектор ELBOOM ЭВ1-НБАТ1-2,0/230 Б Е (IP24)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-echb-2000-e",
+      "name": "Конвектор электрический Electrolux ECH/B-2000 E",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-nbat1-15-230-b-ip24-podrobnee-https-sbgby-p95412611-elektrokonvektor-elboom-ev1html",
+      "name": "Электроконвектор ELBOOM ЭВ1-НБАТ1-1,5/230 Б (IP24)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-nbat1-10-230-ip20",
+      "name": "Электроконвектор ELBOOM ЭВ1-НБАТ1-1,0/230 (IP20)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-echag2-1000-ef",
+      "name": "Конвектор электрический Electrolux ECH/AG2-1000 EF",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-nbat1-20-230-b-ip24-podrobnee-https-sbgby-p95412665-elektrokonvektor-elboom-ev1html",
+      "name": "Электроконвектор ELBOOM ЭВ1-НБАТ1-2,0/230 Б (IP24)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "teplyiy-plintus-elektricheskiy-cth-r-1-belyiy-korichnevyiy",
+      "name": "Теплый плинтус электрический Mr.Tektum Smart Line 1.1м (белый, коричневый)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-ubat1-10-230-b-ip24",
+      "name": "Электроконвектор ELBOOM ЭВ1-УБАТ1-1,0/230 Б (IP24)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-echbmi-2000",
+      "name": "Конвектор электрический Electrolux ECH/BMI-2000",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-rapid-echr-1000-e",
+      "name": "Конвектор электрический Electrolux Rapid ECH/R-1000 E",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-ubat1-10-230-ip20",
+      "name": "Электроконвектор ELBOOM ЭВ1-УБАТ1-1,0/230 (IP20)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-usat1-15-230-ip20",
+      "name": "Электроконвектор ELBOOM ЭВ1-УСАТ1-1,5/230 (IP20)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-rapid-echr-1000-m",
+      "name": "Конвектор электрический Electrolux Rapid ECH/R-1000 M",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-rapid-echr-1500-m",
+      "name": "Конвектор электрический Electrolux Rapid ECH/R-1500 M",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-nbat1-05-230-b-ip24",
+      "name": "Электроконвектор ELBOOM ЭВ1-НБАТ1-0,5/230 Б (IP24)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-nbat1-10-230-b-ip24",
+      "name": "Электроконвектор ELBOOM ЭВ1-НБАТ1-1,0/230 Б (IP24)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-nsat1-20-230-ip20",
+      "name": "Электроконвектор ELBOOM ЭВ1-НСАТ1-2,0/230 (IP20)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-echb-1500-e",
+      "name": "Конвектор электрический Electrolux ECH/B-1500 E",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-echag2-2000-ef",
+      "name": "Конвектор электрический Electrolux ECH/AG2-2000 EF",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "teplyiy-plintus-elektricheskiy-mrtektum-smart-line-16m-belyiy-korichnevyiy",
+      "name": "Теплый плинтус электрический Mr.Tektum Smart Line 1.6м (белый, коричневый)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "teplyiy-plintus",
+      "name": "Теплый плинтус электрический Mr.Tektum Smart Line 2.1м (белый, коричневый)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-plintusnyi-electrolux-echag-2000-pi",
+      "name": "Электроконвектор плинтусный Electrolux ECH/AG-2000 PI",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-infrakrasnyi-electrolux-eihag2-1500-e",
+      "name": "Конвектор инфракрасный Electrolux EIH/AG2 1500 E",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "elektrokonvektor-elboom-ev1-usat-15-230-ip20",
+      "name": "Электроконвектор ELBOOM ЭВ1-УСАТ-1,5/230 (IP20)",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-rapid-echr-1500-e",
+      "name": "Конвектор электрический Electrolux Rapid ECH/R-1500 E",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    },
+    {
+      "slug": "konvektor-elektriceskii-electrolux-echbmi-1500",
+      "name": "Конвектор электрический Electrolux ECH/BMI-1500",
+      "missing": [
+        "power_kw",
+        "area_m2",
+        "mount"
+      ],
+      "reason": "Exact manufacturer specification for this execution was not confirmed; no neighbouring-model values or power-based area estimates were used."
+    }
+  ]
+}
