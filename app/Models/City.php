@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaPresence;
 
 class City extends Model
 {
@@ -66,7 +66,7 @@ class City extends Model
 
     public static function findBySlug(string $slug): ?self
     {
-        if (Schema::hasTable((new static)->getTable())) {
+        if (SchemaPresence::table((new static)->getTable())) {
             $city = static::where('slug', $slug)->first();
 
             // A persisted city is the source of truth. Falling back to the
@@ -77,7 +77,7 @@ class City extends Model
                     return null;
                 }
 
-                if (Schema::hasColumn($city->getTable(), 'storefront_enabled')
+                if (SchemaPresence::column($city->getTable(), 'storefront_enabled')
                     && ! $city->storefront_enabled) {
                     return null;
                 }

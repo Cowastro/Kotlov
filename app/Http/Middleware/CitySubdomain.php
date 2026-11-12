@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\City;
 use App\Services\CityContactResolver;
+use App\Support\AdminSurfaceRequest;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -13,6 +14,10 @@ class CitySubdomain
 
     public function handle(Request $request, Closure $next)
     {
+        if (AdminSurfaceRequest::matches($request)) {
+            return $next($request);
+        }
+
         $host = $request->getHost();
         $baseDomain = config('app.base_domain', 'kotlov.by');
 

@@ -11,6 +11,8 @@ use App\Models\WishlistItem;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\SupplierSyncJournalRecorder;
 use App\Support\AdminRoleAccess;
+use App\Support\AdminSurfaceRequest;
+use App\Support\SchemaPresence;
 use App\Support\TransactionalMailbox;
 use Illuminate\Console\Events\CommandFinished;
 use Illuminate\Console\Events\CommandStarting;
@@ -99,7 +101,7 @@ class AppServiceProvider extends ServiceProvider
         // Пропускаем для реальных консольных команд (artisan/queue), но НЕ для
         // тестов: под `php artisan test` runningInConsole() == true, а вьюхи всё
         // равно рендерятся HTTP-запросами и требуют navCategories и т.п.
-        if ((app()->runningInConsole() && ! app()->runningUnitTests()) || request()->is('admin*') || str_starts_with((string) request()->getHost(), 'admin.')) {
+        if ((app()->runningInConsole() && ! app()->runningUnitTests()) || AdminSurfaceRequest::matches(request())) {
             return;
         }
 
@@ -268,7 +270,7 @@ private function getCitiesByRegion(): array
                 'Гродненская' => [], 'Могилёвская' => [], 'Витебская' => []];
 
     $activeCitySlugs = null;
-    if (Schema::hasTable('cities')) {
+    if (SchemaPresence::table('cities')) {
         $activeCities = City::query()->where('is_active', true);
         $activeCitySlugs = $activeCities->pluck('slug')->all();
     }

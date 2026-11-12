@@ -153,39 +153,32 @@ class ListCrmMailThreads extends ListRecords
      */
     public static function messageBadgeCounts(?int $mailboxId = null): array
     {
-        $activeMessages = fn () => CrmMailMessage::query()->visibleTo(auth()->user())
-            ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
-            ->whereHas('thread', fn (Builder $threads): Builder => $threads
-                ->whereNotIn('status', ['draft', 'spam', 'closed']));
-
-        return [
-            'inbox' => $activeMessages()
-                ->whereHas('thread.messages', fn (Builder $messages): Builder => $messages
-                    ->where('direction', 'incoming'))
-                ->count(),
-            'unread' => $activeMessages()
-                ->where('direction', 'incoming')
-                ->where('is_read', false)
-                ->count(),
-            'incoming' => $activeMessages()->where('direction', 'incoming')->count(),
-            'drafts' => CrmMailMessage::query()->visibleTo(auth()->user())
-                ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
-                ->whereHas('thread', fn (Builder $threads): Builder => $threads->where('status', 'draft'))
-                ->count(),
-            'sent' => $activeMessages()->where('direction', 'outgoing')->count(),
-            'spam' => CrmMailMessage::query()->visibleTo(auth()->user())
-                ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
-                ->whereHas('thread', fn (Builder $threads): Builder => $threads->where('status', 'spam'))
-                ->count(),
-            'trash' => CrmMailMessage::query()->visibleTo(auth()->user())
-                ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
-                ->whereHas('thread', fn (Builder $threads): Builder => $threads->onlyTrashed())
-                ->count(),
-            'all' => CrmMailMessage::query()->visibleTo(auth()->user())
-                ->when($mailboxId, fn (Builder $query): Builder => $query->where('mailbox_id', $mailboxId))
-                ->whereHas('thread')
-                ->count(),
+        $present = 'badge_thread.deleted_at IS NULL';
+        $active = "$present AND badge_thread.status NOT IN ('draft', 'spam', 'closed')";
+        $conditions = [
+            'inbox' => "$active AND EXISTS (SELECT 1 FROM crm_mail_messages AS incoming_mail WHERE incoming_mail.thread_id = badge_thread.id AND incoming_mail.direction = 'incoming')",
+            'unread' => "$active AND crm_mail_messages.direction = 'incoming' AND crm_mail_messages.is_read = 0",
+            'incoming' => "$active AND crm_mail_messages.direction = 'incoming'",
+            'drafts' => "$present AND badge_thread.status = 'draft'",
+            'sent' => "$active AND crm_mail_messages.direction = 'outgoing'",
+            'spam' => "$present AND badge_thread.status = 'spam'",
+            'trash' => 'badge_thread.deleted_at IS NOT NULL',
+            'all' => $present,
         ];
+        $query = CrmMailMessage::query()->visibleTo(auth()->user())
+            ->join('crm_mail_threads as badge_thread', 'badge_thread.id', '=', 'crm_mail_messages.thread_id')
+            ->when($mailboxId, fn (Builder $query): Builder => $query->where('crm_mail_messages.mailbox_id', $mailboxId));
+        foreach ($conditions as $key => $condition) {
+            $query->selectRaw("COALESCE(SUM(CASE WHEN $condition THEN 1 ELSE 0 END), 0) AS `$key`");
+        }
+        $counts = $query->first();
+
+        $result = [];
+        foreach (array_keys($conditions) as $key) {
+            $result[$key] = (int) $counts->getAttribute($key);
+        }
+
+        return $result;
     }
 
     protected function getTableQuery(): Builder

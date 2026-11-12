@@ -6,7 +6,7 @@ use App\Models\City;
 use App\Models\CityContactProfile;
 use App\Models\PartnerBranch;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
+use App\Support\SchemaPresence;
 use Illuminate\Support\Str;
 
 class CityContactResolver
@@ -49,8 +49,8 @@ class CityContactResolver
         $branch = null;
 
         if ($city?->exists
-            && Schema::hasTable('partner_branches')
-            && Schema::hasTable('b2b_clients')) {
+            && SchemaPresence::table('partner_branches')
+            && SchemaPresence::table('b2b_clients')) {
             $branch = PartnerBranch::query()->visibleIn($city)
                 ->when($city->slug === 'minsk', fn ($query) => $query->whereHas('client', fn ($client) => $client->where('unp', '193265863')))
                 ->first();
@@ -71,7 +71,7 @@ class CityContactResolver
             }
         }
 
-        if ($city?->exists && Schema::hasTable('city_contact_profiles')) {
+        if ($city?->exists && SchemaPresence::table('city_contact_profiles')) {
             $profile = CityContactProfile::query()
                 ->where('city_id', $city->id)
                 ->where('is_active', true)
@@ -107,7 +107,7 @@ class CityContactResolver
 
     public function selectableCity(string $slug): ?City
     {
-        if (! Schema::hasTable('cities')) {
+        if (! SchemaPresence::table('cities')) {
             return $slug === 'minsk' ? $this->defaultMinsk() : null;
         }
 
