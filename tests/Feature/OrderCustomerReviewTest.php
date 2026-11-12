@@ -250,6 +250,35 @@ class OrderCustomerReviewTest extends TestCase
         $this->assertSame('delivered', $order->fresh()->status);
     }
 
+    public function test_order_review_filters_distinguish_unsent_waiting_and_moderation(): void
+    {
+        [$unsent] = $this->order();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true, 'is_crm_user' => true]);
+        $orders = [];
+        foreach (['waiting', 'moderation', 'published', 'review_without_sms'] as $state) {
+            $order = $unsent->replicate();
+            $order->number = 'ORD-REVIEW-'.$state;
+            $order->forceFill(['review_sms_sent_at' => $state === 'review_without_sms' ? null : now()]);
+            $order->save();
+            $orders[$state] = $order;
+            if ($state !== 'waiting') {
+                Review::create(['order_id' => $order->id, 'reviewable_type' => $order->getMorphClass(),
+                    'reviewable_id' => $order->id, 'author_name' => 'Покупатель', 'rating' => 4,
+                    'text' => 'Проверка фильтра отзывов', 'is_approved' => $state === 'published']);
+            }
+        }
+        $page = Livewire::actingAs($manager)->test(ListOrders::class)->set('activeTab', 'all');
+        $page->filterTable('customer_review_status', 'sms_not_sent')
+            ->assertCanSeeTableRecords([$unsent])->assertCanNotSeeTableRecords(array_values($orders));
+        $page->filterTable('customer_review_status', 'waiting')
+            ->assertCanSeeTableRecords([$orders['waiting']])
+            ->assertCanNotSeeTableRecords([$unsent, $orders['moderation'], $orders['published'], $orders['review_without_sms']]);
+        $page->filterTable('customer_review_status', 'moderation')
+            ->assertCanSeeTableRecords([$orders['moderation'], $orders['review_without_sms']])
+            ->assertCanNotSeeTableRecords([$unsent, $orders['waiting'], $orders['published']]);
+        $page->removeTableFilter('customer_review_status')->assertCanSeeTableRecords([$unsent, ...array_values($orders)]);
+    }
+
     private function data(string $target = 'order'): array
     {
         return ['target' => $target, 'author_name' => 'Александр', 'rating' => 4, 'text' => 'Заказ доставили аккуратно и вовремя', 'consent' => 1];
