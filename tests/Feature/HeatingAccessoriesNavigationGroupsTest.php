@@ -57,6 +57,7 @@ class HeatingAccessoriesNavigationGroupsTest extends TestCase
         $this->assertSame(['Радиаторы отопления', 'Конвекторы и арматура'], $response->viewData('catalogNavigationGroups')->pluck('title')->all());
         $this->assertSame(['radiatornaya-armatura'], $response->viewData('catalogNavigationGroups')->last()['items']->pluck('slug')->all());
         $response->assertSee('data-accessories-group', false)->assertSee('href="/stalnye-radiatory"', false)->assertDontSee('Пустая категория');
+        $this->assertSame(1, preg_match_all('~<a[^>]+class="tf-btn s-small [^"]+"[^>]*>\s*В наличии\s*</a>~u', $response->getContent()));
     }
 
     private function categoryWithProduct(int $parentId, string $name, string $slug): void
