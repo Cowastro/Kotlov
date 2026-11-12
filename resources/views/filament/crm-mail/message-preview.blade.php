@@ -75,6 +75,13 @@
                     >✓ Пропустить</button>
                 @endif
                 @if ($message->direction === 'incoming')
+                    @if (! in_array($message->thread->status, ['spam', 'draft'], true))
+                        <button type="button" class="crm-mail-forward-button"
+                            wire:click="openSplitRequest({{ (int) $message->id }})"
+                            wire:loading.attr="disabled"
+                            title="Перенести это письмо и вложения в отдельную заявку"
+                        ><x-heroicon-o-scissors style="width: 14px; height: 14px; display: inline-block; vertical-align: middle;" /> Новый запрос</button>
+                    @endif
                     <button
                         type="button"
                         class="crm-mail-reply-button"
