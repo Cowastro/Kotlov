@@ -1,0 +1,1387 @@
+{
+  "checked_at": "2026-11-12",
+  "policy": "Exact positive model lists only. Completeness refers to the bare heater, not manufacturer bundles. Included list is the confirmed portion, not a claim that no other installation materials are needed. Never match by brand or model prefix at runtime. Parts without a verified relationship are omitted.",
+  "parts": {
+    "ballu-control": {
+      "slug": "ballu-bctevu-4e",
+      "model": "Ballu BCT/EVU-4E",
+      "source": "https://b2b.rusklimat.com/catalog/product/blok-upravleniya-transformer-electronic-ballu-bct-evu-4e/"
+    },
+    "ballu-feet": {
+      "slug": "ballu-bftevur",
+      "model": "Ballu BFT/EVUR",
+      "source": "https://b2b.rusklimat.com/catalog/product/komplekt-shassi-bft-evur-dlya-napolnoy-ustanovki-konvektora-ballu-evolution-transformer/"
+    },
+    "ballu-wall": {
+      "slug": "ballu-cwm-02",
+      "model": "Ballu CWM-02",
+      "source": "https://b2b.rusklimat.com/catalog/product/kronshteyn-universalnyy-cwm-02-dlya-montazha-konvektora-na-stenu/"
+    },
+    "electrolux-inverter": {
+      "slug": "electrolux-echtui4",
+      "model": "Electrolux ECH/TUI4",
+      "source": "https://b2b.rusklimat.com/catalog/product/blok-upravleniya-konvektora-electrolux-transformer-digital-inverter-ech-tui4/"
+    },
+    "electrolux-electronic": {
+      "slug": "electrolux-echtue4",
+      "model": "Electrolux ECH/TUE4",
+      "source": "https://b2b.rusklimat.com/catalog/product/blok-upravleniya-transformer-electronic-electrolux-ech-tue4/"
+    },
+    "electrolux-mechanic": {
+      "slug": "blok-upravleniia-electrolux-echtum3-transformer-mechanic",
+      "model": "Electrolux ECH/TUM3",
+      "source": "https://b2b.rusklimat.com/catalog/product/blok-upravleniya-transformer-mechanic-electrolux-ech-tum3/"
+    },
+    "air-gate-feet": {
+      "slug": "electrolux-eftag2r",
+      "model": "Electrolux EFT/AG2R",
+      "source": "https://b2b.rusklimat.com/catalog/product/komplekt-shassi-eft-ag2r-dlya-napolnoy-ustanovki-konvektora-electrolux-air-gate-transformer/"
+    },
+    "rapid-feet": {
+      "slug": "electrolux-eftrr-komplekt-sassi-dlia-konvektora-rapid-transformer",
+      "model": "Electrolux EFT/RR",
+      "source": "https://b2b.rusklimat.com/catalog/product/komplekt-shassi-eft-rr-dlya-napolnoy-ustanovki-konvektora-electrolux-rapid-transformer/"
+    }
+  },
+  "products": {
+    "ballu-beccmr-1500": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-ip-54-bec-cmr-1500/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "ballu-beccmr-2000": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-ip-54-bec-cmr-2000/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "ballu-becemt-1500": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки"
+      ],
+      "separate": [
+        {
+          "kind": "wall",
+          "label": "Кронштейн Ballu CWM-02",
+          "requirement": "wall",
+          "parts": [
+            "ballu-wall"
+          ],
+          "evidence": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-camino-eco-turbo-bec-emt-2500-kronshteyn-cwm-0274/"
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-camino-eco-turbo-bec-emt-1500/",
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-camino-eco-turbo-bec-emt-2500-kronshteyn-cwm-0274/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "ballu-becemt-2000": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки"
+      ],
+      "separate": [
+        {
+          "kind": "wall",
+          "label": "Кронштейн Ballu CWM-02",
+          "requirement": "wall",
+          "parts": [
+            "ballu-wall"
+          ],
+          "evidence": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-camino-eco-turbo-bec-emt-2500-kronshtein-cwm-02/"
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-camino-eco-turbo-bec-emt-2000/",
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-camino-eco-turbo-bec-emt-2500-kronshtein-cwm-02/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "ballu-beceter-2000": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-ballu-ettore-bec-eter-2000/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "ballu-becetmr-1500": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/elektricheskiy-obogrevatel-ballu-ettore-bec-etmr-1500/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "ballu-becevu-1500": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления Ballu BCT/EVU-4E",
+          "requirement": "required",
+          "parts": [
+            "ballu-control"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Ballu BFT/EVUR",
+          "requirement": "floor",
+          "parts": [
+            "ballu-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-ballu-evolution-transformer-bec-evu-1500/",
+        "https://b2b.rusklimat.com/catalog/product/komplekt-ballu-transformer-s-blokom-upravleniya-i-shassi-bec-evu-1500-4e-elektronnyy/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Совместимость подтверждена составом фирменного комплекта этой мощности: BCT/EVU-4E и BFT/EVUR."
+    },
+    "ballu-becevu-2000": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления Ballu BCT/EVU-4E",
+          "requirement": "required",
+          "parts": [
+            "ballu-control"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Ballu BFT/EVUR",
+          "requirement": "floor",
+          "parts": [
+            "ballu-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-ballu-evolution-transformer-bec-evu-2000/",
+        "https://b2b.rusklimat.com/catalog/product/komplekt-ballu-transformer-s-blokom-upravleniya-i-shassi-bec-evu-2000-4e-elektronnyy/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Совместимость подтверждена составом фирменного комплекта этой мощности: BCT/EVU-4E и BFT/EVUR."
+    },
+    "ballu-becevu-500": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления Ballu BCT/EVU-4E",
+          "requirement": "required",
+          "parts": [
+            "ballu-control"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Ballu BFT/EVUR",
+          "requirement": "floor",
+          "parts": [
+            "ballu-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-ballu-evolution-transformer-bec-evu-50022/",
+        "https://b2b.rusklimat.com/catalog/product/komplekt-ballu-evolution-transformer-s-blokom-upravleniya-i-shassi-bec-evu-500-4e-elektronnyy-/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Совместимость подтверждена составом фирменного комплекта этой мощности: BCT/EVU-4E и BFT/EVUR."
+    },
+    "electrolux-echag2-1000-t": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления — выберите один вариант",
+          "requirement": "required",
+          "parts": [
+            "electrolux-inverter",
+            "electrolux-electronic",
+            "electrolux-mechanic"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Electrolux EFT/AG2R",
+          "requirement": "floor",
+          "parts": [
+            "air-gate-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-air-gate-transformer-ech-ag2-1000-t/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Блоки управления: назначение Electrolux Transformer System; шасси: точная серия Air Gate Transformer или Rapid Transformer, без переноса на готовые R-M/R-E."
+    },
+    "electrolux-echag2-1500-t": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления — выберите один вариант",
+          "requirement": "required",
+          "parts": [
+            "electrolux-inverter",
+            "electrolux-electronic",
+            "electrolux-mechanic"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Electrolux EFT/AG2R",
+          "requirement": "floor",
+          "parts": [
+            "air-gate-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-air-gate-transformer-ech-ag2-1500-t/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Блоки управления: назначение Electrolux Transformer System; шасси: точная серия Air Gate Transformer или Rapid Transformer, без переноса на готовые R-M/R-E."
+    },
+    "electrolux-echag2-2000-t": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления — выберите один вариант",
+          "requirement": "required",
+          "parts": [
+            "electrolux-inverter",
+            "electrolux-electronic",
+            "electrolux-mechanic"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Electrolux EFT/AG2R",
+          "requirement": "floor",
+          "parts": [
+            "air-gate-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-air-gate-transformer-ech-ag2-2000-t/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Блоки управления: назначение Electrolux Transformer System; шасси: точная серия Air Gate Transformer или Rapid Transformer, без переноса на готовые R-M/R-E."
+    },
+    "elektriceskii-konvektor-timberk-tecpf10n-dg-1000": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf10n_dg/",
+        "https://www.timberk.ru/upload/iblock/dfc/dfca2fbdd32d50a7a8c0284e0c2d9f71.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf10n-dg-1500": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf10n_dg/",
+        "https://www.timberk.ru/upload/iblock/dfc/dfca2fbdd32d50a7a8c0284e0c2d9f71.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf10n-dg-2000": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf10n_dg/",
+        "https://www.timberk.ru/upload/iblock/dfc/dfca2fbdd32d50a7a8c0284e0c2d9f71.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf11n-dg-1000": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf11n_dg/",
+        "https://www.timberk.ru/upload/iblock/140/140e528fe5952ddebee655395eca7b5d.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf11n-dg-1500": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf11n_dg/",
+        "https://www.timberk.ru/upload/iblock/140/140e528fe5952ddebee655395eca7b5d.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf11n-dg-2000": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf11n_dg/",
+        "https://www.timberk.ru/upload/iblock/140/140e528fe5952ddebee655395eca7b5d.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf8n-m-1000": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf8n_m/",
+        "https://www.timberk.ru/upload/iblock/633/633f8b99528d10b806d2c2ed7306aa89.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf8n-m-1500": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf8n_m/",
+        "https://www.timberk.ru/upload/iblock/633/633f8b99528d10b806d2c2ed7306aa89.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf8n-m-2000": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf8n_m/",
+        "https://www.timberk.ru/upload/iblock/633/633f8b99528d10b806d2c2ed7306aa89.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf9n-dg-1000": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf9n_dg/",
+        "https://www.timberk.ru/upload/iblock/d88/d88af4a19ab6e2a328d5cf9f9729742c.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf9n-dg-1500": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf9n_dg/",
+        "https://www.timberk.ru/upload/iblock/d88/d88af4a19ab6e2a328d5cf9f9729742c.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "elektriceskii-konvektor-timberk-tecpf9n-dg-2000": {
+      "included": [
+        "Конвектор",
+        "Опорные ножки — 2 шт.",
+        "Комплект настенной установки",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tec_pf9n_dg/",
+        "https://www.timberk.ru/upload/iblock/d88/d88af4a19ab6e2a328d5cf9f9729742c.pdf"
+      ],
+      "evidence": "Паспорт Timberk соответствующей серии, раздел «Комплект поставки»."
+    },
+    "konvektor-elektriceskii-electrolux-echa2-1000-m": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "feet",
+          "label": "Опоры или шасси для напольной установки",
+          "requirement": "floor",
+          "parts": []
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-a2-1000-m/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-echa2-1500-m": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "feet",
+          "label": "Опоры или шасси для напольной установки",
+          "requirement": "floor",
+          "parts": []
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-a2-1500-m/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-echa2-2000-m": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "feet",
+          "label": "Опоры или шасси для напольной установки",
+          "requirement": "floor",
+          "parts": []
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-a2-2000-m/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-echa2-2500-m": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "feet",
+          "label": "Опоры или шасси для напольной установки",
+          "requirement": "floor",
+          "parts": []
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-a2-2500-m/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-echag2-1500-t-otopitelnyi-modul": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления — выберите один вариант",
+          "requirement": "required",
+          "parts": [
+            "electrolux-inverter",
+            "electrolux-electronic",
+            "electrolux-mechanic"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Electrolux EFT/AG2R",
+          "requirement": "floor",
+          "parts": [
+            "air-gate-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-air-gate-transformer-ech-ag2-1500-t/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Блоки управления: назначение Electrolux Transformer System; шасси: точная серия Air Gate Transformer или Rapid Transformer, без переноса на готовые R-M/R-E."
+    },
+    "konvektor-elektriceskii-electrolux-echbne-1000": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-electrolux-ech-bne-1000-brilliant-next/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-echbne-1500": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-electrolux-ech-bne-1500-brilliant-next/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-echr-1000-t-otopitelnyi-modul": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления — выберите один вариант",
+          "requirement": "required",
+          "parts": [
+            "electrolux-inverter",
+            "electrolux-electronic",
+            "electrolux-mechanic"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Electrolux EFT/RR",
+          "requirement": "floor",
+          "parts": [
+            "rapid-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-rapid-transformer-ech-r-1000-t/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Блоки управления: назначение Electrolux Transformer System; шасси: точная серия Air Gate Transformer или Rapid Transformer, без переноса на готовые R-M/R-E."
+    },
+    "konvektor-elektriceskii-electrolux-echr-1500-t-otopitelnyi-modul": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления — выберите один вариант",
+          "requirement": "required",
+          "parts": [
+            "electrolux-inverter",
+            "electrolux-electronic",
+            "electrolux-mechanic"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Electrolux EFT/RR",
+          "requirement": "floor",
+          "parts": [
+            "rapid-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-rapid-transformer-ech-r-1500-t/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Блоки управления: назначение Electrolux Transformer System; шасси: точная серия Air Gate Transformer или Rapid Transformer, без переноса на готовые R-M/R-E."
+    },
+    "konvektor-elektriceskii-electrolux-echr-2000-t-otopitelnyi-modul": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления — выберите один вариант",
+          "requirement": "required",
+          "parts": [
+            "electrolux-inverter",
+            "electrolux-electronic",
+            "electrolux-mechanic"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Electrolux EFT/RR",
+          "requirement": "floor",
+          "parts": [
+            "rapid-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-rapid-transformer-ech-r-2000-t/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Блоки управления: назначение Electrolux Transformer System; шасси: точная серия Air Gate Transformer или Rapid Transformer, без переноса на готовые R-M/R-E."
+    },
+    "konvektor-elektriceskii-electrolux-echr-2500-t-otopitelnyi-modul": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления — выберите один вариант",
+          "requirement": "required",
+          "parts": [
+            "electrolux-inverter",
+            "electrolux-electronic",
+            "electrolux-mechanic"
+          ]
+        },
+        {
+          "kind": "feet",
+          "label": "Шасси Electrolux EFT/RR",
+          "requirement": "floor",
+          "parts": [
+            "rapid-feet"
+          ]
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-electrolux-serii-rapid-transformer-ech-r-2500-t/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ. Блоки управления: назначение Electrolux Transformer System; шасси: точная серия Air Gate Transformer или Rapid Transformer, без переноса на готовые R-M/R-E."
+    },
+    "konvektor-elektriceskii-electrolux-rapid-echr-2000-m": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-r-2000-m/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektricheskiy-enks-1000": {
+      "included": [
+        "Встроенный терморегулятор",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://tenko.ua/catalog/good/konvektor-enks1000"
+      ],
+      "evidence": "Описание точной модели Tenko: встроенный регулятор, в комплекте наборы для установки на пол и крепления на стену."
+    },
+    "konvektor-elektricheskiy-tenko-enkh-1000": {
+      "included": [
+        "Встроенный терморегулятор",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://tenko.ua/catalog/good/konvektor-enkh1000"
+      ],
+      "evidence": "Описание точной модели Tenko: встроенный регулятор, в комплекте наборы для установки на пол и крепления на стену."
+    },
+    "konvektor-elektricheskiy-tenko-enkh-1500": {
+      "included": [
+        "Встроенный терморегулятор",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://tenko.ua/catalog/good/konvektor-enkh1500"
+      ],
+      "evidence": "Описание точной модели Tenko: встроенный регулятор, в комплекте наборы для установки на пол и крепления на стену."
+    },
+    "konvektor-elektricheskiy-tenko-enkh-2000": {
+      "included": [
+        "Встроенный терморегулятор",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://tenko.ua/catalog/good/konvektor-enkh2000"
+      ],
+      "evidence": "Описание точной модели Tenko: встроенный регулятор, в комплекте наборы для установки на пол и крепления на стену."
+    },
+    "konvektor-elektricheskiy-tenko-enkh-500": {
+      "included": [
+        "Встроенный терморегулятор",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://tenko.ua/catalog/good/konvektor-enkh500"
+      ],
+      "evidence": "Описание точной модели Tenko: встроенный регулятор, в комплекте наборы для установки на пол и крепления на стену."
+    },
+    "konvektor-elektricheskiy-tenko-enks-1500": {
+      "included": [
+        "Встроенный терморегулятор",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://tenko.ua/catalog/good/konvektor-enks1500"
+      ],
+      "evidence": "Описание точной модели Tenko: встроенный регулятор, в комплекте наборы для установки на пол и крепления на стену."
+    },
+    "maslianyi-radiator-timberk-tor-211507-bc": {
+      "included": [
+        "Маслонаполненный радиатор",
+        "Роликовые колёса в сборе — 2 шт.",
+        "U-образные скобы — 2 шт.",
+        "Барашковые гайки — 2 шт.",
+        "Руководство и гарантийный талон"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tor_21_bc/",
+        "https://www.timberk.ru/upload/iblock/ba7/ba7058da6aee865ebc4e3ecb4fbb77d6.pdf"
+      ],
+      "evidence": "Паспорт Timberk TOR 21 BC IM2021, раздел 6 «Комплект поставки»."
+    },
+    "maslianyi-radiator-timberk-tor-212009-bc": {
+      "included": [
+        "Маслонаполненный радиатор",
+        "Роликовые колёса в сборе — 2 шт.",
+        "U-образные скобы — 2 шт.",
+        "Барашковые гайки — 2 шт.",
+        "Руководство и гарантийный талон"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tor_21_bc/",
+        "https://www.timberk.ru/upload/iblock/ba7/ba7058da6aee865ebc4e3ecb4fbb77d6.pdf"
+      ],
+      "evidence": "Паспорт Timberk TOR 21 BC IM2021, раздел 6 «Комплект поставки»."
+    },
+    "maslianyi-radiator-timberk-tor-212512-bc": {
+      "included": [
+        "Маслонаполненный радиатор",
+        "Роликовые колёса в сборе — 2 шт.",
+        "U-образные скобы — 2 шт.",
+        "Барашковые гайки — 2 шт.",
+        "Руководство и гарантийный талон"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/tor_21_bc/",
+        "https://www.timberk.ru/upload/iblock/ba7/ba7058da6aee865ebc4e3ecb4fbb77d6.pdf"
+      ],
+      "evidence": "Паспорт Timberk TOR 21 BC IM2021, раздел 6 «Комплект поставки»."
+    },
+    "royal-thermo-rchcm-500": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-royal-thermo-capella-rchc-m-500/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "royal-thermo-rchcm-502": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-royal-thermo-capella-rchc-m-502/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "teplovaia-puska-timberk-t-hg3-q12t": {
+      "included": [
+        "Тепловая пушка",
+        "Руководство по эксплуатации",
+        "Гарантийный талон"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/t-hg-q12t/"
+      ],
+      "evidence": "Паспорт Timberk T-HG Q12T, раздел «Комплект поставки»."
+    },
+    "teplovaia-puska-timberk-t-hg5-q12t": {
+      "included": [
+        "Тепловая пушка",
+        "Руководство по эксплуатации",
+        "Гарантийный талон"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.timberk.ru/catalog/product/t-hg-q12t/"
+      ],
+      "evidence": "Паспорт Timberk T-HG Q12T, раздел «Комплект поставки»."
+    },
+    "konvektor-elektriceskii-energolux-gchvi-25": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-energolux-gch-vi-25/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "ballu-becpl-1500": {
+      "included": [
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Блок управления — выберите один совместимый вариант",
+          "requirement": "required",
+          "parts": []
+        },
+        {
+          "kind": "feet",
+          "label": "Опоры или шасси для напольной установки",
+          "requirement": "floor",
+          "parts": []
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-ballu-plinth-transformer-bec-pl-1500/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "electrolux-eihag2-1000-e": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-infrakrasnyy-electrolux-eih-ag2-1000-e/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-infrakrasnyi-electrolux-eihag2-1500-e": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-infrakrasnyy-electrolux-eih-ag2-1500-e/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-echbmi-2000": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "feet",
+          "label": "Опоры или шасси для напольной установки",
+          "requirement": "floor",
+          "parts": []
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-electrolux-ech-bmi-2000-brilliant-marble/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-echbmi-1500": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект настенного крепления"
+      ],
+      "separate": [
+        {
+          "kind": "feet",
+          "label": "Опоры или шасси для напольной установки",
+          "requirement": "floor",
+          "parts": []
+        }
+      ],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-electrolux-ech-bmi-1500-brilliant-marble/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-rapid-echr-1000-e": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-r-1000-e/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-rapid-echr-1500-e": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-r-1500-e/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-rapid-echr-1500-m": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-r-1500-m/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "konvektor-elektriceskii-electrolux-echag2-2000-ef": {
+      "included": [
+        "Встроенный блок управления",
+        "Комплект для напольной установки",
+        "Комплект настенного крепления"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-ag2-2000-ef/"
+      ],
+      "evidence": "Поля «Блок управления», «Комплект напольной установки», «Комплект настенного крепления» в карточке точной модели РУСКЛИМАТ."
+    },
+    "royal-thermo-rchce-1502": {
+      "included": [
+        "Обогреватель",
+        "Комплект настенного крепления",
+        "Планки с роликами для напольной установки",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.c-o-k.ru/library/instructions/royal-thermo/elektricheskie-obogrevateli-teploventilyatory/42296",
+        "https://www.c-o-k.ru/library/instructions/royal-thermo/elektricheskie-obogrevateli-teploventilyatory/42296/148306.pdf"
+      ],
+      "evidence": "Паспорт Royal Thermo Capella E, разделы «Напольная установка» и «Комплектация»."
+    },
+    "royal-thermo-rchce-2002": {
+      "included": [
+        "Обогреватель",
+        "Комплект настенного крепления",
+        "Планки с роликами для напольной установки",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.c-o-k.ru/library/instructions/royal-thermo/elektricheskie-obogrevateli-teploventilyatory/42296",
+        "https://www.c-o-k.ru/library/instructions/royal-thermo/elektricheskie-obogrevateli-teploventilyatory/42296/148306.pdf"
+      ],
+      "evidence": "Паспорт Royal Thermo Capella E, разделы «Напольная установка» и «Комплектация»."
+    },
+    "konvektor-elektriceskii-electrolux-echb-1000-e": {
+      "included": [
+        "Обогреватель",
+        "Кронштейн настенного крепления",
+        "Крепёжные элементы",
+        "Шасси с колёсами",
+        "Руководство и гарантийный талон"
+      ],
+      "separate": [],
+      "sources": [
+        "https://object.pscloud.io/cms/cms/Uploads/file_0_19_251_0_0.pdf"
+      ],
+      "evidence": "Паспорт точной серии, раздел «Комплектация»."
+    },
+    "konvektor-elektriceskii-electrolux-echb-1500-e": {
+      "included": [
+        "Обогреватель",
+        "Кронштейн настенного крепления",
+        "Крепёжные элементы",
+        "Шасси с колёсами",
+        "Руководство и гарантийный талон"
+      ],
+      "separate": [],
+      "sources": [
+        "https://object.pscloud.io/cms/cms/Uploads/file_0_19_251_0_0.pdf"
+      ],
+      "evidence": "Паспорт точной серии, раздел «Комплектация»."
+    },
+    "konvektor-elektriceskii-electrolux-echb-2000-e": {
+      "included": [
+        "Обогреватель",
+        "Кронштейн настенного крепления",
+        "Крепёжные элементы",
+        "Шасси с колёсами",
+        "Руководство и гарантийный талон"
+      ],
+      "separate": [],
+      "sources": [
+        "https://object.pscloud.io/cms/cms/Uploads/file_0_19_251_0_0.pdf"
+      ],
+      "evidence": "Паспорт точной серии, раздел «Комплектация»."
+    },
+    "konvektor-elektriceskii-electrolux-rapid-echr-1000-m": {
+      "included": [
+        "Обогреватель",
+        "Кронштейн настенного крепления",
+        "Крепёжные элементы",
+        "Шасси с колёсами",
+        "Руководство и гарантийный талон"
+      ],
+      "separate": [],
+      "sources": [
+        "https://object.pscloud.io/cms/cms/Uploads/file_0_19_184_0_0_STnP2C.pdf"
+      ],
+      "evidence": "Паспорт точной серии, раздел «Комплектация»."
+    },
+    "elektrokonvektor-plintusnyi-electrolux-echag-2000-pi": {
+      "included": [
+        "Обогреватель",
+        "Кронштейны — 3 шт.",
+        "Крепёжные болты — 3 шт.",
+        "Руководство и гарантийный талон"
+      ],
+      "separate": [
+        {
+          "kind": "feet",
+          "label": "Шасси для напольной установки",
+          "requirement": "floor",
+          "parts": []
+        }
+      ],
+      "sources": [
+        "https://object.pscloud.io/cms/cms/Uploads/file_0_19_299_0_0.pdf"
+      ],
+      "evidence": "Паспорт ECH/AG-PI, разделы «Комплектация» и «Напольная установка»."
+    },
+    "elektrokonvektor-elboom-ev1-usat1-20-230-ip20": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации",
+        "Опоры — 1 комплект (универсальное исполнение)"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-15-230-b-e-ip24": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-20-230-b-e-ip24-podrobnee-https-sbgby-p95452184-elektrokonvektor-elboom-ev1html": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/catalog/climate/convektor/konvektor-elboom-nbat1-20230-be-utsenyonnyy.html",
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-15-230-b-ip24-podrobnee-https-sbgby-p95412611-elektrokonvektor-elboom-ev1html": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-10-230-ip20": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-20-230-b-ip24-podrobnee-https-sbgby-p95412665-elektrokonvektor-elboom-ev1html": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-ubat1-10-230-b-ip24": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации",
+        "Опоры — 1 комплект (универсальное исполнение)"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-ubat1-10-230-ip20": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации",
+        "Опоры — 1 комплект (универсальное исполнение)"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-usat1-15-230-ip20": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации",
+        "Опоры — 1 комплект (универсальное исполнение)"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-05-230-b-ip24": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-10-230-b-ip24": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-elboom-ev1-nsat1-20-230-ip20": {
+      "included": [
+        "Электроконвектор",
+        "Кронштейн — 1 комплект",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [],
+      "sources": [
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ],
+      "evidence": "Паспорт ЭВ1 УБАТ1/УСАТ1/НБАТ1/НСАТ1, раздел 3 «Комплектность»: опоры только для универсального исполнения."
+    },
+    "elektrokonvektor-plintusnyiy-elboom-ev-p-018-230-podrobnee-https-sbgby-p95516566-elektrokonvektor-plintusnyj-elboomhtml": {
+      "included": [
+        "Электроконвектор",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Внешний терморегулятор",
+          "requirement": "required",
+          "parts": []
+        },
+        {
+          "kind": "installation",
+          "label": "Распределительная коробка",
+          "requirement": "required",
+          "parts": []
+        }
+      ],
+      "sources": [
+        "https://electro-boom.by/catalog/heating/plinth/plintusnyy-obogrevatel-elboom-ev-p-018230.html",
+        "https://electro-boom.by/assets/files/elboom-evp.pdf"
+      ],
+      "evidence": "Паспорт ЭВП: разделы 1.2, 3 и 5.2.1. Терморегулятор устанавливается потребителем, распределительная коробка не входит в комплект."
+    },
+    "elektrokonvektor-plintusnyiy-elboom-ev-p-027-230": {
+      "included": [
+        "Электроконвектор",
+        "Руководство по эксплуатации"
+      ],
+      "separate": [
+        {
+          "kind": "control",
+          "label": "Внешний терморегулятор",
+          "requirement": "required",
+          "parts": []
+        },
+        {
+          "kind": "installation",
+          "label": "Распределительная коробка",
+          "requirement": "required",
+          "parts": []
+        }
+      ],
+      "sources": [
+        "https://electro-boom.by/catalog/heating/plinth/plintusnyy-obogrevatel-elboom-ev-p-027230.html",
+        "https://electro-boom.by/assets/files/elboom-evp.pdf"
+      ],
+      "evidence": "Паспорт ЭВП: разделы 1.2, 3 и 5.2.1. Терморегулятор устанавливается потребителем, распределительная коробка не входит в комплект."
+    },
+    "teplyiy-plintus-elektricheskiy-cth-r-1-belyiy-korichnevyiy": {
+      "included": [
+        "Обогреватель",
+        "Сетевой шнур",
+        "Ножки — 2 шт.",
+        "Саморезы 3,5×16 — 4 шт.",
+        "Технический паспорт"
+      ],
+      "separate": [],
+      "sources": [
+        "https://plintus-obogrevatel.aldengroup.ru/",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202105/6553709.pdf/mr-tektum-smartline-1-6m-675vt-korichnevyj-1649506.pdf"
+      ],
+      "evidence": "Паспорт Mr. Tektum, раздел 3 «Комплектность»; коннектор только для исполнения SMART LINE."
+    },
+    "teplyiy-plintus-elektricheskiy-mrtektum-smart-line-16m-belyiy-korichnevyiy": {
+      "included": [
+        "Обогреватель",
+        "Сетевой шнур",
+        "Ножки — 2 шт.",
+        "Саморезы 3,5×16 — 4 шт.",
+        "Технический паспорт",
+        "Коннектор SMART LINE — 1 шт."
+      ],
+      "separate": [],
+      "sources": [
+        "https://plintus-obogrevatel.aldengroup.ru/",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202105/6553709.pdf/mr-tektum-smartline-1-6m-675vt-korichnevyj-1649506.pdf"
+      ],
+      "evidence": "Паспорт Mr. Tektum, раздел 3 «Комплектность»; коннектор только для исполнения SMART LINE."
+    },
+    "teplyiy-plintus": {
+      "included": [
+        "Обогреватель",
+        "Сетевой шнур",
+        "Ножки — 2 шт.",
+        "Саморезы 3,5×16 — 4 шт.",
+        "Технический паспорт"
+      ],
+      "separate": [],
+      "sources": [
+        "https://plintus-obogrevatel.aldengroup.ru/",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202105/6553709.pdf/mr-tektum-smartline-1-6m-675vt-korichnevyj-1649506.pdf"
+      ],
+      "evidence": "Паспорт Mr. Tektum, раздел 3 «Комплектность»; коннектор только для исполнения SMART LINE."
+    }
+  }
+}

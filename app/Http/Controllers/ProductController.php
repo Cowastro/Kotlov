@@ -20,6 +20,7 @@ use App\Support\Catalog\BoilerCatalog;
 use App\Support\Catalog\BoilerSpecifications;
 use App\Support\Catalog\WaterHeaterCatalog;
 use App\Support\Catalog\HeaterCatalog;
+use App\Support\Catalog\HeaterEquipment;
 use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
@@ -96,6 +97,8 @@ class ProductController extends Controller
         };
 
         $productCardSpecs = [];
+        $heaterEquipment = HeaterEquipment::details($product);
+        $heaterEquipmentGroups = HeaterEquipment::relatedGroups($product, $heaterEquipment);
         if (isset(HeaterCatalog::NAMES[$productCategory->slug])) {
             $catalog = app(HeaterCatalog::class);
             $productCardSpecs = $catalog->productFacts($product, $productCategory->slug, $catalog->dimensions($productCategory->slug))['card'];
@@ -430,6 +433,7 @@ class ProductController extends Controller
             'attributeValues',
             'fireplaceSpecs', 'productCardSpecs',
             'compatibleElectricProducts',
+            'heaterEquipment', 'heaterEquipmentGroups',
             'showCompatibleInserts',
             'relatedProducts',
             'showsChimneyOffer',
