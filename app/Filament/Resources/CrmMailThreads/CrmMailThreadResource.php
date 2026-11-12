@@ -328,6 +328,9 @@ class CrmMailThreadResource extends Resource
                     ->width('8.5rem')
                     ->grow(false),
                 TextColumn::make('assignedUser.name')->label('Ответственный')->default('Не назначен')
+                    ->color(fn (CrmMailThread $record, ListCrmMailThreads $livewire): string => $livewire->activeTab === 'needs_response' && $record->assigned_user_id === null ? 'danger' : 'gray')
+                    ->weight(fn (CrmMailThread $record, ListCrmMailThreads $livewire): string => $livewire->activeTab === 'needs_response' && $record->assigned_user_id === null ? 'bold' : 'medium')
+                    ->icon(fn (CrmMailThread $record, ListCrmMailThreads $livewire): ?string => $livewire->activeTab === 'needs_response' && $record->assigned_user_id === null ? 'heroicon-o-exclamation-circle' : null)
                     ->description(function (CrmMailThread $record, ListCrmMailThreads $livewire): ?HtmlString {
                         if ($livewire->activeTab !== 'needs_response' || $record->replyWaitingMinutes() === null) {
                             return null;
@@ -377,9 +380,8 @@ class CrmMailThreadResource extends Resource
             ->defaultSort(function (Builder $query, ListCrmMailThreads $livewire): Builder {
                 if ($livewire->activeTab === 'needs_response' && blank($livewire->getTableSortColumn())) {
                     return $query
-                        ->orderByRaw("CASE WHEN priority = 'urgent' THEN 0 WHEN next_follow_up_at <= ? THEN 1 WHEN priority = 'high' THEN 2 ELSE 3 END", [now()])
-                        ->orderByDesc('last_message_at')
-                        ->orderByDesc('crm_mail_threads.id');
+                        ->orderBy('reply_waiting_since')
+                        ->orderBy('crm_mail_threads.id');
                 }
 
                 return $query->orderByDesc('last_message_at')->orderByDesc('crm_mail_threads.id');
