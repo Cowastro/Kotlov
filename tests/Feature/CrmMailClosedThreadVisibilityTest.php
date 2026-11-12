@@ -61,10 +61,10 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
         $this->actingAs($manager);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         $page = Livewire::test(ListCrmMailThreads::class)->set('activeTab', 'needs_response');
-        $page->assertCanSeeTableRecords([$threads['new'], $threads['waiting_manager']])
-            ->assertCanNotSeeTableRecords($threads->except(['new', 'waiting_manager'])->values())
+        $page->assertCanSeeTableRecords([$threads['new'], $threads['waiting_manager'], $threads['in_progress'], $threads['waiting_customer']])
+            ->assertCanNotSeeTableRecords($threads->only(['closed', 'spam', 'draft'])->values())
             ->assertCanNotSeeTableRecords([$trashed]);
-        $this->assertSame('2', $page->instance()->getTabs()['needs_response']->getBadge());
+        $this->assertSame('4', $page->instance()->getTabs()['needs_response']->getBadge());
     }
 
     public function test_reaction_tab_lists_newest_mail_first_by_default(): void
@@ -78,6 +78,10 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
         $middle = $this->thread($mailbox, 'middle@example.com', 'waiting_manager');
         $middle->forceFill(['last_message_at' => now()->subDays(3)])->save();
 
+        foreach ([$old, $fresh, $middle] as $thread) {
+            $this->incomingMessage($thread, $mailbox, $thread->subject);
+        }
+
         $this->actingAs($manager);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
@@ -86,6 +90,39 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
             ->assertCanSeeTableRecords([$fresh, $middle, $old], inOrder: true)
             ->set('activeTab', 'all')
             ->assertCanSeeTableRecords([$fresh, $middle, $old], inOrder: true);
+    }
+
+    public function test_reaction_queue_uses_actual_unanswered_mail_and_preserves_control_reminders(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::create(['name' => 'Reply audit', 'email' => 'reply-audit@example.com', 'username' => 'reply-audit@example.com']);
+        $pending = $this->thread($mailbox, 'pending@example.com', 'in_progress');
+        $this->incomingMessage($pending, $mailbox, 'Ждём ответ');
+        $pending->messages()->create(['mailbox_id' => $mailbox->id, 'direction' => 'draft', 'from_email' => $mailbox->email, 'received_at' => now()->addMinute()]);
+
+        $answered = $this->thread($mailbox, 'answered@example.com', 'waiting_manager');
+        $this->incomingMessage($answered, $mailbox, 'Уже ответили');
+        $answered->messages()->create(['mailbox_id' => $mailbox->id, 'direction' => 'outgoing', 'from_email' => $mailbox->email, 'received_at' => now()->addMinute()]);
+        $answered->update(['next_follow_up_at' => now()->subDay()]);
+        // An old incoming message imported later must not undo the sent reply.
+        $answered->messages()->create(['mailbox_id' => $mailbox->id, 'direction' => 'incoming', 'from_email' => $answered->participant_email, 'received_at' => now()->subDays(2)]);
+
+        $lost = $this->thread($mailbox, 'lost@example.com', 'waiting_manager');
+        $lost->update(['sales_stage' => 'lost', 'next_follow_up_at' => now()->subDay()]);
+        $this->incomingMessage($lost, $mailbox, 'Старый отказ');
+        $won = $this->thread($mailbox, 'won@example.com', 'new');
+        $won->update(['sales_stage' => 'won']);
+        $this->incomingMessage($won, $mailbox, 'Успешная сделка');
+        $empty = $this->thread($mailbox, 'empty@example.com', 'new');
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $page = Livewire::test(ListCrmMailThreads::class)->set('activeTab', 'needs_response')
+            ->assertCanSeeTableRecords([$pending])
+            ->assertCanNotSeeTableRecords([$answered, $lost, $won, $empty]);
+        $this->assertSame('1', $page->instance()->getTabs()['needs_response']->getBadge());
+        $page->set('activeTab', 'follow_up')->assertCanSeeTableRecords([$answered]);
+        $this->assertSame('lost', $lost->fresh()->sales_stage);
     }
 
     public function test_incoming_mail_stays_newest_first_and_new_replies_return_to_the_top(): void

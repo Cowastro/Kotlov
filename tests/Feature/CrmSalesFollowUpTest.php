@@ -252,6 +252,11 @@ class CrmSalesFollowUpTest extends TestCase
         $this->assertTrue(CrmMailThread::query()->requiresReaction()->whereKey($thread)->exists());
         $this->assertSame('mail', $quote->contact_history[0]['source']);
 
+        $thread->messages()->create([
+            'mailbox_id' => $thread->mailbox_id, 'direction' => 'incoming',
+            'from_email' => $thread->participant_email, 'received_at' => now(),
+        ]);
+
         Livewire::actingAs($manager)
             ->test(ListCrmMailThreads::class)
             ->set('activeTab', 'needs_response')
