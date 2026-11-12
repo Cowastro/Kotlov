@@ -1,5 +1,8 @@
 @extends('layouts.amerce')
 
+@section('title', 'Доставка и оплата '.($cityIn ?? 'в Минске').' — котлы, печи, камины | KOTLOV')
+@section('description', 'Как получить заказ KOTLOV '.($cityIn ?? 'в Минске').': самовывоз, доставка нашим транспортом по графику и по всей Беларуси, оплата картой, через ЕРИП, наличными или по безналу, рассрочка.')
+
 @section('content')
 @php
     $delivery = config('shop.delivery_methods', []);

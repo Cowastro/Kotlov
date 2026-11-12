@@ -25,7 +25,7 @@ return [
         ],
         'equipment_category_slugs' => [
             'kotly', 'kotly-otopleniya', 'gazovye', 'tverdotoplivnye',
-            'kaminy', 'topki', 'pechki', 'pechi', 'pechi-dlya-bani',
+            'kaminy', 'topki', 'pechki', 'pechi',
             'pechi-kaminy', 'burzhuiki-pechi', 'dlya-dachi',
             'peci-drovianye-otopitelnye', 'drovyanye-pechi-dlya-bani',
             'drovianye-peci-bannye',

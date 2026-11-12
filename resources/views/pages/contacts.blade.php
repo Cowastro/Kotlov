@@ -1,5 +1,8 @@
 @extends('layouts.amerce')
 
+@section('title', 'Контакты KOTLOV '.($cityIn ?? 'в Минске').' — адрес, телефоны, режим работы')
+@section('description', 'Магазин KOTLOV '.($cityIn ?? 'в Минске').(! empty($cityContact['address']) ? ': '.$cityContact['address'] : '').(! empty($cityContact['phone_links'][0]['display']) ? ', тел. '.$cityContact['phone_links'][0]['display'] : '').'. Котлы, печи, камины и дымоходы — подбор, доставка, монтаж.')
+
 @section('content')
 @php
     $replacementSlug = request()->query('replace_meter');
