@@ -25,7 +25,7 @@ class CreateOneCCardCommandTest extends TestCase
             'stock_quantity' => 15,
         ]);
         $args = ['code' => 'УТ-00009534', 'category' => 'lyuki-i-dozhdepriemniki',
-            '--name' => 'Люк полимерпесчаный 1,5 т зелёный', '--brand' => 'Гамма-Сан',
+            '--title' => 'Люк полимерпесчаный 1,5 т зелёный', '--brand' => 'Гамма-Сан',
             '--image' => ['img/products/gamma-san/lyuk-polimerpeschanyi-1-5t-zelenyi.webp'],
             '--spec' => ['Нагрузка: 1,5 т', 'Цвет: зелёный']];
 

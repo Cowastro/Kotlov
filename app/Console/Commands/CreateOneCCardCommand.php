@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
  * One 1C row with no card and no source page becomes a card from what we know ourselves: our own photo
  * (public/img/…), the maker, specs from its documents. Price 0 means «Цену уточняйте».
  *
- *   php artisan integration:create-onec-card УТ-00009534 lyuki-i-dozhdepriemniki --name="Люк …" --brand="Гамма-Сан"
+ *   php artisan integration:create-onec-card УТ-00009534 lyuki-i-dozhdepriemniki --title="Люк …" --brand="Гамма-Сан"
  *       --image=img/products/gamma-san/lyuk.webp --spec="Нагрузка: 1,5 т" --short="…"          # dry run
  *   … --apply
  */
@@ -23,7 +23,7 @@ class CreateOneCCardCommand extends Command
     protected $signature = 'integration:create-onec-card
         {code : 1C code of the row}
         {category : Category slug}
-        {--name= : Card name (default: the 1C name)}
+        {--title= : Card name (default: the 1C name)}
         {--price=0 : Retail price, BYN; 0 = «Цену уточняйте»}
         {--brand= : Brand name, created inactive if missing}
         {--image=* : Photo path under public (img/…)}
@@ -57,7 +57,7 @@ class CreateOneCCardCommand extends Command
             return self::FAILURE;
         }
 
-        $name = trim((string) ($this->option('name') ?: $item->name));
+        $name = trim((string) ($this->option('title') ?: $item->name));
         $specs = collect((array) $this->option('spec'))
             ->map(fn ($line) => array_map('trim', explode(':', (string) $line, 2)))
             ->filter(fn ($pair) => count($pair) === 2 && $pair[0] !== '' && $pair[1] !== '')
