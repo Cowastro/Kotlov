@@ -28,4 +28,7 @@
             @endforeach
         @endif
     </div>
+    @if ($isRoomHeaterCatalog ?? false)
+        @include('partials.catalog-heater-room-picker')
+    @endif
 </section>

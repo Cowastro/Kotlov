@@ -113,6 +113,9 @@ class CatalogController extends Controller
         $isWaterHeaterHub = $category->slug === WaterHeaterCatalog::ROOT;
         $heaterName = WaterHeaterCatalog::name($category->slug);
         $roomHeaterName = HeaterCatalog::NAMES[$category->slug] ?? null;
+        $isRoomHeaterCatalog = $roomHeaterName !== null;
+        $roomArea = $isRoomHeaterCatalog ? HeaterCatalog::roomArea(request()->query('room_area')) : null;
+        $roomAreaInvalid = $isRoomHeaterCatalog && request()->has('room_area') && request('room_area') !== '' && $roomArea === null;
         $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName ?? $roomHeaterName;
         $specificationSearch = request()->query('q');
         $specificationSearch = $specificationName !== null && is_string($specificationSearch) ? mb_substr(trim($specificationSearch), 0, 100) : '';
@@ -766,6 +769,7 @@ class CatalogController extends Controller
         $specificationMatchingIds = null;
         if ($specificationCatalog !== null) {
             $specificationCatalog->search($query, $specificationSearch);
+            if ($roomArea !== null) HeaterCatalog::forRoom($query, $roomArea);
             if (! $isBoilerHub) {
                 $specificationSelection = (array) request()->query($specificationParameter, []);
                 if ($category->slug === 'kotly-na-pelletah' && is_string(request('power'))) {
@@ -1453,6 +1457,12 @@ class CatalogController extends Controller
                     'url' => request()->fullUrlWithoutQuery(['q', 'page']).'#catalog-products',
                 ];
             }
+            if ($roomArea !== null) {
+                $electricFilterChips[] = [
+                    'label' => 'Комната: '.str_replace('.', ',', (string) $roomArea).' м²',
+                    'url' => request()->fullUrlWithoutQuery(['room_area', 'page']).'#catalog-products',
+                ];
+            }
             $specificationParams = request()->except('page');
             foreach ($specificationFacets as $key => &$facet) {
                 foreach ($facet['options'] as $value => &$option) {
@@ -1605,6 +1615,7 @@ class CatalogController extends Controller
             'catalogNavigationGroups', 'cityStorefrontBranch', 'isCityStorefront',
             'specificationHeading', 'specificationSearch', 'specificationFacets', 'specificationFilterAttributes', 'specificationLanding', 'specificationCollections', 'robots',
             'isWaterHeaterHub', 'waterHeaterNavigation', 'waterHeaterRelated', 'heaterName', 'categorySchemaName',
+            'isRoomHeaterCatalog', 'roomArea', 'roomAreaInvalid',
             'isBoilerHub', 'boilerTypes', 'boilerCategories', 'selectedSubcategory', 'inStockOnly'
         ));
     }
