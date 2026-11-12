@@ -153,6 +153,21 @@ class CrmMailThreadResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
+            Section::make('Связанные запросы')
+                ->visible(fn (CrmMailThread $record): bool => $record->source_thread_id !== null || $record->splitRequests()->exists())
+                ->schema([
+                    TextEntry::make('sourceThread.subject')
+                        ->label('Исходная переписка')
+                        ->visible(fn (CrmMailThread $record): bool => $record->sourceThread()->visibleTo(auth()->user())->exists())
+                        ->url(fn (CrmMailThread $record): string => self::getUrl('view', ['record' => $record->source_thread_id])),
+                    RepeatableEntry::make('splitRequests')
+                        ->label('Выделенные новые запросы')
+                        ->state(fn (CrmMailThread $record) => $record->splitRequests()->visibleTo(auth()->user())->get())
+                        ->schema([
+                            TextEntry::make('subject')->hiddenLabel()
+                                ->url(fn (CrmMailThread $record): string => self::getUrl('view', ['record' => $record])),
+                        ]),
+                ]),
             Section::make('Лид')->columns(4)->schema([
                 TextEntry::make('participant_name')->label('Имя')->placeholder('Не указано')->weight('bold'),
                 TextEntry::make('participant_email')

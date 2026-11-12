@@ -13,6 +13,7 @@ use App\Models\CrmMailMessage;
 use App\Services\CommercialDocuments\QuickCommercialOfferSaver;
 use App\Services\CommercialDocuments\QuickCommercialOfferService;
 use App\Services\CrmMail\CrmMailSender;
+use App\Services\CrmMail\SplitMailRequest;
 use App\Services\CrmMail\SupplierRequestMailDraftService;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
@@ -39,6 +40,8 @@ class ViewCrmMailThread extends ViewRecord
     public ?int $forwardMessageId = null;
 
     public ?int $replyMessageId = null;
+
+    public ?int $splitMessageId = null;
 
     /** @var array<int> */
     public array $initiallyUnreadMessageIds = [];
@@ -83,6 +86,22 @@ class ViewCrmMailThread extends ViewRecord
         return [
             ManageMailThreadNotesAction::make(),
             AssignMailThreadAction::make(),
+            Action::make('split_request')
+                ->label('Выделить в новый запрос')
+                ->icon('heroicon-o-scissors')
+                ->visible(fn (): bool => $this->splitMessageId !== null)
+                ->schema([
+                    TextInput::make('subject')->label('Тема нового запроса')->required()->maxLength(998),
+                ])
+                ->fillForm(fn (): array => ['subject' => $this->record->messages()->find($this->splitMessageId)?->subject ?: $this->record->subject])
+                ->modalHeading('Выделить письмо в новый запрос')
+                ->modalDescription('Выбранное входящее письмо и его вложения перейдут в отдельный запрос. Ответственный сохранится. Предыдущие КП, отказ и остальные письма останутся в исходной переписке. Отправки письма клиенту не будет.')
+                ->modalSubmitActionLabel('Создать новый запрос')
+                ->action(function (array $data): void {
+                    $new = app(SplitMailRequest::class)->split($this->record, (int) $this->splitMessageId, $data['subject'], auth()->user());
+                    Notification::make()->success()->title('Создан новый запрос')->send();
+                    $this->redirect(CrmMailThreadResource::getUrl('view', ['record' => $new]));
+                }),
             Action::make('take')
                 ->label('Взять в работу')->icon('heroicon-o-hand-raised')->color('warning')
                 ->extraAttributes(['class' => 'crm-thread-action crm-thread-action--take'])
@@ -453,6 +472,14 @@ class ViewCrmMailThread extends ViewRecord
         $this->record->messages()->findOrFail($messageId);
         $this->forwardMessageId = $messageId;
         $this->mountAction('forward');
+    }
+
+    public function openSplitRequest(int $messageId): void
+    {
+        $message = $this->record->messages()->findOrFail($messageId);
+        abort_unless($message->direction === 'incoming' && ! in_array($this->record->status, ['spam', 'draft'], true), 404);
+        $this->splitMessageId = $message->id;
+        $this->mountAction('split_request');
     }
 
     public function canTakeThread(): bool

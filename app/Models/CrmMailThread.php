@@ -62,7 +62,7 @@ class CrmMailThread extends Model
         'supplier_order_request_id', 'product_id', 'supplier_id',
         'thread_key', 'subject', 'participant_name', 'participant_email', 'status', 'sales_stage',
         'priority', 'messages_count', 'unread_count', 'last_message_at', 'handled_at',
-        'next_follow_up_at', 'follow_up_note', 'manager_note',
+        'next_follow_up_at', 'follow_up_note', 'manager_note', 'source_thread_id',
     ];
 
     protected $casts = [
@@ -115,6 +115,16 @@ class CrmMailThread extends Model
     public function mailbox(): BelongsTo
     {
         return $this->belongsTo(CrmMailbox::class, 'mailbox_id');
+    }
+
+    public function sourceThread(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'source_thread_id');
+    }
+
+    public function splitRequests(): HasMany
+    {
+        return $this->hasMany(self::class, 'source_thread_id');
     }
 
     public function counterparty(): BelongsTo
