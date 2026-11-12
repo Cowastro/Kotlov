@@ -14,16 +14,20 @@ final class RadiatorCategoryClassifier
         $context = mb_strtolower($brand.' '.$name.' '.$source);
         // An oil heater is not a hydronic radiator, even if the supplier calls it a radiator.
         if (preg_match('~маслян|boh/|\btor\s*21|электроконвектор~u', $name)) return null;
+        // Logafix BH1-W0 is a thermostatic head, not a radiator.
+        if (str_contains($context, 'buderus') && preg_match('~\bbh1[-\s]*w0\b~u', $name)) return 'radiatornaya-armatura';
         $radiatorContext = preg_match('~радиатор|radiator|raditory~u', $context);
         if ($radiatorContext && preg_match('~^(?:(?:монтажный|присоединительный|универсальный|термостатический)\s+)?(?:набор|комплект)\b|пробк|футорк|кронштейн|термоголов|термостат|\b(?:кран|клапан|вентиль|воздухоотвод|заглушк)|удлинител.*поток|подключения.*узел|узел.*подключения~u', $name)) return 'radiatornaya-armatura';
         if (preg_match('~внутрипольн|водян.*конвектор|конвектор.*водян|\bkermi\s+kvn\b~u', $name)) return 'vodyanye-konvektory';
-        if (! preg_match('~\bрадиатор(?:ы)?\b|\bradiator\b~u', $name)) return null;
+        $isRadiator = (bool) preg_match('~\bрадиатор(?:ы)?\b|\bradiator\b~u', $name);
 
         // The actual product type wins over an incorrect supplier category.
-        if (str_contains($name, 'биметалл')) return 'bimetallicheskie-radiatory';
-        if (str_contains($name, 'алюмин')) return 'alyuminievye-radiatory';
-        if (preg_match('~стальн|стальной~u', $name)) return 'stalnye-radiatory';
-        if (str_contains($name, 'чугун')) return 'chugunnye-radiatory';
+        if ($isRadiator) {
+            if (str_contains($name, 'биметалл')) return 'bimetallicheskie-radiatory';
+            if (str_contains($name, 'алюмин')) return 'alyuminievye-radiatory';
+            if (preg_match('~стальн|стальной~u', $name)) return 'stalnye-radiatory';
+            if (str_contains($name, 'чугун')) return 'chugunnye-radiatory';
+        }
 
         // Manufacturer-documented families; never classify an entire brand as one material.
         if (preg_match('~royal[\s-]*thermo~u', $context)) {
@@ -40,8 +44,13 @@ final class RadiatorCategoryClassifier
         if (preg_match('~\bkermi\b~u', $context) && preg_match('~\b(?:fko|ftv|fkv|profil|plan|verteo)~u', $name)) return 'stalnye-radiatory';
         if (str_contains($context, 'zehnder') && str_contains($name, 'charleston')) return 'stalnye-radiatory';
         if (str_contains($context, 'prado') && preg_match('~classic|universal|style~u', $name)) return 'stalnye-radiatory';
+        if (str_contains($context, 'buderus') && preg_match('~\b(?:vk|k)-profil\b~u', $name)) return 'stalnye-radiatory';
+        if (str_contains($context, 'fondital')) {
+            if (str_contains($name, 'alustal bimetal')) return 'bimetallicheskie-radiatory';
+            if (preg_match('~exclusivo super (?:b4|d3)|calidor super b4~u', $name)) return 'alyuminievye-radiatory';
+        }
 
-        return 'radiatory';
+        return $isRadiator ? 'radiatory' : null;
     }
 
     public static function categoryId(string $name, string $source = '', string $brand = ''): ?int

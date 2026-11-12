@@ -732,6 +732,85 @@
         "https://www.c-o-k.ru/library/catalogs/royal-thermo/37775"
       ]
     },
+    "fondital-alustal-bimetal-super-500100-10-sek-rf": {
+      "name": "Fondital ALUSTAL BIMETAL SUPER 500/100 - 10 сек. (РФ)",
+      "material": "bimetal",
+      "height_mm": 559,
+      "depth_mm": 97,
+      "centres_mm": 500,
+      "sections": 10,
+      "sources": [
+        "https://www.fondital.ru/ru/ru/alustal-bimetal-super"
+      ]
+    },
+    "fondital-alustal-bimetal-super-500100-12-sek-rf": {
+      "name": "Fondital ALUSTAL BIMETAL SUPER 500/100 - 12 сек. (РФ)",
+      "material": "bimetal",
+      "height_mm": 559,
+      "depth_mm": 97,
+      "centres_mm": 500,
+      "sections": 12,
+      "sources": [
+        "https://www.fondital.ru/ru/ru/alustal-bimetal-super"
+      ]
+    },
+    "fondital-alustal-bimetal-super-500100-6-sek-rf": {
+      "name": "Fondital ALUSTAL BIMETAL SUPER 500/100-6 сек. (РФ)",
+      "material": "bimetal",
+      "height_mm": 559,
+      "depth_mm": 97,
+      "centres_mm": 500,
+      "sections": 6,
+      "sources": [
+        "https://www.fondital.ru/ru/ru/alustal-bimetal-super"
+      ]
+    },
+    "fondital-alustal-bimetal-super-500100-8-sek-rf": {
+      "name": "Fondital ALUSTAL BIMETAL SUPER 500/100 - 8 сек. (РФ)",
+      "material": "bimetal",
+      "height_mm": 559,
+      "depth_mm": 97,
+      "centres_mm": 500,
+      "sections": 8,
+      "sources": [
+        "https://www.fondital.ru/ru/ru/alustal-bimetal-super"
+      ]
+    },
+    "fondital-exclusivo-super-b4-350100-10-rf": {
+      "name": "Fondital EXCLUSIVO SUPER B4 350/100 (10) (РФ)",
+      "material": "aluminium",
+      "sources": [
+        "https://www.fondital.ru/ru/ru/lityye-davleniyem-bimetallicheskiye-radiatory"
+      ]
+    },
+    "fondital-exclusivo-super-d3-500100-10-rf": {
+      "name": "Fondital EXCLUSIVO SUPER D3 500/100-(10) (РФ)",
+      "material": "aluminium",
+      "sources": [
+        "https://www.fondital.ru/ru/ru/lityye-davleniyem-bimetallicheskiye-radiatory"
+      ]
+    },
+    "fondital-exclusivo-super-d3-500100-12rf": {
+      "name": "Fondital EXCLUSIVO SUPER D3 500/100-(12)(РФ)",
+      "material": "aluminium",
+      "sources": [
+        "https://www.fondital.ru/ru/ru/lityye-davleniyem-bimetallicheskiye-radiatory"
+      ]
+    },
+    "fondital-exclusivo-super-d3-500100-6-rf": {
+      "name": "Fondital EXCLUSIVO SUPER D3 500/100-(6) (РФ)",
+      "material": "aluminium",
+      "sources": [
+        "https://www.fondital.ru/ru/ru/lityye-davleniyem-bimetallicheskiye-radiatory"
+      ]
+    },
+    "fondital-exclusivo-super-d3-500100-8-rf": {
+      "name": "Fondital EXCLUSIVO SUPER D3 500/100-(8) (РФ)",
+      "material": "aluminium",
+      "sources": [
+        "https://www.fondital.ru/ru/ru/lityye-davleniyem-bimetallicheskiye-radiatory"
+      ]
+    },
     "kermi-fko-110504": {
       "name": "Радиатор Kermi FKO 11500400",
       "material": "steel",
@@ -2074,6 +2153,13 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ]
+    },
+    "radiator-aliuminievyi-calidor-super-b4-350100-8-sekcii-fondital": {
+      "name": "Радиатор алюминиевый CALIDOR SUPER B4 350/100 8 секций FONDITAL",
+      "material": "aluminium",
+      "sources": [
+        "https://www.fondital.ru/ru/ru/lityye-davleniyem-bimetallicheskiye-radiatory"
       ]
     },
     "radiator-aliuminievyi-rifar-alum-350": {

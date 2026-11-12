@@ -41,6 +41,9 @@ class RadiatorCatalogTest extends TestCase
             ['Пробка радиатора', 'radiatornaya-armatura'],
             ['Водяной конвектор Kermi KVN', 'vodyanye-konvektory'],
             ['Радиатор стальной с крепежом в комплекте', 'stalnye-radiatory'],
+            ['Fondital ALUSTAL BIMETAL SUPER 500/100 - 12 сек.', 'bimetallicheskie-radiatory'],
+            ['Buderus BH1-W0 K белый', 'radiatornaya-armatura'],
+            ['Buderus 22/500/1200 VK-Profil', 'stalnye-radiatory'],
         ];
         $rus = app(\App\Console\Commands\SyncRusklimatCommand::class);
         $tep = app(\App\Console\Commands\ImportTeplodvorCatalogCommand::class);
