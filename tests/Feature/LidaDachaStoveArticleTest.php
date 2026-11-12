@@ -23,14 +23,18 @@ class LidaDachaStoveArticleTest extends TestCase
             'phones' => ['+375333667609'], 'working_hours' => 'Вт–Сб 09:00–18:00', 'is_active' => true]);
 
         (require database_path('migrations/2026_11_12_110000_publish_lida_dacha_stove_chimney_article.php'))->up();
+        (require database_path('migrations/2026_11_12_130000_lida_dacha_article_retouched_photos_and_cover.php'))->up();
 
         $this->get('https://lida.kotlov.by/news/dymohod-dlya-pechi-na-dache-lida')->assertOk()
             ->assertSee('Дымоход для печи на даче в Лиде: бюджетный монтаж через кровлю')
-            ->assertSee('pech-i-dymohod-v-dome.webp', false)
-            ->assertSee('dymohod-nad-krovley.webp', false)
+            ->assertSee('lida-dacha-cover.webp', false)
+            ->assertSee('pech-i-dymohod-v-dome-2.webp', false)
+            ->assertSee('dymohod-nad-krovley-2.webp', false)
+            ->assertSee('визуализация финишной отделки')
             ->assertSee('Калинина, 57');
         $this->get('https://lida.kotlov.by/news')->assertOk()->assertSee('Дымоход для печи на даче в Лиде');
-        $this->assertFileExists(public_path('img/blog/works/lida-dacha-pech/pech-i-dymohod-v-dome.webp'));
-        $this->assertFileExists(public_path('img/blog/works/lida-dacha-pech/dymohod-nad-krovley.webp'));
+        $this->assertFileExists(public_path('img/blog/works/lida-dacha-pech/lida-dacha-cover.webp'));
+        $this->assertFileExists(public_path('img/blog/works/lida-dacha-pech/pech-i-dymohod-v-dome-2.webp'));
+        $this->assertFileExists(public_path('img/blog/works/lida-dacha-pech/dymohod-nad-krovley-2.webp'));
     }
 }
