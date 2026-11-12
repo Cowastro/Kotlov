@@ -73,7 +73,7 @@ class ImportTeplodvorCatalogCommand extends Command
         'raditory/konvektory'                                        => 324,  // водяные конвекторы (не электрические!)
         'raditory/trubchatye'                                        => 235,
         'raditory/obogrevateli'                                      => 202,
-        'raditory/dizaynerskie-radiatory'                            => 235,  // дизайнерские → стальные
+        'raditory/dizaynerskie-radiatory'                            => 87,   // material must be confirmed for the model
         'raditory/komplektuyuschie-k-radiatoram'                     => 195,
         'konvektory/elektricheskie-konvektory'                       => 281,  // реальные электрические
         'konvektory/gazovye'                                         => 195,
@@ -663,6 +663,9 @@ class ImportTeplodvorCatalogCommand extends Command
 
     private function detectCategory(string $url, string $name = ''): int
     {
+        if ($id = \App\Support\Catalog\RadiatorCategoryClassifier::categoryId($name, $url)) {
+            return $id;
+        }
         if ($id = \App\Support\Catalog\HeaterCategoryClassifier::categoryId($name, $url)) {
             return $id;
         }

@@ -25,6 +25,7 @@ use App\Services\HeatPumpProductPresenter;
 use App\Support\Catalog\BoilerSpecifications;
 use App\Support\Catalog\WaterHeaterCatalog;
 use App\Support\Catalog\HeaterCatalog;
+use App\Support\Catalog\RadiatorCatalog;
 use App\Support\Catalog\CatalogSearch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -114,19 +115,21 @@ class CatalogController extends Controller
         $isWaterHeaterHub = $category->slug === WaterHeaterCatalog::ROOT;
         $heaterName = WaterHeaterCatalog::name($category->slug);
         $roomHeaterName = HeaterCatalog::NAMES[$category->slug] ?? null;
+        $radiatorName = RadiatorCatalog::NAMES[$category->slug] ?? null;
         $isRoomHeaterCatalog = $roomHeaterName !== null;
         $roomArea = $isRoomHeaterCatalog ? HeaterCatalog::roomArea(request()->query('room_area')) : null;
         $roomAreaInvalid = $isRoomHeaterCatalog && request()->has('room_area') && request('room_area') !== '' && $roomArea === null;
-        $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName ?? $roomHeaterName;
+        $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName ?? $roomHeaterName ?? $radiatorName;
         $specificationSearch = CatalogSearch::term(request()->query('q'));
         $scopeCatalogSearch = fn ($query) => CatalogSearch::apply($query, $specificationSearch);
         $specificationCatalog = match (true) {
+            $radiatorName !== null => app(RadiatorCatalog::class),
             $roomHeaterName !== null => app(HeaterCatalog::class),
             $heaterName !== null => app(WaterHeaterCatalog::class),
             $specificationName !== null => app(BoilerCatalog::class),
             default => null,
         };
-        $specificationParameter = $roomHeaterName !== null ? 'heating' : ($heaterName !== null ? 'heater' : 'boiler');
+        $specificationParameter = $radiatorName !== null ? 'radiator' : ($roomHeaterName !== null ? 'heating' : ($heaterName !== null ? 'heater' : 'boiler'));
         if ($category->slug === WaterHeaterCatalog::GAS && ($gasId = Category::active()->where('slug', 'gas')->value('id'))) {
             $allCategoryIds = $allCategoryIds->merge($this->collectCategoryAndDescendantIds($gasId))->unique()->values();
         }
@@ -225,6 +228,14 @@ class CatalogController extends Controller
             }
         }
 
+        if ($category->slug === 'radiatory' && $selectedSubcategory === null) {
+            $partsId = Category::active()->where('slug', 'radiatornaya-armatura')->value('id');
+            if ($partsId) {
+                $activeCategoryIds = $activeCategoryIds->diff($this->collectCategoryAndDescendantIds((int) $partsId))->values();
+                $allCategoryIds = $activeCategoryIds;
+            }
+        }
+
         $showElectricFireplaceNavigation = in_array($category->slug, ['elektrokamini', 'oblicovki'], true);
         $fireplaceType = ElectricFireplaceNavigation::selection($category->slug, request()->query('fireplace_type'));
         $fireplaceSelectionIds = $fireplaceType === null ? null
@@ -313,7 +324,7 @@ class CatalogController extends Controller
 
         $legacyHeaterAttributeIds = $roomHeaterName !== null
             ? $rawAttributes->filter(fn ($attribute) => HeaterCatalog::managed($attribute->name))->modelKeys()
-            : [];
+            : ($radiatorName !== null ? $rawAttributes->filter(fn ($attribute) => RadiatorCatalog::managed($attribute->name))->modelKeys() : []);
         if ($legacyHeaterAttributeIds !== []) {
             $rawAttributes = $rawAttributes->reject(fn ($attribute) => in_array($attribute->id, $legacyHeaterAttributeIds, true));
         }
@@ -1035,6 +1046,7 @@ class CatalogController extends Controller
             if ($roomHeaterName !== null) {
                 $boilerDescription = 'Сравните подтверждённые мощность, площадь обогрева и тип установки. Площадь указана по данным производителя и зависит от условий помещения.';
             }
+            if ($radiatorName !== null) $boilerDescription = 'Сравните материал, подключение и размеры. Теплоотдача указана вместе с температурным напором ΔT; для подбора учитывайте теплопотери помещения.';
             $description = $seo->description(null, 'Купить '.mb_strtolower($specificationName).' '.$specificationCity.'. '.($specificationLanding['description'] ?? $boilerDescription));
             if ($specificationLanding !== null) {
                 $categoryUrl .= '/'.$specificationLanding['slug'];
@@ -1072,7 +1084,7 @@ class CatalogController extends Controller
 
         if (request()->hasAny(['q', 'brand', 'attr', 'price_min', 'price_max', 'in_stock', 'subcategory',
             'power', 'electric_mode', 'niche_width_max', 'fireplace_type', 'sort', 'brand_sort',
-            'firebox_glass', 'firebox_door', 'sauna_volume', 'room_area', 'heating', 'boiler', 'heater'])) {
+            'firebox_glass', 'firebox_door', 'sauna_volume', 'room_area', 'heating', 'boiler', 'heater', 'radiator'])) {
             $robots = 'noindex, follow';
         }
 
