@@ -497,6 +497,21 @@ class OrdersTable
                     ->label('Статус оплаты')
                     ->options($paymentStatuses),
 
+                SelectFilter::make('customer_review_status')
+                    ->label('СМС и отзывы')
+                    ->placeholder('Все')
+                    ->options([
+                        'sms_not_sent' => 'СМС не отправлена',
+                        'waiting' => 'Ждём отзыв',
+                        'moderation' => 'Отзыв на модерации',
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                        'sms_not_sent' => $query->whereNull('review_sms_sent_at')->whereDoesntHave('customerReviews'),
+                        'waiting' => $query->whereNotNull('review_sms_sent_at')->whereDoesntHave('customerReviews'),
+                        'moderation' => $query->whereHas('customerReviews', fn (Builder $reviews): Builder => $reviews->where('is_approved', false)),
+                        default => $query,
+                    }),
+
                 SelectFilter::make('delivery_type')
                     ->label('Доставка')
                     ->options($deliveryNames),
@@ -569,15 +584,16 @@ class OrdersTable
                         ->when($data['created_from'] ?? null, fn (Builder $query, $date) => $query->whereDate('created_at', '>=', $date))
                         ->when($data['created_until'] ?? null, fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date))),
             ], layout: FiltersLayout::AboveContent)
-            ->filtersFormColumns(['md' => 2, 'xl' => 4])
+            ->filtersFormColumns(['md' => 2, 'xl' => 5])
             ->filtersFormSchema(fn (array $filters): array => [
                 $filters['status'],
                 $filters['manager_id'],
                 $filters['operational_problem'],
                 $filters['payment_status'],
+                $filters['customer_review_status'],
                 Section::make('Дополнительные фильтры')->compact()->collapsible()->collapsed()->columnSpanFull()
                     ->columns(['md' => 2, 'xl' => 4])
-                    ->schema(array_values(array_diff_key($filters, array_flip(['status', 'manager_id', 'operational_problem', 'payment_status'])))),
+                    ->schema(array_values(array_diff_key($filters, array_flip(['status', 'manager_id', 'operational_problem', 'payment_status', 'customer_review_status'])))),
             ])
             ->deferFilters(false)
             ->emptyStateHeading('Заказы не найдены')
