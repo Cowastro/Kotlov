@@ -1016,6 +1016,10 @@ class CatalogController extends Controller
             $robots = 'noindex, follow';
         }
 
+        if ($products->total() === 0 && ! Product::orderable()->whereIn('category_id', $allCategoryIds)->exists()) {
+            $robots = 'noindex, follow';
+        }
+
         $canonical = $categoryUrl;
         $hasIndexablePagination = $specificationName !== null || $isMinskFireplaceCatalog
             || ($isElectricFireplaceCatalog && request()->getHost() === config('app.base_domain', 'kotlov.by'));

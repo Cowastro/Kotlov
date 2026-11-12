@@ -325,7 +325,7 @@ class ImportTeplodvorCatalogCommand extends Command
                     continue;
                 }
 
-                $categoryId = $this->detectCategory($tepUrl);
+                $categoryId = $this->detectCategory($tepUrl, $card['name']);
                 $productSlug = $this->makeSlug($card['name'], (int) $brand->id);
 
                 // Skip if slug already exists
@@ -661,8 +661,11 @@ class ImportTeplodvorCatalogCommand extends Command
 
     // ── Category detection ────────────────────────────────────────────────────────
 
-    private function detectCategory(string $url): int
+    private function detectCategory(string $url, string $name = ''): int
     {
+        if ($id = \App\Support\Catalog\HeaterCategoryClassifier::categoryId($name, $url)) {
+            return $id;
+        }
         // Extract /shop/cat1/cat2/ from URL
         if (preg_match('#/shop/([^/]+)/([^/]+)/#', $url, $m)) {
             $key = $m[1] . '/' . $m[2];
