@@ -62,15 +62,38 @@ class CrmMailReplyWaitingTest extends TestCase
         $unassigned = $this->thread();
         $this->message($unassigned, 'incoming', now()->subMinutes(15));
 
-        Livewire::actingAs($manager)->test(ListCrmMailThreads::class)
+        $page = Livewire::actingAs($manager)->test(ListCrmMailThreads::class)
             ->set('activeTab', 'needs_response')
             ->assertCanSeeTableRecords([$thread, $unassigned])
             ->assertSeeText('Наталья Тестовая')
             ->assertSeeText('Не назначен')
             ->assertSeeText('Ждёт 1 д 2 ч')
-            ->assertSeeText('Ждёт 15 мин')
-            ->set('activeTab', 'all')
-            ->assertDontSeeText('Ждёт 1 д 2 ч');
+            ->assertSeeText('Ждёт 15 мин');
+        $ownerColumn = $page->instance()->getTable()->getColumn('assignedUser.name');
+        $this->assertSame('danger', $ownerColumn->record($unassigned)->getColor('Не назначен'));
+        $this->assertSame(\Filament\Support\Enums\FontWeight::Bold, $ownerColumn->getWeight());
+        $this->assertSame('heroicon-o-exclamation-circle', $ownerColumn->getIcon('Не назначен'));
+        $this->assertSame('gray', $ownerColumn->record($thread)->getColor($manager->name));
+        $page->set('activeTab', 'all')->assertDontSeeText('Ждёт 1 д 2 ч');
+    }
+
+    public function test_longest_unanswered_wait_stays_first_after_a_repeat_message(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-12 12:00:00'));
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $oldest = $this->thread();
+        $oldest->update(['assigned_user_id' => $manager->id]);
+        $this->message($oldest, 'incoming', now()->subDays(3));
+        $this->message($oldest, 'incoming', now());
+        $middle = $this->thread();
+        $this->message($middle, 'incoming', now()->subDay());
+        $freshUrgent = $this->thread();
+        $freshUrgent->update(['priority' => 'urgent', 'next_follow_up_at' => now()->subHour()]);
+        $this->message($freshUrgent, 'incoming', now()->subMinutes(10));
+
+        Livewire::actingAs($manager)->test(ListCrmMailThreads::class)
+            ->set('activeTab', 'needs_response')
+            ->assertCanSeeTableRecords([$oldest, $middle, $freshUrgent], inOrder: true);
     }
 
     private function thread(): CrmMailThread
