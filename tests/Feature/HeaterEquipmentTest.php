@@ -96,6 +96,51 @@ class HeaterEquipmentTest extends TestCase
         $this->assertSame(['Внешний терморегулятор', 'Распределительная коробка'], array_column(HeaterEquipment::details($elboom)['separate'], 'label'));
     }
 
+    public function test_remaining_verified_passports_show_included_parts_without_extra_purchases(): void
+    {
+        $partsCategory = $this->category(HeaterEquipment::PARTS_CATEGORY);
+        foreach (HeaterEquipment::records()['parts'] as $part) $this->product($partsCategory, $part['slug']);
+
+        $oil = $this->category('maslyanye-obrevateli');
+        $convectors = $this->category('elektricheskie-konvektoryi');
+        $cases = [
+            [$oil, 'ballu-bohcl-05wrn', 'Ножки с роликами', 'BOH/CL-05WRN', 7],
+            [$oil, 'ballu-bohcl-07wrn', 'Ножки с роликами', 'BOH/CL-07WRN', 7],
+            [$oil, 'ballu-bohcl-11wrn', 'Ножки с роликами', 'BOH/CL-11WRN', 7],
+            [$convectors, 'konvektor-elektriceskii-electrolux-echag2-1000-ef', 'Дополнительные фильтры', 'ECH/AG2-1000 EF', 14],
+        ];
+        foreach ($cases as [$category, $slug, $included, $model, $page]) {
+            $heater = $this->product($category, $slug);
+            $response = $this->get('/'.$category->slug.'/'.$slug)->assertOk();
+            $response->assertSee('В комплекте')->assertSee($included)
+                ->assertDontSee('Точная комплектация этой модели пока не подтверждена.')
+                ->assertDontSee('id="compatible-heater-equipment"', false);
+            $record = $response->viewData('heaterEquipment');
+            $this->assertSame([], $record['separate']);
+            $this->assertStringContainsString($model, $record['document']['model']);
+            $this->assertSame($page, $record['document']['completeness_page']);
+            $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $record['document']['sha256']);
+            $response->assertSee($record['document']['url']);
+            $this->assertTrue($response->viewData('heaterEquipmentGroups')->isEmpty());
+        }
+    }
+
+    public function test_unresolved_exact_models_stay_unknown_despite_similar_manufacturer_series(): void
+    {
+        foreach ([
+            'elektricheskie-teploakkumulyatory' => 'hotta-aet-24-220-v-elektriceskii-teploakkumuliator',
+            'elektricheskie-konvektoryi' => 'elektrokonvektor-elboom-ev1-usat-15-230-ip20',
+        ] as $categorySlug => $slug) {
+            $heater = $this->product($this->category($categorySlug), $slug);
+            $response = $this->get('/'.$categorySlug.'/'.$slug)->assertOk();
+            $response->assertSee('Точная комплектация этой модели пока не подтверждена.')
+                ->assertDontSee('id="compatible-heater-equipment"', false);
+            $this->assertSame([], $response->viewData('heaterEquipment')['included']);
+            $this->assertArrayNotHasKey($slug, HeaterEquipment::records()['products']);
+            $this->assertNotEmpty(HeaterEquipment::records()['unresolved'][$slug]['reason']);
+        }
+    }
+
     public function test_every_published_fact_and_relationship_has_manufacturer_evidence(): void
     {
         $records = HeaterEquipment::records();
