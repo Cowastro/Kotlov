@@ -1,0 +1,1870 @@
+{
+  "checked_at": "2026-11-12",
+  "requested_backlog": 98,
+  "newly_confirmed": 18,
+  "still_unconfirmed": 80,
+  "corrected_previous_assignments": 4,
+  "policy": "Only exact manufacturer model values with explicit temperature head. Distributor pages identify the item, never supply thermal values. No calculated assembly power or converted temperature regime. Unknown revision/colour stays unfilled.",
+  "products": [
+    {
+      "slug": "radiator-aliuminievyi-royal-thermo-monoblock-a-500-4-sekc",
+      "name": "Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 – 4 секц.",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "KOTLOV-001395"
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-royal-thermo-monoblock-a-500-10-sekc",
+      "name": "Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 – 10 секц.",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "KOTLOV-001398"
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-royal-thermo-indigo-a-500-10-sekc",
+      "name": "Радиатор алюминиевый Royal Thermo Indigo A 500 - 10 секц.",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "KOTLOV-001408"
+      }
+    },
+    {
+      "slug": "atm-thermo-energia-500100-aliuminievyi-radiator-1-sekciia",
+      "name": "ATM Thermo Energia 500/100, алюминиевый радиатор, 1 секция",
+      "status": "conflicting_manufacturer_revisions",
+      "reason": "Найдены оригинальные паспорта АТМ разных редакций с отличающимися номиналами/размерами. Старая редакция с названием 500/80 или 500/100 не объявляет ΔT, новая объявляет ΔT70, но отличается модельным рядом. Без маркировки партии сопоставление не подтверждено; Moderno+ не заменяет Moderno.",
+      "reviewed_sources": [
+        "https://dn.ru/storage/certificates/radiator/pasport-metallo-moderno.pdf",
+        "https://radiat.ru/pdf/radiatory/atm/pass_atm.pdf",
+        "https://rusradiator.ru/files/uploads/Documents/ATM/ATM_Pasport/Pasport-ATM-AL-BM.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "KOTLOV-022625"
+      }
+    },
+    {
+      "slug": "atm-thermo-moderno-50080-aliuminievyi-radiator-1-sekciia",
+      "name": "ATM Thermo Moderno 500/80, алюминиевый радиатор, 1 секция",
+      "status": "conflicting_manufacturer_revisions",
+      "reason": "Найдены оригинальные паспорта АТМ разных редакций с отличающимися номиналами/размерами. Старая редакция с названием 500/80 или 500/100 не объявляет ΔT, новая объявляет ΔT70, но отличается модельным рядом. Без маркировки партии сопоставление не подтверждено; Moderno+ не заменяет Moderno.",
+      "reviewed_sources": [
+        "https://dn.ru/storage/certificates/radiator/pasport-metallo-moderno.pdf",
+        "https://radiat.ru/pdf/radiatory/atm/pass_atm.pdf",
+        "https://rusradiator.ru/files/uploads/Documents/ATM/ATM_Pasport/Pasport-ATM-AL-BM.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "KOTLOV-022626"
+      }
+    },
+    {
+      "slug": "atm-thermo-metallo-50080-bimetalliceskii-radiator-1-sekciia",
+      "name": "ATM Thermo Metallo 500/80, биметаллический радиатор, 1 секция",
+      "status": "conflicting_manufacturer_revisions",
+      "reason": "Найдены оригинальные паспорта АТМ разных редакций с отличающимися номиналами/размерами. Старая редакция с названием 500/80 или 500/100 не объявляет ΔT, новая объявляет ΔT70, но отличается модельным рядом. Без маркировки партии сопоставление не подтверждено; Moderno+ не заменяет Moderno.",
+      "reviewed_sources": [
+        "https://dn.ru/storage/certificates/radiator/pasport-metallo-moderno.pdf",
+        "https://radiat.ru/pdf/radiatory/atm/pass_atm.pdf",
+        "https://rusradiator.ru/files/uploads/Documents/ATM/ATM_Pasport/Pasport-ATM-AL-BM.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "KOTLOV-022624"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-lemaks-compact-tip-22-500x500",
+      "name": "Радиатор стальной Лемакс Compact тип 22 500x500",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Общее название Compact без заводского артикула не различает Premium/Modern и редакцию панели. Таблица V7.02 найдена, но принадлежность партии к ней не подтверждена.",
+      "reviewed_sources": [
+        "https://spb.teplodvor.ru/dokumentacija/lemaks-radiators-passport-20261112.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "KOTLOV-040166"
+      }
+    },
+    {
+      "slug": "fondital-aliuminievyi-radiator-g35010-armatura-polsa",
+      "name": "Fondital Алюминиевый радиатор G350/10 Armatura (ПОЛЬША)",
+      "status": "manufacturer_identity_conflict",
+      "reason": "В названии одновременно Fondital и Armatura (Польша). Нужен паспорт G350/10 производителя Armatura; характеристики Fondital не подставлялись.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "KOTLOV-006136"
+      }
+    },
+    {
+      "slug": "fondital-aliuminievyi-radiator-exclusivo-b4-350100-10-italiia",
+      "name": "Fondital Алюминиевый радиатор Exclusivo B4 350/100 (10) (ИТАЛИЯ)",
+      "status": "confirmed",
+      "fields": {
+        "section_power_dt70_w": 141.3,
+        "section_power_dt50_w": 91.5
+      },
+      "source": "https://teplo3000.spb.ru/doc/radiator/tp-aluminievye-fondital-exclusivo.pdf",
+      "pages": [
+        3
+      ],
+      "note": "Итальянский Exclusivo B4 350/100, паспорт Exclusivo B3-B4, PDF 3: 141,3 Вт/секц. при ΔT70. Значение 91,5 Вт/секц. при ΔT50 подтверждено декларацией Fondital DOP185, PDF 2, и текущей заводской страницей Exclusivo. Не российский Super/Plus B4 (143 Вт).",
+      "identity": {
+        "manufacturer_model": "Fondital Exclusivo B4 350/100 (Italy)"
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-500100-10-sekcii-art-s500a2-sti",
+      "name": "Радиатор алюминиевый 500/100 10 секций арт. S500A2 STI",
+      "status": "confirmed",
+      "fields": {
+        "section_power_dt70_w": 215
+      },
+      "source": "https://avm36.pro/upload/iblock/187/s997wcfnivbwgi92wkk6g2v68xyujgjc.pdf",
+      "pages": [
+        1,
+        2
+      ],
+      "note": "Оригинальный паспорт ООО «САС Индастриал», строка S500A2: 215 Вт на секцию. Нормативный напор 70°C задан непосредственно формулой Qф=Qн×(Тф/70)^1,3 и определением Тф под таблицей; пересчёт не выполнялся. Артикул S500A2, изготовитель и размер 580×80×96 мм подтверждены карточкой точного кода поставщика. Теплоотдача сборки не вычисляется.",
+      "identity": {
+        "supplier_sku": "BEREG-00143405",
+        "supplier_url": "https://www.bereg.by/product/radiator_alyuminievyy_500_100_10_sektsiy_art_s500a2_sti/",
+        "distributor_article": "ТТ000019462",
+        "manufacturer": "ООО «САС Индастриал»",
+        "manufacturer_model": "S500A2"
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-50080-4-sekcii-sti",
+      "name": "Радиатор алюминиевый 500/80 4 секции STI",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 540
+      },
+      "source": "https://mnogo-tepla.ru/upload/iblock/0db/uk0ie5jf8lgbzgi10tyntky7okqe4b7o/Alyuminievyy-radiator-STI-_-Pasport.pdf",
+      "pages": [
+        1
+      ],
+      "note": "Паспорт STI Classic, ОТК 07.2022, Zhejiang Wisdom Industry & Trade: точная сборка 500/80; под таблицей явно указано ΔT=70°C. Изготовитель, размер 565×78×78 мм и число секций сверены по коду поставщика. Не заменяется исполнениями САС или RUS.",
+      "identity": {
+        "supplier_sku": "BEREG-00085547",
+        "supplier_url": "https://www.bereg.by/product/radiator_alyuminievyy_500_80_4_sektsii_sti_1/",
+        "manufacturer": "Zhejiang Wisdom Industry & Trade",
+        "manufacturer_model": "STI Classic 500/80",
+        "sections": 4
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-50080-12-sekcii-sti",
+      "name": "Радиатор алюминиевый 500/80 12 секций STI",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 1620
+      },
+      "source": "https://mnogo-tepla.ru/upload/iblock/0db/uk0ie5jf8lgbzgi10tyntky7okqe4b7o/Alyuminievyy-radiator-STI-_-Pasport.pdf",
+      "pages": [
+        1
+      ],
+      "note": "Паспорт STI Classic, ОТК 07.2022, Zhejiang Wisdom Industry & Trade: точная сборка 500/80; под таблицей явно указано ΔT=70°C. Изготовитель, размер 565×78×78 мм и число секций сверены по коду поставщика. Не заменяется исполнениями САС или RUS.",
+      "identity": {
+        "supplier_sku": "BEREG-00085546",
+        "supplier_url": "https://www.bereg.by/product/radiator_alyuminievyy_500_80_12_sektsiy_sti_1/",
+        "manufacturer": "Zhejiang Wisdom Industry & Trade",
+        "manufacturer_model": "STI Classic 500/80",
+        "sections": 12
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-bokovoe-podkliucenie-c-21x500x500-magnum-steel",
+      "name": "Радиатор стальной боковое подключение C 21х500х500 MAGNUM Steel",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102324"
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-500100-6-sekcii-art-s500a2-sti",
+      "name": "Радиатор алюминиевый 500/100 6 секций арт. S500A2 STI",
+      "status": "confirmed",
+      "fields": {
+        "section_power_dt70_w": 215
+      },
+      "source": "https://avm36.pro/upload/iblock/187/s997wcfnivbwgi92wkk6g2v68xyujgjc.pdf",
+      "pages": [
+        1,
+        2
+      ],
+      "note": "Оригинальный паспорт ООО «САС Индастриал», строка S500A2: 215 Вт на секцию. Нормативный напор 70°C задан непосредственно формулой Qф=Qн×(Тф/70)^1,3 и определением Тф под таблицей; пересчёт не выполнялся. Артикул S500A2, изготовитель и размер 580×80×96 мм подтверждены карточкой точного кода поставщика. Теплоотдача сборки не вычисляется.",
+      "identity": {
+        "supplier_sku": "BEREG-00143403",
+        "supplier_url": "https://www.bereg.by/product/radiator_alyuminievyy_500_100_6_sektsiy_art_s500a2_sti/",
+        "distributor_article": "ТТ000019460",
+        "manufacturer": "ООО «САС Индастриал»",
+        "manufacturer_model": "S500A2"
+      }
+    },
+    {
+      "slug": "radiator-cugunnyi-500-7-sekcii-sti-nova",
+      "name": "Радиатор чугунный 500 7 секций STI Нова",
+      "status": "temperature_head_not_declared",
+      "reason": "Паспорт Нова 300/80 и 500/80 найден (85/124 Вт на секцию), но ΔT в нем не объявлен. Не подменять максимальной температурой 130°C или данными другой редакции.",
+      "reviewed_sources": [
+        "https://vodomirural.ru/upload/iblock/489/489f2c6b08c8d8c2357a2c588f6c349d.pdf",
+        "https://progreem.by/upload/dev2fun.imagecompress/webp/iblock/51f/Tekhnicheskiy-pasport-_-Radiatory-otopleniya-STI-Nova-500.webp"
+      ],
+      "identity": {
+        "merchant_sku": "BEREG-00127630",
+        "supplier_sku": "BEREG-00127630",
+        "supplier_url": "https://www.bereg.by/product/radiator_chugunnyy_500_7_sektsiy_sti_nova/",
+        "supplier_identification": "Бренд STI Вес, кг 28.413 Высота секции, мм 580 Гарантийный срок (месяцев) 36 Глубина секции, мм 80 Диаметр присоединения, \" 1 Количество секций 10 Максимальная температура рабочей среды, °С 130 Материал корпуса чугун Межосевое расстояние, мм 500 Назначение для систем отопления Номерной паспорт (на ед. товара) Вложен в инд. упаковку (номерной паспорт) Область применения отопление Предприятие-изготовитель HULUDAO NANPIAO DISTRICT JINXING XINGHUA Рабочее давление (МПа) 1,2 Срок годности (месяцев) Не установлен Срок службы 30 лет Страна происхождения Китай Тепловая мощность, Вт 868 Тип присоединения резьбовое Цвет белый Ширина секции, мм 60"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-nizn-podkl-22x500x700-magnum-steel-pod-termogovku-danfoss",
+      "name": "Радиатор стальной нижн. подкл. 22х500х700 MAGNUM Steel (под термоговку Danfoss)",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102758"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-bokovoe-podkliucenie-c-21x500x400-magnum-steel",
+      "name": "Радиатор стальной боковое подключение C 21х500х400 MAGNUM Steel",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102323",
+        "supplier_sku": "BEREG-00102323",
+        "supplier_url": "https://www.bereg.by/product/radiator_stalnoy_bokovoe_podklyuchenie_c_21kh500kh400_magnum_steel_1/",
+        "supplier_reported_article": "C21-500-400/9016",
+        "supplier_identification": "Бренд MAGNUM Steel Вес, кг 9.53 Высота, мм 500 Гарантийный срок (месяцев) 120 Глубина, мм 64 Диаметр присоединения, \" 1/2 Длина радиатора, мм 400 Код производителя C21-500-400/9016 MAGSt Максимальная температура рабочей среды, °С 110 Максимальное рабочее давление, бар 10 Материал корпуса сталь Межосевое расстояние, мм 445 Назначение для систем отопления Область применения отопление Подвод воды боковой Предприятие-изготовитель Роял Термо Рус Рабочее давление (МПа) 1 Срок службы 2 года Страна происхождения Россия Тепловая мощность, Вт 821 Тип присоединения резьбовое Тип радиатора 21 Тип резьбы цилиндрическая Цвет белый Ширина, мм 400"
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-50080-10-sekcii-sti",
+      "name": "Радиатор алюминиевый 500/80 10 секций STI",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 1350
+      },
+      "source": "https://mnogo-tepla.ru/upload/iblock/0db/uk0ie5jf8lgbzgi10tyntky7okqe4b7o/Alyuminievyy-radiator-STI-_-Pasport.pdf",
+      "pages": [
+        1
+      ],
+      "note": "Паспорт STI Classic, ОТК 07.2022, Zhejiang Wisdom Industry & Trade: точная сборка 500/80; под таблицей явно указано ΔT=70°C. Изготовитель, размер 565×78×78 мм и число секций сверены по коду поставщика. Не заменяется исполнениями САС или RUS.",
+      "identity": {
+        "supplier_sku": "BEREG-00085545",
+        "supplier_url": "https://www.bereg.by/product/radiator_alyuminievyy_500_80_10_sektsiy_sti_1/",
+        "manufacturer": "Zhejiang Wisdom Industry & Trade",
+        "manufacturer_model": "STI Classic 500/80",
+        "sections": 10
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-50080-6-sekcii-sti",
+      "name": "Радиатор алюминиевый 500/80 6 секций STI",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 810
+      },
+      "source": "https://mnogo-tepla.ru/upload/iblock/0db/uk0ie5jf8lgbzgi10tyntky7okqe4b7o/Alyuminievyy-radiator-STI-_-Pasport.pdf",
+      "pages": [
+        1
+      ],
+      "note": "Паспорт STI Classic, ОТК 07.2022, Zhejiang Wisdom Industry & Trade: точная сборка 500/80; под таблицей явно указано ΔT=70°C. Изготовитель, размер 565×78×78 мм и число секций сверены по коду поставщика. Не заменяется исполнениями САС или RUS.",
+      "identity": {
+        "supplier_sku": "BEREG-00084129",
+        "supplier_url": "https://www.bereg.by/product/radiator_alyuminievyy_500_80_6_sektsiy_sti_1/",
+        "manufacturer": "Zhejiang Wisdom Industry & Trade",
+        "manufacturer_model": "STI Classic 500/80",
+        "sections": 6
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-50080-8-sekcii-sti",
+      "name": "Радиатор алюминиевый 500/80 8 секций STI",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 1080
+      },
+      "source": "https://mnogo-tepla.ru/upload/iblock/0db/uk0ie5jf8lgbzgi10tyntky7okqe4b7o/Alyuminievyy-radiator-STI-_-Pasport.pdf",
+      "pages": [
+        1
+      ],
+      "note": "Паспорт STI Classic, ОТК 07.2022, Zhejiang Wisdom Industry & Trade: точная сборка 500/80; под таблицей явно указано ΔT=70°C. Изготовитель, размер 565×78×78 мм и число секций сверены по коду поставщика. Не заменяется исполнениями САС или RUS.",
+      "identity": {
+        "supplier_sku": "BEREG-00085548",
+        "supplier_url": "https://www.bereg.by/product/radiator_alyuminievyy_500_80_8_sektsiy_sti_1/",
+        "manufacturer": "Zhejiang Wisdom Industry & Trade",
+        "manufacturer_model": "STI Classic 500/80",
+        "sections": 8
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-niznee-podkliucenie-vc-22x500x500-magnum-steel",
+      "name": "Радиатор стальной нижнее подключение VC 22х500х500 MAGNUM Steel",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00123775",
+        "supplier_sku": "BEREG-00123775",
+        "supplier_url": "https://www.bereg.by/product/radiator_stalnoy_nizhnee_podklyuchenie_vc_22kh500kh500_magnum_steel_1/",
+        "supplier_identification": "Бренд MAGNUM Steel Вес, кг 13.597 Высота, мм 500 Гарантийный срок (месяцев) 120 Диаметр присоединения, \" 1/2 Длина радиатора, мм 500 Максимальная температура рабочей среды, °С 110 Максимальное рабочее давление, бар 10 Материал корпуса сталь Межосевое расстояние, мм 445 Назначение для систем отопления Область применения отопление Подвод воды нижний Предприятие-изготовитель Роял Термо Рус Рабочее давление (МПа) 1 Срок службы 2 года Страна происхождения Россия Тепловая мощность, Вт 1103 Тип присоединения резьбовое Тип радиатора 22 Тип резьбы цилиндрическая Цвет белый Ширина, мм 500"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-bok-podkl-22x500x400-magnum-steel",
+      "name": "Радиатор стальной бок. подкл. 22х500х400 MAGNUM Steel",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102377"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-nizn-podkl-21x500x700-magnum-steel",
+      "name": "Радиатор стальной нижн. подкл. 21х500х700 MAGNUM Steel",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00123770"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-nizn-podkl-21x500x600-magnum-steel-pod-termogovku-danfoss",
+      "name": "Радиатор стальной нижн. подкл. 21х500х600 MAGNUM Steel (под термоговку Danfoss)",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102703"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-nizn-podkl-21x500x400-magnum-steel-pod-termogovku-danfoss",
+      "name": "Радиатор стальной нижн. подкл. 21х500х400 MAGNUM Steel (под термоговку Danfoss)",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102701"
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-500100-8-sekcii-art-s500a2-sti",
+      "name": "Радиатор алюминиевый 500/100 8 секций арт. S500A2 STI",
+      "status": "confirmed",
+      "fields": {
+        "section_power_dt70_w": 215
+      },
+      "source": "https://avm36.pro/upload/iblock/187/s997wcfnivbwgi92wkk6g2v68xyujgjc.pdf",
+      "pages": [
+        1,
+        2
+      ],
+      "note": "Оригинальный паспорт ООО «САС Индастриал», строка S500A2: 215 Вт на секцию. Нормативный напор 70°C задан непосредственно формулой Qф=Qн×(Тф/70)^1,3 и определением Тф под таблицей; пересчёт не выполнялся. Артикул S500A2, изготовитель и размер 580×80×96 мм подтверждены карточкой точного кода поставщика. Теплоотдача сборки не вычисляется.",
+      "identity": {
+        "supplier_sku": "BEREG-00143404",
+        "supplier_url": "https://www.bereg.by/product/radiator_alyuminievyy_500_100_8_sektsiy_art_s500a2_sti/",
+        "distributor_article": "ТТ000019461",
+        "manufacturer": "ООО «САС Индастриал»",
+        "manufacturer_model": "S500A2"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-niznee-podkliucenie-vc-21x500x500-magnum-steel-pod-termogovku-danfoss",
+      "name": "Радиатор стальной нижнее подключение VC 21х500х500 MAGNUM Steel (под термоговку Danfoss)",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102702",
+        "supplier_sku": "BEREG-00102702",
+        "supplier_url": "https://www.bereg.by/product/radiator_stalnoy_nizhnee_podklyuchenie_vc_21kh500kh500_magnum_steel_pod_termogovku_danfoss_1/",
+        "supplier_reported_article": "VC21-500-500/9016",
+        "supplier_identification": "Бренд MAGNUM Steel Вес, кг 12.055 Высота, мм 500 Гарантийный срок (месяцев) 120 Глубина, мм 64 Диаметр присоединения, \" 1/2 Длина радиатора, мм 500 Код производителя VC21-500-500/9016 MAGSt Максимальная температура рабочей среды, °С 110 Максимальное рабочее давление, бар 10 Материал корпуса сталь Межосевое расстояние, мм 445 Назначение для систем отопления Область применения отопление Подвод воды нижний Предприятие-изготовитель Роял Термо Рус Рабочее давление (МПа) 1 Срок службы 2 года Страна происхождения Россия Тепловая мощность, Вт 1026 Тип присоединения резьбовое Тип радиатора 21 Тип резьбы цилиндрическая Цвет белый Ширина, мм 500"
+      }
+    },
+    {
+      "slug": "radiator-cugunnyi-rs-100-10-7-sekcii-luganskii-lmz",
+      "name": "Радиатор чугунный РС-100-1,0 (7 секций) Луганский ЛМЗ",
+      "status": "temperature_head_not_declared",
+      "reason": "На сайте ЛМЗ заявлен номинал 0,13 кВт на секцию, но явный ΔT не найден. Не выдавать максимальную температуру за температурный напор.",
+      "reviewed_sources": [
+        "https://lugansk-lmz.ru/radiators/"
+      ],
+      "identity": {
+        "merchant_sku": "BEREG-00061460",
+        "supplier_sku": "BEREG-00061460",
+        "supplier_url": "https://www.bereg.by/product/radiator_chugunnyy_rs_100_1_0_7_sektsiy_luganskiy_lmz/",
+        "supplier_identification": "Бренд Луганский ЛМЗ Вес, кг 35 Высота секции, мм 577 Гарантийный срок (месяцев) 24 Глубина секции, мм 96 Диаметр присоединения, \" 1 1/4 Количество секций 7 Максимальная температура рабочей среды, °С 130 Материал корпуса чугун Межосевое расстояние, мм 500 Назначение для систем отопления Номерной паспорт (на ед. товара) Не вложен в инд. упаковку (номерной паспорт) Область применения отопление Предприятие-изготовитель Луганский литейно-механический завод Рабочее давление (МПа) 1,2 Регламентирующий документ ГОСТ 31311-2005 Срок годности (месяцев) Не установлен Срок службы 2 года Страна происхождения Россия Тепловая мощность, Вт 910 Тип присоединения резьбовое Ширина секции, мм 84"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-bok-podkl-21x500x400-magnum-steel",
+      "name": "Радиатор стальной бок. подкл. 21х500х400 MAGNUM Steel",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00123746"
+      }
+    },
+    {
+      "slug": "radiator-cugunnyi-300-10-sekcii-magnum",
+      "name": "Радиатор чугунный 300 10 секций MAGNUM",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "Нужен паспорт именно MAGNUM указанного типа. Общий OEM-сертификат не доказывает теплоотдачу; значения Royal Thermo не подставлялись.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00137379",
+        "supplier_sku": "BEREG-00137379",
+        "supplier_url": "https://www.bereg.by/product/radiator_chugunnyy_300_10_sektsiy_magnum/",
+        "supplier_reported_article": "MG310",
+        "supplier_identification": "Бренд MAGNUM Вес, кг 28 Высота секции, мм 376 Гарантийный срок (месяцев) 36 Глубина секции, мм 80 Давление номинальное, МПа 1,2 Диаметр присоединения, \" 1 Код производителя MG310 Материал корпуса чугун Назначение для систем отопления Область применения отопление Предприятие-изготовитель Market Union Co.,Ltd Срок службы 30 лет Страна происхождения Китай Тепловая мощность, Вт 85 Цвет белый Ширина секции, мм 60"
+      }
+    },
+    {
+      "slug": "radiator-cugunnyi-300-10-sekcii-sti-nova",
+      "name": "Радиатор чугунный 300 10 секций STI Нова",
+      "status": "temperature_head_not_declared",
+      "reason": "Паспорт Нова 300/80 и 500/80 найден (85/124 Вт на секцию), но ΔT в нем не объявлен. Не подменять максимальной температурой 130°C или данными другой редакции.",
+      "reviewed_sources": [
+        "https://vodomirural.ru/upload/iblock/489/489f2c6b08c8d8c2357a2c588f6c349d.pdf",
+        "https://progreem.by/upload/dev2fun.imagecompress/webp/iblock/51f/Tekhnicheskiy-pasport-_-Radiatory-otopleniya-STI-Nova-500.webp"
+      ],
+      "identity": {
+        "merchant_sku": "BEREG-00128598"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-nizn-podkl-21x500x500-magnum-steel",
+      "name": "Радиатор стальной нижн. подкл. 21х500х500 MAGNUM Steel",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00123768"
+      }
+    },
+    {
+      "slug": "radiator-aliuminievyi-radena-r-500100-gl-dizain-model-10-sekcii",
+      "name": "Радиатор алюминиевый RADENA R 500/100 GL. Дизайн-модель. 10 секций",
+      "status": "confirmed",
+      "fields": {
+        "section_power_dt70_w": 194
+      },
+      "source": "https://www.alterplast.ru/upload/iblock/d23/hs38n5vmbxo7lv1rw1dy7v6332rhl5sp.pdf",
+      "pages": [
+        89
+      ],
+      "note": "Заводской каталог Альтерпласт/RADENA 2026/1, печатная стр. 91 (PDF 89): отдельная колонка R500/100 GL, 194 Вт/секц. при ΔT70. Не подменяется R500, R500/100 или R1000; мощность сборки не вычисляется.",
+      "identity": {
+        "supplier_sku": "ATMOS-9010516",
+        "manufacturer_model": "RADENA R500/100 GL (GOLD)"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-bokovoe-podkliucenie-c-22x500x400-magnum-steel",
+      "name": "Радиатор стальной боковое подключение C 22х500х400 MAGNUM Steel",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00123756",
+        "supplier_sku": "BEREG-00123756",
+        "supplier_url": "https://www.bereg.by/product/radiator_stalnoy_bokovoe_podklyuchenie_c_22kh500kh400_magnum_steel_2/",
+        "supplier_identification": "Бренд MAGNUM Steel Вес, кг 10.96 Высота, мм 500 Гарантийный срок (месяцев) 120 Диаметр присоединения, \" 1/2 Длина радиатора, мм 400 Максимальная температура рабочей среды, °С 110 Материал корпуса сталь Межосевое расстояние, мм 445 Назначение для систем отопления Область применения отопление Подвод воды боковой Предприятие-изготовитель Роял Термо Рус Срок службы 2 года Страна происхождения Россия Тепловая мощность, Вт 882 Тип присоединения резьбовое Тип радиатора 22 Тип резьбы цилиндрическая Цвет белый"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-niznee-podkliucenie-vc-22x500x500-magnum-steel-pod-termogovku-danfoss",
+      "name": "Радиатор стальной нижнее подключение VC 22х500х500 MAGNUM Steel (под термоговку Danfoss)",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102756",
+        "supplier_sku": "BEREG-00102756",
+        "supplier_url": "https://www.bereg.by/product/radiator_stalnoy_nizhnee_podklyuchenie_vc_22kh500kh500_magnum_steel_pod_termogovku_danfoss_1/",
+        "supplier_reported_article": "VC22-500-500/9016",
+        "supplier_identification": "Бренд MAGNUM Steel Вес, кг 13.597 Высота, мм 500 Гарантийный срок (месяцев) 120 Глубина, мм 97 Диаметр присоединения, \" 1/2 Длина радиатора, мм 500 Код производителя VC22-500-500/9016 MAGSt Максимальная температура рабочей среды, °С 110 Максимальное рабочее давление, бар 10 Материал корпуса сталь Межосевое расстояние, мм 445 Назначение для систем отопления Область применения отопление Подвод воды нижний Предприятие-изготовитель Роял Термо Рус Рабочее давление (МПа) 1 Срок службы 2 года Страна происхождения Россия Тепловая мощность, Вт 1103 Тип присоединения резьбовое Тип радиатора 22 Тип резьбы цилиндрическая Цвет белый Ширина, мм 500"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-niznee-podkliucenie-vc-22x500x400-magnum-steel-pod-termogovku-danfoss",
+      "name": "Радиатор стальной нижнее подключение VC 22х500х400 MAGNUM Steel (под термоговку Danfoss)",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102755",
+        "supplier_sku": "BEREG-00102755",
+        "supplier_url": "https://www.bereg.by/product/radiator_stalnoy_nizhnee_podklyuchenie_vc_22kh500kh400_magnum_steel_pod_termogovku_danfoss_1/",
+        "supplier_reported_article": "VC22-500-400/9016",
+        "supplier_identification": "Бренд MAGNUM Steel Вес, кг 11.077 Высота, мм 500 Гарантийный срок (месяцев) 120 Глубина, мм 97 Диаметр присоединения, \" 1/2 Длина радиатора, мм 400 Код производителя VC22-500-400/9016 MAGSt Максимальная температура рабочей среды, °С 110 Максимальное рабочее давление, бар 10 Материал корпуса сталь Межосевое расстояние, мм 445 Назначение для систем отопления Область применения отопление Подвод воды нижний Предприятие-изготовитель Роял Термо Рус Рабочее давление (МПа) 1 Срок службы 2 года Страна происхождения Россия Тепловая мощность, Вт 882 Тип присоединения резьбовое Тип радиатора 22 Тип резьбы цилиндрическая Цвет белый Ширина, мм 400"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-niznee-podkliucenie-vc-21x500x700-magnum-steel-pod-termogovku-danfoss",
+      "name": "Радиатор стальной нижнее подключение VC 21х500х700 MAGNUM Steel (под термоговку Danfoss)",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102704",
+        "supplier_sku": "BEREG-00102704",
+        "supplier_url": "https://www.bereg.by/product/radiator_stalnoy_nizhnee_podklyuchenie_vc_21kh500kh700_magnum_steel_pod_termogovku_danfoss_1/",
+        "supplier_reported_article": "VC21-500-700/9016",
+        "supplier_identification": "Бренд MAGNUM Steel Вес, кг 15.854 Высота, мм 500 Гарантийный срок (месяцев) 120 Глубина, мм 64 Диаметр присоединения, \" 1/2 Длина радиатора, мм 700 Код производителя VC21-500-700/9016 MAGSt Максимальная температура рабочей среды, °С 110 Максимальное рабочее давление, бар 10 Материал корпуса сталь Межосевое расстояние, мм 445 Назначение для систем отопления Область применения отопление Подвод воды нижний Предприятие-изготовитель Роял Термо Рус Рабочее давление (МПа) 1 Срок службы 2 года Страна происхождения Россия Тепловая мощность, Вт 1436 Тип присоединения резьбовое Тип радиатора 21 Тип резьбы цилиндрическая Цвет белый Ширина, мм 700"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-niznee-podkliucenie-vc-21x500x400-magnum-steel",
+      "name": "Радиатор стальной нижнее подключение VC 21х500х400 MAGNUM Steel",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00123767",
+        "supplier_sku": "BEREG-00123767",
+        "supplier_url": "https://www.bereg.by/product/radiator_stalnoy_nizhnee_podklyuchenie_vc_21kh500kh400_magnum_steel_1/",
+        "supplier_identification": "Бренд MAGNUM Steel Вес, кг 9.839 Высота, мм 500 Гарантийный срок (месяцев) 120 Диаметр присоединения, \" 1/2 Длина радиатора, мм 400 Максимальная температура рабочей среды, °С 110 Материал корпуса сталь Межосевое расстояние, мм 445 Назначение для систем отопления Область применения отопление Подвод воды нижний Предприятие-изготовитель Роял Термо Рус Рабочее давление (МПа) 1 Срок службы 2 года Страна происхождения Россия Тепловая мощность, Вт 821 Тип присоединения резьбовое Тип радиатора 21 Тип резьбы цилиндрическая Цвет белый"
+      }
+    },
+    {
+      "slug": "royal-thermo-trend-500",
+      "name": "Радиатор Royal Thermo Revolution Bimetall 500",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-002.554",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-royal-thermo-pianoforte-500-silver-satin",
+      "name": "Радиатор Royal Thermo PianoForte 500 Silver Satin",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-007.049",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-royal-thermo-piano-forte-tower-500",
+      "name": "Радиатор Royal Thermo Piano Forte Tower 500 (18 секций)",
+      "status": "needs_colour_and_revision",
+      "reason": "В названии отсутствует цвет/артикул: паспорт дает разные номиналы Silver Satin и Bianco Traffico/Noir Sable. Новая редакция 2026 тоже отличается. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://rkcdn.ru/products/394454c1-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/153b137b-c7a6-11f1-b8e3-00505601218a/src.pdf",
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-009.181",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "royal-thermo-pianoforte",
+      "name": "Радиатор Royal Thermo PianoForte 500",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-004.560",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-royal-thermo-piano-forte-tower-500-22-sektsii",
+      "name": "Радиатор Royal Thermo Piano Forte Tower 500 (22 секции)",
+      "status": "needs_colour_and_revision",
+      "reason": "В названии отсутствует цвет/артикул: паспорт дает разные номиналы Silver Satin и Bianco Traffico/Noir Sable. Новая редакция 2026 тоже отличается. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://rkcdn.ru/products/394454c1-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/153b137b-c7a6-11f1-b8e3-00505601218a/src.pdf",
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-009.182",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "royal-thermo-trend-350",
+      "name": "Радиатор Royal Thermo Revolution Bimetall 350",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-002.555",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "royal-thermo-skyliner-500",
+      "name": "Радиатор Royal Thermo DreamLiner 500",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-002.552",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-royal-thermo-monoblock-b-100-500",
+      "name": "Радиатор Royal Thermo Monoblock B 100 500",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-009.865",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-royal-thermo-indigo-500",
+      "name": "Радиатор Royal Thermo Indigo 500",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-009.183",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "royal-thermo-optimal-350",
+      "name": "Радиатор Royal Thermo Revolution 350",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-002.546",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33500500",
+      "name": "Радиатор стальной Kermi Kompakt 33500500",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18543",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33500500",
+            "title": "Радиатор стальной Kermi Kompakt 33500500",
+            "identifiers": [
+              "1001061 Рассрочка 0% 4мес Производитель: Kermi Есть в наличии Цена: 377.11 руб. Рассрочка В сравнени"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-lk-11",
+      "name": "Радиатор Лидея ЛК 10 (боковое подключение, тип 10) ",
+      "status": "missing_size",
+      "reason": "Тип ЛК10 указан без высоты и длины. Единого номинала для всех размеров не существует.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "PS-011.694",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-335001200",
+      "name": "Радиатор стальной Kermi Kompakt 335001200",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18539",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-335001200",
+            "title": "Радиатор стальной Kermi Kompakt 335001200",
+            "identifiers": [
+              "1001998 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33500600",
+      "name": "Радиатор стальной Kermi Kompakt 33500600",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18542",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33500600",
+            "title": "Радиатор стальной Kermi Kompakt 33500600",
+            "identifiers": [
+              "1001064 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-115001300",
+      "name": "Радиатор стальной Kermi Kompakt 115001300",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18530",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-115001300",
+            "title": "Радиатор стальной Kermi Kompakt 115001300",
+            "identifiers": [
+              "1001955 Рассрочка 0% 4мес Производитель: Kermi Есть в наличии Цена: 299.20 руб. Рассрочка В сравнени"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-335001400",
+      "name": "Радиатор стальной Kermi Kompakt 335001400",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18540",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-335001400",
+            "title": "Радиатор стальной Kermi Kompakt 335001400",
+            "identifiers": [
+              "1001994 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoy-lemax-compact-22-500h400",
+      "name": "Радиатор стальной LEMAX Compact 22 500х400",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Общее название Compact без заводского артикула не различает Premium/Modern и редакцию панели. Таблица V7.02 найдена, но принадлежность партии к ней не подтверждена.",
+      "reviewed_sources": [
+        "https://spb.teplodvor.ru/dokumentacija/lemaks-radiators-passport-20261112.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-008.575",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33300900",
+      "name": "Радиатор стальной Kermi Kompakt 33300900",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18553",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33300900",
+            "title": "Радиатор стальной Kermi Kompakt 33300900",
+            "identifiers": [
+              "1001058 Доставка 0 руб Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на "
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-335002000",
+      "name": "Радиатор стальной Kermi Kompakt 335002000",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18556",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-335002000",
+            "title": "Радиатор стальной Kermi Kompakt 335002000",
+            "identifiers": [
+              "1001997 Доставка 0 руб Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на "
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-333001000",
+      "name": "Радиатор стальной Kermi Kompakt 333001000",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18550",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-333001000",
+            "title": "Радиатор стальной Kermi Kompakt 333001000",
+            "identifiers": [
+              "1001983 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33500900",
+      "name": "Радиатор стальной Kermi Kompakt 33500900",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18561",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33500900",
+            "title": "Радиатор стальной Kermi Kompakt 33500900",
+            "identifiers": [
+              "1001065 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-line-k-22-200700",
+      "name": "Радиатор стальной Kermi Line K 22 200*700",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 667,
+        "power_dt60_w": 576,
+        "power_dt50_w": 460
+      },
+      "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+      "pages": [
+        44
+      ],
+      "note": "Kermi Line-K, тип 22: обозначение 200×700 — номинальные размерные коды. Заводской каталог 2018, PDF 93, прямо сопоставляет коду высоты 020 фактические 205 мм для Line, а коду длины 070 — 705 мм; PDF 33 содержит оговорку 200/205 мм. Применена точная строка 205×705 технического каталога PDF44. Значения взяты из таблицы, без умножения Вт/м и без пересчёта режимов.",
+      "identity": {
+        "manufacturer_model": "Kermi Line-K type 22, nominal 200×700, actual 205×705",
+        "order_height_code": "020",
+        "order_length_code": "070",
+        "supplier_pages": [
+          "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-line-k-22-200700"
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33500700",
+      "name": "Радиатор стальной Kermi Kompakt 33500700",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18538",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33500700",
+            "title": "Радиатор стальной Kermi Kompakt 33500700",
+            "identifiers": [
+              "1001063 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-113001300",
+      "name": "Радиатор стальной Kermi Kompakt 113001300",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18528",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-113001300",
+            "title": "Радиатор стальной Kermi Kompakt 113001300",
+            "identifiers": [
+              "1001949 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-335001000",
+      "name": "Радиатор стальной Kermi Kompakt 335001000",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18529",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-335001000",
+            "title": "Радиатор стальной Kermi Kompakt 335001000",
+            "identifiers": [
+              "1001992 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-335001300",
+      "name": "Радиатор стальной Kermi Kompakt 335001300",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18559",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-335001300",
+            "title": "Радиатор стальной Kermi Kompakt 335001300",
+            "identifiers": [
+              "1001995 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-11500900",
+      "name": "Радиатор стальной Kermi Kompakt 11500900",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18531",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-11500900",
+            "title": "Радиатор стальной Kermi Kompakt 11500900",
+            "identifiers": [
+              "1001041 Рассрочка 0% 4мес Производитель: Kermi Есть в наличии Цена: 224.37 руб. Рассрочка В сравнени"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-kermi-fko-224004800",
+      "name": "Радиатор Kermi FKO 224004800",
+      "status": "invalid_or_incomplete_model",
+      "reason": "Указанная длина 4800 мм вне проверенного заводского размерного ряда. Нужен точный артикул или исправление названия.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "PS-004.916",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-line-k-22-200900",
+      "name": "Радиатор стальной Kermi Line K 22 200*900",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 857,
+        "power_dt60_w": 739,
+        "power_dt50_w": 591
+      },
+      "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+      "pages": [
+        44
+      ],
+      "note": "Kermi Line-K, тип 22: обозначение 200×900 — номинальные размерные коды. Заводской каталог 2018, PDF 93, прямо сопоставляет коду высоты 020 фактические 205 мм для Line, а коду длины 090 — 905 мм; PDF 33 содержит оговорку 200/205 мм. Применена точная строка 205×905 технического каталога PDF44. Значения взяты из таблицы, без умножения Вт/м и без пересчёта режимов.",
+      "identity": {
+        "manufacturer_model": "Kermi Line-K type 22, nominal 200×900, actual 205×905",
+        "order_height_code": "020",
+        "order_length_code": "090",
+        "supplier_pages": [
+          "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-line-k-22-200900"
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-223001300",
+      "name": "Радиатор стальной Kermi Kompakt 223001300",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18537",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-223001300",
+            "title": "Радиатор стальной Kermi Kompakt 223001300",
+            "identifiers": [
+              "1001963 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-333001400",
+      "name": "Радиатор стальной Kermi Kompakt 333001400",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18548",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-333001400",
+            "title": "Радиатор стальной Kermi Kompakt 333001400",
+            "identifiers": [
+              "1001988 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-11500400",
+      "name": "Радиатор стальной Kermi Kompakt 11500400",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Проверена исходная карточка поставщика: полного заводского артикула и редакции нет. Для 11500400 найден URL с текущим заголовком 11500500 и размером 500×500: источник противоречит карточке 500×400. Перенос therm-x2/РФ-Y или ближайшего размера не допускается.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18525",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-11500400",
+            "title": "Радиатор стальной Kermi Kompakt 11500500",
+            "identifiers": [
+              "1001037 Рассрочка 0% 4мес Производитель: Kermi Есть в наличии Цена: 154 руб. Рассрочка В сравнение У"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-333001600",
+      "name": "Радиатор стальной Kermi Kompakt 333001600",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18547",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-333001600",
+            "title": "Радиатор стальной Kermi Kompakt 333001600",
+            "identifiers": [
+              "1001987 Доставка 0 руб Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на "
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "royal-thermo-optimal-500",
+      "name": "Радиатор Royal Thermo Revolution 500",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Найдены документы других редакций/серий с отличающимися номиналами. Нужен заводской артикул: Monoblock A не приравнивается к A2.0, Revolution Bimetall к Revolution B, неопределенный цвет к Silver Satin. Проверены старые и новые заводские паспорта/каталоги: одинаковое сокращённое название встречается с разной теплоотдачей; текущий артикул не доказывает исполнение старой карточки.",
+      "reviewed_sources": [
+        "https://thermomir.ru/files/it/2046_4971.pdf",
+        "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+        "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-002.547",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-333001800",
+      "name": "Радиатор стальной Kermi Kompakt 333001800",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18544",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-333001800",
+            "title": "Радиатор стальной Kermi Kompakt 333001800",
+            "identifiers": [
+              "1001989 Доставка 0 руб Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на "
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33300400",
+      "name": "Радиатор стальной Kermi Kompakt 33300400",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18535",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33300400",
+            "title": "Радиатор стальной Kermi Kompakt 33300400",
+            "identifiers": [
+              "1001055 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-225001300",
+      "name": "Радиатор стальной Kermi Kompakt 225001300",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18536",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-225001300",
+            "title": "Радиатор стальной Kermi Kompakt 225001300",
+            "identifiers": [
+              "1001978 Рассрочка 0% 4мес Производитель: Kermi Есть в наличии Цена: 481 руб. Рассрочка В сравнение У"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-333001100",
+      "name": "Радиатор стальной Kermi Kompakt 333001100",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18551",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-333001100",
+            "title": "Радиатор стальной Kermi Kompakt 333001100",
+            "identifiers": [
+              "1001984 Доставка 0 руб Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на "
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-333001300",
+      "name": "Радиатор стальной Kermi Kompakt 333001300",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18549",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-333001300",
+            "title": "Радиатор стальной Kermi Kompakt 333001300",
+            "identifiers": [
+              "1001986 Доставка 0 руб Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на "
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-line-k-22-200800",
+      "name": "Радиатор стальной Kermi Line K 22 200*800",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 762,
+        "power_dt60_w": 658,
+        "power_dt50_w": 526
+      },
+      "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+      "pages": [
+        44
+      ],
+      "note": "Kermi Line-K, тип 22: обозначение 200×800 — номинальные размерные коды. Заводской каталог 2018, PDF 93, прямо сопоставляет коду высоты 020 фактические 205 мм для Line, а коду длины 080 — 805 мм; PDF 33 содержит оговорку 200/205 мм. Применена точная строка 205×805 технического каталога PDF44. Значения взяты из таблицы, без умножения Вт/м и без пересчёта режимов.",
+      "identity": {
+        "manufacturer_model": "Kermi Line-K type 22, nominal 200×800, actual 205×805",
+        "order_height_code": "020",
+        "order_length_code": "080",
+        "supplier_pages": [
+          "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-line-k-22-200800"
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33300700",
+      "name": "Радиатор стальной Kermi Kompakt 33300700",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18533",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33300700",
+            "title": "Радиатор стальной Kermi Kompakt 33300700",
+            "identifiers": [
+              "1001060 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-11500600",
+      "name": "Радиатор стальной Kermi Kompakt 11500600",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18527",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-11500600",
+            "title": "Радиатор стальной Kermi Kompakt 11500600",
+            "identifiers": [
+              "1001040 Рассрочка 0% 4мес Производитель: Kermi Есть в наличии Цена: 168.55 руб. Рассрочка В сравнени"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-line-k-22-2001000",
+      "name": "Радиатор стальной Kermi Line K 22 200*1000",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 951,
+        "power_dt60_w": 821,
+        "power_dt50_w": 656
+      },
+      "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+      "pages": [
+        44
+      ],
+      "note": "Kermi Line-K, тип 22: обозначение 200×1000 — номинальные размерные коды. Заводской каталог 2018, PDF 93, прямо сопоставляет коду высоты 020 фактические 205 мм для Line, а коду длины 100 — 1005 мм; PDF 33 содержит оговорку 200/205 мм. Применена точная строка 205×1005 технического каталога PDF44. Значения взяты из таблицы, без умножения Вт/м и без пересчёта режимов.",
+      "identity": {
+        "manufacturer_model": "Kermi Line-K type 22, nominal 200×1000, actual 205×1005",
+        "order_height_code": "020",
+        "order_length_code": "100",
+        "supplier_pages": [
+          "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-line-k-22-2001000"
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33300800",
+      "name": "Радиатор стальной Kermi Kompakt 33300800",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18554",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33300800",
+            "title": "Радиатор стальной Kermi Kompakt 33300800",
+            "identifiers": [
+              "1001059 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-335001600",
+      "name": "Радиатор стальной Kermi Kompakt 335001600",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18558",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-335001600",
+            "title": "Радиатор стальной Kermi Kompakt 335001600",
+            "identifiers": [
+              "1001996 Доставка 0 руб Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на "
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-11500500",
+      "name": "Радиатор стальной Kermi Kompakt 11500500",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18526",
+        "supplier_pages": []
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33500800",
+      "name": "Радиатор стальной Kermi Kompakt 33500800",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18541",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33500800",
+            "title": "Радиатор стальной Kermi Kompakt 33500800",
+            "identifiers": [
+              "1001066 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-335001100",
+      "name": "Радиатор стальной Kermi Kompakt 335001100",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18560",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-335001100",
+            "title": "Радиатор стальной Kermi Kompakt 335001100",
+            "identifiers": [
+              "1001993 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-333002000",
+      "name": "Радиатор стальной Kermi Kompakt 333002000",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18545",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-333002000",
+            "title": "Радиатор стальной Kermi Kompakt 333002000",
+            "identifiers": [
+              "1001990 Доставка 0 руб Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на "
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33500400",
+      "name": "Радиатор стальной Kermi Kompakt 33500400",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18546",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33500400",
+            "title": "Радиатор стальной Kermi Kompakt 33500400",
+            "identifiers": [
+              "1001062 Рассрочка 0% 4мес Производитель: Kermi Есть в наличии Цена: 336.05 руб. Рассрочка В сравнени"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-line-k-22-200600",
+      "name": "Радиатор стальной Kermi Line K 22 200*600",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 573,
+        "power_dt60_w": 494,
+        "power_dt50_w": 395
+      },
+      "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+      "pages": [
+        44
+      ],
+      "note": "Kermi Line-K, тип 22: обозначение 200×600 — номинальные размерные коды. Заводской каталог 2018, PDF 93, прямо сопоставляет коду высоты 020 фактические 205 мм для Line, а коду длины 060 — 605 мм; PDF 33 содержит оговорку 200/205 мм. Применена точная строка 205×605 технического каталога PDF44. Значения взяты из таблицы, без умножения Вт/м и без пересчёта режимов.",
+      "identity": {
+        "manufacturer_model": "Kermi Line-K type 22, nominal 200×600, actual 205×605",
+        "order_height_code": "020",
+        "order_length_code": "060",
+        "supplier_pages": [
+          "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-line-k-22-200600"
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33300600",
+      "name": "Радиатор стальной Kermi Kompakt 33300600",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18555",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33300600",
+            "title": "Радиатор стальной Kermi Kompakt 33300600",
+            "identifiers": [
+              "1001056 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-33300500",
+      "name": "Радиатор стальной Kermi Kompakt 33300500",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18534",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-33300500",
+            "title": "Радиатор стальной Kermi Kompakt 33300500",
+            "identifiers": [
+              "1001057 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-11500700",
+      "name": "Радиатор стальной Kermi Kompakt 11500700",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18532",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-11500700",
+            "title": "Радиатор стальной Kermi Kompakt 11500700",
+            "identifiers": [
+              "1001039 Рассрочка 0% 4мес Производитель: Kermi Есть в наличии Цена: 187.52 руб. Рассрочка В сравнени"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-line-plk-225051305",
+      "name": "Радиатор стальной Kermi Line PLK 22*505*1305",
+      "status": "confirmed",
+      "fields": {
+        "power_dt50_w": 1748,
+        "power_dt60_w": 2203
+      },
+      "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+      "pages": [
+        44
+      ],
+      "note": "Точная строка Line-K PLK22, 505×1305 мм: 1748 Вт при ΔT50 и 2203 Вт при ΔT60. Каталог производителя 2018 PDF33/93 подтверждает фактические 505×1305 для кодов 050/130; независимый заводской каталог 2022 PDF44 подтверждает номинал ΔT50 (длина в его правой таблице записана сокращённо 1300). Противоречивое значение ΔT70 не опубликовано.",
+      "identity": {
+        "manufacturer_model": "Kermi Line-K PLK22 505×1305",
+        "order_height_code": "050",
+        "order_length_code": "130"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-335001800",
+      "name": "Радиатор стальной Kermi Kompakt 335001800",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18557",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-335001800",
+            "title": "Радиатор стальной Kermi Kompakt 335001800",
+            "identifiers": [
+              "1001999 Доставка 0 руб Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на "
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-kermi-kompakt-333001200",
+      "name": "Радиатор стальной Kermi Kompakt 333001200",
+      "status": "needs_factory_article_or_revision",
+      "reason": "Исходная карточка поставщика содержит только Kompakt и размер, без полного артикула и редакции. Заводские каталоги разных исполнений дают разные номиналы; однозначная привязка не установлена.",
+      "reviewed_sources": [
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "identity": {
+        "merchant_sku": "PS-000.18552",
+        "supplier_pages": [
+          {
+            "url": "https://www.teplodvor.by/shop/raditory/stalnye/radiator-stalnoy-kermi-kompakt-333001200",
+            "title": "Радиатор стальной Kermi Kompakt 333001200",
+            "identifiers": [
+              "1001985 Рассрочка 0% 4мес Производитель: Kermi Цену и наличие уточняйте Скидка 3% на товары в наличи"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-niznee-podkliucenie-v-profil-20x500x700-kermi",
+      "name": "Радиатор стальной нижнее подключение V Profil 20х500х700 KERMI",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 898,
+        "power_dt60_w": 774,
+        "power_dt50_w": 618
+      },
+      "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+      "pages": [
+        34
+      ],
+      "note": "Точный заводской артикул FTV200500701R2K установлен по коду поставщика 00078704. Заводской каталог 2018 PDF18/93 подтверждает FTV20 как Profil-V Hygiene, а не обычный Profil типа 22. Точная строка типа20, H500×L700 в техническом каталоге PDF34: 898/774/618 Вт при ΔT70/60/50. Значение поставщика 498 Вт относится к 70/55/20 (таблица 2018 PDF18), оно не выдаётся за ΔT70.",
+      "identity": {
+        "supplier_sku": "BEREG-00078704",
+        "supplier_url": "https://www.bereg.by/product/radiator_stalnoy_nizhnee_podklyuchenie_v_profil_20kh500kh700_kermi_1/",
+        "manufacturer_article": "FTV200500701R2K",
+        "manufacturer_model": "Kermi Profil-V Hygiene type20 500×700"
+      }
+    },
+    {
+      "slug": "konvektor-vstraivaemyi-medno-aliuminievyi-novaterm-nt-v-1425160",
+      "name": "Конвектор встраиваемый медно-алюминиевый \"Новатерм\" НТ-В-14/25/160",
+      "status": "confirmed",
+      "fields": {
+        "power_dt70_w": 1058
+      },
+      "source": "https://www.plus24.ru/upload/uf/616/iw5jc083jhmp080c9g0li1li90v0ib3l/Паспорт%20НТ-В.pdf",
+      "pages": [
+        1
+      ],
+      "note": "Паспорт НТ-В, естественная конвекция: строка длины 1600 мм, глубина 148 мм, ширина 250 (решётка 255) мм = 1,058 кВт. Под таблицей явно указаны ΔT70 и расход 360 кг/ч. Нужная сноска пропущена при предыдущем аудите. Код 14.25.160.GR.U.05 и размеры подтверждены у поставщика.",
+      "identity": {
+        "supplier_sku": "BEREG-00078026",
+        "supplier_url": "https://www.bereg.by/product/konvektor_vstraivaemyy_medno_alyuminievyy_novaterm_nt_v_14_25_160_1/",
+        "manufacturer_article": "14.25.160.GR.U.05",
+        "manufacturer_model": "НТ-В-14/25/160"
+      }
+    },
+    {
+      "slug": "radiator-stalnoi-niznee-podkliucenie-vc-22x500x1600-magnum-steel-pod-termogovku-danfoss",
+      "name": "Радиатор стальной нижнее подключение VC 22х500х1600 MAGNUM Steel (под термоговку Danfoss)",
+      "status": "needs_branded_manufacturer_passport",
+      "reason": "По точному коду поставщика установлены артикул MAGSt и изготовитель Роял Термо Рус. Найденные общие сертификаты OEM подтверждают изготовителя, но не тепловой номинал этой модели MAGNUM. Прикреплённый ко всем карточкам bereg PDF оказался политикой cookie, а не паспортом. Таблица другого бренда не применяется.",
+      "reviewed_sources": [],
+      "identity": {
+        "merchant_sku": "BEREG-00102767",
+        "supplier_sku": "BEREG-00102767",
+        "supplier_url": "https://www.bereg.by/product/radiator_stalnoy_nizhnee_podklyuchenie_vc_22kh500kh1600_magnum_steel_pod_termogovku_danfoss_1/",
+        "supplier_reported_article": "VC22-500-1600/9016",
+        "supplier_identification": "Бренд MAGNUM Steel Вес, кг 41.873 Высота, мм 500 Гарантийный срок (месяцев) 120 Глубина, мм 97 Диаметр присоединения, \" 1/2 Длина радиатора, мм 1600 Код производителя VC22-500-1600/9016 MAGSt Максимальная температура рабочей среды, °С 110 Максимальное рабочее давление, бар 10 Материал корпуса сталь Межосевое расстояние, мм 445 Назначение для систем отопления Область применения отопление Подвод воды нижний Предприятие-изготовитель Роял Термо Рус Рабочее давление (МПа) 1 Срок службы 2 года Страна происхождения Россия Тепловая мощность, Вт 3528 Тип присоединения резьбовое Тип радиатора 22 Тип резьбы цилиндрическая Цвет белый Ширина, мм 1600"
+      }
+    }
+  ],
+  "corrections": [
+    {
+      "slug": "radiator-bimetalliceskii-50080-6-sekcii-bimetal-art-s500b1-sti",
+      "name": "Радиатор биметаллический 500/80 6 секций BIMETAL арт. S500B1 STI",
+      "status": "confirmed",
+      "fields": {
+        "section_power_dt70_w": 163
+      },
+      "source": "https://avm36.pro/upload/iblock/187/s997wcfnivbwgi92wkk6g2v68xyujgjc.pdf",
+      "pages": [
+        1,
+        2
+      ],
+      "note": "Исправлено ошибочное применение паспорта Zhejiang Wisdom STI Bimetal к другому изготовителю. Точная модель S500B1, ООО «САС Индастриал», 558×80×79 мм, подтверждена у поставщика. Оригинальный паспорт САС: 163 Вт на секцию, нормативный температурный напор 70°C задан под таблицей. Мощность целой сборки из другого паспорта удалена; новое значение сборки не вычисляется.",
+      "identity": {
+        "supplier_sku": "BEREG-00143393",
+        "supplier_url": "https://www.bereg.by/product/radiator_bimetallicheskiy_500_80_6_sektsiy_bimetal_art_s500b1_sti/",
+        "distributor_article": "ТТ000019472",
+        "manufacturer": "ООО «САС Индастриал»",
+        "manufacturer_model": "S500B1"
+      },
+      "previous_fields": {
+        "power_dt70_w": 774
+      }
+    },
+    {
+      "slug": "radiator-bimetalliceskii-50080-8-sekcii-bimetal-art-s500b1-sti",
+      "name": "Радиатор биметаллический 500/80 8 секций BIMETAL арт. S500B1 STI",
+      "status": "confirmed",
+      "fields": {
+        "section_power_dt70_w": 163
+      },
+      "source": "https://avm36.pro/upload/iblock/187/s997wcfnivbwgi92wkk6g2v68xyujgjc.pdf",
+      "pages": [
+        1,
+        2
+      ],
+      "note": "Исправлено ошибочное применение паспорта Zhejiang Wisdom STI Bimetal к другому изготовителю. Точная модель S500B1, ООО «САС Индастриал», 558×80×79 мм, подтверждена у поставщика. Оригинальный паспорт САС: 163 Вт на секцию, нормативный температурный напор 70°C задан под таблицей. Мощность целой сборки из другого паспорта удалена; новое значение сборки не вычисляется.",
+      "identity": {
+        "supplier_sku": "BEREG-00143394",
+        "supplier_url": "https://www.bereg.by/product/radiator_bimetallicheskiy_500_80_8_sektsiy_bimetal_art_s500b1_sti/",
+        "distributor_article": "ТТ000019473",
+        "manufacturer": "ООО «САС Индастриал»",
+        "manufacturer_model": "S500B1"
+      },
+      "previous_fields": {
+        "power_dt70_w": 1032
+      }
+    },
+    {
+      "slug": "radiator-bimetalliceskii-50080-4-sekcii-bimetal-art-s500b1-sti",
+      "name": "Радиатор биметаллический 500/80 4 секции BIMETAL арт. S500B1 STI",
+      "status": "confirmed",
+      "fields": {
+        "section_power_dt70_w": 163
+      },
+      "source": "https://avm36.pro/upload/iblock/187/s997wcfnivbwgi92wkk6g2v68xyujgjc.pdf",
+      "pages": [
+        1,
+        2
+      ],
+      "note": "Исправлено ошибочное применение паспорта Zhejiang Wisdom STI Bimetal к другому изготовителю. Точная модель S500B1, ООО «САС Индастриал», 558×80×79 мм, подтверждена у поставщика. Оригинальный паспорт САС: 163 Вт на секцию, нормативный температурный напор 70°C задан под таблицей. Мощность целой сборки из другого паспорта удалена; новое значение сборки не вычисляется.",
+      "identity": {
+        "supplier_sku": "BEREG-00143392",
+        "supplier_url": "https://www.bereg.by/product/radiator_bimetallicheskiy_500_80_4_sektsii_bimetal_art_s500b1_sti/",
+        "distributor_article": "ТТ000019454",
+        "manufacturer": "ООО «САС Индастриал»",
+        "manufacturer_model": "S500B1"
+      },
+      "previous_fields": {
+        "power_dt70_w": 516
+      }
+    },
+    {
+      "slug": "radiator-bimetalliceskii-50080-12-sekcii-bimetal-art-s500b1-sti",
+      "name": "Радиатор биметаллический 500/80 12 секций BIMETAL арт. S500B1 STI",
+      "status": "confirmed",
+      "fields": {
+        "section_power_dt70_w": 163
+      },
+      "source": "https://avm36.pro/upload/iblock/187/s997wcfnivbwgi92wkk6g2v68xyujgjc.pdf",
+      "pages": [
+        1,
+        2
+      ],
+      "note": "Исправлено ошибочное применение паспорта Zhejiang Wisdom STI Bimetal к другому изготовителю. Точная модель S500B1, ООО «САС Индастриал», 558×80×79 мм, подтверждена у поставщика. Оригинальный паспорт САС: 163 Вт на секцию, нормативный температурный напор 70°C задан под таблицей. Мощность целой сборки из другого паспорта удалена; новое значение сборки не вычисляется.",
+      "identity": {
+        "supplier_sku": "BEREG-00143396",
+        "supplier_url": "https://www.bereg.by/product/radiator_bimetallicheskiy_500_80_12_sektsiy_bimetal_art_s500b1_sti/",
+        "distributor_article": "ТТ000019475",
+        "manufacturer": "ООО «САС Индастриал»",
+        "manufacturer_model": "S500B1"
+      },
+      "previous_fields": {
+        "power_dt70_w": 1548
+      }
+    }
+  ]
+}
