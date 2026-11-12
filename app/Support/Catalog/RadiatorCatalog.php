@@ -20,6 +20,7 @@ class RadiatorCatalog extends SpecificationCatalog
         return [
             'material' => ['Материал', ['steel' => 'Сталь', 'aluminium' => 'Алюминий', 'bimetal' => 'Биметалл', 'cast-iron' => 'Чугун']],
             'connection' => ['Подключение', ['side' => 'Боковое', 'bottom' => 'Нижнее']],
+            'panel_type' => ['Тип панельного радиатора', ['10' => 'Тип 10', '11' => 'Тип 11', '20' => 'Тип 20', '20A' => 'Тип 20А', '21' => 'Тип 21', '22' => 'Тип 22', '30' => 'Тип 30', '33' => 'Тип 33']],
             'height' => ['Высота', ['to-300' => 'до 300 мм', 'to-500' => 'свыше 300 до 500 мм', 'to-600' => 'свыше 500 до 600 мм', 'over' => 'свыше 600 мм']],
             'width' => ['Ширина', ['to-500' => 'до 500 мм', 'to-1000' => 'свыше 500 до 1000 мм', 'to-1500' => 'свыше 1000 до 1500 мм', 'over' => 'свыше 1500 мм']],
             'sections' => ['Количество секций', ['to-6' => 'до 6', 'to-10' => '7–10', 'to-14' => '11–14', 'over' => 'больше 14']],
@@ -63,6 +64,7 @@ class RadiatorCatalog extends SpecificationCatalog
             }
             $card[$label] = trim(str_replace('.', ',', (string) $value).' '.$unit);
         }
+        if (isset($record['panel_type'], $dimensions['panel_type'][1][$record['panel_type']])) $options['panel_type'] = [(string) $record['panel_type']];
         $ordered = [];
         foreach (['Материал', 'Подключение', 'Теплоотдача при ΔT 70 °C', 'Высота', 'Ширина', 'Количество секций', 'Межосевое расстояние'] as $label) {
             if (isset($card[$label])) $ordered[$label] = $card[$label];
@@ -72,16 +74,20 @@ class RadiatorCatalog extends SpecificationCatalog
 
     public static function managed(string $name): bool
     {
-        return (bool) preg_match('~мощност|теплоотдач|тепловой поток|площадь|межосев|высот|ширин|глубин|габарит|размер|давлен|температур.*теплоносител|рабочая температур|об[ъь]ем воды|количество секци|число секци|материал|подключени~ui', $name);
+        return (bool) preg_match('~мощност|теплоотдач|тепловой поток|площадь|межосев|расстояни.*ос|высот|ширин|глубин|толщин|габарит|размер|давлен|температур.*теплоносител|рабочая температур|об[ъь]ем воды|количество секци|число секци|тип радиатора|^тип$|материал|подключени|резьб|диаметр|вес|масс~ui', $name);
     }
 
-    public function details(Product $product, iterable $attributes): array
+    public function details(Product $product, iterable $attributes, bool $preserveUnverified = false): array
     {
         $record = self::verified($product);
         $rows = $this->productFacts($product, $product->category->slug, $this->dimensions($product->category->slug))['card'];
+        if (isset($record['panel_type'])) $rows['Тип панельного радиатора'] = (string) $record['panel_type'];
         foreach (['height_mm' => ['Высота', 'мм'], 'width_mm' => ['Ширина', 'мм'], 'depth_mm' => ['Глубина', 'мм'], 'centres_mm' => ['Межосевое расстояние', 'мм'], 'sections' => ['Количество секций', ''], 'power_dt50_w' => ['Теплоотдача при ΔT 50 °C', 'Вт'], 'power_dt60_w' => ['Теплоотдача при ΔT 60 °C', 'Вт']] as $field => [$label, $unit]) {
             if (isset($record[$field])) $rows[$label] = trim(str_replace('.', ',', (string) $record[$field]).' '.$unit);
         }
+        // Public tables contain manufacturer evidence only. Migrations can retain raw legacy
+        // fields in storage without exposing contradictory or duplicated supplier attributes.
+        if (! $preserveUnverified) return $rows;
         foreach ($attributes as $attribute) {
             $name = (string) $attribute->attribute?->name;
             $value = trim((string) $attribute->display_value);
@@ -105,14 +111,21 @@ class RadiatorCatalog extends SpecificationCatalog
     public function cleanDescription(Product $product): array
     {
         $rows = $this->details($product, []);
-        $short = $product->name.'.';
-        $content = '<p>'.e($product->name).'.</p><ul>';
+        $short = rtrim($product->name, '.').'.';
+        $content = '<p>'.e($short).'</p>'.($rows !== [] ? '<ul>' : '');
         foreach ($rows as $label => $value) {
             $short .= ' '.$label.': '.$value.'.';
             $content .= '<li>'.e($label).': '.e($value).'.</li>';
         }
-        $content .= '</ul><p>Теплоотдача зависит от температурного напора. Для подбора учитывайте режим системы отопления и теплопотери помещения.</p>';
+        $content .= ($rows !== [] ? '</ul>' : '<p>Характеристики этого исполнения уточняйте у менеджера.</p>').'<p>Теплоотдача зависит от температурного напора. Для подбора учитывайте режим системы отопления и теплопотери помещения.</p>';
         foreach (self::verified($product)['sources'] ?? [] as $url) $content .= '<p><a href="'.e($url).'" target="_blank" rel="noopener">Документация производителя</a></p>';
         return ['short_description' => $short, 'content' => $content, 'meta_description' => \Illuminate\Support\Str::limit($short, 155, '…')];
+    }
+
+    public function forDisplay(Product $product): Product
+    {
+        $display = clone $product;
+        $display->forceFill($this->cleanDescription($product) + ['specs' => $this->details($product, [])]);
+        return $display;
     }
 }

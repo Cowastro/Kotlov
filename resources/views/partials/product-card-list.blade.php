@@ -2,6 +2,11 @@
 {{-- List view — детальная карточка товара --}}
 
 @php
+    if (isset(\App\Support\Catalog\RadiatorCatalog::NAMES[$product->category?->slug ?? ''])) {
+        $radiatorCatalog = app(\App\Support\Catalog\RadiatorCatalog::class);
+        $product = $radiatorCatalog->forDisplay($product);
+        $fireplaceCardSpecs = $radiatorCatalog->productFacts($product, $product->category->slug, $radiatorCatalog->dimensions($product->category->slug))['card'];
+    }
     $placeholder = asset('img/products/product-placeholder.jpg');
     $imageUrl  = $product->image_url;
     $imageUrl2 = $product->imageUrl(1);

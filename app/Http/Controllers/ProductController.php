@@ -107,6 +107,7 @@ class ProductController extends Controller
         }
         if (isset(RadiatorCatalog::NAMES[$productCategory->slug])) {
             $catalog = app(RadiatorCatalog::class);
+            $product = $catalog->forDisplay($product);
             $productCardSpecs = $catalog->productFacts($product, $productCategory->slug, $catalog->dimensions($productCategory->slug))['card'];
             $fireplaceSpecs = $catalog->details($product, $attributeValues);
         }
@@ -211,6 +212,9 @@ class ProductController extends Controller
             ->filter()
             ->values();
 
+        if (isset(RadiatorCatalog::NAMES[$productCategory->slug])) {
+            $seoHighlights = collect($fireplaceSpecs)->map(fn ($value, $label) => $label.': '.$value)->values();
+        }
         $description = $verifiedGasMeter['description'] ?? $seo->productDescription($product, $cityIn, $seoHighlights);
 
         $keywords = $replaceCityIn($product->meta_keywords)

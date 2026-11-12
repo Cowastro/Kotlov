@@ -142,4 +142,26 @@ class RadiatorCatalogTest extends TestCase
         $this->assertEquals($categories['alyuminievye-radiatory']->id, $radiator->fresh()->category_id);
         $this->assertSame('1026 Вт, высота 574 мм', $radiator->fresh()->short_description);
     }
+
+    public function test_public_table_body_quick_view_and_metadata_use_evidence_without_rewriting_raw_storage(): void
+    {
+        $categories = $this->categories();
+        $slug = 'radiator-panelnyi-royal-thermo-compact-c22-500-1600-ral9016';
+        $record = RadiatorCatalog::records()[$slug];
+        $legacy = ['Тип радиатора' => '11', 'Толщина' => '47 мм', 'Цвет' => 'Белый'];
+        $product = $this->product($categories['stalnye-radiatory'], $slug, $record['name'], [
+            'specs' => $legacy, 'short_description' => 'LEGACY_WRONG_MARKER 47 мм, тип 11',
+            'content' => '<p>LEGACY_WRONG_MARKER 47 мм</p>', 'meta_description' => 'LEGACY_WRONG_MARKER 47 мм',
+        ]);
+        $response = $this->get('/stalnye-radiatory/'.$slug)->assertOk()->assertDontSee('LEGACY_WRONG_MARKER')->assertDontSee('47 мм');
+        $this->assertSame('22', $response->viewData('fireplaceSpecs')['Тип панельного радиатора']);
+        $this->assertSame('500 мм', $response->viewData('fireplaceSpecs')['Высота']);
+        $this->assertArrayNotHasKey('Тип радиатора', $response->viewData('fireplaceSpecs'));
+        $this->get('/stalnye-radiatory?radiator[panel_type]=22')->assertOk()->assertDontSee('LEGACY_WRONG_MARKER')
+            ->assertViewHas('products', fn ($products) => $products->modelKeys() === [$product->id]);
+        $this->get('/stalnye-radiatory?radiator[panel_type]=11')->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->isEmpty());
+        $this->assertEquals($legacy, $product->fresh()->specs);
+        $this->assertSame('<p>LEGACY_WRONG_MARKER 47 мм</p>', $product->fresh()->content);
+    }
 }

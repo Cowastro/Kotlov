@@ -28,7 +28,7 @@ return new class extends Migration
             if ($slug && $slug !== 'radiatory' && isset($categories[$slug]) && (int) $categories[$slug] !== (int) $product->category_id) $replacement['category_id'] = (int) $categories[$slug];
             $fact = RadiatorCatalog::verified($product);
             if ($fact !== []) {
-                $specs = $catalog->details($product, []);
+                $specs = $catalog->details($product, [], preserveUnverified: true);
                 if ($product->specs != $specs) $replacement['specs'] = $specs;
                 if (($fact['material'] ?? '') === 'aluminium' && preg_match('~(?:^|это\s+[^.]{0,80})биметаллическ~ui', trim(strip_tags((string) $product->short_description)))) $replacement += $catalog->cleanDescription($product);
             }
