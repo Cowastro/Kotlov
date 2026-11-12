@@ -31,6 +31,7 @@ class CreateOneCCardCommand extends Command
         {--short= : Short description}
         {--content= : HTML description}
         {--source=onec : Integration source code}
+        {--replace=* : With --like: «было=>стало» in the copied texts (220 В=>380 В, 3 фазы)}
         {--like= : Id of a sibling card (same series): its category, brand, photos, specs and texts are the base}
         {--without-row : Our own card with no 1C row (a model not stocked yet); code is then only a label}
         {--apply : Create the card and link the row}';
@@ -95,8 +96,8 @@ class CreateOneCCardCommand extends Command
             'brand_id' => $brandId,
             'images' => $images->all() ?: null,
             'specs' => $specs ?: null,
-            'short_description' => $this->option('short') ?: ($like?->short_description ?: null),
-            'content' => $this->option('content') ?: ($like?->content ?: null),
+            'short_description' => $this->option('short') ?: ($this->replaced($like?->short_description) ?: null),
+            'content' => $this->option('content') ?: ($this->replaced($like?->content) ?: null),
         ], fn ($value) => $value !== null);
         $product = $standalone ? $creator->createStandalone($data) : $creator->createAndLink($item, $data);
         if (! $product) {
@@ -107,5 +108,18 @@ class CreateOneCCardCommand extends Command
         $this->line(sprintf('audit.onec_card.created=%d:%d:%s', (int) $item?->id, $product->id, $product->slug));
 
         return self::SUCCESS;
+    }
+
+    /** A sibling's text with this variant's differences (--replace=«было=>стало»). */
+    private function replaced(?string $text): ?string
+    {
+        foreach ((array) $this->option('replace') as $pair) {
+            [$from, $to] = array_pad(explode('=>', (string) $pair, 2), 2, null);
+            if (filled($from) && $to !== null) {
+                $text = str_replace($from, $to, (string) $text);
+            }
+        }
+
+        return $text;
     }
 }
