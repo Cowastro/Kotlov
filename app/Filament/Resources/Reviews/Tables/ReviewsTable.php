@@ -22,7 +22,7 @@ class ReviewsTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn(Builder $query) => $query->with('reviewable'))
+            ->modifyQueryUsing(fn(Builder $query) => $query->with(['reviewable', 'order']))
             ->columns([
                 // Фото товара
                 ImageColumn::make('product_image')
@@ -43,6 +43,7 @@ class ReviewsTable
                         if ($record->reviewable_type !== 'App\Models\Product') {
                             return match($record->reviewable_type) {
                                 'App\Models\InstallerProfile' => 'Монтажник',
+                                'App\Models\Order' => 'Обслуживание и заказ',
                                 default => '—',
                             };
                         }
@@ -67,6 +68,11 @@ class ReviewsTable
                     ->label('Рейтинг')
                     ->sortable()
                     ->formatStateUsing(fn($state) => str_repeat('★', (int)$state)),
+
+                TextColumn::make('order.number')->label('Заказ')->placeholder('—')
+                    ->url(fn ($record): ?string => $record->order_id
+                        ? \App\Filament\Resources\Orders\OrderResource::getUrl('view', ['record' => $record->order_id]) : null)
+                    ->color('primary'),
 
                 TextColumn::make('text')
                     ->label('Отзыв')
@@ -93,6 +99,7 @@ class ReviewsTable
                     ->options([
                         'App\Models\Product'           => 'Товары',
                         'App\Models\InstallerProfile'  => 'Монтажники',
+                        'App\Models\Order' => 'Обслуживание и заказы',
                     ]),
 
                 TernaryFilter::make('is_approved')

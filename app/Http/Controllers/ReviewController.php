@@ -8,6 +8,15 @@ use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
+    public function index()
+    {
+        return view('pages.reviews', [
+            'reviews' => \App\Models\Review::approved()
+                ->whereIn('reviewable_type', [(new Product)->getMorphClass(), (new \App\Models\Order)->getMorphClass()])
+                ->with('reviewable')->latest()->paginate(12),
+        ]);
+    }
+
     public function store(Request $request, Product $product)
     {
         $validated = $request->validate([

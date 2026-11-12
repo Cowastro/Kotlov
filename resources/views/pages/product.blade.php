@@ -1205,6 +1205,7 @@
                                                     </div>
                                                     <div class="info_author">
                                                         <p class="h6 author__name">{{ $review->author_name }}</p>
+                                                        @if($review->order_id)<span style="font-size:12px;color:#28764b;">Отзыв по заказу</span>@endif
                                                         <div class="star-wrap normal d-flex align-items-center">
                                                             @for ($s = 1; $s <= 5; $s++)
                                                                 <i class="icon icon-Star{{ $s <= $review->rating ? '' : 'EmptyOutlined' }}"></i>

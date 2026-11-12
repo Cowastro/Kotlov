@@ -50,6 +50,7 @@ class ReviewForm
                                 'App\Models\Product'          => 'Товар',
                                 'App\Models\InstallerProfile' => 'Монтажник',
                                 'App\Models\SupplierProfile'  => 'Поставщик',
+                                'App\Models\Order' => 'Обслуживание и заказ',
                             ])
                             ->required(),
 

@@ -599,7 +599,11 @@ Route::get('/montazh-kaminov', FireplaceInstallationController::class)->name('fi
 Route::get('/installers/{slug}', [InstallerController::class, 'show'])->name('installers.show');
 Route::get('/install-request', [InstallRequestController::class, 'create'])->name('install-requests.create');
 Route::post('/install-request', [InstallRequestController::class, 'store'])->middleware('public.form.protect:install-request')->name('install-requests.store');
-Route::view('/reviews', 'pages.reviews');
+Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+Route::get('/order-review/{order}', [\App\Http\Controllers\OrderReviewController::class, 'show'])
+    ->middleware(['signed:relative', 'throttle:60,1'])->name('orders.review.show');
+Route::post('/order-review/{order}', [\App\Http\Controllers\OrderReviewController::class, 'store'])
+    ->middleware(['signed:relative', 'throttle:10,1'])->name('orders.review.store');
 Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->middleware('public.form.protect:reviews')->name('reviews.store');
 Route::view('/rassrochka-do-6-mesyatsev', 'pages.installment')->name('installment.info');
 Route::view('/faq', 'pages.faq');

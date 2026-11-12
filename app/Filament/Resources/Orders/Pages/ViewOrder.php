@@ -90,6 +90,7 @@ class ViewOrder extends ViewRecord
     {
         return [
             ManageOrderDealAction::make(),
+            \App\Filament\Resources\Orders\Actions\OrderReviewLinkAction::make(),
             AssignOrderToPartnerAction::make(),
             ActionGroup::make([
                 CreateCommercialDocumentFromOrderAction::make(),
