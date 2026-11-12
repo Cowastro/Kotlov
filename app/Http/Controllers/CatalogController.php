@@ -10,6 +10,7 @@ use App\Models\PartnerBranch;
 use App\Models\Product;
 use App\Models\ProductAttributeValue;
 use App\Services\ChimneyDiameterQuickFilter;
+use App\Services\CategoryMetadataImage;
 use App\Services\CityContactResolver;
 use App\Services\SeoMetadataBuilder;
 use App\Services\SaunaStoveFilterNormalizer;
@@ -1070,7 +1071,22 @@ class CatalogController extends Controller
         $gasMeterFaq = collect();
         $heatFluidFaq = collect();
         $pelletComparisonProducts = collect();
-        $schemaNodes = [$breadcrumbSchema];
+        $categoryImageMetadata = true;
+        $categoryPhoto = app(CategoryMetadataImage::class)->resolve($category, $allCategoryIds->all());
+        $ogImage = $categoryPhoto['url'] ?? null;
+        $ogImageWidth = $categoryPhoto['width'] ?? null;
+        $ogImageHeight = $categoryPhoto['height'] ?? null;
+        $ogImageType = $categoryPhoto['type'] ?? null;
+        $ogImageAlt = $categorySchemaName;
+        $collectionSchema = array_filter([
+            '@context' => 'https://schema.org',
+            '@type' => 'CollectionPage',
+            '@id' => $canonical.'#collection',
+            'url' => $canonical,
+            'name' => $categorySchemaName,
+            'image' => $ogImage,
+        ]);
+        $schemaNodes = [$breadcrumbSchema, $collectionSchema];
 
         if ($category->slug === 'schetchiki-gaza') {
             $gasMeterFaq = $this->gasMeterFaqItems();
@@ -1545,7 +1561,7 @@ class CatalogController extends Controller
             'description',
             'keywords',
             'canonical',
-            'schemaJson',
+            'schemaJson', 'categoryImageMetadata', 'ogImage', 'ogImageWidth', 'ogImageHeight', 'ogImageType', 'ogImageAlt',
             'heatPumpArticles',
             'pelletBurnerFaq',
             'gasMeterFaq',
