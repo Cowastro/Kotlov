@@ -13,6 +13,7 @@ class DeltaPrime1100CastIronPostsTest extends TestCase
     {
         $this->get('/blog/novinka-ekokamin-delta-praim-1100-chugunnaya-topochnaya-kamera')->assertOk()
             ->assertSee('Новинка ЭкоКамин: топка ДЕЛЬТА ПРАЙМ 1100 с чугунной топочной камерой')
+            ->assertSee('delta-prime-1100-chugun-cover.webp', false)
             ->assertSee('delta-prime-1100-chugun-novinka.webp', false)
             ->assertSee('/blog/chugunnaya-futerovka-kamina-preimushchestva', false)
             ->assertSee('/topki/topka-delta-praim-1100-tri-stekla-futerovka-cugun-siber-vstroennyi-ramka-dekorativnaia', false);
@@ -21,6 +22,7 @@ class DeltaPrime1100CastIronPostsTest extends TestCase
             ->assertSee('Чугунная футеровка камина: преимущества, отличие от шамота и вермикулита')
             ->assertSee('"@type":"FAQPage"', false)
             ->assertSee('Чем чугунная футеровка лучше шамотной?')
+            ->assertSee('chugunnaya-futerovka-cover.webp', false)
             ->assertSee('preimushchestva-chugunnoy-futerovki.webp', false);
 
         $this->assertFileExists(public_path('img/blog/ecokamin-prime/delta-prime-1100-chugun-novinka.webp'));
