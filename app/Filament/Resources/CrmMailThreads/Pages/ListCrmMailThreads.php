@@ -26,7 +26,7 @@ use Throwable;
 
 class ListCrmMailThreads extends ListRecords
 {
-    public const WORK_TABS = ['incoming', 'needs_response', 'my_work', 'inbox', 'all'];
+    public const WORK_TABS = ['incoming', 'unread', 'needs_response', 'my_work', 'inbox', 'all'];
 
     protected static string $resource = CrmMailThreadResource::class;
 
