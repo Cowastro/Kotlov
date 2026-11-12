@@ -183,6 +183,23 @@ class OrderCustomerReviewTest extends TestCase
         $this->assertNull($order->fresh()->review_sms_attempted_at);
     }
 
+    public function test_manager_can_publish_from_list_and_action_disappears_with_rating_updated(): void
+    {
+        [$order, $product] = $this->order();
+        $review = Review::create(['order_id' => $order->id, 'reviewable_type' => $product->getMorphClass(),
+            'reviewable_id' => $product->id, 'author_name' => 'Покупатель', 'rating' => 2,
+            'text' => 'Публикация из списка отзывов', 'is_approved' => false]);
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true, 'is_crm_user' => true]);
+        $page = Livewire::actingAs($manager)->test(\App\Filament\Resources\Reviews\Pages\ListReviews::class)
+            ->assertTableActionVisible('publish', $review)
+            ->callTableAction('publish', $review)->assertHasNoTableActionErrors();
+        $this->assertTrue($review->fresh()->is_approved);
+        $page->assertTableActionHidden('publish', $review->fresh());
+        $this->assertSame(1, $product->fresh()->reviews_count);
+        $this->assertEquals(2, $product->fresh()->rating);
+        $this->get('/reviews')->assertOk()->assertSee('Публикация из списка отзывов');
+    }
+
     private function data(string $target = 'order'): array
     {
         return ['target' => $target, 'author_name' => 'Александр', 'rating' => 4, 'text' => 'Заказ доставили аккуратно и вовремя', 'consent' => 1];

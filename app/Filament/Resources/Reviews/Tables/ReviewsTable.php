@@ -2,12 +2,15 @@
 
 namespace App\Filament\Resources\Reviews\Tables;
 
+use App\Filament\Resources\Reviews\ReviewResource;
+use App\Models\Review;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -116,6 +119,18 @@ class ReviewsTable
                     ]),
             ])
             ->recordActions([
+                Action::make('publish')
+                    ->label('Опубликовать')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->button()
+                    ->authorize(fn (Review $record): bool => ReviewResource::canEdit($record))
+                    ->visible(fn (Review $record): bool => ! $record->is_approved)
+                    ->action(function (Review $record): void {
+                        $record->update(['is_approved' => true]);
+                        Notification::make()->success()->title('Отзыв опубликован')->send();
+                    }),
+
                 Action::make('view_on_site')
                     ->label('На сайте')
                     ->icon('heroicon-o-arrow-top-right-on-square')
