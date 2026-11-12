@@ -105,7 +105,7 @@ class RadiatorCatalogTest extends TestCase
     public function test_catalog_filters_use_standard_chips_and_exclude_parts_from_the_hub(): void
     {
         $categories = $this->categories();
-        $record = collect(RadiatorCatalog::records())->first(fn ($row) => isset($row['power_dt70_w']));
+        $record = collect(RadiatorCatalog::records())->first(fn ($row) => isset($row['power_dt70_w']) && ($row['material'] ?? null) === 'bimetal');
         $slug = array_search($record, RadiatorCatalog::records(), true);
         $radiator = $this->product($categories['bimetallicheskie-radiatory'], $slug, $record['name']);
         $part = $this->product($categories['radiatornaya-armatura'], 'radiator-part', 'Монтажный комплект');
@@ -163,5 +163,69 @@ class RadiatorCatalogTest extends TestCase
             ->assertViewHas('products', fn ($products) => $products->isEmpty());
         $this->assertEquals($legacy, $product->fresh()->specs);
         $this->assertSame('<p>LEGACY_WRONG_MARKER 47 мм</p>', $product->fresh()->content);
+    }
+
+    public function test_manufacturer_tables_keep_section_outputs_out_of_whole_radiator_filters(): void
+    {
+        $categories = $this->categories();
+        $catalog = app(RadiatorCatalog::class);
+        $slug = 'radiator-stalnoi-trubcatyi-zehnder-charleston-2035-62-342';
+        $row = RadiatorCatalog::records()[$slug];
+        $product = $this->product($categories['stalnye-radiatory'], $slug, $row['name']);
+        $details = $catalog->details($product, []);
+        $this->assertSame('342 мм', $details['Высота']);
+        $this->assertSame('62 мм', $details['Глубина']);
+        $this->assertSame('27,5 Вт/секц.', $details['Теплоотдача секции при ΔT 50 °C']);
+        $this->assertSame('42 Вт/секц.', $details['Теплоотдача секции при ΔT 70 °C']);
+        $this->assertArrayNotHasKey('Ширина', $details);
+        $this->assertArrayNotHasKey('Теплоотдача при ΔT 70 °C', $details);
+        $facts = $catalog->productFacts($product, 'radiatory', $catalog->dimensions('radiatory'));
+        $this->assertArrayNotHasKey('power70', $facts['options']);
+        $this->assertArrayNotHasKey('power50', $facts['options']);
+        $html = view('partials.fireplace-card-specs', ['fireplaceCardSpecs' => $facts['card']])->render();
+        $this->assertStringContainsString('42 Вт/секц. · ΔT 70 °C', $html);
+        $this->get('/stalnye-radiatory?radiator[power70]=to-1000')->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->isEmpty());
+        $this->get('/stalnye-radiatory/'.$slug)->assertOk()->assertSee('Исполнение подключения')
+            ->assertSee('27,5 Вт/секц.')->assertSee('Документация производителя');
+        $only50 = collect(RadiatorCatalog::records())->first(fn ($row) => isset($row['section_power_dt50_w']) && ! isset($row['section_power_dt70_w']));
+        $only50Slug = array_search($only50, RadiatorCatalog::records(), true);
+        $lowTemperature = new Product(['slug' => $only50Slug, 'name' => $only50['name']]);
+        $lowFacts = $catalog->productFacts($lowTemperature, 'radiatory', $catalog->dimensions('radiatory'));
+        $lowHtml = view('partials.fireplace-card-specs', ['fireplaceCardSpecs' => $lowFacts['card']])->render();
+        $this->assertStringContainsString('Вт/секц. · ΔT 50 °C', $lowHtml);
+        $this->assertStringNotContainsString('ΔT 70 °C', $lowHtml);
+        $this->assertArrayNotHasKey('power50', $lowFacts['options']);
+    }
+
+    public function test_exact_factory_revisions_and_connection_codes_are_preserved(): void
+    {
+        $r = RadiatorCatalog::records();
+        $this->assertEquals(1156, $r['kermi-ftv110500901r2y-radiator-stalnoi-niznee-rf']['power_dt70_w']);
+        $this->assertSame('bottom', $r['kermi-ftv110500901r2y-radiator-stalnoi-niznee-rf']['connection']);
+        $this->assertEquals(3599, $r['radiator-panelnyi-royal-thermo-compact-c22-500-1600-ral9016']['power_dt70_w']);
+        $this->assertEquals(97, $r['radiator-panelnyi-royal-thermo-compact-c22-500-1600-ral9016']['depth_mm']);
+        $tubog = $r['stalnoi-trubcatyi-radiator-rifar-tubog-2180-12-d1'];
+        $this->assertSame('bottom', $tubog['connection']);
+        $this->assertEquals(558, $tubog['width_mm']);
+        $this->assertEquals(198, $tubog['section_power_dt70_w']);
+        $this->assertArrayNotHasKey('power_dt70_w', $tubog);
+        $this->assertEquals(197, $r['radiator-bimetalliceskii-rifar-base-500']['section_power_dt70_w']);
+        $this->assertArrayNotHasKey('width_mm', $r['radiator-bimetalliceskii-rifar-base-500']);
+        $this->assertEquals(566, $r['radiator-stalnoi-trubcatyi-zehnder-charleston-3057-100-566']['height_mm']);
+        foreach (['radiator-kermi-fko-224004800', 'radiator-stalnoi-kermi-line-plk-125051305', 'kermi-fko-110504'] as $slug) {
+            $this->assertArrayNotHasKey('power_dt70_w', $r[$slug], $slug);
+        }
+        foreach ($r as $slug => $row) {
+            foreach ($row['evidence'] ?? [] as $evidence) {
+                $this->assertContains($evidence['source'], $row['sources'], $slug);
+                foreach ($evidence['fields'] as $field) $this->assertArrayHasKey($field, $row, $slug);
+            }
+            foreach ($row as $field => $value) {
+                if (preg_match('/^(?:section_)?(?:power_dt\d+_w|width_mm|height_mm|depth_mm|centres_mm)$/', $field)) {
+                    $this->assertGreaterThan(0, $value, $slug.':'.$field);
+                }
+            }
+        }
     }
 }
