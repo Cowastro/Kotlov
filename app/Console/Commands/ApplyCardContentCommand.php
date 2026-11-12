@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 /**
  * Hand-written content for our own cards, kept in git: database/data/<file>.json maps a card slug to
- * content, short_description, meta_title, meta_description, h1 and images (paths under public/img/…).
+ * content, short_description, meta_title, meta_description, h1, specs ([{key, value}]) and images (paths under public/img/…).
  * Only the given fields change; a missing card or photo is reported and skipped.
  *
  *   php artisan catalog:apply-card-content gamma_san_lyuki_content          # dry run
@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
  */
 class ApplyCardContentCommand extends Command
 {
-    private const FIELDS = ['content', 'short_description', 'meta_title', 'meta_description', 'h1', 'images'];
+    private const FIELDS = ['content', 'short_description', 'meta_title', 'meta_description', 'h1', 'images', 'specs'];
 
     protected $signature = 'catalog:apply-card-content
         {file : JSON file name in database/data (without .json)}
