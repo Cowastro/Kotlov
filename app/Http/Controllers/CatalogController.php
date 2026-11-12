@@ -210,6 +210,14 @@ class CatalogController extends Controller
             }
         }
 
+        if ($category->slug === 'obogrevateli' && $selectedSubcategory === null) {
+            $heaterPartsId = Category::active()->where('slug', 'komplektuyushchie-dlya-obogrevateley')->value('id');
+            if ($heaterPartsId) {
+                $activeCategoryIds = $activeCategoryIds->diff($this->collectCategoryAndDescendantIds((int) $heaterPartsId))->values();
+                $allCategoryIds = $activeCategoryIds;
+            }
+        }
+
         $showElectricFireplaceNavigation = in_array($category->slug, ['elektrokamini', 'oblicovki'], true);
         $fireplaceType = ElectricFireplaceNavigation::selection($category->slug, request()->query('fireplace_type'));
         $fireplaceSelectionIds = $fireplaceType === null ? null

@@ -61,6 +61,22 @@ class HeaterCategoryCleanupTest extends TestCase
         $this->get('/heater-empty-test')->assertOk()->assertDontSee('content="noindex, follow"', false);
     }
 
+    public function test_heater_hub_unites_actual_heaters_and_keeps_components_out_of_product_grid(): void
+    {
+        $root = $this->category('obogrevateli');
+        $oil = $this->category('maslyanye-obrevateli');
+        $parts = $this->category('komplektuyushchie-dlya-obogrevateley', $root);
+        $heater = $this->product($oil, 'Масляный радиатор для проверки');
+        $component = $this->product($parts, 'Уникальное шасси для проверки');
+        $migration = require database_path('migrations/2026_11_12_151000_group_heater_types_under_hub.php');
+        $migration->up();
+        $this->assertEquals($root->id, $oil->fresh()->parent_id);
+        $response = $this->get('/obogrevateli')->assertOk();
+        $this->assertTrue($response->viewData('products')->contains('id', $heater->id));
+        $this->assertFalse($response->viewData('products')->contains('id', $component->id));
+        $this->get('/komplektuyushchie-dlya-obogrevateley')->assertOk()->assertSee($component->name);
+    }
+
     public function test_imports_use_specific_categories_and_do_not_confuse_water_convectors_or_boiler_parts(): void
     {
         $root = $this->category('obogrevateli');
