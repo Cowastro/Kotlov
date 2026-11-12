@@ -72,7 +72,7 @@ class RadiatorCatalog extends SpecificationCatalog
 
     public static function managed(string $name): bool
     {
-        return (bool) preg_match('~мощност|теплоотдач|тепловой поток|площадь|межосев|высот|ширин|глубин|количество секци|число секци|материал|подключени~ui', $name);
+        return (bool) preg_match('~мощност|теплоотдач|тепловой поток|площадь|межосев|высот|ширин|глубин|габарит|размер|давлен|температур.*теплоносител|рабочая температур|об[ъь]ем воды|количество секци|число секци|материал|подключени~ui', $name);
     }
 
     public function details(Product $product, iterable $attributes): array
@@ -84,16 +84,22 @@ class RadiatorCatalog extends SpecificationCatalog
         }
         foreach ($attributes as $attribute) {
             $name = (string) $attribute->attribute?->name;
-            if ($name !== '' && ! self::managed($name)) $rows[$name] = $attribute->display_value;
+            $value = trim((string) $attribute->display_value);
+            if ($name !== '' && ! self::managed($name) && $this->meaningful($value)) $rows[$name] = $value;
         }
         foreach ($product->specs ?: [] as $key => $raw) {
             if (is_array($raw)) {
                 $key = $raw['key'] ?? $raw['name'] ?? '';
                 $raw = ($raw['value'] ?? '').(! empty($raw['unit']) ? ' '.$raw['unit'] : '');
             }
-            if (is_string($key) && $key !== '' && is_scalar($raw) && ! self::managed($key)) $rows[$key] ??= (string) $raw;
+            if (is_string($key) && $key !== '' && is_scalar($raw) && ! self::managed($key) && $this->meaningful((string) $raw)) $rows[$key] ??= (string) $raw;
         }
         return $rows;
+    }
+
+    private function meaningful(string $value): bool
+    {
+        return trim($value) !== '' && ! preg_match('~^(?:[-—–]|кг|г|л|бар|мм|см|м|м[²2]|Вт|кВт|°[СC])$~ui', trim($value));
     }
 
     public function cleanDescription(Product $product): array

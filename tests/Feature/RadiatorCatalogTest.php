@@ -98,7 +98,7 @@ class RadiatorCatalogTest extends TestCase
         $categories = $this->categories();
         $record = collect(RadiatorCatalog::records())->first(fn ($row) => str_contains($row['name'], 'Tower'));
         $slug = array_search($record, RadiatorCatalog::records(), true);
-        $radiator = $this->product($categories['alyuminievye-radiatory'], $slug, $record['name'], ['specs' => ['Мощность' => '1026 Вт', 'Цвет' => 'Чёрный'], 'short_description' => '1026 Вт, высота 574 мм']);
+        $radiator = $this->product($categories['alyuminievye-radiatory'], $slug, $record['name'], ['specs' => ['Мощность' => '1026 Вт', 'Цвет' => 'Чёрный', 'Давление опрессовки' => '999 бар', 'Вес упаковки' => 'кг'], 'short_description' => '1026 Вт, высота 574 мм']);
         $migration = require database_path('migrations/2026_11_12_210000_repair_radiator_catalog.php');
         $migration->up();
         $migration->up();
@@ -107,6 +107,8 @@ class RadiatorCatalogTest extends TestCase
         $this->assertEquals(100, $radiator->price);
         $this->assertSame('Чёрный', $radiator->specs['Цвет']);
         $this->assertArrayNotHasKey('Мощность', $radiator->specs);
+        $this->assertArrayNotHasKey('Давление опрессовки', $radiator->specs);
+        $this->assertArrayNotHasKey('Вес упаковки', $radiator->specs);
         $this->assertStringNotContainsString('1026', $radiator->short_description);
         $this->get('/alyuminievye-radiatory/'.$slug)->assertStatus(301)->assertRedirect('/bimetallicheskie-radiatory/'.$slug);
         $this->get('/bimetallicheskie-radiatory/'.$slug)->assertOk()->assertSee('Документация производителя')->assertDontSee('1026 Вт');
