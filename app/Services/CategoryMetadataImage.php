@@ -45,7 +45,12 @@ class CategoryMetadataImage
             }
         }
 
-        foreach (['img/popular/'.$category->slug.'.jpg', Category::fallbackImagePath($category->slug)] as $path) {
+        $supplierPhoto = match ($category->slug) {
+            // Existing catalog supplier photo, mirrored locally for reliable crawler access.
+            'stekla-dlya-pechey-i-kaminov' => 'img/category-meta/robax-meta-bel-enisei-2-front.jpg',
+            default => null,
+        };
+        foreach ([$supplierPhoto, 'img/popular/'.$category->slug.'.jpg', Category::fallbackImagePath($category->slug)] as $path) {
             if ($path && ($image = $this->localImage('/'.$path))) {
                 return [...$image, 'source' => 'category-stock'];
             }
