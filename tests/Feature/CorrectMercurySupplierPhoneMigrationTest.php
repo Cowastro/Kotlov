@@ -20,7 +20,8 @@ class CorrectMercurySupplierPhoneMigrationTest extends TestCase
             'contact' => '+375 (29) 640-09-59 · info@pkmercury.by',
             'communication_channels' => [['type' => 'phone', 'value' => '+375296400959'], ['type' => 'email', 'value' => 'info@pkmercury.by']],
         ]);
-        CrmContactPoint::query()->create(['counterparty_id' => $counterparty->id, 'type' => 'phone', 'value' => '+375296400959', 'is_primary' => true, 'is_active' => true]);
+        $phonePoint = CrmContactPoint::query()->create(['counterparty_id' => $counterparty->id, 'type' => 'phone', 'value' => '+375296400959', 'is_primary' => true, 'is_active' => true]);
+        $emailPoint = CrmContactPoint::query()->create(['counterparty_id' => $counterparty->id, 'type' => 'email', 'value' => 'info@pkmercury.by', 'is_primary' => true, 'is_active' => true]);
         $migration = require database_path('migrations/2026_10_16_110000_correct_mercury_supplier_phone.php');
         $migration->up();
         $migration->up();
@@ -28,6 +29,9 @@ class CorrectMercurySupplierPhoneMigrationTest extends TestCase
         $this->assertSame('+375297873892', $supplier->fresh()->communication_channels[0]['value']);
         $this->assertSame('info@pkmercury.by', $supplier->fresh()->communication_channels[1]['value']);
         $this->assertSame(['+375297873892'], $supplier->fresh()->contactPhoneNumbers());
-        $this->assertSame(1, CrmContactPoint::query()->where('counterparty_id', $counterparty->id)->count());
+        $this->assertSame(2, CrmContactPoint::query()->where('counterparty_id', $counterparty->id)->count());
+        $this->assertSame('375297873892', $phonePoint->fresh()->normalized_value);
+        $this->assertTrue($phonePoint->fresh()->is_primary);
+        $this->assertSame('info@pkmercury.by', $emailPoint->fresh()->value);
     }
 }

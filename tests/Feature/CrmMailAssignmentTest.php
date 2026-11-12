@@ -47,6 +47,12 @@ class CrmMailAssignmentTest extends TestCase
             'last_message_at' => now(),
         ]);
 
+        $thread->messages()->create([
+            'mailbox_id' => $mailbox->id, 'direction' => 'incoming',
+            'from_email' => 'client@example.com', 'subject' => $thread->subject,
+            'text_body' => 'Прошу подготовить предложение.', 'received_at' => now(), 'is_read' => false,
+        ]);
+
         Livewire::actingAs($dispatcher)
             ->test(ListCrmMailThreads::class)
             ->assertTableActionExists('assign_responsible', record: $thread)

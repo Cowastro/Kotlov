@@ -3,7 +3,7 @@
 namespace Tests\Unit;
 
 use App\Support\Catalog\BelomoSelectorLineup;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class BelomoSelectorLineupTest extends TestCase
 {

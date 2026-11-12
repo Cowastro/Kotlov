@@ -2801,9 +2801,11 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'is_active' => true,
             'update_stock' => true,
         ]);
-        $category = Category::query()->firstOrCreate(['slug' => 'obogrevateli'], [
-            'name' => 'Обогреватели',
-            'parent_id' => 0,
+        $root = Category::query()->firstOrCreate(['slug' => 'obogrevateli'], [
+            'name' => 'Обогреватели', 'parent_id' => 0,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'komplektuyushchie-dlya-obogrevateley'], [
+            'name' => 'Комплектующие для обогревателей', 'parent_id' => $root->id,
         ]);
         $ballu = Brand::query()->firstOrCreate(['slug' => 'ballu'], ['name' => 'Ballu']);
         $wrongHommynCandidate = Product::query()->create([
@@ -3136,9 +3138,11 @@ class CreateSbgDistinctProductsBatchCommandTest extends TestCase
             'is_active' => true,
             'update_stock' => true,
         ]);
-        $category = Category::query()->firstOrCreate(['slug' => 'obogrevateli'], [
-            'name' => 'Обогреватели',
-            'parent_id' => 0,
+        $root = Category::query()->firstOrCreate(['slug' => 'obogrevateli'], [
+            'name' => 'Обогреватели', 'parent_id' => 0,
+        ]);
+        $category = Category::query()->firstOrCreate(['slug' => 'komplektuyushchie-dlya-obogrevateley'], [
+            'name' => 'Комплектующие для обогревателей', 'parent_id' => $root->id,
         ]);
         $electrolux = Brand::query()->firstOrCreate(['slug' => 'electrolux'], ['name' => 'Electrolux']);
         $wrongEfa2Candidate = Product::query()->create([

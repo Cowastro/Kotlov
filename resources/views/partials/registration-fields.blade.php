@@ -1,6 +1,7 @@
 @php
     $prefix = $prefix ?? 'registration';
     $accountType = old('account_type', 'legal');
+    $errors = $errors ?? new \Illuminate\Support\ViewErrorBag;
     $smsError = $errors->first('phone_verification_token') ?: $errors->first('phone_code');
 @endphp
 

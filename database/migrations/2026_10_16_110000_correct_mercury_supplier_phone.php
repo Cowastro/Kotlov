@@ -2,6 +2,7 @@
 
 use App\Models\CrmContactPoint;
 use App\Models\Supplier;
+use App\Services\Telephony\PhoneNumber;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -51,8 +52,8 @@ return new class extends Migration
                 $companyPhones->update(['is_primary' => false]);
                 CrmContactPoint::query()->updateOrCreate([
                     'counterparty_id' => $supplier->crm_counterparty_id, 'contact_id' => null,
-                    'type' => 'phone', 'value' => $phone,
-                ], ['is_active' => true, 'is_primary' => true]);
+                    'type' => 'phone', 'normalized_value' => PhoneNumber::normalize($phone),
+                ], ['value' => $phone, 'is_active' => true, 'is_primary' => true]);
             }
             if (! collect($supplier->fresh()->contactPhoneNumbers())->contains(fn ($value) => preg_replace('/\D/', '', $value) === '375297873892')) {
                 throw new RuntimeException('Mercury supplier phone verification failed.');

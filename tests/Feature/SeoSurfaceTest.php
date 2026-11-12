@@ -28,12 +28,20 @@ class SeoSurfaceTest extends TestCase
 
     public function test_sitemap_contains_only_primary_domain_urls(): void
     {
-        Category::query()->create([
+        $category = Category::query()->create([
             'parent_id' => 0,
             'name' => 'Газовые котлы',
             'slug' => 'gazovye',
             'is_active' => true,
         ]);
+
+        Product::query()->create([
+            'category_id' => $category->id, 'name' => 'Газовый котёл',
+            'slug' => 'sitemap-gas-boiler', 'sku' => 'SITEMAP-GAS', 'price' => 100,
+            'is_active' => true, 'is_archived' => false,
+            'availability_status' => Product::AVAILABILITY_IN_STOCK, 'in_stock' => true,
+        ]);
+        Category::query()->create(['parent_id' => 0, 'name' => 'Пустой раздел', 'slug' => 'sitemap-empty', 'is_active' => true]);
 
         $response = $this->get('https://kotlov.by/sitemap.xml');
 
@@ -43,6 +51,7 @@ class SeoSurfaceTest extends TestCase
 
         $this->assertNotEmpty($matches[1]);
         $this->assertContains('https://kotlov.by/gazovye', $matches[1]);
+        $this->assertNotContains('https://kotlov.by/sitemap-empty', $matches[1]);
         foreach ($matches[1] as $location) {
             $this->assertSame('kotlov.by', parse_url($location, PHP_URL_HOST));
         }

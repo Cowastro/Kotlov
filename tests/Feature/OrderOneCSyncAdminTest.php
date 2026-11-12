@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Models\IntegrationIssue;
 use App\Models\IntegrationSource;
 use App\Models\Order;
 use App\Models\OrderIntegrationDelivery;
 use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class OrderOneCSyncAdminTest extends TestCase
@@ -57,9 +60,10 @@ class OrderOneCSyncAdminTest extends TestCase
         $this->assertSame('conflict', $conflict->onecSyncState());
         $this->assertSame('unknown', $unknown->onecSyncState());
 
-        $this->actingAs($admin)
-            ->get(OrderResource::getUrl('index', panel: 'admin'))
-            ->assertOk()
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::actingAs($admin)->test(ListOrders::class)
+            ->toggleAllTableColumns()
+            ->assertTableColumnStateSet('onec_sync_state', 'delayed', $delayed)
             ->assertSee('Не передан в 1С')
             ->assertSee('Передача задержана')
             ->assertSee('Передан')
