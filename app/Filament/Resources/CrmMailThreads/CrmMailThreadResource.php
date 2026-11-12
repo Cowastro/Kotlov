@@ -60,6 +60,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -281,14 +282,19 @@ class CrmMailThreadResource extends Resource
                     ->sortable(),
                 TextColumn::make('participant_name')
                     ->label('Отправитель')
-                    ->weight('bold')
+                    ->weight(fn (CrmMailThread $record): string => $record->unread_count > 0 ? 'bold' : 'medium')
                     ->limit(30)
                     ->tooltip(fn (CrmMailThread $record): ?string => $record->participant_name)
                     ->description(fn (CrmMailThread $record): string => $record->participant_email)
                     ->width('11.5rem')
                     ->grow(false),
                 TextColumn::make('subject')->label('Последняя тема')->limit(80)->wrap()
-                    ->description(fn (CrmMailThread $record): string => $record->messages_count.' писем · непрочитанных '.$record->unread_count)
+                    ->weight(fn (CrmMailThread $record): string => $record->unread_count > 0 ? 'bold' : 'medium')
+                    ->description(fn (CrmMailThread $record): HtmlString => new HtmlString(
+                        ($record->unread_count > 0
+                            ? '<span class="crm-mail-unread-label">Не прочитано · '.(int) $record->unread_count.'</span> · '
+                            : '').(int) $record->messages_count.' писем'
+                    ))
                     ->icon(fn (CrmMailThread $record): ?string => filled($record->manager_note)
                         ? 'heroicon-o-document-text'
                         : null)
@@ -343,10 +349,11 @@ class CrmMailThreadResource extends Resource
                 if ($livewire->activeTab === 'needs_response' && blank($livewire->getTableSortColumn())) {
                     return $query
                         ->orderByRaw("CASE WHEN priority = 'urgent' THEN 0 WHEN next_follow_up_at <= ? THEN 1 WHEN priority = 'high' THEN 2 ELSE 3 END", [now()])
-                        ->orderByDesc('last_message_at');
+                        ->orderByDesc('last_message_at')
+                        ->orderByDesc('crm_mail_threads.id');
                 }
 
-                return $query->orderByDesc('last_message_at');
+                return $query->orderByDesc('last_message_at')->orderByDesc('crm_mail_threads.id');
             }, 'desc')
             ->filters([
                 SelectFilter::make('assigned_user_id')
@@ -923,7 +930,7 @@ class CrmMailThreadResource extends Resource
     public static function mailRowClasses(CrmMailThread $record): string
     {
         if ($record->unread_count > 0) {
-            return 'bg-warning-50 dark:bg-warning-950/40';
+            return 'crm-mail-row-unread bg-warning-50 dark:bg-warning-950/40';
         }
 
         return match ($record->status) {

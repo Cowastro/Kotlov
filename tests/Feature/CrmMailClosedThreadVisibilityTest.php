@@ -88,6 +88,46 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
             ->assertCanSeeTableRecords([$fresh, $middle, $old], inOrder: true);
     }
 
+    public function test_incoming_mail_stays_newest_first_and_new_replies_return_to_the_top(): void
+    {
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
+        $mailbox = CrmMailbox::create(['name' => 'Incoming', 'email' => 'incoming-sort@example.com', 'username' => 'incoming-sort@example.com']);
+        $old = $this->thread($mailbox, 'old-unread@example.com', 'new');
+        $fresh = $this->thread($mailbox, 'fresh-read@example.com', 'in_progress');
+        $sameTime = $this->thread($mailbox, 'same-time@example.com', 'in_progress');
+        $receivedAt = now()->subHour();
+
+        foreach ([$old, $fresh, $sameTime] as $thread) {
+            $this->incomingMessage($thread, $mailbox, $thread->subject);
+            $thread->messages()->update(['received_at' => $thread->is($old) ? now()->subDay() : $receivedAt]);
+            $thread->refreshMessageSummary();
+        }
+        $old->update(['unread_count' => 1, 'priority' => 'urgent']);
+        $old->messages()->update(['is_read' => false]);
+
+        $this->actingAs($manager);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $page = Livewire::test(ListCrmMailThreads::class)
+            ->assertSet('activeTab', 'incoming')
+            ->assertCanSeeTableRecords([$sameTime, $fresh, $old], inOrder: true)
+            ->assertSee('Не прочитано · 1');
+
+        $old->messages()->create([
+            'mailbox_id' => $mailbox->id,
+            'message_id' => '<new-reply@example.com>',
+            'direction' => 'incoming',
+            'from_email' => $old->participant_email,
+            'subject' => 'Новый ответ в старой переписке',
+            'is_read' => false,
+            'received_at' => now(),
+        ]);
+        $old->refreshMessageSummary();
+
+        $page->call('$refresh')
+            ->assertCanSeeTableRecords([$old, $sameTime, $fresh], inOrder: true)
+            ->assertSee('Не прочитано · 2');
+    }
+
     public function test_trashed_thread_can_be_opened_from_trash_without_appearing_in_active_tabs(): void
     {
         $mailbox = CrmMailbox::create([
