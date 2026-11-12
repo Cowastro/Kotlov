@@ -28,6 +28,9 @@ class ApplyCardContentCommandTest extends TestCase
         $this->assertStringContainsString('26 ± 2 кг', $card->content);
         $this->assertStringContainsString('%city%', $card->meta_title);
         $this->assertSame('img/products/gamma-san/lyuk-polimerno-kompozitnyi-3t-chertezh.webp', $card->imagePaths()[1]);
+        $small = Product::query()->where('slug', 'liuk-polimerno-kompozitnyi-15-t-zelenyi-gamma-san')->first();
+        $this->assertStringContainsString('диаметр внизу — 800 ± 5 мм', $small->content);
+        $this->assertContains(['key' => 'Диаметр обечайки внизу', 'value' => '800 мм'], $small->specs);
 
         $this->artisan('catalog:apply-card-content', ['file' => 'gamma_san_lyuki_content', '--apply' => true])
             ->expectsOutputToContain('metric.card_content.updated=0')->assertSuccessful();

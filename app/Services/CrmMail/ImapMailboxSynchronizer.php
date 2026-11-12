@@ -187,6 +187,7 @@ class ImapMailboxSynchronizer
                                 'participant_name' => $fromName,
                                 'participant_email' => $fromEmail,
                                 'assigned_user_id' => $previousClientThread?->assigned_user_id,
+                                'sales_stage' => $isSpam ? null : 'new_inquiry',
                                 'status' => $isSpam
                                     ? 'spam'
                                     : ($previousClientThread ? 'waiting_manager' : 'new'),
