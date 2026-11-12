@@ -26,6 +26,8 @@ class OrderResource extends Resource
     protected static ?string $modelLabel = 'Заказ';
     protected static ?string $pluralModelLabel = 'Заказы';
     protected static ?string $recordTitleAttribute = 'number';
+
+    protected static ?int $globalSearchSort = -20;
     protected static ?int $navigationSort = 1;
 
     public static function getNavigationGroup(): ?string { return 'Продажи'; }
