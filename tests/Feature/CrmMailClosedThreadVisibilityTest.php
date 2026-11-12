@@ -67,7 +67,7 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
         $this->assertSame('4', $page->instance()->getTabs()['needs_response']->getBadge());
     }
 
-    public function test_reaction_tab_lists_newest_mail_first_by_default(): void
+    public function test_reaction_tab_lists_longest_wait_first_while_all_mail_stays_newest_first(): void
     {
         $manager = User::factory()->create(['role' => 'manager', 'is_active' => true]);
         $mailbox = CrmMailbox::create(['name' => 'Order', 'email' => 'order-sort@example.com', 'username' => 'order-sort@example.com']);
@@ -80,6 +80,7 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
 
         foreach ([$old, $fresh, $middle] as $thread) {
             $this->incomingMessage($thread, $mailbox, $thread->subject);
+            $thread->messages()->update(['received_at' => $thread->last_message_at]);
         }
 
         $this->actingAs($manager);
@@ -87,7 +88,7 @@ class CrmMailClosedThreadVisibilityTest extends TestCase
 
         Livewire::test(ListCrmMailThreads::class)
             ->set('activeTab', 'needs_response')
-            ->assertCanSeeTableRecords([$fresh, $middle, $old], inOrder: true)
+            ->assertCanSeeTableRecords([$old, $middle, $fresh], inOrder: true)
             ->set('activeTab', 'all')
             ->assertCanSeeTableRecords([$fresh, $middle, $old], inOrder: true);
     }

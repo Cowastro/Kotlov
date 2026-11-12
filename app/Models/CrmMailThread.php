@@ -69,6 +69,7 @@ class CrmMailThread extends Model
         'last_message_at' => 'datetime',
         'handled_at' => 'datetime',
         'next_follow_up_at' => 'datetime',
+        'reply_waiting_since' => 'datetime',
         'deleted_at' => 'datetime',
     ];
 
@@ -235,6 +236,50 @@ class CrmMailThread extends Model
         return $query->whereNotIn('status', ['closed', 'spam', 'draft'])
             ->where(fn (Builder $stages): Builder => $stages->whereNull('sales_stage')->orWhereNotIn('sales_stage', ['lost', 'won']))
             ->where($latestDirection, 'incoming');
+    }
+
+    public function scopeWithReplyWaitingSince(Builder $query): Builder
+    {
+        $incomingTime = 'COALESCE(waiting_mail.received_at, waiting_mail.sent_at, waiting_mail.created_at)';
+        $outgoingTime = 'COALESCE(answer_mail.received_at, answer_mail.sent_at, answer_mail.created_at)';
+        $firstUnanswered = DB::table('crm_mail_messages as waiting_mail')
+            ->selectRaw($incomingTime)
+            ->whereColumn('waiting_mail.thread_id', 'crm_mail_threads.id')
+            ->where('waiting_mail.direction', 'incoming')
+            ->whereNotExists(fn ($answers) => $answers->selectRaw('1')
+                ->from('crm_mail_messages as answer_mail')
+                ->whereColumn('answer_mail.thread_id', 'waiting_mail.thread_id')
+                ->where('answer_mail.direction', 'outgoing')
+                ->whereRaw("($outgoingTime > $incomingTime OR ($outgoingTime = $incomingTime AND answer_mail.id > waiting_mail.id))"))
+            ->orderByRaw($incomingTime.' ASC')->orderBy('waiting_mail.id')->limit(1);
+
+        if ($query->getQuery()->columns === null) {
+            $query->select('crm_mail_threads.*');
+        }
+
+        return $query->addSelect(['reply_waiting_since' => $firstUnanswered]);
+    }
+
+    public function replyWaitingMinutes(): ?int
+    {
+        return $this->reply_waiting_since
+            ? max(0, (int) floor((now()->timestamp - $this->reply_waiting_since->timestamp) / 60))
+            : null;
+    }
+
+    public function replyWaitingLabel(): ?string
+    {
+        $minutes = $this->replyWaitingMinutes();
+        if ($minutes === null) {
+            return null;
+        }
+
+        return 'Ждёт '.match (true) {
+            $minutes < 1 => '<1 мин',
+            $minutes < 60 => $minutes.' мин',
+            $minutes < 1440 => intdiv($minutes, 60).' ч'.($minutes % 60 ? ' '.($minutes % 60).' мин' : ''),
+            default => intdiv($minutes, 1440).' д'.(intdiv($minutes % 1440, 60) ? ' '.intdiv($minutes % 1440, 60).' ч' : ''),
+        };
     }
 
     public function scopePotentialDeals(Builder $query): Builder

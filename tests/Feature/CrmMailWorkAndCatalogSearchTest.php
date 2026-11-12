@@ -87,7 +87,7 @@ class CrmMailWorkAndCatalogSearchTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         Livewire::test(ListCrmMailThreads::class)
             ->set('activeTab', 'needs_response')
-            ->assertCanSeeTableRecords([$mine, $otherDue, $unassigned], inOrder: true)
+            ->assertCanSeeTableRecords([$unassigned, $mine, $otherDue], inOrder: true)
             ->assertCanNotSeeTableRecords([$draft])
             ->assertSee('Пора связаться')
             ->filterTable('assigned_user_id', 'mine')
