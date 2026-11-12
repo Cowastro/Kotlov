@@ -224,6 +224,19 @@ class CrmMailThread extends Model
         });
     }
 
+    public function scopeAwaitingReply(Builder $query): Builder
+    {
+        $latestDirection = CrmMailMessage::query()->select('direction')
+            ->whereColumn('thread_id', 'crm_mail_threads.id')
+            ->whereIn('direction', ['incoming', 'outgoing'])
+            ->orderByRaw('COALESCE(received_at, sent_at, created_at) DESC')
+            ->orderByDesc('id')->limit(1);
+
+        return $query->whereNotIn('status', ['closed', 'spam', 'draft'])
+            ->where(fn (Builder $stages): Builder => $stages->whereNull('sales_stage')->orWhereNotIn('sales_stage', ['lost', 'won']))
+            ->where($latestDirection, 'incoming');
+    }
+
     public function scopePotentialDeals(Builder $query): Builder
     {
         return $query

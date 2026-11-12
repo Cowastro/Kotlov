@@ -71,10 +71,17 @@ class CrmMailWorkAndCatalogSearchTest extends TestCase
         $mailbox = CrmMailbox::create(['name' => 'Work', 'email' => 'work@example.com', 'username' => 'work@example.com']);
         $mine = $this->mailThread($mailbox, 'mine', ['assigned_user_id' => $manager->id, 'priority' => 'urgent']);
         $otherDue = $this->mailThread($mailbox, 'other', [
-            'assigned_user_id' => $other->id, 'status' => 'waiting_customer', 'next_follow_up_at' => now()->subDay(),
+            'assigned_user_id' => $other->id, 'status' => 'waiting_manager', 'next_follow_up_at' => now()->subDay(),
         ]);
         $unassigned = $this->mailThread($mailbox, 'unassigned', ['last_message_at' => now()->subDays(2)]);
         $draft = $this->mailThread($mailbox, 'draft', ['status' => 'draft', 'next_follow_up_at' => now()->subDay()]);
+
+        foreach ([$mine, $otherDue, $unassigned] as $thread) {
+            $thread->messages()->create([
+                'mailbox_id' => $mailbox->id, 'direction' => 'incoming',
+                'from_email' => $thread->participant_email, 'received_at' => $thread->last_message_at,
+            ]);
+        }
 
         $this->actingAs($manager);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
