@@ -138,11 +138,53 @@ class OrderDealControlTest extends TestCase
         $this->assertStringContainsString('Клиент изменил комплектацию', $order->statusHistory()->latest('id')->first()->comment);
     }
 
+    public function test_tooltip_keeps_the_stage_author_and_time_when_control_is_rescheduled(): void
+    {
+        $this->travelTo(now()->setTime(9, 0));
+        $manager = $this->manager();
+        $colleague = $this->manager();
+        $order = $this->save($this->order(), $manager);
+        $enteredAt = now()->copy();
+        $this->travel(2)->hours();
+        $order = $this->save($order, $colleague, ['next_action' => 'Повторно позвонить', 'manager_id' => $colleague->id]);
+        $order->load('statusHistory.user');
+        $event = $order->dealStageHistory()['contacted'];
+        $this->assertSame($manager->id, $event->user_id);
+        $this->assertTrue($event->created_at->equalTo($enteredAt));
+        $html = view('filament.resources.orders.deal-progress', ['getRecord' => fn () => $order, 'isTable' => true])->render();
+        $hint = "Связались\n".$manager->name."\n".$enteredAt->timezone('Europe/Minsk')->format('d.m.Y H:i').' (Минск)';
+        $this->assertStringContainsString('title="'.e($hint).'"', $html);
+        $this->assertStringContainsString('>Условия</span>', $html);
+        $this->assertStringContainsString('>Передача</span>', $html);
+    }
+
+    public function test_legacy_stage_history_ignores_reminder_edits_and_requested_transitions(): void
+    {
+        $manager = $this->manager();
+        $order = $this->order();
+        $entered = $order->statusHistory()->create([
+            'user_id' => $manager->id, 'status_from' => 'new', 'status_to' => 'new',
+            'comment' => "Контроль сделки. Было: Получен\nСтало: Связались · Позвонить",
+        ]);
+        foreach ([
+            "Контроль сделки. Было: Связались · Позвонить\nСтало: Связались · Перенести звонок",
+            "Контроль сделки. Было: Связались\nЗапрошен переход: Исполнение · Позвонить",
+        ] as $comment) {
+            $order->statusHistory()->create([
+                'user_id' => $manager->id, 'status_from' => 'new', 'status_to' => 'new', 'comment' => $comment,
+            ]);
+        }
+        $history = $order->load('statusHistory.user')->dealStageHistory();
+        $this->assertSame(['contacted'], array_keys($history));
+        $this->assertSame($entered->id, $history['contacted']->id);
+    }
+
     public function test_later_stages_use_the_existing_order_workflow_and_finish_control(): void
     {
         Mail::fake();
         config()->set('onec.order_queue_enabled', false);
         $manager = $this->manager();
+        $this->actingAs($manager);
         $order = $this->order('confirmed');
         $order->items()->create([
             'product_name' => 'Товар', 'price' => 100, 'quantity' => 1, 'total' => 100,
@@ -160,6 +202,11 @@ class OrderDealControlTest extends TestCase
         $this->assertSame('completed', $order->effectiveDealStage());
         $this->assertNull($order->deal_control_at);
         $this->assertFalse($order->dealIsActive());
+        $history = $order->load('statusHistory.user')->dealStageHistory();
+        foreach (['processing', 'handover', 'completed'] as $stage) {
+            $this->assertSame($manager->id, $history[$stage]->user_id);
+            $this->assertSame($stage, $history[$stage]->deal_stage_to);
+        }
     }
 
     public function test_control_queues_use_minsk_dates_and_exclude_completed_orders(): void

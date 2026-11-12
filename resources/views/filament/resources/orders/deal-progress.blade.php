@@ -1,6 +1,9 @@
 @php
     $order = $getRecord();
     $stages = \App\Models\Order::DEAL_STAGES;
+    $history = $order->dealStageHistory();
+    $compactLabels = ['received' => 'Получен', 'contacted' => 'Контакт', 'agreed' => 'Условия',
+        'processing' => 'В работе', 'handover' => 'Передача', 'completed' => 'Завершён'];
     $currentIndex = array_search($order->effectiveDealStage(), array_keys($stages), true);
     $active = $order->dealIsActive();
     $overdue = $active && $order->deal_control_at?->isPast();
@@ -14,15 +17,29 @@
     </div>
     <div class="order-deal__track" aria-label="Этапы сделки">
         @foreach ($stages as $key => $label)
+            @php
+                $event = $history[$key] ?? null;
+                $hint = $label;
+                if ($event) {
+                    $author = $event->user?->name ?: ($event->user_id ? 'Пользователь удалён' : 'Система');
+                    $hint .= "\n".$author."\n".$event->created_at->timezone('Europe/Minsk')->format('d.m.Y H:i').' (Минск)';
+                } elseif ($key === 'received' && $order->created_at) {
+                    $hint .= "\n".$order->created_at->timezone('Europe/Minsk')->format('d.m.Y H:i').' (Минск)'
+                        ."\nАвтор создания не зафиксирован";
+                } else {
+                    $hint .= "\nПереход отдельно не отмечен в истории";
+                }
+            @endphp
             <button type="button"
                 class="order-deal__step {{ $loop->index < $currentIndex ? 'is-done' : '' }} {{ $loop->index === $currentIndex ? 'is-current' : '' }}"
                 @disabled(! $active)
                 @if ($active) wire:click.stop="mountAction('manageDeal', @js(['stage' => $key]), @js($context))" @endif
-                title="{{ $label }}{{ $loop->index === $currentIndex ? ' · текущий этап' : '' }}"
+                title="{{ $hint }}"
                 aria-label="{{ $label }}"
+                aria-description="{{ $hint }}"
                 @if ($loop->index === $currentIndex) aria-current="step" @endif>
                 <span class="order-deal__bar"></span>
-                <span class="order-deal__step-label">{{ $label }}</span>
+                <span class="order-deal__step-label">{{ ($isTable ?? false) ? $compactLabels[$key] : $label }}</span>
             </button>
         @endforeach
     </div>

@@ -27,7 +27,12 @@ class Order extends Model
 
     public function fulfillmentDealStage(): string
     {
-        return match ($this->status) {
+        return self::fulfillmentDealStageForStatus($this->status);
+    }
+
+    public static function fulfillmentDealStageForStatus(?string $status): string
+    {
+        return match ($status) {
             'processing', 'waiting_payment', 'paid' => 'processing',
             'shipped' => 'handover',
             'delivered', 'completed' => 'completed',
@@ -42,6 +47,20 @@ class Order extends Model
         $actual = array_search($this->fulfillmentDealStage(), $keys, true);
 
         return $keys[max($stored === false ? 0 : $stored, $actual)];
+    }
+
+    /** @return array<string, OrderStatusHistory> */
+    public function dealStageHistory(): array
+    {
+        $stages = [];
+        foreach ($this->statusHistory->sortBy([['created_at', 'desc'], ['id', 'desc']]) as $event) {
+            $stage = $event->enteredDealStage();
+            if ($stage !== null && ! isset($stages[$stage])) {
+                $stages[$stage] = $event;
+            }
+        }
+
+        return $stages;
     }
 
     public function dealIsActive(): bool
@@ -239,12 +258,18 @@ class Order extends Model
 
             // История изменений статуса
             if ($order->isDirty('status')) {
+                $previous = clone $order;
+                $previous->status = $order->getOriginal('status');
+                $stageFrom = $previous->effectiveDealStage();
+                $stageTo = $order->effectiveDealStage();
                 OrderStatusHistory::create([
                     'order_id' => $order->id,
                     'user_id' => $userId,
                     'status_from' => $order->getOriginal('status'),
                     'status_to' => $order->status,
                     'comment' => $order->pendingStatusHistoryComment,
+                    'deal_stage_from' => $stageFrom !== $stageTo ? $stageFrom : null,
+                    'deal_stage_to' => $stageFrom !== $stageTo ? $stageTo : null,
                 ]);
             }
         });
