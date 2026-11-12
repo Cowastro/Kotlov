@@ -216,6 +216,40 @@ class OrderCustomerReviewTest extends TestCase
         $this->get('/review-pechi/review-stove')->assertOk()->assertSee('Отзыв о качестве печи')->assertDontSee('Отзыв о работе магазина');
     }
 
+    public function test_order_shows_sms_received_and_publication_states_with_review_links(): void
+    {
+        [$order] = $this->order();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true, 'is_crm_user' => true]);
+        $this->actingAs($manager);
+        $render = fn (): string => view('filament.resources.orders.review-status', ['order' => $order->load('customerReviews')])->render();
+        $html = $render();
+        $this->assertStringContainsString('СМС со ссылкой не отправлена', $html);
+        $this->assertStringContainsString('Отзыв не получен', $html);
+        $this->assertStringContainsString('Отзыв не опубликован', $html);
+
+        $order->forceFill(['review_sms_sent_at' => now()])->save();
+        $review = Review::create(['order_id' => $order->id, 'reviewable_type' => $order->getMorphClass(),
+            'reviewable_id' => $order->id, 'author_name' => 'Покупатель', 'rating' => 4,
+            'text' => 'Проверка статуса отзыва в заказе', 'is_approved' => false]);
+        $html = $render();
+        $this->assertStringContainsString('СМС со ссылкой отправлена', $html);
+        $this->assertStringContainsString('Отзыв получен — открыть', $html);
+        $this->assertStringContainsString('Отзыв не опубликован', $html);
+        $this->assertStringContainsString('/admin/reviews/'.$review->id, $html);
+
+        Livewire::test(ListOrders::class)->set('activeTab', 'all')->assertSee('Отзыв получен — открыть');
+        Livewire::test(\App\Filament\Resources\Orders\Pages\ViewOrder::class, ['record' => $order->id])
+            ->assertSee('Отзыв получен — открыть');
+        $review->update(['is_approved' => true]);
+        $html = $render();
+        $this->assertStringContainsString('Отзыв опубликован — открыть', $html);
+        $review->update(['is_approved' => false]);
+        $html = $render();
+        $this->assertStringContainsString('Отзыв не опубликован', $html);
+        $this->assertStringNotContainsString('aria-label="Отзыв опубликован — открыть"', $html);
+        $this->assertSame('delivered', $order->fresh()->status);
+    }
+
     private function data(string $target = 'order'): array
     {
         return ['target' => $target, 'author_name' => 'Александр', 'rating' => 4, 'text' => 'Заказ доставили аккуратно и вовремя', 'consent' => 1];

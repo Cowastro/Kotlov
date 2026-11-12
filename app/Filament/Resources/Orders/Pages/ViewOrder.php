@@ -71,6 +71,7 @@ class ViewOrder extends ViewRecord
             'accountingRequests.requestedBy',
             'accountingRequests.completedBy',
             'statusHistory.user',
+            'customerReviews:id,order_id,is_approved,created_at',
             'managerComments.user',
             'user',
             'manager',
