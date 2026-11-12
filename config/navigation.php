@@ -40,6 +40,12 @@ return [
     // Группы подразделов крупных разделов: заголовки колонок мегаменю и блоки на странице раздела.
     // Подраздел, не попавший ни в одну группу, показывается в группе «Ещё».
     'groups' => [
+        'radiatory' => [
+            ['title' => 'Радиаторы отопления', 'icon' => 'icon-Layout', 'description' => 'Выберите материал радиатора и перейдите к нужному типу.',
+                'slugs' => ['stalnye-radiatory', 'alyuminievye-radiatory', 'bimetallicheskie-radiatory']],
+            ['title' => 'Конвекторы и арматура', 'icon' => 'icon-PuzzlePiece', 'description' => 'Водяные конвекторы, подключение и регулирование.',
+                'slugs' => ['vodyanye-konvektory', 'radiatornaya-armatura']],
+        ],
         'teplyj-pol' => [
             ['title' => 'Водяной', 'icon' => 'icon-Leaf', 'description' => 'Трубы, коллекторы и узлы для водяного тёплого пола.',
                 'slugs' => ['vodyanoy-teplyy-pol']],

@@ -170,9 +170,7 @@
         @include('partials.electric-sauna-heater-quick-filters')
     @endif
 
-    @if ($specificationHeading !== null)
-        @include('partials.catalog-specification-search')
-    @endif
+    @include('partials.catalog-specification-search')
 
     @if (! $isMinskFireplaceCatalog && ! $isStoveHeatingCatalog)
         @include('partials.catalog-ecokamin-promo')
@@ -466,9 +464,7 @@
                                         'brand_sort' => request('brand_sort') === 'alpha' ? 'alpha' : null,
                                     ]);
                                     $resetCatalogUrl = url()->current().($resetCatalogParameters ? '?'.http_build_query($resetCatalogParameters) : '');
-                                    if ($showElectricFireplaceNavigation || $specificationHeading !== null) {
-                                        $resetCatalogUrl .= '#catalog-products';
-                                    }
+                                    $resetCatalogUrl .= '#catalog-products';
                                 @endphp
                                 @if ($hasActiveCatalogFilters)
                                     <a href="{{ $resetCatalogUrl }}" class="tf-btn btn-outline w-100 mt-8">
@@ -574,16 +570,9 @@
                                 ]);
                                 $resetCatalogUrl = $resetCatalogUrl ?? (url()->current() . ($resetCatalogParameters ? '?' . http_build_query($resetCatalogParameters) : ''));
                             @endphp
-                            @if ($hasActiveCatalogFilters && ! $showElectricFireplaceNavigation && $specificationHeading === null)
-                                <div class="br-line type-vertical"></div>
-                                <div id="applied-filters"></div>
-                                <a href="{{ $resetCatalogUrl }}" class="remove-all-filters d-flex align-items-center gap-4 cl-text-2">
-                                    <i class="icon icon-X2"></i> Сбросить
-                                </a>
-                            @endif
                         </div>
 
-                        @if (($showElectricFireplaceNavigation || $specificationHeading !== null) && $hasActiveCatalogFilters)
+                        @if ($hasActiveCatalogFilters)
                             <div class="d-flex flex-wrap align-items-center gap-2 mb-16" aria-label="Выбранные фильтры">
                                 @foreach ($electricFilterChips as $chip)
                                     <a href="{{ $chip['url'] }}"
