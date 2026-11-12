@@ -43,7 +43,20 @@ class HeatingAccessoriesNavigationGroupsTest extends TestCase
 
         $this->assertSame(['Трубы', 'Фитинги', 'Ещё'], $groups->pluck('title')->all());
         $this->assertSame(['novaya-kategoriya'], $groups->last()['items']->pluck('slug')->all());
-        $this->assertTrue(CategoryNavigationGroups::for('radiatory', $children)->isEmpty());
+        $this->assertTrue(CategoryNavigationGroups::for('unconfigured-category', $children)->isEmpty());
+    }
+
+    public function test_radiators_and_installation_parts_have_separate_navigation_groups(): void
+    {
+        $parent = Category::query()->updateOrCreate(['slug' => 'radiatory'], ['parent_id' => 0, 'name' => 'Радиаторы', 'is_active' => true]);
+        $this->categoryWithProduct($parent->id, 'Стальные радиаторы', 'stalnye-radiatory');
+        $this->categoryWithProduct($parent->id, 'Биметаллические радиаторы', 'bimetallicheskie-radiatory');
+        $this->categoryWithProduct($parent->id, 'Радиаторная арматура', 'radiatornaya-armatura');
+        Category::create(['parent_id' => $parent->id, 'name' => 'Пустая категория', 'slug' => 'empty-radiators', 'is_active' => true]);
+        $response = $this->get('/radiatory')->assertOk();
+        $this->assertSame(['Радиаторы отопления', 'Конвекторы и арматура'], $response->viewData('catalogNavigationGroups')->pluck('title')->all());
+        $this->assertSame(['radiatornaya-armatura'], $response->viewData('catalogNavigationGroups')->last()['items']->pluck('slug')->all());
+        $response->assertSee('data-accessories-group', false)->assertSee('href="/stalnye-radiatory"', false)->assertDontSee('Пустая категория');
     }
 
     private function categoryWithProduct(int $parentId, string $name, string $slug): void

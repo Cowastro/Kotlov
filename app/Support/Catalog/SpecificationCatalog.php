@@ -15,14 +15,7 @@ abstract class SpecificationCatalog
 
     public function search(Builder $query, string $search): void
     {
-        foreach (preg_split('/\s+/u', $search, 6, PREG_SPLIT_NO_EMPTY) as $word) {
-            $match = '%'.strtr($word, ['!' => '!!', '%' => '!%', '_' => '!_']).'%';
-            $query->where(fn (Builder $term) => $term
-                ->whereRaw("products.name LIKE ? ESCAPE '!'", [$match])
-                ->orWhereRaw("products.sku LIKE ? ESCAPE '!'", [$match])
-                ->orWhereRaw("products.slug LIKE ? ESCAPE '!'", [$match])
-                ->orWhereHas('brand', fn (Builder $brand) => $brand->whereRaw("name LIKE ? ESCAPE '!'", [$match])));
-        }
+        CatalogSearch::apply($query, $search);
     }
 
     public function facets(Builder $query, string $slug, Collection $categoryIds, array $selection, array $fixed): array

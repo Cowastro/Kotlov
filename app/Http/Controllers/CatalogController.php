@@ -25,6 +25,7 @@ use App\Services\HeatPumpProductPresenter;
 use App\Support\Catalog\BoilerSpecifications;
 use App\Support\Catalog\WaterHeaterCatalog;
 use App\Support\Catalog\HeaterCatalog;
+use App\Support\Catalog\CatalogSearch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -117,8 +118,8 @@ class CatalogController extends Controller
         $roomArea = $isRoomHeaterCatalog ? HeaterCatalog::roomArea(request()->query('room_area')) : null;
         $roomAreaInvalid = $isRoomHeaterCatalog && request()->has('room_area') && request('room_area') !== '' && $roomArea === null;
         $specificationName = $specificationLanding['title'] ?? BoilerCatalog::NAMES[$category->slug] ?? $heaterName ?? $roomHeaterName;
-        $specificationSearch = request()->query('q');
-        $specificationSearch = $specificationName !== null && is_string($specificationSearch) ? mb_substr(trim($specificationSearch), 0, 100) : '';
+        $specificationSearch = CatalogSearch::term(request()->query('q'));
+        $scopeCatalogSearch = fn ($query) => CatalogSearch::apply($query, $specificationSearch);
         $specificationCatalog = match (true) {
             $roomHeaterName !== null => app(HeaterCatalog::class),
             $heaterName !== null => app(WaterHeaterCatalog::class),
@@ -231,9 +232,9 @@ class CatalogController extends Controller
         $scopeFireplaceType = fn ($query) => $query->whereIntegerInRaw('products.id', $fireplaceSelectionIds);
 
         // Бренды с количеством товаров в категории
-        $brands = Brand::whereHas('products', fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds)->when($fireplaceSelectionIds !== null, $scopeFireplaceType)
+        $brands = Brand::whereHas('products', fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds)->when($fireplaceSelectionIds !== null, $scopeFireplaceType)->when($specificationSearch !== '', $scopeCatalogSearch)
         )
-            ->withCount(['products' => fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds)->when($fireplaceSelectionIds !== null, $scopeFireplaceType),
+            ->withCount(['products' => fn ($q) => $q->orderable()->whereIn('category_id', $activeCategoryIds)->when($fireplaceSelectionIds !== null, $scopeFireplaceType)->when($specificationSearch !== '', $scopeCatalogSearch),
             ])
             ->orderBy('name')
             ->get();
@@ -327,6 +328,7 @@ class CatalogController extends Controller
                 ->whereIn('category_id', $activeCategoryIds)
                 ->when($fireplaceSelectionIds !== null, $scopeFireplaceType)
                 ->when($selectedBrandId, fn ($query) => $query->where('brand_id', $selectedBrandId))
+                ->when($specificationSearch !== '', $scopeCatalogSearch)
             )
             ->groupBy('attribute_id', 'option_id')
             ->selectRaw('attribute_id, option_id, count(*) as cnt')
@@ -428,6 +430,8 @@ class CatalogController extends Controller
             ->whereIn('category_id', $activeCategoryIds)
             ->when($fireplaceSelectionIds !== null, $scopeFireplaceType)
             ->with(['category', 'brand']);
+
+        CatalogSearch::apply($query, $specificationSearch);
 
         // Фильтр по цене
         if (request('price_min')) {
@@ -768,7 +772,6 @@ class CatalogController extends Controller
         $specificationCards = [];
         $specificationMatchingIds = null;
         if ($specificationCatalog !== null) {
-            $specificationCatalog->search($query, $specificationSearch);
             if ($roomArea !== null) HeaterCatalog::forRoom($query, $roomArea);
             if (! $isBoilerHub) {
                 $specificationSelection = (array) request()->query($specificationParameter, []);
@@ -1067,10 +1070,14 @@ class CatalogController extends Controller
             $robots = 'noindex, follow';
         }
 
+        if (request()->hasAny(['q', 'brand', 'attr', 'price_min', 'price_max', 'in_stock', 'subcategory',
+            'power', 'electric_mode', 'niche_width_max', 'fireplace_type', 'sort', 'brand_sort',
+            'firebox_glass', 'firebox_door', 'sauna_volume', 'room_area', 'heating', 'boiler', 'heater'])) {
+            $robots = 'noindex, follow';
+        }
+
         $canonical = $categoryUrl;
-        $hasIndexablePagination = $specificationName !== null || $isMinskFireplaceCatalog
-            || ($isElectricFireplaceCatalog && request()->getHost() === config('app.base_domain', 'kotlov.by'));
-        if ($hasIndexablePagination && array_keys(request()->query()) === ['page']) {
+        if (array_keys(request()->query()) === ['page']) {
             $page = $products->currentPage();
             abort_if($page > $products->lastPage(), 404);
             if ($page > 1) {
@@ -1467,17 +1474,16 @@ class CatalogController extends Controller
             ? PartnerBranch::query()->visibleIn($currentCity)->first()
             : null;
 
-        $electricFilterChips = $showElectricFireplaceNavigation || $specificationName !== null
-            ? $this->catalogFilterChips($brands, $subcategories, $rawAttributes, $selectedElectricMode, $nicheWidthMax, $inStockOnly)
-            : [];
+        $electricFilterChips = $this->catalogFilterChips($brands, $subcategories, $rawAttributes, $selectedElectricMode, $nicheWidthMax, $inStockOnly);
+
+        if ($specificationSearch !== '') {
+            $electricFilterChips[] = [
+                'label' => 'Поиск: '.$specificationSearch,
+                'url' => request()->fullUrlWithoutQuery(['q', 'page']).'#catalog-products',
+            ];
+        }
 
         if ($specificationName !== null) {
-            if ($specificationSearch !== '') {
-                $electricFilterChips[] = [
-                    'label' => 'Поиск: '.$specificationSearch,
-                    'url' => request()->fullUrlWithoutQuery(['q', 'page']).'#catalog-products',
-                ];
-            }
             if ($roomArea !== null) {
                 $electricFilterChips[] = [
                     'label' => 'Комната: '.str_replace('.', ',', (string) $roomArea).' м²',
