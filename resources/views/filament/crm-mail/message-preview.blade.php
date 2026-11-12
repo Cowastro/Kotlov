@@ -75,7 +75,7 @@
                     >✓ Пропустить</button>
                 @endif
                 @if ($message->direction === 'incoming')
-                    @if (! in_array($message->thread->status, ['spam', 'draft'], true))
+                    @if ($message->thread && ! in_array($message->thread->status, ['spam', 'draft'], true))
                         <button type="button" class="crm-mail-forward-button"
                             wire:click="openSplitRequest({{ (int) $message->id }})"
                             wire:loading.attr="disabled"
