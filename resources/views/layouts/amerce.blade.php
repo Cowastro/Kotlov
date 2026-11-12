@@ -23,6 +23,7 @@
     <meta property="og:description" content="{{ $ogDescription ?? $metaDescription }}">
     <meta property="og:type" content="{{ $ogType ?? 'website' }}">
     <meta property="og:url" content="{{ $ogUrl ?? url()->current() }}">
+    @if(!($categoryImageMetadata ?? false) || !empty($ogImage))
     <meta property="og:image" content="{{ $ogImage ?? asset('img/og/kotlov-default.jpg') }}">
     @if(isset($ogImageSecure))
     <meta property="og:image:secure_url" content="{{ $ogImageSecure }}">
@@ -35,6 +36,10 @@
     @endif
     @if(isset($ogImageType))
     <meta property="og:image:type" content="{{ $ogImageType }}">
+    @endif
+    @if(isset($ogImageAlt))
+    <meta property="og:image:alt" content="{{ $ogImageAlt }}">
+    @endif
     @endif
     <meta property="og:site_name" content="kotlov.by">
     <meta property="og:locale" content="ru_RU">
@@ -55,7 +60,12 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $twitterTitle ?? $ogTitle ?? $metaTitle }}">
     <meta name="twitter:description" content="{{ $twitterDescription ?? $ogDescription ?? $metaDescription }}">
+    @if(!($categoryImageMetadata ?? false) || !empty($ogImage))
     <meta name="twitter:image" content="{{ $twitterImage ?? $ogImage ?? asset('img/og/kotlov-default.jpg') }}">
+    @if(isset($ogImageAlt))
+    <meta name="twitter:image:alt" content="{{ $ogImageAlt }}">
+    @endif
+    @endif
 
     @isset($schemaJson)
     <script type="application/ld+json">{!! $schemaJson !!}</script>
