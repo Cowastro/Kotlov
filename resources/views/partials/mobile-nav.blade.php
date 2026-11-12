@@ -36,5 +36,5 @@
     <li><a href="/installers">Монтаж</a></li>
     <li><a href="/partners">Партнёрам</a></li>
     <li><a href="/about">О нас</a></li>
-    <li><a href="/reviews">Отзывы</a></li>
+    <li><a href="/reviews">Отзывы о магазине</a></li>
 </ul>

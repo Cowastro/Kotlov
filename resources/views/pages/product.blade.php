@@ -1154,6 +1154,10 @@
 
                 <div class="tab-pane" id="customer-reviews" role="tabpanel">
                     <div class="product-desc_review">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-12 mb-24">
+                            <h3>Отзывы о товаре</h3>
+                            <a href="/reviews" class="link" style="font-size:14px;text-decoration:underline;">Отзывы о магазине</a>
+                        </div>
 
                         @if (session('review_sent'))
                             <div class="alert alert-success mb-24" role="alert">
@@ -1545,6 +1549,13 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    if (window.location.hash === '#customer-reviews') {
+        const reviewsTab = document.querySelector('a[href="#customer-reviews"]');
+        if (reviewsTab) {
+            reviewsTab.click();
+            document.getElementById('customer-reviews')?.scrollIntoView({ block: 'start' });
+        }
+    }
     const stars = document.querySelectorAll('#star-rating .icon');
     const ratingInput = document.getElementById('rating-value');
     if (!stars.length || !ratingInput) return;

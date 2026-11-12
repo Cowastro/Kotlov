@@ -48,8 +48,9 @@ class OrderCustomerReviewTest extends TestCase
         $this->assertDatabaseCount('reviews', 1);
         $this->get('/reviews')->assertOk()->assertDontSee('Заказ доставили аккуратно и вовремя');
         $review->update(['is_approved' => true]);
-        $this->get('/reviews')->assertOk()->assertSee('Заказ доставили аккуратно и вовремя')->assertSee('Отзыв по заказу')
+        $this->get('/reviews')->assertOk()->assertDontSee('Заказ доставили аккуратно и вовремя')
             ->assertDontSee($order->customer_email)->assertDontSee($order->customer_phone);
+        $this->get('/review-pechi/review-stove')->assertOk()->assertSee('Заказ доставили аккуратно и вовремя')->assertSee('Отзыв по заказу');
         $this->assertSame(1, $product->fresh()->reviews_count);
         $this->assertEquals(4, $product->fresh()->rating);
     }
@@ -197,7 +198,22 @@ class OrderCustomerReviewTest extends TestCase
         $page->assertTableActionHidden('publish', $review->fresh());
         $this->assertSame(1, $product->fresh()->reviews_count);
         $this->assertEquals(2, $product->fresh()->rating);
-        $this->get('/reviews')->assertOk()->assertSee('Публикация из списка отзывов');
+        $this->get('/reviews')->assertOk()->assertDontSee('Публикация из списка отзывов');
+    }
+
+    public function test_store_reviews_are_separate_from_product_reviews_and_only_approved_are_public(): void
+    {
+        [$order, $product] = $this->order();
+        $service = Review::create(['order_id' => $order->id, 'reviewable_type' => $order->getMorphClass(),
+            'reviewable_id' => $order->id, 'author_name' => 'Покупатель', 'rating' => 3,
+            'text' => 'Отзыв о работе магазина', 'is_approved' => false]);
+        Review::create(['reviewable_type' => $product->getMorphClass(), 'reviewable_id' => $product->id,
+            'author_name' => 'Другой покупатель', 'rating' => 4, 'text' => 'Отзыв о качестве печи', 'is_approved' => true]);
+        $this->get('/reviews')->assertOk()->assertDontSee('Отзыв о работе магазина')->assertDontSee('Отзыв о качестве печи');
+        $service->update(['is_approved' => true]);
+        $this->get('/reviews')->assertOk()->assertSee('Отзывы о магазине KOTLOV')->assertSee('Отзыв о работе магазина')
+            ->assertDontSee('Отзыв о качестве печи')->assertDontSee($order->customer_phone);
+        $this->get('/review-pechi/review-stove')->assertOk()->assertSee('Отзыв о качестве печи')->assertDontSee('Отзыв о работе магазина');
     }
 
     private function data(string $target = 'order'): array

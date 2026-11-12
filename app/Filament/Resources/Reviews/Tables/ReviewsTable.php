@@ -136,15 +136,16 @@ class ReviewsTable
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->color('gray')
                     ->url(function ($record) {
+                        if ($record->reviewable_type === 'App\Models\Order') return url('/reviews');
                         if ($record->reviewable_type !== 'App\Models\Product') return null;
                         $product = $record->reviewable;
                         if (!$product) return null;
                         $product->load('category');
                         if (!$product->category) return null;
-                        return url('/' . $product->category->slug . '/' . $product->slug);
+                        return url('/' . $product->category->slug . '/' . $product->slug).'#customer-reviews';
                     })
                     ->openUrlInNewTab()
-                    ->visible(fn($record) => $record->reviewable_type === 'App\Models\Product'),
+                    ->visible(fn($record) => in_array($record->reviewable_type, ['App\Models\Product', 'App\Models\Order'], true)),
 
                 ViewAction::make(),
                 EditAction::make(),

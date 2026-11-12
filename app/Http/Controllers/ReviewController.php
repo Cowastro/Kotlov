@@ -12,8 +12,8 @@ class ReviewController extends Controller
     {
         return view('pages.reviews', [
             'reviews' => \App\Models\Review::approved()
-                ->whereIn('reviewable_type', [(new Product)->getMorphClass(), (new \App\Models\Order)->getMorphClass()])
-                ->with('reviewable')->latest()->paginate(12),
+                ->where('reviewable_type', (new \App\Models\Order)->getMorphClass())
+                ->latest()->paginate(12),
         ]);
     }
 
