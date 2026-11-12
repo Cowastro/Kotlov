@@ -1006,6 +1006,14 @@
                 @if ($hasSpecs)
                     <div class="tab-pane" id="specifications" role="tabpanel">
                         <div class="tab-content_desc site-prose">
+                            @if (isset(\App\Support\Catalog\RadiatorCatalog::NAMES[$product->category->slug]))
+                                <div class="border rounded-3 p-3 mb-3 text-secondary">
+                                    <p class="mb-2">Теплоотдача зависит от температурного напора ΔT. Для подбора учитывайте режим отопления и теплопотери комнаты. Неподтверждённые значения не указаны.</p>
+                                    @foreach (\App\Support\Catalog\RadiatorCatalog::verified($product)['sources'] ?? [] as $source)
+                                        <a class="d-block" href="{{ $source }}" target="_blank" rel="noopener">Документация производителя</a>
+                                    @endforeach
+                                </div>
+                            @endif
                             <table class="table table-bordered table-striped">
                                 <tbody>
                                     @if ($fireplaceSpecs !== null)

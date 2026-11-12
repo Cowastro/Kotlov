@@ -42,7 +42,7 @@ return [
     'groups' => [
         'radiatory' => [
             ['title' => 'Радиаторы отопления', 'icon' => 'icon-Layout', 'description' => 'Выберите материал радиатора и перейдите к нужному типу.',
-                'slugs' => ['stalnye-radiatory', 'alyuminievye-radiatory', 'bimetallicheskie-radiatory']],
+                'slugs' => ['stalnye-radiatory', 'alyuminievye-radiatory', 'bimetallicheskie-radiatory', 'chugunnye-radiatory']],
             ['title' => 'Конвекторы и арматура', 'icon' => 'icon-PuzzlePiece', 'description' => 'Водяные конвекторы, подключение и регулирование.',
                 'slugs' => ['vodyanye-konvektory', 'radiatornaya-armatura']],
         ],

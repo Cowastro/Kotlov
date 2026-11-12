@@ -1423,6 +1423,9 @@ class SyncThermostudioPricelistCommand extends Command
 
     private function categoryId(array $row): ?int
     {
+        if ($slug = \App\Support\Catalog\RadiatorCategoryClassifier::slug((string) $row['name'], (string) ($row['section'] ?? ''))) {
+            return $this->categoryBySlug[$slug] ?? null;
+        }
         $rawText = mb_strtolower(($row['sheet'] ?? '') . ' ' . $row['section'] . ' ' . ($row['supplier_article'] ?? '') . ' ' . ($row['supplier_article_raw'] ?? '') . ' ' . $row['name'] . ' ' . $row['description']);
         $text = $this->nameKey($rawText);
 
@@ -1460,7 +1463,7 @@ class SyncThermostudioPricelistCommand extends Command
                 return $this->categoryBySlug['bimetallicheskie-radiatory'] ?? $this->categoryBySlug['radiatory'] ?? null;
             }
 
-            return $this->categoryBySlug['stalnye-radiatory'] ?? $this->categoryBySlug['radiatory'] ?? null;
+            return $this->categoryBySlug['radiatory'] ?? null;
         }
 
         if (str_contains($text, 'vodonagrevatel') || str_contains($text, 'водонагревател') || str_contains($text, 'бойлер')) {
