@@ -11,6 +11,7 @@
     "centres_mm": 36,
     "power_dt70_w": 32,
     "connection": 667,
+    "panel_type": 125,
     "power_dt50_w": 3,
     "power_dt60_w": 3
   },

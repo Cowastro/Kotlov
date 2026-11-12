@@ -10,6 +10,11 @@
 @endonce
 
 @php
+    if (isset(\App\Support\Catalog\RadiatorCatalog::NAMES[$product->category?->slug ?? ''])) {
+        $radiatorCatalog = app(\App\Support\Catalog\RadiatorCatalog::class);
+        $product = $radiatorCatalog->forDisplay($product);
+        $fireplaceCardSpecs = $radiatorCatalog->productFacts($product, $product->category->slug, $radiatorCatalog->dimensions($product->category->slug))['card'];
+    }
     $imageUrl   = $product->image_url;
     $imageHover = $product->imageUrl(1);
 

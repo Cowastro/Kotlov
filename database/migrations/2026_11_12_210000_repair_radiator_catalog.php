@@ -28,7 +28,7 @@ return new class extends Migration
             $slug = RadiatorCategoryClassifier::slug($product->name, $product->category->slug, $product->brand?->name ?? '');
             if ($slug && isset($categories[$slug]) && (int) $categories[$slug] !== (int) $product->category_id) $replacement['category_id'] = (int) $categories[$slug];
             if (RadiatorCatalog::verified($product) !== []) {
-                $specs = $catalog->details($product, []);
+                $specs = $catalog->details($product, [], preserveUnverified: true);
                 if ($product->specs !== $specs) $replacement['specs'] = $specs;
                 // A copied Biliner-style description was attached to different PianoForte/Tower models.
                 // Replace only this positively identified defective template; retain other editorial text.
