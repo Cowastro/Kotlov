@@ -2,6 +2,44 @@
   "checked_at": "2026-11-12",
   "policy": "Exact model/family documentation. No room-area estimate, no undocumented output or pressure, no output conversion between temperature differences. Tower conflicts withheld.",
   "products": {
+    "aliuminievyi-radiator-radena-r-1000-350100-10-sekcii": {
+      "name": "Алюминиевый радиатор RADENA R 1000 350/100. 10 секций",
+      "sources": [
+        "https://dn.ru/storage/certificates/Radena/pass_radena-alum.pdf"
+      ],
+      "section_power_dt70_w": 142,
+      "evidence": [
+        {
+          "source": "https://dn.ru/storage/certificates/Radena/pass_radena-alum.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact aluminium Radena R1000 350/100 or 500/100 passport, nominal ΔT70 per-section row. Not older R500 GL or bimetal CS1000."
+        }
+      ]
+    },
+    "aliuminievyi-radiator-radena-r-1000-500100-10-sekcii": {
+      "name": "Алюминиевый радиатор RADENA R 1000 500/100. 10 секций",
+      "sources": [
+        "https://dn.ru/storage/certificates/Radena/pass_radena-alum.pdf"
+      ],
+      "section_power_dt70_w": 184,
+      "evidence": [
+        {
+          "source": "https://dn.ru/storage/certificates/Radena/pass_radena-alum.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact aluminium Radena R1000 350/100 or 500/100 passport, nominal ΔT70 per-section row. Not older R500 GL or bimetal CS1000."
+        }
+      ]
+    },
     "alyuminievyiy-radiator-nova-florida-extrathermserir-super-b4-350-100-tsena-ukazana-za-1-sektsiyu": {
       "name": "Радиатор алюминиевый Nova Florida EXTRATHERMSERIR SUPER B4 350/100 WHITE",
       "sources": [
@@ -28,6 +66,25 @@
             "section_power_dt50_w"
           ],
           "note": "Manufacturer explicitly states W/section at ΔT50. No conversion to ΔT70 and no assumed assembly width or section count."
+        }
+      ]
+    },
+    "bimetalliceskii-radiator-evolution-evb-500-10-sekcii": {
+      "name": "Биметаллический радиатор EVOLUTION EVB 500 10 секций",
+      "sources": [
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202401/32700065.pdf/evolution-cn-ev-f-evv-500-10-sektsij-1803272.pdf"
+      ],
+      "section_power_dt70_w": 126,
+      "evidence": [
+        {
+          "source": "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202401/32700065.pdf/evolution-cn-ev-f-evv-500-10-sektsij-1803272.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original Zhejiang Wisdom Evolution passport, EvB500 bimetal row, 126 W/section at ΔT70. Not EvA aluminium."
         }
       ]
     },
@@ -1117,7 +1174,21 @@
       "material": "steel",
       "connection": "side",
       "sources": [
-        "https://www.c-o-k.ru/library/catalogs/royal-thermo/37775"
+        "https://www.c-o-k.ru/library/catalogs/royal-thermo/37775",
+        "https://rkcdn.ru/products/ac16dbbf-7fc8-11ef-b8db-00505601218a/src.pdf"
+      ],
+      "section_power_dt70_w": 202,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/ac16dbbf-7fc8-11ef-b8db-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact Insignia 3030 or 2180 family in manufacturer per-section table. C/VC does not change the declared per-section row; no assembled-power multiplication."
+        }
       ]
     },
     "dizain-radiator-royal-thermo-insignia-c3030-14-sekc-ral9016": {
@@ -2128,7 +2199,21 @@
       "material": "steel",
       "connection": "bottom",
       "sources": [
-        "https://www.c-o-k.ru/library/catalogs/royal-thermo/37775"
+        "https://www.c-o-k.ru/library/catalogs/royal-thermo/37775",
+        "https://rkcdn.ru/products/ac16dbbf-7fc8-11ef-b8db-00505601218a/src.pdf"
+      ],
+      "section_power_dt70_w": 51,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/ac16dbbf-7fc8-11ef-b8db-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact Insignia 3030 or 2180 family in manufacturer per-section table. C/VC does not change the declared per-section row; no assembled-power multiplication."
+        }
       ]
     },
     "dizain-radiator-royal-thermo-insignia-vc3180-06-sekc-ral9016": {
@@ -2957,7 +3042,21 @@
       "material": "steel",
       "connection": "bottom",
       "sources": [
-        "https://www.c-o-k.ru/library/catalogs/royal-thermo/37775"
+        "https://www.c-o-k.ru/library/catalogs/royal-thermo/37775",
+        "https://rkcdn.ru/products/c9a3098c-9bd3-11f1-b8e3-00505601218a/src.pdf"
+      ],
+      "section_power_dt70_w": 41,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/c9a3098c-9bd3-11f1-b8e3-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact Shift R22 2030 row, 41 W per section at ΔT70; not Q30 or 2180."
+        }
       ]
     },
     "dizain-radiator-royal-thermo-shift-r22-vc2180-04-sekc-ral9005m": {
@@ -3170,6 +3269,25 @@
         }
       ]
     },
+    "engel-tip-22-500500-stalnoi-panelnyi-radiator-bokovoe-podkliucenie": {
+      "name": "ENGEL тип 22 500×500 стальной панельный радиатор, боковое подключение",
+      "sources": [
+        "https://storage.by.prom.st/288112_katalog_engel.pdf"
+      ],
+      "power_dt50_w": 726,
+      "evidence": [
+        {
+          "source": "https://storage.by.prom.st/288112_katalog_engel.pdf",
+          "pages": [
+            6
+          ],
+          "fields": [
+            "power_dt50_w"
+          ],
+          "note": "Original UTERM/ENGEL manufacturer catalogue, type22 H500/L500 row. Explicit 75/65/20°C: ΔT50. Both side and bottom are covered by table footnote."
+        }
+      ]
+    },
     "fondital-alustal-bimetal-super-500100-10-sek-rf": {
       "name": "Fondital ALUSTAL BIMETAL SUPER 500/100 - 10 сек. (РФ)",
       "material": "bimetal",
@@ -3278,7 +3396,21 @@
       "name": "Fondital EXCLUSIVO SUPER B4 350/100 (10) (РФ)",
       "material": "aluminium",
       "sources": [
-        "https://www.fondital.ru/ru/ru/lityye-davleniyem-bimetallicheskiye-radiatory"
+        "https://www.fondital.ru/ru/ru/lityye-davleniyem-bimetallicheskiye-radiatory",
+        "https://www.fondital.ru/ru/ru/exclusivo-super-b4"
+      ],
+      "section_power_dt70_w": 143,
+      "evidence": [
+        {
+          "source": "https://www.fondital.ru/ru/ru/exclusivo-super-b4",
+          "pages": [
+            "Technical data"
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact Russian Super B4 model, not the older Italian Exclusivo B4 without Super. 143 W per section at ΔT70."
+        }
       ]
     },
     "fondital-exclusivo-super-d3-500100-10-rf": {
@@ -3402,7 +3534,8 @@
       "material": "steel",
       "connection": "side",
       "sources": [
-        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf"
       ],
       "height_mm": 500,
       "width_mm": 400,
@@ -3422,8 +3555,19 @@
             "panel_type"
           ],
           "note": "Exact named size and family matched to manufacturer combination table. Kompakt without a therm-x2 identifier receives geometry only."
+        },
+        {
+          "source": "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+          "pages": [
+            20
+          ],
+          "fields": [
+            "power_dt50_w"
+          ],
+          "note": "Independent original manufacturer 2022 table: FK011, H500/L400, 75/65/20°C (ΔT50), 336 W. Contradictory ΔT70 404 W in the other catalogue remains absent."
         }
-      ]
+      ],
+      "power_dt50_w": 336
     },
     "kermi-fko-110505": {
       "name": "Радиатор Kermi FKO 11500500",
@@ -8677,11 +8821,684 @@
         }
       ]
     },
+    "konvektor-vnutripolnyi-kermi-kvn-180x110x1000": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х110х1000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 338,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x110x1250": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х110х1250",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 455,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x110x1500": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х110х1500",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 572,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x110x1750": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х110х1750",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 689,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x110x2000": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х110х2000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 806,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x150x1000": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х150х1000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 401,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x150x1250": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х150х1250",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 539,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x150x1500": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х150х1500",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 677,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x150x1750": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х150х1750",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 815,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x150x2000": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х150х2000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 953,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x80x1000": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х80х1000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 272,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x80x1250": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х80х1250",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 368,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x80x1500": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х80х1500",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 464,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x80x1750": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х80х1750",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 559,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-180x80x2000": {
+      "name": "Конвектор внутрипольный Kermi KVN 180х80х2000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 655,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x110x1000": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х110х1000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 356,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x110x1250": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х110х1250",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 480,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x110x1500": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х110х1500",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 605,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x110x1750": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х110х1750",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 729,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x110x2000": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х110х2000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 853,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x150x1000": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х150х1000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 549,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x150x1250": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х150х1250",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 743,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x150x1500": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х150х1500",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 937,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x150x1750": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х150х1750",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 1132,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x150x2000": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х150х2000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 1326,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x80x1000": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х80х1000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 302,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x80x1250": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х80х1250",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 407,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x80x1500": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х80х1500",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 512,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x80x1750": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х80х1750",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 617,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-kermi-kvn-230x80x2000": {
+      "name": "Конвектор внутрипольный Kermi KVN 230х80х2000",
+      "sources": [
+        "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf"
+      ],
+      "power_dt60_w": 722,
+      "evidence": [
+        {
+          "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "power_dt60_w"
+          ],
+          "note": "Exact KVN natural-convection width/height/length. Manufacturer declares 90/70°C water and 20°C room: ΔT60; no conversion of output, no fan-assisted KVQ values."
+        }
+      ]
+    },
+    "konvektor-vnutripolnyi-wsk-320-110-2500-mohlenhoff": {
+      "name": "Конвектор внутрипольный WSK 320-110-2500 MOHLENHOFF",
+      "sources": [
+        "https://www.c-o-k.ru/library/catalogs/moehlenhoff/33142/118307.pdf?download"
+      ],
+      "power_dt60_w": 1273,
+      "power_dt50_w": 976,
+      "evidence": [
+        {
+          "source": "https://www.c-o-k.ru/library/catalogs/moehlenhoff/33142/118307.pdf?download",
+          "pages": [
+            16,
+            20,
+            30
+          ],
+          "fields": [
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Original manufacturer WSK320-110 type drawing identifies actual height111 mm. Exact L2500 table, natural convection, room20°C: 90/70=1273 W,75/65=976 W. Not WSKP, GSK or fan-assisted QSK."
+        }
+      ]
+    },
     "radiator-aliuminievyi-calidor-super-b4-350100-8-sekcii-fondital": {
       "name": "Радиатор алюминиевый CALIDOR SUPER B4 350/100 8 секций FONDITAL",
       "material": "aluminium",
       "sources": [
-        "https://www.fondital.ru/ru/ru/lityye-davleniyem-bimetallicheskiye-radiatory"
+        "https://www.fondital.ru/ru/ru/lityye-davleniyem-bimetallicheskiye-radiatory",
+        "https://www.fondital.com/ww/en/calidor-super-b4"
+      ],
+      "section_power_dt50_w": 89.9,
+      "evidence": [
+        {
+          "source": "https://www.fondital.com/ww/en/calidor-super-b4",
+          "pages": [
+            "Technical data"
+          ],
+          "fields": [
+            "section_power_dt50_w"
+          ],
+          "note": "Exact Calidor Super B4 350/100 manufacturer table: 89.9 W per section at ΔT50. No conversion to ΔT70."
+        }
+      ]
+    },
+    "radiator-aliuminievyi-nova-florida-aleternum-b4-350100": {
+      "name": "Радиатор алюминиевый Nova Florida ALETERNUM B4 350/100",
+      "sources": [
+        "https://www.novaflorida.com/media/files/attachments/578_LISTOCATALOGO_RADIATORI_FN_IT.pdf"
+      ],
+      "section_power_dt50_w": 89.9,
+      "section_power_dt60_w": 113.1,
+      "section_power_dt70_w": 137.3,
+      "evidence": [
+        {
+          "source": "https://www.novaflorida.com/media/files/attachments/578_LISTOCATALOGO_RADIATORI_FN_IT.pdf",
+          "pages": [
+            17
+          ],
+          "fields": [
+            "section_power_dt50_w",
+            "section_power_dt60_w",
+            "section_power_dt70_w"
+          ],
+          "note": "Original Fondital manufacturer catalogue hosted by Nova Florida, exact Aleternum B4 sizes and explicit W/element columns at ΔT50/60/70."
+        }
+      ]
+    },
+    "radiator-aliuminievyi-nova-florida-aleternum-b4-500100": {
+      "name": "Радиатор алюминиевый Nova Florida ALETERNUM B4 500/100",
+      "sources": [
+        "https://www.novaflorida.com/media/files/attachments/578_LISTOCATALOGO_RADIATORI_FN_IT.pdf"
+      ],
+      "section_power_dt50_w": 123.8,
+      "section_power_dt60_w": 156.5,
+      "section_power_dt70_w": 190.9,
+      "evidence": [
+        {
+          "source": "https://www.novaflorida.com/media/files/attachments/578_LISTOCATALOGO_RADIATORI_FN_IT.pdf",
+          "pages": [
+            17
+          ],
+          "fields": [
+            "section_power_dt50_w",
+            "section_power_dt60_w",
+            "section_power_dt70_w"
+          ],
+          "note": "Original Fondital manufacturer catalogue hosted by Nova Florida, exact Aleternum B4 sizes and explicit W/element columns at ΔT50/60/70."
+        }
+      ]
+    },
+    "radiator-aliuminievyi-nova-florida-big-d3-500100": {
+      "name": "Радиатор алюминиевый Nova Florida BIG D3 500/100",
+      "sources": [
+        "https://www.novaflorida.com/media/files/attachments/1047_DOP%20251%20%20Big%20D3%20-%2019%20Giugno%202020%20-%20ed.%203.pdf"
+      ],
+      "section_power_dt50_w": 114.4,
+      "evidence": [
+        {
+          "source": "https://www.novaflorida.com/media/files/attachments/1047_DOP%20251%20%20Big%20D3%20-%2019%20Giugno%202020%20-%20ed.%203.pdf",
+          "pages": [
+            1,
+            2
+          ],
+          "fields": [
+            "section_power_dt50_w"
+          ],
+          "note": "Manufacturer declaration DOP251, BIG D3 500/100, Φ50 114.4 W/element. Not Big Super or B4, no conversion to ΔT70."
+        }
       ]
     },
     "radiator-aliuminievyi-nova-florida-extrathermserir-super-b4-350100": {
@@ -8856,7 +9673,21 @@
       "material": "aluminium",
       "sections": 12,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/product/radiator-alyuminievyy-royal-thermo-monoblock-a-500-2-0-4-sekts/"
+        "https://b2b.rusklimat.com/catalog/product/radiator-alyuminievyy-royal-thermo-monoblock-a-500-2-0-4-sekts/",
+        "https://rkcdn.ru/products/145c7f44-2cab-11ef-b8d8-00505601218a/src.pdf"
+      ],
+      "section_power_dt70_w": 181,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/145c7f44-2cab-11ef-b8d8-00505601218a/src.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact Monoblock A500 2.0, not the earlier A500 or Monoblock B. Manufacturer explicitly states 181 W per section at ΔT70."
+        }
       ]
     },
     "radiator-aliuminievyi-royal-thermo-monoblock-a-500-20-8-sekc": {
@@ -8864,7 +9695,21 @@
       "material": "aluminium",
       "sections": 8,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/product/radiator-alyuminievyy-royal-thermo-monoblock-a-500-2-0-4-sekts/"
+        "https://b2b.rusklimat.com/catalog/product/radiator-alyuminievyy-royal-thermo-monoblock-a-500-2-0-4-sekts/",
+        "https://rkcdn.ru/products/145c7f44-2cab-11ef-b8d8-00505601218a/src.pdf"
+      ],
+      "section_power_dt70_w": 181,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/145c7f44-2cab-11ef-b8d8-00505601218a/src.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact Monoblock A500 2.0, not the earlier A500 or Monoblock B. Manufacturer explicitly states 181 W per section at ΔT70."
+        }
       ]
     },
     "radiator-aliuminievyi-royal-thermo-monoblock-a-500-4-sekc": {
@@ -8873,6 +9718,26 @@
       "sections": 4,
       "sources": [
         "https://b2b.rusklimat.com/catalog/product/radiator-alyuminievyy-royal-thermo-monoblock-a-500-2-0-4-sekts/"
+      ]
+    },
+    "radiator-alyuminievyiy-nova-florida-big-d3-500_100-white": {
+      "name": "Радиатор алюминиевый Nova Florida BIG D3 500/100 WHITE",
+      "sources": [
+        "https://www.novaflorida.com/media/files/attachments/1047_DOP%20251%20%20Big%20D3%20-%2019%20Giugno%202020%20-%20ed.%203.pdf"
+      ],
+      "section_power_dt50_w": 114.4,
+      "evidence": [
+        {
+          "source": "https://www.novaflorida.com/media/files/attachments/1047_DOP%20251%20%20Big%20D3%20-%2019%20Giugno%202020%20-%20ed.%203.pdf",
+          "pages": [
+            1,
+            2
+          ],
+          "fields": [
+            "section_power_dt50_w"
+          ],
+          "note": "Manufacturer declaration DOP251, BIG D3 500/100, Φ50 114.4 W/element. Not Big Super or B4, no conversion to ΔT70."
+        }
       ]
     },
     "radiator-alyuminievyiy-nova-florida-extrathermserir-super-b4-500_100-white": {
@@ -8901,6 +9766,253 @@
             "section_power_dt50_w"
           ],
           "note": "Manufacturer explicitly states W/section at ΔT50. No conversion to ΔT70 and no assumed assembly width or section count."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-35080-10-sekcii-sti-bimetal": {
+      "name": "Радиатор биметаллический 350/80 10 секций STI BIMETAL",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 1050,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-35080-8-sekcii-sti-bimetal": {
+      "name": "Радиатор биметаллический 350/80 8 секций STI BIMETAL",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 840,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-50080-10-sekcii-sti-bimetal": {
+      "name": "Радиатор биметаллический 500/80 10 секций STI BIMETAL",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 1290,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-50080-12-sekcii-bimetal-art-s500b1-sti": {
+      "name": "Радиатор биметаллический 500/80 12 секций BIMETAL арт. S500B1 STI",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 1548,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-50080-12-sekcii-sti-bimetal": {
+      "name": "Радиатор биметаллический 500/80 12 секций STI BIMETAL",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 1548,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-50080-4-sekcii-bimetal-art-s500b1-sti": {
+      "name": "Радиатор биметаллический 500/80 4 секции BIMETAL арт. S500B1 STI",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 516,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-50080-4-sekcii-sti-bimetal": {
+      "name": "Радиатор биметаллический 500/80 4 секций STI BIMETAL",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 516,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-50080-6-sekcii-bimetal-art-s500b1-sti": {
+      "name": "Радиатор биметаллический 500/80 6 секций BIMETAL арт. S500B1 STI",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 774,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-50080-6-sekcii-sti-bimetal": {
+      "name": "Радиатор биметаллический 500/80 6 секций STI BIMETAL",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 774,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-50080-8-sekcii-bimetal-art-s500b1-sti": {
+      "name": "Радиатор биметаллический 500/80 8 секций BIMETAL арт. S500B1 STI",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 1032,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-50080-8-sekcii-sti-bimetal": {
+      "name": "Радиатор биметаллический 500/80 8 секций STI BIMETAL",
+      "sources": [
+        "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf"
+      ],
+      "power_dt70_w": 1032,
+      "evidence": [
+        {
+          "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original STI Bimetal 350/80 or 500/80 passport, dated 07.2022, by Zhejiang Wisdom / GK Elf. Whole-assembly table, explicit ΔT70 footnote. Does not reuse STI RUS/ForteProm or GRAND."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-bm-500100-6-sekcii-korvet": {
+      "name": "Радиатор биметаллический BM 500/100 6 секций Корвет",
+      "sources": [
+        "https://revitech.ru/upload/uf/61c/tehf5v38rqv6beedhhqqn6hdyjqtl884/Pasport-KORVET-bimetallicheskiy.pdf"
+      ],
+      "section_power_dt70_w": 195,
+      "evidence": [
+        {
+          "source": "https://revitech.ru/upload/uf/61c/tehf5v38rqv6beedhhqqn6hdyjqtl884/Pasport-KORVET-bimetallicheskiy.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Russian Radiator Korvet BM exact 500×100 /500×80 row, nominal ΔT70 per section. No temperature recalculation; manufacturer explicitly states other temperature heads were not measured."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-bm-50080-4-sekcii-korvet": {
+      "name": "Радиатор биметаллический BM 500/80 4 секции Корвет",
+      "sources": [
+        "https://revitech.ru/upload/uf/61c/tehf5v38rqv6beedhhqqn6hdyjqtl884/Pasport-KORVET-bimetallicheskiy.pdf"
+      ],
+      "section_power_dt70_w": 163,
+      "evidence": [
+        {
+          "source": "https://revitech.ru/upload/uf/61c/tehf5v38rqv6beedhhqqn6hdyjqtl884/Pasport-KORVET-bimetallicheskiy.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Russian Radiator Korvet BM exact 500×100 /500×80 row, nominal ΔT70 per section. No temperature recalculation; manufacturer explicitly states other temperature heads were not measured."
         }
       ]
     },
@@ -9142,7 +10254,21 @@
       "material": "bimetal",
       "sections": 10,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-300-noir-sable-10-sekc": {
@@ -9150,7 +10276,21 @@
       "material": "bimetal",
       "sections": 10,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-300-noir-sable-12-sekc": {
@@ -9158,7 +10298,21 @@
       "material": "bimetal",
       "sections": 12,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-300-noir-sable-14-sekc": {
@@ -9166,7 +10320,21 @@
       "material": "bimetal",
       "sections": 14,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-300-noir-sable-6-sekc": {
@@ -9174,7 +10342,21 @@
       "material": "bimetal",
       "sections": 6,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-300-noir-sable-8-sekc": {
@@ -9182,7 +10364,21 @@
       "material": "bimetal",
       "sections": 8,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-300-silver-satin-10-sekc": {
@@ -9190,7 +10386,21 @@
       "material": "bimetal",
       "sections": 10,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-300-silver-satin-12-sekc": {
@@ -9198,7 +10408,21 @@
       "material": "bimetal",
       "sections": 12,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-300-silver-satin-14-sekc": {
@@ -9206,7 +10430,21 @@
       "material": "bimetal",
       "sections": 14,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-300-silver-satin-6-sekc": {
@@ -9214,7 +10452,21 @@
       "material": "bimetal",
       "sections": 6,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-300-silver-satin-8-sekc": {
@@ -9222,7 +10474,21 @@
       "material": "bimetal",
       "sections": 8,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf"
+      ],
+      "section_power_dt70_w": 115,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original manufacturer Infinity 300/500 passport, exact 300 row: 115 W per section at ΔT70. No assembled-power multiplication."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-infinity-500-bianco-traffico-12-sekc": {
@@ -9497,7 +10763,21 @@
       "material": "bimetal",
       "sections": 10,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://rkcdn.ru/products/9187928c-9b54-11ef-b8dc-00505601218a/src.pdf"
+      ],
+      "section_power_dt70_w": 177,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/9187928c-9b54-11ef-b8dc-00505601218a/src.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact Monoblock B500 row, 177 W/section at ΔT70. Not Monoblock B2.0 or the unspecified B100 variant."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-monoblock-b-500-4-sekc": {
@@ -9505,7 +10785,21 @@
       "material": "bimetal",
       "sections": 4,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://rkcdn.ru/products/9187928c-9b54-11ef-b8dc-00505601218a/src.pdf"
+      ],
+      "section_power_dt70_w": 177,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/9187928c-9b54-11ef-b8dc-00505601218a/src.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact Monoblock B500 row, 177 W/section at ΔT70. Not Monoblock B2.0 or the unspecified B100 variant."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-monoblock-b-500-6-sekc": {
@@ -9513,7 +10807,21 @@
       "material": "bimetal",
       "sections": 6,
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://rkcdn.ru/products/9187928c-9b54-11ef-b8dc-00505601218a/src.pdf"
+      ],
+      "section_power_dt70_w": 177,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/9187928c-9b54-11ef-b8dc-00505601218a/src.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Exact Monoblock B500 row, 177 W/section at ΔT70. Not Monoblock B2.0 or the unspecified B100 variant."
+        }
       ]
     },
     "radiator-bimetalliceskii-royal-thermo-pianoforte-200-cernyi-14-sekc": {
@@ -9829,6 +11137,158 @@
       "connection": "side",
       "sources": [
         "https://b2b.rusklimat.com/catalog/product/radiator-bimetallicheskiy-royal-thermo-pianoforte-500-serebristyy-8-sekts/"
+      ]
+    },
+    "radiator-bimetalliceskii-termica-bitherm-500100-10-sekcii": {
+      "name": "Радиатор биметаллический TERMICA Bitherm 500/100 10 секций",
+      "sources": [
+        "https://cdn.bigam.ru/iblock/72b/lbotrhjurfp1dps633rbbrqk8fp0oa8x/Pasport.pdf"
+      ],
+      "power_dt70_w": 1320,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/72b/lbotrhjurfp1dps633rbbrqk8fp0oa8x/Pasport.pdf",
+          "pages": [
+            3
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact BITHERM 500/100 10/12 section assembly row; table explicitly declares ΔT70. Not the 500/80 series."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-termica-bitherm-500100-12-sekcii": {
+      "name": "Радиатор биметаллический TERMICA Bitherm 500/100 12 секций",
+      "sources": [
+        "https://cdn.bigam.ru/iblock/72b/lbotrhjurfp1dps633rbbrqk8fp0oa8x/Pasport.pdf"
+      ],
+      "power_dt70_w": 1584,
+      "evidence": [
+        {
+          "source": "https://cdn.bigam.ru/iblock/72b/lbotrhjurfp1dps633rbbrqk8fp0oa8x/Pasport.pdf",
+          "pages": [
+            3
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact BITHERM 500/100 10/12 section assembly row; table explicitly declares ΔT70. Not the 500/80 series."
+        }
+      ]
+    },
+    "radiator-bimetalliceskii-ultra-plus-500-6-sekcii-ogint-2": {
+      "name": "Радиатор биметаллический Ultra Plus 500 6 секций OGINT",
+      "sources": [
+        "https://ogint.ru/wp-content/uploads/2025/10/Паспорт_рад_бимет_и_алюм_Ogint.pdf"
+      ],
+      "section_power_dt70_w": 143,
+      "evidence": [
+        {
+          "source": "https://ogint.ru/wp-content/uploads/2025/10/Паспорт_рад_бимет_и_алюм_Ogint.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original current manufacturer passport: Ultra 500 (Ultra Plus 500 in previous manufacturer passport), nominal 0.143 kW /143 W per section at ΔT70."
+        }
+      ]
+    },
+    "radiator-cn-ra-radiator-bimetalliceskii-cs-1000-500100-10-sekcii": {
+      "name": "Радиатор CN-RA Радиатор биметаллический CS 1000 500/100 10 секций",
+      "sources": [
+        "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf"
+      ],
+      "section_power_dt70_w": 180,
+      "evidence": [
+        {
+          "source": "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Manufacturer model CS1000 500/100 per-section table at ΔT70. CS150/CS200 alternate flow sections: do not multiply to invent assembly output. VC500 uses its separate lower-connection row, not CS500."
+        }
+      ]
+    },
+    "radiator-cn-ra-radiator-bimetalliceskii-cs-150-10-sekcii": {
+      "name": "Радиатор CN-RA Радиатор биметаллический CS 150 10 секций",
+      "sources": [
+        "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf"
+      ],
+      "section_power_dt70_w": 88,
+      "evidence": [
+        {
+          "source": "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Manufacturer model CS150/120 per-section table at ΔT70. CS150/CS200 alternate flow sections: do not multiply to invent assembly output. VC500 uses its separate lower-connection row, not CS500."
+        }
+      ]
+    },
+    "radiator-cn-ra-radiator-bimetalliceskii-cs-200-10-sekcii": {
+      "name": "Радиатор CN-RA Радиатор биметаллический CS 200 10 секции",
+      "sources": [
+        "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf"
+      ],
+      "section_power_dt70_w": 95,
+      "evidence": [
+        {
+          "source": "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Manufacturer model CS200/120 per-section table at ΔT70. CS150/CS200 alternate flow sections: do not multiply to invent assembly output. VC500 uses its separate lower-connection row, not CS500."
+        }
+      ]
+    },
+    "radiator-cn-ra-radiator-bimetalliceskii-cs-350-10-sekcii": {
+      "name": "Радиатор CN-RA Радиатор биметаллический CS 350 10 секций",
+      "sources": [
+        "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf"
+      ],
+      "section_power_dt70_w": 139,
+      "evidence": [
+        {
+          "source": "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Manufacturer model CS350/85 per-section table at ΔT70. CS150/CS200 alternate flow sections: do not multiply to invent assembly output. VC500 uses its separate lower-connection row, not CS500."
+        }
+      ]
+    },
+    "radiator-cn-ra-vc-radiator-bimetall-cs-500-4-sekcii-niznee-podkliucenie": {
+      "name": "Радиатор CN-RA VC Радиатор биметалл CS 500 4 секции нижнее подключение",
+      "sources": [
+        "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf"
+      ],
+      "section_power_dt70_w": 178,
+      "evidence": [
+        {
+          "source": "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Manufacturer model VC500/85 per-section table at ΔT70. CS150/CS200 alternate flow sections: do not multiply to invent assembly output. VC500 uses its separate lower-connection row, not CS500."
+        }
       ]
     },
     "radiator-kermi-fko-113001000": {
@@ -15214,7 +16674,22 @@
       "material": "bimetal",
       "sections": 18,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/315e0fa0-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-200-bianco-traffico-18-sekts/"
+      ],
+      "power_dt70_w": 865,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/315e0fa0-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTBT20018 / НС-1346107 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-200-bianco-traffico-22-sekc": {
@@ -15222,7 +16697,22 @@
       "material": "bimetal",
       "sections": 22,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/23558c82-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-200-bianco-traffico-22-sekts/"
+      ],
+      "power_dt70_w": 1050,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/23558c82-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTBT20022 / НС-1346145 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-200-noir-sable-22-sekc": {
@@ -15230,7 +16720,22 @@
       "material": "bimetal",
       "sections": 22,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/394454c3-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-200-noir-sable-22-sekts/"
+      ],
+      "power_dt70_w": 1050,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/394454c3-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTNS20022 / НС-1346146 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-200-silver-satin-18-sekc": {
@@ -15238,7 +16743,22 @@
       "material": "bimetal",
       "sections": 18,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/410641a5-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-200-silver-satin-18-sekts/"
+      ],
+      "power_dt70_w": 825,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/410641a5-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTSS20018 / НС-1346156 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-200-silver-satin-22-sekc": {
@@ -15246,7 +16766,22 @@
       "material": "bimetal",
       "sections": 22,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/23558c88-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-200-silver-satin-22-sekts/"
+      ],
+      "power_dt70_w": 1010,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/23558c88-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTSS20022 / НС-1346147 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-300-bianco-traffico-18-sekc": {
@@ -15254,7 +16789,22 @@
       "material": "bimetal",
       "sections": 18,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/410641a2-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-300-bianco-traffico-18-sekts/"
+      ],
+      "power_dt70_w": 1065,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/410641a2-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTBT30018 / НС-1345745 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-300-noir-sable-22-sekc": {
@@ -15262,7 +16812,22 @@
       "material": "bimetal",
       "sections": 22,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/315e0fae-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-300-noir-sable-22-sekts/"
+      ],
+      "power_dt70_w": 1320,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/315e0fae-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTNS30022 / НС-1345882 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-300-silver-satin-18-sekc": {
@@ -15270,7 +16835,22 @@
       "material": "bimetal",
       "sections": 18,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/23558c86-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-300-silver-satin-18-sekts/"
+      ],
+      "power_dt70_w": 995,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/23558c86-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTSS30018 / НС-1345748 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-300-silver-satin-22-sekc": {
@@ -15278,7 +16858,22 @@
       "material": "bimetal",
       "sections": 22,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/2b37bc78-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-300-silver-satin-22-sekts/"
+      ],
+      "power_dt70_w": 1215,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/2b37bc78-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTSS30022 / НС-1345861 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-500-newnoir-sable-22-sekc": {
@@ -15286,7 +16881,22 @@
       "material": "bimetal",
       "sections": 22,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/315e0fac-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-noir-sable-22-sekts/"
+      ],
+      "power_dt70_w": 1968,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/315e0fac-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTNNS50022 / НС-1176346 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-500-newsilver-satin-18-sekc": {
@@ -15294,7 +16904,22 @@
       "material": "bimetal",
       "sections": 18,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/394454c5-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-silver-satin-18-sekts/"
+      ],
+      "power_dt70_w": 1530,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/394454c5-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTNSS50018 / НС-1176348 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-royal-thermo-pianoforte-tower-500-newsilver-satin-22-sekc": {
@@ -15302,7 +16927,22 @@
       "material": "bimetal",
       "sections": 22,
       "sources": [
-        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf"
+        "https://rkcdn.ru/products/fc92888b-c7a5-11f1-b8e3-00505601218a/src.pdf",
+        "https://rkcdn.ru/products/394454c1-f086-11f0-b8e1-00505601218a/src.pdf",
+        "https://b2b.rusklimat.com/catalog/product/radiator-royal-thermo-pianoforte-tower-silver-satin-22-sekts/"
+      ],
+      "power_dt70_w": 1870,
+      "evidence": [
+        {
+          "source": "https://rkcdn.ru/products/394454c1-f086-11f0-b8e1-00505601218a/src.pdf",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Exact factory article RTPFTNSS50022 / НС-1176350 and attached passport 371989. Colour-specific nominal table agrees with the exact current manufacturer card. The different 2026 uncoloured family table is NOT substituted. Geometry/connection conflicts remain unfilled."
+        }
       ]
     },
     "radiator-stalnoi-bokovoe-podkliucenie-11x300x700-lideia": {
@@ -16948,6 +18588,23 @@
       "material": "steel",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 620,
+      "power_dt60_w": 534,
+      "power_dt50_w": 425,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-bokovoe-podkliucenie-k-profil-12x500x600-kermi": {
@@ -16955,6 +18612,23 @@
       "material": "steel",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 930,
+      "power_dt60_w": 801,
+      "power_dt50_w": 638,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-bokovoe-podkliucenie-k-profil-22x400x800-kermi": {
@@ -16962,6 +18636,42 @@
       "material": "steel",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 1405,
+      "power_dt60_w": 1211,
+      "power_dt50_w": 966,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
+      ]
+    },
+    "radiator-stalnoi-electrolux-compact-ec22-500-4009016": {
+      "name": "Радиатор стальной Electrolux Compact EC22-500-400/9016",
+      "sources": [
+        "https://www.c-o-k.ru/library/instructions/electrolux/radiatory-konvektory/33436/118995.pdf?download"
+      ],
+      "power_dt70_w": 882,
+      "evidence": [
+        {
+          "source": "https://www.c-o-k.ru/library/instructions/electrolux/radiatory-konvektory/33436/118995.pdf?download",
+          "pages": [
+            1
+          ],
+          "fields": [
+            "power_dt70_w"
+          ],
+          "note": "Original Electrolux Compact manufacturer passport, model nomenclature EC22-500-400, type22/H500/L400=0.882 kW at declared ΔT70. No Royal Thermo/private-label substitute."
+        }
       ]
     },
     "radiator-stalnoi-kermi-kompakt-113001300": {
@@ -18142,7 +19852,8 @@
       "material": "steel",
       "connection": "side",
       "sources": [
-        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf"
       ],
       "height_mm": 505,
       "width_mm": 1305,
@@ -18162,8 +19873,19 @@
             "panel_type"
           ],
           "note": "Exact named size and family matched to manufacturer combination table. Kompakt without a therm-x2 identifier receives geometry only."
+        },
+        {
+          "source": "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+          "pages": [
+            44
+          ],
+          "fields": [
+            "power_dt50_w"
+          ],
+          "note": "Independent manufacturer Line-K PLK table, actual H505/L1305 row at 75/65/20°C (ΔT50). No power inferred from the contradictory ΔT70 row in the other catalogue."
         }
-      ]
+      ],
+      "power_dt50_w": 977
     },
     "radiator-stalnoi-kermi-line-plk-115051405": {
       "name": "Радиатор стальной Kermi Line PLK 11*505*1405",
@@ -18578,7 +20300,8 @@
       "material": "steel",
       "connection": "side",
       "sources": [
-        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+        "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+        "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf"
       ],
       "height_mm": 505,
       "width_mm": 1305,
@@ -18598,8 +20321,19 @@
             "panel_type"
           ],
           "note": "Exact named size and family matched to manufacturer combination table. Kompakt without a therm-x2 identifier receives geometry only."
+        },
+        {
+          "source": "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+          "pages": [
+            44
+          ],
+          "fields": [
+            "power_dt50_w"
+          ],
+          "note": "Independent manufacturer Line-K PLK table, actual H505/L1305 row at 75/65/20°C (ΔT50). No power inferred from the contradictory ΔT70 row in the other catalogue."
         }
-      ]
+      ],
+      "power_dt50_w": 1245
     },
     "radiator-stalnoi-kermi-line-plk-125051405": {
       "name": "Радиатор стальной Kermi Line PLK 12*505*1405",
@@ -20777,6 +22511,23 @@
       "connection": "side",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 1317,
+      "power_dt60_w": 1138,
+      "power_dt50_w": 910,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-10x500x1100-lideia": {
@@ -21905,6 +23656,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 1393,
+      "power_dt60_w": 1201,
+      "power_dt50_w": 959,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-22x300x500-kermi": {
@@ -21913,6 +23681,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 697,
+      "power_dt60_w": 601,
+      "power_dt50_w": 480,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-22x300x600-kermi": {
@@ -21921,6 +23706,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 836,
+      "power_dt60_w": 721,
+      "power_dt50_w": 575,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-22x300x700-kermi": {
@@ -21929,6 +23731,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 975,
+      "power_dt60_w": 841,
+      "power_dt50_w": 671,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-22x300x700-kermi-2": {
@@ -21937,6 +23756,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 975,
+      "power_dt60_w": 841,
+      "power_dt50_w": 671,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-22x300x800-kermi": {
@@ -21945,6 +23781,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 1115,
+      "power_dt60_w": 961,
+      "power_dt50_w": 767,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-22x500x400-kermi": {
@@ -21953,6 +23806,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 840,
+      "power_dt60_w": 723,
+      "power_dt50_w": 576,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-22x500x400-kermi-2": {
@@ -21961,6 +23831,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 840,
+      "power_dt60_w": 723,
+      "power_dt50_w": 576,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-22x500x600-pravoe-podkliucenie-kermi": {
@@ -21969,6 +23856,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 1260,
+      "power_dt60_w": 1085,
+      "power_dt50_w": 865,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-22x500x700-pravoe-podkliucenie-kermi": {
@@ -21977,6 +23881,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 1470,
+      "power_dt60_w": 1266,
+      "power_dt50_w": 1009,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-33x300x1300-kermi": {
@@ -21985,6 +23906,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 2447,
+      "power_dt60_w": 2113,
+      "power_dt50_w": 1690,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-33x400x500-kermi": {
@@ -21993,6 +23931,23 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 1185,
+      "power_dt60_w": 1022,
+      "power_dt50_w": 817,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
       ]
     },
     "radiator-stalnoi-niznee-podkliucenie-v-profil-33x400x600-kermi": {
@@ -22001,6 +23956,44 @@
       "connection": "bottom",
       "sources": [
         "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf"
+      ],
+      "power_dt70_w": 1422,
+      "power_dt60_w": 1227,
+      "power_dt50_w": 980,
+      "evidence": [
+        {
+          "source": "https://kermi-fko.ru/files/editors/Doc/kermi-pdf/line/tech-katalog-kermi-therm-x2.pdf",
+          "pages": [
+            24
+          ],
+          "fields": [
+            "power_dt70_w",
+            "power_dt60_w",
+            "power_dt50_w"
+          ],
+          "note": "Manufacturer Profil-K / Profil-V (FKO/FTV) family and exact type/height/length table. Generic Kompakt, Line 200 and RF-Y articles are not inferred."
+        }
+      ]
+    },
+    "radiator-stalnoi-niznee-podkliucenie-vs-21x500x400-uterm": {
+      "name": "Радиатор стальной нижнее подключение VС 21х500х400 UTERM",
+      "sources": [
+        "https://ovk-systems.com.ua/wp-content/uploads/2024/11/Katalog-Uterm-2024.pdf"
+      ],
+      "power_dt50_w": 438,
+      "power_dt70_w": 681,
+      "evidence": [
+        {
+          "source": "https://ovk-systems.com.ua/wp-content/uploads/2024/11/Katalog-Uterm-2024.pdf",
+          "pages": [
+            8
+          ],
+          "fields": [
+            "power_dt50_w",
+            "power_dt70_w"
+          ],
+          "note": "Original UTERM 2024 type21 catalogue, exact H500/L400, bottom or side. Direct table rows 75/65/20 and 95/85/20, no conversion."
+        }
       ]
     },
     "radiator-stalnoi-trubcatyi-zehnder-charleston-2026-62-252": {
@@ -25612,21 +27605,63 @@
       "name": "Радиатор Royal Thermo BiLiner 500",
       "material": "bimetal",
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3308535.pdf/royal-thermo-biliner-500-5-sektsij-559431.pdf"
+      ],
+      "section_power_dt70_w": 171,
+      "evidence": [
+        {
+          "source": "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3308535.pdf/royal-thermo-biliner-500-5-sektsij-559431.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original BiLiner / BiLiner Inox manufacturer passport. Exact older series; not later BILINER B or 2.0. Section row explicitly declares ΔT70."
+        }
       ]
     },
     "royal-thermo-biliner-inox-350": {
       "name": "Радиатор Royal Thermo BiLiner Inox 350",
       "material": "bimetal",
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3308535.pdf/royal-thermo-biliner-500-5-sektsij-559431.pdf"
+      ],
+      "section_power_dt70_w": 118,
+      "evidence": [
+        {
+          "source": "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3308535.pdf/royal-thermo-biliner-500-5-sektsij-559431.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original BiLiner / BiLiner Inox manufacturer passport. Exact older series; not later BILINER B or 2.0. Section row explicitly declares ΔT70."
+        }
       ]
     },
     "royal-thermo-biliner-inox-500": {
       "name": "Радиатор Royal Thermo BiLiner Inox 500",
       "material": "bimetal",
       "sources": [
-        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/"
+        "https://b2b.rusklimat.com/catalog/1162748-radiatory-bimetallicheskie-sektsionnye/royal-thermo/",
+        "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3308535.pdf/royal-thermo-biliner-500-5-sektsij-559431.pdf"
+      ],
+      "section_power_dt70_w": 171,
+      "evidence": [
+        {
+          "source": "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3308535.pdf/royal-thermo-biliner-500-5-sektsij-559431.pdf",
+          "pages": [
+            2
+          ],
+          "fields": [
+            "section_power_dt70_w"
+          ],
+          "note": "Original BiLiner / BiLiner Inox manufacturer passport. Exact older series; not later BILINER B or 2.0. Section row explicitly declares ΔT70."
+        }
       ]
     },
     "royal-thermo-optimal-350": {
@@ -25843,5 +27878,6 @@
       ]
     }
   },
-  "supplement": "Manufacturer missing-field completion; no room-area estimates or temperature conversions; section values remain distinct from assembled output."
+  "supplement": "Manufacturer missing-field completion; no room-area estimates or temperature conversions; section values remain distinct from assembled output.",
+  "thermal_completion_checked_at": "2026-11-12"
 }

@@ -27,6 +27,7 @@ class RadiatorCatalog extends SpecificationCatalog
             'centres' => ['Межосевое расстояние', ['to-200' => 'до 200 мм', 'to-350' => 'свыше 200 до 350 мм', 'to-500' => 'свыше 350 до 500 мм', 'over' => 'свыше 500 мм']],
             'power70' => ['Теплоотдача при ΔT 70 °C', ['to-1000' => 'до 1000 Вт', 'to-2000' => 'свыше 1000 до 2000 Вт', 'over' => 'свыше 2000 Вт']],
             'power50' => ['Теплоотдача при ΔT 50 °C', ['to-1000' => 'до 1000 Вт', 'to-2000' => 'свыше 1000 до 2000 Вт', 'over' => 'свыше 2000 Вт']],
+            'power60' => ['Теплоотдача при ΔT 60 °C', ['to-1000' => 'до 1000 Вт', 'to-2000' => 'свыше 1000 до 2000 Вт', 'over' => 'свыше 2000 Вт']],
         ];
     }
 
@@ -54,7 +55,7 @@ class RadiatorCatalog extends SpecificationCatalog
                 $card[$label] = implode(' / ', array_map(fn ($value) => $dimensions[$key][1][$value], $values));
             }
         }
-        foreach (['height' => ['height_mm', 'Высота', 'мм'], 'width' => ['width_mm', 'Ширина', 'мм'], 'sections' => ['sections', 'Количество секций', ''], 'centres' => ['centres_mm', 'Межосевое расстояние', 'мм'], 'power70' => ['power_dt70_w', 'Теплоотдача при ΔT 70 °C', 'Вт'], 'power50' => ['power_dt50_w', 'Теплоотдача при ΔT 50 °C', 'Вт']] as $key => [$field, $label, $unit]) {
+        foreach (['height' => ['height_mm', 'Высота', 'мм'], 'width' => ['width_mm', 'Ширина', 'мм'], 'sections' => ['sections', 'Количество секций', ''], 'centres' => ['centres_mm', 'Межосевое расстояние', 'мм'], 'power70' => ['power_dt70_w', 'Теплоотдача при ΔT 70 °C', 'Вт'], 'power50' => ['power_dt50_w', 'Теплоотдача при ΔT 50 °C', 'Вт'], 'power60' => ['power_dt60_w', 'Теплоотдача при ΔT 60 °C', 'Вт']] as $key => [$field, $label, $unit]) {
             if (! isset($record[$field])) continue;
             $value = $record[$field];
             foreach ($dimensions[$key][1] as $option => $text) {
@@ -65,14 +66,18 @@ class RadiatorCatalog extends SpecificationCatalog
             }
             $card[$label] = trim(str_replace('.', ',', (string) $value).' '.$unit);
         }
-        if (! isset($record['power_dt70_w']) && isset($record['section_power_dt70_w'])) {
-            $card['Теплоотдача секции при ΔT 70 °C'] = str_replace('.', ',', (string) $record['section_power_dt70_w']).' Вт/секц.';
-        } elseif (! isset($record['power_dt70_w']) && ! isset($record['section_power_dt70_w']) && isset($record['section_power_dt50_w'])) {
-            $card['Теплоотдача секции при ΔT 50 °C'] = str_replace('.', ',', (string) $record['section_power_dt50_w']).' Вт/секц.';
+        $thermalLabel = null;
+        foreach (['power_dt' => ['Теплоотдача', 'Вт'], 'section_power_dt' => ['Теплоотдача секции', 'Вт/секц.']] as $prefix => [$label, $unit]) {
+            foreach ([70, 50, 60] as $delta) {
+                if (! isset($record[$prefix.$delta.'_w'])) continue;
+                $thermalLabel = $label.' при ΔT '.$delta.' °C';
+                $card[$thermalLabel] = str_replace('.', ',', (string) $record[$prefix.$delta.'_w']).' '.$unit;
+                break 2;
+            }
         }
         if (isset($record['panel_type'], $dimensions['panel_type'][1][$record['panel_type']])) $options['panel_type'] = [(string) $record['panel_type']];
         $ordered = [];
-        foreach (['Материал', 'Подключение', 'Теплоотдача при ΔT 70 °C', 'Теплоотдача секции при ΔT 70 °C', 'Теплоотдача секции при ΔT 50 °C', 'Высота', 'Ширина', 'Количество секций', 'Межосевое расстояние'] as $label) {
+        foreach (array_filter(['Материал', 'Подключение', $thermalLabel, 'Высота', 'Ширина', 'Количество секций', 'Межосевое расстояние']) as $label) {
             if (isset($card[$label])) $ordered[$label] = $card[$label];
         }
         return ['options' => $options, 'card' => array_slice($ordered, 0, 4, true)];
@@ -124,8 +129,9 @@ class RadiatorCatalog extends SpecificationCatalog
         $short = rtrim($product->name, '.').'.';
         $content = '<p>'.e($short).'</p>'.($rows !== [] ? '<ul>' : '');
         foreach ($rows as $label => $value) {
-            $short .= ' '.$label.': '.$value.'.';
-            $content .= '<li>'.e($label).': '.e($value).'.</li>';
+            $sentence = $label.': '.rtrim($value, '. ').'.';
+            $short .= ' '.$sentence;
+            $content .= '<li>'.e($sentence).'</li>';
         }
         $content .= ($rows !== [] ? '</ul>' : '<p>Характеристики этого исполнения уточняйте у менеджера.</p>').'<p>Теплоотдача зависит от температурного напора. Для подбора учитывайте режим системы отопления и теплопотери помещения.</p>';
         foreach (self::verified($product)['sources'] ?? [] as $url) $content .= '<p><a href="'.e($url).'" target="_blank" rel="noopener">Документация производителя</a></p>';
