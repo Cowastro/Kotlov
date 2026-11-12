@@ -1,9 +1,9 @@
 {
   "public_products": 1283,
-  "verified": 849,
+  "verified": 858,
   "fields": {
-    "material": 849,
-    "sections": 73,
+    "material": 858,
+    "sections": 78,
     "article": 32,
     "height_mm": 161,
     "width_mm": 157,
@@ -73,26 +73,6 @@
     }
   ],
   "unconfirmed": [
-    {
-      "slug": "radiator-aliuminievyi-royal-thermo-monoblock-a-500-20-12-sekc",
-      "name": "Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 2.0 – 12 секц."
-    },
-    {
-      "slug": "radiator-aliuminievyi-royal-thermo-monoblock-a-500-20-8-sekc",
-      "name": "Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 2.0 – 8 секц."
-    },
-    {
-      "slug": "radiator-aliuminievyi-royal-thermo-monoblock-a-500-4-sekc",
-      "name": "Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 – 4 секц."
-    },
-    {
-      "slug": "radiator-aliuminievyi-royal-thermo-monoblock-a-500-10-sekc",
-      "name": "Радиатор алюминиевый Royal Thermo MONOBLOCK A 500 – 10 секц."
-    },
-    {
-      "slug": "radiator-aliuminievyi-royal-thermo-indigo-a-500-10-sekc",
-      "name": "Радиатор алюминиевый Royal Thermo Indigo A 500 - 10 секц."
-    },
     {
       "slug": "atm-thermo-energia-500100-aliuminievyi-radiator-1-sekciia",
       "name": "ATM Thermo Energia 500/100, алюминиевый радиатор, 1 секция"
@@ -478,24 +458,12 @@
       "name": "Конвектор внутрипольный Kermi KVN 230х150х2000"
     },
     {
-      "slug": "royal-thermo-skyliner-500",
-      "name": "Радиатор Royal Thermo DreamLiner 500"
-    },
-    {
       "slug": "royal-thermo-trend-350",
       "name": "Радиатор Royal Thermo Revolution Bimetall 350"
     },
     {
-      "slug": "radiator-royal-thermo-indigo-500",
-      "name": "Радиатор Royal Thermo Indigo 500"
-    },
-    {
       "slug": "konvektor-vnutripolnyi-kermi-kvn-180x110x1000",
       "name": "Конвектор внутрипольный Kermi KVN 180х110х1000"
-    },
-    {
-      "slug": "royal-thermo-optimal-350",
-      "name": "Радиатор Royal Thermo Revolution 350"
     },
     {
       "slug": "konvektor-vnutripolnyi-kermi-kvn-180x150x2000",
@@ -512,10 +480,6 @@
     {
       "slug": "konvektor-vnutripolnyi-kermi-kvn-180x150x1000",
       "name": "Конвектор внутрипольный Kermi KVN 180х150х1000"
-    },
-    {
-      "slug": "royal-thermo-optimal-500",
-      "name": "Радиатор Royal Thermo Revolution 500"
     },
     {
       "slug": "konvektor-vnutripolnyi-kermi-kvn-180x110x2000",
