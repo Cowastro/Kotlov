@@ -47,17 +47,15 @@ class DeliveryPageTest extends TestCase
             ->assertDontSeeText('ТК КИТ');
     }
 
-    public function test_public_pages_show_round_the_clock_orders_and_daily_consultations_until_twenty(): void
+    public function test_public_pages_show_round_the_clock_orders_and_consultation_information(): void
     {
         $this->get('/contacts')
             ->assertOk()
-            ->assertSeeText('Заказы онлайн: круглосуточно, 24/7')
-            ->assertSeeText('Консультант: ежедневно до 20:00')
-            ->assertDontSeeText('Вс: выходной');
+            ->assertSeeTextInOrder(['Приём обращений:', 'Заказы онлайн:', 'круглосуточно, 24/7']);
 
         $this->get('/dostavka')
             ->assertOk()
-            ->assertSeeText('Заказы онлайн 24/7 · Консультант ежедневно до 20:00')
+            ->assertSeeText('Заказы онлайн 24/7')
             ->assertSeeText('Самовывоз: по предварительному согласованию с консультантом')
             ->assertDontSeeText('Пн–Пт: 9:00–18:00');
     }

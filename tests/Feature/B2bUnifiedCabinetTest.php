@@ -43,12 +43,13 @@ class B2bUnifiedCabinetTest extends TestCase
         $this->assertSame('Котельные под ключ', $profile->fresh()->short_description);
     }
 
-    public function test_wholesale_partner_creates_page_that_waits_for_moderation(): void
+    public function test_installer_can_recreate_a_missing_page_that_waits_for_moderation(): void
     {
-        [$owner, $client] = $this->partner('wholesale');
+        [$owner, $client] = $this->partner('installer');
+        InstallerProfile::query()->where('user_id', $owner->id)->delete();
 
         $this->actingAs($owner)->get(route('b2b.cabinet', ['section' => 'page']))
-            ->assertOk()->assertSee('Моя страница на KOTLOV')->assertSee('Создать страницу монтажника');
+            ->assertOk()->assertSee('Моя страница монтажника')->assertSee('Создать страницу монтажника');
 
         $this->actingAs($owner)->post(route('b2b.cabinet.page.create'))
             ->assertRedirect(route('b2b.cabinet', ['section' => 'page']));

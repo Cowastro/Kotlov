@@ -13,7 +13,7 @@ class BelomoPriceList
             throw new \RuntimeException("Не удалось открыть зафиксированный прайс БелОМО: {$path}");
         }
 
-        $headers = fgetcsv($handle, 0, ';');
+        $headers = fgetcsv($handle, 0, ';', '"', '\\');
         if ($headers === false) {
             fclose($handle);
             throw new \RuntimeException('Прайс БелОМО пуст.');
@@ -21,7 +21,7 @@ class BelomoPriceList
         $headers[0] = ltrim((string) $headers[0], "\xEF\xBB\xBF");
 
         $rows = [];
-        while (($values = fgetcsv($handle, 0, ';')) !== false) {
+        while (($values = fgetcsv($handle, 0, ';', '"', '\\')) !== false) {
             if (count($values) !== count($headers)) {
                 fclose($handle);
                 throw new \RuntimeException('Некорректная строка в прайсе БелОМО.');

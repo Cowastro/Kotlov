@@ -60,7 +60,7 @@ class OrderTableLayoutTest extends TestCase
         $mine = $this->order('ORD-FILTER-MINE', ['manager_id' => $manager->id]);
         $unassigned = $this->order('ORD-FILTER-EMPTY', ['assigned_to' => ' ']);
         $legacy = $this->order('ORD-FILTER-LEGACY', ['assigned_to' => '@operator']);
-        $closed = $this->order('ORD-FILTER-CLOSED', ['status' => 'completed']);
+        $closed = $this->order('ORD-FILTER-CLOSED', ['status' => 'delivered']);
 
         $unassigned->items()->create([
             'product_name' => 'Насос циркуляционный', 'product_sku' => 'SKU-FILTER-19', 'price' => 100, 'quantity' => 1, 'total' => 100,
@@ -85,7 +85,7 @@ class OrderTableLayoutTest extends TestCase
             ->assertCanNotSeeTableRecords([$closed])
             ->assertSee('Искать во всех заказах')
             ->call('selectOrderTab', 'all')
-            ->filterTable('status', 'completed')
+            ->filterTable('status', 'delivered')
             ->assertCanSeeTableRecords([$closed])
             ->assertCanNotSeeTableRecords([$mine, $legacy, $unassigned]);
     }
