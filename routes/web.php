@@ -600,6 +600,12 @@ Route::get('/installers/{slug}', [InstallerController::class, 'show'])->name('in
 Route::get('/install-request', [InstallRequestController::class, 'create'])->name('install-requests.create');
 Route::post('/install-request', [InstallRequestController::class, 'store'])->middleware('public.form.protect:install-request')->name('install-requests.store');
 Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+Route::get('/r/{token}', function (string $token) {
+    $order = \App\Models\Order::where('review_sms_token', $token)->firstOrFail();
+    return redirect(app(\App\Services\Orders\OrderReviewInvitation::class)->url($order))
+        ->header('Cache-Control', 'private, no-store')->header('X-Robots-Tag', 'noindex, nofollow')
+        ->header('Referrer-Policy', 'no-referrer');
+})->where('token', '[A-Za-z0-9_-]{22}')->middleware('throttle:60,1')->name('orders.review.short');
 Route::get('/order-review/{order}', [\App\Http\Controllers\OrderReviewController::class, 'show'])
     ->middleware(['signed:relative', 'throttle:60,1'])->name('orders.review.show');
 Route::post('/order-review/{order}', [\App\Http\Controllers\OrderReviewController::class, 'store'])

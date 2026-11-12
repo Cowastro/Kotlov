@@ -92,6 +92,94 @@ class OrderCustomerReviewTest extends TestCase
         $this->assertDatabaseCount('reviews', 0);
     }
 
+    public function test_short_sms_link_fits_one_message_and_opens_only_the_review_form(): void
+    {
+        [$order] = $this->order();
+        config(['app.url' => 'https://kotlov.by']);
+        $service = app(\App\Services\Orders\OrderReviewSms::class);
+        $message = $service->message($order);
+        $this->assertLessThanOrEqual(70, strlen(mb_convert_encoding($message, 'UTF-16BE', 'UTF-8')) / 2);
+        $this->assertSame($message, $service->message($order));
+        $this->assertStringNotContainsString($order->customer_phone, $message);
+        $url = 'https://kotlov.by/r/'.$order->fresh()->review_sms_token;
+        $redirect = $this->get($url)->assertRedirect()->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+        $this->get($redirect->headers->get('Location'))->assertOk()->assertSee('Ваш отзыв')->assertDontSee($order->customer_phone);
+        $this->get('/r/'.str_repeat('x', 22))->assertNotFound();
+    }
+
+    public function test_manager_can_send_one_sms_and_duplicate_click_is_blocked_and_logged(): void
+    {
+        [$order] = $this->order();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true, 'is_crm_user' => true]);
+        $this->actingAs($manager);
+        config(['app.url' => 'https://kotlov.by', 'services.sms_by.enabled' => true,
+            'services.sms_by.token' => 'test-token', 'services.sms_by.alphaname_id' => '123',
+            'services.sms_by.base_url' => 'https://app.sms.by']);
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
+        \Illuminate\Support\Facades\Http::fake(['app.sms.by/*' => \Illuminate\Support\Facades\Http::response(['sms_id' => 'review-123'])]);
+        $page = Livewire::test(ListOrders::class)->set('activeTab', 'all')->mountTableAction('customer_review_sms', $order);
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+        $page->setTableActionData(['phone' => '+375 (29) 123-45-67'])->callMountedTableAction()->assertHasNoTableActionErrors();
+        \Illuminate\Support\Facades\Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/sendQuickSMS')
+            && $request['phone'] === '375291234567' && mb_strlen($request['message']) <= 70);
+        $this->assertSame('review-123', $order->fresh()->review_sms_id);
+        $history = $order->statusHistory()->where('comment', 'like', '%review-123%')->sole();
+        $this->assertSame($manager->id, $history->user_id);
+        $this->assertSame('delivered', $order->fresh()->status);
+        try {
+            app(\App\Services\Orders\OrderReviewSms::class)->send($order, $order->customer_phone);
+            $this->fail('Duplicate SMS should be blocked');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertArrayHasKey('phone', $e->errors());
+        }
+        \Illuminate\Support\Facades\Http::assertSentCount(1);
+    }
+
+    public function test_sms_failure_is_not_recorded_as_sent_and_invalid_numbers_are_rejected(): void
+    {
+        [$order] = $this->order();
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        config(['app.url' => 'https://kotlov.by', 'services.sms_by.enabled' => true,
+            'services.sms_by.token' => 'test-token', 'services.sms_by.alphaname_id' => '123',
+            'services.sms_by.base_url' => 'https://app.sms.by']);
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
+        \Illuminate\Support\Facades\Http::fake(['app.sms.by/*' => \Illuminate\Support\Facades\Http::response(['status' => 'error', 'message' => 'No balance'])]);
+        try {
+            app(\App\Services\Orders\OrderReviewSms::class)->send($order, '123');
+            $this->fail('Invalid phone should be rejected');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertArrayHasKey('phone', $e->errors());
+        }
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+        try {
+            app(\App\Services\Orders\OrderReviewSms::class)->send($order, $order->customer_phone);
+            $this->fail('Provider error should be returned');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('SMS.BY', $e->getMessage());
+        }
+        $this->assertNull($order->fresh()->review_sms_sent_at);
+        $this->assertNull($order->fresh()->review_sms_id);
+        $this->assertSame(0, $order->statusHistory()->count());
+    }
+
+    public function test_message_over_one_sms_is_blocked_before_provider_request(): void
+    {
+        [$order] = $this->order();
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        config(['app.url' => 'https://'.str_repeat('long', 20).'.example.com',
+            'services.sms_by.enabled' => true, 'services.sms_by.alphaname_id' => '123']);
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
+        \Illuminate\Support\Facades\Http::fake();
+        try {
+            app(\App\Services\Orders\OrderReviewSms::class)->send($order, $order->customer_phone);
+            $this->fail('Multipart SMS must not be sent');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertStringContainsString('одной СМС', $e->errors()['phone'][0]);
+        }
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+        $this->assertNull($order->fresh()->review_sms_attempted_at);
+    }
+
     private function data(string $target = 'order'): array
     {
         return ['target' => $target, 'author_name' => 'Александр', 'rating' => 4, 'text' => 'Заказ доставили аккуратно и вовремя', 'consent' => 1];
