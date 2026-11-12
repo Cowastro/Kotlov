@@ -164,6 +164,7 @@ class ImapMailboxSynchronizer
                         $counterparty?->id,
                         $inReplyTo,
                         $subject,
+                        $header->references ?? null,
                     );
 
                     $previousClientThread = $thread || $isAutomaticSpam ? null : $this->threadResolver->latestForClient(
@@ -173,12 +174,16 @@ class ImapMailboxSynchronizer
                     );
 
                     if (! $thread) {
+                        $ambiguousSubject = ! $isAutomaticSpam && $this->threadResolver->hasAmbiguousSubject(
+                            $mailbox, $fromEmail, $counterparty?->id, $subject,
+                        );
                         $thread = CrmMailThread::withTrashed()->firstOrCreate(
                             [
                                 'mailbox_id' => $mailbox->id,
                                 'thread_key' => $isAutomaticSpam
                                     ? CrmMailThread::AUTOMATIC_SPAM_THREAD_PREFIX.$uid
-                                    : hash('sha256', $fromEmail.'|'.mb_strtolower(trim($subject))),
+                                    : hash('sha256', $fromEmail.'|'.mb_strtolower(trim($subject))
+                                        .($ambiguousSubject ? '|ambiguous:'.($messageId ?: $uid) : '')),
                             ],
                             [
                                 'crm_counterparty_id' => $counterparty?->id,
@@ -188,6 +193,9 @@ class ImapMailboxSynchronizer
                                 'participant_email' => $fromEmail,
                                 'assigned_user_id' => $previousClientThread?->assigned_user_id,
                                 'sales_stage' => $isSpam ? null : 'new_inquiry',
+                                'manager_note' => $ambiguousSubject
+                                    ? 'Письмо с общей темой нескольких запросов. Связь с конкретным письмом не определена: проверьте, к какой закупке оно относится.'
+                                    : null,
                                 'status' => $isSpam
                                     ? 'spam'
                                     : ($previousClientThread ? 'waiting_manager' : 'new'),

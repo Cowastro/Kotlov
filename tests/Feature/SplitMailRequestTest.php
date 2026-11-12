@@ -82,6 +82,70 @@ class SplitMailRequestTest extends TestCase
             ->assertSeeText('Исходная переписка');
     }
 
+    public function test_replies_to_manager_and_later_customer_messages_stay_in_the_split_request(): void
+    {
+        $actor = User::factory()->create(['role' => 'admin']);
+        [$source, $message] = $this->request($actor);
+        $new = app(SplitMailRequest::class)->split($source, $message->id, 'Новая закупка', $actor);
+        $resolver = app(CrmMailThreadResolver::class);
+
+        foreach (['outgoing', 'incoming', 'outgoing'] as $index => $direction) {
+            $parent = $new->messages()->create([
+                'mailbox_id' => $source->mailbox_id,
+                'message_id' => 'continued-'.$index.'@example.com',
+                'direction' => $direction, 'subject' => 'Re: Старая закупка',
+                'from_email' => $direction === 'incoming' ? 'buyer@example.com' : 'sales@example.com',
+            ]);
+            $this->assertTrue($resolver->resolve($source->mailbox, 'buyer@example.com', null,
+                $parent->message_id, 'Re: Старая закупка')->is($new));
+        }
+
+        $oldMessage = $source->messages()->sole();
+        $oldMessage->update(['message_id' => 'old-deal@example.com']);
+        $this->assertTrue($resolver->resolve($source->mailbox, 'buyer@example.com', null,
+            $oldMessage->message_id, 'Re: Старая закупка')->is($source));
+        $this->assertSame('lost', $source->fresh()->sales_stage);
+    }
+
+    public function test_references_chain_finds_the_nearest_known_message_in_the_new_request(): void
+    {
+        $actor = User::factory()->create(['role' => 'admin']);
+        [$source, $message] = $this->request($actor);
+        $oldMessage = $source->messages()->where('direction', 'outgoing')->sole();
+        $oldMessage->update(['message_id' => 'old-deal@example.com']);
+        $new = app(SplitMailRequest::class)->split($source, $message->id, 'Новая закупка', $actor);
+        $resolver = app(CrmMailThreadResolver::class);
+        $references = '<old-deal@example.com> <'.$message->message_id.'> <not-imported@example.com>';
+
+        foreach ([null, '<not-imported@example.com>'] as $parent) {
+            $this->assertTrue($resolver->resolve($source->mailbox, 'buyer@example.com', null,
+                $parent, 'Re: Старая закупка', $references)->is($new));
+        }
+    }
+
+    public function test_shared_subject_without_reply_headers_does_not_reopen_the_old_refusal(): void
+    {
+        $actor = User::factory()->create(['role' => 'admin']);
+        [$source, $message] = $this->request($actor);
+        app(SplitMailRequest::class)->split($source, $message->id, 'Новое название закупки', $actor);
+        $resolver = app(CrmMailThreadResolver::class);
+
+        $this->assertNull($resolver->resolve($source->mailbox, 'buyer@example.com', null, null, 'Re: Старая закупка'));
+        $this->assertTrue($resolver->hasAmbiguousSubject($source->mailbox, 'buyer@example.com', null, 'Re: Старая закупка'));
+        $this->assertSame('closed', $source->fresh()->status);
+    }
+
+    public function test_same_message_id_in_another_mailbox_does_not_override_the_local_parent(): void
+    {
+        $actor = User::factory()->create(['role' => 'admin']);
+        $this->request($actor);
+        [$source, $message] = $this->request($actor);
+        $new = app(SplitMailRequest::class)->split($source, $message->id, 'Новая закупка', $actor);
+
+        $this->assertTrue(app(CrmMailThreadResolver::class)->resolve($source->mailbox,
+            'buyer@example.com', null, '<'.$message->message_id.'>', 'Re: Старая закупка')->is($new));
+    }
+
     public function test_foreign_message_cannot_be_moved_from_another_thread(): void
     {
         $actor = User::factory()->create(['role' => 'admin']);
