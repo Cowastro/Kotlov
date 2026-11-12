@@ -541,3 +541,9 @@ Artisan::command('partners:evaluate-levels', function (): void {
 })->purpose('Recalculate B2B partner levels');
 
 Schedule::command('partners:evaluate-levels')->hourly()->withoutOverlapping();
+
+Artisan::command('orders:notify-control', function (\App\Services\Orders\OrderDealControlNotifier $notifier): void {
+    $this->info('Заказов с напоминанием: '.$notifier->notify());
+})->purpose('Remind responsible managers about due order follow-ups');
+
+Schedule::command('orders:notify-control')->everyFiveMinutes()->withoutOverlapping();

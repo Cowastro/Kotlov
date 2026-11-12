@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Orders\Tables;
 
 use App\Filament\Exports\OrderExporter;
 use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
+use App\Filament\Resources\Orders\Actions\ManageOrderDealAction;
 use App\Filament\Resources\Orders\Actions\RequestOrderSupplierReserveAction;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Orders\Pages\ListOrders;
@@ -34,6 +35,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Support\Enums\IconSize;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -263,6 +265,13 @@ class OrdersTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                ViewColumn::make('deal_progress')
+                    ->label('Сделка и контроль')
+                    ->view('filament.resources.orders.deal-progress')
+                    ->viewData(['isTable' => true])
+                    ->width('270px')
+                    ->visibleFrom('md'),
+
                 TextColumn::make('status')
                     ->label('Статус')
                     ->badge()
@@ -318,6 +327,7 @@ class OrdersTable
                         : null)
                     ->width('130px')
                     ->visibleFrom('md')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->grow(false),
 
                 IconColumn::make('onec_sync_state')
@@ -436,6 +446,7 @@ class OrdersTable
                     ->tooltip(fn (Order $record): ?string => self::responsibleName($record))
                     ->width('90px')
                     ->visibleFrom('xl')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->grow(false)
                     ->wrap()
                     ->sortable(query: fn (Builder $query, string $direction): Builder => $query
@@ -575,6 +586,7 @@ class OrdersTable
                     ->action(fn (ListOrders $livewire) => $livewire->selectOrderTab('all')),
             ])
             ->recordActions([
+                ManageOrderDealAction::make()->iconButton()->tooltip('Этап сделки и контроль'),
                 Action::make('advanceWorkflow')
                     ->label(fn (Order $record): string => self::compactWorkflowLabel($record))
                     ->icon(fn (Order $record): string => app(OrderWorkflow::class)->step($record)['icon'] ?? 'heroicon-o-arrow-right')

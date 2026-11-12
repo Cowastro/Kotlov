@@ -30,6 +30,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -61,6 +62,14 @@ class OrderInfolist
         return $schema
             ->columns(3)
             ->components([
+                Section::make('Сделка и следующий шаг')
+                    ->columnSpanFull()
+                    ->compact()
+                    ->schema([
+                        ViewEntry::make('deal_progress')->hiddenLabel()
+                            ->view('filament.resources.orders.deal-progress')
+                            ->viewData(['isTable' => false]),
+                    ]),
 
                 // ── Шапка: полная ширина ──────────────────────────────────────
                 Section::make()

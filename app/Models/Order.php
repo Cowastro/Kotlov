@@ -16,6 +16,72 @@ use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
+    public const DEAL_STAGES = [
+        'received' => 'Получен',
+        'contacted' => 'Связались',
+        'agreed' => 'Условия согласованы',
+        'processing' => 'Исполнение',
+        'handover' => 'Передача клиенту',
+        'completed' => 'Завершён',
+    ];
+
+    public function fulfillmentDealStage(): string
+    {
+        return match ($this->status) {
+            'processing', 'waiting_payment', 'paid' => 'processing',
+            'shipped' => 'handover',
+            'delivered', 'completed' => 'completed',
+            default => 'received',
+        };
+    }
+
+    public function effectiveDealStage(): string
+    {
+        $keys = array_keys(self::DEAL_STAGES);
+        $stored = array_search($this->deal_stage, $keys, true);
+        $actual = array_search($this->fulfillmentDealStage(), $keys, true);
+
+        return $keys[max($stored === false ? 0 : $stored, $actual)];
+    }
+
+    public function dealIsActive(): bool
+    {
+        return ! $this->isArchivedAsIrrelevant()
+            && ! in_array($this->status, ['cancelled', 'delivered', 'completed'], true);
+    }
+
+    public function dealControlLabel(): string
+    {
+        if (! $this->dealIsActive()) {
+            return $this->isArchivedAsIrrelevant() ? 'В архиве'
+                : ($this->status === 'cancelled' ? 'Закрыт с причиной' : 'Работа завершена');
+        }
+        if (! $this->deal_control_at || blank($this->deal_next_action)) {
+            return 'Назначьте следующий шаг и контроль';
+        }
+
+        $prefix = $this->deal_on_hold
+            ? ($this->deal_control_at->isPast() ? 'Вернуть в работу · ' : 'Отложен до ')
+            : ($this->deal_control_at->isPast() ? 'Просрочено · ' : 'Контроль · ');
+
+        return $prefix.$this->deal_control_at->timezone('Europe/Minsk')->format('d.m H:i');
+    }
+
+    public function scopeDealControl(Builder $query, string $queue): Builder
+    {
+        $query->operationallyActive();
+
+        return match ($queue) {
+            'overdue' => $query->whereNotNull('deal_control_at')->where('deal_control_at', '<=', now()),
+            'today' => $query->whereBetween('deal_control_at', [
+                now('Europe/Minsk')->startOfDay()->utc(), now('Europe/Minsk')->endOfDay()->utc(),
+            ]),
+            'unscheduled' => $query->where(fn (Builder $missing): Builder => $missing
+                ->whereNull('deal_control_at')->orWhereNull('deal_next_action')->orWhere('deal_next_action', '')),
+            default => $query,
+        };
+    }
+
     private ?string $pendingStatusHistoryComment = null;
 
     /** @var array<string, mixed>|null */
@@ -68,6 +134,11 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'deal_control_at' => 'datetime',
+        'deal_stage_changed_at' => 'datetime',
+        'deal_control_notified_at' => 'datetime',
+        'deal_on_hold' => 'boolean',
+        'deal_version' => 'integer',
         'subtotal' => 'decimal:2',
         'total' => 'decimal:2',
         'delivery_price' => 'decimal:2',
@@ -160,6 +231,10 @@ class Order extends Model
                 // Автоназначение ответственного при изменении статуса из CRM
                 $order->manager_id = $userId;
                 $order->assigned_to = '@'.(Auth::user()->telegram_username ?? Auth::user()->name);
+            }
+
+            if ($order->isDirty(['manager_id', 'assigned_to'])) {
+                $order->deal_control_notified_at = null;
             }
 
             // История изменений статуса

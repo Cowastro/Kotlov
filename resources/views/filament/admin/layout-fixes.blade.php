@@ -81,6 +81,165 @@
         margin-inline-start: auto;
     }
 
+    .order-deal {
+        color: var(--gray-700);
+        text-align: start;
+    }
+
+    .dark .order-deal {
+        color: var(--gray-200);
+    }
+
+    .order-deal--compact {
+        contain: inline-size;
+        padding: .4rem .375rem;
+        min-width: 15rem;
+        font-size: .75rem;
+        line-height: 1.1rem;
+    }
+
+    .order-deal__heading,
+    .order-deal__control {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: .5rem;
+    }
+
+    .order-deal__heading > span {
+        font-size: .7rem;
+        opacity: .65;
+        white-space: nowrap;
+    }
+
+    .order-deal__track {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: .25rem;
+    }
+
+    .order-deal__step {
+        min-height: 24px;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .order-deal__step:disabled {
+        cursor: default;
+    }
+
+    .order-deal__step:focus-visible {
+        outline: 2px solid #f59e0b;
+        outline-offset: 2px;
+        border-radius: .25rem;
+    }
+
+    .order-deal__bar {
+        display: block;
+        height: 6px;
+        border-radius: 4px;
+        background: var(--gray-200);
+    }
+
+    .dark .order-deal__bar {
+        background: var(--gray-700);
+    }
+
+    .order-deal__step.is-done .order-deal__bar {
+        background: #22c55e;
+    }
+
+    .order-deal__step.is-current .order-deal__bar {
+        background: #f59e0b;
+        box-shadow: 0 0 0 2px rgb(245 158 11 / .18);
+    }
+
+    .order-deal__step:not(:disabled):hover .order-deal__bar {
+        background: #fbbf24;
+    }
+
+    .order-deal__step-label {
+        display: block;
+        margin-top: .5rem;
+        font-size: .8125rem;
+    }
+
+    .order-deal--compact .order-deal__step-label {
+        display: none;
+    }
+
+    .order-deal__control {
+        font-size: .75rem;
+        color: var(--gray-500);
+    }
+
+    .order-deal__control > button {
+        color: #b45309;
+        text-decoration: underline;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .dark .order-deal__control > button {
+        color: #fbbf24;
+    }
+
+    .order-deal__control.is-today {
+        color: #b45309;
+    }
+
+    .dark .order-deal__control.is-today {
+        color: #fbbf24;
+    }
+
+    .order-deal__control.is-overdue {
+        color: #dc2626;
+        font-weight: 600;
+    }
+
+    .dark .order-deal__control.is-overdue {
+        color: #f87171;
+    }
+
+    .order-deal__next {
+        margin-top: .25rem;
+        overflow-wrap: anywhere;
+    }
+
+    .order-deal--compact .order-deal__next {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 1;
+        overflow: hidden;
+    }
+
+    .order-deal__facts {
+        display: flex;
+        flex-wrap: wrap;
+        column-gap: .6rem;
+        row-gap: .1rem;
+        margin-top: .25rem;
+        font-size: .6875rem;
+        opacity: .8;
+    }
+
+    .order-deal--compact .order-deal__fulfillment-status {
+        display: none;
+    }
+
+    .order-deal__changed {
+        margin-top: .5rem;
+        color: var(--gray-500);
+        font-size: .75rem;
+    }
+
+    @media (max-width: 640px) {
+        .order-deal--full .order-deal__step-label {
+            font-size: .625rem;
+            overflow-wrap: anywhere;
+        }
+    }
+
     .orders-workspace .fi-ta-header-cell {
         padding: .5rem .375rem;
     }

@@ -18,9 +18,14 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ListOrders extends ListRecords
 {
-    private const WORK_TABS = ['work_queue', 'attention', 'my', 'unassigned', 'all'];
+    private const WORK_TABS = ['work_queue', 'control_today', 'control_overdue', 'control_missing', 'attention', 'my', 'unassigned', 'all'];
 
     protected static string $resource = OrderResource::class;
+
+    public function getDefaultActiveTab(): string|int|null
+    {
+        return 'work_queue';
+    }
 
     public function getMaxContentWidth(): Width|string|null
     {
@@ -84,6 +89,21 @@ class ListOrders extends ListRecords
         $archivedCount = $this->ordersQuery()->archived()->count();
 
         $tabs = [
+            'control_today' => Tab::make('Контроль сегодня')
+                ->icon('heroicon-o-calendar-days')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->dealControl('today')->orderBy('deal_control_at'))
+                ->badge($this->ordersQuery()->dealControl('today')->count() ?: null)
+                ->badgeColor('warning'),
+            'control_overdue' => Tab::make('Просрочено')
+                ->icon('heroicon-o-clock')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->dealControl('overdue')->orderBy('deal_control_at'))
+                ->badge($this->ordersQuery()->dealControl('overdue')->count() ?: null)
+                ->badgeColor('danger'),
+            'control_missing' => Tab::make('Без следующего шага')
+                ->icon('heroicon-o-pencil-square')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->dealControl('unscheduled'))
+                ->badge($this->ordersQuery()->dealControl('unscheduled')->count() ?: null)
+                ->badgeColor('warning'),
             'work_queue' => Tab::make('В работе')
                 ->icon('heroicon-o-briefcase')
                 ->modifyQueryUsing(fn (Builder $query) => $query->operationallyActive())

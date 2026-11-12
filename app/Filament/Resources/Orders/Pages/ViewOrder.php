@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Orders\Actions\AssignOrderManagerAction;
+use App\Filament\Resources\Orders\Actions\ManageOrderDealAction;
 use App\Filament\Resources\Orders\Actions\AssignOrderToPartnerAction;
 use App\Filament\Resources\Orders\Actions\CreateCommercialDocumentFromOrderAction;
 use App\Filament\Resources\Orders\Actions\FindOrderItemAnalogAction;
@@ -88,6 +89,7 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            ManageOrderDealAction::make(),
             AssignOrderToPartnerAction::make(),
             ActionGroup::make([
                 CreateCommercialDocumentFromOrderAction::make(),
