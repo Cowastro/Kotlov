@@ -95,7 +95,7 @@
     .order-deal--compact {
         contain: inline-size;
         padding: .4rem .375rem;
-        min-width: 15rem;
+        min-width: 21rem;
         font-size: .75rem;
         line-height: 1.1rem;
     }
@@ -118,9 +118,12 @@
         display: grid;
         grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: .25rem;
+        align-items: start;
     }
 
     .order-deal__step {
+        min-width: 0;
+        width: 100%;
         min-height: 24px;
         cursor: pointer;
         text-align: center;
@@ -167,7 +170,11 @@
     }
 
     .order-deal--compact .order-deal__step-label {
-        display: none;
+        display: block;
+        margin-top: .25rem;
+        font-size: .625rem;
+        line-height: .875rem;
+        white-space: nowrap;
     }
 
     .order-deal__control {

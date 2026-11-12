@@ -93,6 +93,8 @@ class OrderDealControl
                 'user_id' => $actor->id,
                 'status_from' => $locked->status,
                 'status_to' => $locked->status,
+                'deal_stage_from' => ! $advance && $beforeStage !== $stage ? $beforeStage : null,
+                'deal_stage_to' => ! $advance && $beforeStage !== $stage ? $stage : null,
                 'comment' => 'Контроль сделки. Было: '.$previous
                     .($advance ? "\nЗапрошен переход: " : "\nСтало: ").Order::DEAL_STAGES[$stage].' · '.$nextAction
                     .' · '.($controlAt?->timezone('Europe/Minsk')->format('d.m.Y H:i') ?? 'Контроль завершён').' · '.$manager->name
