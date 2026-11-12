@@ -79,6 +79,9 @@ class HeaterCatalog extends SpecificationCatalog
     public function details(Product $product, iterable $attributes): array
     {
         $rows = $this->productFacts($product, $product->category->slug, $this->dimensions($product->category->slug))['card'];
+        if (isset(self::verified($product)['consumption_kw'])) {
+            $rows['Потребляемая мощность'] = $this->number((float) self::verified($product)['consumption_kw']).' кВт';
+        }
         foreach ($attributes as $attribute) {
             $name = (string) $attribute->attribute?->name;
             if ($name !== '' && ! self::managed($name)) {

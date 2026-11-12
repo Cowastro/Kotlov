@@ -719,6 +719,500 @@
         "checked_at": "2026-11-12"
       },
       "source_model": "T-HG5-Q12T"
+    },
+    "konvektor-elektriceskii-energolux-gchvi-25": {
+      "power_kw": 2.2,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-energolux-gch-vi-25/",
+        "checked_at": "2026-11-12",
+        "document": "https://rkcdn.ru/products/1463b2ef-b516-11ee-b8d6-00505601218a/src.pdf"
+      },
+      "source_model": "Конвектор электрический Energolux GCH/VI-25",
+      "area_max_m2": 30,
+      "consumption_kw": 2.5,
+      "evidence_note": "Passport technical table: heating output 2200 W, nominal consumption 2.5 kW; declared area up to 30 m². Do not conflate the two power ratings."
+    },
+    "ballu-becpl-1500": {
+      "power_kw": 1.5,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/modul-otopitelnyy-elektricheskogo-konvektora-ballu-plinth-transformer-bec-pl-1500/",
+        "checked_at": "2026-11-12",
+        "document": "https://rkcdn.ru/products/993384f5-ec14-11ee-b8d7-00505601218a/src.pdf"
+      },
+      "source_model": "Модуль отопительный электрического конвектора Ballu Plinth Transformer BEC/PL-1500",
+      "area_max_m2": 20,
+      "mount_note": "Шасси для напольной установки приобретаются отдельно."
+    },
+    "electrolux-eihag2-1000-e": {
+      "power_kw": 1,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-infrakrasnyy-electrolux-eih-ag2-1000-e/",
+        "checked_at": "2026-11-12",
+        "document": "https://rkcdn.ru/products/4c880a6c-3810-11ee-b736-005056013a69/src.pdf"
+      },
+      "source_model": "Обогреватель конвективно-инфракрасный Electrolux EIH/AG2 – 1000 E",
+      "area_max_m2": 15
+    },
+    "konvektor-infrakrasnyi-electrolux-eihag2-1500-e": {
+      "power_kw": 1.5,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-infrakrasnyy-electrolux-eih-ag2-1500-e/",
+        "checked_at": "2026-11-12",
+        "document": "https://rkcdn.ru/products/4c880a6e-3810-11ee-b736-005056013a69/src.pdf"
+      },
+      "source_model": "Обогреватель конвективно-инфракрасный Electrolux EIH/AG2 – 1500 E",
+      "area_max_m2": 20
+    },
+    "konvektor-elektriceskii-electrolux-echbmi-2000": {
+      "power_kw": 2,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-electrolux-ech-bmi-2000-brilliant-marble/",
+        "checked_at": "2026-11-12",
+        "document": "https://rkcdn.ru/products/f1e5d1eb-b85e-11ef-b8dc-00505601218a/src.pdf"
+      },
+      "source_model": "Электропанель Electrolux ECH/BMI-2000 Marble",
+      "area_max_m2": 25,
+      "mount_note": "Шасси для напольной установки приобретаются отдельно."
+    },
+    "konvektor-elektriceskii-electrolux-echbmi-1500": {
+      "power_kw": 1.5,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-electrolux-ech-bmi-1500-brilliant-marble/",
+        "checked_at": "2026-11-12",
+        "document": "https://rkcdn.ru/products/0582f7c4-b85f-11ef-b8dc-00505601218a/src.pdf"
+      },
+      "source_model": "Электропанель Electrolux ECH/BMI-1500 Marble",
+      "area_max_m2": 20,
+      "mount_note": "Шасси для напольной установки приобретаются отдельно."
+    },
+    "konvektor-elektriceskii-electrolux-rapid-echr-1000-e": {
+      "power_kw": 1,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-r-1000-e/",
+        "checked_at": "2026-11-12",
+        "document": "https://rkcdn.ru/products/f5a21c9d-a75c-11f1-b8e3-00505601218a/src.pdf"
+      },
+      "source_model": "Конвектор электрический Electrolux ECH/R-1000 E",
+      "area_max_m2": 15
+    },
+    "konvektor-elektriceskii-electrolux-rapid-echr-1500-e": {
+      "power_kw": 1.5,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-r-1500-e/",
+        "checked_at": "2026-11-12",
+        "document": "https://rkcdn.ru/products/6a7f32de-79ff-11f1-b8e3-00505601218a/src.pdf"
+      },
+      "source_model": "Конвектор электрический Electrolux ECH/R-1500 E",
+      "area_max_m2": 20
+    },
+    "konvektor-elektriceskii-electrolux-rapid-echr-1500-m": {
+      "power_kw": 1.5,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-r-1500-m/",
+        "checked_at": "2026-11-12",
+        "document": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_184_0_0_STnP2C.pdf"
+      },
+      "source_model": "Конвектор электрический Electrolux ECH/R -1500 M",
+      "area_max_m2": 20
+    },
+    "konvektor-elektriceskii-electrolux-echag2-2000-ef": {
+      "power_kw": 2,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://b2b.rusklimat.com/catalog/product/konvektor-elektricheskiy-electrolux-ech-ag2-2000-ef/",
+        "checked_at": "2026-11-12",
+        "document": "https://www.fotosklad.ru/upload/iblock/853/853e78e25ac586c748a367758a6c0cdc.pdf"
+      },
+      "source_model": "Конвектор электрический Electrolux ECH/AG2-2000 EF",
+      "area_max_m2": 25
+    },
+    "royal-thermo-rchce-1502": {
+      "power_kw": 1.5,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.c-o-k.ru/library/instructions/royal-thermo/elektricheskie-obogrevateli-teploventilyatory/42296",
+        "checked_at": "2026-11-12",
+        "document": "https://www.c-o-k.ru/library/instructions/royal-thermo/elektricheskie-obogrevateli-teploventilyatory/42296/148306.pdf"
+      },
+      "source_model": "Royal Thermo Capella RCHC/E-1502",
+      "area_max_m2": 15,
+      "evidence_note": "Original Royal Thermo manual: printed p.14 exact model table; p.8 wall/floor installation. Manufacturer approximate area, not a calculated estimate."
+    },
+    "royal-thermo-rchce-2002": {
+      "power_kw": 2,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.c-o-k.ru/library/instructions/royal-thermo/elektricheskie-obogrevateli-teploventilyatory/42296",
+        "checked_at": "2026-11-12",
+        "document": "https://www.c-o-k.ru/library/instructions/royal-thermo/elektricheskie-obogrevateli-teploventilyatory/42296/148306.pdf"
+      },
+      "source_model": "Royal Thermo Capella RCHC/E-2002",
+      "area_max_m2": 20,
+      "evidence_note": "Original Royal Thermo manual: printed p.14 exact model table; p.8 wall/floor installation. Manufacturer approximate area, not a calculated estimate."
+    },
+    "konvektor-elektriceskii-electrolux-echb-1000-e": {
+      "power_kw": 1.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_251_0_0.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_251_0_0.pdf"
+      },
+      "source_model": "Electrolux Brilliant ECH/B–1000 E",
+      "evidence_note": "Original Electrolux instruction, printed p.12: nominal stage II power and wall/floor mounting; no declared heating area in the model table."
+    },
+    "konvektor-elektriceskii-electrolux-echb-1500-e": {
+      "power_kw": 1.5,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_251_0_0.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_251_0_0.pdf"
+      },
+      "source_model": "Electrolux Brilliant ECH/B–1500 E",
+      "evidence_note": "Original Electrolux instruction, printed p.12: nominal stage II power and wall/floor mounting; no declared heating area in the model table."
+    },
+    "konvektor-elektriceskii-electrolux-echb-2000-e": {
+      "power_kw": 2.0,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_251_0_0.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_251_0_0.pdf"
+      },
+      "source_model": "Electrolux Brilliant ECH/B–2000 E",
+      "evidence_note": "Original Electrolux instruction, printed p.12: nominal stage II power and wall/floor mounting; no declared heating area in the model table."
+    },
+    "konvektor-elektriceskii-electrolux-rapid-echr-1000-m": {
+      "power_kw": 1,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_184_0_0_STnP2C.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_184_0_0_STnP2C.pdf"
+      },
+      "source_model": "Electrolux ECH/R–1000 M",
+      "evidence_note": "Original Electrolux R-M manual, printed p.10. R and RT are distinct series; no area copied from RT or a neighbouring model."
+    },
+    "konvektor-elektriceskii-electrolux-echag2-1000-ef": {
+      "power_kw": 1,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://www.fotosklad.ru/upload/iblock/853/853e78e25ac586c748a367758a6c0cdc.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://www.fotosklad.ru/upload/iblock/853/853e78e25ac586c748a367758a6c0cdc.pdf"
+      },
+      "source_model": "Electrolux ECH/AG2–1000 EF",
+      "evidence_note": "Original Electrolux ECH/AG2-EF instruction, printed p.13: exact 1000 EF column. Area is not stated; no EEC/T values used."
+    },
+    "elektrokonvektor-plintusnyi-electrolux-echag-2000-pi": {
+      "power_kw": 2,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_299_0_0.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://object.pscloud.io/cms/cms/Uploads/file_0_19_299_0_0.pdf"
+      },
+      "source_model": "Electrolux ECH/AG–2000 PI",
+      "area_max_m2": 25,
+      "mount_note": "Комплект шасси для напольной установки продаётся отдельно.",
+      "evidence_note": "Original Electrolux manual, 2020/1, second sheet: exact model technical table and both installation methods."
+    },
+    "elektrokonvektor-elboom-ev1-usat1-20-230-ip20": {
+      "power_kw": 2,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-УСАТ1-2,0/230 (IP20)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-15-230-b-e-ip24": {
+      "power_kw": 1.5,
+      "mount": [
+        "wall"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-НБАТ1-1,5/230 Б Е (IP24)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-20-230-b-e-ip24-podrobnee-https-sbgby-p95452184-elektrokonvektor-elboom-ev1html": {
+      "power_kw": 2,
+      "mount": [
+        "wall"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/catalog/climate/convektor/konvektor-elboom-nbat1-20230-be-utsenyonnyy.html",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-НБАТ1-2,0/230 Б Е (IP24)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated. Exact НБАТ1-2,0/230 БЕ manufacturer product page explicitly declares 20–25 m²; not applied to other variants.",
+      "area_min_m2": 20,
+      "area_max_m2": 25
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-15-230-b-ip24-podrobnee-https-sbgby-p95412611-elektrokonvektor-elboom-ev1html": {
+      "power_kw": 1.5,
+      "mount": [
+        "wall"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-НБАТ1-1,5/230 Б (IP24)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-10-230-ip20": {
+      "power_kw": 1,
+      "mount": [
+        "wall"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-НБАТ1-1,0/230 (IP20)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-20-230-b-ip24-podrobnee-https-sbgby-p95412665-elektrokonvektor-elboom-ev1html": {
+      "power_kw": 2,
+      "mount": [
+        "wall"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-НБАТ1-2,0/230 Б (IP24)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-elboom-ev1-ubat1-10-230-b-ip24": {
+      "power_kw": 1,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-УБАТ1-1,0/230 Б (IP24)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-elboom-ev1-ubat1-10-230-ip20": {
+      "power_kw": 1,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-УБАТ1-1,0/230 (IP20)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-elboom-ev1-usat1-15-230-ip20": {
+      "power_kw": 1.5,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-УСАТ1-1,5/230 (IP20)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-05-230-b-ip24": {
+      "power_kw": 0.5,
+      "mount": [
+        "wall"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-НБАТ1-0,5/230 Б (IP24)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-elboom-ev1-nbat1-10-230-b-ip24": {
+      "power_kw": 1,
+      "mount": [
+        "wall"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-НБАТ1-1,0/230 Б (IP24)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-elboom-ev1-nsat1-20-230-ip20": {
+      "power_kw": 2,
+      "mount": [
+        "wall"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      },
+      "source_model": "ELBOOM ЭВ1-НСАТ1-2,0/230 (IP20)",
+      "evidence_note": "ООО Электробум legacy ЭВ1 passport: exact УБАТ1/УСАТ1/НБАТ1/НСАТ1 series on cover, nominal power table and §1.8 model marking: У universal (floor/wall), Н wall. Area is not calculated."
+    },
+    "elektrokonvektor-plintusnyiy-elboom-ev-p-018-230-podrobnee-https-sbgby-p95516566-elektrokonvektor-plintusnyj-elboomhtml": {
+      "power_kw": 0.18,
+      "mount": [
+        "wall"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/catalog/heating/plinth/plintusnyy-obogrevatel-elboom-ev-p-018230.html",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-evp.pdf"
+      },
+      "source_model": "ELBOOM ЭВ-П 0,18/230",
+      "evidence_note": "ООО Электробум original ЭВ-П passport: table §2, fixing plane and floor diagram in figure 2 / §5.1.2. No heating area stated."
+    },
+    "elektrokonvektor-plintusnyiy-elboom-ev-p-027-230": {
+      "power_kw": 0.27,
+      "mount": [
+        "wall"
+      ],
+      "source": {
+        "url": "https://electro-boom.by/catalog/heating/plinth/plintusnyy-obogrevatel-elboom-ev-p-027230.html",
+        "checked_at": "2026-11-12",
+        "document": "https://electro-boom.by/assets/files/elboom-evp.pdf"
+      },
+      "source_model": "ELBOOM ЭВ-П 0,27/230",
+      "evidence_note": "ООО Электробум original ЭВ-П passport: table §2, fixing plane and floor diagram in figure 2 / §5.1.2. No heating area stated."
+    },
+    "teplyiy-plintus-elektricheskiy-cth-r-1-belyiy-korichnevyiy": {
+      "power_kw": 0.45,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://plintus-obogrevatel.aldengroup.ru/",
+        "checked_at": "2026-11-12",
+        "document": "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202105/6553709.pdf/mr-tektum-smartline-1-6m-675vt-korichnevyj-1649506.pdf"
+      },
+      "source_model": "Mr.Tektum SMART LINE AG-SMART11 (все цвета и стороны подключения)",
+      "mount_note": "Ножки входят в комплект.",
+      "evidence_note": "Original ООО ТПК Алден Групп passport, ТУ 27.51.26-003-67446952-2019, p.3: installed power for exact 1100/1600/2100 mm versions; manufacturer site confirms wall/floor installation. No area estimated from W/m."
+    },
+    "teplyiy-plintus-elektricheskiy-mrtektum-smart-line-16m-belyiy-korichnevyiy": {
+      "power_kw": 0.675,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://plintus-obogrevatel.aldengroup.ru/",
+        "checked_at": "2026-11-12",
+        "document": "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202105/6553709.pdf/mr-tektum-smartline-1-6m-675vt-korichnevyj-1649506.pdf"
+      },
+      "source_model": "Mr.Tektum SMART LINE AG-SMART16 (все цвета и стороны подключения)",
+      "mount_note": "Ножки входят в комплект.",
+      "evidence_note": "Original ООО ТПК Алден Групп passport, ТУ 27.51.26-003-67446952-2019, p.3: installed power for exact 1100/1600/2100 mm versions; manufacturer site confirms wall/floor installation. No area estimated from W/m."
+    },
+    "teplyiy-plintus": {
+      "power_kw": 0.9,
+      "mount": [
+        "wall",
+        "floor"
+      ],
+      "source": {
+        "url": "https://plintus-obogrevatel.aldengroup.ru/",
+        "checked_at": "2026-11-12",
+        "document": "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202105/6553709.pdf/mr-tektum-smartline-1-6m-675vt-korichnevyj-1649506.pdf"
+      },
+      "source_model": "Mr.Tektum SMART LINE AG-SMART21 (все цвета и стороны подключения)",
+      "mount_note": "Ножки входят в комплект.",
+      "evidence_note": "Original ООО ТПК Алден Групп passport, ТУ 27.51.26-003-67446952-2019, p.3: installed power for exact 1100/1600/2100 mm versions; manufacturer site confirms wall/floor installation. No area estimated from W/m."
     }
   }
 }
