@@ -31,6 +31,7 @@ class CreateOneCCardCommand extends Command
         {--short= : Short description}
         {--content= : HTML description}
         {--source=onec : Integration source code}
+        {--without-row : Our own card with no 1C row (a model not stocked yet); code is then only a label}
         {--apply : Create the card and link the row}';
 
     protected $description = 'Create a card for one 1C row from our own photo and data';
@@ -39,14 +40,16 @@ class CreateOneCCardCommand extends Command
     {
         $source = IntegrationSource::query()->where('code', $this->option('source'))->first();
         $code = (string) $this->argument('code');
-        $item = IntegrationProduct::query()->where('integration_source_id', $source?->id)
+        $standalone = (bool) $this->option('without-row');
+        $item = $standalone ? null : IntegrationProduct::query()->where('integration_source_id', $source?->id)
             ->where(fn ($q) => $q->where('external_code', $code)->orWhere('external_id', $code))->first();
         $category = Category::query()->where('slug', (string) $this->argument('category'))->first();
         $images = collect((array) $this->option('image'))->map(fn ($path) => ltrim((string) $path, '/'))->values();
         $reason = match (true) {
-            ! $item => 'no_row',
-            (bool) $item->product_id => 'linked',
-            $item->match_status === 'ignored' => 'ignored',
+            ! $standalone && ! $item => 'no_row',
+            (bool) $item?->product_id => 'linked',
+            $item?->match_status === 'ignored' => 'ignored',
+            $standalone && ! trim((string) $this->option('title')) => 'no_title',
             ! $category => 'no_category',
             $images->contains(fn ($path) => ! str_starts_with($path, 'img/') || ! is_file(public_path($path))) => 'no_image',
             default => null,
@@ -57,12 +60,12 @@ class CreateOneCCardCommand extends Command
             return self::FAILURE;
         }
 
-        $name = trim((string) ($this->option('title') ?: $item->name));
+        $name = trim((string) ($this->option('title') ?: $item?->name));
         $specs = collect((array) $this->option('spec'))
             ->map(fn ($line) => array_map('trim', explode(':', (string) $line, 2)))
             ->filter(fn ($pair) => count($pair) === 2 && $pair[0] !== '' && $pair[1] !== '')
             ->map(fn ($pair) => ['key' => $pair[0], 'value' => $pair[1]])->values()->all();
-        $this->line(sprintf('audit.onec_card.plan=%d:%s:%s:images%d:specs%d', $item->id, Str::slug($name), $category->slug, $images->count(), count($specs)));
+        $this->line(sprintf('audit.onec_card.plan=%d:%s:%s:images%d:specs%d', (int) $item?->id, Str::slug($name), $category->slug, $images->count(), count($specs)));
         if (! $this->option('apply')) {
             return self::SUCCESS;
         }
@@ -73,7 +76,7 @@ class CreateOneCCardCommand extends Command
                 ?? Brand::query()->create(['name' => $brandName, 'slug' => Str::slug($brandName), 'is_active' => false]);
             $brandId = $brand->id;
         }
-        $product = $creator->createAndLink($item, array_filter([
+        $data = array_filter([
             'name' => $name,
             'category_id' => $category->id,
             'retail_price' => round((float) str_replace(',', '.', (string) $this->option('price')), 2),
@@ -82,13 +85,14 @@ class CreateOneCCardCommand extends Command
             'specs' => $specs ?: null,
             'short_description' => $this->option('short') ?: null,
             'content' => $this->option('content') ?: null,
-        ], fn ($value) => $value !== null));
+        ], fn ($value) => $value !== null);
+        $product = $standalone ? $creator->createStandalone($data) : $creator->createAndLink($item, $data);
         if (! $product) {
             $this->line('audit.onec_card.failed='.$item->id);
 
             return self::FAILURE;
         }
-        $this->line(sprintf('audit.onec_card.created=%d:%d:%s', $item->id, $product->id, $product->slug));
+        $this->line(sprintf('audit.onec_card.created=%d:%d:%s', (int) $item?->id, $product->id, $product->slug));
 
         return self::SUCCESS;
     }

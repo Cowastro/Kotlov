@@ -42,4 +42,21 @@ class CreateOneCCardCommandTest extends TestCase
         $this->artisan('integration:create-onec-card', ['code' => 'УТ-00009534', 'category' => 'lyuki-i-dozhdepriemniki', '--image' => ['img/none.webp']])
             ->expectsOutputToContain('skipped')->assertFailed();
     }
+
+    public function test_model_without_a_1c_row_becomes_a_standalone_card(): void
+    {
+        Category::query()->firstOrCreate(['slug' => 'lyuki-i-dozhdepriemniki'], ['name' => 'Люки и дождеприёмники', 'is_active' => true]);
+        $args = ['code' => 'lyuk-3t', 'category' => 'lyuki-i-dozhdepriemniki', '--without-row' => true,
+            '--title' => 'Люк 3 т зелёный', '--brand' => 'Гамма-Сан', '--price' => '70',
+            '--image' => ['img/products/gamma-san/lyuk-polimerpeschanyi-1-5t-zelenyi.webp'], '--apply' => true];
+
+        $this->artisan('integration:create-onec-card', $args)->expectsOutputToContain('audit.onec_card.created=0:')->assertSuccessful();
+        $product = \App\Models\Product::query()->where('name', 'Люк 3 т зелёный')->firstOrFail();
+        $this->assertEquals(70, $product->price);
+        $this->assertFalse((bool) $product->in_stock);
+        $this->assertSame(0, IntegrationProduct::query()->where('product_id', $product->id)->count());
+
+        unset($args['--title']);
+        $this->artisan('integration:create-onec-card', $args)->expectsOutputToContain('skipped=lyuk-3t:no_title')->assertFailed();
+    }
 }

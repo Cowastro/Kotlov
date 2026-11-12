@@ -34,38 +34,7 @@ class IntegrationProductCreator
                 return null;
             }
 
-            $name = trim((string) $data['name']);
-            $contentFields = Arr::only($data, [
-                'brand_id',
-                'h1',
-                'short_description',
-                'content',
-                'images',
-                'specs',
-                'content_source_url',
-                'meta_title',
-                'meta_description',
-            ]);
-
-            $product = Product::query()->create(array_merge([
-                'category_id' => (int) $data['category_id'],
-                'supplier_id' => $item->source?->supplier_id,
-                'name' => $name,
-                'slug' => 'new-product-'.Str::uuid(),
-                'sku' => null,
-                'price' => round((float) $data['retail_price'], 2),
-                'currency' => 'BYN',
-                'is_active' => true,
-                'is_archived' => false,
-                'in_stock' => false,
-                'availability_status' => Product::AVAILABILITY_CHECK,
-                'stock_qty' => null,
-            ], $contentFields));
-
-            $product->update([
-                'sku' => $this->uniqueSku($product->id),
-                'slug' => $this->uniqueSlug($name, $product->id),
-            ]);
+            $product = $this->createProduct($data, $item->source?->supplier_id);
 
             $item->update([
                 'product_id' => $product->id,
@@ -82,6 +51,55 @@ class IntegrationProductCreator
 
             return $product->fresh();
         });
+    }
+
+    /** A card of our own with no 1C or supplier row behind it (e.g. a model not stocked yet). */
+    public function createStandalone(array $data): Product
+    {
+        return DB::transaction(function () use ($data): Product {
+            $product = $this->createProduct($data, null);
+            $this->availability->refresh($product->id);
+
+            return $product->fresh();
+        });
+    }
+
+    private function createProduct(array $data, ?int $supplierId): Product
+    {
+        $name = trim((string) $data['name']);
+        $contentFields = Arr::only($data, [
+            'brand_id',
+            'h1',
+            'short_description',
+            'content',
+            'images',
+            'specs',
+            'content_source_url',
+            'meta_title',
+            'meta_description',
+        ]);
+
+        $product = Product::query()->create(array_merge([
+            'category_id' => (int) $data['category_id'],
+            'supplier_id' => $supplierId,
+            'name' => $name,
+            'slug' => 'new-product-'.Str::uuid(),
+            'sku' => null,
+            'price' => round((float) $data['retail_price'], 2),
+            'currency' => 'BYN',
+            'is_active' => true,
+            'is_archived' => false,
+            'in_stock' => false,
+            'availability_status' => Product::AVAILABILITY_CHECK,
+            'stock_qty' => null,
+        ], $contentFields));
+
+        $product->update([
+            'sku' => $this->uniqueSku($product->id),
+            'slug' => $this->uniqueSlug($name, $product->id),
+        ]);
+
+        return $product;
     }
 
     private function uniqueSku(int $productId): string
