@@ -36,6 +36,7 @@ final class AssignMailThreadAction
                     ->required(),
             ])
             ->modalHeading('Назначить ответственного')
+            ->modalWidth('sm')
             ->modalDescription(fn (CrmMailThread $record): string => $record->subject ?: 'Без темы')
             ->modalSubmitActionLabel('Назначить')
             ->action(function (CrmMailThread $record, array $data): void {

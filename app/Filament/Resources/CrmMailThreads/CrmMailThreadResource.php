@@ -328,6 +328,10 @@ class CrmMailThreadResource extends Resource
                     ->width('8.5rem')
                     ->grow(false),
                 TextColumn::make('assignedUser.name')->label('Ответственный')->default('Не назначен')
+                    ->action(fn (CrmMailThread $record, ListCrmMailThreads $livewire) => $livewire->mountAction(
+                        'assign_responsible', [], context: ['table' => true, 'recordKey' => (string) $record->getKey()],
+                    ))
+                    ->disabled(fn (CrmMailThread $record): bool => $record->trashed() || in_array($record->status, ['draft', 'closed', 'spam'], true))
                     ->color(fn (CrmMailThread $record, ListCrmMailThreads $livewire): string => $livewire->activeTab === 'needs_response' && $record->assigned_user_id === null ? 'danger' : 'gray')
                     ->weight(fn (CrmMailThread $record, ListCrmMailThreads $livewire): string => $livewire->activeTab === 'needs_response' && $record->assigned_user_id === null ? 'bold' : 'medium')
                     ->icon(fn (CrmMailThread $record, ListCrmMailThreads $livewire): ?string => $livewire->activeTab === 'needs_response' && $record->assigned_user_id === null ? 'heroicon-o-exclamation-circle' : null)
@@ -344,6 +348,7 @@ class CrmMailThreadResource extends Resource
                         return new HtmlString('<span style="white-space:nowrap;font-weight:600;color:'.$color.'">'.e($record->replyWaitingLabel()).'</span>');
                     })
                     ->tooltip(fn (CrmMailThread $record): string => ($record->assignedUser?->name ?: 'Ответственный не назначен')
+                        .(! $record->trashed() && ! in_array($record->status, ['draft', 'closed', 'spam'], true) ? ' · Нажмите, чтобы назначить менеджера' : '')
                         .($record->reply_waiting_since ? ' · Без ответа с '.$record->reply_waiting_since->timezone('Europe/Minsk')->format('d.m.Y H:i') : ''))
                     ->limit(24)
                     ->width('7.5rem')
