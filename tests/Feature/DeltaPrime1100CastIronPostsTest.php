@@ -22,7 +22,7 @@ class DeltaPrime1100CastIronPostsTest extends TestCase
             ->assertSee('Чугунная футеровка камина: преимущества, отличие от шамота и вермикулита')
             ->assertSee('"@type":"FAQPage"', false)
             ->assertSee('Чем чугунная футеровка лучше шамотной?')
-            ->assertSee('chugunnaya-futerovka-cover.webp', false)
+            ->assertSee('chugunnaya-futerovka-cover-v2.webp', false)
             ->assertSee('preimushchestva-chugunnoy-futerovki.webp', false);
 
         $this->assertFileExists(public_path('img/blog/ecokamin-prime/delta-prime-1100-chugun-novinka.webp'));
