@@ -171,7 +171,7 @@
                                                     @endif
                                                     <span class="city-home-slide__identity-label"><strong class="city-home-slide__city-name">{{ $city->name }}</strong>Магазин отопления</span>
                                                 </div>
-                                                <h1><span class="visually-hidden">{{ strtoupper($city->slug) }}.KOTLOV.BY</span><span @class(['city-home-slide__wordmark', 'city-home-slide__wordmark--long' => $city->slug === 'borisov']) aria-hidden="true"><span class="city-home-slide__wordmark-prefix">{{ strtoupper($city->slug) }}.</span><img src="{{ asset('img/logo.png') }}" width="810" height="100" alt=""></span></h1>
+                                                <h1><span class="visually-hidden">Котлы, печи и камины {{ $city->name_in }} — {{ strtoupper($city->slug) }}.KOTLOV.BY</span><span @class(['city-home-slide__wordmark', 'city-home-slide__wordmark--long' => $city->slug === 'borisov']) aria-hidden="true"><span class="city-home-slide__wordmark-prefix">{{ strtoupper($city->slug) }}.</span><img src="{{ asset('img/logo.png') }}" width="810" height="100" alt=""></span></h1>
                                                 <p>Котлы, печи, камины и дымоходы.<span class="city-home-slide__intro-detail"> {{ $city->slug === 'lida' ? 'Поможем подобрать оборудование и покажем образцы в магазине.' : 'Поможем подобрать оборудование и уточним наличие в магазине.' }}</span></p>
                                             @else
                                                 <span>Филиал KOTLOV · {{ $city->name }}</span>
