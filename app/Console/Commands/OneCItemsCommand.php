@@ -30,6 +30,8 @@ class OneCItemsCommand extends Command
         {--link=* : 1C code (or external id) : product id}
         {--relink : A row linked to another card leaves it (with its 1C price there) for the given one}
         {--reject=* : 1C code (or external id) of an unlinked row whose candidates are all wrong}
+        {--ignore=* : 1C code (or external id) of an unlinked row that is not for the site (spare part to order, etc.)}
+        {--unarchive : With --link: return an archived card to the catalog before linking}
         {--apply : Write the links}';
 
     protected $description = 'Find 1C rows and the site cards they belong to; link them';
@@ -112,6 +114,15 @@ class OneCItemsCommand extends Command
                     $this->unlink($item);
                 }
             }
+            if ($this->option('unarchive')) {
+                $archived = DB::table('products')->where('id', (int) $productId)->where('is_archived', true)->exists();
+                if ($archived) {
+                    $this->line(sprintf('audit.onec_items.unarchived=%d', (int) $productId));
+                    if ($this->option('apply')) {
+                        DB::table('products')->where('id', (int) $productId)->update(['is_archived' => false, 'is_active' => true, 'updated_at' => now()]);
+                    }
+                }
+            }
             if ($this->option('apply') && ! $decision->linkSelectedProduct($item, (int) $productId)) {
                 $this->line('audit.onec_items.link_failed='.$item->id);
 
@@ -122,6 +133,7 @@ class OneCItemsCommand extends Command
         }
         $this->line('metric.onec_items.linked='.$linked);
         $this->rejectCandidates($source);
+        $this->ignoreRows($source);
 
         return self::SUCCESS;
     }
@@ -167,6 +179,28 @@ class OneCItemsCommand extends Command
             $this->line(sprintf('audit.onec_items.rejected=%d:%d', $item->id, count($rejectedIds)));
         }
         $this->line('metric.onec_items.rejected='.$rejected);
+    }
+
+    /** Rows that are not for the site go to «Игнорируется» — the same as the admin bulk action. */
+    private function ignoreRows(IntegrationSource $source): void
+    {
+        $ignored = 0;
+        foreach ((array) $this->option('ignore') as $code) {
+            $item = IntegrationProduct::query()->where('integration_source_id', $source->id)
+                ->where(fn ($q) => $q->where('external_code', $code)->orWhere('external_id', $code))->first();
+            if (! $item || $item->product_id || $item->match_status === 'ignored') {
+                $this->line('audit.onec_items.ignore_skipped='.Str::slug((string) $code));
+
+                continue;
+            }
+            if ($this->option('apply')) {
+                $item->forceFill(['product_id' => null, 'match_status' => 'ignored', 'match_method' => 'manual_ignore',
+                    'match_confidence' => null, 'matched_at' => null])->save();
+            }
+            $ignored++;
+            $this->line('audit.onec_items.ignored='.$item->id);
+        }
+        $this->line('metric.onec_items.ignored='.$ignored);
     }
 
     /** The row leaves the wrong card, and so does the 1C price the sync put on it. */

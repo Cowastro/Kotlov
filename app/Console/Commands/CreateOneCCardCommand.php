@@ -31,6 +31,7 @@ class CreateOneCCardCommand extends Command
         {--short= : Short description}
         {--content= : HTML description}
         {--source=onec : Integration source code}
+        {--like= : Id of a sibling card (same series): its category, brand, photos, specs and texts are the base}
         {--without-row : Our own card with no 1C row (a model not stocked yet); code is then only a label}
         {--apply : Create the card and link the row}';
 
@@ -43,13 +44,16 @@ class CreateOneCCardCommand extends Command
         $standalone = (bool) $this->option('without-row');
         $item = $standalone ? null : IntegrationProduct::query()->where('integration_source_id', $source?->id)
             ->where(fn ($q) => $q->where('external_code', $code)->orWhere('external_id', $code))->first();
-        $category = Category::query()->where('slug', (string) $this->argument('category'))->first();
+        $like = $this->option('like') ? \App\Models\Product::query()->find((int) $this->option('like')) : null;
+        $categorySlug = (string) $this->argument('category');
+        $category = $categorySlug === '-' && $like ? $like->category : Category::query()->where('slug', $categorySlug)->first();
         $images = collect((array) $this->option('image'))->map(fn ($path) => ltrim((string) $path, '/'))->values();
         $reason = match (true) {
             ! $standalone && ! $item => 'no_row',
             (bool) $item?->product_id => 'linked',
             $item?->match_status === 'ignored' => 'ignored',
             $standalone && ! trim((string) $this->option('title')) => 'no_title',
+            $this->option('like') && ! $like => 'no_like',
             ! $category => 'no_category',
             $images->contains(fn ($path) => ! str_starts_with($path, 'img/') || ! is_file(public_path($path))) => 'no_image',
             default => null,
@@ -61,16 +65,24 @@ class CreateOneCCardCommand extends Command
         }
 
         $name = trim((string) ($this->option('title') ?: $item?->name));
-        $specs = collect((array) $this->option('spec'))
+        $own = collect((array) $this->option('spec'))
             ->map(fn ($line) => array_map('trim', explode(':', (string) $line, 2)))
             ->filter(fn ($pair) => count($pair) === 2 && $pair[0] !== '' && $pair[1] !== '')
-            ->map(fn ($pair) => ['key' => $pair[0], 'value' => $pair[1]])->values()->all();
+            ->mapWithKeys(fn ($pair) => [$pair[0] => $pair[1]]);
+        // A sibling's specs stay in their order; a --spec with the same name replaces the value, new ones go last.
+        $specs = collect($like?->specs ?? [])->filter(fn ($row) => is_array($row) && filled($row['key'] ?? null))
+            ->map(fn ($row) => ['key' => $row['key'], 'value' => $own->pull($row['key']) ?? ($row['value'] ?? '')])
+            ->concat($own->map(fn ($value, $key) => ['key' => $key, 'value' => $value])->values())
+            ->values()->all();
+        if ($images->isEmpty() && $like) {
+            $images = collect($like->imagePaths());
+        }
         $this->line(sprintf('audit.onec_card.plan=%d:%s:%s:images%d:specs%d', (int) $item?->id, Str::slug($name), $category->slug, $images->count(), count($specs)));
         if (! $this->option('apply')) {
             return self::SUCCESS;
         }
 
-        $brandId = null;
+        $brandId = $like?->brand_id;
         if ($brandName = trim((string) $this->option('brand'))) {
             $brand = Brand::query()->where('name', $brandName)->first()
                 ?? Brand::query()->create(['name' => $brandName, 'slug' => Str::slug($brandName), 'is_active' => false]);
@@ -83,8 +95,8 @@ class CreateOneCCardCommand extends Command
             'brand_id' => $brandId,
             'images' => $images->all() ?: null,
             'specs' => $specs ?: null,
-            'short_description' => $this->option('short') ?: null,
-            'content' => $this->option('content') ?: null,
+            'short_description' => $this->option('short') ?: ($like?->short_description ?: null),
+            'content' => $this->option('content') ?: ($like?->content ?: null),
         ], fn ($value) => $value !== null);
         $product = $standalone ? $creator->createStandalone($data) : $creator->createAndLink($item, $data);
         if (! $product) {
