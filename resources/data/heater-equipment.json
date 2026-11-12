@@ -1382,6 +1382,114 @@
         "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202105/6553709.pdf/mr-tektum-smartline-1-6m-675vt-korichnevyj-1649506.pdf"
       ],
       "evidence": "Паспорт Mr. Tektum, раздел 3 «Комплектность»; коннектор только для исполнения SMART LINE."
+    },
+    "ballu-bohcl-05wrn": {
+      "included": [
+        "Масляный обогреватель",
+        "Крепёжные элементы",
+        "Ножки с роликами",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/maslyanyy-radiator-ballu-boh-cl-05wrn/",
+        "https://drv.dns-shop.ru/Manuals/B/ballu-classic-grey-bohcl-07grn_instrukcia_034406_02092022.pdf"
+      ],
+      "evidence": "Оригинальное руководство Ballu 338434_Ballu_manual_maslo_BOH-CL, редакция 2021. Точное исполнение Ballu BOH/CL-05WRN перечислено на обложке (с. 1) и в таблице характеристик (с. 6); раздел «Комплектация» на с. 7: обогреватель, крепёж, ножки с роликами, инструкция с гарантийным талоном. Это паспорт WRN/BRN/GRN, не паспорт старой серии WR без N. Ножки не предлагаются повторно как отдельная покупка.",
+      "document": {
+        "manufacturer": "Ballu",
+        "title": "338434_Ballu_manual_maslo_BOH-CL, 2021",
+        "url": "https://drv.dns-shop.ru/Manuals/B/ballu-classic-grey-bohcl-07grn_instrukcia_034406_02092022.pdf",
+        "sha256": "c8b174731e02ca3c276dae23cf9f55910e395c15133687bad40c922e96ba86e1",
+        "model": "Ballu BOH/CL-05WRN",
+        "model_page": 1,
+        "completeness_page": 7
+      }
+    },
+    "ballu-bohcl-07wrn": {
+      "included": [
+        "Масляный обогреватель",
+        "Крепёжные элементы",
+        "Ножки с роликами",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/maslyanyy-radiator-ballu-boh-cl-07wrn/",
+        "https://drv.dns-shop.ru/Manuals/B/ballu-classic-grey-bohcl-07grn_instrukcia_034406_02092022.pdf"
+      ],
+      "evidence": "Оригинальное руководство Ballu 338434_Ballu_manual_maslo_BOH-CL, редакция 2021. Точное исполнение Ballu BOH/CL-07WRN перечислено на обложке (с. 1) и в таблице характеристик (с. 6); раздел «Комплектация» на с. 7: обогреватель, крепёж, ножки с роликами, инструкция с гарантийным талоном. Это паспорт WRN/BRN/GRN, не паспорт старой серии WR без N. Ножки не предлагаются повторно как отдельная покупка.",
+      "document": {
+        "manufacturer": "Ballu",
+        "title": "338434_Ballu_manual_maslo_BOH-CL, 2021",
+        "url": "https://drv.dns-shop.ru/Manuals/B/ballu-classic-grey-bohcl-07grn_instrukcia_034406_02092022.pdf",
+        "sha256": "c8b174731e02ca3c276dae23cf9f55910e395c15133687bad40c922e96ba86e1",
+        "model": "Ballu BOH/CL-07WRN",
+        "model_page": 1,
+        "completeness_page": 7
+      }
+    },
+    "ballu-bohcl-11wrn": {
+      "included": [
+        "Масляный обогреватель",
+        "Крепёжные элементы",
+        "Ножки с роликами",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://b2b.rusklimat.com/catalog/product/maslyanyy-radiator-ballu-boh-cl-11wrn/",
+        "https://drv.dns-shop.ru/Manuals/B/ballu-classic-grey-bohcl-07grn_instrukcia_034406_02092022.pdf"
+      ],
+      "evidence": "Оригинальное руководство Ballu 338434_Ballu_manual_maslo_BOH-CL, редакция 2021. Точное исполнение Ballu BOH/CL-11WRN перечислено на обложке (с. 1) и в таблице характеристик (с. 6); раздел «Комплектация» на с. 7: обогреватель, крепёж, ножки с роликами, инструкция с гарантийным талоном. Это паспорт WRN/BRN/GRN, не паспорт старой серии WR без N. Ножки не предлагаются повторно как отдельная покупка.",
+      "document": {
+        "manufacturer": "Ballu",
+        "title": "338434_Ballu_manual_maslo_BOH-CL, 2021",
+        "url": "https://drv.dns-shop.ru/Manuals/B/ballu-classic-grey-bohcl-07grn_instrukcia_034406_02092022.pdf",
+        "sha256": "c8b174731e02ca3c276dae23cf9f55910e395c15133687bad40c922e96ba86e1",
+        "model": "Ballu BOH/CL-11WRN",
+        "model_page": 1,
+        "completeness_page": 7
+      }
+    },
+    "konvektor-elektriceskii-electrolux-echag2-1000-ef": {
+      "included": [
+        "Конвектор",
+        "Монтажный кронштейн для стены",
+        "Пластиковые крепления",
+        "Шасси с колёсами",
+        "Дополнительные фильтры",
+        "Руководство с гарантийным талоном"
+      ],
+      "separate": [],
+      "sources": [
+        "https://www.fotosklad.ru/upload/iblock/853/853e78e25ac586c748a367758a6c0cdc.pdf"
+      ],
+      "evidence": "Оригинальная инструкция Electrolux серии ECH/AG2-EF: точная колонка ECH/AG2-1000 EF на печатной с. 13; раздел «Комплектация» на с. 14. Включает настенный кронштейн, пластиковые полуповоротные крепления, шасси с колёсиками, дополнительные фильтры и инструкцию с гарантийным талоном. На ECH/AG2-T и EIH/AG2-E эти данные не переносятся.",
+      "document": {
+        "manufacturer": "Electrolux",
+        "title": "Руководство Electrolux ECH/AG2-EF",
+        "url": "https://www.fotosklad.ru/upload/iblock/853/853e78e25ac586c748a367758a6c0cdc.pdf",
+        "sha256": "eb514f819fde069c22f1f4e8388220e4310a9144aece32bfb94813f6c64d498a",
+        "model": "Electrolux ECH/AG2-1000 EF",
+        "model_page": 13,
+        "completeness_page": 14
+      }
+    }
+  },
+  "unresolved": {
+    "hotta-aet-24-220-v-elektriceskii-teploakkumuliator": {
+      "checked_at": "2026-11-12",
+      "reason": "Паспорт изготовителя для точной модели HOTTA АЭТ-2.4 (220 В) не найден. Тексты магазинов и публикации об АЭТ других изготовителей не устанавливают комплектность HOTTA. Нужен оригинальный паспорт конкретного исполнения; ничего не перенесено из аналогов."
+    },
+    "elektrokonvektor-elboom-ev1-usat-15-230-ip20": {
+      "checked_at": "2026-11-12",
+      "reason": "Точное обозначение ЭВ1-УСАТ-1,5/230 без индекса 1 не подтверждено. Старый паспорт относится к УСАТ1, текущие инструкции изготовителя — к другим поколениям. Универсальную установку из карточки продавца не считаем доказательством включённых опор. Нужен паспорт или подтверждение изготовителя о соответствии обозначений.",
+      "checked_sources": [
+        "https://elboom.by/convector",
+        "https://electro-boom.by/catalog/climate/convektor.html",
+        "https://electro-boom.by/assets/files/elboom-xbat1-be.pdf"
+      ]
     }
   }
 }
