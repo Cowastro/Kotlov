@@ -77,6 +77,21 @@ class HeaterCategoryCleanupTest extends TestCase
         $this->get('/komplektuyushchie-dlya-obogrevateley')->assertOk()->assertSee($component->name);
     }
 
+    public function test_existing_convector_branch_is_repaired_with_additional_heater_types(): void
+    {
+        $root = $this->category('obogrevateli');
+        $convectors = $this->category('elektricheskie-konvektoryi', $root);
+        $guns = $this->category('teplovye-pushki', $root);
+        $parts = $this->category('komplektuyushchie-dlya-obogrevateley', $root);
+        $names = ['Тепловая пушка Timberk T-HG3-Q12T', 'Electrolux ECH/TUM Transformer Mechanic механический блок управления',
+            'HOTTA АЭТ-2.4 (220 В) электрический теплоаккумулятор', 'Теплый плинтус электрический Mr.Tektum'];
+        $items = array_map(fn ($name) => $this->product($convectors, $name), $names);
+        $migration = require database_path('migrations/2026_11_12_152000_finish_heater_subcategory_classification.php');
+        $migration->up();
+        $expected = ['teplovye-pushki', 'komplektuyushchie-dlya-obogrevateley', 'elektricheskie-teploakkumulyatory', 'elektricheskie-teplye-plintusy'];
+        foreach ($items as $i => $item) $this->assertSame($expected[$i], $item->fresh()->category->slug);
+    }
+
     public function test_imports_use_specific_categories_and_do_not_confuse_water_convectors_or_boiler_parts(): void
     {
         $root = $this->category('obogrevateli');
@@ -93,5 +108,11 @@ class HeaterCategoryCleanupTest extends TestCase
         $this->assertNull(HeaterCategoryClassifier::slug('Водяной конвектор'));
         $this->assertNull(HeaterCategoryClassifier::slug('Блок управления газовым котлом'));
         $this->assertSame('komplektuyushchie-dlya-obogrevateley', HeaterCategoryClassifier::slug('Шасси для конвектора'));
+        foreach (['Electrolux ECH/TUM Transformer Mechanic механический блок управления', 'Комплект шасси Electrolux Rapid Transformer System EFT/R', 'Универсальный комплект опор Electrolux EFA'] as $name) {
+            $this->assertSame('komplektuyushchie-dlya-obogrevateley', HeaterCategoryClassifier::slug($name));
+        }
+        $this->assertSame('teplovye-pushki', HeaterCategoryClassifier::slug('Тепловая пушка Timberk T-HG3-Q12T'));
+        $this->assertSame('elektricheskie-teploakkumulyatory', HeaterCategoryClassifier::slug('HOTTA АЭТ-2.4 (220 В) электрический теплоаккумулятор'));
+        $this->assertSame('elektricheskie-teplye-plintusy', HeaterCategoryClassifier::slug('Теплый плинтус электрический Mr.Tektum Smart Line'));
     }
 }
