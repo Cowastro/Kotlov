@@ -593,6 +593,11 @@ jobs:
             grep -E '^audit\.onec_card\.(skipped=[a-z0-9-]+:[a-z_]+|plan=[0-9]+:[a-z0-9-]+:[a-z0-9-]+:images[0-9]+:specs[0-9]+|created=[0-9]+:[0-9]+:[a-z0-9-]+|failed=[0-9]+)$' "$detail_log" || true
             echo "safe_onec_card_end"
           fi
+          if [[ "${ARTISAN_ARGV[0]:-}" == "catalog:apply-card-content" ]]; then
+            echo "safe_card_content_begin"
+            grep -E '^(metric\.card_content\.updated=[0-9]+|audit\.card_content\.(skipped=[a-z0-9-]+:[a-z_]+|card=[0-9]+:[a-z0-9-]+:[a-z_-]+))$' "$detail_log" || true
+            echo "safe_card_content_end"
+          fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "supplier:sync-cooper-doors" ]]; then
             echo "safe_cooper_doors_begin"
             grep -E '^metric\.cooper_doors\.[a-z_]+=[0-9]+$' "$detail_log" || true
