@@ -1,0 +1,46 @@
+[
+  {
+    "file": "kermi-rf-passport.pdf",
+    "sha256": "13434345b6f0f249bc092d464e37262999c000049c52e942b6c9250d786f26a7"
+  },
+  {
+    "file": "zehnder-cis.pdf",
+    "sha256": "f05559ddf16cfe044027231ab3bf57f6b31374deeca2a568e30045392f88e42a"
+  },
+  {
+    "file": "rifar-catalog.pdf",
+    "sha256": "60d4be20fe2452958db60058209fbc0e2b3aa8f55be973d010c69f5d6d454a51"
+  },
+  {
+    "file": "rifar-tubog.pdf",
+    "sha256": "e2061e57e09201870ee938651e9c328c183fc725b4f5583826a15218faa54866"
+  },
+  {
+    "file": "royal-panel-current.pdf",
+    "sha256": "a92c6fb0f09aa6d6004c82962310c8eb5c36b6b595ece8dcab33928a7f6f9e8c"
+  },
+  {
+    "file": "royal-Insignia.pdf",
+    "sha256": "a67b331c64c228c3aafd99d51a21ec2faaec880b823a31b376537e593faf979d"
+  },
+  {
+    "file": "royal-Shift-Q30.pdf",
+    "sha256": "5ec32103d37e30422eb1d2c9d6bc8d80a46ead13abf8ae8d8b979d705746a5ef"
+  },
+  {
+    "file": "royal-Shift-R22.pdf",
+    "sha256": "9cd9b69896690b0f4f974b8b0e0f6a8ce9d56f243feb498529683c2125611cd9"
+  },
+  {
+    "file": "buderus-2020.pdf",
+    "sha256": "a68aa8ed1af1ff3ce7948721a5c21e0dfe451baf32839108af5efaca56a083c1"
+  },
+  {
+    "file": "prado-2021.pdf",
+    "sha256": "3413d2b97449d04c57a76057e4b915eda45b73508644373179118090e19ab502"
+  },
+  {
+    "file": "royal-infinity-original.pdf",
+    "sha256": "61dbd6dd146badd7b603cc5713d835c22a6f29bf62fd966d2662dd9249870170"
+  }
+]
