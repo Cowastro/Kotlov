@@ -53,6 +53,7 @@ class RadiatorCatalogTest extends TestCase
             $this->assertEquals($categories[$slug]->id, (new \ReflectionMethod($tep, 'detectCategory'))->invoke($tep, 'https://supplier.test/raditory/allyminevye/model', $name));
         }
         $this->assertNull(RadiatorCategoryClassifier::slug('Масляный радиатор Ballu BOH/CL-07WRN'));
+        $this->assertEquals($categories['radiatornaya-armatura']->id, (new \ReflectionMethod($tep, 'detectCategory'))->invoke($tep, 'https://supplier.test/raditory/komplektuyuschie-k-radiatoram/model', 'Переходник 1/2'));
         $this->assertEquals($categories['radiatory']->id, (new \ReflectionMethod($tep, 'detectCategory'))->invoke($tep, 'https://supplier.test/raditory/dizaynerskie-radiatory/model', 'Дизайн-радиатор неизвестной серии'));
         $thermo = app(\App\Console\Commands\SyncThermostudioPricelistCommand::class);
         (new \ReflectionProperty($thermo, 'categoryBySlug'))->setValue($thermo, collect($categories)->map->id->all());

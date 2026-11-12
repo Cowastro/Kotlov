@@ -74,7 +74,7 @@ class ImportTeplodvorCatalogCommand extends Command
         'raditory/trubchatye'                                        => 235,
         'raditory/obogrevateli'                                      => 202,
         'raditory/dizaynerskie-radiatory'                            => 87,   // material must be confirmed for the model
-        'raditory/komplektuyuschie-k-radiatoram'                     => 195,
+        'raditory/komplektuyuschie-k-radiatoram'                     => 371,
         'konvektory/elektricheskie-konvektory'                       => 281,  // реальные электрические
         'konvektory/gazovye'                                         => 195,
         'vodonagrevateli/bufernye-emkosti'                           => 91,

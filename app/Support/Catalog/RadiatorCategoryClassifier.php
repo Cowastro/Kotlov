@@ -14,6 +14,8 @@ final class RadiatorCategoryClassifier
         $context = mb_strtolower($brand.' '.$name.' '.$source);
         // An oil heater is not a hydronic radiator, even if the supplier calls it a radiator.
         if (preg_match('~маслян|boh/|\btor\s*21|электроконвектор~u', $name)) return null;
+        // Some accessory titles contain only a thread size; their dedicated source branch is explicit.
+        if (str_contains($context, 'raditory/komplektuyuschie-k-radiatoram') && ! preg_match('~\bрадиатор\b|\bradiator\b~u', $name)) return 'radiatornaya-armatura';
         // Logafix BH1-W0 is a thermostatic head, not a radiator.
         if (str_contains($context, 'buderus') && preg_match('~\bbh1[-\s]*w0\b~u', $name)) return 'radiatornaya-armatura';
         $radiatorContext = preg_match('~радиатор|radiator|raditory~u', $context);
