@@ -724,6 +724,18 @@
         @include('partials.heat-transfer-fluid-category-content', ['faq' => $heatFluidFaq ?? collect()])
     @endif
 
+    {{-- Local text for this city, written in the admin: Каталог → SEO городов. --}}
+    @if (filled($citySeoContent ?? null) && !request()->hasAny(['page', 'price_min', 'price_max', 'in_stock', 'brand', 'attr', 'sort']))
+        <section class="city-category-guide" aria-label="{{ $category->h1 ?: $category->name }}">
+            <div class="container">{!! $citySeoContent !!}</div>
+        </section>
+        <style>
+        .city-category-guide{padding:48px 0 8px}.city-category-guide h2{margin:0 0 12px;font-size:clamp(24px,3vw,34px)}
+        .city-category-guide h3{margin:22px 0 8px;font-size:18px}.city-category-guide p{max-width:860px;color:#555;line-height:1.6}
+        .city-category-guide a{text-decoration:underline;text-underline-offset:3px}.city-category-guide ul{padding-left:18px;color:#555;line-height:1.7}
+        </style>
+    @endif
+
     {{-- Secondary partner CTA belongs after products and useful category content. --}}
     @if ($installerRecruitment)
         @include('partials.installer-recruitment-note', $installerRecruitment)

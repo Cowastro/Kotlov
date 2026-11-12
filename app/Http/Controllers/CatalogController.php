@@ -958,6 +958,12 @@ class CatalogController extends Controller
             }
         }
 
+        // Local SEO written for this city in the admin (Каталог → SEO городов) wins over the shared template.
+        $citySeo = $isCityStorefront ? \App\Models\CityCategorySeo::for($currentCity, $category) : null;
+        if (filled($citySeo?->h1)) {
+            $category->h1 = $replaceCityIn($citySeo->h1);
+        }
+
         $name = $category->name;
         $nameLower = mb_strtolower($name);
 
@@ -984,6 +990,8 @@ class CatalogController extends Controller
             $rawDesc && mb_strlen($rawDesc) <= SeoMetadataBuilder::DESCRIPTION_LIMIT ? $rawDesc : null,
             $autoDescription
         );
+
+        $citySeoContent = filled($citySeo?->content) ? $replaceCityIn($citySeo->content) : null;
 
         if ($isHeatPumpHub && $selectedSubcategory === null) {
             $description = 'Тепловые насосы для дома и бассейна. Сравните мощность, SCOP, температуру подачи и цены. Запросите подбор по теплопотерям дома.';
@@ -1031,6 +1039,19 @@ class CatalogController extends Controller
             }
             if (request()->except('page') !== []) {
                 $robots = 'noindex, follow';
+            }
+        }
+
+        // Local SEO of this city (admin: Каталог → SEO городов) — on the category itself, not on its filtered landings.
+        if ($citySeo !== null && ($specificationLanding ?? null) === null) {
+            if (filled($citySeo->meta_title)) {
+                $title = $seo->title($replaceCityIn($citySeo->meta_title), $title);
+            }
+            if (filled($citySeo->meta_description)) {
+                $description = $seo->description($replaceCityIn($citySeo->meta_description), $description);
+            }
+            if (filled($citySeo->h1) && $specificationHeading !== null) {
+                $specificationHeading = $replaceCityIn($citySeo->h1);
             }
         }
 
@@ -1611,6 +1632,7 @@ class CatalogController extends Controller
             'pelletComparisonProducts',
             'installerRecruitment',
             'catalogIntro',
+            'citySeoContent',
             'catalogSpotlight',
             'catalogNavigationGroups', 'cityStorefrontBranch', 'isCityStorefront',
             'specificationHeading', 'specificationSearch', 'specificationFacets', 'specificationFilterAttributes', 'specificationLanding', 'specificationCollections', 'robots',

@@ -51,7 +51,50 @@ class HandleRedirects
         'prujanyi' => 'pruzhany',
     ];
 
+    /**
+     * Old URLs often pass through several rules (/kotly/gazovye/x/page:5 → /kotly/gazovye/x → /gazovye/x → /gazovye).
+     * Follow the chain here and answer with the final address in one 301, so search engines move the old page's
+     * signals straight to the live one. Only same-host hops are followed; the first status code is kept.
+     */
     public function handle(Request $request, Closure $next): Response
+    {
+        $response = $this->resolve($request, $next);
+        if (! $response->isRedirection() || ! $request->isMethod('GET')) {
+            return $response;
+        }
+
+        $host = $request->getHost();
+        $baseDomain = (string) config('app.base_domain', 'kotlov.by');
+        $location = (string) $response->headers->get('Location');
+        $seen = [$request->getUri() => true];
+        $passed = new Response('', 299);
+        for ($hop = 0; $hop < 5; $hop++) {
+            $url = str_starts_with($location, '/') ? $request->getSchemeAndHttpHost().$location : $location;
+            $hopHost = (string) parse_url($url, PHP_URL_HOST);
+            if (isset($seen[$url]) || ($hopHost !== $host && ! str_ends_with('.'.$hopHost, '.'.$baseDomain))) {
+                break;
+            }
+            $seen[$url] = true;
+            $hopRequest = Request::create($url, 'GET', [], [], [], ['HTTPS' => $request->isSecure() ? 'on' : 'off']);
+            // redirect('/path') builds the address from the URL generator's request — point it at this hop's host.
+            app('url')->setRequest($hopRequest);
+            try {
+                $next = $this->resolve($hopRequest, fn () => $passed);
+            } finally {
+                app('url')->setRequest($request);
+            }
+            $nextLocation = $next !== $passed && $next->isRedirection() ? (string) $next->headers->get('Location') : '';
+            if ($nextLocation === '') {
+                break;
+            }
+            $location = $nextLocation;
+        }
+        $response->headers->set('Location', $location);
+
+        return $response;
+    }
+
+    private function resolve(Request $request, Closure $next): Response
     {
         // Проверяем ДО роутинга — не ждём 404
         $path = '/'.ltrim($request->getPathInfo(), '/');

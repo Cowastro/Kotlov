@@ -228,6 +228,31 @@ class CityStorefrontSeoTest extends TestCase
             ->assertDontSee('Sitemap: https://borisov.kotlov.by/sitemap.xml');
     }
 
+    public function test_a_city_category_uses_the_local_seo_written_in_the_admin(): void
+    {
+        $lida = $this->city('lida', 'Лида');
+        $this->branch($lida);
+        $category = $this->categoryWithProduct('gazovye', 'Газовые котлы');
+        \App\Models\CityCategorySeo::query()->create([
+            'city_id' => $lida->id, 'category_id' => $category->id,
+            'h1' => 'Газовые котлы в Лиде на Калинина',
+            'meta_title' => 'Купить газовый котёл в Лиде — цены | KOTLOV',
+            'meta_description' => 'Газовые котлы в Лиде: магазин на ул. Калинина, 57.',
+            'content' => '<h2>Как купить газовый котёл в Лиде</h2><p>Уникальный текст Лиды.</p>',
+        ]);
+
+        $this->get('https://lida.kotlov.by/gazovye')->assertOk()
+            ->assertSee('<title>Купить газовый котёл в Лиде — цены | KOTLOV</title>', false)
+            ->assertSee('Газовые котлы в Лиде на Калинина')
+            ->assertSee('Газовые котлы в Лиде: магазин на ул. Калинина, 57.')
+            ->assertSee('Уникальный текст Лиды.');
+
+        // Another city keeps the shared template.
+        $borisov = $this->city('borisov', 'Борисов');
+        $this->branch($borisov);
+        $this->get('https://borisov.kotlov.by/gazovye')->assertOk()->assertDontSee('Уникальный текст Лиды.');
+    }
+
     private function city(string $slug, string $name): City
     {
         return City::query()->create([

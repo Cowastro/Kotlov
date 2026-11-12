@@ -41,6 +41,17 @@ class LegacySeoRedirectTest extends TestCase
         $response->assertRedirect('https://kotlov.by/tsentrobejnye');
     }
 
+    public function test_a_chain_of_legacy_rules_answers_with_the_final_address_in_one_redirect(): void
+    {
+        $this->enableCityStorefront('vitebsk');
+        Category::query()->firstOrCreate(['slug' => 'kotly-na-pelletah'], ['parent_id' => 0, 'name' => 'Пеллетные котлы', 'is_active' => true]);
+
+        // page:2 → /kotly/tverdotoplivnye/kotly-na-pelletah → /kotly-na-pelletah
+        $this->get('https://vitebsk.kotlov.by/kotly/tverdotoplivnye/kotly-na-pelletah/page:2')
+            ->assertStatus(301)
+            ->assertRedirect('https://kotlov.by/kotly-na-pelletah');
+    }
+
     public function test_old_nested_pellet_boiler_category_redirects_to_current_category(): void
     {
         $this->enableCityStorefront('vitebsk');
@@ -616,6 +627,7 @@ class LegacySeoRedirectTest extends TestCase
             'is_active' => true,
         ]);
 
+        Product::create(['category_id' => $category->id, 'name' => 'Тепловой насос', 'slug' => 'canonical-heat-pump', 'is_active' => true, 'is_archived' => false]);
         Product::create([
             'category_id' => $category->id,
             'name' => 'Архивный тепловой насос',
