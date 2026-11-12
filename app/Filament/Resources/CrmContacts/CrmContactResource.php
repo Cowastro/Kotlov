@@ -43,6 +43,8 @@ class CrmContactResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'full_name';
 
+    protected static ?int $globalSearchSort = -30;
+
     protected static ?int $navigationSort = 2;
 
     public static function getNavigationGroup(): ?string
