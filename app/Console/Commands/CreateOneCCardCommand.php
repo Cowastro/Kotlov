@@ -31,7 +31,7 @@ class CreateOneCCardCommand extends Command
         {--short= : Short description}
         {--content= : HTML description}
         {--source=onec : Integration source code}
-        {--replace=* : With --like: «было=>стало» in the copied texts (220 В=>380 В, 3 фазы)}
+        {--replace=* : With --like: «было::стало» in the copied texts (220 В::380 В, 3 фазы); «=>» also works locally}
         {--like= : Id of a sibling card (same series): its category, brand, photos, specs and texts are the base}
         {--without-row : Our own card with no 1C row (a model not stocked yet); code is then only a label}
         {--apply : Create the card and link the row}';
@@ -114,7 +114,7 @@ class CreateOneCCardCommand extends Command
     private function replaced(?string $text): ?string
     {
         foreach ((array) $this->option('replace') as $pair) {
-            [$from, $to] = array_pad(explode('=>', (string) $pair, 2), 2, null);
+            [$from, $to] = array_pad(explode('::', str_replace('=>', '::', (string) $pair), 2), 2, null);
             if (filled($from) && $to !== null) {
                 $text = str_replace($from, $to, (string) $text);
             }

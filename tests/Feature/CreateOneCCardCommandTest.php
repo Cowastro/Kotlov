@@ -72,7 +72,7 @@ class CreateOneCCardCommandTest extends TestCase
 
         $this->artisan('integration:create-onec-card', ['code' => 'УТ-00008740', 'category' => '-', '--like' => $sibling->id,
             '--title' => 'Тепловой насос NL-FLM30-100II 10 кВт, 380 В', '--price' => '13254',
-            '--spec' => ['Электропитание: 380 В, 3 фазы'], '--replace' => ['220 В=>380 В, 3 фазы'], '--apply' => true])->assertSuccessful();
+            '--spec' => ['Электропитание: 380 В, 3 фазы'], '--replace' => ['220 В::380 В, 3 фазы'], '--apply' => true])->assertSuccessful();
 
         $product = $item->fresh()->product;
         $this->assertSame($category->id, $product->category_id);
