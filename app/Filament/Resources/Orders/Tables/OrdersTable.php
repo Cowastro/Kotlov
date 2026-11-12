@@ -112,6 +112,7 @@ class OrdersTable
                     'items.product.integrationProducts.source.supplier.crmCounterparty.contactPoints',
                     'items.product.supplierProducts.supplier.crmCounterparty.contactPoints',
                     'manager:id,name',
+                    'statusHistory.user:id,name',
                     'dealByInbox:id,order_id,remote_order_id,remote_status,remote_status_name,remote_created_at',
                     'archivedBy:id,name',
                     'placedEconomicSnapshot',
@@ -269,7 +270,7 @@ class OrdersTable
                     ->label('Сделка и контроль')
                     ->view('filament.resources.orders.deal-progress')
                     ->viewData(['isTable' => true])
-                    ->width('270px')
+                    ->width('350px')
                     ->visibleFrom('md'),
 
                 TextColumn::make('status')
