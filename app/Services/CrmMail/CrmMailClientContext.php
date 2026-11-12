@@ -88,16 +88,9 @@ class CrmMailClientContext
             return $thread->sales_stage;
         }
 
-        $relatedStage = $this->threads($thread)
-            ->first(fn (CrmMailThread $related): bool => filled($related->sales_stage))
-            ?->sales_stage;
-
-        if (filled($relatedStage)) {
-            return $relatedStage;
-        }
-
         return $this->commercialDocuments($thread)->contains(
             fn (CommercialDocument $document): bool => $document->type === 'quote'
+                && (int) $document->crm_mail_thread_id === (int) $thread->id
                 && in_array($document->status, ['sent', 'needs_revision', 'accepted', 'paid'], true),
         ) ? 'proposal_sent' : null;
     }

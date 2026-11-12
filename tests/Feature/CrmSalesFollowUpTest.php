@@ -136,7 +136,7 @@ class CrmSalesFollowUpTest extends TestCase
             ->assertSee('Просрочено');
     }
 
-    public function test_new_email_subject_shows_the_clients_previous_quote_and_deal_stage(): void
+    public function test_new_email_subject_keeps_previous_quote_in_history_without_inheriting_its_stage(): void
     {
         $counterparty = CrmCounterparty::query()->create([
             'type' => 'organization',
@@ -198,7 +198,7 @@ class CrmSalesFollowUpTest extends TestCase
         ]);
 
         $this->assertTrue(CrmMailThreadResource::linkedQuote($newThread)?->is($quote));
-        $this->assertSame('proposal_sent', CrmMailThreadResource::effectiveSalesStage($newThread));
+        $this->assertNull(CrmMailThreadResource::effectiveSalesStage($newThread));
         $this->assertSame('heroicon-o-document-check', CrmMailThreadResource::commercialOfferIcon($newThread));
         $this->assertStringContainsString('другой переписке', CrmMailThreadResource::commercialOfferTooltip($newThread));
 
@@ -280,6 +280,44 @@ class CrmSalesFollowUpTest extends TestCase
         $this->assertSame($callbackAt->timestamp, $thread->next_follow_up_at?->timestamp);
         $this->assertSame('Клиент думает, вернуться после внутреннего согласования.', $thread->follow_up_note);
         $this->assertFalse(CrmMailThread::query()->requiresReaction()->whereKey($thread)->exists());
+    }
+
+    public function test_separate_requests_do_not_inherit_other_deal_stages(): void
+    {
+        foreach (['lost', 'won', 'negotiation'] as $stage) {
+            $email = fake()->unique()->safeEmail();
+            $oldThread = $this->thread([
+                'participant_email' => $email,
+                'sales_stage' => $stage,
+                'last_message_at' => now()->subDay(),
+            ]);
+            $newThread = $this->thread([
+                'participant_email' => $email,
+                'status' => 'waiting_manager',
+                'last_message_at' => now(),
+            ]);
+
+            $this->assertNull(CrmMailThreadResource::effectiveSalesStage($newThread));
+            $this->assertSame($stage, CrmMailThreadResource::effectiveSalesStage($oldThread));
+
+            $newThread->update(['sales_stage' => 'new_inquiry']);
+            $this->assertSame('new_inquiry', CrmMailThreadResource::effectiveSalesStage($newThread));
+            $this->assertSame($stage, $oldThread->fresh()->sales_stage);
+        }
+    }
+
+    public function test_own_sent_quote_still_supplies_stage_for_a_legacy_unclassified_request(): void
+    {
+        $thread = $this->thread();
+        CommercialDocument::query()->create([
+            'number' => 'КП-OWN-STAGE-00001',
+            'type' => 'quote',
+            'status' => 'sent',
+            'crm_mail_thread_id' => $thread->id,
+            'issued_at' => today(),
+        ]);
+
+        $this->assertSame('proposal_sent', CrmMailThreadResource::effectiveSalesStage($thread));
     }
 
     private function thread(array $attributes = []): CrmMailThread
