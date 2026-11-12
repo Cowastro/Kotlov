@@ -54,7 +54,7 @@ class OrderCustomerReviewTest extends TestCase
         $this->assertEquals(4, $product->fresh()->rating);
     }
 
-    public function test_service_review_and_product_review_can_both_be_left_and_low_ratings_are_accepted(): void
+    public function test_submission_and_reopening_show_confirmation_without_another_form_even_with_unreviewed_products(): void
     {
         [$order, $product] = $this->order();
         $url = app(OrderReviewInvitation::class)->url($order);
@@ -62,8 +62,11 @@ class OrderCustomerReviewTest extends TestCase
         $review = Review::sole();
         $this->assertTrue($review->reviewable->is($order));
         $this->assertSame(1, (int) $review->rating);
+        $this->get($url)->assertOk()->assertSee('Ваш отзыв отправлен')->assertSee('Перейти в каталог')
+            ->assertDontSee('name="rating"', false)->assertDontSee('name="target"', false)
+            ->assertDontSee('Как прошёл ваш заказ?')->assertDontSee('Спасибо! Ваш отзыв получен и появится на сайте после проверки.');
         $this->post($url, $this->data((string) $product->id))->assertRedirect($url);
-        $this->get($url)->assertOk()->assertSee('Спасибо за ваши отзывы!')->assertDontSee('name="rating"', false);
+        $this->get($url)->assertOk()->assertSee('Ваш отзыв отправлен')->assertDontSee('name="rating"', false);
         $this->assertDatabaseCount('reviews', 2);
     }
 
