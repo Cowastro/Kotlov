@@ -84,6 +84,8 @@
     .order-deal {
         color: var(--gray-700);
         text-align: start;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     .dark .order-deal {
@@ -173,11 +175,19 @@
         color: var(--gray-500);
     }
 
+    .order-deal__control > span {
+        flex: 1;
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
     .order-deal__control > button {
         color: #b45309;
         text-decoration: underline;
         cursor: pointer;
         flex-shrink: 0;
+        white-space: nowrap;
     }
 
     .dark .order-deal__control > button {
