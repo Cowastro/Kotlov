@@ -94,7 +94,7 @@ Route::get('/sitemap.xml', function (Request $request) {
             ->header('Cache-Control', 'public, max-age=3600');
     }
 
-    $xml = Cache::remember('sitemap.xml.v6', 86400, function () {
+    $xml = Cache::remember('sitemap.xml.v7', 3600, function () {
         $baseUrl = 'https://kotlov.by';
         $urls = [];
 
@@ -144,6 +144,7 @@ Route::get('/sitemap.xml', function (Request $request) {
         }
 
         Category::active()
+            ->whereIn('id', app(\App\Services\CatalogPublishedCategories::class)->ids())
             ->when(Category::active()->where('slug', WaterHeaterCatalog::GAS)->exists(), fn ($query) => $query->where('slug', '!=', 'gas'))
             ->whereNotNull('slug')
             ->where('slug', '!=', 'aktsiiiskidki')

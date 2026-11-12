@@ -908,6 +908,9 @@ class SyncRusklimatCommand extends Command
 
     private function resolveCategory(string $catRaw, string $name): ?int
     {
+        if ($slug = \App\Support\Catalog\HeaterCategoryClassifier::slug($name, $catRaw)) {
+            return \App\Models\Category::active()->where('slug', $slug)->value('id');
+        }
         $combined = mb_strtolower($catRaw . ' ' . $name);
 
         foreach (self::CATEGORY_MAP as $keyword => $catId) {
