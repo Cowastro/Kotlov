@@ -11,7 +11,9 @@
                 wire:click="selectMailTab('{{ $key }}')"
             >
                 {{ $tab->getLabel() }}
-                @if (in_array($key, ['needs_response', 'my_work'], true) && $tab->getBadge())
+                @if ($key === 'unread')
+                    <x-filament::badge :color="$tab->getBadgeColor()">{{ $tab->getBadge() ?? 0 }}</x-filament::badge>
+                @elseif (in_array($key, ['needs_response', 'my_work'], true) && $tab->getBadge())
                     <x-filament::badge :color="$tab->getBadgeColor()">{{ $tab->getBadge() }}</x-filament::badge>
                 @endif
             </x-filament::button>
