@@ -631,6 +631,10 @@
                                 </a>
                             @endif
 
+                            @if ($heaterEquipment !== null)
+                                @include('partials.heater-equipment')
+                            @endif
+
                             {{-- Доп. ссылки --}}
                             <div class="tf-product-extra-link">
                                 <a href="#" data-product-id="{{ $product->id }}"
@@ -1409,6 +1413,8 @@
             </div>
         </section>
     @endif
+
+    @include('partials.heater-equipment-cards')
 
     {{-- Похожие товары --}}
     @if ($relatedProducts->count() > 0)
