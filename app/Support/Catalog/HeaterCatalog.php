@@ -3,6 +3,7 @@
 namespace App\Support\Catalog;
 
 use App\Models\Product;
+use Illuminate\Database\Eloquent\Builder;
 
 class HeaterCatalog extends SpecificationCatalog
 {
@@ -47,6 +48,51 @@ class HeaterCatalog extends SpecificationCatalog
     public static function verified(Product $product): array
     {
         return self::records()[$product->slug] ?? [];
+    }
+
+    public static function roomArea(mixed $raw): ?float
+    {
+        if (! is_string($raw) || ! preg_match('/^\d{1,4}(?:[.,]\d{1,2})?$/D', trim($raw))) return null;
+        $area = (float) str_replace(',', '.', trim($raw));
+        return $area >= 1 && $area <= 1000 ? $area : null;
+    }
+
+    public static function forRoom(Builder $query, float $area): void
+    {
+        $slugs = array_keys(array_filter(self::records(), fn (array $fact): bool =>
+            isset($fact['area_max_m2']) && (float) $fact['area_max_m2'] >= $area));
+        $query->whereIn('products.slug', $slugs);
+    }
+
+    /** Copy only facts checked against the exact manufacturer's model. */
+    public function description(Product $product): array
+    {
+        $facts = $this->productFacts($product, $product->category->slug, $this->dimensions($product->category->slug))['card'];
+        $record = self::verified($product);
+        $name = trim(html_entity_decode(strip_tags((string) $product->name), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $sentences = [$name.'.'];
+        foreach ($facts as $label => $value) $sentences[] = $label.': '.$value.'.';
+        if ($facts === []) $sentences[] = 'Мощность, площадь обогрева и комплектацию уточняйте у менеджера перед заказом.';
+        $content = '<p>'.e($name).'.</p>';
+        if ($facts !== []) {
+            $content .= '<ul>';
+            foreach ($facts as $label => $value) $content .= '<li>'.e($label).': '.e($value).'.</li>';
+            if (isset($record['consumption_kw'])) $content .= '<li>Потребляемая мощность: '.e($this->number((float) $record['consumption_kw'])).' кВт.</li>';
+            $content .= '</ul>';
+        } else {
+            $content .= '<p>'.e($sentences[1]).'</p>';
+        }
+        if ($note = $record['mount_note'] ?? null) $content .= '<p>'.e($note).'</p>';
+        if (isset($record['area_max_m2'])) {
+            $content .= '<p>Площадь обогрева указана производителем. Результат зависит от теплоизоляции, высоты потолков и условий помещения. Для основного отопления учитывайте теплопотери.</p>';
+        } elseif ($record !== []) {
+            $content .= '<p>Площадь обогрева для этого исполнения уточняйте у менеджера. Подбор по площади комнаты для этой модели недоступен.</p>';
+        }
+        if ($url = $record['source']['document'] ?? $record['source']['url'] ?? null) {
+            $content .= '<p><a href="'.e($url).'" target="_blank" rel="noopener">'.(isset($record['source']['document']) ? 'Паспорт производителя' : 'Характеристики производителя').'</a></p>';
+        }
+        $short = implode(' ', $sentences);
+        return ['short_description' => $short, 'content' => $content, 'meta_description' => \Illuminate\Support\Str::limit($short, 155, '…')];
     }
 
     public function productFacts(Product $product, string $slug, array $dimensions): array
