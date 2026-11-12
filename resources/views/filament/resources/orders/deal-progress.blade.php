@@ -65,4 +65,5 @@
     @if (! ($isTable ?? false) && $order->deal_stage_changed_at)
         <div class="order-deal__changed">Последняя отметка менеджера {{ $order->deal_stage_changed_at->timezone('Europe/Minsk')->format('d.m.Y H:i') }}. Все изменения — в истории этапов и действий.</div>
     @endif
+    @include('filament.resources.orders.review-status', ['order' => $order])
 </div>

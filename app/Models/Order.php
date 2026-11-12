@@ -585,6 +585,11 @@ class Order extends Model
         return $this->hasMany(OrderStatusHistory::class);
     }
 
+    public function customerReviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'order_id')->latest('id');
+    }
+
     public function managerComments(): HasMany
     {
         return $this->hasMany(OrderManagerComment::class)
