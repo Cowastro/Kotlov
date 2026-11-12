@@ -190,10 +190,12 @@ class ListCrmMailThreads extends ListRecords
 
     protected function getTableQuery(): Builder
     {
-        return static::threadQueryForMailbox(
+        $query = static::threadQueryForMailbox(
             $this->selectedMailboxId(),
             CrmMailThreadResource::getEloquentQuery()->without('messages'),
         );
+
+        return $this->activeTab === 'needs_response' ? $query->withReplyWaitingSince() : $query;
     }
 
     public static function threadQueryForMailbox(?int $mailboxId, ?Builder $query = null): Builder

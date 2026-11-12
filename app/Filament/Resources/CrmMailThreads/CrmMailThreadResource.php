@@ -327,7 +327,21 @@ class CrmMailThreadResource extends Resource
                     ->limit(26)
                     ->width('8.5rem')
                     ->grow(false),
-                TextColumn::make('assignedUser.name')->label('Ответственный')->placeholder('Не назначен')
+                TextColumn::make('assignedUser.name')->label('Ответственный')->default('Не назначен')
+                    ->description(function (CrmMailThread $record, ListCrmMailThreads $livewire): ?HtmlString {
+                        if ($livewire->activeTab !== 'needs_response' || $record->replyWaitingMinutes() === null) {
+                            return null;
+                        }
+                        $color = match (true) {
+                            $record->replyWaitingMinutes() >= 1440 => '#ef4444',
+                            $record->replyWaitingMinutes() >= 120 => '#d97706',
+                            default => '#9ca3af',
+                        };
+
+                        return new HtmlString('<span style="white-space:nowrap;font-weight:600;color:'.$color.'">'.e($record->replyWaitingLabel()).'</span>');
+                    })
+                    ->tooltip(fn (CrmMailThread $record): string => ($record->assignedUser?->name ?: 'Ответственный не назначен')
+                        .($record->reply_waiting_since ? ' · Без ответа с '.$record->reply_waiting_since->timezone('Europe/Minsk')->format('d.m.Y H:i') : ''))
                     ->limit(24)
                     ->width('7.5rem')
                     ->grow(false)
