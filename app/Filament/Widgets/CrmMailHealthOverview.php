@@ -14,7 +14,7 @@ class CrmMailHealthOverview extends StatsOverviewWidget
 
     protected ?string $description = 'Состояние HOSTER, автоматической загрузки входящих писем и серверного времени.';
 
-    protected ?string $pollingInterval = '30s';
+    protected ?string $pollingInterval = '120s';
 
     protected function getStats(): array
     {
