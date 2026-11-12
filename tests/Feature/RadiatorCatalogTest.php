@@ -96,7 +96,7 @@ class RadiatorCatalogTest extends TestCase
         $facts = $catalog->productFacts($product, 'radiatory', $catalog->dimensions('radiatory'));
         $this->assertSame($record['power_dt70_w'].' Вт', $facts['card']['Теплоотдача при ΔT 70 °C']);
         $this->assertArrayNotHasKey('Площадь обогрева', $facts['card']);
-        $tower = collect(RadiatorCatalog::records())->first(fn ($row) => str_contains($row['name'], 'Tower'));
+        $tower = RadiatorCatalog::records()['radiator-royal-thermo-piano-forte-tower-500'];
         $this->assertArrayNotHasKey('power_dt70_w', $tower);
         $product->name = 'Другой радиатор';
         $this->assertSame([], RadiatorCatalog::verified($product));
@@ -227,5 +227,66 @@ class RadiatorCatalogTest extends TestCase
                 }
             }
         }
+    }
+
+    public function test_kvn_declared_regime_is_visible_and_filterable_without_inventing_delta70(): void
+    {
+        $categories = $this->categories();
+        $slug = 'konvektor-vnutripolnyi-kermi-kvn-230x80x1500';
+        $row = RadiatorCatalog::records()[$slug];
+        $product = $this->product($categories['vodyanye-konvektory'], $slug, $row['name']);
+        $unknown = $this->product($categories['vodyanye-konvektory'], 'unknown-convector', 'Конвектор без подтверждения');
+        $catalog = app(RadiatorCatalog::class);
+        $facts = $catalog->productFacts($product, 'vodyanye-konvektory', $catalog->dimensions('vodyanye-konvektory'));
+        $this->assertSame(['to-1000'], $facts['options']['power60']);
+        $this->assertArrayNotHasKey('power70', $facts['options']);
+        $this->assertArrayNotHasKey('power50', $facts['options']);
+        $html = view('partials.fireplace-card-specs', ['fireplaceCardSpecs' => $facts['card']])->render();
+        $this->assertStringContainsString('512 Вт · ΔT 60 °C', $html);
+        $this->assertStringNotContainsString('ΔT 70 °C', $html);
+        $this->get('/vodyanye-konvektory?radiator[power60]=to-1000')->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->modelKeys() === [$product->id])
+            ->assertSee('512 Вт · ΔT 60 °C')->assertSee('Сбросить все фильтры');
+        $this->get('/vodyanye-konvektory/'.$slug)->assertOk()->assertSee('512 Вт')
+            ->assertSee('Теплоотдача при ΔT 60 °C')->assertSee('Документация производителя');
+    }
+
+    public function test_remaining_passports_preserve_colours_series_and_temperature_heads(): void
+    {
+        $r = RadiatorCatalog::records();
+        $this->assertEquals(1870, $r['radiator-royal-thermo-pianoforte-tower-500-newsilver-satin-22-sekc']['power_dt70_w']);
+        $this->assertEquals(1968, $r['radiator-royal-thermo-pianoforte-tower-500-newnoir-sable-22-sekc']['power_dt70_w']);
+        $this->assertEquals(1010, $r['radiator-royal-thermo-pianoforte-tower-200-silver-satin-22-sekc']['power_dt70_w']);
+        $this->assertEquals(1050, $r['radiator-royal-thermo-pianoforte-tower-200-bianco-traffico-22-sekc']['power_dt70_w']);
+        $this->assertArrayNotHasKey('height_mm', $r['radiator-royal-thermo-pianoforte-tower-500-newsilver-satin-22-sekc']);
+        $this->assertArrayNotHasKey('power_dt70_w', $r['radiator-royal-thermo-piano-forte-tower-500']);
+        $this->assertEquals(336, $r['kermi-fko-110504']['power_dt50_w']);
+        $this->assertArrayNotHasKey('power_dt70_w', $r['kermi-fko-110504']);
+        $this->assertEquals(977, $r['radiator-stalnoi-kermi-line-plk-115051305']['power_dt50_w']);
+        $this->assertEquals(1245, $r['radiator-stalnoi-kermi-line-plk-125051305']['power_dt50_w']);
+        $this->assertEquals(1584, $r['radiator-bimetalliceskii-termica-bitherm-500100-12-sekcii']['power_dt70_w']);
+        $this->assertEquals(115, $r['radiator-bimetalliceskii-royal-thermo-infinity-300-silver-satin-10-sekc']['section_power_dt70_w']);
+        $this->assertEquals(181, $r['radiator-aliuminievyi-royal-thermo-monoblock-a-500-20-12-sekc']['section_power_dt70_w']);
+        $this->assertArrayNotHasKey('power_dt70_w', $r['radiator-aliuminievyi-royal-thermo-monoblock-a-500-20-12-sekc']);
+        $audit = json_decode(file_get_contents(resource_path('data/radiator-thermal-completion-audit.json')), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertCount(218, $audit['products']);
+        $this->assertSame(118, $audit['confirmed']);
+        $this->assertSame(98, $audit['unconfirmed_heating_appliances']);
+        foreach ($audit['products'] as $item) {
+            $record = $r[$item['slug']] ?? [];
+            $thermal = array_filter($record, fn ($field) => str_starts_with($field, 'power_dt') || str_starts_with($field, 'section_power_dt'), ARRAY_FILTER_USE_KEY);
+            if ($item['status'] !== 'confirmed') {
+                $this->assertSame([], $thermal, $item['slug']);
+                continue;
+            }
+            $this->assertEquals($item['fields'], $thermal, $item['slug']);
+            $this->assertContains($item['source'], $record['sources'], $item['slug']);
+        }
+        $categories = $this->categories();
+        $slug = 'radiator-aliuminievyi-royal-thermo-monoblock-a-500-20-12-sekc';
+        $product = $this->product($categories['alyuminievye-radiatory'], $slug, $r[$slug]['name']);
+        $description = app(RadiatorCatalog::class)->cleanDescription($product);
+        $this->assertStringContainsString('181 Вт/секц.', $description['short_description']);
+        $this->assertStringNotContainsString('секц..', $description['short_description']);
     }
 }

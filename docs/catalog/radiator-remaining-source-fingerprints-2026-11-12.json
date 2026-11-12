@@ -1,0 +1,197 @@
+[
+  {
+    "source": "https://enginer-pro.ru/upload/iblock/730/jyyxbdf42o8hbk5sqliqw0ny3e451rdi/Radiatory_Alyuminievye_radiatory_STI_Pasport.pdf",
+    "file": "sti-classic-al.pdf",
+    "sha256": "786ed8be22c634421fd1052cec7468afd295c3f059f32ef483900e14da969ebb"
+  },
+  {
+    "source": "https://mnogo-tepla.ru/upload/iblock/b82/8j30119n3j1sdkw6lxs7k00x1hh1w4s9/Radiatory-batarei-bimetallicheskie-STI-_-Pasport.pdf",
+    "file": "sti-bimetal.pdf",
+    "sha256": "137123f4bacfd55d034599be9f52f0aa09b8852c4509f929224a7e92548196d9"
+  },
+  {
+    "source": "https://cdn.bigam.ru/iblock/0b3/0b3d2a71c92135159af65a8bdd3ceb2a/Instrukciya-Royal-Thermo-Infinity-300.pdf",
+    "file": "infinity-300-500.pdf",
+    "sha256": "4593ff8eee6c38c8699d719444dc6abdfe3bf230e7c858c93f18098cfaf6d898"
+  },
+  {
+    "source": "https://teploexpert96.ru/pdf/technical-catalog-kermi-kvn-kvq.pdf",
+    "file": "kermi-kvn.pdf",
+    "sha256": "20c8f8893a18aff2d3984ac4720f8c6f02a176f9df7059133e79f35509d165c1"
+  },
+  {
+    "source": "https://dn.ru/storage/certificates/radiator/pasport-metallo-moderno.pdf",
+    "file": "atm-original.pdf",
+    "sha256": "c694089f1ba5f9bae2a555df5d865a886df828a0683a016367ff7c3a36dd5833"
+  },
+  {
+    "source": "https://spb.teplodvor.ru/dokumentacija/lemaks-radiators-passport-20261112.pdf",
+    "file": "lemax.pdf",
+    "sha256": "f48ed4c06480e651443685df680c05e679be2838cf45cdd556f0c9a77e221d44"
+  },
+  {
+    "source": "https://rkcdn.ru/products/153b137b-c7a6-11f1-b8e3-00505601218a/src.pdf",
+    "file": "royal-tower-2026.pdf",
+    "sha256": "95ef4ed70b6e4d3d8dc885caff35b6e01973414b969c5f30f7e365b53a9d5e83"
+  },
+  {
+    "source": "https://rkcdn.ru/products/394454c1-f086-11f0-b8e1-00505601218a/src.pdf",
+    "file": "royal-tower-2025.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6"
+  },
+  {
+    "source": "https://ogint.ru/wp-content/uploads/2023/05/%D0%9F%D0%B0%D1%81%D0%BF%D0%BE%D1%80%D1%82-%D0%BD%D0%B0-%D1%80%D0%B0%D0%B4%D0%B8%D0%B0%D1%82%D0%BE%D1%80%D1%8B-%D0%B1%D0%B8%D0%BC%D0%B5%D1%82-%D0%B8-%D0%B0%D0%BB%D1%8E%D0%BC-Ogint.pdf",
+    "file": "ogint.pdf",
+    "sha256": "441cc0a26f6b3afea188c08e5b4fb10b3233edf6732764cc60556fb3e3fae4c0"
+  },
+  {
+    "source": "https://cdn.bigam.ru/iblock/72b/lbotrhjurfp1dps633rbbrqk8fp0oa8x/Pasport.pdf",
+    "file": "termica.pdf",
+    "sha256": "b83a384f588d9b3cef690f761962e1e1db193515ae7b3bfd280eff816073b1e2"
+  },
+  {
+    "source": "https://www.alterplast.ru/upload/iblock/761/vv0smaywp39i8kjzqrvpf8w2c2jt2r6g.pdf",
+    "file": "radena-bm.pdf",
+    "sha256": "9d951a11729ca0c208b5a2bd38ce9bec1465f5c84b9547e0183b625082904720"
+  },
+  {
+    "source": "https://rkcdn.ru/products/145c7f44-2cab-11ef-b8d8-00505601218a/src.pdf",
+    "file": "monoblock-a-20.pdf",
+    "sha256": "bf5732222f1f07c028d0ddb8065d8728d516c524636fe780beec4e4e1b3ffd2a"
+  },
+  {
+    "source": "https://storage.by.prom.st/288112_katalog_engel.pdf",
+    "file": "engel.pdf",
+    "sha256": "3913a42d8da23a54212065298082b6756711ce3b7695142c5d67c31f06bd51f9"
+  },
+  {
+    "source": "https://ogint.ru/wp-content/uploads/2025/10/Паспорт_рад_бимет_и_алюм_Ogint.pdf",
+    "file": "ogint-current.pdf",
+    "sha256": "6c87438cc5ce1f2f403abaed3cfe04eaa3c59fdf854c254d6664d6ae650c0fad"
+  },
+  {
+    "source": "https://kermi-x2.nl/wp-content/uploads/2022/11/Prijslijst-Kermi-therm-x2-paneelradiatoren-2022.pdf",
+    "file": "kermi-nl-2022.pdf",
+    "sha256": "3ca8878d81ccefc97ea5ee393c4192ce94d2de275d3b694184bf8c8c98438767"
+  },
+  {
+    "source": "https://www.novaflorida.com/media/files/attachments/1047_DOP%20251%20%20Big%20D3%20-%2019%20Giugno%202020%20-%20ed.%203.pdf",
+    "file": "nova-big-d3.pdf",
+    "sha256": "b87fd3417c339c27eb74a6eaed6fef3d629236c10562df88d189b026e175d2f7"
+  },
+  {
+    "source": "https://vodomirural.ru/upload/iblock/489/489f2c6b08c8d8c2357a2c588f6c349d.pdf",
+    "file": "sti-nova.pdf",
+    "sha256": "47620503e6898670c71c2458061c618c3d5298aa91723426f5116803ac1bc5be"
+  },
+  {
+    "source": "https://rkcdn.ru/products/9187928c-9b54-11ef-b8dc-00505601218a/src.pdf",
+    "file": "royal-monoblock-b.pdf",
+    "sha256": "9178f346bd993117566000471c2c40cce5db016958e85730adc55907b538bcf0"
+  },
+  {
+    "source": "https://dn.ru/storage/certificates/Radena/pass_radena-alum.pdf",
+    "file": "radena-r1000.pdf",
+    "sha256": "3f6a01be36da6c9f847ee7fb1b4e1785d514cca52e7178db7631ab77cf0e6742"
+  },
+  {
+    "source": "https://www.c-o-k.ru/library/instructions/moehlenhoff/elektricheskie-obogrevateli-teploventilyatory/1623/15520.pdf",
+    "file": "mohlenhoff.pdf",
+    "sha256": "c86b35bb073954f440e7b45bad5fa42047963d13b0854e890164912c5f496c7d"
+  },
+  {
+    "source": "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3308535.pdf/royal-thermo-biliner-500-5-sektsij-559431.pdf",
+    "file": "royal-biliner-inox.pdf",
+    "sha256": "85c3f8a891a1fa358db8d56b6ea2ee96d3d2aafac370cc57ea2d981ca960c76e"
+  },
+  {
+    "source": "https://www.c-o-k.ru/library/instructions/electrolux/radiatory-konvektory/33436/118995.pdf?download",
+    "file": "electrolux.pdf",
+    "sha256": "a94e7107b8d309a96646ba6ad018e5f59fbc52556c0dbd215abcf7c5ef4b2823"
+  },
+  {
+    "source": "https://www.c-o-k.ru/library/catalogs/moehlenhoff/33142/118307.pdf?download",
+    "file": "mohlenhoff-original.pdf",
+    "sha256": "b3938b70f9259a50e9597563729bd31a4c5510a1bc0fbafecf4cddfcb7aa8424"
+  },
+  {
+    "source": "https://revitech.ru/upload/uf/61c/tehf5v38rqv6beedhhqqn6hdyjqtl884/Pasport-KORVET-bimetallicheskiy.pdf",
+    "file": "korvet.pdf",
+    "sha256": "0fcbcc9641dab68c29dc22a969b51014e21abfa6771852cee58c2d38d8625b54"
+  },
+  {
+    "source": "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202401/32700065.pdf/evolution-cn-ev-f-evv-500-10-sektsij-1803272.pdf",
+    "file": "evolution.pdf",
+    "sha256": "efdf7803eb49bb1dbf4fad10cc7f896cd2f319a0889f9cc354bce68f59ebdf09"
+  },
+  {
+    "source": "https://www.plus24.ru/upload/uf/616/iw5jc083jhmp080c9g0li1li90v0ib3l/%D0%9F%D0%B0%D1%81%D0%BF%D0%BE%D1%80%D1%82%20%D0%9D%D0%A2-%D0%92.pdf",
+    "file": "novaterm.pdf",
+    "sha256": "49ea889a812f8420b83c87829a82201dd0bda4f2e3e57f5af389d7d7df971343"
+  },
+  {
+    "source": "https://ovk-systems.com.ua/wp-content/uploads/2024/11/Katalog-Uterm-2024.pdf",
+    "file": "uterm-current.pdf",
+    "sha256": "82357afc54c89a57d16cb64542fe432ecde4a50296962c3deaab0b7c85e13f07"
+  },
+  {
+    "source": "https://rkcdn.ru/products/394454c1-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/23558c86-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/394454c5-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/315e0fae-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/23558c88-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/23558c82-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/315e0fac-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/315e0fa0-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/2b37bc78-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/410641a2-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/394454c3-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  },
+  {
+    "source": "https://rkcdn.ru/products/410641a5-f086-11f0-b8e1-00505601218a/src.pdf",
+    "sha256": "112f72af83ad20c188e65d9dbdde0e75c1d780f4a840cd21e8d176ca6162aad6",
+    "identical_to_reviewed_passport": true
+  }
+]
