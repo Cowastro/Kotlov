@@ -270,8 +270,8 @@ class RadiatorCatalogTest extends TestCase
         $this->assertArrayNotHasKey('power_dt70_w', $r['radiator-aliuminievyi-royal-thermo-monoblock-a-500-20-12-sekc']);
         $audit = json_decode(file_get_contents(resource_path('data/radiator-thermal-completion-audit.json')), true, flags: JSON_THROW_ON_ERROR);
         $this->assertCount(218, $audit['products']);
-        $this->assertSame(118, $audit['confirmed']);
-        $this->assertSame(98, $audit['unconfirmed_heating_appliances']);
+        $this->assertSame(136, $audit['confirmed']);
+        $this->assertSame(80, $audit['unconfirmed_heating_appliances']);
         foreach ($audit['products'] as $item) {
             $record = $r[$item['slug']] ?? [];
             $thermal = array_filter($record, fn ($field) => str_starts_with($field, 'power_dt') || str_starts_with($field, 'section_power_dt'), ARRAY_FILTER_USE_KEY);
@@ -288,5 +288,55 @@ class RadiatorCatalogTest extends TestCase
         $description = app(RadiatorCatalog::class)->cleanDescription($product);
         $this->assertStringContainsString('181 Вт/секц.', $description['short_description']);
         $this->assertStringNotContainsString('секц..', $description['short_description']);
+    }
+
+    public function test_exact_sti_factory_identity_keeps_sas_separate_from_chinese_classic(): void
+    {
+        $r = RadiatorCatalog::records();
+        $sasSlug = 'radiator-bimetalliceskii-50080-6-sekcii-bimetal-art-s500b1-sti';
+        $this->assertEquals(163, $r[$sasSlug]['section_power_dt70_w']);
+        $this->assertArrayNotHasKey('power_dt70_w', $r[$sasSlug]);
+        $this->assertStringContainsString('САС', $r[$sasSlug]['evidence'][0]['note']);
+        $aluminium = 'radiator-aliuminievyi-500100-6-sekcii-art-s500a2-sti';
+        $this->assertEquals(215, $r[$aluminium]['section_power_dt70_w']);
+        $this->assertArrayNotHasKey('power_dt70_w', $r[$aluminium]);
+        $classicSlug = 'radiator-aliuminievyi-50080-6-sekcii-sti';
+        $this->assertEquals(810, $r[$classicSlug]['power_dt70_w']);
+        $categories = $this->categories();
+        $sas = $this->product($categories['bimetallicheskie-radiatory'], $sasSlug, $r[$sasSlug]['name']);
+        $classic = $this->product($categories['alyuminievye-radiatory'], $classicSlug, $r[$classicSlug]['name']);
+        $this->get('/radiatory?radiator[power70]=to-1000')->assertOk()
+            ->assertViewHas('products', fn ($products) => $products->modelKeys() === [$classic->id]);
+        $this->get('/bimetallicheskie-radiatory/'.$sasSlug)->assertOk()
+            ->assertSee('163 Вт/секц.')->assertDontSee('774 Вт');
+    }
+
+    public function test_final_identity_audit_covers_all_98_and_never_fills_unknown_revisions(): void
+    {
+        $r = RadiatorCatalog::records();
+        $this->assertEquals(1058, $r['konvektor-vstraivaemyi-medno-aliuminievyi-novaterm-nt-v-1425160']['power_dt70_w']);
+        $this->assertEquals(194, $r['radiator-aliuminievyi-radena-r-500100-gl-dizain-model-10-sekcii']['section_power_dt70_w']);
+        $this->assertEquals(141.3, $r['fondital-aliuminievyi-radiator-exclusivo-b4-350100-10-italiia']['section_power_dt70_w']);
+        $this->assertEquals(898, $r['radiator-stalnoi-niznee-podkliucenie-v-profil-20x500x700-kermi']['power_dt70_w']);
+        $this->assertEquals(618, $r['radiator-stalnoi-niznee-podkliucenie-v-profil-20x500x700-kermi']['power_dt50_w']);
+        $this->assertEquals(667, $r['radiator-stalnoi-kermi-line-k-22-200700']['power_dt70_w']);
+        $this->assertEquals(460, $r['radiator-stalnoi-kermi-line-k-22-200700']['power_dt50_w']);
+        $this->assertArrayNotHasKey('power_dt70_w', $r['radiator-stalnoi-kermi-line-plk-225051305']);
+        $this->assertEquals(1748, $r['radiator-stalnoi-kermi-line-plk-225051305']['power_dt50_w']);
+        $audit = json_decode(file_get_contents(resource_path('data/radiator-final98-identity-audit.json')), true, flags: JSON_THROW_ON_ERROR);
+        $this->assertCount(98, $audit['products']);
+        $this->assertSame(18, $audit['newly_confirmed']);
+        $this->assertSame(80, $audit['still_unconfirmed']);
+        $this->assertCount(4, $audit['corrections']);
+        foreach ($audit['products'] as $item) {
+            $thermal = array_filter($r[$item['slug']] ?? [], fn ($key) => str_starts_with($key, 'power_dt') || str_starts_with($key, 'section_power_dt'), ARRAY_FILTER_USE_KEY);
+            if ($item['status'] === 'confirmed') {
+                $this->assertEquals($item['fields'], $thermal, $item['slug']);
+                $this->assertContains($item['source'], $r[$item['slug']]['sources']);
+            } else {
+                $this->assertSame([], $thermal, $item['slug']);
+                $this->assertNotEmpty($item['reason']);
+            }
+        }
     }
 }

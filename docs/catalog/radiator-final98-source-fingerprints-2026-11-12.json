@@ -1,0 +1,92 @@
+[
+  {
+    "source": "https://teplo3000.spb.ru/doc/radiator/tp-aluminievye-fondital-exclusivo.pdf",
+    "file": "fondital-exclusivo-old.pdf",
+    "sha256": "5a732c53e14fb2f75870246954cc2abd3a005bf49da4829f0e0646f6978e1170",
+    "used_for_heat": true
+  },
+  {
+    "source": "https://www.fondital.com/downloads/6121/2826/DOP%20185%20Exclusivo%20B4%20-%20FP%20-%2015%20dicembre%202021%20-%20ed%204.pdf",
+    "file": "fondital-dop-b4.pdf",
+    "sha256": "7179f4428d29ea6326cef2a5864aa4104301dfc370df39527011760b6d9e3b5b",
+    "used_for_heat": true
+  },
+  {
+    "source": "https://thermomir.ru/files/it/2046_4971.pdf",
+    "file": "royal-al-legacy.pdf",
+    "sha256": "801a172c58cbb1f6d7c66451ccb4318730621f0b112a2a8a40495af83172d3a1",
+    "used_for_heat": false
+  },
+  {
+    "source": "https://cdn.vseinstrumenti.ru/instruction/nomenclaturecontent/202006/3251692.pdf/royal-thermo-revolution-bimetall-500-8-sektsij-714687.pdf",
+    "file": "royal-revolution-b-legacy.pdf",
+    "sha256": "23e400d7c3aca5c468a57cc65a9d20089d1d44633cfc54f8b4fad4ab3fed2706",
+    "used_for_heat": false
+  },
+  {
+    "source": "https://e-texnika.ru/uploadedFiles/files/user_1823/1DreamLiner.pdf",
+    "file": "royal-dream-legacy.pdf",
+    "sha256": "6bef04c733a7a342e983471cfacff223d044e0a626cb8cd00da81363b2919b29",
+    "used_for_heat": false
+  },
+  {
+    "source": "https://radiat.ru/pdf/radiatory/atm/pass_atm.pdf",
+    "file": "atm-other.pdf",
+    "sha256": "272ebdc98194a9e3b3d024f1a48aeaa7849256afd13e4d6b2aa1b99095dd495e",
+    "used_for_heat": false
+  },
+  {
+    "source": "https://www.plus24.ru/upload/uf/616/iw5jc083jhmp080c9g0li1li90v0ib3l/Паспорт%20НТ-В.pdf",
+    "file": "novaterm-current.pdf",
+    "sha256": "49ea889a812f8420b83c87829a82201dd0bda4f2e3e57f5af389d7d7df971343",
+    "used_for_heat": true
+  },
+  {
+    "source": "https://www.alterplast.ru/upload/iblock/d23/hs38n5vmbxo7lv1rw1dy7v6332rhl5sp.pdf",
+    "file": "radena-2026.pdf",
+    "sha256": "3a9f180eb739518d1f1667382f7f11473c7beabf3fa6757f525aac22b89055f8",
+    "used_for_heat": true
+  },
+  {
+    "source": "https://avm36.pro/upload/iblock/187/s997wcfnivbwgi92wkk6g2v68xyujgjc.pdf",
+    "file": "sas-al.pdf",
+    "sha256": "c9411940d1f8c766f3f6c8265c27964dfe02adfeba1d86d44d765f44dd18415d",
+    "used_for_heat": true
+  },
+  {
+    "source": "https://cdn.bigam.ru/iblock/085/0858c7f191eee62603103b79f1547e18/Pasport.pdf",
+    "file": "royal-al-2023-real.pdf",
+    "sha256": "83ee9eef2b6b35b389b505dfc5103a88a97eaf6beca87c4e3a1452537da73721",
+    "used_for_heat": false
+  },
+  {
+    "source": "https://www.teplodvor.by/userfls/ufiles/katalog_po_radiatoram_royal_thermo_2017.pdf",
+    "file": "royal-2017.pdf",
+    "sha256": "59ad112e0a57be0ec06349840d146b3d387be722da5719bef45ac07a8e6d8a4d",
+    "used_for_heat": false
+  },
+  {
+    "source": "https://www.bereg.by/upload/medialibrary/176/j3p81r8p11jki6v1oc97phv5yvzl5wg0.pdf",
+    "file": "bereg-shared-document.pdf",
+    "sha256": "79057ee2858a4098920d0f44868672daa4f9c05772730581d6077329b43b687f",
+    "used_for_heat": false
+  },
+  {
+    "source": "https://mnogo-tepla.ru/upload/iblock/0db/uk0ie5jf8lgbzgi10tyntky7okqe4b7o/Alyuminievyy-radiator-STI-_-Pasport.pdf",
+    "file": "sti-classic-stamped.pdf",
+    "sha256": "5be7f4b127bfc9411b4559a907ebdc96c1e41908b9b52769d21d2f7569705cb8",
+    "used_for_heat": true
+  },
+  {
+    "source": "https://www.kermiradiatoriai.lt/images/files/Kermi%20katalogas.pdf",
+    "file": "kermi-2018-en.pdf",
+    "sha256": "61648a9374f65cca6d9b87f4cab4fa683c99bcf9c57866ce28d919f8252818e7",
+    "used_for_heat": true
+  },
+  {
+    "source": "https://progreem.by/upload/dev2fun.imagecompress/webp/iblock/51f/Tekhnicheskiy-pasport-_-Radiatory-otopleniya-STI-Nova-500.webp",
+    "file": "sti-nova-image.webp",
+    "sha256": "d020be50079297c9e2adf7e5765a25e7868a1781c8c70f961a090a7f25def80a",
+    "used_for_heat": false
+  }
+]
