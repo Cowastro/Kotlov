@@ -10,13 +10,15 @@ class HeaterCategoryClassifier
     {
         $name = mb_strtolower($name);
         // Components must win over the heater type mentioned in their description.
-        if (preg_match('~bft/|bct/evu|bec/wf|cwm-02|ech/tu[ie]|eft/(?:ag|rr)~u', $name)
+        if (preg_match('~bft/|bct/evu|bec/wf|cwm-02|ech/tu[iem]|eft/(?:ag|r)|\befa\b~u', $name)
             || (preg_match('~шасси|подставк|кронштейн|блок управлен|модуль.*(?:wi-fi|wifi)~u', $name)
                 && preg_match('~конвектор|обогревател~u', $name))) {
             return 'komplektuyushchie-dlya-obogrevateley';
         }
+        if (preg_match('~теплоаккумулятор~u', $name) && preg_match('~электрическ|аэт~u', $name)) return 'elektricheskie-teploakkumulyatory';
+        if (preg_match('~тепл[ыё]й плинтус~u', $name) && str_contains($name, 'электрическ')) return 'elektricheskie-teplye-plintusy';
         if (preg_match('~зарядн.*станци|станци.*зарядн~u', $name)) return 'zaryadnye-stantsii-dlya-elektromobiley';
-        if (preg_match('~масля[нн]*|boh/|\btor\s*21~u', $name)) return 'maslyanye-obrevateli';
+        if (preg_match('~маслян.*(?:радиатор|обогревател)|(?:радиатор|обогревател).*маслян|boh/|\btor\s*21~u', $name)) return 'maslyanye-obrevateli';
         if (preg_match('~инфракрас|eih/ag~u', $name)) return 'infrakrasnye-obrevateli';
         if (preg_match('~теплов.*завес~u', $name)) return 'teplovye-zavesy';
         if (preg_match('~теплов.*пушк~u', $name)) return 'teplovye-pushki';

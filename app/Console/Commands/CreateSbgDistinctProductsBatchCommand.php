@@ -1423,7 +1423,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
     private const BATCH_RESEARCHED_PRICED_20261013_AT = [
         'УТ-00004679' => [
             'template' => 'KOTLOV-003695',
-            'category_slug' => 'obogrevateli',
+            'category_slug' => 'komplektuyushchie-dlya-obogrevateley',
             'fragments' => ['Модуль', 'съёмный', 'управляющий', 'Ballu', 'Smart', 'WI-FI', 'BEC/WF-01'],
             'brand' => [
                 'name' => 'Ballu',
@@ -1605,7 +1605,7 @@ class CreateSbgDistinctProductsBatchCommand extends Command
             'link_existing_sku' => 'KOTLOV-000727',
             'link_fragments' => ['Electrolux', 'EFT/AG2R'],
             'refresh_existing' => true,
-            'category_slug' => 'obogrevateli',
+            'category_slug' => 'komplektuyushchie-dlya-obogrevateley',
             'fragments' => ['Комплект', 'шасси', 'EFT/AG2R', 'напольной установки', 'конвектора'],
             'brand' => [
                 'name' => 'Electrolux',
