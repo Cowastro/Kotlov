@@ -269,6 +269,9 @@ class OrdersTable
 
                 ViewColumn::make('deal_progress')
                     ->label('Сделка и контроль')
+                    // Contains its own buttons and review links; a record-link wrapper
+                    // would create nested anchors and let the browser split the layout.
+                    ->disabledClick()
                     ->view('filament.resources.orders.deal-progress')
                     ->viewData(['isTable' => true])
                     ->width('350px')

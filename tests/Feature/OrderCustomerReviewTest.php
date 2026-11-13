@@ -238,6 +238,9 @@ class OrderCustomerReviewTest extends TestCase
         $this->assertStringContainsString('/admin/reviews/'.$review->id, $html);
 
         Livewire::test(ListOrders::class)->set('activeTab', 'all')->assertSee('Отзыв получен — открыть');
+        $page = Livewire::test(ListOrders::class)->set('activeTab', 'all');
+        $this->assertTrue($page->instance()->getTable()->getColumn('deal_progress')->isClickDisabled(),
+            'The progress column must not wrap review links in another record anchor.');
         Livewire::test(\App\Filament\Resources\Orders\Pages\ViewOrder::class, ['record' => $order->id])
             ->assertSee('Отзыв получен — открыть');
         $review->update(['is_approved' => true]);
