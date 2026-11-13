@@ -61,6 +61,47 @@ class NavigationRedirectedCategoryTest extends TestCase
         $this->assertContains('redirect-nav-inactive-test', $slugs);
     }
 
+    public function test_legacy_gas_category_is_hidden_when_gas_water_heater_section_is_active(): void
+    {
+        $parent = Category::query()->create([
+            'parent_id' => 0,
+            'name' => 'Водонагреватели теста',
+            'slug' => 'gas-nav-parent-test',
+            'is_active' => true,
+        ]);
+
+        foreach (['gas', 'vodogreynaya-kolonka'] as $index => $slug) {
+            $child = Category::query()->create([
+                'parent_id' => $parent->id,
+                'name' => 'Раздел '.$slug,
+                'slug' => $slug,
+                'is_active' => true,
+            ]);
+
+            Product::query()->create([
+                'category_id' => $child->id,
+                'name' => 'Товар '.$slug,
+                'slug' => 'gas-nav-product-'.$index,
+                'sku' => 'GAS-NAV-'.$index,
+                'price' => 100,
+                'is_active' => true,
+                'is_archived' => false,
+                'in_stock' => true,
+                'availability_status' => Product::AVAILABILITY_IN_STOCK,
+            ]);
+        }
+
+        Cache::flush();
+
+        $method = new ReflectionMethod(AppServiceProvider::class, 'getNavCategories');
+        $navigation = $method->invoke(new AppServiceProvider($this->app));
+
+        $this->assertSame(
+            ['vodogreynaya-kolonka'],
+            $navigation->firstWhere('slug', $parent->slug)->children->pluck('slug')->all()
+        );
+    }
+
     public function test_contacts_page_has_organization_schema(): void
     {
         $html = $this->get('/contacts')->assertOk()->getContent();

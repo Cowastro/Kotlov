@@ -11,6 +11,7 @@ use App\Models\WishlistItem;
 use App\Services\B2bCatalogOfferResolver;
 use App\Services\SupplierSyncJournalRecorder;
 use App\Support\AdminRoleAccess;
+use App\Support\Catalog\WaterHeaterCatalog;
 use App\Support\AdminSurfaceRequest;
 use App\Support\SchemaPresence;
 use App\Support\TransactionalMailbox;
@@ -306,10 +307,10 @@ private function getNavBrands(): \Illuminate\Support\Collection
 
 private function getNavCategories()
 {
-    return Cache::remember('nav:categories:orderable:v4', 3600, function () {
-        // A category whose URL is the source of an active redirect (e.g. a merged
-        // duplicate like /gas → /vodogreynaya-kolonka) must not be linked from the
-        // menu: every such link costs crawlers and visitors an extra 301 hop.
+    return Cache::remember('nav:categories:orderable:v5', 3600, function () {
+        // A category whose URL is the source of an active redirect must not be
+        // linked from the menu: every such link costs crawlers and visitors an
+        // extra 301 hop.
         $redirectedPaths = DB::table('redirects')
             ->where('is_active', 1)
             ->pluck('from_url')
@@ -320,7 +321,15 @@ private function getNavCategories()
             ->where('is_active', true)
             ->orderBy('name')
             ->orderBy('sort_order')
-            ->get()
+            ->get();
+
+        // CatalogController redirects the legacy /gas category to the gas water
+        // heater section whenever that section is active.
+        if ($categories->contains('slug', WaterHeaterCatalog::GAS)) {
+            $redirectedPaths->put('/gas', true);
+        }
+
+        $categories = $categories
             ->reject(fn (Category $category) => $redirectedPaths->has('/' . trim((string) $category->slug, '/')));
 
         $categoriesByParent = $categories->groupBy('parent_id');
