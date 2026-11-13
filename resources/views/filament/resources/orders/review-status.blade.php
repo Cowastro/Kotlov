@@ -32,10 +32,10 @@
         ],
     ];
 @endphp
-<div class="order-review-status" aria-label="СМС и отзыв клиента" style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+<div class="order-review-status" aria-label="СМС и отзыв клиента" style="display:inline-flex;width:max-content;align-items:center;justify-content:flex-start;gap:5px;margin-top:2px;">
     @foreach($statuses as $status)
         @php
-            $style = 'display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:6px;flex-shrink:0;'
+            $style = 'display:inline-flex;align-items:center;justify-content:center;width:24px;min-width:24px;max-width:24px;height:24px;border-radius:6px;flex:0 0 24px;'
                 .($status['active'] ? 'color:#22c55e;background:rgba(34,197,94,.1);' : 'color:#9ca3af;background:rgba(156,163,175,.1);');
         @endphp
         @if($status['url'])

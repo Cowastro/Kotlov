@@ -82,10 +82,15 @@
     }
 
     .order-deal {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: .3rem;
+        width: 100%;
+        min-width: 0;
         color: var(--gray-700);
         text-align: start;
         white-space: normal;
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
     }
 
     .dark .order-deal {
@@ -93,11 +98,26 @@
     }
 
     .order-deal--compact {
-        contain: inline-size;
         padding: .4rem .375rem;
-        min-width: 21rem;
+        min-width: 0;
         font-size: .75rem;
         line-height: 1.1rem;
+    }
+
+    .orders-workspace .fi-ta-cell-deal-progress,
+    .orders-workspace .fi-ta-header-cell-deal-progress {
+        width: 22rem;
+        min-width: 22rem;
+    }
+
+    .order-deal > * {
+        min-width: 0;
+    }
+
+    .order-deal__heading > strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .order-deal__heading,
@@ -175,6 +195,9 @@
         font-size: .625rem;
         line-height: .875rem;
         white-space: nowrap;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .order-deal__control {
@@ -186,7 +209,7 @@
         flex: 1;
         min-width: 0;
         white-space: normal;
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
     }
 
     .order-deal__control > button {
@@ -242,6 +265,10 @@
 
     .order-deal--compact .order-deal__fulfillment-status {
         display: none;
+    }
+
+    .order-deal--compact .order-deal__facts > span:first-child {
+        flex-basis: 100%;
     }
 
     .order-deal__changed {
