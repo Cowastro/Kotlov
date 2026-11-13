@@ -77,6 +77,10 @@ class SyncDealByCatalogPricesCommand extends Command
                 $sent += $chunk->count();
             }
             $this->metric('sent', $sent);
+            // Only the accepted identity/price rows are needed now. Do not retain the local
+            // Eloquent catalog and the first remote snapshot while reading the second snapshot.
+            unset($products, $remote, $plan, $updates);
+            gc_collect_cycles();
             $verified = $this->loadProducts($client)->keyBy('id');
             $failed = 0;
             foreach ($accepted as $row) {
@@ -128,6 +132,9 @@ class SyncDealByCatalogPricesCommand extends Command
                     throw new RuntimeException('Некорректный или повторный ID товара sbg.by.');
                 }
                 $seen[$id] = true;
+                // Product descriptions and image galleries can be very large. Retain only
+                // the fields used by matching and price verification, not full API records.
+                $item = array_intersect_key($item, array_flip(['id', 'sku', 'name', 'external_id', 'price', 'currency', 'discount']));
                 // Deal.by still labels modern Belarusian-ruble amounts BYR in its API.
                 // Verified against sbg.by's public BYN offer (1494 API = 1494 BYN, not a FX conversion).
                 // Never apply this legacy alias to another marketplace endpoint.
