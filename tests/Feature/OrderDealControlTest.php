@@ -264,6 +264,24 @@ class OrderDealControlTest extends TestCase
         $this->assertSame(0, $notifier->notify());
     }
 
+    public function test_completed_queue_includes_all_finished_deals_without_sms_or_review_conditions(): void
+    {
+        $manager = $this->manager();
+        $delivered = $this->order('delivered');
+        $finished = $this->order('completed');
+        $stageFinished = $this->order('processing');
+        $stageFinished->forceFill(['deal_stage' => 'completed', 'review_sms_sent_at' => now()])->save();
+        $cancelled = $this->order('cancelled');
+        $cancelled->forceFill(['deal_stage' => 'completed'])->save();
+        $active = $this->order('processing');
+        Livewire::actingAs($manager)->test(ListOrders::class)
+            ->call('selectOrderTab', 'finished')
+            ->assertSet('activeTab', 'finished')
+            ->assertCanSeeTableRecords([$delivered, $finished, $stageFinished])
+            ->assertCanNotSeeTableRecords([$cancelled, $active])
+            ->assertSee('Завершённые');
+    }
+
     private function manager(): User
     {
         return User::factory()->create(['role' => 'manager', 'is_active' => true]);

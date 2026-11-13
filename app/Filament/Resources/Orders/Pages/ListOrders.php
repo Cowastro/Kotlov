@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ListOrders extends ListRecords
 {
-    private const WORK_TABS = ['work_queue', 'control_today', 'control_overdue', 'control_missing', 'attention', 'my', 'unassigned', 'all'];
+    private const WORK_TABS = ['work_queue', 'control_today', 'control_overdue', 'control_missing', 'attention', 'my', 'unassigned', 'all', 'finished'];
 
     protected static string $resource = OrderResource::class;
 
@@ -158,6 +158,12 @@ class ListOrders extends ListRecords
 
             'all' => Tab::make('Все заказы')
                 ->badge($this->ordersQuery()->count()),
+
+            'finished' => Tab::make('Завершённые')
+                ->icon('heroicon-o-check-circle')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $this->completedDeals($query))
+                ->badge($this->completedDeals($this->ordersQuery())->count())
+                ->badgeColor('success'),
         ];
 
         $statusCounts = $this->ordersQuery()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
@@ -174,5 +180,13 @@ class ListOrders extends ListRecords
     protected function ordersQuery(): Builder
     {
         return static::getResource()::getEloquentQuery();
+    }
+
+    private function completedDeals(Builder $query): Builder
+    {
+        return $query->where('status', '!=', 'cancelled')
+            ->where(fn (Builder $completed): Builder => $completed
+                ->whereIn('status', ['delivered', 'completed'])
+                ->orWhere('deal_stage', 'completed'));
     }
 }
