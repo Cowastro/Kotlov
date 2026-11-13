@@ -18,7 +18,7 @@ class SyncDealByCatalogPricesTest extends TestCase
         $category = Category::query()->create(['name' => 'Печи', 'slug' => 'deal-catalog-test', 'is_active' => true]);
 
         return Product::query()->create(['category_id' => $category->id, 'name' => 'Печь 18 М', 'slug' => 'deal-catalog-stove',
-            'sku' => 'CATALOG-18M', 'price' => 1852, 'is_active' => true, 'is_archived' => false, 'requires_price_confirmation' => false]);
+            'sku' => 'CATALOG-18M', 'price' => 1852, 'currency' => 'BYN', 'is_active' => true, 'is_archived' => false, 'requires_price_confirmation' => false]);
     }
 
     private function remote(float $price): array

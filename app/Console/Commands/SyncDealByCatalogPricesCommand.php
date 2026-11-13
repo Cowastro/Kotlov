@@ -37,7 +37,7 @@ class SyncDealByCatalogPricesCommand extends Command
                     ->select(['id', 'product_id', 'external_sku', 'barcode'])
                     ->where('match_status', 'matched')->where('match_confidence', '>=', 0.99)
                     ->whereHas('source', fn ($source) => $source->where('is_active', true))])
-                ->get(['id', 'sku', 'slug', 'name', 'price', 'is_active', 'is_archived', 'requires_price_confirmation']);
+                ->get(['id', 'sku', 'slug', 'name', 'price', 'currency', 'is_active', 'is_archived', 'requires_price_confirmation']);
             $disk = Storage::disk('local');
             $links = $disk->exists(self::LINKS) ? json_decode($disk->get(self::LINKS), true, 512, JSON_THROW_ON_ERROR) : [];
             $remote = $this->loadProducts($client);

@@ -81,6 +81,8 @@ class DealByPricePlan
                 $row['reason'] = 'changed_local_identity';
             } elseif (! $product->is_active || $product->is_archived || $product->requires_price_confirmation || ! is_finite($row['new_price']) || $row['new_price'] <= 0) {
                 $row['reason'] = 'ineligible_local_product';
+            } elseif (strtoupper((string) $product->currency) !== 'BYN') {
+                $row['reason'] = 'unsupported_local_currency';
             } elseif (strtoupper((string) ($item['currency'] ?? '')) !== 'BYN') {
                 $row['reason'] = 'unsupported_currency';
             } elseif (! is_numeric($item['price'] ?? null) || ! is_finite((float) $item['price'])) {

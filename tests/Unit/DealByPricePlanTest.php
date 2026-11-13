@@ -42,6 +42,8 @@ class DealByPricePlanTest extends TestCase
             $remote = array_replace($this->remote(10, 'A', 'Печь'), $attributes);
             $this->assertSame($attributes['reason'], (new DealByPricePlan)->build(collect([$this->product(1, 'A', 'Печь')]), collect([$remote]))[0]['reason']);
         }
+        $foreign = $this->product(1, 'A', 'Печь')->forceFill(['currency' => 'USD']);
+        $this->assertSame('unsupported_local_currency', (new DealByPricePlan)->build(collect([$foreign]), collect([$this->remote(10, 'A', 'Печь')]))[0]['reason']);
     }
 
     public function test_changed_saved_identity_is_blocked_and_no_fuzzy_suffix_match_is_allowed(): void
@@ -81,7 +83,7 @@ class DealByPricePlanTest extends TestCase
 
     private function product(int $id, string $sku, string $name): Product
     {
-        return (new Product)->forceFill(['id' => $id, 'sku' => $sku, 'slug' => 'stove-'.$id, 'name' => $name, 'price' => 1852,
+        return (new Product)->forceFill(['id' => $id, 'sku' => $sku, 'slug' => 'stove-'.$id, 'name' => $name, 'price' => 1852, 'currency' => 'BYN',
             'is_active' => true, 'is_archived' => false]);
     }
 
