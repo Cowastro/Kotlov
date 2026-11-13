@@ -32,7 +32,11 @@ class SyncDealByCatalogPricesCommand extends Command
             $products = Product::query()->with(['supplierProducts' => fn ($query) => $query
                 ->select(['id', 'product_id', 'supplier_article'])
                 ->where('match_status', 'matched')
-                ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true))])
+                ->whereHas('supplier', fn ($supplier) => $supplier->where('is_active', true)),
+                'integrationProducts' => fn ($query) => $query
+                    ->select(['id', 'product_id', 'external_sku', 'barcode'])
+                    ->where('match_status', 'matched')->where('match_confidence', '>=', 0.99)
+                    ->whereHas('source', fn ($source) => $source->where('is_active', true))])
                 ->get(['id', 'sku', 'slug', 'name', 'price', 'is_active', 'is_archived', 'requires_price_confirmation']);
             $disk = Storage::disk('local');
             $links = $disk->exists(self::LINKS) ? json_decode($disk->get(self::LINKS), true, 512, JSON_THROW_ON_ERROR) : [];
@@ -43,6 +47,7 @@ class SyncDealByCatalogPricesCommand extends Command
                 throw new RuntimeException('Не удалось сохранить план цен sbg.by.');
             }
             $this->metric('remote_products', $remote->count());
+            $this->metric('legacy_byr_labels', $remote->where('_api_currency', 'BYR')->count());
             $this->metric('local_products', $products->count());
             foreach ($plan->countBy('reason') as $reason => $count) {
                 $this->metric($reason, $count);
@@ -76,7 +81,7 @@ class SyncDealByCatalogPricesCommand extends Command
             $failed = 0;
             foreach ($accepted as $row) {
                 $item = $verified->get($row['deal_id']);
-                if (! $item || $planner->fingerprint($item) !== $row['fingerprint'] || ! is_numeric($item['price'] ?? null)
+                if (! $item || ($item['currency'] ?? '') !== 'BYN' || $planner->fingerprint($item) !== $row['fingerprint'] || ! is_numeric($item['price'] ?? null)
                     || abs((float) $item['price'] - $row['new_price']) >= 0.005 || ! empty($item['discount'])) {
                     $failed++;
 
@@ -123,6 +128,14 @@ class SyncDealByCatalogPricesCommand extends Command
                     throw new RuntimeException('Некорректный или повторный ID товара sbg.by.');
                 }
                 $seen[$id] = true;
+                // Deal.by still labels modern Belarusian-ruble amounts BYR in its API.
+                // Verified against sbg.by's public BYN offer (1494 API = 1494 BYN, not a FX conversion).
+                // Never apply this legacy alias to another marketplace endpoint.
+                if (($item['currency'] ?? '') === 'BYR'
+                    && strtolower((string) parse_url((string) config('services.deal_by.base_url'), PHP_URL_HOST)) === 'my.deal.by') {
+                    $item['_api_currency'] = 'BYR';
+                    $item['currency'] = 'BYN';
+                }
                 $products->push($item);
             }
             if (count($items) < 100) {

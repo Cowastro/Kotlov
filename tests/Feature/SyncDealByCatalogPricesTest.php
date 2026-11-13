@@ -74,4 +74,36 @@ class SyncDealByCatalogPricesTest extends TestCase
         });
         $this->artisan('deal:sync-catalog-prices', ['--apply' => true])->assertFailed();
     }
+
+    public function test_deal_by_legacy_byr_label_keeps_modern_byn_amount_without_conversion(): void
+    {
+        Storage::fake('local');
+        $this->card();
+        config()->set('services.deal_by.base_url', 'https://my.deal.by/api/v1');
+        $before = $this->remote(1494);
+        $after = $this->remote(1852);
+        $before['products'][0]['currency'] = $after['products'][0]['currency'] = 'BYR';
+        $this->mock(DealByClient::class, function ($mock) use ($before, $after): void {
+            $mock->shouldReceive('listProducts')->twice()->andReturn($before, $after);
+            $mock->shouldReceive('editProducts')->once()->with([['id' => 100, 'price' => 1852.0]])->andReturn([]);
+        });
+        $this->artisan('deal:sync-catalog-prices', ['--apply' => true])
+            ->expectsOutputToContain('metric.deal_catalog_prices.legacy_byr_labels=1')
+            ->expectsOutputToContain('metric.deal_catalog_prices.verification_failures=0')->assertSuccessful();
+    }
+
+    public function test_byr_is_not_reinterpreted_for_another_api_endpoint(): void
+    {
+        Storage::fake('local');
+        $this->card();
+        config()->set('services.deal_by.base_url', 'https://other.marketplace.test/api/v1');
+        $payload = $this->remote(1494);
+        $payload['products'][0]['currency'] = 'BYR';
+        $this->mock(DealByClient::class, function ($mock) use ($payload): void {
+            $mock->shouldReceive('listProducts')->once()->andReturn($payload);
+            $mock->shouldNotReceive('editProducts');
+        });
+        $this->artisan('deal:sync-catalog-prices')
+            ->expectsOutputToContain('metric.deal_catalog_prices.unsupported_currency=1')->assertSuccessful();
+    }
 }

@@ -2,7 +2,9 @@
 
 namespace Tests\Unit;
 
+use App\Models\IntegrationProduct;
 use App\Models\Product;
+use App\Models\SupplierProduct;
 use App\Services\Marketplaces\DealByPricePlan;
 use PHPUnit\Framework\TestCase;
 
@@ -59,6 +61,22 @@ class DealByPricePlanTest extends TestCase
         $a = $this->product(1, 'A', 'Печь');
         $this->assertSame('unchanged', $planner->build(collect([$a]), collect([array_replace($this->remote(10, 'A', 'Печь'), ['price' => 1852])]))[0]['reason']);
         $this->assertSame('update', $planner->build(collect([$a]), collect([array_replace($this->remote(10, 'A', 'Печь'), ['price' => 0])]))[0]['reason']);
+    }
+
+    public function test_confirmed_supplier_and_integration_articles_match_and_collisions_still_block(): void
+    {
+        $a = $this->product(1, 'CRM-1', 'Печь 18 М');
+        $a->setRelation('supplierProducts', collect([new SupplierProduct(['supplier_article' => 'FACTORY-18M'])]));
+        $b = $this->product(2, 'CRM-2', 'Печь 24 М');
+        $b->setRelation('integrationProducts', collect([new IntegrationProduct(['external_sku' => 'FACTORY-24M', 'barcode' => '4600000000010'])]));
+        $planner = new DealByPricePlan;
+        $rows = $planner->build(collect([$a, $b]), collect([
+            $this->remote(10, 'FACTORY-18M', 'Other'), $this->remote(11, '4600000000010', 'Other 2'),
+        ]));
+        $this->assertSame([1, 2], $rows->pluck('local_id')->all());
+        $this->assertSame(['update', 'update'], $rows->pluck('reason')->all());
+        $b->setRelation('supplierProducts', collect([new SupplierProduct(['supplier_article' => 'FACTORY-18M'])]));
+        $this->assertSame('conflicting_identity', $planner->build(collect([$a, $b]), collect([$this->remote(10, 'FACTORY-18M', 'Other')]))[0]['reason']);
     }
 
     private function product(int $id, string $sku, string $name): Product
