@@ -20,6 +20,12 @@ class DealByPricePlan
         foreach ($products as $product) {
             $articles = $product->relationLoaded('supplierProducts')
                 ? $product->supplierProducts->pluck('supplier_article')->all() : [];
+            if ($product->relationLoaded('integrationProducts')) {
+                foreach ($product->integrationProducts as $linked) {
+                    $articles[] = $linked->external_sku;
+                    $articles[] = $linked->barcode;
+                }
+            }
             foreach (array_unique([$product->sku, $product->slug, ...$articles]) as $value) {
                 if ($key = $this->normalize($value)) {
                     $keys[$key][(int) $product->id] = true;
@@ -34,7 +40,8 @@ class DealByPricePlan
             $id = (int) ($item['id'] ?? 0);
             $row = ['deal_id' => $id, 'deal_name' => $item['name'] ?? '', 'deal_sku' => $item['sku'] ?? '',
                 'local_id' => null, 'local_slug' => null, 'method' => '', 'old_price' => $item['price'] ?? null,
-                'new_price' => null, 'reason' => '', 'fingerprint' => $this->fingerprint($item)];
+                'new_price' => null, 'reason' => '', 'api_currency' => $item['_api_currency'] ?? $item['currency'] ?? null,
+                'fingerprint' => $this->fingerprint($item)];
             $candidates = [];
             if ($id <= 0) {
                 return array_replace($row, ['reason' => 'invalid_remote_id']);
@@ -74,6 +81,8 @@ class DealByPricePlan
                 $row['reason'] = 'changed_local_identity';
             } elseif (! $product->is_active || $product->is_archived || $product->requires_price_confirmation || ! is_finite($row['new_price']) || $row['new_price'] <= 0) {
                 $row['reason'] = 'ineligible_local_product';
+            } elseif (strtoupper((string) $product->currency) !== 'BYN') {
+                $row['reason'] = 'unsupported_local_currency';
             } elseif (strtoupper((string) ($item['currency'] ?? '')) !== 'BYN') {
                 $row['reason'] = 'unsupported_currency';
             } elseif (! is_numeric($item['price'] ?? null) || ! is_finite((float) $item['price'])) {
