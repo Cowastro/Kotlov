@@ -279,6 +279,51 @@ class OrderCustomerReviewTest extends TestCase
         $page->removeTableFilter('customer_review_status')->assertCanSeeTableRecords([$unsent, ...array_values($orders)]);
     }
 
+    public function test_review_controls_unlock_only_after_completion_and_mount_the_sms_dialog(): void
+    {
+        [$order] = $this->order();
+        $manager = User::factory()->create(['role' => 'manager', 'is_active' => true, 'is_crm_user' => true]);
+        $this->actingAs($manager);
+        $order->forceFill(['status' => 'processing', 'deal_stage' => 'processing'])->save();
+        $render = fn (): string => view('filament.resources.orders.review-status', [
+            'order' => $order->load('customerReviews'), 'isTable' => true,
+        ])->render();
+        $this->assertStringNotContainsString('wire:click.stop=', $render());
+        $page = Livewire::test(ListOrders::class)->set('activeTab', 'all');
+        $page->assertTableActionDisabled('customer_review_sms', $order)
+            ->assertTableActionDisabled('customer_review_link', $order);
+
+        $order->forceFill(['status' => 'delivered', 'deal_stage' => 'completed'])->save();
+        $html = $render();
+        $this->assertStringContainsString('aria-label="Отправить ссылку на отзыв по СМС"', $html);
+        $this->assertStringContainsString('aria-label="Скопировать ссылку на отзыв"', $html);
+        $this->assertStringContainsString('recordKey', $html);
+        config(['app.url' => 'https://kotlov.by']);
+        Livewire::test(ListOrders::class)->set('activeTab', 'all')
+            ->assertTableActionEnabled('customer_review_sms', $order)
+            ->mountTableAction('customer_review_sms', $order)
+            ->assertActionMounted(\Filament\Actions\Testing\TestAction::make('customer_review_sms')->table($order));
+        $order->forceFill(['status' => 'cancelled'])->save();
+        $this->assertFalse($order->canRequestCustomerReview());
+    }
+
+    public function test_unfinished_order_cannot_send_review_sms_even_through_service(): void
+    {
+        [$order] = $this->order();
+        $this->actingAs(User::factory()->create(['role' => 'admin', 'is_active' => true]));
+        $order->forceFill(['status' => 'processing', 'deal_stage' => 'processing'])->save();
+        config(['services.sms_by.enabled' => true, 'services.sms_by.alphaname_id' => '123']);
+        \Illuminate\Support\Facades\Http::fake();
+        try {
+            app(\App\Services\Orders\OrderReviewSms::class)->send($order, $order->customer_phone);
+            $this->fail('Unfinished order must not request a review');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertStringContainsString('после завершения', $e->errors()['phone'][0]);
+        }
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+        $this->assertNull($order->fresh()->review_sms_attempted_at);
+    }
+
     private function data(string $target = 'order'): array
     {
         return ['target' => $target, 'author_name' => 'Александр', 'rating' => 4, 'text' => 'Заказ доставили аккуратно и вовремя', 'consent' => 1];

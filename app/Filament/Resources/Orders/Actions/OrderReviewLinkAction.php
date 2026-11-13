@@ -15,6 +15,9 @@ final class OrderReviewLinkAction
         return Action::make('customer_review_link')
             ->label('Попросить отзыв')->icon('heroicon-o-star')
             ->authorize(fn (Order $record): bool => OrderResource::canView($record))
+            ->disabled(fn (Order $record): bool => ! $record->canRequestCustomerReview())
+            ->tooltip(fn (Order $record): string => $record->canRequestCustomerReview()
+                ? 'Скопировать ссылку на отзыв' : 'Доступно после завершения сделки')
             ->modalHeading('Ссылка для отзыва клиента')->modalWidth('md')
             ->modalDescription('Скопируйте ссылку и отправьте клиенту после покупки или разговора. Регистрация не нужна. Отзывы поступают на модерацию; ничего автоматически не отправляется.')
             ->schema([
