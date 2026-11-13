@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class CompanyRequisitesPageTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_public_requisites_page_uses_canonical_company_data(): void
     {
         $company = config('legal.commercial_documents');
