@@ -15,6 +15,7 @@ on:
           - tail-log
           - diagnose-error-kinds
           - diagnose-deal-currencies
+          - recover-deal-price-lock
           - ps-artisan
           - stop-varmega-image-repair
           - stop-product-image-repair
@@ -58,7 +59,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|diagnose-error-kinds|diagnose-deal-currencies|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|audit-gas-meter-demand|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|configure-deal-by|enable-deal-by-orders|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|diagnose-error-kinds|diagnose-deal-currencies|recover-deal-price-lock|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|audit-gas-meter-demand|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|configure-deal-by|enable-deal-by-orders|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -194,6 +195,17 @@ jobs:
                 echo "metric.deal_failure.execution_time=$(grep -ic 'Maximum execution time' storage/logs/github-actions-artisan-apply.log || true)"
                 echo "metric.deal_failure.fatal=$(grep -ic 'Fatal error' storage/logs/github-actions-artisan-apply.log || true)"
                 "$PHP_BIN" -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap(); $items = $app->make(\App\Services\Marketplaces\DealByClient::class)->listProducts(100); $counts = []; foreach ($items["products"] ?? [] as $item) { $value = strtoupper(trim((string) ($item["currency"] ?? ""))); $key = in_array($value, ["BYN", "BYR", "USD", "EUR", "RUB"], true) ? strtolower($value) : ($value === "" ? "missing" : "other"); $counts[$key] = ($counts[$key] ?? 0) + 1; } foreach ($counts as $key => $count) echo "metric.deal_currency.$key=$count\n";'
+                ;;
+              recover-deal-price-lock)
+                set +e
+                pgrep -f '[p]hp.*artisan deal:sync-catalog-prices' >/dev/null
+                process_status=$?
+                set -e
+                if [[ "$process_status" -ne 1 ]]; then
+                  echo 'metric.deal_recovery.blocked=1'
+                  exit 1
+                fi
+                "$PHP_BIN" -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap(); \Illuminate\Support\Facades\Cache::lock("deal-by-catalog-price-sync")->forceRelease(); echo "metric.deal_recovery.released=1\n";'
                 ;;
               artisan-background)
                 mkdir -p "$(dirname "$LOG_FILE")"
@@ -1202,6 +1214,9 @@ jobs:
           if [[ "$TASK" == "diagnose-deal-currencies" ]]; then
             grep -E '^metric\.deal_currency\.(byn|byr|usd|eur|rub|missing|other)=[0-9]+$' "$detail_log" || true
             grep -E '^metric\.deal_failure\.(memory|execution_time|fatal)=[0-9]+$' "$detail_log" || true
+          fi
+          if [[ "$TASK" == "recover-deal-price-lock" ]]; then
+            grep -E '^metric\.deal_recovery\.(blocked|released)=[01]$' "$detail_log" || true
           fi
           if [[ "${ARTISAN_ARGV[0]:-}" == "deal:sync-catalog-prices" ]]; then
             grep -E '^metric\.deal_catalog_prices\.[a-z_]+=[0-9]+$' "$detail_log" || true

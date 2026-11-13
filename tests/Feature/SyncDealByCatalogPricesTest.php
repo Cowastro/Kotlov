@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Console\Commands\SyncDealByCatalogPricesCommand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\Marketplaces\DealByClient;
@@ -105,5 +106,20 @@ class SyncDealByCatalogPricesTest extends TestCase
         });
         $this->artisan('deal:sync-catalog-prices')
             ->expectsOutputToContain('metric.deal_catalog_prices.unsupported_currency=1')->assertSuccessful();
+    }
+
+    public function test_price_reader_does_not_retain_descriptions_or_image_galleries(): void
+    {
+        $payload = $this->remote(1494);
+        $payload['products'][0]['description'] = str_repeat('Large catalog description ', 10000);
+        $payload['products'][0]['images'] = array_fill(0, 100, ['url' => 'https://images.example.test/photo.jpg']);
+        $client = $this->mock(DealByClient::class);
+        $client->shouldReceive('listProducts')->once()->andReturn($payload);
+        $method = new \ReflectionMethod(SyncDealByCatalogPricesCommand::class, 'loadProducts');
+        $row = $method->invoke(new SyncDealByCatalogPricesCommand, $client)->first();
+        $this->assertSame(100, $row['id']);
+        $this->assertSame(1494.0, $row['price']);
+        $this->assertArrayNotHasKey('description', $row);
+        $this->assertArrayNotHasKey('images', $row);
     }
 }

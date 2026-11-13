@@ -6,6 +6,8 @@ Matching uses exact product SKU, slug, matched active-supplier article, confirme
 
 The registry is `Storage::disk('local')/deal-by/product-links.json`. Every run saves an item-level plan with skip reasons and old/new prices in `deal-by/price-plans/`. Applying also saves the previous registry before API writes. Files remain private. API errors or failed rereads make the command fail; HTTP acceptance alone is not evidence of success. A partial write can be safely rerun after checking the plan.
 
+The reader keeps only identity, price, currency and discount fields; descriptions and image galleries are discarded on each page. The initial local/remote catalogs are released before the verification scan, so the two full snapshots do not coexist in memory.
+
 Deal.by's API uses the legacy label `BYR` for current BYN amounts. The production diagnostic on 2026-11-13 returned BYR for all 100 sampled products; API product 160512617 reported 1494, matching its public sbg.by offer of 1494 BYN. The loader treats this as a label alias only for the exact `my.deal.by` API host, without multiplying or converting prices. Raw labels are retained in plans; other endpoints and currencies remain blocked. `diagnose-deal-currencies` is a read-only workflow task exposing only allowlisted currency counts.
 
 The scheduler runs at minute 20 of each hour, with command and scheduler overlap locks. Existing supplier-specific jobs remain compatible and use the same KOTLOV retail source. The full-catalog command does not add or delete sbg.by products.
