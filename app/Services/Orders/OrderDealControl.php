@@ -16,7 +16,9 @@ class OrderDealControl
     {
         $advance = false;
         $saved = DB::transaction(function () use ($order, $actor, $data, &$advance): Order {
-            $locked = Order::query()->whereDoesntHave('dealByInbox')->whereDoesntHave('legacyB2bOrder')
+            // Retail and Deal.by share this workflow; only legacy B2B belongs
+            // to a separate module. Resource queries still keep the lists apart.
+            $locked = Order::query()->whereDoesntHave('legacyB2bOrder')
                 ->lockForUpdate()->findOrFail($order->id);
             Gate::forUser($actor)->authorize('update', $locked);
             if (! $locked->dealIsActive()) {
