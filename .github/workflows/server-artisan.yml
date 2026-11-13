@@ -27,6 +27,7 @@ on:
           - audit-gas-meter-demand
           - verify-commercial-pdf
           - research-price-batch
+          - research-deal-catalog
           - upload-svah-pricelist
           - configure-openai
           - configure-deal-by
@@ -59,7 +60,7 @@ jobs:
           set -euo pipefail
 
           case "$TASK" in
-            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|diagnose-error-kinds|diagnose-deal-currencies|recover-deal-price-lock|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|audit-gas-meter-demand|verify-commercial-pdf|research-price-batch|upload-svah-pricelist|configure-openai|configure-deal-by|enable-deal-by-orders|deploy-safe|deploy-recover) ;;
+            optimize-clear|artisan-dry-run|artisan-apply|artisan-background|tail-log|diagnose-error-kinds|diagnose-deal-currencies|recover-deal-price-lock|ps-artisan|stop-varmega-image-repair|stop-product-image-repair|audit-teplodar|audit-unlinked-products|audit-price-integrity|audit-svah-group|audit-belomo|audit-gas-meter-demand|verify-commercial-pdf|research-price-batch|research-deal-catalog|upload-svah-pricelist|configure-openai|configure-deal-by|enable-deal-by-orders|deploy-safe|deploy-recover) ;;
             *) echo "::error::Unsupported task: $TASK"; exit 1 ;;
           esac
 
@@ -109,8 +110,21 @@ jobs:
           ssh-keyscan -p "${SERVER_PORT:-22}" "$SERVER_HOST" >> ~/.ssh/known_hosts
 
       - name: Checkout code for market research
-        if: inputs.task == 'research-price-batch'
+        if: inputs.task == 'research-price-batch' || inputs.task == 'research-deal-catalog'
         uses: actions/checkout@v6
+
+      - name: Upload read-only Deal research script
+        if: inputs.task == 'research-deal-catalog'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          set -euo pipefail
+          port="${SERVER_PORT:-22}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          scp -q -i ~/.ssh/server_key -P "$port" scripts/export_deal_research.php "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/private/deal-by/research-export.php"
 
       - name: Run remote task
         if: inputs.task != 'configure-openai' && inputs.task != 'configure-deal-by' && inputs.task != 'upload-svah-pricelist'
@@ -189,6 +203,9 @@ jobs:
                 ;;
               artisan-dry-run|artisan-apply)
                 "$PHP_BIN" artisan "${ARTISAN_ARGV[@]}"
+                ;;
+              research-deal-catalog)
+                "$PHP_BIN" storage/app/private/deal-by/research-export.php
                 ;;
               diagnose-deal-currencies)
                 echo "metric.deal_failure.memory=$(grep -ic 'Allowed memory size' storage/logs/github-actions-artisan-apply.log || true)"
@@ -1215,6 +1232,9 @@ jobs:
             grep -E '^metric\.deal_currency\.(byn|byr|usd|eur|rub|missing|other)=[0-9]+$' "$detail_log" || true
             grep -E '^metric\.deal_failure\.(memory|execution_time|fatal)=[0-9]+$' "$detail_log" || true
           fi
+          if [[ "$TASK" == "research-deal-catalog" ]]; then
+            grep -E '^metric\.deal_research\.[a-z_]+=[0-9]+$' "$detail_log" || true
+          fi
           if [[ "$TASK" == "recover-deal-price-lock" ]]; then
             grep -E '^metric\.deal_recovery\.(blocked|released)=[01]$' "$detail_log" || true
           fi
@@ -1277,6 +1297,28 @@ jobs:
             <<< "$remote_script"
 
       # User explicitly authorized these two identity rows only, not the full import report.
+      - name: Download explicitly approved Deal research data
+        if: inputs.task == 'research-deal-catalog' && inputs.artisan_args == '--export-approved'
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+        run: |
+          set -euo pipefail
+          port="${SERVER_PORT:-22}"
+          server_path="${SERVER_PATH:-/var/www/h209767/data/www/new.kotlov.by}"
+          mkdir -p deal-research
+          scp -q -i ~/.ssh/server_key -P "$port" "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/private/deal-by/research/*.ndjson" deal-research/
+          scp -q -i ~/.ssh/server_key -P "$port" "$SERVER_USER@$SERVER_HOST:$server_path/storage/app/private/deal-by/research/baseline-plan.json" deal-research/
+
+      - uses: actions/upload-artifact@v4
+        if: inputs.task == 'research-deal-catalog' && inputs.artisan_args == '--export-approved'
+        with:
+          name: deal-product-research
+          path: deal-research/
+          retention-days: 7
+
       - name: Download limited Omenergo identities
         if: inputs.task == 'artisan-dry-run' && inputs.artisan_args == 'supplier:sync-omenergo --dry-run --review-two'
         env:
